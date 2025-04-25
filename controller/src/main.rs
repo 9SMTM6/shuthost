@@ -2,11 +2,21 @@ mod config;
 mod http;
 mod wol;
 
+use std::{env, fs};
+
 use config::load_controller_config;
 use http::start_http_server;
 
 fn main() {
-    let config = load_controller_config("example_controller_config.toml")
+    // Get config path from env or fallback
+    let config_path_raw = env::var("CONFIG_PATH")
+        .unwrap_or_else(|_| "controller_config.toml".to_string());
+    let config_path = fs::canonicalize(&config_path_raw)
+        .unwrap_or_else(|_| panic!("Config file not found at: {}", config_path_raw));
+    println!("Using config path: {}", config_path.display());
+
+    let config = load_controller_config(&config_path)
         .expect("Failed to load controller config");
+
     start_http_server(config);
 }

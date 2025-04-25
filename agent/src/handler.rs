@@ -6,7 +6,7 @@ use crate::server::ServiceArgs;
 
 const ALLOWED_WINDOW: u64 = 30; // Seconds
 
-pub fn handle_request(data: &[u8], config: &ServiceArgs) -> String {
+pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> String {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => return "ERROR: Invalid UTF-8".to_string(),
@@ -35,11 +35,7 @@ pub fn handle_request(data: &[u8], config: &ServiceArgs) -> String {
         return "ERROR: Invalid HMAC signature".to_string();
     }
 
-    // Step 3: Handle the shutdown or sleep command
-    match execute_command(&config.shutdown_command) {
-        Ok(_) => format!("Successfully executed command: {}", config.shutdown_command),
-        Err(e) => format!("ERROR: Failed to execute command: {}", e),
-    }
+    return format!("Now executing command: {}. Hopefully goodbye.", config.shutdown_command)
 }
 
 // Step 4: Check if the timestamp is within the allowed window
@@ -60,11 +56,11 @@ fn verify_hmac(message: &str, received_signature: &str, secret: &[u8]) -> bool {
 }
 
 // Step 6: Execute the shutdown or sleep command
-fn execute_command(command: &str) -> Result<(), std::io::Error> {
-    println!("[agent] Executing command: {}", command);
+pub fn execute_shutdown(config: &ServiceArgs) -> Result<(), std::io::Error> {
+    println!("Executing command: {}", &config.shutdown_command);
     std::process::Command::new("sh")
         .arg("-c")
-        .arg(command)
+        .arg(&config.shutdown_command)
         .spawn()?
         .wait()?;
     Ok(())

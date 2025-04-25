@@ -9,11 +9,10 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Known issues:
 
-* server gets stuck after shutdown of any host, as the 'request' to shutdown doesn't get ackd, and doesn't seem to have a timeout.
-* status of servers doesn't update properly right now. TODO: Might go away after fix of above. Otherwise check JS.
-* paths to agent-executable is currently hard-coded, doesn't work in most setups.
-    * probably configure per environment variable with fallback to hostwide.
+* UI still gets stuck on load sometimes. IDK why. Need to add more timeouts
+* currently I only deliver binaries for linux, need to add some check on the frontend to load the fitting binary (or allow free choice to get a binary for a headless host)
 * docker image creation is untested and probably doesnt work.
+* re-installation fails with 'is busy' at least on systemd and unraid, resolved when stopping the services.
 * if you re-add config it doesn't get reloaded in server, since config only gets loaded once
 * untested on mac
 * on slackware like hosts the agent can't be started immediately, thus you either have to start it manually with `/etc/rc.d/rc.shuthost_agent start` or restart the host.
@@ -32,3 +31,6 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 * autobuild image in actions and push them to ghcr.io
 * windows support currently not planned, due to large differences
 * BSD support only planned if someone tests it themselfes (after every release? TBD)
+* uninstall
+
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-gnu && cp target/x86_64-unknown-linux-gnu/release/shuthost_agent .

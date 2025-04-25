@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 
-use crate::handler::handle_request;
+use crate::handler::{execute_shutdown, handle_request_without_shutdown };
 use crate::install::{generate_secret, get_default_shutdown_command};
 use clap::Parser;
 
@@ -40,8 +40,9 @@ fn handle_client(mut stream: TcpStream, config: ServiceArgs) {
     match stream.read(&mut buffer) {
         Ok(size) => {
             let data = &buffer[..size];
-            let response = handle_request(data, &config);
+            let response = handle_request_without_shutdown(data, &config);
             let _ = stream.write_all(response.as_bytes());
+            execute_shutdown(&config).unwrap();
         }
         Err(e) => {
             eprintln!("Failed to read from stream: {}", e);

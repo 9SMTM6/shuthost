@@ -1,8 +1,9 @@
+use std::{env, fs};
 use std::net::TcpStream;
 use std::io::{Write, Read};
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use hmac::{Hmac, Mac};
 use regex::Regex;
@@ -21,9 +22,16 @@ pub fn start_http_server(config: ControllerConfig) {
 
     let re = Regex::new(r"^/api/(?:wake|shutdown|status)/([^/]+)").unwrap();  // Regex to capture hostname    
 
-    let agent_binary = std::fs::read("target/x86_64-unknown-linux-gnu/release/shuthost_agent").expect("Agent binary not found.");
-    // let agent_binary = std::fs::read("./target/release/agent").expect("Agent binary not found.");
-    // let agent_binary = std::fs::read("/opt/agent/agent").expect("Agent binary not found.");
+    // Get agent binary path from env or fallback to default
+    let agent_path_raw = env::var("AGENT_PATH")
+        .unwrap_or_else(|_| "target/x86_64-unknown-linux-gnu/release/shuthost_agent".to_string());
+
+    let agent_path = fs::canonicalize(&agent_path_raw)
+        .unwrap_or_else(|_| panic!("Agent binary not found at: {}", agent_path_raw));
+    println!("Resolved agent binary path: {}", agent_path.display());
+
+    let agent_binary = fs::read(&agent_path)
+        .unwrap_or_else(|_| panic!("Failed to read agent binary at: {}", agent_path.display()));
 
     for request in server.incoming_requests() {
         let config = Arc::clone(&config);
@@ -166,6 +174,7 @@ fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
     let addr = format!("{}:{}", ip, port);
     let mut stream = TcpStream::connect(addr).map_err(|e| e.to_string())?;
     stream.write_all(message.as_bytes()).map_err(|e| e.to_string())?;
+    stream.set_read_timeout(Some(Duration::from_millis(200))).map_err(|err| err.to_string())?;
 
     let mut response = String::new();
     stream.read_to_string(&mut response).map_err(|e| e.to_string())?;
