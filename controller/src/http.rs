@@ -27,12 +27,37 @@ pub fn start_http_server(config: ControllerConfig) {
                 let hostname = path.trim_start_matches("/shutdown/");
                 handle_shutdown_request(request, hostname, &config);
             }
+            (&Method::Get, path) if path.starts_with("/status/") => {
+                let hostname = path.trim_start_matches("/status/");
+                handle_status_request(request, hostname, &config);
+            }
             _ => {
                 let response = Response::from_string("Not Found").with_status_code(404);
                 let _ = request.respond(response);
             }
         }
     }
+}
+
+fn handle_status_request(request: tiny_http::Request, hostname: &str, config: &ControllerConfig) {
+    let host = match config.hosts.get(hostname) {
+        Some(h) => h,
+        None => {
+            let _ = request.respond(Response::from_string("Unknown host").with_status_code(404));
+            return;
+        }
+    };
+
+    let addr = format!("{}:{}", host.ip, host.port);
+    let status = match TcpStream::connect_timeout(
+        &addr.parse().unwrap(),
+        std::time::Duration::from_secs(2),
+    ) {
+        Ok(_) => "online",
+        Err(_) => "offline",
+    };
+
+    let _ = request.respond(Response::from_string(status));
 }
 
 fn handle_shutdown_request(request: tiny_http::Request, hostname: &str, config: &ControllerConfig) {
