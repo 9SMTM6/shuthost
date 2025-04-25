@@ -1,2 +1,2 @@
 [hosts]
-"office-pc" = { ip = "192.168.1.100", mac = "AA:BB:CC:DD:EE:FF", port = 9090, shared_secret = "..." }
+"tarbean" = { ip = "192.168.178.7", mac = "b4:2e:99:e2:0b:01", port = 9090, shared_secret = "QSZZpnwFDx7XoGVrmqw98CZOVUqW1KdT" }

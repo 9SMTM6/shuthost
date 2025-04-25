@@ -1,36 +1,35 @@
 use std::env;
-use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::Write;
 use std::process::Command;
 use std::path::Path;
 use rand::Rng;
+use clap::Parser;
 
 const DEFAULT_PORT: u16 = 9090;
-const DEFAULT_SHUTDOWN_COMMAND: &str = "systemctl poweroff";
-const SERVICE_FILE_TEMPLATE: &str = r#"
-[Unit]
-Description=Agent for Remote Management Solution ShutHost
-
-[Service]
-ExecStart={binary} --port={port} --shutdown-command="{shutdown_command}" --shared-secret="{secret}"
-Restart=always
-User=root
-Group=root
-
-[Install]
-WantedBy=multi-user.target
-"#;
 const CONFIG_ENTRY: &str = r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
+const DEFAULT_SHUTDOWN_COMMAND: &str = "systemctl poweroff";
+const SERVICE_FILE_TEMPLATE: &str = include_str!("shutdown_agent.service.ini");
 
-pub fn install_agent(install_path: &Path, port: Option<u16>, shutdown_command: Option<&str>, secret: Option<String>) -> Result<(), String> {
+/// Struct for the install subcommand, with defaults added
+#[derive(Debug, Parser)]
+pub struct InstallArgs {
+    #[arg(long = "port", default_value_t = DEFAULT_PORT)]
+    pub port: u16,
+
+    #[arg(long = "shutdown-command", default_value = DEFAULT_SHUTDOWN_COMMAND)]
+    pub shutdown_command: String,
+
+    #[arg(long = "shared-secret", default_value_t = generate_secret())]
+    pub shared_secret: String,
+}
+
+
+pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), String> {
     // Check for superuser rights
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
-    
-    // Generate secret if not provided
-    let secret = secret.unwrap_or_else(|| generate_secret());
     
     // Prepare paths
     let target_bin = "/usr/sbin/shuthost_agent";
@@ -41,13 +40,12 @@ pub fn install_agent(install_path: &Path, port: Option<u16>, shutdown_command: O
     fs::copy(install_path, target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin}");
 
-    let port = &port.unwrap_or(DEFAULT_PORT).to_string();
-
     // Create systemd service file
     let service_file_content = SERVICE_FILE_TEMPLATE
-        .replace("{port}", port)
-        .replace("{shutdown_command}", shutdown_command.unwrap_or(DEFAULT_SHUTDOWN_COMMAND))
-        .replace("{secret}", &secret)
+        .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{port}", &arguments.port.to_string())
+        .replace("{shutdown_command}", &arguments.shutdown_command)
+        .replace("{secret}", &arguments.shared_secret)
         .replace("{binary}",&target_bin);
     
     let mut service_file = File::create(service_file_path).map_err(|e| e.to_string())?;
@@ -82,8 +80,8 @@ pub fn install_agent(install_path: &Path, port: Option<u16>, shutdown_command: O
         .replace("{name}", &get_hostname().unwrap())
         .replace("{ip}", &get_ip(interface).unwrap())
         .replace("{mac}", &get_mac(interface).unwrap())
-        .replace("{port}", &port)
-        .replace("{secret}", &secret)
+        .replace("{port}", &arguments.port.to_string())
+        .replace("{secret}", &arguments.shared_secret)
 );
     
     Ok(())

@@ -1,11 +1,12 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use crate::Args;
+
+use crate::server::ServiceArgs;
 
 const ALLOWED_WINDOW: u64 = 30; // Seconds
 
-pub fn handle_request(data: &[u8], config: &Args) -> String {
+pub fn handle_request(data: &[u8], config: &ServiceArgs) -> String {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => return "ERROR: Invalid UTF-8".to_string(),
