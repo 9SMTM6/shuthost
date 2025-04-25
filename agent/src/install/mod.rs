@@ -10,7 +10,6 @@ use std::os::unix::fs::PermissionsExt;
 
 const DEFAULT_PORT: u16 = 9090;
 const CONFIG_ENTRY: &str = r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
-const DEFAULT_SHUTDOWN_COMMAND: &str = "systemctl poweroff";
 #[cfg(target_os = "linux")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shutdown_agent.service.ini");
 #[cfg(target_os = "macos")]
@@ -24,7 +23,7 @@ pub struct InstallArgs {
     #[arg(long = "port", default_value_t = DEFAULT_PORT)]
     pub port: u16,
 
-    #[arg(long = "shutdown-command", default_value = DEFAULT_SHUTDOWN_COMMAND)]
+    #[arg(long = "shutdown-command", default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
 
     #[arg(long = "shared-secret", default_value_t = generate_secret())]
@@ -43,7 +42,7 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
         fs::copy(install_path, target_bin).map_err(|e| e.to_string())?;
         println!("Installed binary to {target_bin}");
 
-        if Path::new("/run/systemd/system").exists() {
+        if is_systemd() {
             let service_name = "shuthost_agent.service";
             let service_file_path = format!("/etc/systemd/system/{service_name}");
             let service_file_content = SERVICE_FILE_TEMPLATE
@@ -145,6 +144,22 @@ pub fn generate_secret() -> String {
         .map(|_| chars[rng.random_range(0..chars.len())])
         .collect::<String>()
         .into()
+}
+
+#[cfg(target_os="linux")]
+fn is_systemd() -> bool {
+    Path::new("/run/systemd/system").exists()
+}
+
+fn get_default_shutdown_command() -> String {
+    #[cfg(target_os="linux")]
+    return if is_systemd() {
+        "systemctl poweroff"
+    } else {
+        "poweroff"
+    }.to_string();
+    #[cfg(target_os="macos")]
+    return "shutdown -h now".to_string();
 }
 
 fn get_default_interface() -> Option<String> {
