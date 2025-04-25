@@ -5,6 +5,8 @@ use std::process::Command;
 use std::path::Path;
 use rand::Rng;
 use clap::Parser;
+#[allow(unused_imports)]
+use std::os::unix::fs::PermissionsExt;
 
 const DEFAULT_PORT: u16 = 9090;
 const CONFIG_ENTRY: &str = r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
@@ -13,6 +15,8 @@ const DEFAULT_SHUTDOWN_COMMAND: &str = "systemctl poweroff";
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shutdown_agent.service.ini");
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github.9smtm6.shutdown_agent.plist.xml");
+#[cfg(target_os = "linux")]
+const SLACKWARE_INIT_TEMPLATE: &str = include_str!("rc.shuthost_agent.sh");
 
 /// Struct for the install subcommand, with defaults added
 #[derive(Debug, Parser)]
@@ -35,28 +39,61 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
     #[cfg(target_os = "linux")]
     {
         let target_bin = "/usr/sbin/shuthost_agent";
-        let service_name = "shuthost_agent.service";
-        let service_file_path = format!("/etc/systemd/system/{service_name}");
 
         fs::copy(install_path, target_bin).map_err(|e| e.to_string())?;
         println!("Installed binary to {target_bin}");
 
-        let service_file_content = SERVICE_FILE_TEMPLATE
-            .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-            .replace("{port}", &arguments.port.to_string())
-            .replace("{shutdown_command}", &arguments.shutdown_command)
-            .replace("{secret}", &arguments.shared_secret)
-            .replace("{binary}", target_bin);
+        if Path::new("/run/systemd/system").exists() {
+            let service_name = "shuthost_agent.service";
+            let service_file_path = format!("/etc/systemd/system/{service_name}");
+            let service_file_content = SERVICE_FILE_TEMPLATE
+                .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+                .replace("{port}", &arguments.port.to_string())
+                .replace("{shutdown_command}", &arguments.shutdown_command)
+                .replace("{secret}", &arguments.shared_secret)
+                .replace("{binary}", target_bin);
 
-        let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
-        service_file.write_all(service_file_content.as_bytes()).map_err(|e| e.to_string())?;
-        println!("Created systemd service file at {service_file_path}");
+            let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
+            service_file.write_all(service_file_content.as_bytes()).map_err(|e| e.to_string())?;
+            println!("Created systemd service file at {service_file_path}");
 
-        Command::new("systemctl").arg("daemon-reload").output().map_err(|e| e.to_string())?;
-        Command::new("systemctl").arg("enable").arg(service_name).output().map_err(|e| e.to_string())?;
-        Command::new("systemctl").arg("start").arg(service_name).output().map_err(|e| e.to_string())?;
+            Command::new("systemctl").arg("daemon-reload").output().map_err(|e| e.to_string())?;
+            Command::new("systemctl").arg("enable").arg(service_name).output().map_err(|e| e.to_string())?;
+            Command::new("systemctl").arg("start").arg(service_name).output().map_err(|e| e.to_string())?;
 
-        println!("Service started and enabled.");
+            println!("Service started and enabled.");
+        } else {
+            // fallback for Unraid / Slackware / non-systemd
+            let init_script_path = "/etc/rc.d/rc.shuthost_agent";
+            let init_script_content = SLACKWARE_INIT_TEMPLATE
+                .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+                .replace("{port}", &arguments.port.to_string())
+                .replace("{shutdown_command}", &arguments.shutdown_command)
+                .replace("{secret}", &arguments.shared_secret)
+                .replace("{binary}", target_bin);
+        
+            let mut file = File::create(init_script_path).map_err(|e| e.to_string())?;
+            file.write_all(init_script_content.as_bytes()).map_err(|e| e.to_string())?;
+            fs::set_permissions(init_script_path, fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
+        
+            // Ensure it's added to rc.local
+            let rc_local = "/etc/rc.d/rc.local";
+            let entry = "if [ -x /etc/rc.d/rc.shuthost_agent ]; then /etc/rc.d/rc.shuthost_agent start; fi\n";
+            let rc_local_content = fs::read_to_string(rc_local).unwrap_or_default();
+            if !rc_local_content.contains("rc.shuthost_agent start") {
+                let mut file = File::options().append(true).open(rc_local).map_err(|e| e.to_string())?;
+                file.write_all(entry.as_bytes()).map_err(|e| e.to_string())?;
+            }
+        
+            println!("Init script installed at {init_script_path} and added to rc.local.");
+
+            // Start the service immediately after install
+            Command::new("/etc/rc.d/rc.shuthost_agent")
+                .arg("start")
+                .status()
+                .map_err(|e| format!("Failed to start agent: {e}"))?;
+        }
+        
     }
 
     #[cfg(target_os = "macos")]
