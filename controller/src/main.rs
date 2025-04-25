@@ -1,9 +1,12 @@
-mod wol;
 mod config;
 mod http;
+mod wol;
+
+use config::load_controller_config;
+use http::start_http_server;
 
 fn main() {
-    if let Err(e) = wol::send_magic_packet("AA:BB:CC:DD:EE:FF", "192.168.1.255") {
-        eprintln!("Failed to send WoL packet: {}", e);
-    }
+    let config = load_controller_config("controller-config.toml")
+        .expect("Failed to load controller config");
+    start_http_server(config);
 }

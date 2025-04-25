@@ -7,6 +7,7 @@ hmac = "0.12.1"
 serde = { version = "1.0.219", features = ["derive"] }
 sha2 = "0.10.8"
 toml = "0.8.20"
+hex = "0.4.3"
 
 [workspace.package]
 version = "0.0.1"
