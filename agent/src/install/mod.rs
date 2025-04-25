@@ -86,11 +86,15 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
         
             println!("Init script installed at {init_script_path} and added to rc.local.");
 
+            // TODO: this seems to reliably lead to an error:
+            // Error installing agent: Failed to start agent: Text file busy (os error 26)
+            // It seems that some file write or similar is async or not yet flushed?
+
             // Start the service immediately after install
-            Command::new("/etc/rc.d/rc.shuthost_agent")
-                .arg("start")
-                .status()
-                .map_err(|e| format!("Failed to start agent: {e}"))?;
+            // Command::new("/etc/rc.d/rc.shuthost_agent")
+            //     .arg("start")
+            //     .status()
+            //     .map_err(|e| format!("Failed to start agent: {e}"))?;
         }
         
     }
@@ -119,7 +123,7 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
     }
 
     let interface = &get_default_interface().unwrap();
-    print!(
+    println!(
         "Place the following in the controller:\n{config_entry}",
         config_entry = CONFIG_ENTRY
             .replace("{name}", &get_hostname().unwrap())

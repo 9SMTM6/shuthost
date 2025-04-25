@@ -7,9 +7,10 @@
     <key>ProgramArguments</key>
     <array>
       <string>{binary}</string>
-        <string>--port={port}</string>
-        <string>--shutdown-command={shutdown_command}</string>
-        <string>--shared-secret={secret}</string>
+      <string>service</string>
+      <string>--port={port}</string>
+      <string>--shutdown-command={shutdown_command}</string>
+      <string>--shared-secret={secret}</string>
     </array>
 
     <key>RunAtLoad</key>

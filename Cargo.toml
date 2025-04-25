@@ -10,7 +10,7 @@ toml = "0.8.20"
 hex = "0.4.3"
 
 [workspace.package]
-version = "0.0.1"
+version = "0.0.5"
 edition = "2024"
 authors = ["Samuel Maier"]
 description = "Adds the ability to remotely control the standby of linux (systemd) based hosts"

@@ -5,7 +5,7 @@
 case "$1" in
   start)
     echo "Starting shutdown agent..."
-    {binary} --port {port} --shutdown-command "{shutdown_command}" --shared-secret "{secret}" &
+    {binary} service --port {port} --shutdown-command "{shutdown_command}" --shared-secret "{secret}" &
     ;;
   stop)
     echo "Stopping shutdown agent..."

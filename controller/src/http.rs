@@ -21,7 +21,7 @@ pub fn start_http_server(config: ControllerConfig) {
 
     let re = Regex::new(r"^/api/(?:wake|shutdown|status)/([^/]+)").unwrap();  // Regex to capture hostname    
 
-    let agent_binary = std::fs::read("target/x86_64-unknown-linux-gnu/release/agent").expect("Agent binary not found.");
+    let agent_binary = std::fs::read("target/x86_64-unknown-linux-gnu/release/shuthost_agent").expect("Agent binary not found.");
     // let agent_binary = std::fs::read("./target/release/agent").expect("Agent binary not found.");
     // let agent_binary = std::fs::read("/opt/agent/agent").expect("Agent binary not found.");
 
