@@ -1,8 +1,8 @@
+use std::path::Path;
 use std::{env, fs};
 use std::net::TcpStream;
 use std::io::{Write, Read};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use hmac::{Hmac, Mac};
@@ -12,29 +12,35 @@ use sha2::Sha256;
 use hex;
 use tiny_http::{Method, Response, Server};
 
-use crate::config::{ControllerConfig, Host};
+use crate::config::{load_controller_config, ControllerConfig, Host};
 use crate::wol::send_magic_packet;
 
-pub fn start_http_server(config: ControllerConfig) {
+pub fn start_http_server(config_path: &Path) {
     let server = Server::http("0.0.0.0:8081").expect("Failed to start HTTP server");
-    let config = Arc::new(config);
     println!("HTTP server running on http://0.0.0.0:8081");
 
     let re = Regex::new(r"^/api/(?:wake|shutdown|status)/([^/]+)").unwrap();  // Regex to capture hostname    
 
     // Get agent binary path from env or fallback to default
-    let agent_path_raw = env::var("AGENT_PATH")
-        .unwrap_or_else(|_| "target/x86_64-unknown-linux-gnu/release/shuthost_agent".to_string());
+    let agent_path_raw = env::var("AGENT_BINARIES_DIR")
+        .unwrap_or_else(|_| "shuthost_agent".to_string());
 
-    let agent_path = fs::canonicalize(&agent_path_raw)
-        .unwrap_or_else(|_| panic!("Agent binary not found at: {}", agent_path_raw));
-    println!("Resolved agent binary path: {}", agent_path.display());
+    let agent_dir = fs::canonicalize(&agent_path_raw)
+        .unwrap_or_else(|_| panic!("Agentbinaries directory not found at: {}", agent_path_raw));
+    println!("Resolved agent binary dir: {}", agent_dir.clone().display());
 
-    let agent_binary = fs::read(&agent_path)
-        .unwrap_or_else(|_| panic!("Failed to read agent binary at: {}", agent_path.display()));
+    let agent_binary_linux = agent_dir.join("linux");
+    let agent_binary_linux = fs::read(&agent_binary_linux)
+        .unwrap_or_else(|_| panic!("Failed to read agent binary at: {}", agent_binary_linux.display()));
+
+    let agent_binary_macos = agent_dir.join("macos");
+    let agent_binary_macos = fs::read(&agent_binary_macos)
+        .unwrap_or_else(|_| panic!("Failed to read agent binary at: {}", agent_binary_macos.display()));
 
     for request in server.incoming_requests() {
-        let config = Arc::clone(&config);
+        let config = load_controller_config(config_path)
+            .expect("Failed to load controller config");
+
         let url = request.url().to_string();
         let method = request.method();
 
@@ -71,7 +77,8 @@ pub fn start_http_server(config: ControllerConfig) {
             }
 
             // Allow downloading of the agent
-            (&Method::Get, "/download_agent") => handle_download_agent(request, agent_binary.as_slice()),
+            (&Method::Get, "/download_agent/macos") => handle_download_agent(request, &agent_binary_macos.as_slice()),
+            (&Method::Get, "/download_agent/linux") => handle_download_agent(request, &agent_binary_linux.as_slice()),
 
             // Serve the UI at the root path: GET /
             (&Method::Get, "/") => handle_ui(request),

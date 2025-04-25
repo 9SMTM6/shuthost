@@ -76,6 +76,13 @@
         <tbody id="host-table-body">
             <!-- Hosts will be loaded here dynamically -->
         </tbody>
+        <label for="os-select">Select your OS:</label>
+        <select id="os-select">
+            <option value="auto">Auto-detect</option>
+            <option value="linux">Linux</option>
+            <option value="macos">macOS</option>
+        </select>
+        <div id="message" style="color: red; margin-top: 1rem;"></div>
         <button class="download-btn" onclick="downloadBinary()">Download Binary</button>
     </table>
 
@@ -156,9 +163,34 @@
             }
         }
 
+        function setMessage(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+        }
+
+        function detectOS() {
+            const platform = navigator.platform.toLowerCase();
+            if (platform.includes('mac')) return 'macos';
+            if (platform.includes('linux')) return 'linux';
+            return 'unknown';
+        }
+
         async function downloadBinary() {
+            const osSelect = document.getElementById('os-select');
+            let os = osSelect.value;
+            if (os === 'auto') {
+                os = detectOS();
+            }
+
+            if (os === 'unknown') {
+                setMessage('Could not detect OS. Please select manually.');
+                return;
+            }
+
+            setMessage(''); // Clear previous messages
+
             try {
-                const response = await fetch('/download_agent', { method: 'GET' });
+                const response = await fetch(`/download_agent/${os}`, { method: 'GET' });
 
                 if (!response.ok) {
                     throw new Error('Failed to download binary');
@@ -168,7 +200,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'shuthost_agent'; // You can change the file name as needed
+                a.download = `shuthost_agent`;
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (err) {

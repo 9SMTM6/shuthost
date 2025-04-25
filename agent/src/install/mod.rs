@@ -39,6 +39,29 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
     {
         let target_bin = "/usr/sbin/shuthost_agent";
 
+        // Stop potentially existing service it before overwriting
+        if is_systemd() {        
+            let output = Command::new("systemctl")
+                .arg("is-active")
+                .arg("shuthost_agent.service")
+                .output()
+                .map_err(|e| e.to_string())?;
+            
+            if output.status.success() {
+                let _ = Command::new("systemctl")
+                    .arg("stop")
+                    .arg("shuthost_agent.service")
+                    .status();
+            }
+        } else {
+            let init_script = "/etc/rc.d/rc.shuthost_agent";
+            if Path::new(init_script).exists() {
+                let _ = Command::new(init_script)
+                    .arg("stop")
+                    .status();
+            }
+        }
+
         fs::copy(install_path, target_bin).map_err(|e| e.to_string())?;
         println!("Installed binary to {target_bin}");
 
@@ -86,15 +109,14 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
         
             println!("Init script installed at {init_script_path} and added to rc.local.");
 
-            // TODO: this seems to reliably lead to an error:
-            // Error installing agent: Failed to start agent: Text file busy (os error 26)
-            // It seems that some file write or similar is async or not yet flushed?
+            // Small delay to allow kernel to release any file handles
+            std::thread::sleep(std::time::Duration::from_millis(300));
 
-            // Start the service immediately after install
-            // Command::new("/etc/rc.d/rc.shuthost_agent")
-            //     .arg("start")
-            //     .status()
-            //     .map_err(|e| format!("Failed to start agent: {e}"))?;
+            // Start the service now that everything’s in place
+            let _ = Command::new(init_script_path)
+                .arg("start")
+                .status()
+                .map_err(|e| format!("Failed to start agent: {e}"))?;
         }
         
     }

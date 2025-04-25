@@ -14,9 +14,7 @@ fn main() {
     let config_path = fs::canonicalize(&config_path_raw)
         .unwrap_or_else(|_| panic!("Config file not found at: {}", config_path_raw));
     println!("Using config path: {}", config_path.display());
-
-    let config = load_controller_config(&config_path)
+    let _config = load_controller_config(&config_path)
         .expect("Failed to load controller config");
-
-    start_http_server(config);
+    start_http_server(&config_path);
 }
