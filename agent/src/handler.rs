@@ -1,11 +1,11 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use crate::config::{Config, AuthConfig};
+use crate::Args;
 
 const ALLOWED_WINDOW: u64 = 30; // Seconds
 
-pub fn handle_request(data: &[u8], config: &Config) -> String {
+pub fn handle_request(data: &[u8], config: &Args) -> String {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => return "ERROR: Invalid UTF-8".to_string(),
@@ -30,14 +30,13 @@ pub fn handle_request(data: &[u8], config: &Config) -> String {
 
     // Step 2: Verify the HMAC signature
     let message = format!("{}|{}", timestamp_str, command);
-    let auth_config: &AuthConfig = &config.auth;
-    if !verify_hmac(&message, signature, auth_config.shared_secret.as_bytes()) {
+    if !verify_hmac(&message, signature, config.shared_secret.as_bytes()) {
         return "ERROR: Invalid HMAC signature".to_string();
     }
 
     // Step 3: Handle the shutdown or sleep command
-    match execute_command(&config.agent.shutdown_command) {
-        Ok(_) => format!("Successfully executed command: {}", config.agent.shutdown_command),
+    match execute_command(&config.shutdown_command) {
+        Ok(_) => format!("Successfully executed command: {}", config.shutdown_command),
         Err(e) => format!("ERROR: Failed to execute command: {}", e),
     }
 }

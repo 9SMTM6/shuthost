@@ -32,6 +32,7 @@
             background-color: #4CAF50;
             color: white;
             cursor: pointer;
+            position: relative;
         }
         button.shutdown {
             background-color: #f44336;
@@ -39,6 +40,22 @@
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
+        }
+        .loading-indicator {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 3px solid #fff;
+            border-top: 3px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .download-btn {
             margin-top: 1rem;
@@ -70,7 +87,7 @@
                 const tbody = document.getElementById('host-table-body');
                 tbody.innerHTML = '';
 
-                hosts.forEach(host => {
+                hosts.forEach(async (host) => {
                     const row = document.createElement('tr');
 
                     const nameCell = document.createElement('td');
@@ -78,20 +95,25 @@
                     row.appendChild(nameCell);
 
                     const statusCell = document.createElement('td');
-                    statusCell.textContent = host.online ? 'Online' : 'Offline';
+                    const status = await fetchHostStatus(host.name); // Fetch status from /api/status/hostname
+                    statusCell.textContent = status;
                     row.appendChild(statusCell);
 
                     const actionsCell = document.createElement('td');
                     const startBtn = document.createElement('button');
                     startBtn.textContent = 'Wake';
-                    startBtn.disabled = host.online;
-                    startBtn.onclick = () => sendCommand(host.name, 'wake');
+                    startBtn.disabled = status === 'online';
+                    const startIndicator = createLoadingIndicator();
+                    startBtn.appendChild(startIndicator);
+                    startBtn.onclick = () => sendCommand(host.name, 'wake', startIndicator);
 
                     const shutdownBtn = document.createElement('button');
                     shutdownBtn.textContent = 'Shutdown';
                     shutdownBtn.className = 'shutdown';
-                    shutdownBtn.disabled = !host.online;
-                    shutdownBtn.onclick = () => sendCommand(host.name, 'shutdown');
+                    shutdownBtn.disabled = status === 'offline';
+                    const shutdownIndicator = createLoadingIndicator();
+                    shutdownBtn.appendChild(shutdownIndicator);
+                    shutdownBtn.onclick = () => sendCommand(host.name, 'shutdown', shutdownIndicator);
 
                     actionsCell.appendChild(startBtn);
                     actionsCell.appendChild(shutdownBtn);
@@ -104,12 +126,33 @@
             }
         }
 
-        async function sendCommand(host, action) {
+        async function fetchHostStatus(hostname) {
             try {
+                const response = await fetch(`/api/status/${hostname}`);
+                const status = await response.text(); // Assumes response is either "online" or "offline"
+                return status;
+            } catch (err) {
+                console.error(`Failed to fetch status for ${hostname}:`, err);
+                return 'offline'; // Default to offline if error occurs
+            }
+        }
+
+        function createLoadingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.classList.add('loading-indicator');
+            indicator.style.display = 'none'; // Hidden by default
+            return indicator;
+        }
+
+        async function sendCommand(host, action, indicator) {
+            try {
+                indicator.style.display = 'inline-block'; // Show loading indicator
                 await fetch(`/api/${action}/${host}`, { method: 'POST' });
                 setTimeout(fetchHosts, 1000); // Refresh status
             } catch (err) {
                 console.error(`Failed to send ${action} command:`, err);
+            } finally {
+                indicator.style.display = 'none'; // Hide loading indicator
             }
         }
 

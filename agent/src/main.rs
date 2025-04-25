@@ -1,4 +1,3 @@
-mod config;
 mod server;
 mod handler;
 mod install;
@@ -6,7 +5,30 @@ mod install;
 use std::env;
 use std::path::PathBuf;
 use std::path::Path;
+use install::generate_secret;
 use install::install_agent;
+
+use clap::{Parser};
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+#[derive(Debug, Clone)]
+#[derive(Parser)]
+#[command(name = env!("CARGO_PKG_NAME"))]
+#[command(version = env!("CARGO_PKG_VERSION"))]
+#[command(author = env!("CARGO_PKG_AUTHORS"))]
+#[command(about = env!("CARGO_PKG_DESCRIPTION"))]
+struct Args {
+    #[arg(long = "port", default_value_t = 9090)]
+    port: u16,
+
+    #[arg(long = "shutdown-command", default_value = "systemctl poweroff")]
+    shutdown_command: String,
+
+    #[arg(long = "shared-secret", default_value_t = generate_secret())]
+    shared_secret: String,
+}
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -23,13 +45,7 @@ fn main() {
         return;
     }
 
-    let config_path = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("Usage: binary agent <config.toml>");
-        std::process::exit(1);
-    });
+    let args = Args::parse();
 
-    let config = config::load_config(PathBuf::from(config_path))
-        .expect("Failed to load config");
-
-    server::start_agent(config);
+    server::start_agent(args);
 }

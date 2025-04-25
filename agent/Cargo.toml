@@ -7,6 +7,7 @@ edition.workspace = true
 documentation.workspace = true
 
 [dependencies]
+clap = { version = "4.5.37", features = ["derive"] }
 hex.workspace = true
 hmac.workspace = true
 rand = "0.9.1"

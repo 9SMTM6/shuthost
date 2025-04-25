@@ -21,7 +21,8 @@ pub fn start_http_server(config: ControllerConfig) {
 
     let re = Regex::new(r"^/api/(?:wake|shutdown|status)/([^/]+)").unwrap();  // Regex to capture hostname    
 
-    let agent_binary = std::fs::read("./target/release/agent").expect("Agent binary not found.");
+    let agent_binary = std::fs::read("target/x86_64-unknown-linux-gnu/release/agent").expect("Agent binary not found.");
+    // let agent_binary = std::fs::read("./target/release/agent").expect("Agent binary not found.");
     // let agent_binary = std::fs::read("/opt/agent/agent").expect("Agent binary not found.");
 
     for request in server.incoming_requests() {
@@ -89,7 +90,7 @@ fn handle_status_request(request: tiny_http::Request, host: &Host) {
     let addr = format!("{}:{}", host.ip, host.port);
     let status = match TcpStream::connect_timeout(
         &addr.parse().unwrap(),
-        std::time::Duration::from_secs(2),
+        std::time::Duration::from_millis(200),
     ) {
         Ok(_) => "online",
         Err(_) => "offline",

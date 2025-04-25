@@ -2,11 +2,11 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
-use crate::config::Config;
 use crate::handler::handle_request;
+use crate::Args;
 
-pub fn start_agent(config: Config) {
-    let addr = format!("0.0.0.0:{}", config.agent.port);
+pub fn start_agent(config: Args) {
+    let addr = format!("0.0.0.0:{}", config.port);
     let listener = TcpListener::bind(&addr).expect("Failed to bind port");
     println!("[agent] Listening on {}", addr);
 
@@ -25,7 +25,7 @@ pub fn start_agent(config: Config) {
     }
 }
 
-fn handle_client(mut stream: TcpStream, config: Config) {
+fn handle_client(mut stream: TcpStream, config: Args) {
     let mut buffer = [0u8; 1024];
     match stream.read(&mut buffer) {
         Ok(size) => {
