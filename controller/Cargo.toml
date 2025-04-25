@@ -10,5 +10,6 @@ documentation.workspace = true
 hmac.workspace = true
 serde.workspace = true
 sha2.workspace = true
+hex.workspace = true
 tiny_http = "0.12.0"
 toml.workspace = true
