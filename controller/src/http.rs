@@ -17,7 +17,7 @@ use crate::wol::send_magic_packet;
 pub fn start_http_server(config: ControllerConfig) {
     let server = Server::http("0.0.0.0:8081").expect("Failed to start HTTP server");
     let config = Arc::new(config);
-    println!("[controller] HTTP server running on http://0.0.0.0:8081");
+    println!("HTTP server running on http://0.0.0.0:8081");
 
     let re = Regex::new(r"^/api/(?:wake|shutdown|status)/([^/]+)").unwrap();  // Regex to capture hostname    
 

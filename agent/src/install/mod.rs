@@ -151,7 +151,7 @@ fn is_systemd() -> bool {
     Path::new("/run/systemd/system").exists()
 }
 
-fn get_default_shutdown_command() -> String {
+pub fn get_default_shutdown_command() -> String {
     #[cfg(target_os="linux")]
     return if is_systemd() {
         "systemctl poweroff"

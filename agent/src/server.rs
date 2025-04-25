@@ -2,7 +2,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 
 use crate::handler::handle_request;
-use crate::install::generate_secret;
+use crate::install::{generate_secret, get_default_shutdown_command};
 use clap::Parser;
 
 /// Struct for the service subcommand
@@ -11,7 +11,7 @@ pub struct ServiceArgs {
     #[arg(long = "port", default_value_t = 9090)]
     pub port: u16,
 
-    #[arg(long = "shutdown-command", default_value = "systemctl poweroff")]
+    #[arg(long = "shutdown-command", default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
 
     #[arg(long = "shared-secret", default_value_t = generate_secret())]
@@ -21,7 +21,7 @@ pub struct ServiceArgs {
 pub fn start_agent(config: ServiceArgs) {
     let addr = format!("0.0.0.0:{}", config.port);
     let listener = TcpListener::bind(&addr).expect("Failed to bind port");
-    println!("[agent] Listening on {}", addr);
+    println!("Listening on {}", addr);
 
     for stream in listener.incoming() {
         match stream {
@@ -29,7 +29,7 @@ pub fn start_agent(config: ServiceArgs) {
                 handle_client(stream, config.clone());
             }
             Err(e) => {
-                eprintln!("[agent] Connection failed: {}", e);
+                eprintln!("Connection failed: {}", e);
             }
         }
     }
@@ -44,7 +44,7 @@ fn handle_client(mut stream: TcpStream, config: ServiceArgs) {
             let _ = stream.write_all(response.as_bytes());
         }
         Err(e) => {
-            eprintln!("[agent] Failed to read from stream: {}", e);
+            eprintln!("Failed to read from stream: {}", e);
         }
     }
 }
