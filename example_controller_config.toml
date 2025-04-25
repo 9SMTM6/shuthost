@@ -1,0 +1,2 @@
+[hosts]
+"office-pc" = { ip = "192.168.1.100", mac = "AA:BB:CC:DD:EE:FF", port = 9090, shared_secret = "..." }

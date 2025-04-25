@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ShutHost</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 2rem;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background-color: white;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+        }
+        button {
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        button.shutdown {
+            background-color: #f44336;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .download-btn {
+            margin-top: 1rem;
+            background-color: #008CBA;
+        }
+    </style>
+</head>
+<body>
+    <h1>Remote Host Controller</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Host</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="host-table-body">
+            <!-- Hosts will be loaded here dynamically -->
+        </tbody>
+        <button class="download-btn" onclick="downloadBinary()">Download Binary</button>
+    </table>
+
+    <script>
+        async function fetchHosts() {
+            try {
+                const response = await fetch('/api/hosts');
+                const hosts = await response.json();
+                const tbody = document.getElementById('host-table-body');
+                tbody.innerHTML = '';
+
+                hosts.forEach(host => {
+                    const row = document.createElement('tr');
+
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = host.name;
+                    row.appendChild(nameCell);
+
+                    const statusCell = document.createElement('td');
+                    statusCell.textContent = host.online ? 'Online' : 'Offline';
+                    row.appendChild(statusCell);
+
+                    const actionsCell = document.createElement('td');
+                    const startBtn = document.createElement('button');
+                    startBtn.textContent = 'Wake';
+                    startBtn.disabled = host.online;
+                    startBtn.onclick = () => sendCommand(host.name, 'wake');
+
+                    const shutdownBtn = document.createElement('button');
+                    shutdownBtn.textContent = 'Shutdown';
+                    shutdownBtn.className = 'shutdown';
+                    shutdownBtn.disabled = !host.online;
+                    shutdownBtn.onclick = () => sendCommand(host.name, 'shutdown');
+
+                    actionsCell.appendChild(startBtn);
+                    actionsCell.appendChild(shutdownBtn);
+                    row.appendChild(actionsCell);
+
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Failed to fetch hosts:', err);
+            }
+        }
+
+        async function sendCommand(host, action) {
+            try {
+                await fetch(`/api/${action}/${host}`, { method: 'POST' });
+                setTimeout(fetchHosts, 1000); // Refresh status
+            } catch (err) {
+                console.error(`Failed to send ${action} command:`, err);
+            }
+        }
+
+        async function downloadBinary() {
+            try {
+                const response = await fetch('/download_agent', { method: 'GET' });
+
+                if (!response.ok) {
+                    throw new Error('Failed to download binary');
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'shuthost_agent'; // You can change the file name as needed
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Error downloading binary:', err);
+            }
+        }
+
+        fetchHosts();
+        setInterval(fetchHosts, 10000); // Auto-refresh every 10 seconds
+    </script>
+</body>
+</html>
