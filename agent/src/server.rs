@@ -40,9 +40,11 @@ fn handle_client(mut stream: TcpStream, config: ServiceArgs) {
     match stream.read(&mut buffer) {
         Ok(size) => {
             let data = &buffer[..size];
-            let response = handle_request_without_shutdown(data, &config);
+            let (response, should_shutdown) = handle_request_without_shutdown(data, &config);
             let _ = stream.write_all(response.as_bytes());
-            execute_shutdown(&config).unwrap();
+            if should_shutdown {
+                execute_shutdown(&config).unwrap();
+            }
         }
         Err(e) => {
             eprintln!("Failed to read from stream: {}", e);

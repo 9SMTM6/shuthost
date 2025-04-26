@@ -6,15 +6,15 @@ use crate::server::ServiceArgs;
 
 const ALLOWED_WINDOW: u64 = 30; // Seconds
 
-pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> String {
+pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
-        Err(_) => return "ERROR: Invalid UTF-8".to_string(),
+        Err(_) => return ("ERROR: Invalid UTF-8".to_string(), false),
     };
 
     let parts: Vec<&str> = data_str.split('|').collect();
     if parts.len() != 3 {
-        return "ERROR: Invalid request format".to_string();
+        return ("ERROR: Invalid request format".to_string(), false);
     }
 
     let (timestamp_str, command, signature) = (parts[0], parts[1], parts[2]);
@@ -22,20 +22,20 @@ pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> Str
     // Step 1: Verify timestamp is within the allowed window
     let timestamp: u64 = match timestamp_str.parse() {
         Ok(ts) => ts,
-        Err(_) => return "ERROR: Invalid timestamp".to_string(),
+        Err(_) => return ("ERROR: Invalid timestamp".to_string(), false),
     };
 
     if !is_timestamp_valid(timestamp) {
-        return "ERROR: Timestamp out of range".to_string();
+        return ("ERROR: Timestamp out of range".to_string(), false);
     }
 
     // Step 2: Verify the HMAC signature
     let message = format!("{}|{}", timestamp_str, command);
     if !verify_hmac(&message, signature, config.shared_secret.as_bytes()) {
-        return "ERROR: Invalid HMAC signature".to_string();
+        return ("ERROR: Invalid HMAC signature".to_string(), false);
     }
 
-    return format!("Now executing command: {}. Hopefully goodbye.", config.shutdown_command)
+    return (format!("Now executing command: {}. Hopefully goodbye.", config.shutdown_command), true)
 }
 
 // Step 4: Check if the timestamp is within the allowed window
