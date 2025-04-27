@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::{env, fs};
 use std::net::TcpStream;
 use std::io::{Write, Read};
 use std::str::FromStr;
@@ -16,26 +15,13 @@ use crate::config::{load_controller_config, ControllerConfig, Host};
 use crate::wol::send_magic_packet;
 
 pub fn start_http_server(config_path: &Path) {
-    let server = Server::http("0.0.0.0:8081").expect("Failed to start HTTP server");
-    println!("HTTP server running on http://0.0.0.0:8081");
+    let server = Server::http("localhost:8081").expect("Failed to start HTTP server");
+    println!("HTTP server running on http://localhost:8081");
 
     let re = Regex::new(r"^/api/(?:wake|shutdown|status)/([^/]+)").unwrap();  // Regex to capture hostname    
 
-    // Get agent binary path from env or fallback to default
-    let agent_path_raw = env::var("AGENT_BINARIES_DIR")
-        .unwrap_or_else(|_| "shuthost_agent".to_string());
-
-    let agent_dir = fs::canonicalize(&agent_path_raw)
-        .unwrap_or_else(|_| panic!("Agentbinaries directory not found at: {}", agent_path_raw));
-    println!("Resolved agent binary dir: {}", agent_dir.clone().display());
-
-    let agent_binary_linux = agent_dir.join("linux");
-    let agent_binary_linux = fs::read(&agent_binary_linux)
-        .unwrap_or_else(|_| panic!("Failed to read agent binary at: {}", agent_binary_linux.display()));
-
-    let agent_binary_macos = agent_dir.join("macos");
-    let agent_binary_macos = fs::read(&agent_binary_macos)
-        .unwrap_or_else(|_| panic!("Failed to read agent binary at: {}", agent_binary_macos.display()));
+    let agent_binary_macos = include_bytes!("../../target/aarch64-apple-darwin/release/shuthost_agent");
+    let agent_binary_linux = include_bytes!("../../target/x86_64-unknown-linux-gnu/release/shuthost_agent");
 
     for request in server.incoming_requests() {
         let config = load_controller_config(config_path)

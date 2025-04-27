@@ -110,7 +110,7 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
             println!("Init script installed at {init_script_path} and added to rc.local.");
 
             // Small delay to allow kernel to release any file handles
-            std::thread::sleep(std::time::Duration::from_millis(300));
+            std::thread::sleep(std::time::Duration::from_millis(700));
 
             // Start the service now that everything’s in place
             let _ = Command::new(init_script_path)
