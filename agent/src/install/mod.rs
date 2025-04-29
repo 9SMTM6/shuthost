@@ -79,6 +79,8 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
             service_file.write_all(service_file_content.as_bytes()).map_err(|e| e.to_string())?;
             println!("Created systemd service file at {service_file_path}");
 
+            drop(service_file);
+
             Command::new("systemctl").arg("daemon-reload").output().map_err(|e| e.to_string())?;
             Command::new("systemctl").arg("enable").arg(service_name).output().map_err(|e| e.to_string())?;
             Command::new("systemctl").arg("start").arg(service_name).output().map_err(|e| e.to_string())?;
@@ -106,11 +108,10 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
                 let mut file = File::options().append(true).open(rc_local).map_err(|e| e.to_string())?;
                 file.write_all(entry.as_bytes()).map_err(|e| e.to_string())?;
             }
+
+            drop(file);
         
             println!("Init script installed at {init_script_path} and added to rc.local.");
-
-            // Small delay to allow kernel to release any file handles
-            std::thread::sleep(std::time::Duration::from_millis(700));
 
             // Start the service now that everything’s in place
             let _ = Command::new(init_script_path)
@@ -139,6 +140,8 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
         let mut plist_file = File::create(plist_path).map_err(|e| e.to_string())?;
         plist_file.write_all(plist_content.as_bytes()).map_err(|e| e.to_string())?;
         println!("Created launchd plist file at {plist_path}");
+
+        drop(plist_file);
 
         Command::new("launchctl").arg("load").arg(plist_path).output().map_err(|e| e.to_string())?;
         println!("Service loaded with launchctl.");
