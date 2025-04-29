@@ -7,7 +7,8 @@ use std::{env, fs};
 use config::load_controller_config;
 use http::start_http_server;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Get config path from env or fallback
     let config_path_raw = env::var("CONFIG_PATH")
         .unwrap_or_else(|_| "controller_config.toml".to_string());
@@ -16,5 +17,5 @@ fn main() {
     println!("Using config path: {}", config_path.display());
     let _config = load_controller_config(&config_path)
         .expect("Failed to load controller config");
-    start_http_server(&config_path);
+    start_http_server(&config_path).await;
 }
