@@ -87,6 +87,52 @@
     </table>
 
     <script>
+        let socket;
+
+        function connectWebSocket() {
+            socket = new WebSocket(`ws://${location.host}/ws`);
+
+            socket.onopen = () => {
+                console.log('WebSocket connected');
+            };
+
+            socket.onmessage = (event) => {
+                const msg = event.data;
+                try {
+                    if (msg === "config_updated") {
+                        fetchHosts(); // config changed
+                    } else {
+                        const statusMap = JSON.parse(msg);
+                        updateHostStatuses(statusMap);
+                    }
+                } catch (err) {
+                    console.error('Error parsing WS message:', err);
+                }
+            };
+
+            socket.onclose = () => {
+                console.warn('WebSocket closed, reconnecting in 2s...');
+                setTimeout(connectWebSocket, 2000);
+            };
+        }
+
+        connectWebSocket();
+
+        function updateHostStatuses(statusMap) {
+            const tbody = document.getElementById('host-table-body');
+            for (const row of tbody.rows) {
+                const hostname = row.cells[0].textContent;
+                const status = statusMap[hostname];
+                if (status !== undefined) {
+                    row.cells[1].textContent = status ? 'online' : 'offline';
+                    const wakeBtn = row.cells[2].children[0];
+                    const shutdownBtn = row.cells[2].children[1];
+                    wakeBtn.disabled = status;
+                    shutdownBtn.disabled = !status;
+                }
+            }
+        }
+
         async function fetchHosts() {
             try {
                 const response = await fetch('/api/hosts');
@@ -209,7 +255,6 @@
         }
 
         fetchHosts();
-        setInterval(fetchHosts, 10000); // Auto-refresh every 10 seconds
     </script>
 </body>
 </html>

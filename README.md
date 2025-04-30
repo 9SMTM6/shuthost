@@ -21,8 +21,6 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Planned features:
 
-* I should check online status with a worker on the server, and provide updates per websockets. Currently naive implementation.
-    * this might be easier/lower overhead with proper async support on the rust side, so perhaps rebase on tokio + a more advanced backend toolkit that supports async.
 * mobile friendly UI
 * documentation:
     * installation of client

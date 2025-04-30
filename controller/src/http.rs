@@ -17,11 +17,14 @@ use tracing::{info, error, warn, debug};
 use crate::config::{load_controller_config, ControllerConfig};
 use crate::wol::send_magic_packet;
 use std::collections::HashMap;
+use axum::extract::ws::{WebSocket, WebSocketUpgrade, Message};
+use tokio::sync::broadcast;
 
 #[derive(Clone)]
 pub struct AppState {
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     is_on_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+    ws_tx: broadcast::Sender<String>,
 }
 
 use tokio::sync::watch;
@@ -37,23 +40,27 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
     let (is_on_tx, is_on_rx) = watch::channel(initial_status);
 
+    let (ws_tx, _) = broadcast::channel(32);
+
     {
         let config_rx = config_rx.clone();
         let is_on_tx = is_on_tx.clone();
+        let ws_tx = ws_tx.clone();
         tokio::spawn(async move {
-            poll_host_statuses(config_rx, is_on_tx).await;
+            poll_host_statuses(config_rx, is_on_tx, ws_tx).await;
         });
     }
 
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
+        let ws_tx = ws_tx.clone();
         tokio::spawn(async move {
-            watch_config_file(path, config_tx).await;
+            watch_config_file(path, config_tx, ws_tx).await;
         });
     }
 
-    let app_state = AppState { config_rx, is_on_rx };
+    let app_state = AppState { config_rx, is_on_rx, ws_tx };
 
     let app = Router::new()
         .route("/api/hosts", get(list_hosts))
@@ -63,6 +70,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/download_agent/macos", get(download_agent_macos))
         .route("/download_agent/linux", get(download_agent_linux))
         .route("/", get(serve_ui))
+        .route("/ws", get(ws_handler))
         .with_state(app_state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
@@ -76,7 +84,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     .unwrap();
 }
 
-async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
+async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>, ws_tx: broadcast::Sender<String>) {
     use notify::{RecommendedWatcher, RecursiveMode, Watcher, Event, EventKind};
     use tokio::sync::mpsc::unbounded_channel;
 
@@ -103,6 +111,7 @@ async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<Contr
                 Ok(new_config) => {
                     let _ = tx.send(Arc::new(new_config));
                     info!("Config reloaded.");
+                    let _ = ws_tx.send("config_updated".to_string());
                 }
                 Err(e) => {
                     error!("Failed to reload config: {}", e);
@@ -115,6 +124,7 @@ async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<Contr
 async fn poll_host_statuses(
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     is_on_tx: watch::Sender<Arc<HashMap<String, bool>>>,
+    ws_tx: broadcast::Sender<String>,
 ) {
     loop {
         let config = config_rx.borrow().clone();
@@ -130,6 +140,7 @@ async fn poll_host_statuses(
             status_map.insert(name.clone(), is_online);
         }
 
+        let _ = ws_tx.send(serde_json::to_string(&status_map).unwrap());
         let _ = is_on_tx.send(Arc::new(status_map));
 
         tokio::time::sleep(Duration::from_secs(2)).await;
@@ -276,4 +287,21 @@ async fn download_agent(agent_binary: &'static [u8]) -> impl IntoResponse {
         .status(StatusCode::OK)
         .body(agent_binary.into_response())
         .unwrap()
+}
+
+async fn ws_handler(
+    ws: WebSocketUpgrade,
+    State(AppState { ws_tx, .. }): State<AppState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket(socket, ws_tx.subscribe()))
+}
+
+async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>) {
+    tokio::spawn(async move {
+        while let Ok(msg) = rx.recv().await {
+            if socket.send(Message::Text(msg.into())).await.is_err() {
+                break;
+            }
+        }
+    });
 }
