@@ -130,7 +130,6 @@
         </tbody>
         <label for="os-select">Select your OS:</label>
         <select id="os-select">
-            <option value="auto">Auto-detect</option>
             <option value="linux">Linux</option>
             <option value="macos">macOS</option>
         </select>
@@ -273,6 +272,14 @@
             if (platform.includes('linux')) return 'linux';
             return 'unknown';
         }
+
+        // Preselect appropriate OS on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const os = detectOS();
+            if (os !== 'unknown') {
+                document.getElementById('os-select').value = os;
+            }
+        });
 
         async function downloadBinary() {
             const osSelect = document.getElementById('os-select');
