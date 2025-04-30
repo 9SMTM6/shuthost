@@ -3,44 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <title>ShutHost</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: sans-serif;
             background-color: #f7f7f7;
             margin: 0;
-            padding: 2rem;
+            padding: 1rem;
         }
+
         h1 {
             color: #333;
+            font-size: 1.5rem;
+            text-align: center;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
             background-color: white;
+            overflow-x: auto;
+            display: block;
         }
+
         th, td {
             padding: 0.75rem;
             text-align: left;
             border-bottom: 1px solid #ccc;
+            white-space: nowrap;
         }
+
         button {
             padding: 0.5rem 1rem;
-            margin-right: 0.5rem;
+            margin: 0.25rem 0.5rem 0.25rem 0;
             border: none;
             border-radius: 4px;
             background-color: #4CAF50;
             color: white;
             cursor: pointer;
             position: relative;
+            font-size: 0.9rem;
         }
+
         button.shutdown {
             background-color: #f44336;
         }
+
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
+
         .loading-indicator {
             position: absolute;
             right: 10px;
@@ -53,18 +67,56 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
         .download-btn {
             margin-top: 1rem;
             background-color: #008CBA;
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #os-select {
+            width: 100%;
+            max-width: 300px;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        #message {
+            color: red;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            th, td {
+                font-size: 0.85rem;
+                padding: 0.5rem;
+            }
+
+            button {
+                width: 100%;
+                margin: 0.25rem 0;
+            }
+
+            td:last-child {
+                display: flex;
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Remote Host Controller</h1>
+    <h1>Shuthost</h1>
     <table>
         <thead>
             <tr>

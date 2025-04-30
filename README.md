@@ -21,7 +21,6 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Planned features:
 
-* mobile friendly UI
 * documentation:
     * installation of client
     * settings required for wake on lan to work (as far as they are defined, show example of host that only WOLs from sleep)
