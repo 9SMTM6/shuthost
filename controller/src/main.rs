@@ -16,6 +16,7 @@ async fn main() {
         .unwrap_or_else(|_| panic!("Config file not found at: {}", config_path_raw));
     println!("Using config path: {}", config_path.display());
     let _config = load_controller_config(&config_path)
+        .await
         .expect("Failed to load controller config");
     start_http_server(&config_path).await;
 }

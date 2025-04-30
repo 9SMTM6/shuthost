@@ -1,9 +1,9 @@
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs;
+use tokio::fs;
 use std::path::Path;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Host {
     pub ip: String,
     pub mac: String,
@@ -16,8 +16,8 @@ pub struct ControllerConfig {
     pub hosts: HashMap<String, Host>,
 }
 
-pub fn load_controller_config<P: AsRef<Path>>(path: P) -> Result<ControllerConfig, Box<dyn std::error::Error>> {
-    let content = fs::read_to_string(path)?;
+pub async fn load_controller_config<P: AsRef<Path>>(path: P) -> Result<ControllerConfig, Box<dyn std::error::Error>> {
+    let content = fs::read_to_string(path).await?;
     let config: ControllerConfig = toml::from_str(&content)?;
     Ok(config)
 }
