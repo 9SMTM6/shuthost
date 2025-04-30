@@ -90,7 +90,8 @@
         let socket;
 
         function connectWebSocket() {
-            socket = new WebSocket(`ws://${location.host}/ws`);
+            const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+            const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
 
             socket.onopen = () => {
                 console.log('WebSocket connected');
