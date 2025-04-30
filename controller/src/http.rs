@@ -15,8 +15,13 @@ use std::time::Duration;
 
 use crate::config::{load_controller_config, ControllerConfig};
 use crate::wol::send_magic_packet;
+use std::collections::HashMap;
 
-type AppState = watch::Receiver<Arc<ControllerConfig>>;
+#[derive(Clone)]
+pub struct AppState {
+    config_rx: watch::Receiver<Arc<ControllerConfig>>,
+    is_on_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+}
 
 use tokio::sync::watch;
 
@@ -24,15 +29,30 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     let initial_config = Arc::new(
         load_controller_config(config_path).await.expect("Failed to load config"),
     );
-    let (tx, rx) = watch::channel(initial_config);
+    let (config_tx, config_rx) = watch::channel(initial_config);
+    
+    let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
+    let (is_on_tx, is_on_rx) = watch::channel(initial_status);
+    
+    // Spawn background task
+    {
+        let config_rx = config_rx.clone();
+        let is_on_tx = is_on_tx.clone();
+        tokio::spawn(async move {
+            poll_host_statuses(config_rx, is_on_tx).await;
+        });
+    }
+    
 
     {
         let path = config_path.to_path_buf();
-        let tx = tx.clone();
+        let config_tx = config_tx.clone();
         tokio::spawn(async move {
-            watch_config_file(path, tx).await;
+            watch_config_file(path, config_tx).await;
         });
     }
+
+    let app_state = AppState { config_rx, is_on_rx };
 
     let app = Router::new()
         .route("/api/hosts", get(list_hosts))
@@ -42,7 +62,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/download_agent/macos", get(download_agent_macos))
         .route("/download_agent/linux", get(download_agent_linux))
         .route("/", get(serve_ui))
-        .with_state(rx);
+        .with_state(app_state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
     println!("Listening on http://{}", addr);
@@ -91,7 +111,29 @@ async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<Contr
     }
 }
 
-async fn list_hosts(State(config_rx): State<AppState>) -> impl IntoResponse {
+async fn poll_host_statuses(
+    config_rx: watch::Receiver<Arc<ControllerConfig>>,
+    is_on_tx: watch::Sender<Arc<HashMap<String, bool>>>,
+) {
+    loop {
+        let config = config_rx.borrow().clone();
+
+        let mut status_map = HashMap::new();
+
+        for (name, host) in &config.hosts {
+            let addr = format!("{}:{}", host.ip, host.port);
+            let status = timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await.is_ok();
+            status_map.insert(name.clone(), status);
+        }
+
+        let _ = is_on_tx.send(Arc::new(status_map));
+
+        tokio::time::sleep(Duration::from_secs(2)).await; // Adjust interval as needed
+    }
+}
+
+
+async fn list_hosts(State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
     let config = config_rx.borrow();
     let hosts: Vec<_> = config.hosts.iter().map(|(name, host)| {
         json!({
@@ -106,23 +148,22 @@ async fn list_hosts(State(config_rx): State<AppState>) -> impl IntoResponse {
 }
 
 #[axum::debug_handler]
-async fn status_host(Path(hostname): Path<String>, State(config_rx): State<AppState>) -> impl IntoResponse {
-    let host = {
-        let config = config_rx.borrow();
-        let Some(host) = config.hosts.get(&hostname) else {
-            return (StatusCode::NOT_FOUND, "Unknown host").into_response();
-        };
-        host.clone()
-    };
-    let addr = format!("{}:{}", host.ip, host.port);
-    match timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await {
-        Ok(Ok(_)) => "online".into_response(),
-        _ => "offline".into_response(),
+async fn status_host(
+    Path(hostname): Path<String>,
+    State(AppState { is_on_rx , .. }): State<AppState>,
+) -> impl IntoResponse {
+    let is_on_rx = is_on_rx.borrow();
+    match is_on_rx.get(&hostname) {
+        Some(status) => match status.clone() {
+            true => "online",
+            false => "offline",
+        }.into_response(),
+        None => (StatusCode::NOT_FOUND, "Unknown host").into_response(),
     }
 }
 
 #[axum::debug_handler]
-async fn wake_host(Path(hostname): Path<String>, State(config_rx): State<AppState>) -> impl IntoResponse {
+async fn wake_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
     let host = {
         let config = config_rx.borrow();
         let Some(host) = config.hosts.get(&hostname) else {
@@ -137,7 +178,7 @@ async fn wake_host(Path(hostname): Path<String>, State(config_rx): State<AppStat
 }
 
 #[axum::debug_handler]
-async fn shutdown_host(Path(hostname): Path<String>, State(config_rx): State<AppState>) -> impl IntoResponse {
+async fn shutdown_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
     let host = {
         let config = config_rx.borrow();
         let Some(host) = config.hosts.get(&hostname) else {
