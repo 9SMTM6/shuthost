@@ -192,10 +192,13 @@ async fn wake_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}):
         };
         host.clone()
     };
-    match send_magic_packet(&host.mac, "255.255.255.255") {
+    // let magic_packet_relay = &host.ip;
+    let magic_packet_relay = "255.255.255.255";
+    match send_magic_packet(&host.mac, magic_packet_relay) {
         Ok(_) => {
-            info!("Magic packet sent to host '{}'", hostname);
-            format!("Magic packet sent to {}", hostname).into_response()
+            let info = format!("Magic packet sent to {} via {}", &host.mac, magic_packet_relay);
+            info!(info);
+            info.into_response()
         },
         Err(e) => {
             error!("Failed to send magic packet to '{}': {}", hostname, e);

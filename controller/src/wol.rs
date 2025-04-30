@@ -17,7 +17,6 @@ pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> Result<(), St
         .send_to(&packet, format!("{}:9", broadcast_ip))
         .map_err(|e| e.to_string())?;
 
-    println!("Magic packet sent to {} via {}", mac_address, broadcast_ip);
     Ok(())
 }
 

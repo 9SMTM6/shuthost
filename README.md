@@ -24,6 +24,7 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 * documentation:
     * installation of client
     * settings required for wake on lan to work (as far as they are defined, show example of host that only WOLs from sleep)
+    * need for static IP
     * reachability of hosts to wol command required, seems stricter than IP? (validate)
 * endpoint on server that allows agents to register themselfes. Unclear how to deal with authorisation:
     * server secret?
