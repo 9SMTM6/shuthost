@@ -9,9 +9,7 @@ pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> Result<(), St
     }
 
     let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| e.to_string())?;
-    socket
-        .set_broadcast(true)
-        .map_err(|e| e.to_string())?;
+    socket.set_broadcast(true).map_err(|e| e.to_string())?;
 
     socket
         .send_to(&packet, format!("{}:9", broadcast_ip))

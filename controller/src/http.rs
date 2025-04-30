@@ -1,23 +1,30 @@
-use std::{net::SocketAddr, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 use axum::{
-    routing::{get, post},
+    Json, Router,
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json, Router,
+    routing::{get, post},
 };
-use serde_json::json;
 use hmac::{Hmac, Mac};
+use serde_json::json;
 use sha2::Sha256;
-use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
-use tokio::time::timeout;
 use std::time::Duration;
-use tracing::{info, error, warn, debug};
+use std::{
+    net::SocketAddr,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
+use tokio::time::timeout;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+};
+use tracing::{debug, error, info, warn};
 
-use crate::config::{load_controller_config, ControllerConfig};
+use crate::config::{ControllerConfig, load_controller_config};
 use crate::wol::send_magic_packet;
+use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use std::collections::HashMap;
-use axum::extract::ws::{WebSocket, WebSocketUpgrade, Message};
 use tokio::sync::broadcast;
 
 #[derive(Clone)]
@@ -33,7 +40,9 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(
-        load_controller_config(config_path).await.expect("Failed to load config"),
+        load_controller_config(config_path)
+            .await
+            .expect("Failed to load config"),
     );
     let (config_tx, config_rx) = watch::channel(initial_config);
 
@@ -60,7 +69,11 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         });
     }
 
-    let app_state = AppState { config_rx, is_on_rx, ws_tx };
+    let app_state = AppState {
+        config_rx,
+        is_on_rx,
+        ws_tx,
+    };
 
     let app = Router::new()
         .route("/api/hosts", get(list_hosts))
@@ -84,8 +97,12 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     .unwrap();
 }
 
-async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>, ws_tx: broadcast::Sender<String>) {
-    use notify::{RecommendedWatcher, RecursiveMode, Watcher, Event, EventKind};
+async fn watch_config_file(
+    path: std::path::PathBuf,
+    tx: watch::Sender<Arc<ControllerConfig>>,
+    ws_tx: broadcast::Sender<String>,
+) {
+    use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
     use tokio::sync::mpsc::unbounded_channel;
 
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
@@ -132,10 +149,10 @@ async fn poll_host_statuses(
 
         for (name, host) in &config.hosts {
             let addr = format!("{}:{}", host.ip, host.port);
-            let is_online = match timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await {
-                Ok(Ok(_)) => true,
-                _ => false,
-            };
+            let is_online = matches!(
+                timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await,
+                Ok(Ok(_))
+            );
             debug!("Polled {} at {} - online: {}", name, addr, is_online);
             status_map.insert(name.clone(), is_online);
         }
@@ -147,16 +164,20 @@ async fn poll_host_statuses(
     }
 }
 
-async fn list_hosts(State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
+async fn list_hosts(State(AppState { config_rx, .. }): State<AppState>) -> impl IntoResponse {
     let config = config_rx.borrow();
-    let hosts: Vec<_> = config.hosts.iter().map(|(name, host)| {
-        json!({
-            "name": name,
-            "ip": host.ip,
-            "mac": host.mac,
-            "port": host.port,
+    let hosts: Vec<_> = config
+        .hosts
+        .iter()
+        .map(|(name, host)| {
+            json!({
+                "name": name,
+                "ip": host.ip,
+                "mac": host.mac,
+                "port": host.port,
+            })
         })
-    }).collect();
+        .collect();
 
     Json(hosts)
 }
@@ -164,26 +185,30 @@ async fn list_hosts(State(AppState{config_rx, ..}): State<AppState>) -> impl Int
 #[axum::debug_handler]
 async fn status_host(
     Path(hostname): Path<String>,
-    State(AppState { is_on_rx , .. }): State<AppState>,
+    State(AppState { is_on_rx, .. }): State<AppState>,
 ) -> impl IntoResponse {
     let is_on_rx = is_on_rx.borrow();
     match is_on_rx.get(&hostname) {
         Some(status) => {
             debug!("Status check for '{}': {}", hostname, status);
-            match status.clone() {
+            match *status {
                 true => "online",
                 false => "offline",
-            }.into_response()
-        },
+            }
+            .into_response()
+        }
         None => {
             warn!("Status check for unknown host '{}'", hostname);
             (StatusCode::NOT_FOUND, "Unknown host").into_response()
-        },
+        }
     }
 }
 
 #[axum::debug_handler]
-async fn wake_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
+async fn wake_host(
+    Path(hostname): Path<String>,
+    State(AppState { config_rx, .. }): State<AppState>,
+) -> impl IntoResponse {
     let host = {
         let config = config_rx.borrow();
         let Some(host) = config.hosts.get(&hostname) else {
@@ -196,19 +221,25 @@ async fn wake_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}):
     let magic_packet_relay = "255.255.255.255";
     match send_magic_packet(&host.mac, magic_packet_relay) {
         Ok(_) => {
-            let info = format!("Magic packet sent to {} via {}", &host.mac, magic_packet_relay);
+            let info = format!(
+                "Magic packet sent to {} via {}",
+                &host.mac, magic_packet_relay
+            );
             info!(info);
             info.into_response()
-        },
+        }
         Err(e) => {
             error!("Failed to send magic packet to '{}': {}", hostname, e);
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)).into_response()
-        },
+        }
     }
 }
 
 #[axum::debug_handler]
-async fn shutdown_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
+async fn shutdown_host(
+    Path(hostname): Path<String>,
+    State(AppState { config_rx, .. }): State<AppState>,
+) -> impl IntoResponse {
     let host = {
         let config = config_rx.borrow();
         let Some(host) = config.hosts.get(&hostname) else {
@@ -217,7 +248,10 @@ async fn shutdown_host(Path(hostname): Path<String>, State(AppState{config_rx, .
         };
         host.clone()
     };
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     let message = format!("{}|shutdown", timestamp);
     let signature = sign_hmac(&message, &host.shared_secret);
     let full_message = format!("{}|{}", message, signature);
@@ -227,11 +261,11 @@ async fn shutdown_host(Path(hostname): Path<String>, State(AppState{config_rx, .
         Ok(resp) => {
             info!("Shutdown response from '{}': {}", hostname, resp);
             resp.into_response()
-        },
+        }
         Err(e) => {
             error!("Failed to shutdown '{}': {}", hostname, e);
             (StatusCode::INTERNAL_SERVER_ERROR, e).into_response()
-        },
+        }
     }
 }
 
@@ -276,11 +310,17 @@ async fn serve_ui() -> impl IntoResponse {
 }
 
 async fn download_agent_macos() -> impl IntoResponse {
-    download_agent(include_bytes!("../../target/aarch64-apple-darwin/release/shuthost_agent")).await
+    download_agent(include_bytes!(
+        "../../target/aarch64-apple-darwin/release/shuthost_agent"
+    ))
+    .await
 }
 
 async fn download_agent_linux() -> impl IntoResponse {
-    download_agent(include_bytes!("../../target/x86_64-unknown-linux-gnu/release/shuthost_agent")).await
+    download_agent(include_bytes!(
+        "../../target/x86_64-unknown-linux-gnu/release/shuthost_agent"
+    ))
+    .await
 }
 
 async fn download_agent(agent_binary: &'static [u8]) -> impl IntoResponse {

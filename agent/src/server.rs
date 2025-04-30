@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 
-use crate::handler::{execute_shutdown, handle_request_without_shutdown };
+use crate::handler::{execute_shutdown, handle_request_without_shutdown};
 use crate::install::{generate_secret, get_default_shutdown_command};
 use clap::Parser;
 

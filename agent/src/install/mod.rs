@@ -1,15 +1,16 @@
+use clap::Parser;
+use rand::Rng;
 use std::env;
 use std::fs::{self, File};
 use std::io::Write;
-use std::process::Command;
-use std::path::Path;
-use rand::Rng;
-use clap::Parser;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
+use std::process::Command;
 
 const DEFAULT_PORT: u16 = 9090;
-const CONFIG_ENTRY: &str = r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
+const CONFIG_ENTRY: &str =
+    r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 #[cfg(target_os = "linux")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shutdown_agent.service.ini");
 #[cfg(target_os = "macos")]
@@ -30,23 +31,25 @@ pub struct InstallArgs {
     pub shared_secret: String,
 }
 
-pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), String> {
+pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
+
+    let binary_path = PathBuf::from(env::args().next().unwrap());
 
     #[cfg(target_os = "linux")]
     {
         let target_bin = "/usr/sbin/shuthost_agent";
 
         // Stop potentially existing service it before overwriting
-        if is_systemd() {        
+        if is_systemd() {
             let output = Command::new("systemctl")
                 .arg("is-active")
                 .arg("shuthost_agent.service")
                 .output()
                 .map_err(|e| e.to_string())?;
-            
+
             if output.status.success() {
                 let _ = Command::new("systemctl")
                     .arg("stop")
@@ -56,13 +59,11 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
         } else {
             let init_script = "/etc/rc.d/rc.shuthost_agent";
             if Path::new(init_script).exists() {
-                let _ = Command::new(init_script)
-                    .arg("stop")
-                    .status();
+                let _ = Command::new(init_script).arg("stop").status();
             }
         }
 
-        fs::copy(install_path, target_bin).map_err(|e| e.to_string())?;
+        fs::copy(binary_path, target_bin).map_err(|e| e.to_string())?;
         println!("Installed binary to {target_bin}");
 
         if is_systemd() {
@@ -76,14 +77,27 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
                 .replace("{binary}", target_bin);
 
             let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
-            service_file.write_all(service_file_content.as_bytes()).map_err(|e| e.to_string())?;
+            service_file
+                .write_all(service_file_content.as_bytes())
+                .map_err(|e| e.to_string())?;
             println!("Created systemd service file at {service_file_path}");
 
             drop(service_file);
 
-            Command::new("systemctl").arg("daemon-reload").output().map_err(|e| e.to_string())?;
-            Command::new("systemctl").arg("enable").arg(service_name).output().map_err(|e| e.to_string())?;
-            Command::new("systemctl").arg("start").arg(service_name).output().map_err(|e| e.to_string())?;
+            Command::new("systemctl")
+                .arg("daemon-reload")
+                .output()
+                .map_err(|e| e.to_string())?;
+            Command::new("systemctl")
+                .arg("enable")
+                .arg(service_name)
+                .output()
+                .map_err(|e| e.to_string())?;
+            Command::new("systemctl")
+                .arg("start")
+                .arg(service_name)
+                .output()
+                .map_err(|e| e.to_string())?;
 
             println!("Service started and enabled.");
         } else {
@@ -95,22 +109,28 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
                 .replace("{shutdown_command}", &arguments.shutdown_command)
                 .replace("{secret}", &arguments.shared_secret)
                 .replace("{binary}", target_bin);
-        
+
             let mut file = File::create(init_script_path).map_err(|e| e.to_string())?;
-            file.write_all(init_script_content.as_bytes()).map_err(|e| e.to_string())?;
-            fs::set_permissions(init_script_path, fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
-        
+            file.write_all(init_script_content.as_bytes())
+                .map_err(|e| e.to_string())?;
+            fs::set_permissions(init_script_path, fs::Permissions::from_mode(0o755))
+                .map_err(|e| e.to_string())?;
+
             // Ensure it's added to rc.local
             let rc_local = "/etc/rc.d/rc.local";
             let entry = "if [ -x /etc/rc.d/rc.shuthost_agent ]; then /etc/rc.d/rc.shuthost_agent start; fi\n";
             let rc_local_content = fs::read_to_string(rc_local).unwrap_or_default();
             if !rc_local_content.contains("rc.shuthost_agent start") {
-                let mut file = File::options().append(true).open(rc_local).map_err(|e| e.to_string())?;
-                file.write_all(entry.as_bytes()).map_err(|e| e.to_string())?;
+                let mut file = File::options()
+                    .append(true)
+                    .open(rc_local)
+                    .map_err(|e| e.to_string())?;
+                file.write_all(entry.as_bytes())
+                    .map_err(|e| e.to_string())?;
             }
 
             drop(file);
-        
+
             println!("Init script installed at {init_script_path} and added to rc.local.");
 
             // Start the service now that everything’s in place
@@ -119,7 +139,6 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
                 .status()
                 .map_err(|e| format!("Failed to start agent: {e}"))?;
         }
-        
     }
 
     #[cfg(target_os = "macos")]
@@ -127,7 +146,7 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
         let target_bin = "/usr/local/bin/shuthost_agent";
         let plist_path = "/Library/LaunchDaemons/com.github.9smtm6.shutdown_agent.plist";
 
-        fs::copy(install_path, target_bin).map_err(|e| e.to_string())?;
+        fs::copy(binary_path, target_bin).map_err(|e| e.to_string())?;
         println!("Installed binary to {target_bin}");
 
         let plist_content = SERVICE_FILE_TEMPLATE
@@ -138,12 +157,18 @@ pub fn install_agent(install_path: &Path, arguments: InstallArgs) -> Result<(), 
             .replace("{binary}", target_bin);
 
         let mut plist_file = File::create(plist_path).map_err(|e| e.to_string())?;
-        plist_file.write_all(plist_content.as_bytes()).map_err(|e| e.to_string())?;
+        plist_file
+            .write_all(plist_content.as_bytes())
+            .map_err(|e| e.to_string())?;
         println!("Created launchd plist file at {plist_path}");
 
         drop(plist_file);
 
-        Command::new("launchctl").arg("load").arg(plist_path).output().map_err(|e| e.to_string())?;
+        Command::new("launchctl")
+            .arg("load")
+            .arg(plist_path)
+            .output()
+            .map_err(|e| e.to_string())?;
         println!("Service loaded with launchctl.");
     }
 
@@ -168,26 +193,28 @@ fn is_superuser() -> bool {
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
-    let chars: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".chars().collect();
+    let chars: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        .chars()
+        .collect();
     (0..32)
         .map(|_| chars[rng.random_range(0..chars.len())])
         .collect::<String>()
-        .into()
 }
 
-#[cfg(target_os="linux")]
+#[cfg(target_os = "linux")]
 fn is_systemd() -> bool {
     Path::new("/run/systemd/system").exists()
 }
 
 pub fn get_default_shutdown_command() -> String {
-    #[cfg(target_os="linux")]
+    #[cfg(target_os = "linux")]
     return if is_systemd() {
         "systemctl poweroff"
     } else {
         "poweroff"
-    }.to_string();
-    #[cfg(target_os="macos")]
+    }
+    .to_string();
+    #[cfg(target_os = "macos")]
     return "shutdown -h now".to_string();
 }
 
@@ -246,14 +273,11 @@ pub fn get_mac(interface: &str) -> Option<String> {
 
     #[cfg(target_os = "macos")]
     {
-        let output = Command::new("ifconfig")
-            .arg(interface)
-            .output()
-            .ok()?;
+        let output = Command::new("ifconfig").arg(interface).output().ok()?;
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             if line.trim_start().starts_with("ether ") {
-                return line.trim().split_whitespace().nth(1).map(|s| s.to_string());
+                return line.split_whitespace().nth(1).map(|s| s.to_string());
             }
         }
         None
@@ -273,7 +297,10 @@ pub fn get_ip(interface: &str) -> Option<String> {
         for line in text.lines() {
             // Looking for the line that contains 'inet', which is typically the IP address line
             if line.contains("inet ") {
-                return line.trim().split_whitespace().nth(1)
+                return line
+                    .trim()
+                    .split_whitespace()
+                    .nth(1)
                     .and_then(|s| s.split('/').next())
                     .map(|s| s.to_string());
             }
@@ -283,14 +310,11 @@ pub fn get_ip(interface: &str) -> Option<String> {
 
     #[cfg(target_os = "macos")]
     {
-        let output = Command::new("ifconfig")
-            .arg(interface)
-            .output()
-            .ok()?;
+        let output = Command::new("ifconfig").arg(interface).output().ok()?;
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             if line.trim_start().starts_with("inet ") && !line.contains("127.0.0.1") {
-                return line.trim().split_whitespace().nth(1).map(|s| s.to_string());
+                return line.split_whitespace().nth(1).map(|s| s.to_string());
             }
         }
         None
@@ -298,12 +322,10 @@ pub fn get_ip(interface: &str) -> Option<String> {
 }
 
 pub fn get_hostname() -> Option<String> {
-    let output = Command::new("hostname")
-        .output()
-        .ok()?;
-    
+    let output = Command::new("hostname").output().ok()?;
+
     let hostname = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    
+
     if !hostname.is_empty() {
         Some(hostname)
     } else {

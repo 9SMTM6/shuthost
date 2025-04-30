@@ -1,13 +1,12 @@
-mod server;
 mod handler;
 mod install;
+mod server;
 
-use std::env;
-use std::path::PathBuf;
-use install::install_agent;
 use clap::{Parser, Subcommand};
 use install::InstallArgs;
+use install::install_agent;
 use server::ServiceArgs;
+use std::env;
 
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
@@ -29,18 +28,13 @@ pub enum Command {
 }
 
 fn main() {
-    let binary_path = PathBuf::from(env::args().next().unwrap());
-    
     let invocation = Cli::parse();
 
     match invocation.command {
-        Command::Install(args) => {
-            match install_agent(&binary_path, args) {
-                Ok(_) => println!("Agent installed successfully!"),
-                Err(e) => eprintln!("Error installing agent: {}", e),
-            }
-            return;
-        }
+        Command::Install(args) => match install_agent(args) {
+            Ok(_) => println!("Agent installed successfully!"),
+            Err(e) => eprintln!("Error installing agent: {}", e),
+        },
         Command::Service(args) => {
             server::start_agent(args);
         }
