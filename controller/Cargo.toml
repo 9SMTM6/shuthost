@@ -17,3 +17,5 @@ regex = "1.11.1"
 tokio = { version = "1.44.2", features = ["full"] }
 axum = { version = "0.8.3", features = ["macros"] }
 notify = "8.0.0"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

@@ -12,6 +12,7 @@ use sha2::Sha256;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpStream};
 use tokio::time::timeout;
 use std::time::Duration;
+use tracing::{info, error, warn, debug};
 
 use crate::config::{load_controller_config, ControllerConfig};
 use crate::wol::send_magic_packet;
@@ -26,15 +27,16 @@ pub struct AppState {
 use tokio::sync::watch;
 
 pub async fn start_http_server(config_path: &std::path::Path) {
+    info!("Starting HTTP server...");
+
     let initial_config = Arc::new(
         load_controller_config(config_path).await.expect("Failed to load config"),
     );
     let (config_tx, config_rx) = watch::channel(initial_config);
-    
+
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
     let (is_on_tx, is_on_rx) = watch::channel(initial_status);
-    
-    // Spawn background task
+
     {
         let config_rx = config_rx.clone();
         let is_on_tx = is_on_tx.clone();
@@ -42,7 +44,6 @@ pub async fn start_http_server(config_path: &std::path::Path) {
             poll_host_statuses(config_rx, is_on_tx).await;
         });
     }
-    
 
     {
         let path = config_path.to_path_buf();
@@ -65,7 +66,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .with_state(app_state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
-    println!("Listening on http://{}", addr);
+    info!("Listening on http://{}", addr);
 
     axum::serve(
         tokio::net::TcpListener::bind(addr).await.unwrap(),
@@ -97,14 +98,14 @@ async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<Contr
 
     while let Some(event) = raw_rx.recv().await {
         if matches!(event.kind, EventKind::Modify(_)) {
-            println!("Config file modified. Reloading...");
+            info!("Config file modified. Reloading...");
             match load_controller_config(&path).await {
                 Ok(new_config) => {
                     let _ = tx.send(Arc::new(new_config));
-                    println!("Config reloaded.");
+                    info!("Config reloaded.");
                 }
                 Err(e) => {
-                    eprintln!("Failed to reload config: {}", e);
+                    error!("Failed to reload config: {}", e);
                 }
             }
         }
@@ -117,21 +118,23 @@ async fn poll_host_statuses(
 ) {
     loop {
         let config = config_rx.borrow().clone();
-
         let mut status_map = HashMap::new();
 
         for (name, host) in &config.hosts {
             let addr = format!("{}:{}", host.ip, host.port);
-            let status = timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await.is_ok();
-            status_map.insert(name.clone(), status);
+            let is_online = match timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await {
+                Ok(Ok(_)) => true,
+                _ => false,
+            };
+            debug!("Polled {} at {} - online: {}", name, addr, is_online);
+            status_map.insert(name.clone(), is_online);
         }
 
         let _ = is_on_tx.send(Arc::new(status_map));
 
-        tokio::time::sleep(Duration::from_secs(2)).await; // Adjust interval as needed
+        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
-
 
 async fn list_hosts(State(AppState{config_rx, ..}): State<AppState>) -> impl IntoResponse {
     let config = config_rx.borrow();
@@ -154,11 +157,17 @@ async fn status_host(
 ) -> impl IntoResponse {
     let is_on_rx = is_on_rx.borrow();
     match is_on_rx.get(&hostname) {
-        Some(status) => match status.clone() {
-            true => "online",
-            false => "offline",
-        }.into_response(),
-        None => (StatusCode::NOT_FOUND, "Unknown host").into_response(),
+        Some(status) => {
+            debug!("Status check for '{}': {}", hostname, status);
+            match status.clone() {
+                true => "online",
+                false => "offline",
+            }.into_response()
+        },
+        None => {
+            warn!("Status check for unknown host '{}'", hostname);
+            (StatusCode::NOT_FOUND, "Unknown host").into_response()
+        },
     }
 }
 
@@ -167,13 +176,20 @@ async fn wake_host(Path(hostname): Path<String>, State(AppState{config_rx, ..}):
     let host = {
         let config = config_rx.borrow();
         let Some(host) = config.hosts.get(&hostname) else {
+            warn!("Wake request for unknown host '{}'", hostname);
             return (StatusCode::NOT_FOUND, "Unknown host").into_response();
         };
         host.clone()
     };
     match send_magic_packet(&host.mac, "255.255.255.255") {
-        Ok(_) => format!("Magic packet sent to {}", hostname).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)).into_response(),
+        Ok(_) => {
+            info!("Magic packet sent to host '{}'", hostname);
+            format!("Magic packet sent to {}", hostname).into_response()
+        },
+        Err(e) => {
+            error!("Failed to send magic packet to '{}': {}", hostname, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)).into_response()
+        },
     }
 }
 
@@ -182,6 +198,7 @@ async fn shutdown_host(Path(hostname): Path<String>, State(AppState{config_rx, .
     let host = {
         let config = config_rx.borrow();
         let Some(host) = config.hosts.get(&hostname) else {
+            warn!("Shutdown request for unknown host '{}'", hostname);
             return (StatusCode::NOT_FOUND, "Unknown host").into_response();
         };
         host.clone()
@@ -191,9 +208,16 @@ async fn shutdown_host(Path(hostname): Path<String>, State(AppState{config_rx, .
     let signature = sign_hmac(&message, &host.shared_secret);
     let full_message = format!("{}|{}", message, signature);
 
+    info!("Sending shutdown command to '{}'", hostname);
     match send_shutdown(&host.ip, host.port, &full_message).await {
-        Ok(resp) => resp.into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e).into_response(),
+        Ok(resp) => {
+            info!("Shutdown response from '{}': {}", hostname, resp);
+            resp.into_response()
+        },
+        Err(e) => {
+            error!("Failed to shutdown '{}': {}", hostname, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, e).into_response()
+        },
     }
 }
 
@@ -205,13 +229,26 @@ fn sign_hmac(message: &str, secret: &str) -> String {
 
 async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
     let addr = format!("{}:{}", ip, port);
-    let mut stream = TcpStream::connect(addr).await.map_err(|e| e.to_string())?;
-    stream.writable().await.map_err(|e| e.to_string())?;
-    stream.write_all(message.as_bytes()).await.map_err(|e| e.to_string())?;
+    debug!("Connecting to {}", addr);
+    let mut stream = TcpStream::connect(addr).await.map_err(|e| {
+        error!("TCP connect error: {}", e);
+        e.to_string()
+    })?;
+    stream.writable().await.map_err(|e| {
+        error!("Stream not writable: {}", e);
+        e.to_string()
+    })?;
+    debug!("Sending shutdown message...");
+    stream.write_all(message.as_bytes()).await.map_err(|e| {
+        error!("Write failed: {}", e);
+        e.to_string()
+    })?;
 
     let mut buf = vec![0; 1024];
-
-    let n = stream.read(&mut buf).await.map_err(|e| e.to_string())?;
+    let n = stream.read(&mut buf).await.map_err(|e| {
+        error!("Read failed: {}", e);
+        e.to_string()
+    })?;
 
     Ok(String::from_utf8_lossy(&buf[..n]).to_string())
 }
