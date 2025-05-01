@@ -3,7 +3,9 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.github.9smtm6.shutdown_agent</string>
+    <string>{label}</string>
+    <key>Description</key>
+    <string>{description}</string>
     <key>ProgramArguments</key>
     <array>
       <string>{binary}</string>

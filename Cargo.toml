@@ -1,11 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["agent", "controller"]
+members = ["agent", "controller", "global_service_install"]
 
 [workspace.dependencies]
 hmac = "0.12.1"
 sha2 = "0.10.8"
 hex = "0.4.3"
+clap = { version = "4.5.37", features = ["derive"] }
+global_service_install = {path = "./global_service_install"}
 
 [workspace.package]
 version = "0.0.5"

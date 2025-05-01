@@ -1,11 +1,9 @@
 use clap::Parser;
+#[cfg(target_os = "linux")]
+use global_service_install::is_systemd;
 use rand::Rng;
-use std::env;
-use std::fs::{self, File};
-use std::io::Write;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
 use std::process::Command;
 
 const DEFAULT_PORT: u16 = 9090;
@@ -32,145 +30,24 @@ pub struct InstallArgs {
 }
 
 pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
-    if !is_superuser() {
-        return Err("You must run this command as root or with sudo.".to_string());
-    }
-
-    let binary_path = PathBuf::from(env::args().next().unwrap());
-
-    #[cfg(target_os = "linux")]
-    {
-        let target_bin = "/usr/sbin/shuthost_agent";
-
-        // Stop potentially existing service it before overwriting
-        if is_systemd() {
-            let output = Command::new("systemctl")
-                .arg("is-active")
-                .arg("shuthost_agent.service")
-                .output()
-                .map_err(|e| e.to_string())?;
-
-            if output.status.success() {
-                let _ = Command::new("systemctl")
-                    .arg("stop")
-                    .arg("shuthost_agent.service")
-                    .status();
-            }
-        } else {
-            let init_script = "/etc/rc.d/rc.shuthost_agent";
-            if Path::new(init_script).exists() {
-                let _ = Command::new(init_script).arg("stop").status();
-            }
-        }
-
-        fs::copy(binary_path, target_bin).map_err(|e| e.to_string())?;
-        println!("Installed binary to {target_bin}");
-
-        if is_systemd() {
-            let service_name = "shuthost_agent.service";
-            let service_file_path = format!("/etc/systemd/system/{service_name}");
-            let service_file_content = SERVICE_FILE_TEMPLATE
-                .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-                .replace("{port}", &arguments.port.to_string())
-                .replace("{shutdown_command}", &arguments.shutdown_command)
-                .replace("{secret}", &arguments.shared_secret)
-                .replace("{binary}", target_bin);
-
-            let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
-            service_file
-                .write_all(service_file_content.as_bytes())
-                .map_err(|e| e.to_string())?;
-            println!("Created systemd service file at {service_file_path}");
-
-            drop(service_file);
-
-            Command::new("systemctl")
-                .arg("daemon-reload")
-                .output()
-                .map_err(|e| e.to_string())?;
-            Command::new("systemctl")
-                .arg("enable")
-                .arg(service_name)
-                .output()
-                .map_err(|e| e.to_string())?;
-            Command::new("systemctl")
-                .arg("start")
-                .arg(service_name)
-                .output()
-                .map_err(|e| e.to_string())?;
-
-            println!("Service started and enabled.");
-        } else {
-            // fallback for Unraid / Slackware / non-systemd
-            let init_script_path = "/etc/rc.d/rc.shuthost_agent";
-            let init_script_content = SLACKWARE_INIT_TEMPLATE
-                .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-                .replace("{port}", &arguments.port.to_string())
-                .replace("{shutdown_command}", &arguments.shutdown_command)
-                .replace("{secret}", &arguments.shared_secret)
-                .replace("{binary}", target_bin);
-
-            let mut file = File::create(init_script_path).map_err(|e| e.to_string())?;
-            file.write_all(init_script_content.as_bytes())
-                .map_err(|e| e.to_string())?;
-            fs::set_permissions(init_script_path, fs::Permissions::from_mode(0o755))
-                .map_err(|e| e.to_string())?;
-
-            // Ensure it's added to rc.local
-            let rc_local = "/etc/rc.d/rc.local";
-            let entry = "if [ -x /etc/rc.d/rc.shuthost_agent ]; then /etc/rc.d/rc.shuthost_agent start; fi\n";
-            let rc_local_content = fs::read_to_string(rc_local).unwrap_or_default();
-            if !rc_local_content.contains("rc.shuthost_agent start") {
-                let mut file = File::options()
-                    .append(true)
-                    .open(rc_local)
-                    .map_err(|e| e.to_string())?;
-                file.write_all(entry.as_bytes())
-                    .map_err(|e| e.to_string())?;
-            }
-
-            drop(file);
-
-            println!("Init script installed at {init_script_path} and added to rc.local.");
-
-            // Start the service now that everything’s in place
-            let _ = Command::new(init_script_path)
-                .arg("start")
-                .status()
-                .map_err(|e| format!("Failed to start agent: {e}"))?;
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        let target_bin = "/usr/local/bin/shuthost_agent";
-        let plist_path = "/Library/LaunchDaemons/com.github.9smtm6.shutdown_agent.plist";
-
-        fs::copy(binary_path, target_bin).map_err(|e| e.to_string())?;
-        println!("Installed binary to {target_bin}");
-
-        let plist_content = SERVICE_FILE_TEMPLATE
+    let name = "shuthost_agent";
+    let bind_known_vals = |arg: &str| {
+        arg
             .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{port}", &arguments.port.to_string())
             .replace("{shutdown_command}", &arguments.shutdown_command)
             .replace("{secret}", &arguments.shared_secret)
-            .replace("{binary}", target_bin);
-
-        let mut plist_file = File::create(plist_path).map_err(|e| e.to_string())?;
-        plist_file
-            .write_all(plist_content.as_bytes())
-            .map_err(|e| e.to_string())?;
-        println!("Created launchd plist file at {plist_path}");
-
-        drop(plist_file);
-
-        Command::new("launchctl")
-            .arg("load")
-            .arg(plist_path)
-            .output()
-            .map_err(|e| e.to_string())?;
-        println!("Service loaded with launchctl.");
+    };
+    #[cfg(target_os = "linux")]
+    if is_systemd() {
+        global_service_install::install_self_as_service_systemd(&name, &bind_known_vals(SERVICE_FILE_TEMPLATE)
+            )?;
+    } else {
+        global_service_install::install_self_as_service_non_systemd_linux(&name, &bind_known_vals(SLACKWARE_INIT_TEMPLATE))?;
     }
+
+    #[cfg(target_os = "macos")]
+    global_service_install::install_self_as_service_macos(&name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
 
     let interface = &get_default_interface().unwrap();
     println!(
@@ -186,10 +63,6 @@ pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
     Ok(())
 }
 
-fn is_superuser() -> bool {
-    env::var("USER").map(|user| user == "root").unwrap_or(false) || env::var("SUDO_USER").is_ok()
-}
-
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
@@ -199,11 +72,6 @@ pub fn generate_secret() -> String {
     (0..32)
         .map(|_| chars[rng.random_range(0..chars.len())])
         .collect::<String>()
-}
-
-#[cfg(target_os = "linux")]
-fn is_systemd() -> bool {
-    Path::new("/run/systemd/system").exists()
 }
 
 pub fn get_default_shutdown_command() -> String {
