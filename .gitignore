@@ -1,4 +1,4 @@
 /target
-controller_config.toml
+shuthost_controller.toml
 shuthost_agent
 .DS_Store

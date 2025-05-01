@@ -1,9 +1,9 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use tokio::fs;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Host {
     pub ip: String,
     pub mac: String,
@@ -11,9 +11,15 @@ pub struct Host {
     pub shared_secret: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ControllerConfig {
+    pub server: ServerConfig,
     pub hosts: HashMap<String, Host>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ServerConfig {
+    pub port: u16,
 }
 
 pub async fn load_controller_config<P: AsRef<Path>>(

@@ -130,7 +130,7 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
     let binary_path = PathBuf::from(env::args().next().unwrap());
 
     let target_bin = PathBuf::from("/usr/local/bin/").join(name);
-    let label = format!("com.github.9smtm6.{name}");
+    let label = format!("com.github_9smtm6.{name}");
     let plist_path = PathBuf::from(format!("/Library/LaunchDaemons/{label}.plist"));
 
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;

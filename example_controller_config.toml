@@ -1,2 +1,5 @@
+[server]
+port = "{port}"
+
 [hosts]
 "{name}" = { ip = "{ip}", mac = "{mac}", port = "{port}", shared_secret = "{secret}" }

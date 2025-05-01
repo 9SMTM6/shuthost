@@ -1,5 +1,5 @@
 [package]
-name = "controller"
+name = "shuthost_controller"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -11,6 +11,7 @@ hmac.workspace = true
 sha2.workspace = true
 hex.workspace = true
 global_service_install.workspace = true
+clap = {workspace = true, features = ["env"]}
 toml = "0.8.20"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"

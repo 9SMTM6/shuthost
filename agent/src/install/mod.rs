@@ -10,7 +10,7 @@ const DEFAULT_PORT: u16 = 9090;
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 #[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shutdown_agent.service.ini");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_agent.service.ini");
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_agent.plist.xml");
 #[cfg(target_os = "linux")]
@@ -30,13 +30,14 @@ pub struct InstallArgs {
 }
 
 pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
-    let name = "shuthost_agent";
+    let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
         arg
             .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{port}", &arguments.port.to_string())
             .replace("{shutdown_command}", &arguments.shutdown_command)
             .replace("{secret}", &arguments.shared_secret)
+            .replace("{name}", &name)
     };
     #[cfg(target_os = "linux")]
     if is_systemd() {

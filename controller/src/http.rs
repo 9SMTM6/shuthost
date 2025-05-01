@@ -26,6 +26,13 @@ use crate::wol::send_magic_packet;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use std::collections::HashMap;
 use tokio::sync::broadcast;
+use clap::Parser;
+
+#[derive(Debug, Parser)]
+pub struct ServiceArgs {
+    #[arg(long = "config", env = "CONFIG_PATH", default_value = "shuthost_controller.toml")]
+    pub config: String,
+}
 
 #[derive(Clone)]
 pub struct AppState {
@@ -44,6 +51,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
             .await
             .expect("Failed to load config"),
     );
+    let listen_port = initial_config.server.port;
     let (config_tx, config_rx) = watch::channel(initial_config);
 
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
@@ -65,6 +73,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         let config_tx = config_tx.clone();
         let ws_tx = ws_tx.clone();
         tokio::spawn(async move {
+            // TODO: warn on changed port
             watch_config_file(path, config_tx, ws_tx).await;
         });
     }
@@ -86,7 +95,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/ws", get(ws_handler))
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
+    let addr = SocketAddr::from(([127, 0, 0, 1], listen_port));
     info!("Listening on http://{}", addr);
 
     axum::serve(

@@ -1,10 +1,11 @@
 #!/bin/sh
+# /etc/rc.d/rc.{name}
 # {description}
 
 case "$1" in
   start)
     echo "Starting {name}..."
-    {binary} service --port {port} --shutdown-command "{shutdown_command}" --shared-secret "{secret}" &
+    {binary}  control-service --config {config_location} &
     ;;
   stop)
     echo "Stopping {name}..."

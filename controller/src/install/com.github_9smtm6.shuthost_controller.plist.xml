@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <!-- none of the domains must start with a number... this cost me hours of debugging. Thanks Apple. -->
+    <string>com.github_9smtm6.{name}</string>
+
+    <key>Description</key>
+    <string>{description}</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/local/bin/{name}</string>
+      <string>control-service</string>
+      <string>--config {config_location}</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>UserName</key>
+    <string>{user}</string>
+  </dict>
+</plist>
