@@ -130,9 +130,17 @@
         </tbody>
         <label for="os-select">Select your OS:</label>
         <select id="os-select">
-            <option value="linux">Linux</option>
             <option value="macos">macOS</option>
+            <option value="linux">Linux GNU (most Linux variants)</option>
+            <option value="linux-musl">Linux MUSL (Alpine)</option>
         </select>
+
+        <label for="arch-select">Select your CPU architecture:</label>
+        <select id="arch-select">
+            <option value="aarch64">aarch64 / arm64 (Apple Silicon, Raspberry Pi)</option>
+            <option value="x86_64">x86_64 / amd64 (Intel, AMD)</option>
+        </select>
+
         <div id="message" style="color: red; margin-top: 1rem;"></div>
         <button class="download-btn" onclick="downloadBinary()">Download Binary</button>
     </table>
@@ -268,49 +276,64 @@
 
         function detectOS() {
             const platform = navigator.platform.toLowerCase();
-            if (platform.includes('mac')) return 'macos';
-            if (platform.includes('linux')) return 'linux';
-            return 'unknown';
+            const ua = navigator.userAgent.toLowerCase();
+
+            if (platform.includes("mac")) return "macos";
+            if (ua.includes("musl")) return "linux-musl";
+            if (platform.includes("linux")) return "linux"; // default to GNU if unsure
+
+            return "unknown";
         }
 
-        // Preselect appropriate OS on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        function detectArch() {
+            const ua = navigator.userAgent.toLowerCase();
+
+            if (ua.includes("aarch64") || ua.includes("arm64")) return "aarch64";
+            if (ua.includes("x86_64") || ua.includes("amd64") || ua.includes("intel")) return "x86_64";
+
+            return "x86_64"; // fallback to x86_64
+        }
+
+        // Preselect appropriate OS and Architecture on page load
+        document.addEventListener("DOMContentLoaded", () => {
             const os = detectOS();
-            if (os !== 'unknown') {
-                document.getElementById('os-select').value = os;
-            }
+            const arch = detectArch();
+
+            if (os !== "unknown") document.getElementById("os-select").value = os;
+            // Apple claims to be Intel even on its Silicon, in all Browsers.
+            if (arch !== "unknown") {if (os !== "macos") document.getElementById("arch-select").value = arch};
         });
 
         async function downloadBinary() {
-            const osSelect = document.getElementById('os-select');
-            let os = osSelect.value;
-            if (os === 'auto') {
-                os = detectOS();
-            }
+            const os = document.getElementById("os-select").value;
+            const arch = document.getElementById("arch-select").value;
 
-            if (os === 'unknown') {
-                setMessage('Could not detect OS. Please select manually.');
+            if (!os || !arch) {
+                setMessage("Please select your OS and architecture.");
                 return;
             }
 
-            setMessage(''); // Clear previous messages
+            setMessage(""); // clear previous error
+
+            const url = `/download_agent/${os}/${arch}`;
 
             try {
-                const response = await fetch(`/download_agent/${os}`, { method: 'GET' });
+                const response = await fetch(url);
 
                 if (!response.ok) {
-                    throw new Error('Failed to download binary');
+                    throw new Error(`Failed to download from ${url}`);
                 }
 
                 const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `shuthost_agent`;
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = downloadUrl;
+                a.download = "shuthost_agent";
                 a.click();
-                URL.revokeObjectURL(url);
+                URL.revokeObjectURL(downloadUrl);
             } catch (err) {
-                console.error('Error downloading binary:', err);
+                console.error("Download error:", err);
+                setMessage("Failed to download binary. Please check your selection or try again.");
             }
         }
 

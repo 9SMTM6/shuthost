@@ -93,8 +93,12 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/api/wake/{hostname}", post(wake_host))
         .route("/api/shutdown/{hostname}", post(shutdown_host))
         .route("/api/status/{hostname}", get(status_host))
-        .route("/download_agent/macos", get(download_agent_macos))
-        .route("/download_agent/linux", get(download_agent_linux))
+        .route("/download_agent/macos/aarch64", get(download_agent_macos_aarch64))
+        .route("/download_agent/macos/x86_64", get(download_agent_macos_x86_64))
+        .route("/download_agent/linux/x86_64", get(download_agent_linux_x86_64))
+        .route("/download_agent/linux/aarch64", get(download_agent_linux_aarch64))
+        .route("/download_agent/linux-musl/x86_64", get(download_agent_linux_musl_x86_64))
+        .route("/download_agent/linux-musl/aarch64", get(download_agent_linux_musl_aarch64))
         .route("/", get(serve_ui))
         .route("/ws", get(ws_handler))
         .with_state(app_state);
@@ -322,16 +326,44 @@ async fn serve_ui() -> impl IntoResponse {
         .unwrap()
 }
 
-async fn download_agent_macos() -> impl IntoResponse {
+async fn download_agent_macos_aarch64() -> impl IntoResponse {
     download_agent(include_bytes!(
         "../../target/aarch64-apple-darwin/release/shuthost_agent"
     ))
     .await
 }
 
-async fn download_agent_linux() -> impl IntoResponse {
+async fn download_agent_macos_x86_64() -> impl IntoResponse {
+    download_agent(include_bytes!(
+        "../../target/x86_64-apple-darwin/release/shuthost_agent"
+    ))
+    .await
+}
+
+async fn download_agent_linux_x86_64() -> impl IntoResponse {
     download_agent(include_bytes!(
         "../../target/x86_64-unknown-linux-gnu/release/shuthost_agent"
+    ))
+    .await
+}
+
+async fn download_agent_linux_aarch64() -> impl IntoResponse {
+    download_agent(include_bytes!(
+        "../../target/aarch64-unknown-linux-gnu/release/shuthost_agent"
+    ))
+    .await
+}
+
+async fn download_agent_linux_musl_x86_64() -> impl IntoResponse {
+    download_agent(include_bytes!(
+        "../../target/x86_64-unknown-linux-musl/release/shuthost_agent"
+    ))
+    .await
+}
+
+async fn download_agent_linux_musl_aarch64() -> impl IntoResponse {
+    download_agent(include_bytes!(
+        "../../target/aarch64-unknown-linux-musl/release/shuthost_agent"
     ))
     .await
 }

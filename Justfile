@@ -1,24 +1,36 @@
-install_cross_toolchains:
+install_cross_toolchains_on_apple_silicon:
+    rustup target add x86_64-apple-darwin
+
     brew tap messense/macos-cross-toolchains
-    # install x86_64-unknown-linux-gnu toolchain
+    
     brew install x86_64-unknown-linux-gnu
     rustup target add x86_64-unknown-linux-gnu
-    # install aarch64-unknown-linux-gnu toolchain
+    
     brew install aarch64-unknown-linux-gnu
     rustup target add aarch64-unknown-linux-gnu
+    
+    brew install x86_64-unknown-linux-musl
+    rustup target add x86_64-unknown-linux-musl
 
-build_agent_linux_on_mac:
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-gnu
-    # target/x86_64-unknown-linux-gnu/release/shuthost_agent
+    brew install aarch64-unknown-linux-musl
+    rustup target add aarch64-unknown-linux-musl
 
-build_agent_mac:
-    cargo build --release --bin shuthost_agent --target aarch64-apple-darwin 
-    # target/aarch64-apple-darwin/release/shuthost_agent
+build_all_agents_on_mac:    
+    cargo build --release --bin shuthost_agent --target aarch64-apple-darwin &
+    cargo build --release --bin shuthost_agent --target x86_64-apple-darwin &
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-gnu &
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-gnu &
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-musl &
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-musl &
+    wait
 
-build_controller_linux_on_mac:
-    # CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-gnu
-    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-gnu
-    # target/x86_64-unknown-linux-gnu/release/shuthost_controller
-    # target/aarch64-unknown-linux-gnu/release/shuthost_controller
+build_controller_on_mac:
+    cargo build --release --bin shuthost_controller --target aarch64-apple-darwin &
+    cargo build --release --bin shuthost_controller --target x86_64-apple-darwin &
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-gnu &
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-gnu &
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-musl &
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-musl &
+    wait
 
-build_all: build_agent_linux_on_mac build_agent_mac build_controller_linux_on_mac
+build_all: build_all_agents_on_mac build_controller_on_mac
