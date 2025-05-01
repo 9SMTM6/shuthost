@@ -3,15 +3,18 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>{label}</string>
+    <!-- none of the domains must start with a number... this cost me hours of debugging. Thanks Apple. -->
+    <string>com.github_9smtm6.{name}</string>
+
     <key>Description</key>
     <string>{description}</string>
+
     <key>ProgramArguments</key>
     <array>
-      <string>{binary}</string>
+      <string>/usr/local/bin/{name}</string>
       <string>service</string>
       <string>--port={port}</string>
-      <string>--shutdown-command={shutdown_command}</string>
+      <string>--shutdown-command="{shutdown_command}"</string>
       <string>--shared-secret={secret}</string>
     </array>
 
@@ -25,8 +28,8 @@
     <string>root</string>
 
     <key>StandardOutPath</key>
-    <string>/var/log/shutdown_agent.out</string>
+    <string>/var/log/{name}.out</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/shutdown_agent.err</string>
+    <string>/var/log/{name}.err</string>
   </dict>
 </plist>

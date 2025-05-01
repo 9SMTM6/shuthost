@@ -1,6 +1,6 @@
-use std::{env, path::PathBuf, process::Command};
+use std::{env, path::PathBuf, process::Command, os::unix::fs::PermissionsExt};
 #[allow(unused_imports)]
-use std::{os::unix::fs::PermissionsExt, path::Path};
+use std::path::Path;
 use std::{fs::{self, File}, io::Write};
 
 #[cfg(target_os = "linux")]
@@ -24,7 +24,7 @@ pub fn install_self_as_service_non_systemd_linux(name: &str, init_script_content
     // fallback for Unraid / Slackware / non-systemd
     let init_script_path = PathBuf::from(format!("/etc/rc.d/rc.{name}"));
     let init_script_content = init_script_content
-        .replace("{binary}", &format!("{target_bin:?}"));
+        .replace("{binary}", &format!("{target_bin}", target_bin = target_bin.to_string_lossy()));
 
 
     let mut file = File::create(&init_script_path).map_err(|e| e.to_string())?;
@@ -88,7 +88,7 @@ pub fn install_self_as_service_systemd(name: &str, init_script_content: &str) ->
 
     let service_file_path = format!("/etc/systemd/system/{service_name}");
     let service_file_content = init_script_content
-        .replace("{binary}", &format!("{target_bin:?}"));
+        .replace("{binary}", &format!("{target_bin}", target_bin = target_bin.to_string_lossy()));
 
     let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
     service_file
@@ -121,6 +121,8 @@ pub fn install_self_as_service_systemd(name: &str, init_script_content: &str) ->
 #[cfg(target_os = "macos")]
 /// FIXME: DOESNT WORK!!!
 pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> Result<(), String> {
+    use std::process::Stdio;
+
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
@@ -134,29 +136,15 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
 
-    // Step 1: Check if the service is loaded
-    let status = Command::new("launchctl")
-        .arg("print")
-        .arg(format!("system/{label}"))
-        .status()
-        .expect("Failed to run launchctl print");
-
-    // Step 2: If loaded, stop it
-    if status.success() {
-        println!("Service {label:?} is running. Stopping...");
-        Command::new("launchctl")
-            .arg("bootout")
-            .arg("system")
-            .arg(&label)
-            .status()
-            .expect("Failed to run launchctl bootout");
-    } else {
-        println!("Service {label:?} not loaded. Skipping stop.", );
-    }
+    // Stop existing job if it's already loaded
+    let _ = Command::new("launchctl")
+        .arg("unload")
+        .arg(&plist_path)
+        .stderr(Stdio::null())
+        .status();
 
     let plist_content = init_script_content
-        .replace("{label}", &label)
-        .replace("{binary}", &format!("{target_bin:?}"));
+        .replace("{name}", &name);
 
     let mut plist_file = File::create(&plist_path).map_err(|e| e.to_string())?;
     plist_file
@@ -166,12 +154,18 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
 
     drop(plist_file);
 
+    // Set proper permissions
+    fs::set_permissions(&plist_path, fs::Permissions::from_mode(0o644))
+        .map_err(|e| e.to_string())?;
+
+    // Load and start the daemon
     Command::new("launchctl")
-        .arg("bootstrap")
-        .arg("system")
-        .arg(&label)
+        .arg("load")
+        .arg(&plist_path)
         .output()
         .map_err(|e| e.to_string())?;
+
+
     println!("Service loaded with launchctl.");
 
     Ok(())

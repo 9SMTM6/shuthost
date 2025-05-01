@@ -4,11 +4,11 @@
 
 case "$1" in
   start)
-    echo "Starting shutdown agent..."
+    echo "Starting shuthost agent..."
     {binary} service --port {port} --shutdown-command "{shutdown_command}" --shared-secret "{secret}" &
     ;;
   stop)
-    echo "Stopping shutdown agent..."
+    echo "Stopping shuthost agent..."
     pkill -f '{binary}'
     ;;
   restart)
