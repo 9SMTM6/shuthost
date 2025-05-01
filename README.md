@@ -9,14 +9,13 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Known issues:
 
-* UI still gets stuck on load sometimes. IDK why. Need to add more timeouts
-* docker has issues (see Containerfile too):
+* UI still gets stuck on load sometimes. IDK precisely why. Need to add timeouts when communicating with other hosts
+* docker doesnt seem like it'll happen:
     * according to what I've seen, podman (and likely docker) on macos wont be able to transfer WOL packages to the host LAN, and docker on WSL would also need additional config, if at all possible.
-    * so using docker kind of falls out of the question.
-    * only on linux hosts should it work with some additional config - e.g. `--cap-add=NET_RAW`
-    * move to single binary - with embedded agents for portability - instead, and show how to expose on localhost only, and reach it from docker (bind localhost (NOT `0.0.0.0`) and in docker `http://host.containers.internal:<port>`)
-    * since we already have them for the agent, add a service files for unix hosts to set up the server
-* untested on mac
+    * thus I'm packaging things into a single binary - with embedded agents and static files - instead 
+* only tested setups currently:
+    * agent on unraid and linux systemd
+    * controller on macos apple silicon
 * windows support currently not planned, due to large differences
 
 ## Planned features:
@@ -26,11 +25,10 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     * settings required for wake on lan to work (as far as they are defined, show example of host that only WOLs from sleep)
     * need for static IP
     * reachability of hosts to wol command required, seems stricter than IP? (validate)
+    * binary exposes server on localhost only, reach it from docker (bind localhost (NOT `0.0.0.0`) and in docker `http://host.containers.internal:<port>`)
 * endpoint on server that allows agents to register themselfes. Unclear how to deal with authorisation:
     * server secret?
     * also page is supposed to be behind reverse proxy, which would have to be dealt with on top...
-* autobuild image in actions and push them to ghcr.io
-* macos amd64 is probably not too hard, just needs doing.
 * windows support currently not planned, due to large differences
-* BSD support only planned if someone tests it themselfes (after every release? TBD)
-* uninstall
+* BSD support not really planned (hard to get  working toolchain to macos)
+* uninstalls
