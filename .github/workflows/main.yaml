@@ -25,6 +25,7 @@ jobs:
 
       - name: Build agents for all targets
         run: |
+          cargo fetch
           cargo build --release --bin shuthost_agent --target aarch64-apple-darwin &
           cargo build --release --bin shuthost_agent --target x86_64-apple-darwin &
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
