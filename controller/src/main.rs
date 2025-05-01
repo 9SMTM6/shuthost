@@ -1,14 +1,14 @@
 mod config;
 mod http;
-mod wol;
 mod install;
+mod wol;
 
 use clap::{Parser, Subcommand};
-use install::{install_controller, InstallArgs};
+use install::{InstallArgs, install_controller};
 
 use std::{env, fs};
 
-use http::{start_http_server, ServiceArgs};
+use http::{ServiceArgs, start_http_server};
 use tracing::info;
 
 #[derive(Debug, Parser)]
@@ -36,16 +36,18 @@ async fn main() {
     match invocation.command {
         Command::Install(args) => {
             install_controller(args).unwrap();
-        },
+        }
         Command::ControlService(args) => {
             tracing_subscriber::fmt()
-                .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_default())
+                .with_env_filter(
+                    tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_default(),
+                )
                 .pretty()
                 .init(); // Initialize logging
             let config_path = fs::canonicalize(&args.config)
                 .unwrap_or_else(|_| panic!("Config file not found at: {}", args.config));
             info!("Using config path: {}", config_path.display());
             start_http_server(&config_path).await;
-        },
+        }
     }
 }

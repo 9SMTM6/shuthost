@@ -24,13 +24,17 @@ use tracing::{debug, error, info, warn};
 use crate::config::{ControllerConfig, load_controller_config};
 use crate::wol::send_magic_packet;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
+use clap::Parser;
 use std::collections::HashMap;
 use tokio::sync::broadcast;
-use clap::Parser;
 
 #[derive(Debug, Parser)]
 pub struct ServiceArgs {
-    #[arg(long = "config", env = "CONFIG_PATH", default_value = "shuthost_controller.toml")]
+    #[arg(
+        long = "config",
+        env = "CONFIG_PATH",
+        default_value = "shuthost_controller.toml"
+    )]
     pub config: String,
 }
 

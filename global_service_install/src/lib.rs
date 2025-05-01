@@ -1,10 +1,16 @@
-use std::{env, path::PathBuf, process::Command, os::unix::fs::PermissionsExt};
 #[allow(unused_imports)]
 use std::path::Path;
-use std::{fs::{self, File}, io::Write};
+use std::{env, os::unix::fs::PermissionsExt, path::PathBuf, process::Command};
+use std::{
+    fs::{self, File},
+    io::Write,
+};
 
 #[cfg(target_os = "linux")]
-pub fn install_self_as_service_non_systemd_linux(name: &str, init_script_content: &str) -> Result<(), String> {
+pub fn install_self_as_service_non_systemd_linux(
+    name: &str,
+    init_script_content: &str,
+) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
@@ -20,12 +26,13 @@ pub fn install_self_as_service_non_systemd_linux(name: &str, init_script_content
     }
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
-   
+
     // fallback for Unraid / Slackware / non-systemd
     let init_script_path = PathBuf::from(format!("/etc/rc.d/rc.{name}"));
-    let init_script_content = init_script_content
-        .replace("{binary}", &format!("{target_bin}", target_bin = target_bin.to_string_lossy()));
-
+    let init_script_content = init_script_content.replace(
+        "{binary}",
+        &format!("{target_bin}", target_bin = target_bin.to_string_lossy()),
+    );
 
     let mut file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     file.write_all(init_script_content.as_bytes())
@@ -60,7 +67,10 @@ pub fn install_self_as_service_non_systemd_linux(name: &str, init_script_content
 }
 
 #[cfg(target_os = "linux")]
-pub fn install_self_as_service_systemd(name: &str, init_script_content: &str) -> Result<(), String> {
+pub fn install_self_as_service_systemd(
+    name: &str,
+    init_script_content: &str,
+) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
@@ -87,8 +97,10 @@ pub fn install_self_as_service_systemd(name: &str, init_script_content: &str) ->
     println!("Installed binary to {target_bin:?}");
 
     let service_file_path = format!("/etc/systemd/system/{service_name}");
-    let service_file_content = init_script_content
-        .replace("{binary}", &format!("{target_bin}", target_bin = target_bin.to_string_lossy()));
+    let service_file_content = init_script_content.replace(
+        "{binary}",
+        &format!("{target_bin}", target_bin = target_bin.to_string_lossy()),
+    );
 
     let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
     service_file
@@ -143,8 +155,7 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
         .stderr(Stdio::null())
         .status();
 
-    let plist_content = init_script_content
-        .replace("{name}", &name);
+    let plist_content = init_script_content.replace("{name}", name);
 
     let mut plist_file = File::create(&plist_path).map_err(|e| e.to_string())?;
     plist_file
@@ -164,7 +175,6 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
         .arg(&plist_path)
         .output()
         .map_err(|e| e.to_string())?;
-
 
     println!("Service loaded with launchctl.");
 

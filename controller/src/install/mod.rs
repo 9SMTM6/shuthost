@@ -1,9 +1,9 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
 use global_service_install::is_systemd;
-use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, process::Command};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, process::Command};
 
 use crate::config::{ControllerConfig, ServerConfig};
 
@@ -29,47 +29,66 @@ pub fn install_controller(args: InstallArgs) -> Result<(), String> {
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
-    let config_location = PathBuf::from(format!("/home/{user}/.config/{name}.toml", user = &args.user));
+    let config_location = PathBuf::from(format!(
+        "/home/{user}/.config/{name}.toml",
+        user = &args.user
+    ));
     #[cfg(target_os = "macos")]
-    let config_location = PathBuf::from(format!("/Users/{user}/.config/{name}.toml", user = &args.user));
+    let config_location = PathBuf::from(format!(
+        "/Users/{user}/.config/{name}.toml",
+        user = &args.user
+    ));
 
     let bind_known_vals = |arg: &str| {
         arg.to_owned()
             .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{user}", &args.user)
-            .replace("{name}", &name)
+            .replace("{name}", name)
             .replace("{config_location}", &config_location.to_string_lossy())
     };
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        global_service_install::install_self_as_service_systemd(&name, &bind_known_vals(SERVICE_FILE_TEMPLATE)
-            )?;
+        global_service_install::install_self_as_service_systemd(
+            &name,
+            &bind_known_vals(SERVICE_FILE_TEMPLATE),
+        )?;
     } else {
-        global_service_install::install_self_as_service_non_systemd_linux(&name, &bind_known_vals(SLACKWARE_INIT_TEMPLATE))?;
+        global_service_install::install_self_as_service_non_systemd_linux(
+            &name,
+            &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
+        )?;
     }
 
     #[cfg(target_os = "macos")]
-    global_service_install::install_self_as_service_macos(&name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+    global_service_install::install_self_as_service_macos(
+        name,
+        &bind_known_vals(SERVICE_FILE_TEMPLATE),
+    )?;
 
     let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
     config_file
-        .write_all(toml::to_string(&ControllerConfig {
-            hosts: HashMap::new(),
-            server: ServerConfig {
-                port: args.port,
-            }
-        }).unwrap().as_bytes())
+        .write_all(
+            toml::to_string(&ControllerConfig {
+                hosts: HashMap::new(),
+                server: ServerConfig { port: args.port },
+            })
+            .unwrap()
+            .as_bytes(),
+        )
         .map_err(|e| e.to_string())?;
     println!("Created config file at {config_location:?}");
 
     let status = Command::new("chown")
-        .arg(format!("{}:", &args.user))  // ":" = default group
+        .arg(format!("{}:", &args.user)) // ":" = default group
         .arg(&config_location)
         .status()
         .map_err(|e| e.to_string())?;
-    
-    println!("Chowned config file at {config_location:?} for {}", args.user);
+
+    println!(
+        "Chowned config file at {config_location:?} for {}",
+        args.user
+    );
 
     if status.success() {
         Ok(())

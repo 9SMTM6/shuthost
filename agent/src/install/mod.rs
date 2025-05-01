@@ -32,23 +32,30 @@ pub struct InstallArgs {
 pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
-        arg
-            .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+        arg.replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{port}", &arguments.port.to_string())
             .replace("{shutdown_command}", &arguments.shutdown_command)
             .replace("{secret}", &arguments.shared_secret)
-            .replace("{name}", &name)
+            .replace("{name}", name)
     };
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        global_service_install::install_self_as_service_systemd(&name, &bind_known_vals(SERVICE_FILE_TEMPLATE)
-            )?;
+        global_service_install::install_self_as_service_systemd(
+            &name,
+            &bind_known_vals(SERVICE_FILE_TEMPLATE),
+        )?;
     } else {
-        global_service_install::install_self_as_service_non_systemd_linux(&name, &bind_known_vals(SLACKWARE_INIT_TEMPLATE))?;
+        global_service_install::install_self_as_service_non_systemd_linux(
+            &name,
+            &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
+        )?;
     }
 
     #[cfg(target_os = "macos")]
-    global_service_install::install_self_as_service_macos(&name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+    global_service_install::install_self_as_service_macos(
+        name,
+        &bind_known_vals(SERVICE_FILE_TEMPLATE),
+    )?;
 
     let interface = &get_default_interface().unwrap();
     println!(
