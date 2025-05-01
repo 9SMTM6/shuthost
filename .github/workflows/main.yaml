@@ -1,0 +1,68 @@
+name: Build All Targets
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build agents and controllers for all targets. It aint pretty but it (kinda) works
+    runs-on: macos-14 # Apple Silicon runner
+
+    steps:
+      - name: Checkout code
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchains and targets
+        run: |
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-unknown-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+          rustup target add x86_64-unknown-linux-musl
+          rustup target add aarch64-unknown-linux-musl
+
+      - name: Install macOS cross toolchains
+        run: |
+          brew tap messense/macos-cross-toolchains
+          brew install x86_64-unknown-linux-gnu
+          brew install aarch64-unknown-linux-gnu
+          brew install x86_64-unknown-linux-musl
+          brew install aarch64-unknown-linux-musl
+
+      - name: Build agents for all targets
+        run: |
+          cargo build --release --bin shuthost_agent --target aarch64-apple-darwin &
+          cargo build --release --bin shuthost_agent --target x86_64-apple-darwin &
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+            cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-gnu &
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+            cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-gnu &
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc \
+            cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-musl &
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc \
+            cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-musl &
+          wait
+
+      - name: Build controllers for all targets (agents already built)
+        run: |
+          cargo build --release --bin shuthost_controller --target aarch64-apple-darwin &
+          cargo build --release --bin shuthost_controller --target x86_64-apple-darwin &
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+            cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-gnu &
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+            cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-gnu &
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc \
+            cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-musl &
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc \
+            cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-musl &
+          wait
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: all-target-binaries
+          path: |
+            target/*/release/shuthost_controller
