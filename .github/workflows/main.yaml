@@ -12,12 +12,9 @@ jobs:
     runs-on: macos-14 # Apple Silicon runner
 
     steps:
-      - name: Checkout code
       - uses: actions/checkout@v4
 
-      - name: Install Rustup
-        run: |
-          brew install rustup
+      - run: brew install rustup
       
       - name: Install Rust toolchains and targets
         run: |
@@ -50,7 +47,7 @@ jobs:
             cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-musl &
           wait
 
-      - name: Build controllers for all targets (agents already built)
+      - name: Build controllers for all targets (using agents already built)
         run: |
           cargo build --release --bin shuthost_controller --target aarch64-apple-darwin &
           cargo build --release --bin shuthost_controller --target x86_64-apple-darwin &
