@@ -1,7 +1,7 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
 use global_service_install::is_systemd;
-use std::{collections::HashMap, fs::File, io::Write};
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, process::Command};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 
@@ -29,16 +29,16 @@ pub fn install_controller(args: InstallArgs) -> Result<(), String> {
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
-    let config_location = format!("/home/{user}/.config/{name}.toml", user = &args.user);
+    let config_location = PathBuf::from(format!("/home/{user}/.config/{name}.toml", user = &args.user));
     #[cfg(target_os = "macos")]
-    let config_location = format!("/Users/{user}/.config/{name}.toml", user = &args.user);
+    let config_location = PathBuf::from(format!("/Users/{user}/.config/{name}.toml", user = &args.user));
 
     let bind_known_vals = |arg: &str| {
         arg.to_owned()
             .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{user}", &args.user)
             .replace("{name}", &name)
-            .replace("{config_location}", &config_location)
+            .replace("{config_location}", &config_location.to_string_lossy())
     };
 
     #[cfg(target_os = "linux")]
@@ -63,5 +63,17 @@ pub fn install_controller(args: InstallArgs) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     println!("Created config file at {config_location:?}");
 
-    Ok(())
+    let status = Command::new("chown")
+        .arg(format!("{}:", &args.user))  // ":" = default group
+        .arg(&config_location)
+        .status()
+        .map_err(|e| e.to_string())?;
+    
+    println!("Chowned config file at {config_location:?} for {}", args.user);
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("chown failed: exit status {}", status))
+    }
 }

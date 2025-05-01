@@ -13,7 +13,7 @@
     <array>
       <string>/usr/local/bin/{name}</string>
       <string>control-service</string>
-      <string>--config {config_location}</string>
+      <string>--config={config_location}</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -22,7 +22,9 @@
     <key>KeepAlive</key>
     <true/>
 
-    <key>UserName</key>
-    <string>{user}</string>
+    <key>StandardOutPath</key>
+    <string>/var/log/{name}.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/{name}.err</string>
   </dict>
 </plist>
