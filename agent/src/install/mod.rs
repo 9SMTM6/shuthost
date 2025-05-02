@@ -6,7 +6,8 @@ use rand::Rng;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
-const DEFAULT_PORT: u16 = 9090;
+/// From 5hu7ho57 (leet speak)
+const DEFAULT_PORT: u16 = 5757;
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 #[cfg(target_os = "linux")]
