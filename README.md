@@ -29,6 +29,10 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 * endpoint on server that allows agents to register themselfes. Unclear how to deal with authorisation:
     * server secret?
     * also page is supposed to be behind reverse proxy, which would have to be dealt with on top...
+    * NEW PLAN: Do a broadcast from agent with its information:
+        * https://chatgpt.com/share/6814d08c-07a8-8008-8c12-2a0b1f03fb59
+        * this tests that the hosts can probably reach each other (IDK if thats always guaranteed to work both ways)
+        * this avoids normal security, so no exception required on reverse proxy
 * windows support currently not planned, due to large differences
 * BSD support not really planned (hard to get  working toolchain to macos)
 * uninstalls
