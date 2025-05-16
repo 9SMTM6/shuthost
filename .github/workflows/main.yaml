@@ -7,54 +7,193 @@ on:
     branches: [main]
 
 jobs:
-  build:
-    name: Build agents and controllers for all targets. It aint pretty but it (kinda) works
-    runs-on: macos-14 # Apple Silicon runner
+  build-matrix:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-14
+          - target: x86_64-apple-darwin
+            runner: macos-14
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            linker: x86_64-linux-gnu-gcc
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-latest
+            linker: aarch64-linux-gnu-gcc
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            linker: x86_64-linux-musl-gcc
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-latest
+            linker: aarch64-linux-musl-gcc
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust toolchains and targets
-        run: |
-          rustup target add x86_64-apple-darwin aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-unknown-linux-musl aarch64-unknown-linux-musl
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
 
-      - name: Install macOS cross toolchains
+      - name: Install linker (if needed)
+        if: runner.os == 'Linux'
         run: |
-          brew tap messense/macos-cross-toolchains
-          brew install x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-unknown-linux-musl aarch64-unknown-linux-musl
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.linker }}
 
-      - name: Build agents for all targets
+      - name: Build agent
         run: |
           cargo fetch
-          cargo build --release --bin shuthost_agent --target aarch64-apple-darwin &
-          cargo build --release --bin shuthost_agent --target x86_64-apple-darwin &
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
-            cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-gnu &
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-            cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-gnu &
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc \
-            cargo build --release --bin shuthost_agent --target x86_64-unknown-linux-musl &
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc \
-            cargo build --release --bin shuthost_agent --target aarch64-unknown-linux-musl &
-          wait
+          if [[ "${{ matrix.linker }}" != "" ]]; then
+            export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
+          fi
+          cargo build --release --bin shuthost_agent --target ${{ matrix.target }}
 
-      - name: Build controllers for all targets (using agents already built)
-        run: |
-          cargo build --release --bin shuthost_controller --target aarch64-apple-darwin &
-          cargo build --release --bin shuthost_controller --target x86_64-apple-darwin &
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
-            cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-gnu &
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-            cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-gnu &
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc \
-            cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-musl &
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc \
-            cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-musl &
-          wait
-
-      - name: Archive artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: all-target-binaries
-          path: |
-            target/*/release/shuthost_controller
+          name: agent-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/shuthost_agent
+
+  build-controllers:
+    name: Build Controller ${{ matrix.target }}
+    needs: build-matrix
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-14
+          - target: x86_64-apple-darwin
+            runner: macos-14
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            linker: x86_64-linux-gnu-gcc
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-latest
+            linker: aarch64-linux-gnu-gcc
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            linker: x86_64-linux-musl-gcc
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-latest
+            linker: aarch64-linux-musl-gcc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install linker (if needed)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.linker }}
+
+      - name: Download all agent binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./target
+
+      - name: Rehydrate target directory structure
+        run: |
+          mkdir -p target
+          find ./target -name shuthost_agent -exec bash -c '
+            for path; do
+              dir=$(dirname "${path#./target/agent-}")
+              mkdir -p "target/$dir/release"
+              cp "$path" "target/$dir/release/"
+            done
+          ' bash {} +
+
+      - name: Build controller
+        run: |
+          if [[ "${{ matrix.linker }}" != "" ]]; then
+            export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
+          fi
+          cargo build --release --bin shuthost_controller --target ${{ matrix.target }}
+
+      - name: Upload controller binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: controller-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/shuthost_controller
+
+  container-build:
+    name: Build & Push Alpine Containers
+    needs:
+      - build-controllers
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download MUSL controller binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./binaries
+
+      - name: Prepare container dirs
+        run: |
+          mkdir -p containers/amd64 containers/arm64
+          cp ./binaries/controller-x86_64-unknown-linux-musl/shuthost_controller containers/amd64/
+          cp ./binaries/controller-aarch64-unknown-linux-musl/shuthost_controller containers/arm64/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build & Push Multi-Arch Alpine Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.alpine
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/shuthost-controller:latest
+            ghcr.io/${{ github.repository }}/shuthost-controller:${{ github.sha }}
+          build-args: |
+            CONTROLLER_AMD64=containers/amd64/shuthost_controller
+            CONTROLLER_ARM64=containers/arm64/shuthost_controller
+
+  release:
+    name: Upload Release Binaries
+    needs:
+      - build-controllers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all controller binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release-assets
+
+      - name: Fetch full git history and tags
+        run: |
+          git fetch --tags --force --depth=0
+
+      - name: Get latest Git tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          name: "Release ${{ steps.get_tag.outputs.tag }}"
+          files: ./release-assets/**/*.shuthost_controller
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
