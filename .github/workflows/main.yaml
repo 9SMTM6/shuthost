@@ -3,6 +3,7 @@ name: Build All Targets
 on:
   push:
     branches: [main]
+    tags: ['*']
   pull_request:
     branches: [main]
 
@@ -127,7 +128,8 @@ jobs:
       - name: Download MUSL controller binaries
         uses: actions/download-artifact@v4
         with:
-          path: ./target
+          path: ./rehydrated
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -147,13 +149,11 @@ jobs:
       - name: Rehydrate target directory structure
         run: |
           mkdir -p target
-          find ./target -name shuthost_controller -exec bash -c '
-            for path; do
-              dir=$(dirname "${path#./target/shuthost_controller-}")
-              mkdir -p "target/$dir/release"
-              cp "$path" "target/$dir/release/"
-            done
-          ' bash {} +
+          for dir in ./rehydrated/controller-*; do
+            target=$(basename "$dir" | sed 's/^controller-//')
+            mkdir -p "target/$target/release"
+            cp "$dir/shuthost_controller" "target/$target/release/"
+          done
 
       - name: Build & Push Multi-Arch Alpine Image
         uses: docker/build-push-action@v6
@@ -164,7 +164,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-controller:latest
-            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-controller:${{ github.sha }}
+            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-controller:latest', steps.repo.outputs.repo_lowercase) || '' }}
           build-args: |
             TARGET=x86_64-unknown-linux-musl
             TARGET=aarch64-unknown-linux-musl
@@ -173,6 +173,7 @@ jobs:
     name: Upload Release Binaries
     needs:
       - build-controllers
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
 
     steps:
