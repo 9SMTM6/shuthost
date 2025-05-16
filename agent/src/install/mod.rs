@@ -46,7 +46,7 @@ pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;
     } else {
-        global_service_install::install_self_as_service_non_systemd_linux(
+        global_service_install::install_self_as_service_sysvinit_linux(
             &name,
             &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
         )?;
