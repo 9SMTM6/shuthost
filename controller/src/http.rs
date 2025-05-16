@@ -104,8 +104,14 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/download_agent/macos/x86_64", get(agent_macos_x86_64))
         .route("/download_agent/linux/x86_64", get(agent_linux_x86_64))
         .route("/download_agent/linux/aarch64", get(agent_linux_aarch64))
-        .route("/download_agent/linux-musl/x86_64", get(agent_linux_musl_x86_64))
-        .route("/download_agent/linux-musl/aarch64", get(agent_linux_musl_aarch64))
+        .route(
+            "/download_agent/linux-musl/x86_64",
+            get(agent_linux_musl_x86_64),
+        )
+        .route(
+            "/download_agent/linux-musl/aarch64",
+            get(agent_linux_musl_aarch64),
+        )
         .route("/", get(serve_ui))
         .route("/ws", get(ws_handler))
         .with_state(app_state);
@@ -337,7 +343,11 @@ async fn serve_ui() -> impl IntoResponse {
 macro_rules! agent_handler {
     ($name:ident, $agent_target:expr) => {
         async fn $name() -> impl IntoResponse {
-            const AGENT_BINARY: &'static [u8] = include_bytes!(concat!("../../target/", $agent_target, "/release/shuthost_agent"));
+            const AGENT_BINARY: &'static [u8] = include_bytes!(concat!(
+                "../../target/",
+                $agent_target,
+                "/release/shuthost_agent"
+            ));
             Response::builder()
                 .header("Content-Type", "application/octet-stream")
                 .header("Content-Length", AGENT_BINARY.len().to_string())

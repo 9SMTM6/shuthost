@@ -1,9 +1,16 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
-use global_service_install::{is_systemd, is_openrc, is_sysvinit};
+use global_service_install::{is_openrc, is_systemd, is_sysvinit};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
-use std::{collections::HashMap, fs::File, io::Write, net::IpAddr, path::{Path, PathBuf}, process::Command};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    net::IpAddr,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use crate::config::{ControllerConfig, ServerConfig};
 
@@ -34,7 +41,9 @@ pub struct InstallArgs {
 pub fn install_controller(args: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
 
-    args.bind.parse::<IpAddr>().map_err(|e| format!("Invalid bind address: {}", e))?;
+    args.bind
+        .parse::<IpAddr>()
+        .map_err(|e| format!("Invalid bind address: {}", e))?;
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
@@ -88,7 +97,10 @@ pub fn install_controller(args: InstallArgs) -> Result<(), String> {
             .write_all(
                 toml::to_string(&ControllerConfig {
                     hosts: HashMap::new(),
-                    server: ServerConfig { port: args.port, bind: args.bind },
+                    server: ServerConfig {
+                        port: args.port,
+                        bind: args.bind,
+                    },
                 })
                 .unwrap()
                 .as_bytes(),

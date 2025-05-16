@@ -32,10 +32,8 @@ pub fn install_self_as_service_sysvinit_linux(
 
     // fallback for Unraid / Slackware / non-systemd
     let init_script_path = PathBuf::from(format!("/etc/rc.d/rc.{name}"));
-    let init_script_content = init_script_content.replace(
-        "{binary}",
-        &target_bin.to_string_lossy(),
-    );
+    let init_script_content =
+        init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
     let mut file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     file.write_all(init_script_content.as_bytes())
@@ -93,10 +91,8 @@ pub fn install_self_as_service_systemd(
     println!("Installed binary to {target_bin:?}");
 
     let service_file_path = format!("/etc/systemd/system/{service_name}");
-    let service_file_content = init_script_content.replace(
-        "{binary}",
-        &target_bin.to_string_lossy(),
-    );
+    let service_file_content =
+        init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
     let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
     service_file
@@ -151,17 +147,18 @@ pub fn install_self_as_service_openrc_linux(
     fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {:?}", target_bin);
 
-    let init_script_content = init_script_content.replace(
-        "{binary}",
-        &target_bin.to_string_lossy(),
-    );
+    let init_script_content =
+        init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
     let mut script_file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     script_file
         .write_all(init_script_content.as_bytes())
         .map_err(|e| e.to_string())?;
 
-    let mut perms = script_file.metadata().map_err(|e| e.to_string())?.permissions();
+    let mut perms = script_file
+        .metadata()
+        .map_err(|e| e.to_string())?
+        .permissions();
     perms.set_mode(0o755);
     fs::set_permissions(&init_script_path, perms).map_err(|e| e.to_string())?;
     println!("Created OpenRC init script at {:?}", init_script_path);
