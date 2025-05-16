@@ -3,7 +3,7 @@ use clap::Parser;
 use global_service_install::{is_systemd, is_openrc, is_sysvinit};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
-use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, process::Command};
+use std::{collections::HashMap, fs::File, io::Write, path::{Path, PathBuf}, process::Command};
 
 use crate::config::{ControllerConfig, ServerConfig};
 
@@ -75,33 +75,38 @@ pub fn install_controller(args: InstallArgs) -> Result<(), String> {
         &bind_known_vals(SERVICE_FILE_TEMPLATE),
     )?;
 
-    let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
-    config_file
-        .write_all(
-            toml::to_string(&ControllerConfig {
-                hosts: HashMap::new(),
-                server: ServerConfig { port: args.port },
-            })
-            .unwrap()
-            .as_bytes(),
-        )
-        .map_err(|e| e.to_string())?;
-    println!("Created config file at {config_location:?}");
+    if !Path::new(&config_location).exists() {
+        let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
+        config_file
+            .write_all(
+                toml::to_string(&ControllerConfig {
+                    hosts: HashMap::new(),
+                    server: ServerConfig { port: args.port },
+                })
+                .unwrap()
+                .as_bytes(),
+            )
+            .map_err(|e| e.to_string())?;
 
-    let status = Command::new("chown")
-        .arg(format!("{}:", &args.user)) // ":" = default group
-        .arg(&config_location)
-        .status()
-        .map_err(|e| e.to_string())?;
+        println!("Created config file at {config_location:?}");
 
-    println!(
-        "Chowned config file at {config_location:?} for {}",
-        args.user
-    );
+        let status = Command::new("chown")
+            .arg(format!("{}:", &args.user)) // ":" = default group
+            .arg(&config_location)
+            .status()
+            .map_err(|e| e.to_string())?;
 
-    if status.success() {
-        Ok(())
+        if !status.success() {
+            return Err(format!("Failed to chown file: {}", status));
+        }
+
+        println!(
+            "Chowned config file at {config_location:?} for {}",
+            args.user
+        );
     } else {
-        Err(format!("chown failed: exit status {}", status))
+        println!("Config file already exists at {config_location:?}, not overwriting.");
     }
+
+    Ok(())
 }
