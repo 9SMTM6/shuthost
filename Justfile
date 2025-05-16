@@ -29,7 +29,7 @@ build_controller_on_mac:
     cargo build --release --bin shuthost_controller --target x86_64-apple-darwin &
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-gnu &
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-gnu &
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-musl &
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_controller --target x86_64-unknown-linux-musl &
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_controller --target aarch64-unknown-linux-musl &
     wait
 

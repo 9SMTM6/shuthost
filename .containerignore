@@ -1,0 +1,3 @@
+*
+!target/x86_64-unknown-linux-musl/release/shuthost_controller
+!target/aarch64-unknown-linux-musl/release/shuthost_controller

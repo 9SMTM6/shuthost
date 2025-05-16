@@ -10,9 +10,10 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 ## Known issues:
 
 * UI still gets stuck on load sometimes. IDK precisely why. Need to add timeouts when communicating with other hosts
-* docker doesnt seem like it'll happen:
+* docker is problematic:
+    * its currently untested
     * according to what I've seen, podman (and likely docker) on macos wont be able to transfer WOL packages to the host LAN, and docker on WSL would also need additional config, if at all possible.
-    * thus I'm packaging things into a single binary - with embedded agents and static files - instead 
+    * thus on these targets you need to use a VM, or simply use the binary - its still just a single file to start.
 * only tested setups currently:
     * agent on unraid and linux systemd
     * controller on macos apple silicon
