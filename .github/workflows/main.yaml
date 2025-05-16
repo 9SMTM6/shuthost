@@ -15,21 +15,17 @@ jobs:
       matrix:
         include:
           - target: aarch64-apple-darwin
-            runner: macos-14
+            runner: macos-latest
           - target: x86_64-apple-darwin
-            runner: macos-14
+            runner: macos-latest
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            linker: x86_64-linux-gnu-gcc
           - target: aarch64-unknown-linux-gnu
-            runner: ubuntu-latest
-            linker: aarch64-linux-gnu-gcc
+            runner: ubuntu-24.04-arm
           - target: x86_64-unknown-linux-musl
             runner: ubuntu-latest
-            linker: x86_64-linux-musl-gcc
           - target: aarch64-unknown-linux-musl
-            runner: ubuntu-latest
-            linker: aarch64-linux-musl-gcc
+            runner: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v4
@@ -37,11 +33,11 @@ jobs:
       - name: Install Rust target
         run: rustup target add ${{ matrix.target }}
 
-      - name: Install linker (if needed)
-        if: runner.os == 'Linux'
+      - name: Install dependencies for MUSL targets
+        if: contains(matrix.target, 'musl')
         run: |
           sudo apt-get update
-          sudo apt-get install -y ${{ matrix.linker }}
+          sudo apt-get install -y musl-tools
 
       - name: Build agent
         run: |
@@ -66,21 +62,17 @@ jobs:
       matrix:
         include:
           - target: aarch64-apple-darwin
-            runner: macos-14
+            runner: macos-latest
           - target: x86_64-apple-darwin
-            runner: macos-14
+            runner: macos-latest
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            linker: x86_64-linux-gnu-gcc
           - target: aarch64-unknown-linux-gnu
-            runner: ubuntu-latest
-            linker: aarch64-linux-gnu-gcc
+            runner: ubuntu-24.04-arm
           - target: x86_64-unknown-linux-musl
             runner: ubuntu-latest
-            linker: x86_64-linux-musl-gcc
           - target: aarch64-unknown-linux-musl
-            runner: ubuntu-latest
-            linker: aarch64-linux-musl-gcc
+            runner: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v4
@@ -88,11 +80,11 @@ jobs:
       - name: Install Rust target
         run: rustup target add ${{ matrix.target }}
 
-      - name: Install linker (if needed)
-        if: runner.os == 'Linux'
+      - name: Install dependencies for MUSL targets
+        if: contains(matrix.target, 'musl')
         run: |
           sudo apt-get update
-          sudo apt-get install -y ${{ matrix.linker }}
+          sudo apt-get install -y musl-tools
 
       - name: Download all agent binaries
         uses: actions/download-artifact@v4
