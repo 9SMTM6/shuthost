@@ -55,7 +55,7 @@ jobs:
 
   build-controllers:
     name: Build Controller for ${{ matrix.target }}
-    needs: build-matrix
+    needs: build-agents
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
