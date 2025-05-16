@@ -2,16 +2,16 @@
 resolver = "2"
 members = ["agent", "controller", "global_service_install"]
 
+[workspace.package]
+version = "0.3.0"
+edition = "2024"
+authors = ["Samuel Maier"]
+description = "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."
+documentation = "https://example.com/bar"
+
 [workspace.dependencies]
 hmac = "0.12.1"
 sha2 = "0.10.8"
 hex = "0.4.3"
 clap = { version = "4.5.37", features = ["derive"] }
 global_service_install = {path = "./global_service_install"}
-
-[workspace.package]
-version = "0.2.0"
-edition = "2024"
-authors = ["Samuel Maier"]
-description = "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."
-documentation = "https://example.com/bar"
