@@ -15,7 +15,7 @@ const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_agent.service.ini");
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_agent.plist.xml");
 #[cfg(target_os = "linux")]
-const SLACKWARE_INIT_TEMPLATE: &str = include_str!("rc.shuthost_agent.sh");
+const SLACKWARE_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_agent.sh");
 
 /// Struct for the install subcommand, with defaults added
 #[derive(Debug, Parser)]

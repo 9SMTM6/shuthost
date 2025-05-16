@@ -33,6 +33,8 @@ pub enum Command {
 async fn main() {
     let invocation = Cli::parse();
 
+    // TODO: dont panic, throw proper errors and exit.
+
     match invocation.command {
         Command::Install(args) => {
             install_controller(args).unwrap();

@@ -34,5 +34,7 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
         * this tests that the hosts can probably reach each other (IDK if thats always guaranteed to work both ways)
         * this avoids normal security, so no exception required on reverse proxy
 * windows support currently not planned, due to large differences
-* BSD support not really planned (hard to get  working toolchain to macos)
+* BSD support might happen, 
+    * requires using cross though, which I wont do locally. This also means refactoring the github pipeline
+    * to be able to build it locally I'd have to introduce features
 * uninstalls

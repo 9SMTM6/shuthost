@@ -1,6 +1,6 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
-use global_service_install::is_systemd;
+use global_service_install::{is_systemd, is_openrc, is_sysvinit};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, process::Command};
@@ -12,7 +12,9 @@ const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_controller.service.in
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_controller.plist.xml");
 #[cfg(target_os = "linux")]
-const SLACKWARE_INIT_TEMPLATE: &str = include_str!("rc.shuthost_controller.sh");
+const SYSVINIT_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_controller.sh");
+#[cfg(target_os = "linux")]
+const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_controller.sh");
 
 /// Struct for the install subcommand
 #[derive(Debug, Parser)]
@@ -53,11 +55,18 @@ pub fn install_controller(args: InstallArgs) -> Result<(), String> {
             &name,
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;
-    } else {
-        global_service_install::install_self_as_service_non_systemd_linux(
+    } else if is_openrc() {
+        global_service_install::install_self_as_service_openrc_linux(
             &name,
-            &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
+            &bind_known_vals(OPENRC_FILE_TEMPLATE),
         )?;
+    } else if is_sysvinit() {
+        global_service_install::install_self_as_service_sysvinit_linux(
+            &name,
+            &bind_known_vals(SYSVINIT_INIT_TEMPLATE),
+        )?;
+    } else {
+        Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
     }
 
     #[cfg(target_os = "macos")]

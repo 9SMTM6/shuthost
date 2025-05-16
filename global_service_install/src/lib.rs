@@ -4,10 +4,11 @@ use std::{env, os::unix::fs::PermissionsExt, path::PathBuf, process::Command};
 use std::{
     fs::{self, File},
     io::Write,
+    process::Stdio,
 };
 
 #[cfg(target_os = "linux")]
-pub fn install_self_as_service_non_systemd_linux(
+pub fn install_self_as_service_sysvinit_linux(
     name: &str,
     init_script_content: &str,
 ) -> Result<(), String> {
@@ -20,10 +21,12 @@ pub fn install_self_as_service_non_systemd_linux(
     let target_bin = PathBuf::from("/usr/sbin/").join(name);
 
     // Stop potentially existing service it before overwriting
-    let init_script = "/etc/rc.d/rc.shuthost_agent";
-    if Path::new(init_script).exists() {
-        let _ = Command::new(init_script).arg("stop").status();
-    }
+    let init_script = format!("/etc/rc.d/rc.{name}");
+    let _ = Command::new(init_script)
+        .arg("stop")
+        .stderr(Stdio::null())
+        .status();
+
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
 
@@ -31,7 +34,7 @@ pub fn install_self_as_service_non_systemd_linux(
     let init_script_path = PathBuf::from(format!("/etc/rc.d/rc.{name}"));
     let init_script_content = init_script_content.replace(
         "{binary}",
-        &format!("{target_bin}", target_bin = target_bin.to_string_lossy()),
+        &target_bin.to_string_lossy(),
     );
 
     let mut file = File::create(&init_script_path).map_err(|e| e.to_string())?;
@@ -80,18 +83,11 @@ pub fn install_self_as_service_systemd(
     let service_name = format!("{name}.service");
 
     // Stop potentially existing service it before overwriting
-    let output = Command::new("systemctl")
-        .arg("is-active")
+    let _ = Command::new("systemctl")
+        .arg("stop")
         .arg(&service_name)
-        .output()
-        .map_err(|e| e.to_string())?;
-
-    if output.status.success() {
-        let _ = Command::new("systemctl")
-            .arg("stop")
-            .arg(&service_name)
-            .status();
-    }
+        .stderr(Stdio::null())
+        .status();
 
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
@@ -99,7 +95,7 @@ pub fn install_self_as_service_systemd(
     let service_file_path = format!("/etc/systemd/system/{service_name}");
     let service_file_content = init_script_content.replace(
         "{binary}",
-        &format!("{target_bin}", target_bin = target_bin.to_string_lossy()),
+        &target_bin.to_string_lossy(),
     );
 
     let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
@@ -130,11 +126,69 @@ pub fn install_self_as_service_systemd(
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
+pub fn install_self_as_service_openrc_linux(
+    name: &str,
+    init_script_content: &str,
+) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    if !is_superuser() {
+        return Err("You must run this command as root or with sudo.".to_string());
+    }
+
+    let binary_path = PathBuf::from(env::args().next().unwrap());
+    let target_bin = PathBuf::from("/usr/sbin/").join(name);
+    let init_script_path = PathBuf::from(format!("/etc/init.d/{name}"));
+
+    // Stop and remove any existing service
+    let _ = Command::new("rc-service")
+        .arg(name)
+        .arg("stop")
+        .stderr(Stdio::null())
+        .status();
+
+    fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
+    println!("Installed binary to {:?}", target_bin);
+
+    let init_script_content = init_script_content.replace(
+        "{binary}",
+        &target_bin.to_string_lossy(),
+    );
+
+    let mut script_file = File::create(&init_script_path).map_err(|e| e.to_string())?;
+    script_file
+        .write_all(init_script_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    let mut perms = script_file.metadata().map_err(|e| e.to_string())?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(&init_script_path, perms).map_err(|e| e.to_string())?;
+    println!("Created OpenRC init script at {:?}", init_script_path);
+
+    drop(script_file);
+
+    Command::new("rc-update")
+        .arg("add")
+        .arg(name)
+        .arg("default")
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    Command::new("rc-service")
+        .arg(name)
+        .arg("start")
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    println!("Service started and added to default runlevel.");
+
+    Ok(())
+}
+
 #[cfg(target_os = "macos")]
 /// FIXME: DOESNT WORK!!!
 pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> Result<(), String> {
-    use std::process::Stdio;
-
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
@@ -188,4 +242,14 @@ fn is_superuser() -> bool {
 #[cfg(target_os = "linux")]
 pub fn is_systemd() -> bool {
     Path::new("/run/systemd/system").exists()
+}
+
+#[cfg(target_os = "linux")]
+pub fn is_openrc() -> bool {
+    Path::new("/run/openrc").exists() || Path::new("/etc/init.d").exists()
+}
+
+#[cfg(target_os = "linux")]
+pub fn is_sysvinit() -> bool {
+    Path::new("/etc/rc.d").exists() && !is_systemd() && !is_openrc()
 }
