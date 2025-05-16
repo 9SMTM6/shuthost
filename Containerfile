@@ -1,9 +1,9 @@
 FROM alpine:latest
 # THIS IS NON-TESTED!
 
-ARG TARGETARCH2="x86_64-unknown-linux-musl"
+ARG TARGET="x86_64-unknown-linux-musl"
 
-COPY target/${TARGETARCH2}/release/shuthost_controller /usr/local/bin/
+COPY target/${TARGET}/release/shuthost_controller /usr/local/bin/
 
 ENV SHUTHOST_CONTROLLER_CONFIG_PATH=/config/controller_config.toml
 

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build-matrix:
+  build-agents:
     name: Build agent for ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -127,13 +127,7 @@ jobs:
       - name: Download MUSL controller binaries
         uses: actions/download-artifact@v4
         with:
-          path: ./binaries
-
-      - name: Prepare container dirs
-        run: |
-          mkdir -p containers/amd64 containers/arm64
-          cp ./binaries/controller-x86_64-unknown-linux-musl/shuthost_controller containers/amd64/
-          cp ./binaries/controller-aarch64-unknown-linux-musl/shuthost_controller containers/arm64/
+          path: ./target
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -144,20 +138,36 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set lowercase repository name
+        id: repo
+        run: |
+          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Rehydrate target directory structure
+        run: |
+          mkdir -p target
+          find ./target -name shuthost_controller -exec bash -c '
+            for path; do
+              dir=$(dirname "${path#./target/shuthost_controller-}")
+              mkdir -p "target/$dir/release"
+              cp "$path" "target/$dir/release/"
+            done
+          ' bash {} +
 
       - name: Build & Push Multi-Arch Alpine Image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile.alpine
+          file: ./Containerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/shuthost-controller:latest
-            ghcr.io/${{ github.repository }}/shuthost-controller:${{ github.sha }}
+            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-controller:latest
+            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-controller:${{ github.sha }}
           build-args: |
-            CONTROLLER_AMD64=containers/amd64/shuthost_controller
-            CONTROLLER_ARM64=containers/arm64/shuthost_controller
+            TARGET=x86_64-unknown-linux-musl
+            TARGET=aarch64-unknown-linux-musl
 
   release:
     name: Upload Release Binaries
@@ -175,7 +185,7 @@ jobs:
 
       - name: Fetch full git history and tags
         run: |
-          git fetch --tags --force --depth=0
+          git fetch --tags --force
 
       - name: Get latest Git tag
         id: get_tag
