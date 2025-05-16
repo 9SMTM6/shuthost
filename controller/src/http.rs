@@ -8,7 +8,7 @@ use axum::{
 use hmac::{Hmac, Mac};
 use serde_json::json;
 use sha2::Sha256;
-use std::time::Duration;
+use std::{net::IpAddr, str::FromStr, time::Duration};
 use std::{
     net::SocketAddr,
     sync::Arc,
@@ -32,7 +32,7 @@ use tokio::sync::broadcast;
 pub struct ServiceArgs {
     #[arg(
         long = "config",
-        env = "CONFIG_PATH",
+        env = "SHUTHOST_CONTROLLER_CONFIG_PATH",
         default_value = "shuthost_controller.toml"
     )]
     pub config: String,
@@ -93,17 +93,17 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/api/wake/{hostname}", post(wake_host))
         .route("/api/shutdown/{hostname}", post(shutdown_host))
         .route("/api/status/{hostname}", get(status_host))
-        .route("/download_agent/macos/aarch64", get(download_agent_macos_aarch64))
-        .route("/download_agent/macos/x86_64", get(download_agent_macos_x86_64))
-        .route("/download_agent/linux/x86_64", get(download_agent_linux_x86_64))
-        .route("/download_agent/linux/aarch64", get(download_agent_linux_aarch64))
-        .route("/download_agent/linux-musl/x86_64", get(download_agent_linux_musl_x86_64))
-        .route("/download_agent/linux-musl/aarch64", get(download_agent_linux_musl_aarch64))
+        .route("/download_agent/macos/aarch64", get(agent_macos_aarch64))
+        .route("/download_agent/macos/x86_64", get(agent_macos_x86_64))
+        .route("/download_agent/linux/x86_64", get(agent_linux_x86_64))
+        .route("/download_agent/linux/aarch64", get(agent_linux_aarch64))
+        .route("/download_agent/linux-musl/x86_64", get(agent_linux_musl_x86_64))
+        .route("/download_agent/linux-musl/aarch64", get(agent_linux_musl_aarch64))
         .route("/", get(serve_ui))
         .route("/ws", get(ws_handler))
         .with_state(app_state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], listen_port));
+    let addr = SocketAddr::from((IpAddr::from_str("0.0.0.0").unwrap(), listen_port));
     info!("Listening on http://{}", addr);
 
     axum::serve(
@@ -326,56 +326,28 @@ async fn serve_ui() -> impl IntoResponse {
         .unwrap()
 }
 
-async fn download_agent_macos_aarch64() -> impl IntoResponse {
-    download_agent(include_bytes!(
-        "../../target/aarch64-apple-darwin/release/shuthost_agent"
-    ))
-    .await
+// Macro to define a handler function from a static binary
+macro_rules! agent_handler {
+    ($name:ident, $agent_target:expr) => {
+        async fn $name() -> impl IntoResponse {
+            const AGENT_BINARY: &'static [u8] = include_bytes!(concat!("../../target/", $agent_target, "/release/shuthost_agent"));
+            Response::builder()
+                .header("Content-Type", "application/octet-stream")
+                .header("Content-Length", AGENT_BINARY.len().to_string())
+                .status(StatusCode::OK)
+                .body(AGENT_BINARY.into_response())
+                .unwrap()
+        }
+    };
 }
 
-async fn download_agent_macos_x86_64() -> impl IntoResponse {
-    download_agent(include_bytes!(
-        "../../target/x86_64-apple-darwin/release/shuthost_agent"
-    ))
-    .await
-}
-
-async fn download_agent_linux_x86_64() -> impl IntoResponse {
-    download_agent(include_bytes!(
-        "../../target/x86_64-unknown-linux-gnu/release/shuthost_agent"
-    ))
-    .await
-}
-
-async fn download_agent_linux_aarch64() -> impl IntoResponse {
-    download_agent(include_bytes!(
-        "../../target/aarch64-unknown-linux-gnu/release/shuthost_agent"
-    ))
-    .await
-}
-
-async fn download_agent_linux_musl_x86_64() -> impl IntoResponse {
-    download_agent(include_bytes!(
-        "../../target/x86_64-unknown-linux-musl/release/shuthost_agent"
-    ))
-    .await
-}
-
-async fn download_agent_linux_musl_aarch64() -> impl IntoResponse {
-    download_agent(include_bytes!(
-        "../../target/aarch64-unknown-linux-musl/release/shuthost_agent"
-    ))
-    .await
-}
-
-async fn download_agent(agent_binary: &'static [u8]) -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "application/octet-stream")
-        .header("Content-Length", agent_binary.len().to_string())
-        .status(StatusCode::OK)
-        .body(agent_binary.into_response())
-        .unwrap()
-}
+// Generate all handlers
+agent_handler!(agent_macos_aarch64, "aarch64-apple-darwin");
+agent_handler!(agent_macos_x86_64, "x86_64-apple-darwin");
+agent_handler!(agent_linux_x86_64, "x86_64-unknown-linux-gnu");
+agent_handler!(agent_linux_aarch64, "aarch64-unknown-linux-gnu");
+agent_handler!(agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
+agent_handler!(agent_linux_musl_aarch64, "aarch64-unknown-linux-musl");
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
