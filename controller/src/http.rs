@@ -8,7 +8,7 @@ use axum::{
 use hmac::{Hmac, Mac};
 use serde_json::json;
 use sha2::Sha256;
-use std::{net::IpAddr, str::FromStr, time::Duration};
+use std::{net::IpAddr, time::Duration};
 use std::{
     net::SocketAddr,
     sync::Arc,
@@ -56,6 +56,13 @@ pub async fn start_http_server(config_path: &std::path::Path) {
             .expect("Failed to load config"),
     );
     let listen_port = initial_config.server.port;
+
+    let listen_ip: IpAddr = initial_config
+        .server
+        .bind
+        .parse()
+        .expect("Invalid bind address");
+
     let (config_tx, config_rx) = watch::channel(initial_config);
 
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
@@ -103,7 +110,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/ws", get(ws_handler))
         .with_state(app_state);
 
-    let addr = SocketAddr::from((IpAddr::from_str("0.0.0.0").unwrap(), listen_port));
+    let addr = SocketAddr::from((listen_ip, listen_port));
     info!("Listening on http://{}", addr);
 
     axum::serve(

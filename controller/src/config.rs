@@ -20,6 +20,7 @@ pub struct ControllerConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServerConfig {
     pub port: u16,
+    pub bind: String,
 }
 
 pub async fn load_controller_config<P: AsRef<Path>>(
