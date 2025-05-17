@@ -1,7 +1,6 @@
 name: Build All Targets
 permissions:
   contents: read
-  packages: write
 
 on:
   push:
@@ -124,7 +123,8 @@ jobs:
     needs:
       - build-controllers
     runs-on: ubuntu-latest
-
+    permissions:
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -175,32 +175,29 @@ jobs:
     name: Upload Release Binaries
     needs:
       - build-controllers
-    if: startsWith(github.ref, 'refs/tags/')
+    if: ${{ github.event_name == 'push' }}
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Download all controller binaries
         uses: actions/download-artifact@v4
         with:
           path: ./release-assets
 
-      - name: Fetch full git history and tags
+      - name: Create a valid release tag
+        id: tag
         run: |
-          git fetch --tags --force
+          string=${{ github.ref }};
+          cleaned_string="${string#refs/tags/}";
+          cleaned_string="${cleaned_string#refs/heads/}";
+          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
 
-      - name: Get latest Git tag
-        id: get_tag
-        run: |
-          TAG=$(git describe --tags --abbrev=0)
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub Release
+      - name: Upload binaries to release (create one if not existing)
         uses: softprops/action-gh-release@v2
+        if: ${{ github.event_name == 'push' }}
         with:
-          tag_name: ${{ steps.get_tag.outputs.tag }}
-          name: "Release ${{ steps.get_tag.outputs.tag }}"
-          files: ./release-assets/**/*.shuthost_controller
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: ${{ github.event.repository.name }}-*.*
+          tag_name: ${{ steps.tag.outputs.tag }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
