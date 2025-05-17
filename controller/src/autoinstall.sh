@@ -10,7 +10,7 @@ fi
 REMOTE_URL="$1"
 shift
 
-BASE_URL="https://${REMOTE_URL}/download/agent"
+BASE_URL="${REMOTE_URL}download/agent"
 
 # Detect architecture
 ARCH="$(uname -m)"
@@ -54,4 +54,3 @@ sudo ./"$OUTFILE" install "$@"
 
 echo "Cleaning up..."
 rm -f "$OUTFILE"
-rm -- "$0"

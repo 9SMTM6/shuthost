@@ -285,8 +285,8 @@
 
         fetchHosts();
 
-        const hostname = window.location.hostname;
-        const command = `curl -fsSL https://${hostname}/download/installer.sh | sh -s ${hostname} --port 9090 --shutdown-command "shutdown -h now"`;
+        const href = window.location.href;
+        const command = `curl -fsSL ${href}download/installer.sh | sh -s ${href} --port 9090`;
         const codeElement = document.getElementById('install-command');
         codeElement.textContent = command;
 
