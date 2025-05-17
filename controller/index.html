@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>ShutHost</title>
@@ -27,7 +28,8 @@
             display: block;
         }
 
-        th, td {
+        th,
+        td {
             padding: 0.75rem;
             text-align: left;
             border-bottom: 1px solid #ccc;
@@ -69,36 +71,19 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+            0% {
+                transform: rotate(0deg);
+            }
 
-        .download-btn {
-            margin-top: 1rem;
-            background-color: #008CBA;
-            display: block;
-            width: 100%;
-            max-width: 300px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        #os-select {
-            width: 100%;
-            max-width: 300px;
-            margin-top: 1rem;
-            padding: 0.5rem;
-            font-size: 1rem;
-        }
-
-        #message {
-            color: red;
-            margin-top: 1rem;
-            text-align: center;
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 600px) {
-            th, td {
+
+            th,
+            td {
                 font-size: 0.85rem;
                 padding: 0.5rem;
             }
@@ -113,8 +98,38 @@
                 flex-direction: column;
             }
         }
+
+        .code-block {
+            position: relative;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.2rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .copy-button:hover {
+            background: #2563eb;
+        }
     </style>
 </head>
+
 <body>
     <h1>Shuthost</h1>
     <table>
@@ -128,22 +143,21 @@
         <tbody id="host-table-body">
             <!-- Hosts will be loaded here dynamically -->
         </tbody>
-        <label for="os-select">Select your OS:</label>
-        <select id="os-select">
-            <option value="macos">macOS</option>
-            <option value="linux">Linux GNU (most Linux variants)</option>
-            <option value="linux-musl">Linux MUSL (Alpine)</option>
-        </select>
-
-        <label for="arch-select">Select your CPU architecture:</label>
-        <select id="arch-select">
-            <option value="aarch64">aarch64 / arm64 (Apple Silicon, Raspberry Pi)</option>
-            <option value="x86_64">x86_64 / amd64 (Intel, AMD)</option>
-        </select>
-
-        <div id="message" style="color: red; margin-top: 1rem;"></div>
-        <button class="download-btn" onclick="downloadBinary()">Download Binary</button>
     </table>
+
+    <p>To install the agent, run the following command in your terminal:</p>
+
+    <div class="code-block" id="code-container">
+        <button class="copy-button" onclick="copyToClipboard()">Copy</button>
+        <code id="install-command">Loading...</code>
+    </div>
+
+    <p>
+        Adjust the install options (like <code>--port</code>, <code>--shutdown-command</code>,
+        <code>--shared-secret</code>) as needed.<br>
+        The command will print a line you need to manually add to the controller configuration at
+        <code>{controller_config}</code>.
+    </p>
 
     <script>
         let socket;
@@ -269,75 +283,24 @@
             }
         }
 
-        function setMessage(text) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-        }
-
-        function detectOS() {
-            const platform = navigator.platform.toLowerCase();
-            const ua = navigator.userAgent.toLowerCase();
-
-            if (platform.includes("mac")) return "macos";
-            if (ua.includes("musl")) return "linux-musl";
-            if (platform.includes("linux")) return "linux"; // default to GNU if unsure
-
-            return "unknown";
-        }
-
-        function detectArch() {
-            const ua = navigator.userAgent.toLowerCase();
-
-            if (ua.includes("aarch64") || ua.includes("arm64")) return "aarch64";
-            if (ua.includes("x86_64") || ua.includes("amd64") || ua.includes("intel")) return "x86_64";
-
-            return "x86_64"; // fallback to x86_64
-        }
-
-        // Preselect appropriate OS and Architecture on page load
-        document.addEventListener("DOMContentLoaded", () => {
-            const os = detectOS();
-            const arch = detectArch();
-
-            if (os !== "unknown") document.getElementById("os-select").value = os;
-            // Apple claims to be Intel even on its Silicon, in all Browsers.
-            if (arch !== "unknown") {if (os !== "macos") document.getElementById("arch-select").value = arch};
-        });
-
-        async function downloadBinary() {
-            const os = document.getElementById("os-select").value;
-            const arch = document.getElementById("arch-select").value;
-
-            if (!os || !arch) {
-                setMessage("Please select your OS and architecture.");
-                return;
-            }
-
-            setMessage(""); // clear previous error
-
-            const url = `/download_agent/${os}/${arch}`;
-
-            try {
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    throw new Error(`Failed to download from ${url}`);
-                }
-
-                const blob = await response.blob();
-                const downloadUrl = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = downloadUrl;
-                a.download = "shuthost_agent";
-                a.click();
-                URL.revokeObjectURL(downloadUrl);
-            } catch (err) {
-                console.error("Download error:", err);
-                setMessage("Failed to download binary. Please check your selection or try again.");
-            }
-        }
-
         fetchHosts();
+
+        const hostname = window.location.hostname;
+        const command = `curl -fsSL https://${hostname}/download/installer.sh | sh -s ${hostname} --port 9090 --shutdown-command "shutdown -h now"`;
+        const codeElement = document.getElementById('install-command');
+        codeElement.textContent = command;
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(command).then(() => {
+                const button = document.querySelector('.copy-button');
+                const original = button.textContent;
+                button.textContent = "Copied!";
+                setTimeout(() => {
+                    button.textContent = original;
+                }, 1500);
+            });
+        }
     </script>
 </body>
+
 </html>

@@ -40,6 +40,7 @@ pub struct ServiceArgs {
 
 #[derive(Clone)]
 pub struct AppState {
+    config_path: std::path::PathBuf,
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     is_on_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
     ws_tx: broadcast::Sender<String>,
@@ -93,6 +94,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         config_rx,
         is_on_rx,
         ws_tx,
+        config_path: config_path.to_path_buf(),
     };
 
     let app = Router::new()
@@ -100,16 +102,17 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .route("/api/wake/{hostname}", post(wake_host))
         .route("/api/shutdown/{hostname}", post(shutdown_host))
         .route("/api/status/{hostname}", get(status_host))
-        .route("/download_agent/macos/aarch64", get(agent_macos_aarch64))
-        .route("/download_agent/macos/x86_64", get(agent_macos_x86_64))
-        .route("/download_agent/linux/x86_64", get(agent_linux_x86_64))
-        .route("/download_agent/linux/aarch64", get(agent_linux_aarch64))
+        .route("/download/installer.sh", get(get_installer))
+        .route("/download/agent/macos/aarch64", get(agent_macos_aarch64))
+        .route("/download/agent/macos/x86_64", get(agent_macos_x86_64))
+        .route("/download/agent/linux/x86_64", get(agent_linux_x86_64))
+        .route("/download/agent/linux/aarch64", get(agent_linux_aarch64))
         .route(
-            "/download_agent/linux-musl/x86_64",
+            "/download/agent/linux-musl/x86_64",
             get(agent_linux_musl_x86_64),
         )
         .route(
-            "/download_agent/linux-musl/aarch64",
+            "/download/agent/linux-musl/aarch64",
             get(agent_linux_musl_aarch64),
         )
         .route("/", get(serve_ui))
@@ -331,8 +334,9 @@ async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, Str
     Ok(String::from_utf8_lossy(&buf[..n]).to_string())
 }
 
-async fn serve_ui() -> impl IntoResponse {
-    let html = include_str!("../index.html");
+async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
+    let html = include_str!("../index.html")
+        .replace("{controller_config}", &config_path.to_string_lossy());
     Response::builder()
         .header("Content-Type", "text/html")
         .body(html.into_response())
@@ -365,6 +369,16 @@ agent_handler!(agent_linux_x86_64, "x86_64-unknown-linux-gnu");
 agent_handler!(agent_linux_aarch64, "aarch64-unknown-linux-gnu");
 agent_handler!(agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
 agent_handler!(agent_linux_musl_aarch64, "aarch64-unknown-linux-musl");
+
+async fn get_installer() -> impl IntoResponse {
+    const INSTALLER: &'static [u8] = include_bytes!("./autoinstall.sh");
+    Response::builder()
+        .header("Content-Type", "text/plain")
+        .header("Content-Length", INSTALLER.len().to_string())
+        .status(StatusCode::OK)
+        .body(INSTALLER.into_response())
+        .unwrap()
+}
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
