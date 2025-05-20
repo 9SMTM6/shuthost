@@ -1,6 +1,7 @@
 mod config;
 mod http;
 mod install;
+mod routes;
 mod wol;
 
 use clap::{Parser, Subcommand};
