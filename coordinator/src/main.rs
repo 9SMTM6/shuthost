@@ -5,7 +5,7 @@ mod routes;
 mod wol;
 
 use clap::{Parser, Subcommand};
-use install::{InstallArgs, install_controller};
+use install::{InstallArgs, install_coordinator};
 
 use std::{env, fs};
 
@@ -38,7 +38,7 @@ async fn main() {
 
     match invocation.command {
         Command::Install(args) => {
-            install_controller(args).unwrap();
+            install_coordinator(args).unwrap();
         }
         Command::ControlService(args) => {
             tracing_subscriber::fmt()

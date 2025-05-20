@@ -11,11 +11,11 @@ const DEFAULT_PORT: u16 = 5757;
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 #[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_agent.service.ini");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_node_agent.service.ini");
 #[cfg(target_os = "macos")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_agent.plist.xml");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_node_agent.plist.xml");
 #[cfg(target_os = "linux")]
-const SLACKWARE_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_agent.sh");
+const SLACKWARE_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_node_agent.sh");
 
 /// Struct for the install subcommand, with defaults added
 #[derive(Debug, Parser)]
@@ -30,7 +30,7 @@ pub struct InstallArgs {
     pub shared_secret: String,
 }
 
-pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
+pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
         arg.replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
@@ -60,7 +60,7 @@ pub fn install_agent(arguments: InstallArgs) -> Result<(), String> {
 
     let interface = &get_default_interface().unwrap();
     println!(
-        "Place the following in the controller:\n{config_entry}",
+        "Place the following in the coordinator:\n{config_entry}",
         config_entry = CONFIG_ENTRY
             .replace("{name}", &get_hostname().unwrap())
             .replace("{ip}", &get_ip(interface).unwrap())

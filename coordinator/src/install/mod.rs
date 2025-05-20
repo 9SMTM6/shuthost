@@ -15,13 +15,13 @@ use std::{
 use crate::config::{ControllerConfig, ServerConfig};
 
 #[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_controller.service.ini");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.ini");
 #[cfg(target_os = "macos")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_controller.plist.xml");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_coordinator.plist.xml");
 #[cfg(target_os = "linux")]
-const SYSVINIT_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_controller.sh");
+const SYSVINIT_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_coordinator.sh");
 #[cfg(target_os = "linux")]
-const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_controller.sh");
+const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.sh");
 
 /// Struct for the install subcommand
 #[derive(Debug, Parser)]
@@ -38,7 +38,7 @@ pub struct InstallArgs {
     bind: String,
 }
 
-pub fn install_controller(args: InstallArgs) -> Result<(), String> {
+pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
 
     args.bind

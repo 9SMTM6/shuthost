@@ -11,7 +11,7 @@ use tokio::time::timeout;
 use tracing::{debug, info};
 
 use crate::{
-    config::{ControllerConfig, load_controller_config, watch_config_file},
+    config::{ControllerConfig, load_coordinator_config, watch_config_file},
     routes::{api_routes, get_download_router},
 };
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
@@ -24,7 +24,7 @@ pub struct ServiceArgs {
     #[arg(
         long = "config",
         env = "SHUTHOST_CONTROLLER_CONFIG_PATH",
-        default_value = "shuthost_controller.toml"
+        default_value = "shuthost_coordinator.toml"
     )]
     pub config: String,
 }
@@ -43,7 +43,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(
-        load_controller_config(config_path)
+        load_coordinator_config(config_path)
             .await
             .expect("Failed to load config"),
     );
@@ -134,7 +134,7 @@ async fn poll_host_statuses(
 
 async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
     let html = include_str!("../index.html")
-        .replace("{controller_config}", &config_path.to_string_lossy());
+        .replace("{coordinator_config}", &config_path.to_string_lossy());
     Response::builder()
         .header("Content-Type", "text/html")
         .body(html.into_response())

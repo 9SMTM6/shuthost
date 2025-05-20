@@ -1,4 +1,4 @@
 /target
-shuthost_controller.toml
-shuthost_agent
+shuthost_coordinator.toml
+shuthost_node_agent
 .DS_Store

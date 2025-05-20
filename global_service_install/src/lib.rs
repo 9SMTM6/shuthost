@@ -62,7 +62,7 @@ pub fn install_self_as_service_sysvinit_linux(
     let _ = Command::new(init_script_path)
         .arg("start")
         .status()
-        .map_err(|e| format!("Failed to start agent: {e}"))?;
+        .map_err(|e| format!("Failed to start node_agent: {e}"))?;
 
     Ok(())
 }

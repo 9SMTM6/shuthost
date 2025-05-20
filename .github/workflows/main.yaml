@@ -10,8 +10,8 @@ on:
     branches: [main]
 
 jobs:
-  build-agents:
-    name: Build agent for ${{ matrix.target }}
+  build-node_agents:
+    name: Build node_agent for ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -42,23 +42,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Build agent
+      - name: Build node_agent
         run: |
           cargo fetch
           if [[ "${{ matrix.linker }}" != "" ]]; then
             export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
           fi
-          cargo build --release --bin shuthost_agent --target ${{ matrix.target }}
+          cargo build --release --bin shuthost_node_agent --target ${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: agent-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_agent
+          name: node_agent-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/shuthost_node_agent
 
-  build-controllers:
+  build-coordinators:
     name: Build Controller for ${{ matrix.target }}
-    needs: build-agents
+    needs: build-node_agents
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -89,7 +89,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Download all agent binaries
+      - name: Download all node_agent binaries
         uses: actions/download-artifact@v4
         with:
           path: ./target
@@ -97,38 +97,38 @@ jobs:
       - name: Rehydrate target directory structure
         run: |
           mkdir -p target
-          find ./target -name shuthost_agent -exec bash -c '
+          find ./target -name shuthost_node_agent -exec bash -c '
             for path; do
-              dir=$(dirname "${path#./target/agent-}")
+              dir=$(dirname "${path#./target/node_agent-}")
               mkdir -p "target/$dir/release"
               cp "$path" "target/$dir/release/"
             done
           ' bash {} +
 
-      - name: Build controller
+      - name: Build coordinator
         run: |
           if [[ "${{ matrix.linker }}" != "" ]]; then
             export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
           fi
-          cargo build --release --bin shuthost_controller --target ${{ matrix.target }}
+          cargo build --release --bin shuthost_coordinator --target ${{ matrix.target }}
 
-      - name: Upload controller binary
+      - name: Upload coordinator binary
         uses: actions/upload-artifact@v4
         with:
-          name: controller-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_controller
+          name: coordinator-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/shuthost_coordinator
 
   container-build:
     name: Build & Push Alpine Containers
     needs:
-      - build-controllers
+      - build-coordinators
     runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download MUSL controller binaries
+      - name: Download MUSL coordinator binaries
         uses: actions/download-artifact@v4
         with:
           path: ./rehydrated
@@ -151,10 +151,10 @@ jobs:
       - name: Rehydrate target directory structure
         run: |
           mkdir -p target
-          for dir in ./rehydrated/controller-*; do
-            target=$(basename "$dir" | sed 's/^controller-//')
+          for dir in ./rehydrated/coordinator-*; do
+            target=$(basename "$dir" | sed 's/^coordinator-//')
             mkdir -p "target/$target/release"
-            cp "$dir/shuthost_controller" "target/$target/release/"
+            cp "$dir/shuthost_coordinator" "target/$target/release/"
           done
 
       - name: Build & Push Multi-Arch Alpine Image
@@ -165,8 +165,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-controller:${{ github.sha }}
-            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-controller:latest', steps.repo.outputs.repo_lowercase) || '' }}
+            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-coordinator:latest', steps.repo.outputs.repo_lowercase) || '' }}
           build-args: |
             TARGET=x86_64-unknown-linux-musl
             TARGET=aarch64-unknown-linux-musl
@@ -174,14 +174,14 @@ jobs:
   release:
     name: Upload Release Binaries
     needs:
-      - build-controllers
+      - build-coordinators
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download all controller binaries
+      - name: Download all coordinator binaries
         uses: actions/download-artifact@v4
         with:
           path: ./release-assets

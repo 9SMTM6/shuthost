@@ -4,7 +4,7 @@ mod server;
 
 use clap::{Parser, Subcommand};
 use install::InstallArgs;
-use install::install_agent;
+use install::install_node_agent;
 use server::ServiceArgs;
 use std::env;
 
@@ -23,7 +23,7 @@ pub enum Command {
     /// Start the service
     Service(ServiceArgs),
 
-    /// Install the agent
+    /// Install the node_agent
     Install(InstallArgs),
 }
 
@@ -31,12 +31,12 @@ fn main() {
     let invocation = Cli::parse();
 
     match invocation.command {
-        Command::Install(args) => match install_agent(args) {
+        Command::Install(args) => match install_node_agent(args) {
             Ok(_) => println!("Agent installed successfully!"),
-            Err(e) => eprintln!("Error installing agent: {}", e),
+            Err(e) => eprintln!("Error installing node_agent: {}", e),
         },
         Command::Service(args) => {
-            server::start_agent(args);
+            server::start_node_agent(args);
         }
     }
 }

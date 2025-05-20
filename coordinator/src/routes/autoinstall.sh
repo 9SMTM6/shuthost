@@ -3,14 +3,14 @@
 set -e
 
 if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [shuthost_agent install options...]"
+  echo "Usage: $0 <remote_url> [shuthost_node_agent install options...]"
   exit 1
 fi
 
 REMOTE_URL="$1"
 shift
 
-BASE_URL="${REMOTE_URL}download/agent"
+BASE_URL="${REMOTE_URL}download/node_agent"
 
 # Detect architecture
 ARCH="$(uname -m)"
@@ -43,9 +43,9 @@ case "$OS" in
 esac
 
 URL="$BASE_URL/$PLATFORM/$ARCH"
-OUTFILE="shuthost_agent"
+OUTFILE="shuthost_node_agent"
 
-echo "Downloading agent for $PLATFORM/$ARCH..."
+echo "Downloading node_agent for $PLATFORM/$ARCH..."
 curl -fL "$URL" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 

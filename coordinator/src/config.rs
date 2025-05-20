@@ -26,7 +26,7 @@ pub struct ServerConfig {
     pub bind: String,
 }
 
-pub async fn load_controller_config<P: AsRef<Path>>(
+pub async fn load_coordinator_config<P: AsRef<Path>>(
     path: P,
 ) -> Result<ControllerConfig, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(path).await?;
@@ -61,7 +61,7 @@ pub async fn watch_config_file(
     while let Some(event) = raw_rx.recv().await {
         if matches!(event.kind, EventKind::Modify(_)) {
             info!("Config file modified. Reloading...");
-            match load_controller_config(&path).await {
+            match load_coordinator_config(&path).await {
                 Ok(new_config) => {
                     let _ = tx.send(Arc::new(new_config));
                     info!("Config reloaded.");

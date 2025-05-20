@@ -999,19 +999,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "shuthost_agent"
-version = "0.4.0"
-dependencies = [
- "clap",
- "global_service_install",
- "hex",
- "hmac",
- "rand",
- "sha2",
-]
-
-[[package]]
-name = "shuthost_controller"
+name = "shuthost_coordinator"
 version = "0.4.0"
 dependencies = [
  "axum",
@@ -1028,6 +1016,18 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "shuthost_node_agent"
+version = "0.4.0"
+dependencies = [
+ "clap",
+ "global_service_install",
+ "hex",
+ "hmac",
+ "rand",
+ "sha2",
 ]
 
 [[package]]
