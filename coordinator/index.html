@@ -174,10 +174,10 @@
                 const msg = event.data;
                 try {
                     if (msg === "config_updated") {
-                        fetchHosts(); // config changed
+                        fetchNodes(); // config changed
                     } else {
                         const statusMap = JSON.parse(msg);
-                        updateHostStatuses(statusMap);
+                        updateNodeStatuses(statusMap);
                     }
                 } catch (err) {
                     console.error('Error parsing WS message:', err);
@@ -192,7 +192,7 @@
 
         connectWebSocket();
 
-        function updateHostStatuses(statusMap) {
+        function updateNodeStatuses(statusMap) {
             const tbody = document.getElementById('host-table-body');
             for (const row of tbody.rows) {
                 const hostname = row.cells[0].textContent;
@@ -207,9 +207,9 @@
             }
         }
 
-        async function fetchHosts() {
+        async function fetchNodes() {
             try {
-                const response = await fetch('/api/hosts');
+                const response = await fetch('/api/nodes');
                 const hosts = await response.json();
                 const tbody = document.getElementById('host-table-body');
                 tbody.innerHTML = '';
@@ -222,7 +222,7 @@
                     row.appendChild(nameCell);
 
                     const statusCell = document.createElement('td');
-                    const status = await fetchHostStatus(host.name); // Fetch status from /api/status/hostname
+                    const status = await fetchNodeStatus(host.name); // Fetch status from /api/status/hostname
                     statusCell.textContent = status;
                     row.appendChild(statusCell);
 
@@ -253,7 +253,7 @@
             }
         }
 
-        async function fetchHostStatus(hostname) {
+        async function fetchNodeStatus(hostname) {
             try {
                 const response = await fetch(`/api/status/${hostname}`);
                 const status = await response.text(); // Assumes response is either "online" or "offline"
@@ -275,7 +275,7 @@
             try {
                 indicator.style.display = 'inline-block'; // Show loading indicator
                 await fetch(`/api/${action}/${host}`, { method: 'POST' });
-                setTimeout(fetchHosts, 1000); // Refresh status
+                setTimeout(fetchNodes, 1000); // Refresh status
             } catch (err) {
                 console.error(`Failed to send ${action} command:`, err);
             } finally {
@@ -283,7 +283,7 @@
             }
         }
 
-        fetchHosts();
+        fetchNodes();
 
         const href = window.location.href;
         const command = `curl -fsSL ${href}download/installer.sh | sh -s ${href} --port 9090`;

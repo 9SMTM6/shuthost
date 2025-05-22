@@ -1,4 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{collections::{HashMap, HashSet}, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 
 use axum::{
     Json, Router,
@@ -12,7 +12,7 @@ use serde_json::json;
 use sha2::Sha256;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
+    net::TcpStream, sync::Mutex,
 };
 use tracing::{debug, error, info, warn};
 
@@ -20,23 +20,24 @@ use crate::{http::AppState, wol::send_magic_packet};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
-        .route("/hosts", get(list_hosts))
+        .route("/nodes", get(list_nodes))
         .route("/wake/{hostname}", post(wake_host))
         .route("/shutdown/{hostname}", post(shutdown_host))
         .route("/status/{hostname}", get(status_host))
+        .route("/m2m/{hostname}/{action}", post(handle_lease))
 }
 
-async fn list_hosts(State(AppState { config_rx, .. }): State<AppState>) -> impl IntoResponse {
+async fn list_nodes(State(AppState { config_rx, .. }): State<AppState>) -> impl IntoResponse {
     let config = config_rx.borrow();
     let hosts: Vec<_> = config
-        .hosts
+        .nodes
         .iter()
-        .map(|(name, host)| {
+        .map(|(name, node)| {
             json!({
                 "name": name,
-                "ip": host.ip,
-                "mac": host.mac,
-                "port": host.port,
+                "ip": node.ip,
+                "mac": node.mac,
+                "port": node.port,
             })
         })
         .collect();
@@ -71,7 +72,7 @@ async fn wake_host(
 ) -> impl IntoResponse {
     let host = {
         let config = config_rx.borrow();
-        let Some(host) = config.hosts.get(&hostname) else {
+        let Some(host) = config.nodes.get(&hostname) else {
             warn!("Wake request for unknown host '{}'", hostname);
             return (StatusCode::NOT_FOUND, "Unknown host").into_response();
         };
@@ -99,24 +100,24 @@ async fn shutdown_host(
     Path(hostname): Path<String>,
     State(AppState { config_rx, .. }): State<AppState>,
 ) -> impl IntoResponse {
-    let host = {
+    let node = {
         let config = config_rx.borrow();
-        let Some(host) = config.hosts.get(&hostname) else {
+        let Some(node) = config.nodes.get(&hostname) else {
             warn!("Shutdown request for unknown host '{}'", hostname);
             return (StatusCode::NOT_FOUND, "Unknown host").into_response();
         };
-        host.clone()
+        node.clone()
     };
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
     let message = format!("{}|shutdown", timestamp);
-    let signature = sign_hmac(&message, &host.shared_secret);
+    let signature = sign_hmac(&message, &node.shared_secret);
     let full_message = format!("{}|{}", message, signature);
 
     info!("Sending shutdown command to '{}'", hostname);
-    match send_shutdown(&host.ip, host.port, &full_message).await {
+    match send_shutdown(&node.ip, node.port, &full_message).await {
         Ok(resp) => {
             info!("Shutdown response from '{}': {}", hostname, resp);
             resp.into_response()
@@ -158,4 +159,85 @@ fn sign_hmac(message: &str, secret: &str) -> String {
     let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).expect("Invalid key");
     mac.update(message.as_bytes());
     hex::encode(mac.finalize().into_bytes())
+}
+
+/// node_name => set of client_ids holding lease
+pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<String>>>>;
+
+const ALLOWED_WINDOW: u64 = 30; // Seconds
+
+#[axum::debug_handler]
+async fn handle_lease(
+    Path((node, action)): Path<(String, String)>,
+    headers: axum::http::HeaderMap,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let client_id = headers
+        .get("X-Client-ID")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing X-Client-ID"))?;
+
+    let data_str = headers
+        .get("X-Request")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing X-Request"))?;
+
+    let parts: Vec<&str> = data_str.split('|').collect();
+    if parts.len() != 3 {
+        return Err((StatusCode::BAD_REQUEST, "Invalid request format"));
+    }
+
+    let (timestamp_str, command, signature) = (parts[0], parts[1], parts[2]);
+    if command != action {
+        return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
+    }
+
+    let timestamp: u64 = timestamp_str
+        .parse()
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid timestamp"))?;
+
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    if now.abs_diff(timestamp) > ALLOWED_WINDOW {
+        return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
+    }
+
+    let shared_secret = {
+        let config = state.config_rx.borrow();
+        config.clients.get(client_id).ok_or_else(|| {
+            warn!("Unknown client '{}'", client_id);
+            (StatusCode::FORBIDDEN, "Unknown client")
+        })?.shared_secret.clone()
+    };    
+
+    let message = format!("{}|{}", timestamp_str, command);
+    if !verify_hmac(&message, signature, shared_secret.as_bytes()) {
+        return Err((StatusCode::UNAUTHORIZED, "Invalid HMAC signature"));
+    }
+
+    let mut leases = state.leases.lock().await;
+    let lease_set = leases.entry(node.clone()).or_default();
+
+    match action.as_str() {
+        "take" => {
+            lease_set.insert(client_id.to_string());
+            info!("Client '{}' took lease on '{}'", client_id, node);
+            Ok("Lease taken".into_response())
+        }
+        "release" => {
+            lease_set.remove(client_id);
+            info!("Client '{}' released lease on '{}'", client_id, node);
+            Ok("Lease released".into_response())
+        }
+        _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
+    }
+}
+
+// Step 5: Verify HMAC signature
+fn verify_hmac(message: &str, received_signature: &str, secret: &[u8]) -> bool {
+    let mut mac = Hmac::<Sha256>::new_from_slice(secret).expect("HMAC can take a key of any size");
+    mac.update(message.as_bytes());
+    let computed_signature = mac.finalize().into_bytes();
+    let computed_signature_hex = hex::encode(computed_signature);
+
+    received_signature == computed_signature_hex
 }

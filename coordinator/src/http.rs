@@ -11,8 +11,8 @@ use tokio::time::timeout;
 use tracing::{debug, info};
 
 use crate::{
-    config::{ControllerConfig, load_coordinator_config, watch_config_file},
-    routes::{api_routes, get_download_router},
+    config::{load_coordinator_config, watch_config_file, ControllerConfig},
+    routes::{api_routes, get_download_router, LeaseMap},
 };
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use clap::Parser;
@@ -35,6 +35,7 @@ pub struct AppState {
     pub config_rx: watch::Receiver<Arc<ControllerConfig>>,
     pub is_on_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
     pub ws_tx: broadcast::Sender<String>,
+    pub leases: LeaseMap,
 }
 
 use tokio::sync::watch;
@@ -86,6 +87,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         is_on_rx,
         ws_tx,
         config_path: config_path.to_path_buf(),
+        leases: LeaseMap::default(),
     };
 
     let app = Router::new()
@@ -115,7 +117,7 @@ async fn poll_host_statuses(
         let config = config_rx.borrow().clone();
         let mut status_map = HashMap::new();
 
-        for (name, host) in &config.hosts {
+        for (name, host) in &config.nodes {
             let addr = format!("{}:{}", host.ip, host.port);
             let is_online = matches!(
                 timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await,

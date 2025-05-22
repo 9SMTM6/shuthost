@@ -4,7 +4,6 @@ use global_service_install::{is_openrc, is_systemd, is_sysvinit};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 use std::{
-    collections::HashMap,
     fs::File,
     io::Write,
     net::IpAddr,
@@ -96,11 +95,11 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         config_file
             .write_all(
                 toml::to_string(&ControllerConfig {
-                    hosts: HashMap::new(),
                     server: ServerConfig {
                         port: args.port,
                         bind: args.bind,
                     },
+                    ..Default::default()
                 })
                 .unwrap()
                 .as_bytes(),

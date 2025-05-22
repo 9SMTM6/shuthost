@@ -7,7 +7,7 @@ use tokio::sync::{broadcast, watch};
 use tracing::{error, info};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Host {
+pub struct Node {
     pub ip: String,
     pub mac: String,
     pub port: u16,
@@ -15,12 +15,19 @@ pub struct Host {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ControllerConfig {
-    pub server: ServerConfig,
-    pub hosts: HashMap<String, Host>,
+pub struct Client {
+    pub id: String,
+    pub shared_secret: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct ControllerConfig {
+    pub server: ServerConfig,
+    pub nodes: HashMap<String, Node>,
+    pub clients: HashMap<String, Client>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ServerConfig {
     pub port: u16,
     pub bind: String,
