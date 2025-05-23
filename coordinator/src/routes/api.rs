@@ -7,9 +7,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use hmac::{Hmac, Mac};
 use serde_json::json;
-use sha2::Sha256;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream, sync::Mutex,
@@ -17,6 +15,7 @@ use tokio::{
 use tracing::{debug, error, info, warn};
 
 use crate::{http::AppState, wol::send_magic_packet};
+use shuthost_common::{create_hmac_message, sign_hmac, verify_hmac, ALLOWED_WINDOW};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
@@ -108,11 +107,8 @@ async fn shutdown_host(
         };
         node.clone()
     };
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let message = format!("{}|shutdown", timestamp);
+    
+    let message = create_hmac_message("shutdown");
     let signature = sign_hmac(&message, &node.shared_secret);
     let full_message = format!("{}|{}", message, signature);
 
@@ -155,16 +151,8 @@ async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, Str
     Ok(String::from_utf8_lossy(&buf[..n]).to_string())
 }
 
-fn sign_hmac(message: &str, secret: &str) -> String {
-    let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).expect("Invalid key");
-    mac.update(message.as_bytes());
-    hex::encode(mac.finalize().into_bytes())
-}
-
 /// node_name => set of client_ids holding lease
 pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<String>>>>;
-
-const ALLOWED_WINDOW: u64 = 30; // Seconds
 
 #[axum::debug_handler]
 async fn handle_lease(
@@ -230,14 +218,4 @@ async fn handle_lease(
         }
         _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
     }
-}
-
-// Step 5: Verify HMAC signature
-fn verify_hmac(message: &str, received_signature: &str, secret: &[u8]) -> bool {
-    let mut mac = Hmac::<Sha256>::new_from_slice(secret).expect("HMAC can take a key of any size");
-    mac.update(message.as_bytes());
-    let computed_signature = mac.finalize().into_bytes();
-    let computed_signature_hex = hex::encode(computed_signature);
-
-    received_signature == computed_signature_hex
 }

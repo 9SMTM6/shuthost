@@ -22,3 +22,4 @@ axum = { version = "0.8.3", features = ["macros", "ws"] }
 notify = "8.0.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+shuthost_common.workspace = true

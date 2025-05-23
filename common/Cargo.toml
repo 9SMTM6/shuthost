@@ -1,5 +1,5 @@
 [package]
-name = "shuthost_node_agent"
+name = "shuthost_common"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -7,10 +7,6 @@ edition.workspace = true
 documentation.workspace = true
 
 [dependencies]
-shuthost_common.workspace = true
-clap.workspace = true
-hex.workspace = true
 hmac.workspace = true
-rand.workspace = true
 sha2.workspace = true
-global_service_install.workspace = true
+hex.workspace = true

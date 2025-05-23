@@ -999,6 +999,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "shuthost_common"
+version = "0.5.0"
+dependencies = [
+ "hex",
+ "hmac",
+ "sha2",
+]
+
+[[package]]
 name = "shuthost_coordinator"
 version = "0.5.0"
 dependencies = [
@@ -1013,6 +1022,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "shuthost_common",
  "tokio",
  "toml",
  "tracing",
@@ -1029,6 +1039,7 @@ dependencies = [
  "hmac",
  "rand",
  "sha2",
+ "shuthost_common",
 ]
 
 [[package]]
