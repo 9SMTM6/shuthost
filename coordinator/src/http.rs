@@ -1,8 +1,5 @@
 use axum::{
-    Router,
-    extract::State,
-    response::{IntoResponse, Response},
-    routing::get,
+    extract::State, response::{IntoResponse, Redirect, Response}, routing::get, Router
 };
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
@@ -93,8 +90,11 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     let app = Router::new()
         .nest("/api", api_routes())
         .nest("/download", get_download_router())
-        .route("/", get(serve_ui))
+        .route("/", get(|| async {Redirect::permanent("/index.html")}))
+        .route("/index.html", get(serve_ui))
         .route("/ws", get(ws_handler))
+        .route("/manifest.json", get(serve_manifest))
+        .route("/favicon.svg", get(serve_favicon))
         .with_state(app_state);
 
     let addr = SocketAddr::from((listen_ip, listen_port));
@@ -158,4 +158,18 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
             }
         }
     });
+}
+
+async fn serve_manifest() -> impl IntoResponse {
+    Response::builder()
+        .header("Content-Type", "application/json")
+        .body(include_bytes!("../manifest.json").into_response())
+        .unwrap()
+}
+
+async fn serve_favicon() -> impl IntoResponse {
+    Response::builder()
+        .header("Content-Type", "image/svg+xml")
+        .body(include_bytes!("../favicon.svg").into_response())
+        .unwrap()
 }

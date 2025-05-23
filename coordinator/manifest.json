@@ -1,0 +1,16 @@
+{
+  "name": "Shuthost",
+  "short_name": "shuthost",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "description": "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
