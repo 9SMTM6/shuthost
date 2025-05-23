@@ -1,16 +1,17 @@
 #!/bin/sh
 
-# Usage: ./lease.sh <take|release> <node>
+# Usage: ./lease.sh <take|release> <node> [remote_url]
 # Requires: curl, openssl, date
 
 set -eu
 
 ACTION="$1"
 NODE="$2"
-COORDINATOR_URL="http://your-coordinator/api/lease/${NODE}/${ACTION}"
+REMOTE_URL="${3:-"{embedded_remote_url}"}"
+COORDINATOR_URL="${REMOTE_URL}/api/lease/${NODE}/${ACTION}"
 
-CLIENT_ID="my-client-id"
-SECRET="your-shared-secret"
+CLIENT_ID="{client_id"
+SECRET="{shared_secret}"
 
 # Get current timestamp (UTC)
 TIMESTAMP=$(date -u +%s)
