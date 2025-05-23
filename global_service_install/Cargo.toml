@@ -1,9 +1,0 @@
-[package]
-name = "global_service_install"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-description.workspace = true
-documentation.workspace = true
-
-[dependencies]

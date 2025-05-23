@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["node_agent", "coordinator", "global_service_install", "common"]
+members = ["node_agent", "coordinator", "common"]
 
 [workspace.package]
 version = "0.5.0"

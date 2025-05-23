@@ -1,6 +1,6 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
-use global_service_install::{is_openrc, is_systemd, is_sysvinit};
+use shuthost_common::{is_openrc, is_systemd, is_sysvinit};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 use std::{
@@ -71,12 +71,12 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;
     } else if is_openrc() {
-        global_service_install::install_self_as_service_openrc_linux(
+        shuthost_common::install_self_as_service_openrc_linux(
             &name,
             &bind_known_vals(OPENRC_FILE_TEMPLATE),
         )?;
     } else if is_sysvinit() {
-        global_service_install::install_self_as_service_sysvinit_linux(
+        shuthost_common::install_self_as_service_sysvinit_linux(
             &name,
             &bind_known_vals(SYSVINIT_INIT_TEMPLATE),
         )?;
@@ -85,7 +85,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    global_service_install::install_self_as_service_macos(
+    shuthost_common::install_self_as_service_macos(
         name,
         &bind_known_vals(SERVICE_FILE_TEMPLATE),
     )?;

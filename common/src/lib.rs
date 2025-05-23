@@ -49,3 +49,6 @@ pub fn parse_hmac_message(data: &str) -> Option<(u64, String, String)> {
     let timestamp = parts[0].parse().ok()?;
     Some((timestamp, parts[1].to_string(), parts[2].to_string()))
 }
+
+mod service_install;
+pub use service_install::*;

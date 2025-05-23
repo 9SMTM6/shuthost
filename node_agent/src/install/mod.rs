@@ -1,6 +1,6 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
-use global_service_install::is_systemd;
+use shuthost_common::is_systemd;
 use rand::Rng;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
@@ -41,19 +41,19 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     };
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        global_service_install::install_self_as_service_systemd(
+        shuthost_common::install_self_as_service_systemd(
             &name,
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;
     } else {
-        global_service_install::install_self_as_service_sysvinit_linux(
+        shuthost_common::install_self_as_service_sysvinit_linux(
             &name,
             &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
         )?;
     }
 
     #[cfg(target_os = "macos")]
-    global_service_install::install_self_as_service_macos(
+    shuthost_common::install_self_as_service_macos(
         name,
         &bind_known_vals(SERVICE_FILE_TEMPLATE),
     )?;

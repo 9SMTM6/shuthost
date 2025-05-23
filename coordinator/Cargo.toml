@@ -11,7 +11,7 @@ hmac.workspace = true
 sha2.workspace = true
 rand.workspace = true
 hex.workspace = true
-global_service_install.workspace = true
+shuthost_common.workspace = true
 clap = {workspace = true, features = ["env"]}
 toml = "0.8.20"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -22,4 +22,3 @@ axum = { version = "0.8.3", features = ["macros", "ws"] }
 notify = "8.0.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-shuthost_common.workspace = true
