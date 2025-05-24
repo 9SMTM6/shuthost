@@ -18,7 +18,7 @@ TIMESTAMP=$(date -u +%s)
 
 # Build the message and signature
 MESSAGE="${TIMESTAMP}|${ACTION}"
-SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET" -binary | openssl base64)
+SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET" -binary | hexdump -ve '/1 "%02x"')
 
 # Combine into final X-Request header
 X_REQUEST="${TIMESTAMP}|${ACTION}|${SIGNATURE}"

@@ -188,10 +188,6 @@ async fn handle_lease(
         .parse()
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid timestamp"))?;
 
-    if is_timestamp_in_valid_range(timestamp) {
-        return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
-    }
-
     let shared_secret = {
         let config = state.config_rx.borrow();
         config
@@ -205,8 +201,14 @@ async fn handle_lease(
             .clone()
     };
 
+    if !is_timestamp_in_valid_range(timestamp) {
+        info!("Timestamp out of range for client '{}'", client_id);
+        return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
+    }
+
     let message = format!("{}|{}", timestamp_str, command);
     if !verify_hmac(&message, signature, &shared_secret) {
+        info!("Invalid HMAC signature for client '{}'", client_id);
         return Err((StatusCode::UNAUTHORIZED, "Invalid HMAC signature"));
     }
 
