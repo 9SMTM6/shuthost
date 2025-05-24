@@ -16,7 +16,6 @@ pub struct Node {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Client {
-    pub id: String,
     pub shared_secret: String,
 }
 

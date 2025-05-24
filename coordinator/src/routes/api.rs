@@ -23,7 +23,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/wake/{hostname}", post(wake_host))
         .route("/shutdown/{hostname}", post(shutdown_host))
         .route("/status/{hostname}", get(status_host))
-        .route("/m2m/{hostname}/{action}", post(handle_lease))
+        .route("/m2m/lease/{hostname}/{action}", post(handle_lease))
 }
 
 async fn list_nodes(State(AppState { config_rx, .. }): State<AppState>) -> impl IntoResponse {
@@ -195,7 +195,7 @@ async fn handle_lease(
             warn!("Unknown client '{}'", client_id);
             (StatusCode::FORBIDDEN, "Unknown client")
         })?.shared_secret.clone()
-    };    
+    };
 
     let message = format!("{}|{}", timestamp_str, command);
     if !verify_hmac(&message, signature, shared_secret.as_bytes()) {
@@ -204,6 +204,8 @@ async fn handle_lease(
 
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(node.clone()).or_default();
+
+    // TODO: Implement taking actual action based on leases (shutdown etc)
 
     match action.as_str() {
         "take" => {

@@ -163,6 +163,12 @@
         <code>{coordinator_config}</code>.
     </p>
 
+    <p>To download the client script for remote management, use:</p>
+    <div class="code-block">
+        <button class="copy-button" onclick="copyClientScriptUrl()">Copy</button>
+        <code id="client-script-url">Loading...</code>
+    </div>
+
     <script>
         let socket;
 
@@ -304,6 +310,27 @@
                 }, 1500);
             });
         }
+
+        function updateClientScriptUrl() {
+            const href = window.location.origin;
+            const url = `${href}/download/shuthost_client.sh?remote_url=${encodeURIComponent(href)}`;
+            document.getElementById('client-script-url').textContent = url;
+        }
+
+        function copyClientScriptUrl() {
+            const url = document.getElementById('client-script-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const button = document.querySelector('.code-block:nth-of-type(2) .copy-button');
+                const original = button.textContent;
+                button.textContent = "Copied!";
+                setTimeout(() => {
+                    button.textContent = original;
+                }, 1500);
+            });
+        }
+
+        // Add this to your initialization code
+        updateClientScriptUrl();
     </script>
 </body>
 
