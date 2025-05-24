@@ -289,8 +289,8 @@
 
         fetchNodes();
 
-        const href = window.location.href;
-        const command = `curl -fsSL ${href}download/installer.sh | sh -s ${href} --port 9090`;
+        const href = window.location.origin;
+        const command = `curl -fsSL ${href}/download/node_agent_installer.sh | sh -s ${href} --port 9090`;
         const codeElement = document.getElementById('install-command');
         codeElement.textContent = command;
 

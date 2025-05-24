@@ -35,7 +35,7 @@ node_agent_handler!(node_agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
 node_agent_handler!(node_agent_linux_musl_aarch64, "aarch64-unknown-linux-musl");
 
 async fn get_installer() -> impl IntoResponse {
-    const INSTALLER: &'static [u8] = include_bytes!("./autoinstall.sh");
+    const INSTALLER: &'static [u8] = include_bytes!("./node_agent_installer.sh");
     Response::builder()
         .header("Content-Type", "text/plain")
         .header("Content-Length", INSTALLER.len().to_string())
@@ -46,7 +46,7 @@ async fn get_installer() -> impl IntoResponse {
 
 pub fn get_download_router() -> Router<AppState> {
     Router::new()
-        .route("/installer.sh", get(get_installer))
+        .route("/node_agent_installer.sh", get(get_installer))
         .route("/node_agent/macos/aarch64", get(node_agent_macos_aarch64))
         .route("/node_agent/macos/x86_64", get(node_agent_macos_x86_64))
         .route("/node_agent/linux/x86_64", get(node_agent_linux_x86_64))
