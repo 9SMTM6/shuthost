@@ -10,7 +10,7 @@ NODE="$2"
 REMOTE_URL="${3:-"{embedded_remote_url}"}"
 COORDINATOR_URL="${REMOTE_URL}/api/lease/${NODE}/${ACTION}"
 
-CLIENT_ID="{client_id"
+CLIENT_ID="{client_id}"
 SECRET="{shared_secret}"
 
 # Get current timestamp (UTC)

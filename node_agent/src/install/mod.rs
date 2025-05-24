@@ -1,7 +1,7 @@
 use clap::Parser;
+use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::is_systemd;
-use rand::Rng;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
@@ -70,17 +70,6 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     );
 
     Ok(())
-}
-
-pub fn generate_secret() -> String {
-    // Simple random secret generation: 32 characters
-    let mut rng = rand::rng();
-    let chars: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        .chars()
-        .collect();
-    (0..32)
-        .map(|_| chars[rng.random_range(0..chars.len())])
-        .collect::<String>()
 }
 
 pub fn get_default_shutdown_command() -> String {
