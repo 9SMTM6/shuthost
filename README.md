@@ -9,6 +9,12 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Known issues:
 
+* requires static IPs on the hosts to control
+* requires that WOL works:
+    * motherboard can do it (sometimes its not supported, or only supported in higher power levels, e.g. RAM based sleep) 
+        * AND IS CONFIGURED accordingly
+    * OS will also need to be configured accordingly
+    * broadcasts need to be enabled on the network, and the hosts must be able to reach each other (TODO test for that)
 * UI still gets stuck on load sometimes. IDK precisely why. Need to add timeouts when communicating with other hosts
 * docker is problematic:
     * its currently untested

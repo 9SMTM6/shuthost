@@ -67,7 +67,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        global_service_install::install_self_as_service_systemd(
+        shuthost_common::install_self_as_service_systemd(
             &name,
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;

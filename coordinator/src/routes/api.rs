@@ -28,6 +28,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/shutdown/{hostname}", post(shutdown_host))
         .route("/status/{hostname}", get(status_host))
         .route("/m2m/lease/{hostname}/{action}", post(handle_lease))
+        .route("/test_wol", post(test_wol)) // Add this line
 }
 
 async fn list_nodes(State(AppState { config_rx, .. }): State<AppState>) -> impl IntoResponse {
@@ -229,5 +230,29 @@ async fn handle_lease(
             Ok("Lease released".into_response())
         }
         _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
+    }
+}
+
+async fn test_wol(
+    headers: axum::http::HeaderMap,
+) -> impl IntoResponse {
+    let remote_ip = headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| {
+            headers
+                .get("x-real-ip")
+                .and_then(|v| v.to_str().ok())
+        })
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "No client IP found").into_response())?;
+
+    match crate::wol::test_wol_reachability(remote_ip) {
+        Ok((direct, broadcast)) => {
+            Ok(Json(json!({
+                "direct": direct,
+                "broadcast": broadcast
+            })).into_response())
+        }
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e).into_response()),
     }
 }

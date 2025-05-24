@@ -5,6 +5,7 @@ mod server;
 use clap::{Parser, Subcommand};
 use install::InstallArgs;
 use install::install_node_agent;
+use install::DEFAULT_PORT;
 use server::ServiceArgs;
 use std::env;
 
@@ -25,6 +26,12 @@ pub enum Command {
 
     /// Install the node_agent
     Install(InstallArgs),
+
+    /// Test WoL packet reachability
+    TestWol {
+        #[arg(long = "port", default_value_t = DEFAULT_PORT + 1)]
+        port: u16,
+    },
 }
 
 fn main() {
@@ -37,6 +44,10 @@ fn main() {
         },
         Command::Service(args) => {
             server::start_node_agent(args);
-        }
+        },
+        Command::TestWol { port } => match install::test_wol_reachability(port) {
+            Ok(_) => (),
+            Err(e) => eprintln!("Error during WoL test: {}", e),
+        },
     }
 }
