@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 use axum::{
@@ -20,7 +19,7 @@ use tokio::{
 use tracing::{debug, error, info, warn};
 
 use crate::{http::AppState, wol::send_magic_packet};
-use shuthost_common::{ALLOWED_WINDOW, create_hmac_message, sign_hmac, verify_hmac};
+use shuthost_common::{create_hmac_message, sign_hmac, verify_hmac, is_timestamp_in_valid_range};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
@@ -189,11 +188,7 @@ async fn handle_lease(
         .parse()
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid timestamp"))?;
 
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    if now.abs_diff(timestamp) > ALLOWED_WINDOW {
+    if is_timestamp_in_valid_range(timestamp) {
         return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
     }
 
@@ -211,7 +206,7 @@ async fn handle_lease(
     };
 
     let message = format!("{}|{}", timestamp_str, command);
-    if !verify_hmac(&message, signature, shared_secret.as_bytes()) {
+    if !verify_hmac(&message, signature, &shared_secret) {
         return Err((StatusCode::UNAUTHORIZED, "Invalid HMAC signature"));
     }
 

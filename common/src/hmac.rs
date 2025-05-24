@@ -11,12 +11,15 @@ fn create_hmac(message: &str, secret: &[u8]) -> Hmac<Sha256> {
     mac
 }
 
-pub fn create_hmac_message(command: &str) -> String {
-    let timestamp = SystemTime::now()
+fn unix_time_seconds() -> u64 {
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    format!("{}|{}", timestamp, command)
+        .expect("Time went backwards")
+        .as_secs()
+}
+
+pub fn create_hmac_message(command: &str) -> String {
+    format!("{}|{}", unix_time_seconds(), command)
 }
 
 pub fn sign_hmac(message: &str, secret: &str) -> String {
@@ -24,20 +27,12 @@ pub fn sign_hmac(message: &str, secret: &str) -> String {
     hex::encode(mac.finalize().into_bytes())
 }
 
-pub fn verify_hmac(message: &str, received_signature: &str, secret: &[u8]) -> bool {
-    let mac = create_hmac(message, secret);
-    let computed_signature = mac.finalize().into_bytes();
-    let computed_signature_hex = hex::encode(computed_signature);
-
-    received_signature == computed_signature_hex
+pub fn verify_hmac(message: &str, received_signature: &str, secret: &str) -> bool {
+    received_signature == sign_hmac(message, secret)
 }
 
-pub fn is_timestamp_valid(timestamp: u64) -> bool {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    now.abs_diff(timestamp) <= ALLOWED_WINDOW
+pub fn is_timestamp_in_valid_range(timestamp: u64) -> bool {
+    unix_time_seconds().abs_diff(timestamp) <= ALLOWED_WINDOW
 }
 
 pub fn parse_hmac_message(data: &str) -> Option<(u64, String, String)> {

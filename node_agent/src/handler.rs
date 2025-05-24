@@ -1,5 +1,5 @@
 use crate::server::ServiceArgs;
-use shuthost_common::{is_timestamp_valid, parse_hmac_message, verify_hmac};
+use shuthost_common::{is_timestamp_in_valid_range, parse_hmac_message, verify_hmac};
 
 pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
@@ -12,12 +12,12 @@ pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> (St
         None => return ("ERROR: Invalid request format".to_string(), false),
     };
 
-    if !is_timestamp_valid(timestamp) {
+    if !is_timestamp_in_valid_range(timestamp) {
         return ("ERROR: Timestamp out of range".to_string(), false);
     }
 
     let message = format!("{}|{}", timestamp, command);
-    if !verify_hmac(&message, &signature, config.shared_secret.as_bytes()) {
+    if !verify_hmac(&message, &signature, &config.shared_secret) {
         return ("ERROR: Invalid HMAC signature".to_string(), false);
     }
 
