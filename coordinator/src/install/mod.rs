@@ -16,7 +16,8 @@ use crate::config::{ControllerConfig, ServerConfig};
 #[cfg(target_os = "linux")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.ini");
 #[cfg(target_os = "macos")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_coordinator.plist.xml");
+const SERVICE_FILE_TEMPLATE: &str =
+    include_str!("com.github_9smtm6.shuthost_coordinator.plist.xml");
 #[cfg(target_os = "linux")]
 const SYSVINIT_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_coordinator.sh");
 #[cfg(target_os = "linux")]
@@ -85,10 +86,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::install_self_as_service_macos(
-        name,
-        &bind_known_vals(SERVICE_FILE_TEMPLATE),
-    )?;
+    shuthost_common::install_self_as_service_macos(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
 
     if !Path::new(&config_location).exists() {
         let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;

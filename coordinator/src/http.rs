@@ -1,5 +1,8 @@
 use axum::{
-    extract::State, response::{IntoResponse, Redirect, Response}, routing::get, Router
+    Router,
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+    routing::get,
 };
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
@@ -8,8 +11,8 @@ use tokio::time::timeout;
 use tracing::{debug, info};
 
 use crate::{
-    config::{load_coordinator_config, watch_config_file, ControllerConfig},
-    routes::{api_routes, download_client_script, get_download_router, LeaseMap},
+    config::{ControllerConfig, load_coordinator_config, watch_config_file},
+    routes::{LeaseMap, api_routes, download_client_script, get_download_router},
 };
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use clap::Parser;
@@ -91,7 +94,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         .nest("/api", api_routes())
         .nest("/download", get_download_router())
         .route("/download/shuthost_client.sh", get(download_client_script))
-        .route("/", get(|| async {Redirect::permanent("/index.html")}))
+        .route("/", get(|| async { Redirect::permanent("/index.html") }))
         .route("/index.html", get(serve_ui))
         .route("/ws", get(ws_handler))
         .route("/manifest.json", get(serve_manifest))
@@ -139,7 +142,7 @@ async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl 
     let html = include_str!("../index.html")
         .replace("{coordinator_config}", &config_path.to_string_lossy())
         .replace("{description}", env!("CARGO_PKG_DESCRIPTION"));
-    
+
     Response::builder()
         .header("Content-Type", "text/html")
         .body(html.into_response())
@@ -164,8 +167,8 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
 }
 
 async fn serve_manifest() -> impl IntoResponse {
-    let manifest = include_str!("../manifest.json")
-        .replace("{description}", env!("CARGO_PKG_DESCRIPTION"));
+    let manifest =
+        include_str!("../manifest.json").replace("{description}", env!("CARGO_PKG_DESCRIPTION"));
 
     Response::builder()
         .header("Content-Type", "application/json")

@@ -9,8 +9,12 @@ use serde::Deserialize;
 const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.sh");
 
 // Word lists for generating readable client IDs
-const ADJECTIVES: &[&str] = &["red", "blue", "swift", "calm", "bold", "wise", "kind", "brave"];
-const NOUNS: &[&str] = &["fox", "bird", "wolf", "bear", "lion", "deer", "hawk", "eagle"];
+const ADJECTIVES: &[&str] = &[
+    "red", "blue", "swift", "calm", "bold", "wise", "kind", "brave",
+];
+const NOUNS: &[&str] = &[
+    "fox", "bird", "wolf", "bear", "lion", "deer", "hawk", "eagle",
+];
 
 #[derive(Deserialize)]
 pub struct ClientScriptQuery {
@@ -19,10 +23,8 @@ pub struct ClientScriptQuery {
     client_id: Option<String>,
 }
 
-pub async fn download_client_script(
-    Query(params): Query<ClientScriptQuery>,
-) -> impl IntoResponse {
-    // TODO: switch to download per script like with the agent. 
+pub async fn download_client_script(Query(params): Query<ClientScriptQuery>) -> impl IntoResponse {
+    // TODO: switch to download per script like with the agent.
     // Like with the agent, infer the client name from hostname, and print out the config to hadd to the config file.
     // Both of these have to happen in the download script.
     let client_id = params.client_id.unwrap_or_else(generate_client_id);

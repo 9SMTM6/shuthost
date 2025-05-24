@@ -1,4 +1,8 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use axum::{
     Json, Router,
@@ -10,12 +14,13 @@ use axum::{
 use serde_json::json;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream, sync::Mutex,
+    net::TcpStream,
+    sync::Mutex,
 };
 use tracing::{debug, error, info, warn};
 
 use crate::{http::AppState, wol::send_magic_packet};
-use shuthost_common::{create_hmac_message, sign_hmac, verify_hmac, ALLOWED_WINDOW};
+use shuthost_common::{ALLOWED_WINDOW, create_hmac_message, sign_hmac, verify_hmac};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
@@ -107,7 +112,7 @@ async fn shutdown_host(
         };
         node.clone()
     };
-    
+
     let message = create_hmac_message("shutdown");
     let signature = sign_hmac(&message, &node.shared_secret);
     let full_message = format!("{}|{}", message, signature);
@@ -184,17 +189,25 @@ async fn handle_lease(
         .parse()
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid timestamp"))?;
 
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     if now.abs_diff(timestamp) > ALLOWED_WINDOW {
         return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
     }
 
     let shared_secret = {
         let config = state.config_rx.borrow();
-        config.clients.get(client_id).ok_or_else(|| {
-            warn!("Unknown client '{}'", client_id);
-            (StatusCode::FORBIDDEN, "Unknown client")
-        })?.shared_secret.clone()
+        config
+            .clients
+            .get(client_id)
+            .ok_or_else(|| {
+                warn!("Unknown client '{}'", client_id);
+                (StatusCode::FORBIDDEN, "Unknown client")
+            })?
+            .shared_secret
+            .clone()
     };
 
     let message = format!("{}|{}", timestamp_str, command);

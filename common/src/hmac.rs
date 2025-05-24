@@ -6,8 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub const ALLOWED_WINDOW: u64 = 30; // Seconds
 
 fn create_hmac(message: &str, secret: &[u8]) -> Hmac<Sha256> {
-    let mut mac = Hmac::<Sha256>::new_from_slice(secret)
-        .expect("HMAC can take a key of any size");
+    let mut mac = Hmac::<Sha256>::new_from_slice(secret).expect("HMAC can take a key of any size");
     mac.update(message.as_bytes());
     mac
 }
@@ -54,5 +53,7 @@ pub fn parse_hmac_message(data: &str) -> Option<(u64, String, String)> {
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
-    (0..32).map(|_| rng.sample(rand::distr::Alphanumeric) as char).collect()
+    (0..32)
+        .map(|_| rng.sample(rand::distr::Alphanumeric) as char)
+        .collect()
 }

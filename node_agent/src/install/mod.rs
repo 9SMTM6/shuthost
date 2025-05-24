@@ -53,10 +53,7 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::install_self_as_service_macos(
-        name,
-        &bind_known_vals(SERVICE_FILE_TEMPLATE),
-    )?;
+    shuthost_common::install_self_as_service_macos(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
 
     let interface = &get_default_interface().unwrap();
     println!(

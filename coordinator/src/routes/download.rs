@@ -51,6 +51,12 @@ pub fn get_download_router() -> Router<AppState> {
         .route("/node_agent/macos/x86_64", get(node_agent_macos_x86_64))
         .route("/node_agent/linux/x86_64", get(node_agent_linux_x86_64))
         .route("/node_agent/linux/aarch64", get(node_agent_linux_aarch64))
-        .route("/node_agent/linux-musl/x86_64", get(node_agent_linux_musl_x86_64))
-        .route("/node_agent/linux-musl/aarch64", get(node_agent_linux_musl_aarch64))
+        .route(
+            "/node_agent/linux-musl/x86_64",
+            get(node_agent_linux_musl_x86_64),
+        )
+        .route(
+            "/node_agent/linux-musl/aarch64",
+            get(node_agent_linux_musl_aarch64),
+        )
 }

@@ -1,5 +1,5 @@
-use shuthost_common::{is_timestamp_valid, parse_hmac_message, verify_hmac};
 use crate::server::ServiceArgs;
+use shuthost_common::{is_timestamp_valid, parse_hmac_message, verify_hmac};
 
 pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
