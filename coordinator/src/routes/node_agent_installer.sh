@@ -27,10 +27,10 @@ esac
 OS="$(uname -s)"
 case "$OS" in
     Linux)
-        if ldd --version 2>&1 | grep -q musl; then
-            PLATFORM="linux-musl"
-        else
+        if getconf GNU_LIBC_VERSION >/dev/null 2>&1; then
             PLATFORM="linux"
+        else
+            PLATFORM="linux-musl"  # If not glibc, assume musl on Linux
         fi
         ;;
     Darwin)
