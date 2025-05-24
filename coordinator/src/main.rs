@@ -6,6 +6,7 @@ mod wol;
 
 use clap::{Parser, Subcommand};
 use install::{InstallArgs, install_coordinator};
+use tracing_subscriber::EnvFilter;
 
 use std::{env, fs};
 
@@ -43,7 +44,7 @@ async fn main() {
         Command::ControlService(args) => {
             tracing_subscriber::fmt()
                 .with_env_filter(
-                    tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_default(),
+                    EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info")),
                 )
                 .pretty()
                 .init(); // Initialize logging
