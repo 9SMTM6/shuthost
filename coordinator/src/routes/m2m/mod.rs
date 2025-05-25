@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{collections::{HashMap, HashSet}, fmt::{self, Display}, sync::Arc};
 
 use axum::{
     extract::{Path, Query, State},
@@ -8,11 +8,13 @@ use axum::{
 use rand::seq::IndexedRandom;
 use serde::Deserialize;
 use serde_json::json;
-use shuthost_common::{is_timestamp_in_valid_range, verify_hmac};
+use shuthost_common::{create_hmac_message, is_timestamp_in_valid_range, sign_hmac, verify_hmac};
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{debug, error, info, warn};
 
-use crate::http::AppState;
+use crate::{http::AppState, wol::send_magic_packet};
+
+use super::api::send_shutdown;
 
 const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.sh");
 
@@ -97,8 +99,8 @@ async fn test_wol(
     }
 }
 
-/// node_name => set of client_ids holding lease
-pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<String>>>>;
+/// node_name => set of lease sources holding lease
+pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>;
 
 #[axum::debug_handler]
 async fn handle_lease(
@@ -156,20 +158,138 @@ async fn handle_lease(
 
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(node.clone()).or_default();
-
-    // TODO: Implement taking actual action based on leases (shutdown etc)
+    let lease_source = LeaseSource::Client(client_id.to_string());
 
     match action.as_str() {
         "take" => {
-            lease_set.insert(client_id.to_string());
+            lease_set.insert(lease_source.clone());
             info!("Client '{}' took lease on '{}'", client_id, node);
+            
+            // Take action based on lease state
+            handle_node_state(&node, &lease_set, &state).await?;
+            
             Ok("Lease taken".into_response())
         }
         "release" => {
-            lease_set.remove(client_id);
+            lease_set.remove(&lease_source);
             info!("Client '{}' released lease on '{}'", client_id, node);
+            
+            // Take action based on lease state
+            handle_node_state(&node, &lease_set, &state).await?;
+            
             Ok("Lease released".into_response())
         }
         _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
+    }
+}
+
+pub async fn handle_node_state(
+    node: &str, 
+    lease_set: &HashSet<LeaseSource>,
+    state: &AppState,
+) -> Result<(), (StatusCode, &'static str)> {
+    // If there are any leases, the node should be running
+    let should_be_running = !lease_set.is_empty();
+    
+    debug!("Checking state for node '{}': should_be_running={}, active_leases={:?}", 
+           node, should_be_running, lease_set);
+    
+    let is_on = {
+        let is_on_rx = state.is_on_rx.borrow();
+        is_on_rx.get(node).copied().unwrap_or(false)
+    };
+
+    debug!("Current state for node '{}': is_on={}", node, is_on);
+
+    if should_be_running && !is_on {
+        info!("Node '{}' needs to wake up - has {} active lease(s): {:?}", 
+              node, lease_set.len(), lease_set);
+        wake_node(node, state).await?;
+    } else if !should_be_running && is_on {
+        info!("Node '{}' should shut down - no active leases", node);
+        shutdown_node(node, state).await?;
+    } else {
+        debug!("No action needed for node '{}' (is_on={}, should_be_running={})", 
+               node, is_on, should_be_running);
+    }
+
+    Ok(())
+}
+
+async fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
+    debug!("Attempting to wake node '{}'", node);
+    
+    let host = {
+        let config = state.config_rx.borrow();
+        match config.nodes.get(node) {
+            Some(host) => {
+                debug!("Found configuration for node '{}': ip={}, mac={}", 
+                       node, host.ip, host.mac);
+                host.clone()
+            }
+            None => {
+                error!("No configuration found for node '{}'", node);
+                return Err((StatusCode::NOT_FOUND, "Unknown host"));
+            }
+        }
+    };
+
+    info!("Sending WoL packet to '{}' (MAC: {})", node, host.mac);
+    send_magic_packet(&host.mac, "255.255.255.255")
+        .map_err(|e| {
+            error!("Failed to send WoL packet to '{}': {}", node, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to send wake packet")
+        })?;
+
+    info!("Successfully sent WoL packet to '{}'", node);
+    Ok(())
+}
+
+async fn shutdown_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
+    debug!("Attempting to shutdown node '{}'", node);
+    
+    let node_config = {
+        let config = state.config_rx.borrow();
+        match config.nodes.get(node) {
+            Some(config) => {
+                debug!("Found configuration for node '{}': ip={}, port={}", 
+                       node, config.ip, config.port);
+                config.clone()
+            }
+            None => {
+                error!("No configuration found for node '{}'", node);
+                return Err((StatusCode::NOT_FOUND, "Unknown host"));
+            }
+        }
+    };
+
+    let message = create_hmac_message("shutdown");
+    let signature = sign_hmac(&message, &node_config.shared_secret);
+    let full_message = format!("{}|{}", message, signature);
+
+    info!("Sending shutdown command to '{}' ({}:{})", node, node_config.ip, node_config.port);
+    send_shutdown(&node_config.ip, node_config.port, &full_message)
+        .await
+        .map_err(|e| {
+            error!("Failed to send shutdown command to '{}': {}", node, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to send shutdown command")
+        })?;
+
+    info!("Successfully sent shutdown command to '{}'", node);
+    Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum LeaseSource {
+    WebInterface,
+    Client(String),
+}
+
+impl Display for LeaseSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LeaseSource::WebInterface => write!(f, "web-interface"),
+            LeaseSource::Client(id) => write!(f, "client-{}", id),
+        }
     }
 }

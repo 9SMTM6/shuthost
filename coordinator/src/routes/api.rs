@@ -12,8 +12,7 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
-use crate::{http::AppState, wol::send_magic_packet};
-use shuthost_common::{create_hmac_message, sign_hmac};
+use crate::{http::AppState, routes::m2m::{handle_node_state, LeaseSource}};
 
 use super::m2m::m2m_routes;
 
@@ -23,8 +22,8 @@ pub fn api_routes() -> Router<AppState> {
     Router::new()
         .route("/nodes", get(list_nodes))
         .nest("/m2m", m2m_routes())
-        .route("/wake/{hostname}", post(wake_host))
-        .route("/shutdown/{hostname}", post(shutdown_host))
+        .route("/lease/{hostname}/take", post(take_lease))
+        .route("/lease/{hostname}/release", post(release_lease))
         .route("/status/{hostname}", get(status_host))
 }
 
@@ -67,67 +66,44 @@ async fn status_host(
     }
 }
 
-async fn wake_host(
+async fn take_lease(
     Path(hostname): Path<String>,
-    State(AppState { config_rx, .. }): State<AppState>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let host = {
-        let config = config_rx.borrow();
-        let Some(host) = config.nodes.get(&hostname) else {
-            warn!("Wake request for unknown host '{}'", hostname);
-            return (StatusCode::NOT_FOUND, "Unknown host").into_response();
-        };
-        host.clone()
-    };
-    // let magic_packet_relay = &host.ip;
-    let magic_packet_relay = "255.255.255.255";
-    match send_magic_packet(&host.mac, magic_packet_relay) {
-        Ok(_) => {
-            let info = format!(
-                "Magic packet sent to {} via {}",
-                &host.mac, magic_packet_relay
-            );
-            info!(info);
-            info.into_response()
-        }
-        Err(e) => {
-            error!("Failed to send magic packet to '{}': {}", hostname, e);
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)).into_response()
-        }
+    let mut leases = state.leases.lock().await;
+    let lease_set = leases.entry(hostname.clone()).or_default();
+    lease_set.insert(LeaseSource::WebInterface);
+    
+    info!("Web interface took lease on '{}'", hostname);
+    
+    // Handle node state after lease change
+    if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
+        return (status, msg).into_response();
     }
+    
+    "Lease taken".into_response()
 }
 
-async fn shutdown_host(
+async fn release_lease(
     Path(hostname): Path<String>,
-    State(AppState { config_rx, .. }): State<AppState>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let node = {
-        let config = config_rx.borrow();
-        let Some(node) = config.nodes.get(&hostname) else {
-            warn!("Shutdown request for unknown host '{}'", hostname);
-            return (StatusCode::NOT_FOUND, "Unknown host").into_response();
-        };
-        node.clone()
-    };
-
-    let message = create_hmac_message("shutdown");
-    let signature = sign_hmac(&message, &node.shared_secret);
-    let full_message = format!("{}|{}", message, signature);
-
-    info!("Sending shutdown command to '{}'", hostname);
-    match send_shutdown(&node.ip, node.port, &full_message).await {
-        Ok(resp) => {
-            info!("Shutdown response from '{}': {}", hostname, resp);
-            resp.into_response()
-        }
-        Err(e) => {
-            error!("Failed to shutdown '{}': {}", hostname, e);
-            (StatusCode::INTERNAL_SERVER_ERROR, e).into_response()
-        }
+    let mut leases = state.leases.lock().await;
+    let lease_set = leases.entry(hostname.clone()).or_default();
+    lease_set.remove(&LeaseSource::WebInterface);
+    
+    info!("Web interface released lease on '{}'", hostname);
+    
+    // Handle node state after lease change
+    if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
+        return (status, msg).into_response();
     }
+    
+    "Lease released".into_response()
 }
 
-async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
+
+pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
     let addr = format!("{}:{}", ip, port);
     debug!("Connecting to {}", addr);
     let mut stream = TcpStream::connect(addr).await.map_err(|e| {

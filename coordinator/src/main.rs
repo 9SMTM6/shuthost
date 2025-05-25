@@ -44,7 +44,7 @@ async fn main() {
         Command::ControlService(args) => {
             tracing_subscriber::fmt()
                 .with_env_filter(
-                    EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info")),
+                    EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("debug")),
                 )
                 .pretty()
                 .init(); // Initialize logging

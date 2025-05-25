@@ -2,6 +2,7 @@
 
 set -e
 
+# TODO: consider a way to embed the install options. Main issue outside of it being annoying: Different defaults between OSs (mostly shutdown argument)
 if [ -z "$1" ]; then
   echo "Usage: $0 <remote_url> [shuthost_node_agent install options...]"
   exit 1

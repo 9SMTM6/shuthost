@@ -238,19 +238,19 @@
 
                     const actionsCell = document.createElement('td');
                     const startBtn = document.createElement('button');
-                    startBtn.textContent = 'Wake';
+                    startBtn.textContent = 'Take Lease';
                     startBtn.disabled = status === 'online';
                     const startIndicator = createLoadingIndicator();
                     startBtn.appendChild(startIndicator);
-                    startBtn.onclick = () => sendCommand(host.name, 'wake', startIndicator);
+                    startBtn.onclick = () => sendLeaseUpdate(host.name, 'take', startIndicator);
 
                     const shutdownBtn = document.createElement('button');
-                    shutdownBtn.textContent = 'Shutdown';
+                    shutdownBtn.textContent = 'Release Lease';
                     shutdownBtn.className = 'shutdown';
                     shutdownBtn.disabled = status === 'offline';
                     const shutdownIndicator = createLoadingIndicator();
                     shutdownBtn.appendChild(shutdownIndicator);
-                    shutdownBtn.onclick = () => sendCommand(host.name, 'shutdown', shutdownIndicator);
+                    shutdownBtn.onclick = () => sendLeaseUpdate(host.name, 'release', shutdownIndicator);
 
                     actionsCell.appendChild(startBtn);
                     actionsCell.appendChild(shutdownBtn);
@@ -281,13 +281,13 @@
             return indicator;
         }
 
-        async function sendCommand(host, action, indicator) {
+        async function sendLeaseUpdate(host, leaseAction, indicator) {
             try {
                 indicator.style.display = 'inline-block'; // Show loading indicator
-                await fetch(`/api/${action}/${host}`, { method: 'POST' });
+                await fetch(`/api/lease/${host}/${leaseAction}`, { method: 'POST' });
                 setTimeout(fetchNodes, 1000); // Refresh status
             } catch (err) {
-                console.error(`Failed to send ${action} command:`, err);
+                console.error(`Failed to ${leaseAction} lease on host ${host}:`, err);
             } finally {
                 indicator.style.display = 'none'; // Hide loading indicator
             }
