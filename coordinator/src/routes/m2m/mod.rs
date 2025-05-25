@@ -67,8 +67,14 @@ fn generate_client_id() -> String {
     format!("{}-{}", adjective, noun)
 }
 
+#[derive(Deserialize)]
+pub struct WolTestQuery {
+    port: u16,
+}
+
 async fn test_wol(
     headers: axum::http::HeaderMap,
+    Query(params): Query<WolTestQuery>,
 ) -> impl IntoResponse {
     let remote_ip = headers
         .get("x-forwarded-for")
@@ -80,7 +86,7 @@ async fn test_wol(
         })
         .ok_or_else(|| (StatusCode::BAD_REQUEST, "No client IP found").into_response())?;
 
-    match crate::wol::test_wol_reachability(remote_ip) {
+    match crate::wol::test_wol_reachability(remote_ip, params.port) {
         Ok((direct, broadcast)) => {
             Ok(Json(json!({
                 "direct": direct,
@@ -90,8 +96,6 @@ async fn test_wol(
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e).into_response()),
     }
 }
-
-
 
 /// node_name => set of client_ids holding lease
 pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<String>>>>;

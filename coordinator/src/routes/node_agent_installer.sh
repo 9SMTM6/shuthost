@@ -56,25 +56,29 @@ echo "Downloading node_agent for $PLATFORM/$ARCH..."
 curl -fL "${REMOTE_URL}/download/node_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
+WOL_TEST_PORT=$(($DEFAULT_PORT + 1))
+
 echo "Testing WOL packet reachability..."
 # Start the test receiver in background
-./"$OUTFILE" test-wol --port $(($DEFAULT_PORT + 1)) &
+./"$OUTFILE" test-wol --port $WOL_TEST_PORT &
 RECEIVER_PID=$!
 
 # Give it time to start
 sleep 1
 
 # Test via coordinator API
-TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol")
+TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
 kill $RECEIVER_PID
 
-if echo "$TEST_RESULT" | grep -q "direct:true"; then
+echo $TEST_RESULT
+
+if echo "$TEST_RESULT" | grep -q "\"direct\":true"; then
     echo "✓ Direct WOL packets working"
 else
     echo "⚠️  Direct WoL packets failed - check firewall rules for UDP port 9"
 fi
 
-if echo "$TEST_RESULT" | grep -q "broadcast:true"; then
+if echo "$TEST_RESULT" | grep -q "\"broadcast\":true"; then
     echo "✓ Broadcast WoL packets working"
 else
     echo "⚠️  Broadcast WoL packets failed - consider using direct WoL"
