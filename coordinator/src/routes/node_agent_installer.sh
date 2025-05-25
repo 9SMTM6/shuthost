@@ -8,9 +8,17 @@ if [ -z "$1" ]; then
 fi
 
 REMOTE_URL="$1"
-# TODO: this aint right...
-DEFAULT_PORT="${3:-5757}"
 shift
+# Extract port from installation arguments arguments while preserving them
+DEFAULT_PORT="5757"
+for arg in "$@"; do
+    if [ "${arg#--port=}" != "$arg" ]; then
+        DEFAULT_PORT="${arg#--port=}"
+    elif [ "$prev_arg" = "--port" ]; then
+        DEFAULT_PORT="$arg"
+    fi
+    prev_arg="$arg"
+done
 
 # Detect architecture
 ARCH="$(uname -m)"
