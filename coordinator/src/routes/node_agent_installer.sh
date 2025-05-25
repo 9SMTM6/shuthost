@@ -12,8 +12,6 @@ REMOTE_URL="$1"
 DEFAULT_PORT="${3:-5757}"
 shift
 
-BASE_URL="${REMOTE_URL}/download/node_agent"
-
 # Detect architecture
 ARCH="$(uname -m)"
 case "$ARCH" in
@@ -44,11 +42,10 @@ case "$OS" in
         ;;
 esac
 
-URL="$BASE_URL/$PLATFORM/$ARCH"
 OUTFILE="shuthost_node_agent"
 
 echo "Downloading node_agent for $PLATFORM/$ARCH..."
-curl -fL "$URL" -o "$OUTFILE"
+curl -fL "${REMOTE_URL}/download/node_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
 echo "Testing WOL packet reachability..."
@@ -60,7 +57,7 @@ RECEIVER_PID=$!
 sleep 1
 
 # Test via coordinator API
-TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/test_wol")
+TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol")
 kill $RECEIVER_PID
 
 if echo "$TEST_RESULT" | grep -q "direct:true"; then
