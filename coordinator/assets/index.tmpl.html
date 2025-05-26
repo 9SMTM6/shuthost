@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ShutHost Coordinator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{description}">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>
+        /* {styles} */
+    </style>
+</head>
+
+<body>
+    <h1>Shuthost</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Host</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="host-table-body">
+            <!-- Hosts will be loaded here dynamically -->
+        </tbody>
+    </table>
+
+    <p>To install the node_agent, run the following command in your terminal:</p>
+
+    <div class="code-block" id="code-container">
+        <button class="copy-button" onclick="copyToClipboard()">Copy</button>
+        <code id="install-command">Loading...</code>
+    </div>
+
+    <p>
+        Adjust the install options (like <code>--port</code>, <code>--shutdown-command</code>,
+        <code>--shared-secret</code>) as needed.<br>
+        The command will print a line you need to manually add to the coordinator configuration at
+        <code>{coordinator_config}</code>.
+    </p>
+
+    <p>To download the client script for remote management, use:</p>
+    <div class="code-block">
+        <button class="copy-button" onclick="copyClientScriptUrl()">Copy</button>
+        <code id="client-script-url">Loading...</code>
+    </div>
+
+    <script>
+        {js}
+    </script>
+</body>
+
+</html>

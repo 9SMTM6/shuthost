@@ -1,0 +1,113 @@
+body {
+    font-family: sans-serif;
+    background-color: #f7f7f7;
+    margin: 0;
+    padding: 1rem;
+}
+
+h1 {
+    color: #333;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: white;
+    overflow-x: auto;
+    display: block;
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    white-space: nowrap;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0.5rem 0.25rem 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    position: relative;
+    font-size: 0.9rem;
+}
+
+button.shutdown {
+    background-color: #f44336;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.loading-indicator {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border: 3px solid #fff;
+    border-top: 3px solid #333;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.code-block {
+    position: relative;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.2rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.copy-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.copy-button:hover {
+    background: #2563eb;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+    th, td {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    button {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+
+    td:last-child {
+        display: flex;
+        flex-direction: column;
+    }
+}
