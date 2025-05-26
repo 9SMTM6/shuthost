@@ -29,25 +29,24 @@
         </tbody>
     </table>
 
-    <p>To install the node_agent, run the following command in your terminal:</p>
+    <section>
+        <h2>Install Node Agent</h2>
+        <p>Run the following command in your terminal:</p>
+        <div class="code-block">
+            <button class="copy-button" data-copy-target="#install-command">Copy</button>
+            <code id="install-command">Loading...</code>
+        </div>
+        <p>Adjust options as needed. Add the output to <code>{coordinator_config}</code>.</p>
+    </section>
 
-    <div class="code-block" id="code-container">
-        <button class="copy-button" onclick="copyToClipboard()">Copy</button>
-        <code id="install-command">Loading...</code>
-    </div>
-
-    <p>
-        Adjust the install options (like <code>--port</code>, <code>--shutdown-command</code>,
-        <code>--shared-secret</code>) as needed.<br>
-        The command will print a line you need to manually add to the coordinator configuration at
-        <code>{coordinator_config}</code>.
-    </p>
-
-    <p>To download the client script for remote management, use:</p>
-    <div class="code-block">
-        <button class="copy-button" onclick="copyClientScriptUrl()">Copy</button>
-        <code id="client-script-url">Loading...</code>
-    </div>
+    <section>
+        <h2>Download Client Script</h2>
+        <p>Use the following URL:</p>
+        <div class="code-block">
+            <button class="copy-button" data-copy-target="#client-script-url">Copy</button>
+            <code id="client-script-url">Loading...</code>
+        </div>
+    </section>
 
     <script>
         {js}
