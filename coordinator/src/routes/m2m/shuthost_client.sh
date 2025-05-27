@@ -24,6 +24,6 @@ SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET" -binar
 X_REQUEST="${TIMESTAMP}|${ACTION}|${SIGNATURE}"
 
 # Make the request
-curl -sSf -X POST "$COORDINATOR_URL" \
+curl -sS --fail-with-body -X POST "$COORDINATOR_URL" \
   -H "X-Client-ID: $CLIENT_ID" \
   -H "X-Request: $X_REQUEST"
