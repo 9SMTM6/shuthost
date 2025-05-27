@@ -1,4 +1,6 @@
 use std::{collections::{HashMap, HashSet}, fmt::{self, Display}, sync::Arc};
+use std::time::Duration;
+use tokio::time::sleep;
 
 use axum::{
     extract::{Path, Query, State},
@@ -102,11 +104,19 @@ async fn test_wol(
 /// node_name => set of lease sources holding lease
 pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>;
 
+#[derive(Deserialize)]
+pub struct LeaseActionQuery {
+    #[serde(default)]
+    r#async: Option<bool>,
+}
+
+// Update the handler to accept the query parameter for async operation
 #[axum::debug_handler]
 async fn handle_lease(
     Path((node, action)): Path<(String, String)>,
     headers: axum::http::HeaderMap,
     State(state): State<AppState>,
+    Query(q): Query<LeaseActionQuery>,
 ) -> impl IntoResponse {
     let client_id = headers
         .get("X-Client-ID")
@@ -160,24 +170,42 @@ async fn handle_lease(
     let lease_set = leases.entry(node.clone()).or_default();
     let lease_source = LeaseSource::Client(client_id.to_string());
 
+    let is_async = q.r#async.unwrap_or(false);
+
     match action.as_str() {
         "take" => {
             lease_set.insert(lease_source.clone());
             info!("Client '{}' took lease on '{}'", client_id, node);
-            
-            // Take action based on lease state
-            handle_node_state(&node, &lease_set, &state).await?;
-            
-            Ok("Lease taken".into_response())
+
+            if is_async {
+                let node = node.clone();
+                let lease_set = lease_set.clone();
+                let state = state.clone();
+                tokio::spawn(async move {
+                    let _ = handle_node_state(&node, &lease_set, &state).await;
+                });
+                Ok("Lease taken (async)".into_response())
+            } else {
+                handle_node_state(&node, &lease_set, &state).await?;
+                Ok("Lease taken, node is online".into_response())
+            }
         }
         "release" => {
             lease_set.remove(&lease_source);
             info!("Client '{}' released lease on '{}'", client_id, node);
-            
-            // Take action based on lease state
-            handle_node_state(&node, &lease_set, &state).await?;
-            
-            Ok("Lease released".into_response())
+
+            if is_async {
+                let node = node.clone();
+                let lease_set = lease_set.clone();
+                let state = state.clone();
+                tokio::spawn(async move {
+                    let _ = handle_node_state(&node, &lease_set, &state).await;
+                });
+                Ok("Lease released (async)".into_response())
+            } else {
+                handle_node_state(&node, &lease_set, &state).await?;
+                Ok("Lease released, node is offline".into_response())
+            }
         }
         _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
     }
@@ -194,7 +222,7 @@ pub async fn handle_node_state(
     debug!("Checking state for node '{}': should_be_running={}, active_leases={:?}", 
            node, should_be_running, lease_set);
     
-    let is_on = {
+    let mut is_on = {
         let is_on_rx = state.is_on_rx.borrow();
         is_on_rx.get(node).copied().unwrap_or(false)
     };
@@ -205,9 +233,51 @@ pub async fn handle_node_state(
         info!("Node '{}' needs to wake up - has {} active lease(s): {:?}", 
               node, lease_set.len(), lease_set);
         wake_node(node, state).await?;
+
+        // Wait until node is reported as online, with timeout
+        let mut waited = 0;
+        let max_wait = 60; // seconds
+        let poll_interval = 1; // second
+        loop {
+            is_on = {
+                let is_on_rx = state.is_on_rx.borrow();
+                is_on_rx.get(node).copied().unwrap_or(false)
+            };
+            if is_on {
+                info!("Node '{}' is now online", node);
+                break;
+            }
+            if waited >= max_wait {
+                warn!("Timeout waiting for node '{}' to become online", node);
+                return Err((StatusCode::GATEWAY_TIMEOUT, "Timeout waiting for node to become online"));
+            }
+            sleep(Duration::from_secs(poll_interval)).await;
+            waited += poll_interval;
+        }
     } else if !should_be_running && is_on {
         info!("Node '{}' should shut down - no active leases", node);
         shutdown_node(node, state).await?;
+
+        // Wait until node is reported as offline, with timeout
+        let mut waited = 0;
+        let max_wait = 60; // seconds
+        let poll_interval = 1; // second
+        loop {
+            is_on = {
+                let is_on_rx = state.is_on_rx.borrow();
+                is_on_rx.get(node).copied().unwrap_or(false)
+            };
+            if !is_on {
+                info!("Node '{}' is now offline", node);
+                break;
+            }
+            if waited >= max_wait {
+                warn!("Timeout waiting for node '{}' to become offline", node);
+                return Err((StatusCode::GATEWAY_TIMEOUT, "Timeout waiting for node to become offline"));
+            }
+            sleep(Duration::from_secs(poll_interval)).await;
+            waited += poll_interval;
+        }
     } else {
         debug!("No action needed for node '{}' (is_on={}, should_be_running={})", 
                node, is_on, should_be_running);
