@@ -19,6 +19,17 @@ function handleWebSocketMessage(event) {
 }
 
 function updateNodeStatuses(statusMap) {
+    // TODO: add endpoint to get leases, and enable/disable buttons based on lease status.
+    // Ensure order of hosts is stable (online hosts in the beginning).
+    // add a "lease" column to the table, showing lease status.
+    // Add separate table to show configured clients, with a reset button to fix broken leases.
+    // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
+    // Then add a bunch of documentation to explain:
+    // - how to configure WOL and gotchas
+    // - shuthost architecture
+    // - how leases work
+    // Then rework UI to be css-grid based, and test on mobile.
+    // then consider different global layout (with tabs?)
     document.querySelectorAll('#host-table-body tr').forEach(row => {
         const hostname = row.dataset.hostname;
         const status = statusMap[hostname];
