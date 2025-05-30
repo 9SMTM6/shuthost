@@ -140,7 +140,7 @@ async fn poll_host_statuses(
 async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
     let styles = include_str!("../assets/styles.css");
     let javascript = include_str!("../assets/app.js");
-    
+
     let html = include_str!("../assets/index.tmpl.html")
         .replace("{coordinator_config}", &config_path.to_string_lossy())
         .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
@@ -171,8 +171,8 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String
 }
 
 async fn serve_manifest() -> impl IntoResponse {
-    let manifest =
-        include_str!("../assets/manifest.json").replace("{description}", env!("CARGO_PKG_DESCRIPTION"));
+    let manifest = include_str!("../assets/manifest.json")
+        .replace("{description}", env!("CARGO_PKG_DESCRIPTION"));
 
     Response::builder()
         .header("Content-Type", "application/json")

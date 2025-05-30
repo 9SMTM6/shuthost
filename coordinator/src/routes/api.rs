@@ -12,7 +12,10 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
-use crate::{http::AppState, routes::m2m::{handle_node_state, LeaseSource}};
+use crate::{
+    http::AppState,
+    routes::m2m::{LeaseSource, handle_node_state},
+};
 
 use super::m2m::m2m_routes;
 
@@ -73,14 +76,14 @@ async fn take_lease(
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.clone()).or_default();
     lease_set.insert(LeaseSource::WebInterface);
-    
+
     info!("Web interface took lease on '{}'", hostname);
-    
+
     // Handle node state after lease change
     if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
         return (status, msg).into_response();
     }
-    
+
     "Lease taken".into_response()
 }
 
@@ -91,17 +94,16 @@ async fn release_lease(
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.clone()).or_default();
     lease_set.remove(&LeaseSource::WebInterface);
-    
+
     info!("Web interface released lease on '{}'", hostname);
-    
+
     // Handle node state after lease change
     if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
         return (status, msg).into_response();
     }
-    
+
     "Lease released".into_response()
 }
-
 
 pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
     let addr = format!("{}:{}", ip, port);

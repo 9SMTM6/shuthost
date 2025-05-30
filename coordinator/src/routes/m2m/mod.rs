@@ -1,11 +1,17 @@
-use std::{collections::{HashMap, HashSet}, fmt::{self, Display}, sync::Arc};
 use std::time::Duration;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::{self, Display},
+    sync::Arc,
+};
 use tokio::time::sleep;
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    response::{IntoResponse, Response}, routing::post, Json,
+    response::{IntoResponse, Response},
+    routing::post,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -45,20 +51,15 @@ async fn test_wol(
     let remote_ip = headers
         .get("x-forwarded-for")
         .and_then(|v| v.to_str().ok())
-        .or_else(|| {
-            headers
-                .get("x-real-ip")
-                .and_then(|v| v.to_str().ok())
-        })
+        .or_else(|| headers.get("x-real-ip").and_then(|v| v.to_str().ok()))
         .ok_or_else(|| (StatusCode::BAD_REQUEST, "No client IP found").into_response())?;
 
     match crate::wol::test_wol_reachability(remote_ip, params.port) {
-        Ok((direct, broadcast)) => {
-            Ok(Json(json!({
-                "direct": direct,
-                "broadcast": broadcast
-            })).into_response())
-        }
+        Ok((direct, broadcast)) => Ok(Json(json!({
+            "direct": direct,
+            "broadcast": broadcast
+        }))
+        .into_response()),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e).into_response()),
     }
 }
@@ -174,16 +175,18 @@ async fn handle_lease(
 }
 
 pub async fn handle_node_state(
-    node: &str, 
+    node: &str,
     lease_set: &HashSet<LeaseSource>,
     state: &AppState,
 ) -> Result<(), (StatusCode, &'static str)> {
     // If there are any leases, the node should be running
     let should_be_running = !lease_set.is_empty();
-    
-    debug!("Checking state for node '{}': should_be_running={}, active_leases={:?}", 
-           node, should_be_running, lease_set);
-    
+
+    debug!(
+        "Checking state for node '{}': should_be_running={}, active_leases={:?}",
+        node, should_be_running, lease_set
+    );
+
     let mut is_on = {
         let is_on_rx = state.is_on_rx.borrow();
         is_on_rx.get(node).copied().unwrap_or(false)
@@ -192,8 +195,12 @@ pub async fn handle_node_state(
     debug!("Current state for node '{}': is_on={}", node, is_on);
 
     if should_be_running && !is_on {
-        info!("Node '{}' needs to wake up - has {} active lease(s): {:?}", 
-              node, lease_set.len(), lease_set);
+        info!(
+            "Node '{}' needs to wake up - has {} active lease(s): {:?}",
+            node,
+            lease_set.len(),
+            lease_set
+        );
         wake_node(node, state).await?;
 
         // Wait until node is reported as online, with timeout
@@ -211,7 +218,10 @@ pub async fn handle_node_state(
             }
             if waited >= max_wait {
                 warn!("Timeout waiting for node '{}' to become online", node);
-                return Err((StatusCode::GATEWAY_TIMEOUT, "Timeout waiting for node to become online"));
+                return Err((
+                    StatusCode::GATEWAY_TIMEOUT,
+                    "Timeout waiting for node to become online",
+                ));
             }
             sleep(Duration::from_secs(poll_interval)).await;
             waited += poll_interval;
@@ -235,14 +245,19 @@ pub async fn handle_node_state(
             }
             if waited >= max_wait {
                 warn!("Timeout waiting for node '{}' to become offline", node);
-                return Err((StatusCode::GATEWAY_TIMEOUT, "Timeout waiting for node to become offline"));
+                return Err((
+                    StatusCode::GATEWAY_TIMEOUT,
+                    "Timeout waiting for node to become offline",
+                ));
             }
             sleep(Duration::from_secs(poll_interval)).await;
             waited += poll_interval;
         }
     } else {
-        debug!("No action needed for node '{}' (is_on={}, should_be_running={})", 
-               node, is_on, should_be_running);
+        debug!(
+            "No action needed for node '{}' (is_on={}, should_be_running={})",
+            node, is_on, should_be_running
+        );
     }
 
     Ok(())
@@ -250,13 +265,15 @@ pub async fn handle_node_state(
 
 async fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
     debug!("Attempting to wake node '{}'", node);
-    
+
     let host = {
         let config = state.config_rx.borrow();
         match config.nodes.get(node) {
             Some(host) => {
-                debug!("Found configuration for node '{}': ip={}, mac={}", 
-                       node, host.ip, host.mac);
+                debug!(
+                    "Found configuration for node '{}': ip={}, mac={}",
+                    node, host.ip, host.mac
+                );
                 host.clone()
             }
             None => {
@@ -267,11 +284,13 @@ async fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'st
     };
 
     info!("Sending WoL packet to '{}' (MAC: {})", node, host.mac);
-    send_magic_packet(&host.mac, "255.255.255.255")
-        .map_err(|e| {
-            error!("Failed to send WoL packet to '{}': {}", node, e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to send wake packet")
-        })?;
+    send_magic_packet(&host.mac, "255.255.255.255").map_err(|e| {
+        error!("Failed to send WoL packet to '{}': {}", node, e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to send wake packet",
+        )
+    })?;
 
     info!("Successfully sent WoL packet to '{}'", node);
     Ok(())
@@ -279,13 +298,15 @@ async fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'st
 
 async fn shutdown_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
     debug!("Attempting to shutdown node '{}'", node);
-    
+
     let node_config = {
         let config = state.config_rx.borrow();
         match config.nodes.get(node) {
             Some(config) => {
-                debug!("Found configuration for node '{}': ip={}, port={}", 
-                       node, config.ip, config.port);
+                debug!(
+                    "Found configuration for node '{}': ip={}, port={}",
+                    node, config.ip, config.port
+                );
                 config.clone()
             }
             None => {
@@ -299,12 +320,18 @@ async fn shutdown_node(node: &str, state: &AppState) -> Result<(), (StatusCode, 
     let signature = sign_hmac(&message, &node_config.shared_secret);
     let full_message = format!("{}|{}", message, signature);
 
-    info!("Sending shutdown command to '{}' ({}:{})", node, node_config.ip, node_config.port);
+    info!(
+        "Sending shutdown command to '{}' ({}:{})",
+        node, node_config.ip, node_config.port
+    );
     send_shutdown(&node_config.ip, node_config.port, &full_message)
         .await
         .map_err(|e| {
             error!("Failed to send shutdown command to '{}': {}", node, e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to send shutdown command")
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to send shutdown command",
+            )
         })?;
 
     info!("Successfully sent shutdown command to '{}'", node);

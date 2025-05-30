@@ -3,9 +3,9 @@ mod install;
 mod server;
 
 use clap::{Parser, Subcommand};
+use install::DEFAULT_PORT;
 use install::InstallArgs;
 use install::install_node_agent;
-use install::DEFAULT_PORT;
 use server::ServiceArgs;
 use std::env;
 
@@ -44,7 +44,7 @@ fn main() {
         },
         Command::Service(args) => {
             server::start_node_agent(args);
-        },
+        }
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
             Err(e) => eprintln!("Error during WoL test: {}", e),

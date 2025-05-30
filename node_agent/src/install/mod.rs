@@ -2,10 +2,10 @@ use clap::Parser;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::is_systemd;
+use std::net::UdpSocket;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
-use std::net::UdpSocket;
 
 /// From 5hu7ho57 (leet speak)
 pub const DEFAULT_PORT: u16 = 5757;
@@ -200,17 +200,20 @@ pub fn get_hostname() -> Option<String> {
 pub fn test_wol_reachability(port: u16) -> Result<(), String> {
     let socket = UdpSocket::bind(format!("0.0.0.0:{}", port))
         .map_err(|e| format!("Failed to bind test socket: {}", e))?;
-    
-    socket.set_broadcast(true)
+
+    socket
+        .set_broadcast(true)
         .map_err(|e| format!("Failed to set broadcast: {}", e))?;
 
     println!("Listening for WOL test packets on port {}...", port);
-    
+
     let mut buf = [0u8; 32];
-    for _ in 0..2 {  // Wait for both direct and broadcast tests
+    for _ in 0..2 {
+        // Wait for both direct and broadcast tests
         if let Ok((_, addr)) = socket.recv_from(&mut buf) {
             // Echo back to confirm receipt
-            socket.send_to(b"SHUTHOST_AGENT RECEIVED", addr)
+            socket
+                .send_to(b"SHUTHOST_AGENT RECEIVED", addr)
                 .map_err(|e| format!("Failed to send confirmation: {}", e))?;
         }
     }
