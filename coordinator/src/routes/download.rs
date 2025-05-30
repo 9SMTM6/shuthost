@@ -7,6 +7,8 @@ use axum::{
 
 use crate::http::AppState;
 
+use super::m2m::download_client_script;
+
 // Macro to define a handler function from a static binary
 macro_rules! node_agent_handler {
     ($name:ident, $node_agent_target:expr) => {
@@ -44,9 +46,21 @@ async fn get_installer() -> impl IntoResponse {
         .unwrap()
 }
 
+async fn get_client_installer() -> impl IntoResponse {
+    const INSTALLER: &'static [u8] = include_bytes!("./client_installer.sh");
+    Response::builder()
+        .header("Content-Type", "text/plain")
+        .header("Content-Length", INSTALLER.len().to_string())
+        .status(StatusCode::OK)
+        .body(INSTALLER.into_response())
+        .unwrap()
+}
+
 pub fn get_download_router() -> Router<AppState> {
     Router::new()
         .route("/node_agent_installer.sh", get(get_installer))
+        .route("/client_installer.sh", get(get_client_installer))
+        .route("/shuthost_client", get(download_client_script))
         .route("/node_agent/macos/aarch64", get(node_agent_macos_aarch64))
         .route("/node_agent/macos/x86_64", get(node_agent_macos_x86_64))
         .route("/node_agent/linux/x86_64", get(node_agent_linux_x86_64))

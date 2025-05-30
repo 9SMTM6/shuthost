@@ -89,8 +89,8 @@ function initialize() {
     setupCopyButtons();
 
     const baseUrl = window.location.origin;
-    document.getElementById('install-command').textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 9090`;
-    document.getElementById('client-script-url').textContent = `${baseUrl}/download/shuthost_client.sh?remote_url=${encodeURIComponent(baseUrl)}`;
+    document.getElementById('node-install-command').textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 9090`;
+    document.getElementById('client-install-command').textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
 }
 
 document.addEventListener('DOMContentLoaded', initialize);

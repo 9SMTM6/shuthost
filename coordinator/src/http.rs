@@ -12,7 +12,7 @@ use tracing::{debug, info};
 
 use crate::{
     config::{ControllerConfig, load_coordinator_config, watch_config_file},
-    routes::{LeaseMap, api_routes, download_client_script, get_download_router},
+    routes::{LeaseMap, api_routes, get_download_router},
 };
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use clap::Parser;
@@ -93,7 +93,6 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     let app = Router::new()
         .nest("/api", api_routes())
         .nest("/download", get_download_router())
-        .route("/download/shuthost_client.sh", get(download_client_script))
         .route("/", get(|| async { Redirect::permanent("/index.html") }))
         .route("/index.html", get(serve_ui))
         .route("/ws", get(ws_handler))

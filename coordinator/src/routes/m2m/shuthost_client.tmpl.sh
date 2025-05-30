@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Usage: ./lease.sh <take|release> <node> [remote_url]
+# Usage: ./shuthost_client_<client_id>.sh <take|release> <node> [remote_url]
 # Requires: curl, openssl, date
 
 set -eu
