@@ -198,6 +198,96 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: ${{ github.event_name == 'push' }}
         with:
-          files: ./release-assets/*
+          files: release-assets/*
           tag_name: ${{ steps.tag.outputs.tag }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+  test-installation:
+    name: Test Service Installation & Startup
+    runs-on: ${{ matrix.runner }}
+    needs: [build-node_agents, build-coordinators]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+            init: systemd
+            docker_image: oowy/systemd  # Example, see notes below
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+            init: openrc
+            docker_image: alpine:latest
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+            init: sysvinit
+            docker_image: slackware/slackware:latest
+          - os: macos-latest
+            runner: macos-latest
+            init: launchd
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download node_agent and coordinator binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./target
+
+      - name: Prepare test scripts
+        run: |
+          cp ./coordinator/src/routes/node_agent_installer.sh ./node_agent_installer.sh
+          cp ./coordinator/src/routes/client_installer.sh ./client_installer.sh
+          chmod +x ./node_agent_installer.sh ./client_installer.sh
+
+      - name: Test on Linux (systemd/openrc/sysvinit)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} sleep infinity
+
+          # Install dependencies
+          if [ "${{ matrix.init }}" = "systemd" ]; then
+            docker exec testinit bash -c "apt-get update && apt-get install -y curl sudo"
+          elif [ "${{ matrix.init }}" = "openrc" ]; then
+            docker exec testinit sh -c "apk add curl sudo"
+          elif [ "${{ matrix.init }}" = "sysvinit" ]; then
+            docker exec testinit bash -c "slackpkg update && slackpkg install curl sudo"
+          fi
+
+          # Copy installer and binaries
+          docker cp ./node_agent_installer.sh testinit:/node_agent_installer.sh
+          docker cp ./target/x86_64-unknown-linux-gnu/release/shuthost_coordinator testinit:/shuthost_coordinator
+
+          # Install the coordinator as a service (it gets started automatically)
+          docker exec testinit sh -c "./shuthost_coordinator install --user root --port 8080 --bind 127.0.0.1"
+
+          # Wait for coordinator to be ready
+          sleep 2
+
+          # Run agent installer (downloads from running coordinator)
+          docker exec testinit sh /node_agent_installer.sh http://localhost:8080 --port 5757 --bind 127.0.0.1
+
+          # Check on agent service according to init system
+          if [ "${{ matrix.init }}" = "systemd" ]; then
+            docker exec testinit systemctl status shuthost_node_agent
+          elif [ "${{ matrix.init }}" = "openrc" ]; then
+            docker exec testinit rc-service shuthost_node_agent status
+          elif [ "${{ matrix.init }}" = "sysvinit" ]; then
+            docker exec testinit /etc/init.d/shuthost_node_agent status
+          fi
+
+          # Check logs or process running
+          docker exec testinit ps aux | grep shuthost_node_agent
+
+          # Clean up
+          docker stop testinit
+
+      - name: Test on macOS (launchd)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          cp ./target/x86_64-apple-darwin/release/shuthost_coordinator ./shuthost_coordinator
+          ./shuthost_coordinator install --user $(whoami) --port 8080 --bind 127.0.0.1
+          launchctl load ~/Library/LaunchAgents/com.github_9smtm6.shuthost_coordinator.plist
+          sleep 2
+          ./node_agent_installer.sh http://localhost:8080 --port 5757 --bind 127.0.0.1
+          launchctl list | grep shuthost_node_agent
