@@ -198,6 +198,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: ${{ github.event_name == 'push' }}
         with:
-          files: ${{ github.event.repository.name }}-*.*
+          files: ./release-assets/*
           tag_name: ${{ steps.tag.outputs.tag }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
