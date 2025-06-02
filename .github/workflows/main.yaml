@@ -182,32 +182,33 @@ jobs:
           - os: ubuntu-latest
             runner: ubuntu-latest
             init: systemd
-            docker_image: oowy/systemd  # Example, see notes below
+            docker_image: docker.io/oowy/systemd:latest
+            binary_target: x86_64-unknown-linux-gnu
           - os: ubuntu-latest
             runner: ubuntu-latest
             init: openrc
             docker_image: alpine:latest
+            binary_target: x86_64-unknown-linux-musl
           - os: ubuntu-latest
             runner: ubuntu-latest
             init: sysvinit
-            docker_image: slackware/slackware:latest
+            docker_image: docker.io/vbatts/slackware:latest
+            binary_target: x86_64-unknown-linux-gnu
           - os: macos-latest
             runner: macos-latest
             init: launchd
+            binary_target: arm64-apple-darwin
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download node_agent and coordinator binaries
+      - name: Download coordinator binary
         uses: actions/download-artifact@v4
         with:
-          path: ./target
+          name: coordinator-${{ matrix.binary_target }}
 
-      - name: Prepare test scripts
-        run: |
-          cp ./coordinator/src/routes/node_agent_installer.sh ./node_agent_installer.sh
-          cp ./coordinator/src/routes/client_installer.sh ./client_installer.sh
-          chmod +x ./node_agent_installer.sh ./client_installer.sh
+      - name: Rename coordinator binary
+        run: mv coordinator-${{ matrix.binary_target }} shuthost_coordinator
 
       - name: Test on Linux (systemd/openrc/sysvinit)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -223,9 +224,8 @@ jobs:
             docker exec testinit bash -c "slackpkg update && slackpkg install curl sudo"
           fi
 
-          # Copy installer and binaries
-          docker cp ./node_agent_installer.sh testinit:/node_agent_installer.sh
-          docker cp ./target/x86_64-unknown-linux-gnu/release/shuthost_coordinator testinit:/shuthost_coordinator
+          # Copy controller binary
+          docker cp ./shuthost_coordinator testinit:/
 
           # Install the coordinator as a service (it gets started automatically)
           docker exec testinit sh -c "./shuthost_coordinator install --user root --port 8080 --bind 127.0.0.1"
@@ -234,7 +234,10 @@ jobs:
           sleep 2
 
           # Run agent installer (downloads from running coordinator)
-          docker exec testinit sh /node_agent_installer.sh http://localhost:8080 --port 5757 --bind 127.0.0.1
+          curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
+
+          # Wait for agent to be ready
+          sleep 2
 
           # Check on agent service according to init system
           if [ "${{ matrix.init }}" = "systemd" ]; then
@@ -254,11 +257,10 @@ jobs:
       - name: Test on macOS (launchd)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          cp ./target/x86_64-apple-darwin/release/shuthost_coordinator ./shuthost_coordinator
           ./shuthost_coordinator install --user $(whoami) --port 8080 --bind 127.0.0.1
-          launchctl load ~/Library/LaunchAgents/com.github_9smtm6.shuthost_coordinator.plist
           sleep 2
-          ./node_agent_installer.sh http://localhost:8080 --port 5757 --bind 127.0.0.1
+          curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
+          sleep 2
           launchctl list | grep shuthost_node_agent
 
   release:
@@ -274,7 +276,12 @@ jobs:
       - name: Download all coordinator binaries
         uses: actions/download-artifact@v4
         with:
+          pattern: coordinator-*
           path: ./release-assets
+          merge-multiple: true
+
+      - run: echo $PWD
+      - run: ls release-assets
 
       - name: Create a valid release tag
         id: tag
@@ -288,6 +295,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: ${{ github.event_name == 'push' }}
         with:
-          files: release-assets/*
+          fail_on_unmatched_files: true
+          files: ${PWD}/release-assets/*
           tag_name: ${{ steps.tag.outputs.tag }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
