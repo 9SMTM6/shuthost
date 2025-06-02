@@ -182,7 +182,7 @@ jobs:
           - os: ubuntu-latest
             runner: ubuntu-latest
             init: systemd
-            docker_image: docker.io/oowy/systemd:latest
+            docker_image: docker.io/heywoodlh/systemd:latest
             binary_target: x86_64-unknown-linux-gnu
           - os: ubuntu-latest
             runner: ubuntu-latest
@@ -197,7 +197,7 @@ jobs:
           - os: macos-latest
             runner: macos-latest
             init: launchd
-            binary_target: arm64-apple-darwin
+            binary_target: aarch64-apple-darwin
 
     steps:
       - uses: actions/checkout@v4
@@ -206,6 +206,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coordinator-${{ matrix.binary_target }}
+
+      - run: chmod +x shuthost_coordinator
 
       - name: Test on Linux (systemd/openrc/sysvinit)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -275,6 +277,17 @@ jobs:
         with:
           pattern: coordinator-*
           path: ./release-assets
+      
+      - name: Prepare release assets directory
+        run: |
+          # Move coordinator binaries to a common directory with target-based binary names
+          mkdir -p release-assets/flat
+          for dir in release-assets/coordinator-*; do
+            target=$(basename "$dir" | sed 's/^coordinator-//')
+            if [ -f "$dir/shuthost_coordinator" ]; then
+              cp "$dir/shuthost_coordinator" "release-assets/flat/shuthost_coordinator-$target"
+            fi
+          done
 
       - run: ls -la release-assets/
 
@@ -291,6 +304,6 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         with:
           fail_on_unmatched_files: true
-          files: ./release-assets/**/shuthost_coordinator
+          files: ./release-assets/flat/*
           tag_name: ${{ steps.tag.outputs.tag }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
