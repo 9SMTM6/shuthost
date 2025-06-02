@@ -220,8 +220,6 @@ jobs:
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             # openrc: start with /sbin/init, then run openrc boot
             docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} /sbin/init
-            sleep 2
-            docker exec testinit openrc boot
           elif [ "${{ matrix.init }}" = "sysvinit" ]; then
             # sysvinit/slackware: start with /bin/bash
             docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} /bin/bash -c "while true; do sleep 60; done"
@@ -231,7 +229,8 @@ jobs:
           if [ "${{ matrix.init }}" = "systemd" ]; then
             docker exec testinit bash -c "apt-get update && apt-get install -y curl sudo"
           elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit sh -c "apk add curl sudo"
+            docker exec testinit sh -c "apk add curl sudo openrc"
+            docker exec testinit openrc boot
           elif [ "${{ matrix.init }}" = "sysvinit" ]; then
             docker exec testinit bash -c "slackpkg update && slackpkg install curl sudo"
           fi

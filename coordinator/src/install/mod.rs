@@ -124,5 +124,25 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         println!("Config file already exists at {config_location:?}, not overwriting.");
     }
 
+    #[cfg(target_os = "macos")]
+    shuthost_common::start_and_enable_self_as_service_macos(name)?;
+
+    #[cfg(target_os = "linux")]
+    if is_systemd() {
+        shuthost_common::start_and_enable_self_as_service_systemd(
+            &name,
+        )?;
+    } else if is_openrc() {
+        shuthost_common::start_and_enable_self_as_service_openrc_linux(
+            &name,
+        )?;
+    } else if is_sysvinit() {
+        shuthost_common::start_and_enable_self_as_service_sysvinit_linux(
+            &name,
+        )?;
+    } else {
+        Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
+    }
+
     Ok(())
 }

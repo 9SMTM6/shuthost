@@ -41,28 +41,9 @@ pub fn install_self_as_service_sysvinit_linux(
     fs::set_permissions(&init_script_path, fs::Permissions::from_mode(0o755))
         .map_err(|e| e.to_string())?;
 
-    // Ensure it's added to rc.local
-    let rc_local = "/etc/rc.d/rc.local";
-    let entry = format!("if [ -x {init_script_path:?} ]; then {init_script_path:?} start; fi\n");
-    let rc_local_content = fs::read_to_string(rc_local).unwrap_or_default();
-    if !rc_local_content.contains(&entry) {
-        let mut file = File::options()
-            .append(true)
-            .open(rc_local)
-            .map_err(|e| e.to_string())?;
-        file.write_all(entry.as_bytes())
-            .map_err(|e| e.to_string())?;
-    }
-
     drop(file);
 
-    println!("Init script installed at {init_script_path:?} and added to rc.local.");
-
-    // Start the service now that everything’s in place
-    let _ = Command::new(init_script_path)
-        .arg("start")
-        .status()
-        .map_err(|e| format!("Failed to start node_agent: {e}"))?;
+    println!("Init script installed at {init_script_path:?}");
 
     Ok(())
 }
@@ -106,18 +87,6 @@ pub fn install_self_as_service_systemd(
         .arg("daemon-reload")
         .output()
         .map_err(|e| e.to_string())?;
-    Command::new("systemctl")
-        .arg("enable")
-        .arg(&service_name)
-        .output()
-        .map_err(|e| e.to_string())?;
-    Command::new("systemctl")
-        .arg("start")
-        .arg(&service_name)
-        .output()
-        .map_err(|e| e.to_string())?;
-
-    println!("Service started and enabled.");
 
     Ok(())
 }
@@ -165,21 +134,6 @@ pub fn install_self_as_service_openrc_linux(
 
     drop(script_file);
 
-    Command::new("rc-update")
-        .arg("add")
-        .arg(name)
-        .arg("default")
-        .status()
-        .map_err(|e| e.to_string())?;
-
-    Command::new("rc-service")
-        .arg(name)
-        .arg("start")
-        .status()
-        .map_err(|e| e.to_string())?;
-
-    println!("Service started and added to default runlevel.");
-
     Ok(())
 }
 
@@ -220,6 +174,12 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
     fs::set_permissions(&plist_path, fs::Permissions::from_mode(0o644))
         .map_err(|e| e.to_string())?;
 
+    Ok(())
+}
+
+pub fn start_and_enable_self_as_service_macos(name: &str) -> Result<(), String> {
+    let label = format!("com.github_9smtm6.{name}");
+    let plist_path = PathBuf::from(format!("/Library/LaunchDaemons/{label}.plist"));
     // Load and start the daemon
     Command::new("launchctl")
         .arg("load")
@@ -228,7 +188,77 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
         .map_err(|e| e.to_string())?;
 
     println!("Service loaded with launchctl.");
+    Ok(())
+}
 
+#[cfg(target_os = "linux")]
+pub fn start_and_enable_self_as_service_systemd(name: &str) -> Result<(), String> {
+    let service_name = format!("{name}.service");
+
+    Command::new("systemctl")
+        .arg("daemon-reload")
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    Command::new("systemctl")
+        .arg("enable")
+        .arg(&service_name)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    Command::new("systemctl")
+        .arg("start")
+        .arg(&service_name)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    println!("Service {service_name} started and enabled.");
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn start_and_enable_self_as_service_openrc_linux(name: &str) -> Result<(), String> {
+    Command::new("rc-update")
+        .arg("add")
+        .arg(name)
+        .arg("default")
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    Command::new("rc-service")
+        .arg(name)
+        .arg("start")
+        .status()
+        .map_err(|e| e.to_string())?;
+
+    println!("Service {name} started and added to default runlevel.");
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn start_and_enable_self_as_service_sysvinit_linux(name: &str) -> Result<(), String> {
+    let init_script_path = format!("/etc/rc.d/rc.{name}");
+
+    // Ensure it's added to rc.local
+    let rc_local = "/etc/rc.d/rc.local";
+    let entry = format!("if [ -x {init_script_path:?} ]; then {init_script_path:?} start; fi\n");
+    let rc_local_content = std::fs::read_to_string(rc_local).unwrap_or_default();
+    if !rc_local_content.contains(&entry) {
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(rc_local)
+            .map_err(|e| e.to_string())?;
+        file.write_all(entry.as_bytes())
+            .map_err(|e| e.to_string())?;
+    }
+
+    // Start the service
+    Command::new(&init_script_path)
+        .arg("start")
+        .status()
+        .map_err(|e| format!("Failed to start service: {e}"))?;
+
+    println!("Service {name} started and enabled via rc.local.");
     Ok(())
 }
 
