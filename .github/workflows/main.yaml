@@ -207,9 +207,6 @@ jobs:
         with:
           name: coordinator-${{ matrix.binary_target }}
 
-      - name: Rename coordinator binary
-        run: mv coordinator-${{ matrix.binary_target }} shuthost_coordinator
-
       - name: Test on Linux (systemd/openrc/sysvinit)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -278,10 +275,8 @@ jobs:
         with:
           pattern: coordinator-*
           path: ./release-assets
-          merge-multiple: true
 
-      - run: echo $PWD
-      - run: ls release-assets
+      - run: ls -la release-assets/
 
       - name: Create a valid release tag
         id: tag
@@ -296,6 +291,6 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         with:
           fail_on_unmatched_files: true
-          files: ${PWD}/release-assets/*
+          files: ./release-assets/**/shuthost_coordinator
           tag_name: ${{ steps.tag.outputs.tag }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
