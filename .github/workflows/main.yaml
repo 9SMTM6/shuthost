@@ -215,9 +215,16 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           if [ "${{ matrix.init }}" = "systemd" ]; then
+            # systemd: use default entrypoint, no command
             docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }}
-          else
+          elif [ "${{ matrix.init }}" = "openrc" ]; then
+            # openrc: start with /sbin/init, then run openrc boot
             docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} /sbin/init
+            sleep 2
+            docker exec testinit openrc boot
+          elif [ "${{ matrix.init }}" = "sysvinit" ]; then
+            # sysvinit/slackware: start with /bin/bash
+            docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} /bin/bash -c "while true; do sleep 60; done"
           fi
 
           # Install dependencies
@@ -233,11 +240,7 @@ jobs:
           docker cp ./shuthost_coordinator testinit:/
 
           # Install the coordinator as a service (it gets started automatically)
-          if [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit sh -c "doas ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
-          else
-            docker exec testinit sh -c "sudo ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
-          fi
+          docker exec testinit sh -c "./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
 
           # Wait for coordinator to be ready
           sleep 2
@@ -266,7 +269,7 @@ jobs:
       - name: Test on macOS (launchd)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
           sleep 2
           curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
           sleep 2

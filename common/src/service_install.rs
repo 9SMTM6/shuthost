@@ -233,7 +233,7 @@ pub fn install_self_as_service_macos(name: &str, init_script_content: &str) -> R
 }
 
 fn is_superuser() -> bool {
-    env::var("USER").map(|user| user == "root").unwrap_or(false) || env::var("SUDO_USER").is_ok()
+    unsafe { libc::geteuid() == 0 }
 }
 
 #[cfg(target_os = "linux")]
