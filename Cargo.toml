@@ -3,7 +3,7 @@ resolver = "2"
 members = ["node_agent", "coordinator", "common"]
 
 [workspace.package]
-version = "0.8.5"
+version = "0.8.6-beta"
 edition = "2024"
 authors = ["Samuel Maier"]
 description = "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."

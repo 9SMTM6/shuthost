@@ -144,6 +144,7 @@ async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl 
     let html = include_str!("../assets/index.tmpl.html")
         .replace("{coordinator_config}", &config_path.to_string_lossy())
         .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{version}", env!("CARGO_PKG_VERSION"))
         .replace("/* {styles} */", styles)
         .replace("{js}", javascript);
 

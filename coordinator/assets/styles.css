@@ -69,3 +69,10 @@ button:disabled {
 .copy-button:hover {
     background: #2563eb;
 }
+
+footer {
+    margin-top: 2em;
+    text-align: center;
+    color: #888;
+    font-size: 0.95rem;
+}
