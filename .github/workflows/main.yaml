@@ -214,7 +214,11 @@ jobs:
       - name: Test on Linux (systemd/openrc/sysvinit)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} sleep infinity
+          if [ "${{ matrix.init }}" = "systemd" ]; then
+            docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }}
+          else
+            docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} /sbin/init
+          fi
 
           # Install dependencies
           if [ "${{ matrix.init }}" = "systemd" ]; then
@@ -229,7 +233,11 @@ jobs:
           docker cp ./shuthost_coordinator testinit:/
 
           # Install the coordinator as a service (it gets started automatically)
-          docker exec testinit sh -c "./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
+          if [ "${{ matrix.init }}" = "openrc" ]; then
+            docker exec testinit sh -c "doas ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
+          else
+            docker exec testinit sh -c "sudo ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
+          fi
 
           # Wait for coordinator to be ready
           sleep 2
