@@ -89,7 +89,7 @@ function initialize() {
     setupCopyButtons();
 
     const baseUrl = window.location.origin;
-    document.getElementById('node-install-command').textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 9090`;
+    document.getElementById('node-install-command').textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
     document.getElementById('client-install-command').textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
 }
 
