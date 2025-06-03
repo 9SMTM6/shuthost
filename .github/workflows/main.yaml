@@ -257,6 +257,7 @@ jobs:
       - name: Test on macOS (launchd)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
+          set -x
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
           sleep 2
           curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
