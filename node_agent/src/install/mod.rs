@@ -1,7 +1,7 @@
 use clap::Parser;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
-use shuthost_common::{is_systemd, is_openrc, is_sysvinit};
+use shuthost_common::{is_systemd, is_openrc};
 use std::net::UdpSocket;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
@@ -15,8 +15,6 @@ const CONFIG_ENTRY: &str =
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_node_agent.service.ini");
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_node_agent.plist.xml");
-#[cfg(target_os = "linux")]
-const SLACKWARE_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_node_agent.sh");
 #[cfg(target_os = "linux")]
 const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_node_agent.sh");
 
@@ -56,14 +54,8 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
                 &bind_known_vals(OPENRC_FILE_TEMPLATE),
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
-        } else if is_sysvinit() {
-            shuthost_common::sysvinit::install_self_as_service(
-                &name,
-                &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
-            )?;
-            shuthost_common::sysvinit::start_and_enable_self_as_service(&name)?;
         } else {
-            return Err("Unsupported Linux init system. Please use systemd, OpenRC, or SysVinit.".to_string());
+            return Err("Unsupported Linux init system. Please use systemd or OpenRC.".to_string());
         }
     }
 

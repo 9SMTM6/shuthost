@@ -189,14 +189,6 @@ jobs:
             init: openrc
             docker_image: docker.io/heywoodlh/openrc:latest
             binary_target: x86_64-unknown-linux-musl
-          # disabled for now, could not find a slackware image with that init system. Maybe considering the issues, and that I have to retrofit unraid anyways, I just drop slackware style support, and instead make an initless installation script.
-          # - os: ubuntu-latest
-          #   runner: ubuntu-latest
-          #   init: sysvinit
-          #   docker_image: docker.io/vbatts/slackware:latest
-          #   # even latest slackware has age old glibc, thus use musl target instead.
-          #   # TODO: document this issue!
-          #   binary_target: x86_64-unknown-linux-musl
           - os: macos-latest
             runner: macos-latest
             init: launchd
@@ -212,7 +204,7 @@ jobs:
 
       - run: chmod +x shuthost_coordinator
 
-      - name: Test on Linux (systemd/openrc/sysvinit)
+      - name: Test on Linux (systemd/openrc)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           if [ "${{ matrix.init }}" = "systemd" ]; then
@@ -223,8 +215,6 @@ jobs:
               rc-update add syslog boot &&
               rc-service syslog start &&
               tail -f /var/log/messages"
-          elif [ "${{ matrix.init }}" = "sysvinit" ]; then
-            docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} /bin/bash -c "while true; do sleep 60; done"
           fi
 
           # Install dependencies
@@ -232,8 +222,6 @@ jobs:
             docker exec testinit bash -c "apt-get update && apt-get install -y curl sudo"
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker exec testinit sh -c "apk add curl sudo"
-          elif [ "${{ matrix.init }}" = "sysvinit" ]; then
-            docker exec testinit bash -c "slackpkg update && slackpkg install curl sudo"
           fi
 
           # Copy controller binary
@@ -256,8 +244,6 @@ jobs:
             docker exec testinit systemctl status shuthost_node_agent
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker exec testinit rc-service shuthost_node_agent status
-          elif [ "${{ matrix.init }}" = "sysvinit" ]; then
-            docker exec testinit /etc/init.d/shuthost_node_agent status
           fi
 
           # Check logs or process running

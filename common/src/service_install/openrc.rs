@@ -7,7 +7,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         return Err("You must run this command as root or with sudo.".to_string());
     }
 
-    let binary_path = PathBuf::from(env::args().next().unwrap());
+    let binary_path = env::current_exe().unwrap();
     let target_bin = Path::new("/usr/sbin/").join(name);
     let init_script_path = PathBuf::from(format!("/etc/init.d/{name}"));
 

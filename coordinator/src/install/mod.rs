@@ -1,6 +1,6 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
-use shuthost_common::{is_openrc, is_systemd, is_sysvinit};
+use shuthost_common::{is_openrc, is_systemd};
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
 use std::{
@@ -18,8 +18,6 @@ const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.i
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str =
     include_str!("com.github_9smtm6.shuthost_coordinator.plist.xml");
-#[cfg(target_os = "linux")]
-const SYSVINIT_INIT_TEMPLATE: &str = include_str!("sysvinit.shuthost_coordinator.sh");
 #[cfg(target_os = "linux")]
 const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.sh");
 
@@ -76,11 +74,6 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
             &name,
             &bind_known_vals(OPENRC_FILE_TEMPLATE),
         )?;
-    } else if is_sysvinit() {
-        shuthost_common::sysvinit::install_self_as_service(
-            &name,
-            &bind_known_vals(SYSVINIT_INIT_TEMPLATE),
-        )?;
     } else {
         Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
     }
@@ -134,10 +127,6 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         )?;
     } else if is_openrc() {
         shuthost_common::openrc::start_and_enable_self_as_service(
-            &name,
-        )?;
-    } else if is_sysvinit() {
-        shuthost_common::sysvinit::start_and_enable_self_as_service(
             &name,
         )?;
     } else {
