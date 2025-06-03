@@ -207,10 +207,12 @@ jobs:
       - name: Test on Linux (systemd/openrc)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
+          set -x
           if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/repo ${{ matrix.docker_image }} journalctl -f
+            docker run --privileged --rm -itd --name testinit ${{ matrix.docker_image }} journalctl -f
           elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} sh -c "
+            docker run --privileged --rm -itd --name testinit ${{ matrix.docker_image }} sh -c "
+              set -x
               rc-update add syslog default &&
               rc-service syslog start &&
               touch /var/log/messages &&
