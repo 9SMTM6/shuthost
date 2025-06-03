@@ -81,6 +81,12 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
 
     if !Path::new(&config_location).exists() {
+        if let Some(parent_dir) = config_location.parent() {
+            if !parent_dir.exists() {
+                std::fs::create_dir_all(parent_dir).map_err(|e| e.to_string())?;
+            }
+        }
+
         let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
         config_file
             .write_all(
