@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_common"
-version = "0.8.9-beta"
+version = "0.8.10-beta"
 dependencies = [
  "hex",
  "hmac",
@@ -1013,7 +1013,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_coordinator"
-version = "0.8.9-beta"
+version = "0.8.10-beta"
 dependencies = [
  "axum",
  "clap",
@@ -1034,7 +1034,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_node_agent"
-version = "0.8.9-beta"
+version = "0.8.10-beta"
 dependencies = [
  "clap",
  "hex",

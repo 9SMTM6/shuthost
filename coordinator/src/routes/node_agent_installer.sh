@@ -69,7 +69,8 @@ sleep 1
 
 # Test via coordinator API
 TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
-kill $RECEIVER_PID
+# kill the agent test process, if its still running.
+kill $RECEIVER_PID || true
 
 if echo "$TEST_RESULT" | grep -q "\"direct\":true"; then
     echo "✓ Direct WOL packets working"

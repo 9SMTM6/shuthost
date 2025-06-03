@@ -273,8 +273,7 @@ jobs:
           sleep 2
           curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
           sleep 2
-          echo "passed"
-          launchctl list | grep shuthost_node_agent
+          launchctl print system/com.github_9smtm6.shuthost_node_agent
 
   release:
     name: Upload Release Binaries
