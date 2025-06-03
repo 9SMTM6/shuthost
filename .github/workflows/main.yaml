@@ -232,7 +232,6 @@ jobs:
             docker exec testinit bash -c "apt-get update && apt-get install -y curl sudo"
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker exec testinit sh -c "apk add curl sudo"
-            docker exec testinit openrc boot
           elif [ "${{ matrix.init }}" = "sysvinit" ]; then
             docker exec testinit bash -c "slackpkg update && slackpkg install curl sudo"
           fi
