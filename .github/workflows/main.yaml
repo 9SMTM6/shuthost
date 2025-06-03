@@ -246,16 +246,14 @@ jobs:
           # Wait for coordinator to be ready
           sleep 2
 
-          # Check on coordinator service according to init system
-          if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker exec testinit systemctl status shuthost_coordinator
-          elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit rc-service shuthost_coordinator status
-          fi
+          # Check on coordinator service
+          docker exec testinit curl -fsSL http://localhost:8080 || { echo "Coordinator service is not running"; exit 1; }
 
           # Run agent installer (downloads from running coordinator)
-          export RUST_BACKTRACE=1;
-          curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
+          docker exec testinit sh -c "
+            export RUST_BACKTRACE=1;
+            curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
+          "
 
           # Wait for agent to be ready
           sleep 2
@@ -266,8 +264,6 @@ jobs:
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker exec testinit rc-service shuthost_node_agent status
           fi
-
-          curl -fsSL http://localhost:8080 || { echo "Coordinator service is not running"; exit 1; }
 
           # Check logs or process running
           docker exec testinit ps aux | grep shuthost_node_agent
