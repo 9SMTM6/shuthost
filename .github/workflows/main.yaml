@@ -223,7 +223,7 @@ jobs:
           if [ "${{ matrix.init }}" = "systemd" ]; then
             docker exec testinit bash -c "apt-get update && apt-get install -y curl sudo"
           elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit sh -c "apk update && apk add curl sudo"
+            docker exec testinit sh -c "apk update && apk --no-cache add curl sudo"
           fi
 
           # Copy controller binary
