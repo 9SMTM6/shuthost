@@ -71,8 +71,6 @@ sleep 1
 TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
 kill $RECEIVER_PID
 
-echo $TEST_RESULT
-
 if echo "$TEST_RESULT" | grep -q "\"direct\":true"; then
     echo "✓ Direct WOL packets working"
 else
@@ -98,7 +96,11 @@ elevate_privileges() {
 }
 
 echo "Running installer..."
-elevate_privileges ./"$OUTFILE" install "$@"
+if [ "$(id -u)" -eq 0 ]; then
+    ./"$OUTFILE" install "$@"
+else
+    elevate_privileges ./"$OUTFILE" install "$@"
+fi
 
 echo "Cleaning up..."
 rm -f "$OUTFILE"
