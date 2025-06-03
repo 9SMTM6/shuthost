@@ -40,6 +40,7 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
             .replace("{secret}", &arguments.shared_secret)
             .replace("{name}", name)
     };
+
     #[cfg(target_os = "linux")]
     {
         if is_systemd() {
@@ -55,7 +56,14 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
         } else {
-            return Err("Unsupported Linux init system. Please use systemd or OpenRC.".to_string());
+            let target_script_path = format!("/usr/local/bin/{}", name);
+            shuthost_common::serviceless::generate_self_extracting_script(
+                &arguments.shared_secret,
+                arguments.port,
+                &arguments.shutdown_command,
+                &target_script_path,
+            )?;
+            println!("Serviceless installation completed. Script generated at: {}", target_script_path);
         }
     }
 
@@ -64,7 +72,7 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
         shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
         shuthost_common::macos::start_and_enable_self_as_service(name)?;
     }
-    
+
     let interface = &get_default_interface().unwrap();
     println!(
         "Place the following in the coordinator:\n{config_entry}",

@@ -3,6 +3,7 @@ pub mod systemd;
 pub mod macos;
 #[cfg(target_os = "linux")]
 pub mod openrc;
+pub mod serviceless;
 
 pub fn is_superuser() -> bool {
     unsafe { libc::geteuid() == 0 }
