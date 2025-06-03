@@ -51,7 +51,7 @@ impl std::string::ToString for InitSystem {
             #[cfg(target_os = "linux")]
             InitSystem::Systemd => "systemd".to_string(),
             #[cfg(target_os = "linux")]
-            InitSystem::OpenRC => "openrc".to_string(),
+            InitSystem::OpenRC => "open-rc".to_string(),
             InitSystem::Serviceless => "serviceless".to_string(),
             #[cfg(target_os = "macos")]
             InitSystem::Launchd => "launchd".to_string(),
@@ -106,13 +106,16 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
         }
     }
 
-    let interface = &get_default_interface().unwrap();
+    let interface = &get_default_interface();
+    if interface.is_none() {
+        eprintln!("Failed to determine the default network interface. Continuing on assuming docker or similar environment.");
+    }
     println!(
         "Place the following in the coordinator:\n{config_entry}",
         config_entry = CONFIG_ENTRY
             .replace("{name}", &get_hostname().unwrap())
-            .replace("{ip}", &get_ip(interface).unwrap())
-            .replace("{mac}", &get_mac(interface).unwrap())
+            .replace("{ip}", &interface.as_ref().and_then(|it|get_ip(&it)).unwrap_or("unrecognized".to_string()))
+            .replace("{mac}", &interface.as_ref().and_then(|it|get_mac(&it)).unwrap_or("unrecognized".to_string()))
             .replace("{port}", &arguments.port.to_string())
             .replace("{secret}", &arguments.shared_secret)
     );
