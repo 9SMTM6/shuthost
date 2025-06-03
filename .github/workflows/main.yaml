@@ -187,15 +187,16 @@ jobs:
           - os: ubuntu-latest
             runner: ubuntu-latest
             init: openrc
-            docker_image: alpine:latest
+            docker_image: docker.io/heywoodlh/openrc:latest
             binary_target: x86_64-unknown-linux-musl
-          - os: ubuntu-latest
-            runner: ubuntu-latest
-            init: sysvinit
-            docker_image: docker.io/vbatts/slackware:latest
-            # even latest slackware has age old glibc, thus use musl target instead.
-            # TODO: document this issue!
-            binary_target: x86_64-unknown-linux-musl
+          # disabled for now, could not find a slackware image with that init system. Maybe considering the issues, and that I have to retrofit unraid anyways, I just drop slackware style support, and instead make an initless installation script.
+          # - os: ubuntu-latest
+          #   runner: ubuntu-latest
+          #   init: sysvinit
+          #   docker_image: docker.io/vbatts/slackware:latest
+          #   # even latest slackware has age old glibc, thus use musl target instead.
+          #   # TODO: document this issue!
+          #   binary_target: x86_64-unknown-linux-musl
           - os: macos-latest
             runner: macos-latest
             init: launchd
