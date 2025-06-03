@@ -45,3 +45,20 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     * requires using cross though, which I wont do locally. This also means refactoring the github pipeline
     * to be able to build it locally I'd have to introduce features
 * uninstalls
+
+<!-- 
+    // TODO: add endpoint to get leases, and enable/disable buttons based on lease status.
+    // rework the way frontend updates work
+    // poll hosts in the backend in paralell
+    // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not)
+    // switch to TS or figure out some other way to better handle frontend logic.
+    // push status updates in object form instead of with arrays
+    // add a "lease" column to the table, showing lease status.
+    // Add separate table to show configured clients, with a reset button to fix broken leases.
+    // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
+    // Then add a bunch of documentation to explain:
+    // - how to configure WOL and gotchas
+    // - shuthost architecture
+    // - how leases work
+    // Then rework UI to be css-grid based, and test on mobile.
+    // then consider different global layout (with tabs?) -->
