@@ -42,6 +42,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
       - name: Build node_agent
         run: |
           cargo fetch
@@ -88,6 +92,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y musl-tools
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
       - name: Download all node_agent binaries
         uses: actions/download-artifact@v4
