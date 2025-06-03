@@ -45,30 +45,30 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         if is_systemd() {
-            shuthost_common::install_self_as_service_systemd(
+            shuthost_common::systemd::install_self_as_service(
                 &name,
                 &bind_known_vals(SERVICE_FILE_TEMPLATE),
             )?;
-            shuthost_common::start_and_enable_self_as_service_systemd(&name)?;
+            shuthost_common::systemd::start_and_enable_self_as_service(&name)?;
         } else if is_openrc() {
-            shuthost_common::install_self_as_service_openrc_linux(
+            shuthost_common::openrc::install_self_as_service(
                 &name,
                 &bind_known_vals(OPENRC_FILE_TEMPLATE),
             )?;
-            shuthost_common::start_and_enable_self_as_service_openrc_linux(&name)?;
+            shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
         } else if is_sysvinit() {
-            shuthost_common::install_self_as_service_sysvinit_linux(
+            shuthost_common::sysvinit::install_self_as_service(
                 &name,
                 &bind_known_vals(SLACKWARE_INIT_TEMPLATE),
             )?;
-            shuthost_common::start_and_enable_self_as_service_sysvinit_linux(&name)?;
+            shuthost_common::sysvinit::start_and_enable_self_as_service(&name)?;
         } else {
             return Err("Unsupported Linux init system. Please use systemd, OpenRC, or SysVinit.".to_string());
         }
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::install_self_as_service_macos(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
 
     let interface = &get_default_interface().unwrap();
     println!(

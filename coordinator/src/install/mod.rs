@@ -67,17 +67,17 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        shuthost_common::install_self_as_service_systemd(
+        shuthost_common::systemd::install_self_as_service(
             &name,
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;
     } else if is_openrc() {
-        shuthost_common::install_self_as_service_openrc_linux(
+        shuthost_common::openrc::install_self_as_service(
             &name,
             &bind_known_vals(OPENRC_FILE_TEMPLATE),
         )?;
     } else if is_sysvinit() {
-        shuthost_common::install_self_as_service_sysvinit_linux(
+        shuthost_common::sysvinit::install_self_as_service(
             &name,
             &bind_known_vals(SYSVINIT_INIT_TEMPLATE),
         )?;
@@ -86,7 +86,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::install_self_as_service_macos(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
 
     if !Path::new(&config_location).exists() {
         let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
@@ -125,19 +125,19 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::start_and_enable_self_as_service_macos(name)?;
+    shuthost_common::macos::start_and_enable_self_as_service(name)?;
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        shuthost_common::start_and_enable_self_as_service_systemd(
+        shuthost_common::systemd::start_and_enable_self_as_service(
             &name,
         )?;
     } else if is_openrc() {
-        shuthost_common::start_and_enable_self_as_service_openrc_linux(
+        shuthost_common::openrc::start_and_enable_self_as_service(
             &name,
         )?;
     } else if is_sysvinit() {
-        shuthost_common::start_and_enable_self_as_service_sysvinit_linux(
+        shuthost_common::sysvinit::start_and_enable_self_as_service(
             &name,
         )?;
     } else {
