@@ -246,6 +246,7 @@ jobs:
           fi
 
           # Run agent installer (downloads from running coordinator)
+          export RUST_BACKTRACE=1;
           curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
 
           # Wait for agent to be ready
@@ -257,6 +258,8 @@ jobs:
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker exec testinit rc-service shuthost_node_agent status
           fi
+
+          curl -fsSL http://localhost:8080 || { echo "Coordinator service is not running"; exit 1; }
 
           # Check logs or process running
           docker exec testinit ps aux | grep shuthost_node_agent
