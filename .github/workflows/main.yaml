@@ -211,9 +211,9 @@ jobs:
             docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v $PWD:/repo ${{ matrix.docker_image }} journalctl -f
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker run --privileged --rm -d --name testinit -v $PWD/target:/binaries -v $PWD:/repo ${{ matrix.docker_image }} sh -c "
-              apk add busybox-syslogd &&
-              rc-update add syslog boot &&
+              rc-update add syslog default &&
               rc-service syslog start &&
+              touch /var/log/messages &&
               tail -f /var/log/messages"
           fi
 
