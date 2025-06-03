@@ -29,6 +29,34 @@ pub struct InstallArgs {
 
     #[arg(long = "shared-secret", default_value_t = generate_secret())]
     pub shared_secret: String,
+
+    #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
+    pub init_system: InitSystem,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum InitSystem {
+    #[cfg(target_os = "linux")]
+    Systemd,
+    #[cfg(target_os = "linux")]
+    OpenRC,
+    Serviceless,
+    #[cfg(target_os = "macos")]
+    Launchd,
+}
+
+impl std::string::ToString for InitSystem {
+    fn to_string(&self) -> String {
+        match self {
+            #[cfg(target_os = "linux")]
+            InitSystem::Systemd => "systemd".to_string(),
+            #[cfg(target_os = "linux")]
+            InitSystem::OpenRC => "openrc".to_string(),
+            InitSystem::Serviceless => "serviceless".to_string(),
+            #[cfg(target_os = "macos")]
+            InitSystem::Launchd => "launchd".to_string(),
+        }
+    }
 }
 
 pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
@@ -41,21 +69,24 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
             .replace("{name}", name)
     };
 
-    #[cfg(target_os = "linux")]
-    {
-        if is_systemd() {
+    match arguments.init_system {
+        #[cfg(target_os = "linux")]
+        InitSystem::Systemd => {
             shuthost_common::systemd::install_self_as_service(
                 &name,
                 &bind_known_vals(SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::systemd::start_and_enable_self_as_service(&name)?;
-        } else if is_openrc() {
+        }
+        #[cfg(target_os = "linux")]
+        InitSystem::OpenRC => {
             shuthost_common::openrc::install_self_as_service(
                 &name,
                 &bind_known_vals(OPENRC_FILE_TEMPLATE),
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
-        } else {
+        }
+        InitSystem::Serviceless => {
             let target_script_path = format!("/usr/local/bin/{}", name);
             shuthost_common::serviceless::generate_self_extracting_script(
                 &arguments.shared_secret,
@@ -65,12 +96,14 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
             )?;
             println!("Serviceless installation completed. Script generated at: {}", target_script_path);
         }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
-        shuthost_common::macos::start_and_enable_self_as_service(name)?;
+        #[cfg(target_os = "macos")]
+        InitSystem::Launchd => {
+            shuthost_common::macos::install_self_as_service(
+                name,
+                &bind_known_vals(SERVICE_FILE_TEMPLATE),
+            )?;
+            shuthost_common::macos::start_and_enable_self_as_service(name)?;
+        }
     }
 
     let interface = &get_default_interface().unwrap();
@@ -85,6 +118,23 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     );
 
     Ok(())
+}
+
+fn get_inferred_init_system() -> InitSystem {
+    #[cfg(target_os = "linux")]
+    {
+        if is_systemd() {
+            InitSystem::Systemd
+        } else if is_openrc() {
+            InitSystem::OpenRC
+        } else {
+            InitSystem::Serviceless
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        InitSystem::Launchd
+    }
 }
 
 pub fn get_default_shutdown_command() -> String {
