@@ -38,6 +38,7 @@ pub struct InstallArgs {
 
 pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
+    let user = args.user;
 
     args.bind
         .parse::<IpAddr>()
@@ -47,18 +48,16 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     let config_location = PathBuf::from(format!(
         "/home/{user}/.config/{name}.toml",
-        user = &args.user
     ));
     #[cfg(target_os = "macos")]
     let config_location = PathBuf::from(format!(
         "/Users/{user}/.config/{name}.toml",
-        user = &args.user
     ));
 
     let bind_known_vals = |arg: &str| {
         arg.to_owned()
             .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-            .replace("{user}", &args.user)
+            .replace("{user}", &user)
             .replace("{name}", name)
             .replace("{config_location}", &config_location.to_string_lossy())
     };
@@ -100,7 +99,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         println!("Created config file at {config_location:?}");
 
         let status = Command::new("chown")
-            .arg(format!("{}:", &args.user)) // ":" = default group
+            .arg(format!("{user}:")) // ":" = default group
             .arg(&config_location)
             .status()
             .map_err(|e| e.to_string())?;
@@ -110,8 +109,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         }
 
         println!(
-            "Chowned config file at {config_location:?} for {}",
-            args.user
+            "Chowned config file at {config_location:?} for {user}",
         );
     } else {
         println!("Config file already exists at {config_location:?}, not overwriting.");
