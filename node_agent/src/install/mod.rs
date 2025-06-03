@@ -44,7 +44,6 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     };
     #[cfg(target_os = "linux")]
     {
-        use shuthost_common::{is_systemd, is_openrc};
         if is_systemd() {
             shuthost_common::install_self_as_service_systemd(
                 &name,
