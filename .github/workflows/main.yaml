@@ -211,19 +211,22 @@ jobs:
           if [ "${{ matrix.init }}" = "systemd" ]; then
             docker run --privileged --rm -itd --name testinit ${{ matrix.docker_image }} journalctl -f
           elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker run --privileged --rm -itd --name testinit ${{ matrix.docker_image }} sh -c "
+            docker run --privileged --memory=2g --rm -itd --name testinit ${{ matrix.docker_image }} sh -c "
               set -x
-              rc-update add syslog default &&
-              rc-service syslog start &&
-              touch /var/log/messages &&
-              tail -f /var/log/messages"
+              rc-update add syslog default;
+              rc-service syslog start;
+              touch /var/log/messages;
+              tail -f /var/log/messages;
+            "
           fi
 
           # Install dependencies
           if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker exec testinit bash -c "apt-get update && apt-get install -y curl sudo"
+            docker exec testinit bash -c "apt-get update; apt-get install -y curl sudo"
           elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit sh -c "apk update && apk --no-cache add curl sudo"
+            docker exec testinit sh -c "apk update"
+            docker exec testinit sh -c "apk --no-cache add curl"
+            docker exec testinit sh -c "apk --no-cache add sudo"
           fi
 
           # Copy controller binary
@@ -234,6 +237,13 @@ jobs:
 
           # Wait for coordinator to be ready
           sleep 2
+
+          # Check on coordinator service according to init system
+          if [ "${{ matrix.init }}" = "systemd" ]; then
+            docker exec testinit systemctl status shuthost_coordinator
+          elif [ "${{ matrix.init }}" = "openrc" ]; then
+            docker exec testinit rc-service shuthost_coordinator status
+          fi
 
           # Run agent installer (downloads from running coordinator)
           curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
