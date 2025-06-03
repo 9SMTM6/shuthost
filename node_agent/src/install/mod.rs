@@ -68,8 +68,11 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
-
+    {
+        shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+        shuthost_common::macos::start_and_enable_self_as_service(name)?;
+    }
+    
     let interface = &get_default_interface().unwrap();
     println!(
         "Place the following in the coordinator:\n{config_entry}",

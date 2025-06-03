@@ -24,10 +24,6 @@
     <key>KeepAlive</key>
     <true/>
 
-    <!-- TODO this probably does nothing -->
-    <key>UserName</key>
-    <string>root</string>
-
     <key>StandardOutPath</key>
     <string>/var/log/{name}.out</string>
     <key>StandardErrorPath</key>
