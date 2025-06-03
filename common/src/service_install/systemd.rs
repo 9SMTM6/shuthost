@@ -28,10 +28,10 @@ pub fn install_self_as_service(
     let service_file_content =
         init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
-    let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
+    let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string()).unwrap();
     service_file
         .write_all(service_file_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string()).unwrap();
     println!("Created systemd service file at {service_file_path}");
 
     drop(service_file);
@@ -39,7 +39,7 @@ pub fn install_self_as_service(
     Command::new("systemctl")
         .arg("daemon-reload")
         .output()
-        .map_err(|e| e.to_string())?;
+        .unwrap();
 
     Ok(())
 }
@@ -50,19 +50,19 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     Command::new("systemctl")
         .arg("daemon-reload")
         .output()
-        .map_err(|e| e.to_string())?;
+        .unwrap();
 
     Command::new("systemctl")
         .arg("enable")
         .arg(&service_name)
         .output()
-        .map_err(|e| e.to_string())?;
+        .unwrap();
 
     Command::new("systemctl")
         .arg("start")
         .arg(&service_name)
         .output()
-        .map_err(|e| e.to_string())?;
+        .unwrap();
 
     println!("Service {service_name} started and enabled.");
     Ok(())
