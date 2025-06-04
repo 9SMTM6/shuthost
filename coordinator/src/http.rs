@@ -91,10 +91,10 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     };
 
     let app = Router::new()
+        .fallback(get(|| async { Redirect::permanent("/") }))
         .nest("/api", api_routes())
         .nest("/download", get_download_router())
-        .route("/", get(|| async { Redirect::permanent("/index.html") }))
-        .route("/index.html", get(serve_ui))
+        .route("/", get(serve_ui))
         .route("/ws", get(ws_handler))
         .route("/manifest.json", get(serve_manifest))
         .route("/favicon.svg", get(serve_favicon))
