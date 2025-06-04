@@ -1,30 +1,32 @@
+// Reusable types
+type Host = { name: string };
+type StatusMap = Record<string, boolean>;
+
 let socket: WebSocket | undefined;
 
-// TODO: consider how to properly integrate this with the rest of the app (in terms of compilation and bundling)
-
-function connectWebSocket(): void {
+const connectWebSocket = () => {
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
     socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
 
     socket.onopen = () => console.log('WebSocket connected');
     socket.onmessage = handleWebSocketMessage;
     socket.onclose = () => setTimeout(connectWebSocket, 2000);
-}
+};
 
-function handleWebSocketMessage(event: MessageEvent): void {
+const handleWebSocketMessage = (event: MessageEvent) => {
     try {
         const msg = event.data;
         if (msg === "config_updated") {
             fetchNodes();
         } else {
-            updateNodeStatuses(JSON.parse(msg) as Record<string, boolean>);
+            updateNodeStatuses(JSON.parse(msg) as StatusMap);
         }
     } catch (err) {
         console.error('Error parsing WS message:', err);
     }
-}
+};
 
-function updateNodeStatuses(statusMap: Record<string, boolean>): void {
+const updateNodeStatuses = (statusMap: StatusMap) => {
     document.querySelectorAll<HTMLTableRowElement>('#host-table-body tr').forEach(row => {
         const hostname = row.dataset["hostname"];
         if (hostname) {
@@ -40,12 +42,12 @@ function updateNodeStatuses(statusMap: Record<string, boolean>): void {
             }
         }
     });
-}
+};
 
-async function fetchNodes(): Promise<void> {
+const fetchNodes = async () => {
     try {
         const response = await fetch('/api/nodes');
-        const hosts: { name: string }[] = await response.json();
+        const hosts: Host[] = await response.json();
         const hostTableBody = document.getElementById('host-table-body');
         if (hostTableBody) {
             hostTableBody.innerHTML = hosts.map(createHostRow).join('');
@@ -53,9 +55,9 @@ async function fetchNodes(): Promise<void> {
     } catch (err) {
         console.error('Failed to fetch hosts:', err);
     }
-}
+};
 
-const createHostRow = (host: { name: string }): string => `
+const createHostRow = (host: Host) => `
     <tr data-hostname="${host.name}">
         <td>${host.name}</td>
         <td class="status">Loading...</td>
@@ -66,15 +68,15 @@ const createHostRow = (host: { name: string }): string => `
     </tr>
 `;
 
-async function updateLease(host: string, action: string): Promise<void> {
+const updateLease = async (host: string, action: string) => {
     try {
         await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
     } catch (err) {
         console.error(`Failed to ${action} lease for ${host}:`, err);
     }
-}
+};
 
-function setupCopyButtons(): void {
+const setupCopyButtons = () => {
     document.querySelectorAll<HTMLButtonElement>('.copy-button').forEach(button => {
         button.addEventListener('click', () => {
             const targetSelector = button.dataset["copyTarget"];
@@ -83,15 +85,15 @@ function setupCopyButtons(): void {
                 if (target) {
                     navigator.clipboard.writeText(target).then(() => {
                         button.textContent = "Copied!";
-                        setTimeout(() => button.textContent = "Copy", 1500);
+                        setTimeout(() => (button.textContent = "Copy"), 1500);
                     });
                 }
             }
         });
     });
-}
+};
 
-function initialize(): void {
+const initialize = () => {
     connectWebSocket();
     fetchNodes();
     setupCopyButtons();
@@ -107,6 +109,6 @@ function initialize(): void {
     if (clientInstallCommand) {
         clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
     }
-}
+};
 
 document.addEventListener('DOMContentLoaded', initialize);
