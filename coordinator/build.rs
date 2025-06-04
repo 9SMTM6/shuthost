@@ -1,31 +1,48 @@
 use std::process::{Command, exit};
 
 fn main() {
-    // Check if `tsc` is installed
-    let tsc_check = Command::new("tsc").arg("--version").output();
+    // Check if `npm` is installed
+    let npm_check = Command::new("npm").arg("--version").output();
 
-    if tsc_check.is_err() {
+    if npm_check.is_err() {
         eprintln!(
-            "TypeScript is not installed. Please install it using:\n\n    npm install --global typescript\n"
+            "npm is not installed. Please install it from https://nodejs.org/ or using your package manager."
         );
         exit(1);
     }
 
-    // Run the TypeScript compiler
-    let tsc_build = Command::new("tsc")
-        .arg("-p")
-        .arg("assets/tsconfig.json")
+    // Run `npm ci` to ensure dependencies are installed
+    let npm_ci = Command::new("npm")
+        .arg("ci")
+        .current_dir("assets")
         .status();
 
-    if let Err(error) = tsc_build {
-        eprintln!("Failed to build TypeScript files: {}", error);
+    if let Err(error) = npm_ci {
+        eprintln!("Failed to run npm ci: {}", error);
         exit(1);
     }
 
-    if !tsc_build.unwrap().success() {
-        eprintln!("TypeScript build failed.");
+    if !npm_ci.unwrap().success() {
+        eprintln!("npm ci failed.");
         exit(1);
     }
 
-    println!("TypeScript build completed successfully.");
+    // Run `npm run build` in the assets directory
+    let npm_build = Command::new("npm")
+        .arg("run")
+        .arg("build")
+        .current_dir("assets")
+        .status();
+
+    if let Err(error) = npm_build {
+        eprintln!("Failed to run npm build: {}", error);
+        exit(1);
+    }
+
+    if !npm_build.unwrap().success() {
+        eprintln!("npm build failed.");
+        exit(1);
+    }
+
+    println!("npm build completed successfully.");
 }

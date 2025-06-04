@@ -189,7 +189,7 @@ async fn poll_host_statuses(
 }
 
 async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
-    let styles = include_str!("../assets/styles.css");
+    let styles = include_str!("../assets/styles_output.css");
     let javascript = include_str!("../assets/app.js");
 
     let html = include_str!("../assets/index.tmpl.html")

@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* Base styles and CSS variables */
 :root {
     --primary: #4CAF50;
