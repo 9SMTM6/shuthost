@@ -15,46 +15,54 @@
 </head>
 
 <body>
-    <h1>Shuthost</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Host</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="host-table-body">
-            <!-- Hosts will be loaded here dynamically -->
-        </tbody>
-    </table>
+    <header>
+        <img src="/favicon.svg" alt="ShutHost Logo" class="favicon">
+        <h1>ShutHost</h1>
+    </header>
+    <div class="main">
+    <div class="pad"></div>
+    <main>
+        <table>
+            <thead>
+                <tr>
+                    <th>Host</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="host-table-body">
+                <!-- Hosts will be loaded here dynamically -->
+            </tbody>
+        </table>
 
-    <section>
-        <h2>Install Node Agent</h2>
-        <p>Run the following command in your terminal:</p>
-        <div class="code-block">
-            <button class="copy-button" data-copy-target="#node-install-command">Copy</button>
-            <code id="node-install-command">Loading...</code>
-        </div>
-        <p>Adjust options as needed. Add the output to <code>{coordinator_config}</code>.</p>
-    </section>
+        <section>
+            <h2>Install Node Agent</h2>
+            <p>Run the following command in your terminal:</p>
+            <div class="code-block">
+                <button class="copy-button" data-copy-target="#node-install-command">Copy</button>
+                <code id="node-install-command">Loading...</code>
+            </div>
+            <p>Adjust options as needed. Add the output to <code>{coordinator_config}</code>.</p>
+        </section>
 
-    <section>
-        <h2>Install Client</h2>
-        <p>Run the following command in your terminal:</p>
-        <div class="code-block">
-            <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
-            <code id="client-install-command">Loading...</code>
-        </div>
-        <p>Optionally, you can specify a custom client ID as the second argument.</p>
-    </section>
-
-    <script>
-        {js}
-    </script>
+        <section>
+            <h2>Install Client</h2>
+            <p>Run the following command in your terminal:</p>
+            <div class="code-block">
+                <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
+                <code id="client-install-command">Loading...</code>
+            </div>
+            <p>Optionally, you can specify a custom client ID as the second argument.</p>
+        </section>
+    </main>
+    <div class="pad"></div>
+    </div>
     <footer>
         ShutHost Coordinator v{version}
     </footer>
+    <script>
+        {js}
+    </script>
 </body>
 
 </html>

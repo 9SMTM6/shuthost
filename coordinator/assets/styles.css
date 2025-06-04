@@ -1,16 +1,72 @@
+/* Define the grid layout for the body */
 body {
+    display: grid;
+    grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
     font-family: sans-serif;
     background-color: #f7f7f7;
     margin: 0;
+    height: 100vh;
+    gap: 0.5rem;
+}
+
+/* Header styling */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 1rem;
+    color: white;
 }
 
-h1 {
+header .favicon {
+    vertical-align: middle;
+    height: 2rem;
+    width: auto; /* Ensure the aspect ratio is maintained */
+}
+
+.pad {
+    flex: 1; /* Allow the pad to take up available space */
+}
+
+header h1 {
+    grid-area: header;
     color: #333;
-    font-size: 1.5rem;
-    text-align: center;
+    margin: 0;
+    padding: 1rem;
+    margin: 0; /* Remove default margin */
+    font-size: 1.5rem; /* Ensure consistent font size */
+    text-align: center; /* Center-align the text */
 }
 
+/* Main content section */
+.main {
+    grid-area: main;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+}
+
+main {
+    width: 80%;
+}
+
+/* Footer section */
+footer {
+    grid-area: footer;
+    margin-top: 2em;
+    text-align: center;
+    color: #888;
+    font-size: 0.95rem;
+    padding: 1rem;
+    background-color: #f3f4f6;
+}
+
+/* Table styling */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -24,6 +80,7 @@ th, td {
     border-bottom: 1px solid #ccc;
 }
 
+/* Buttons styling */
 button {
     padding: 0.5rem 1rem;
     margin: 0.25rem;
@@ -43,6 +100,7 @@ button:disabled {
     cursor: not-allowed;
 }
 
+/* Code block styling */
 .code-block {
     background: #f3f4f6;
     border: 1px solid #d1d5db;
@@ -68,11 +126,4 @@ button:disabled {
 
 .copy-button:hover {
     background: #2563eb;
-}
-
-footer {
-    margin-top: 2em;
-    text-align: center;
-    color: #888;
-    font-size: 0.95rem;
 }
