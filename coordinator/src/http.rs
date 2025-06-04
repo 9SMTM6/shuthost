@@ -1,8 +1,5 @@
 use axum::{
-    Router,
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-    routing::get,
+    extract::State, response::{IntoResponse, Redirect, Response}, routing::get, Router
 };
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
@@ -93,10 +90,30 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
-        let ws_tx = ws_tx.clone();
         tokio::spawn(async move {
             // TODO: warn on changed port
             watch_config_file(path, config_tx).await;
+        });
+    }
+    {
+        let ws_tx = ws_tx.clone();
+        let mut config_rx = config_rx.clone();
+        tokio::spawn(async move {
+            loop {
+                if let Ok(_) = config_rx.changed().await {
+                    let _ = ws_tx.send("config_updated".to_string());
+                    // if let Ok(config) = serde_json::to_string(config_rx.borrow().as_ref()) {
+                    //     if let Err(e) = ws_tx.send(config) {
+                    //         error!("Failed to send message on WebSocket: {}", e);
+                    //     }
+                    // } else {
+                    //     error!("Failed to serialize status map");
+                    // }
+                } else {
+                    warn!("WebSocket channel closed");
+                    break;
+                }
+            }
         });
     }
 
@@ -197,7 +214,7 @@ async fn ws_handler(
 
 async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>, current_state: Arc<HashMap<String, bool>>) {
     tokio::spawn(async move {
-        socket.send(serde_json::json!(current_state.as_ref()).to_string().into()).await.unwrap_or_else(|e| {
+        socket.send(serde_json::to_string(current_state.as_ref()).unwrap().into()).await.unwrap_or_else(|e| {
             warn!("Failed to send initial state: {}", e);
         });
         while let Ok(msg) = rx.recv().await {

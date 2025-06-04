@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
-use tokio::sync::{broadcast, watch};
+use tokio::sync::{watch, mpsc::unbounded_channel};
 use tracing::{error, info};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Node {
@@ -43,11 +44,7 @@ pub async fn load_coordinator_config<P: AsRef<Path>>(
 pub async fn watch_config_file(
     path: std::path::PathBuf,
     tx: watch::Sender<Arc<ControllerConfig>>,
-    ws_tx: broadcast::Sender<String>,
 ) {
-    use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-    use tokio::sync::mpsc::unbounded_channel;
-
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 
     let mut watcher = RecommendedWatcher::new(
@@ -71,7 +68,6 @@ pub async fn watch_config_file(
                 Ok(new_config) => {
                     let _ = tx.send(Arc::new(new_config));
                     info!("Config reloaded.");
-                    let _ = ws_tx.send("config_updated".to_string());
                 }
                 Err(e) => {
                     error!("Failed to reload config: {}", e);
