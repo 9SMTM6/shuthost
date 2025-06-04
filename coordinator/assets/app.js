@@ -65,7 +65,6 @@ const createHostRow = host => `
 async function updateLease(host, action) {
     try {
         await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
-        setTimeout(fetchNodes, 1000);
     } catch (err) {
         console.error(`Failed to ${action} lease for ${host}:`, err);
     }
