@@ -33,7 +33,7 @@ pub struct ServiceArgs {
 pub struct AppState {
     pub config_path: std::path::PathBuf,
     pub config_rx: watch::Receiver<Arc<ControllerConfig>>,
-    pub is_on_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+    pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
     pub ws_tx: broadcast::Sender<String>,
     pub leases: LeaseMap,
 }
@@ -57,28 +57,28 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     let (config_tx, config_rx) = watch::channel(initial_config);
 
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
-    let (is_on_tx, is_on_rx) = watch::channel(initial_status);
+    let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
 
     let (ws_tx, _) = broadcast::channel(32);
 
     {
         let config_rx = config_rx.clone();
-        let is_on_tx = is_on_tx.clone();
+        let hoststatus_tx = hoststatus_tx.clone();
         tokio::spawn(async move {
-            poll_host_statuses(config_rx, is_on_tx).await;
+            poll_host_statuses(config_rx, hoststatus_tx).await;
         });
     }
     {
         let ws_tx = ws_tx.clone();
-        let mut is_on_rx = is_on_rx.clone();
+        let mut hoststatus_rx = hoststatus_rx.clone();
         tokio::spawn(async move {
             {
-                let initial_status = is_on_tx.borrow().clone();
+                let initial_status = hoststatus_tx.borrow().clone();
                 let _ = ws_tx.send(serde_json::to_string(initial_status.as_ref()).unwrap());
             }
             loop {
-                if let Ok(_) = is_on_rx.changed().await {
-                    if let Ok(status_map) = serde_json::to_string(is_on_rx.borrow().as_ref()) {
+                if let Ok(_) = hoststatus_rx.changed().await {
+                    if let Ok(status_map) = serde_json::to_string(hoststatus_rx.borrow().as_ref()) {
                         let _ = ws_tx.send(status_map);
                     } else {
                         error!("Failed to serialize status map");
@@ -96,13 +96,13 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         let ws_tx = ws_tx.clone();
         tokio::spawn(async move {
             // TODO: warn on changed port
-            watch_config_file(path, config_tx, ws_tx).await;
+            watch_config_file(path, config_tx).await;
         });
     }
 
     let app_state = AppState {
         config_rx,
-        is_on_rx,
+        hoststatus_rx,
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases: LeaseMap::default(),
@@ -131,7 +131,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
 
 async fn poll_host_statuses(
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
-    is_on_tx: watch::Sender<Arc<HashMap<String, bool>>>,
+    hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
 ) {
     loop {
         let config = config_rx.borrow().clone();
@@ -155,13 +155,13 @@ async fn poll_host_statuses(
             .collect();
 
         let is_new = {
-            let old_status_map = is_on_tx.borrow();
+            let old_status_map = hoststatus_tx.borrow();
             let old_status_map = old_status_map.as_ref();
             status_map != *old_status_map
         };
         if is_new {
             info!("Host status changed: {:?}", status_map);
-            is_on_tx.send(Arc::new(status_map)).unwrap();
+            hoststatus_tx.send(Arc::new(status_map)).unwrap();
         } else {
             debug!("No change in host status");
         }
@@ -189,9 +189,9 @@ async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl 
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(AppState { ws_tx, is_on_rx, .. }): State<AppState>,
+    State(AppState { ws_tx, hoststatus_rx, .. }): State<AppState>,
 ) -> impl IntoResponse {
-    let current_state = is_on_rx.borrow().clone();
+    let current_state = hoststatus_rx.borrow().clone();
     ws.on_upgrade(move |socket| handle_socket(socket, ws_tx.subscribe(), current_state))
 }
 

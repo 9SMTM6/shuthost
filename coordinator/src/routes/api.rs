@@ -52,9 +52,9 @@ async fn list_nodes(State(AppState { config_rx, .. }): State<AppState>) -> impl 
 
 async fn status_host(
     Path(hostname): Path<String>,
-    State(AppState { is_on_rx, .. }): State<AppState>,
+    State(AppState { hoststatus_rx, .. }): State<AppState>,
 ) -> impl IntoResponse {
-    let is_on_rx = is_on_rx.borrow();
+    let is_on_rx = hoststatus_rx.borrow();
     match is_on_rx.get(&hostname) {
         Some(status) => {
             debug!("Status check for '{}': {}", hostname, status);

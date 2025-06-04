@@ -187,14 +187,14 @@ pub async fn handle_node_state(
         node, should_be_running, lease_set
     );
 
-    let mut is_on = {
-        let is_on_rx = state.is_on_rx.borrow();
-        is_on_rx.get(node).copied().unwrap_or(false)
+    let mut host_is_on = {
+        let hoststatus_rx = state.hoststatus_rx.borrow();
+        hoststatus_rx.get(node).copied().unwrap_or(false)
     };
 
-    debug!("Current state for node '{}': is_on={}", node, is_on);
+    debug!("Current state for node '{}': is_on={}", node, host_is_on);
 
-    if should_be_running && !is_on {
+    if should_be_running && !host_is_on {
         info!(
             "Node '{}' needs to wake up - has {} active lease(s): {:?}",
             node,
@@ -208,11 +208,11 @@ pub async fn handle_node_state(
         let max_wait = 60; // seconds
         let poll_interval = 1; // second
         loop {
-            is_on = {
-                let is_on_rx = state.is_on_rx.borrow();
-                is_on_rx.get(node).copied().unwrap_or(false)
+            host_is_on = {
+                let hoststatus = state.hoststatus_rx.borrow();
+                hoststatus.get(node).copied().unwrap_or(false)
             };
-            if is_on {
+            if host_is_on {
                 info!("Node '{}' is now online", node);
                 break;
             }
@@ -226,7 +226,7 @@ pub async fn handle_node_state(
             sleep(Duration::from_secs(poll_interval)).await;
             waited += poll_interval;
         }
-    } else if !should_be_running && is_on {
+    } else if !should_be_running && host_is_on {
         info!("Node '{}' should shut down - no active leases", node);
         shutdown_node(node, state).await?;
 
@@ -235,11 +235,11 @@ pub async fn handle_node_state(
         let max_wait = 60; // seconds
         let poll_interval = 1; // second
         loop {
-            is_on = {
-                let is_on_rx = state.is_on_rx.borrow();
+            host_is_on = {
+                let is_on_rx = state.hoststatus_rx.borrow();
                 is_on_rx.get(node).copied().unwrap_or(false)
             };
-            if !is_on {
+            if !host_is_on {
                 info!("Node '{}' is now offline", node);
                 break;
             }
@@ -256,7 +256,7 @@ pub async fn handle_node_state(
     } else {
         debug!(
             "No action needed for node '{}' (is_on={}, should_be_running={})",
-            node, is_on, should_be_running
+            node, host_is_on, should_be_running
         );
     }
 
