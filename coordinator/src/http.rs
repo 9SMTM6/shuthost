@@ -118,18 +118,26 @@ async fn poll_host_statuses(
 ) {
     loop {
         let config = config_rx.borrow().clone();
-        let mut status_map = HashMap::new();
 
-        for (name, host) in &config.nodes {
+        let futures = config.nodes.iter().map(|(name, host)| {
             let addr = format!("{}:{}", host.ip, host.port);
-            let is_online = matches!(
-                timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await,
-                Ok(Ok(_))
-            );
-            debug!("Polled {} at {} - online: {}", name, addr, is_online);
-            status_map.insert(name.clone(), is_online);
-        }
+            let name = name.clone();
+            async move {
+                let is_online = matches!(
+                    timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await,
+                    Ok(Ok(_))
+                );
+                debug!("Polled {} at {} - online: {}", name, addr, is_online);
+                (name, is_online)
+            }
+        });
 
+        let results = futures::future::join_all(futures).await;
+        let status_map: HashMap<_, _> = results
+            .into_iter()
+            .collect();
+
+        // TODO: sends updates all the time to websocket clients, even if nothing changed.
         let _ = ws_tx.send(serde_json::to_string(&status_map).unwrap());
         let _ = is_on_tx.send(Arc::new(status_map));
 
