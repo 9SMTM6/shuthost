@@ -1,6 +1,12 @@
 use std::process::{Command, exit};
 
 fn main() {
+    // Inform Cargo to rerun the build script if these files change
+    // TODO: for some reason this doesnt seem to work properly...
+    println!("cargo::rerun-if-changed=assets/styles.css");
+    println!("cargo::rerun-if-changed=assets/app.ts");
+    println!("cargo::rerun-if-changed=assets/index.tmpl.html");
+
     // Check if `npm` is installed
     let npm_check = Command::new("npm").arg("--version").output();
 
