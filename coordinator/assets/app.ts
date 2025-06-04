@@ -58,12 +58,12 @@ const fetchNodes = async () => {
 };
 
 const createHostRow = (host: Host) => `
-    <tr data-hostname="${host.name}">
-        <td>${host.name}</td>
-        <td class="status">Loading...</td>
-        <td>
-            <button class="take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
-            <button class="release-lease shutdown" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
+    <tr data-hostname="${host.name}" class="hover:bg-gray-50">
+        <td class="px-6 py-4">${host.name}</td>
+        <td class="px-6 py-4 status">Loading...</td>
+        <td class="px-6 py-4 space-x-2">
+            <button class="take-lease bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
+            <button class="release-lease bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
         </td>
     </tr>
 `;
