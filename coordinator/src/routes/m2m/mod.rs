@@ -201,7 +201,7 @@ pub async fn handle_node_state(
             lease_set.len(),
             lease_set
         );
-        wake_node(node, state).await?;
+        wake_node(node, state)?;
 
         // Wait until node is reported as online, with timeout
         let mut waited = 0;
@@ -263,7 +263,7 @@ pub async fn handle_node_state(
     Ok(())
 }
 
-async fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
+fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
     debug!("Attempting to wake node '{}'", node);
 
     let host = {
