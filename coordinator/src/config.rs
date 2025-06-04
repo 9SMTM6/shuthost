@@ -1,11 +1,11 @@
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
-use tokio::sync::{watch, mpsc::unbounded_channel};
+use tokio::sync::{mpsc::unbounded_channel, watch};
 use tracing::{error, info};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Node {
@@ -41,10 +41,7 @@ pub async fn load_coordinator_config<P: AsRef<Path>>(
     Ok(config)
 }
 
-pub async fn watch_config_file(
-    path: std::path::PathBuf,
-    tx: watch::Sender<Arc<ControllerConfig>>,
-) {
+pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 
     let mut watcher = RecommendedWatcher::new(

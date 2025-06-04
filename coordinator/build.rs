@@ -5,7 +5,9 @@ fn main() {
     let tsc_check = Command::new("tsc").arg("--version").output();
 
     if tsc_check.is_err() {
-        eprintln!("TypeScript is not installed. Please install it using:\n\n    npm install --global typescript\n");
+        eprintln!(
+            "TypeScript is not installed. Please install it using:\n\n    npm install --global typescript\n"
+        );
         exit(1);
     }
 

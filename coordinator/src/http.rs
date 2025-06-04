@@ -1,5 +1,8 @@
 use axum::{
-    extract::State, response::{IntoResponse, Redirect, Response}, routing::get, Router
+    Router,
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+    routing::get,
 };
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
@@ -167,9 +170,7 @@ async fn poll_host_statuses(
         });
 
         let results = futures::future::join_all(futures).await;
-        let status_map: HashMap<_, _> = results
-            .into_iter()
-            .collect();
+        let status_map: HashMap<_, _> = results.into_iter().collect();
 
         let is_new = {
             let old_status_map = hoststatus_tx.borrow();
@@ -206,17 +207,32 @@ async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl 
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(AppState { ws_tx, hoststatus_rx, .. }): State<AppState>,
+    State(AppState {
+        ws_tx,
+        hoststatus_rx,
+        ..
+    }): State<AppState>,
 ) -> impl IntoResponse {
     let current_state = hoststatus_rx.borrow().clone();
     ws.on_upgrade(move |socket| handle_socket(socket, ws_tx.subscribe(), current_state))
 }
 
-async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>, current_state: Arc<HashMap<String, bool>>) {
+async fn handle_socket(
+    mut socket: WebSocket,
+    mut rx: broadcast::Receiver<String>,
+    current_state: Arc<HashMap<String, bool>>,
+) {
     tokio::spawn(async move {
-        socket.send(serde_json::to_string(current_state.as_ref()).unwrap().into()).await.unwrap_or_else(|e| {
-            warn!("Failed to send initial state: {}", e);
-        });
+        socket
+            .send(
+                serde_json::to_string(current_state.as_ref())
+                    .unwrap()
+                    .into(),
+            )
+            .await
+            .unwrap_or_else(|e| {
+                warn!("Failed to send initial state: {}", e);
+            });
         while let Ok(msg) = rx.recv().await {
             if socket.send(Message::Text(msg.into())).await.is_err() {
                 break;

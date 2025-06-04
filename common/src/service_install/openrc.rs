@@ -1,4 +1,11 @@
-use std::{env, fs::{self, File}, io::Write, os::unix::fs::PermissionsExt, path::{Path, PathBuf}, process::{Command, Stdio}};
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+};
 
 use crate::is_superuser;
 
@@ -21,7 +28,8 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {:?}", target_bin);
 
-    let init_script_content = init_script_content.replace("{binary}", &target_bin.to_string_lossy());
+    let init_script_content =
+        init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
     let mut script_file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     script_file

@@ -1,11 +1,14 @@
-use std::{env, fs::{self, File}, io::Write, path::PathBuf, process::{Command, Stdio}};
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 use crate::is_superuser;
 
-pub fn install_self_as_service(
-    name: &str,
-    init_script_content: &str,
-) -> Result<(), String> {
+pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
     }
@@ -28,10 +31,13 @@ pub fn install_self_as_service(
     let service_file_content =
         init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
-    let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string()).unwrap();
+    let mut service_file = File::create(&service_file_path)
+        .map_err(|e| e.to_string())
+        .unwrap();
     service_file
         .write_all(service_file_content.as_bytes())
-        .map_err(|e| e.to_string()).unwrap();
+        .map_err(|e| e.to_string())
+        .unwrap();
     println!("Created systemd service file at {service_file_path}");
 
     drop(service_file);

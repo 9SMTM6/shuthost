@@ -1,7 +1,7 @@
 use clap::Parser;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
-use shuthost_common::{is_systemd, is_openrc};
+use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
 #[allow(unused_imports)]
 use std::os::unix::fs::PermissionsExt;
@@ -94,7 +94,10 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
                 &arguments.shutdown_command,
                 &target_script_path,
             )?;
-            println!("Serviceless installation completed. Script generated at: {}", target_script_path);
+            println!(
+                "Serviceless installation completed. Script generated at: {}",
+                target_script_path
+            );
         }
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => {
@@ -108,14 +111,28 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
 
     let interface = &get_default_interface();
     if interface.is_none() {
-        eprintln!("Failed to determine the default network interface. Continuing on assuming docker or similar environment.");
+        eprintln!(
+            "Failed to determine the default network interface. Continuing on assuming docker or similar environment."
+        );
     }
     println!(
         "Place the following in the coordinator:\n{config_entry}",
         config_entry = CONFIG_ENTRY
             .replace("{name}", &get_hostname().unwrap())
-            .replace("{ip}", &interface.as_ref().and_then(|it|get_ip(&it)).unwrap_or("unrecognized".to_string()))
-            .replace("{mac}", &interface.as_ref().and_then(|it|get_mac(&it)).unwrap_or("unrecognized".to_string()))
+            .replace(
+                "{ip}",
+                &interface
+                    .as_ref()
+                    .and_then(|it| get_ip(&it))
+                    .unwrap_or("unrecognized".to_string())
+            )
+            .replace(
+                "{mac}",
+                &interface
+                    .as_ref()
+                    .and_then(|it| get_mac(&it))
+                    .unwrap_or("unrecognized".to_string())
+            )
             .replace("{port}", &arguments.port.to_string())
             .replace("{secret}", &arguments.shared_secret)
     );

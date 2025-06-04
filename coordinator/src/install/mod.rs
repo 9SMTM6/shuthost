@@ -46,13 +46,9 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
-    let config_location = PathBuf::from(format!(
-        "/home/{user}/.config/{name}.toml",
-    ));
+    let config_location = PathBuf::from(format!("/home/{user}/.config/{name}.toml",));
     #[cfg(target_os = "macos")]
-    let config_location = PathBuf::from(format!(
-        "/Users/{user}/.config/{name}.toml",
-    ));
+    let config_location = PathBuf::from(format!("/Users/{user}/.config/{name}.toml",));
 
     let bind_known_vals = |arg: &str| {
         arg.to_owned()
@@ -114,9 +110,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
             return Err(format!("Failed to chown file: {}", status));
         }
 
-        println!(
-            "Chowned config file at {config_location:?} for {user}",
-        );
+        println!("Chowned config file at {config_location:?} for {user}",);
     } else {
         println!("Config file already exists at {config_location:?}, not overwriting.");
     }
@@ -126,13 +120,9 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        shuthost_common::systemd::start_and_enable_self_as_service(
-            &name,
-        )?;
+        shuthost_common::systemd::start_and_enable_self_as_service(&name)?;
     } else if is_openrc() {
-        shuthost_common::openrc::start_and_enable_self_as_service(
-            &name,
-        )?;
+        shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
     } else {
         Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
     }

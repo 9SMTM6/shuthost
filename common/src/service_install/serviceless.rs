@@ -1,4 +1,9 @@
-use std::{env, fs::{self, File}, io::Write, os::unix::fs::PermissionsExt};
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    os::unix::fs::PermissionsExt,
+};
 
 pub fn generate_self_extracting_script(
     secret: &str,
@@ -23,12 +28,16 @@ exec "$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" --shar
 exit 1
 
 __BINARY_PAYLOAD_BELOW__
-"#);
+"#
+    );
 
     let mut script = File::create(target_script_path).map_err(|e| e.to_string())?;
-    script.write_all(script_header.as_bytes()).map_err(|e| e.to_string())?;
+    script
+        .write_all(script_header.as_bytes())
+        .map_err(|e| e.to_string())?;
     script.write_all(&self_binary).map_err(|e| e.to_string())?;
-    fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
+    fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o755))
+        .map_err(|e| e.to_string())?;
 
     println!("Generated self-extracting script: {}", target_script_path);
     Ok(())

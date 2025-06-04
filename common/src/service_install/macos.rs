@@ -1,5 +1,11 @@
 use std::path::PathBuf;
-use std::{env, fs::{self, File}, io::Write, os::unix::fs::PermissionsExt, process::{Command, Stdio}};
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    os::unix::fs::PermissionsExt,
+    process::{Command, Stdio},
+};
 
 use crate::is_superuser;
 
@@ -23,7 +29,8 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         .arg("system")
         .arg(&plist_path)
         .stderr(Stdio::null())
-        .status() {
+        .status()
+    {
         println!("Stopped existing service");
     };
 
