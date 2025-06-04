@@ -17,7 +17,7 @@ use crate::{
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use clap::Parser;
 use std::collections::HashMap;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, watch};
 
 #[derive(Debug, Parser)]
 pub struct ServiceArgs {
@@ -37,8 +37,6 @@ pub struct AppState {
     pub ws_tx: broadcast::Sender<String>,
     pub leases: LeaseMap,
 }
-
-use tokio::sync::watch;
 
 pub async fn start_http_server(config_path: &std::path::Path) {
     info!("Starting HTTP server...");
@@ -191,13 +189,17 @@ async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl 
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(AppState { ws_tx, .. }): State<AppState>,
+    State(AppState { ws_tx, is_on_rx, .. }): State<AppState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket, ws_tx.subscribe()))
+    let current_state = is_on_rx.borrow().clone();
+    ws.on_upgrade(move |socket| handle_socket(socket, ws_tx.subscribe(), current_state))
 }
 
-async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>) {
+async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<String>, current_state: Arc<HashMap<String, bool>>) {
     tokio::spawn(async move {
+        socket.send(serde_json::json!(current_state.as_ref()).to_string().into()).await.unwrap_or_else(|e| {
+            warn!("Failed to send initial state: {}", e);
+        });
         while let Ok(msg) = rx.recv().await {
             if socket.send(Message::Text(msg.into())).await.is_err() {
                 break;
