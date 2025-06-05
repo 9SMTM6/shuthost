@@ -14,7 +14,7 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     * motherboard can do it (sometimes its not supported, or only supported in higher power levels, e.g. RAM based sleep) 
         * AND IS CONFIGURED accordingly
     * OS will also need to be configured accordingly
-    * broadcasts need to be enabled on the network, and the hosts must be able to reach each other (TODO test for that)
+    * broadcasts need to be enabled on the network, and the hosts must be able to reach each other (theres a test for that now)
 * UI still gets stuck on load sometimes. IDK precisely why. Need to add timeouts when communicating with other hosts
 * docker is problematic:
     * its currently untested
@@ -49,10 +49,7 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 <!-- 
     // TODO: add endpoint to get leases, and enable/disable buttons based on lease status.
     // rework the way frontend updates work
-    // poll hosts in the backend in paralell
-    // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not)
-    // switch to TS or figure out some other way to better handle frontend logic.
-    // push status updates in object form instead of with arrays
+    // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count())
     // add a "lease" column to the table, showing lease status.
     // Add separate table to show configured clients, with a reset button to fix broken leases.
     // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
