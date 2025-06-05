@@ -26,11 +26,22 @@ macro_rules! node_agent_handler {
                 .unwrap()
         }
     };
+    ($name:ident, $node_agent_target:expr, feature=$feature:expr) => {
+        #[cfg(feature = $feature)]
+        node_agent_handler!($name, $node_agent_target);
+        #[cfg(not(feature = $feature))]
+        async fn $name() -> impl IntoResponse {
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body("This agent is not available in this build.".into_response())
+                .unwrap()
+        }
+    };
 }
 
 // Generate all handlers
-node_agent_handler!(node_agent_macos_aarch64, "aarch64-apple-darwin");
-node_agent_handler!(node_agent_macos_x86_64, "x86_64-apple-darwin");
+node_agent_handler!(node_agent_macos_aarch64, "aarch64-apple-darwin", feature = "build_macos");
+node_agent_handler!(node_agent_macos_x86_64, "x86_64-apple-darwin", feature = "build_macos");
 node_agent_handler!(node_agent_linux_x86_64, "x86_64-unknown-linux-gnu");
 node_agent_handler!(node_agent_linux_aarch64, "aarch64-unknown-linux-gnu");
 node_agent_handler!(node_agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
