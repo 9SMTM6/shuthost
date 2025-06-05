@@ -2,11 +2,12 @@
 type Host = { name: string };
 type StatusMap = Record<string, boolean>;
 
-let socket: WebSocket | undefined;
+// Persist statusMap globally
+let statusMap: StatusMap = {};
 
 const connectWebSocket = () => {
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+    const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
 
     socket.onopen = () => console.log('WebSocket connected');
     socket.onmessage = handleWebSocketMessage;
@@ -19,7 +20,9 @@ const handleWebSocketMessage = (event: MessageEvent) => {
         if (msg === "config_updated") {
             fetchNodes();
         } else {
-            updateNodeStatuses(JSON.parse(msg) as StatusMap);
+            // Update and persist statusMap
+            statusMap = JSON.parse(msg) as StatusMap;
+            updateNodeStatuses(statusMap);
         }
     } catch (err) {
         console.error('Error parsing WS message:', err);
@@ -51,6 +54,10 @@ const fetchNodes = async () => {
         const hostTableBody = document.getElementById('host-table-body');
         if (hostTableBody) {
             hostTableBody.innerHTML = hosts.map(createHostRow).join('');
+            // After re-render, re-apply statuses if available
+            if (Object.keys(statusMap).length > 0) {
+                updateNodeStatuses(statusMap);
+            }
         }
     } catch (err) {
         console.error('Failed to fetch hosts:', err);
