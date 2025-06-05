@@ -59,11 +59,11 @@ const fetchNodes = async () => {
 
 const createHostRow = (host: Host) => `
     <tr data-hostname="${host.name}" class="hover:bg-gray-50">
-        <td class="px-6 py-4">${host.name}</td>
-        <td class="px-6 py-4 status">Loading...</td>
-        <td class="px-6 py-4 space-x-2">
-            <button class="take-lease bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
-            <button class="release-lease bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
+        <td class="table-header border-none">${host.name}</td>
+        <td class="table-header border-none status">Loading...</td>
+        <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <button class="take-lease w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
+            <button class="release-lease w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
         </td>
     </tr>
 `;
@@ -93,6 +93,11 @@ const setupCopyButtons = () => {
     });
 };
 
+// Add helper function for inserting break opportunities
+const addBreakOpportunities = (text: string) => {
+    return text.replace(/([/._-])/g, `$1\u200B`);
+};
+
 const initialize = () => {
     connectWebSocket();
     fetchNodes();
@@ -103,11 +108,11 @@ const initialize = () => {
     const clientInstallCommand = document.getElementById('client-install-command');
 
     if (nodeInstallCommand) {
-        nodeInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+        nodeInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/node_agent_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)} --port 5757`;
     }
 
     if (clientInstallCommand) {
-        clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+        clientInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/client_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)}`;
     }
 };
 
