@@ -42,4 +42,14 @@ footer { grid-area: footer; }
     .table-header {
         @apply px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base;
     }
+
+    .btn {
+        @apply w-full sm:w-auto text-white px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed;
+    }
+    .btn-green {
+        @apply bg-green-500 hover:bg-green-600;
+    }
+    .btn-red {
+        @apply bg-red-500 hover:bg-red-600;
+    }
 }

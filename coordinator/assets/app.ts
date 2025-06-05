@@ -69,8 +69,8 @@ const createHostRow = (host: Host) => `
         <td class="table-header border-none">${host.name}</td>
         <td class="table-header border-none status">Loading...</td>
         <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <button class="take-lease w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
-            <button class="release-lease w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
+            <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
+            <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
         </td>
     </tr>
 `;
