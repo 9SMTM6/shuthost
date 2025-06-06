@@ -23,19 +23,21 @@
     <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <main class="py-4 sm:py-6">
             <div class="section-container mt-0">
-                <table class="w-full min-w-[640px]">
-                    <thead>
-                        <tr>
-                            <th class="table-header">Host</th>
-                            <th class="table-header">Status</th>
-                            <th class="table-header">Leases</th>
-                            <th class="table-header">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="host-table-body" class="divide-y divide-gray-200">
-                        <!-- Hosts will be loaded here dynamically -->
-                    </tbody>
-                </table>
+                <div class="table-wrapper">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th class="table-header">Host</th>
+                                <th class="table-header">Status</th>
+                                <th class="table-header">Leases</th>
+                                <th class="table-header">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="host-table-body" class="divide-y divide-gray-200">
+                            <!-- Hosts will be loaded here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <section class="section-container">

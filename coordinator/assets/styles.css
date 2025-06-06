@@ -16,7 +16,7 @@ footer { grid-area: footer; }
 
 @layer components {
     .section-container {
-        @apply bg-white shadow-md rounded-lg p-4 sm:p-6 mt-4 sm:mt-6;
+        @apply bg-white shadow-md rounded-lg p-4 sm:p-6 mt-4 sm:mt-6 overflow-x-auto;
     }
     
     .section-title {
@@ -32,7 +32,7 @@ footer { grid-area: footer; }
     }
     
     .code-block {
-        @apply block font-mono text-xs sm:text-sm break-all whitespace-pre-wrap max-w-full;
+        @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-16;
     }
     
     .description-text {
@@ -40,16 +40,31 @@ footer { grid-area: footer; }
     }
     
     .table-header {
-        @apply px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base;
+        @apply px-2 sm:px-4 py-2 sm:py-3 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base;
     }
 
     .btn {
-        @apply w-full sm:w-auto text-white px-3 sm:px-4 py-1.5 sm:py-2 text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed;
+        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed;
     }
+
     .btn-green {
         @apply bg-green-500 hover:bg-green-600;
     }
+
     .btn-red {
         @apply bg-red-500 hover:bg-red-600;
+    }
+
+    /* New mobile optimizations */
+    .table-wrapper {
+        @apply w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+    }
+
+    .table-cell {
+        @apply px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base;
+    }
+
+    .actions-cell {
+        @apply flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center min-w-[180px];
     }
 }

@@ -109,12 +109,14 @@ const createHostRow = (host: Host) => {
     const leases = getFormattedLeases(host.name);
     return `
     <tr data-hostname="${host.name}" class="hover:bg-gray-50">
-        <td class="table-header border-none">${host.name}</td>
-        <td class="table-header border-none status">${statusText}</td>
-        <td class="table-header border-none leases">${leases}</td>
-        <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
-            <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
+        <td class="table-cell">${host.name}</td>
+        <td class="table-cell status">${statusText}</td>
+        <td class="table-cell leases">${leases}</td>
+        <td class="table-cell">
+            <div class="actions-cell">
+                <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
+                <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
+            </div>
         </td>
     </tr>
     `;
@@ -145,11 +147,6 @@ const setupCopyButtons = () => {
     });
 };
 
-// Add helper function for inserting break opportunities
-const addBreakOpportunities = (text: string) => {
-    return text.replace(/([/._-])/g, `$1\u200B`);
-};
-
 const initialize = () => {
     const nodeInstallCommand = document.getElementById('node-install-command');
     const clientInstallCommand = document.getElementById('client-install-command');
@@ -161,8 +158,8 @@ const initialize = () => {
     setupCopyButtons();
 
     const baseUrl = window.location.origin;
-    nodeInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/node_agent_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)} --port 5757`;
-    clientInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/client_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)}`;
+    nodeInstallCommand.textContent = `curl -fsSL ${`${baseUrl}/download/node_agent_installer.sh`} | sh -s ${baseUrl} --port 5757`;
+    clientInstallCommand.textContent = `curl -fsSL ${`${baseUrl}/download/client_installer.sh`} | sh -s ${baseUrl}`;
 };
 
 document.addEventListener('DOMContentLoaded', initialize);
