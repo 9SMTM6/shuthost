@@ -3,7 +3,7 @@ use axum::{
     response::IntoResponse,
 };
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::{broadcast, watch};
+use tokio::sync::broadcast;
 use tracing::warn;
 use serde::{Serialize, Deserialize};
 
@@ -30,11 +30,12 @@ pub async fn ws_handler(
     }): State<AppState>,
 ) -> impl IntoResponse {
     let current_state = hoststatus_rx.borrow().clone();
+    let current_config = config_rx.borrow().clone();
     ws.on_upgrade(move |socket| handle_socket(
         socket,
         ws_tx.subscribe(),
         current_state,
-        config_rx
+        current_config
     ))
 }
 
@@ -52,11 +53,11 @@ async fn handle_socket(
     mut socket: WebSocket,
     mut rx: broadcast::Receiver<WsMessage>,
     current_state: Arc<HashMap<String, bool>>,
-    config_rx: watch::Receiver<Arc<ControllerConfig>>,
+    config: Arc<ControllerConfig>,
 ) {
     tokio::spawn(async move {
         // Send initial combined state
-        let nodes = config_rx.borrow().nodes.keys().cloned().collect();
+        let nodes = config.nodes.keys().cloned().collect();
         let initial_msg = WsMessage::Initial {
             nodes,
             status: current_state.as_ref().clone(),
