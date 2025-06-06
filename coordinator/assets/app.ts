@@ -8,9 +8,9 @@ type LeaseSource =
 
 type WsMessage = 
     | { type: 'HostStatus'; payload: Record<string, boolean> }
-    | { type: 'UpdateNodes'; payload: string[] }
-    | { type: 'Initial'; payload: { nodes: string[]; status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
-    | { type: 'LeaseUpdate'; payload: { node: string; leases: LeaseSource[] } };
+    | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[]} }
+    | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
+    | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 type Client = {
     id: string;
@@ -21,6 +21,7 @@ type Client = {
 // Persist statusMap globally
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
+let persistedClientList: string[] = [];
 
 const connectWebSocket = () => {
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -36,24 +37,29 @@ const handleWebSocketMessage = (event: MessageEvent) => {
         const message = JSON.parse(event.data) as WsMessage;
         const hostTableBody = document.getElementById('host-table-body');
         if (!hostTableBody) throw new Error('Missing required element #host-table-body');
-        
+        const clientTableBody = document.getElementById('client-table-body');
+        if (!clientTableBody) return;
+
         switch (message.type) {
             case 'Initial':
                 persistedStatusMap = message.payload.status;
                 persistedLeaseMap = message.payload.leases;
-                const hosts = message.payload.nodes.map(name => ({ name }));
+                persistedClientList = message.payload.clients;
+                const hosts = message.payload.hosts.map(name => ({ name }));
                 hostTableBody.innerHTML = hosts.map(createHostRow).join('');
-                updateClientsTable(); // Add this line
+                updateClientsTable(); // already included
                 break;
             case 'HostStatus':
                 persistedStatusMap = message.payload;
                 break;
-            case 'UpdateNodes':
-                const newHosts = message.payload.map(name => ({ name }));
+            case 'ConfigChanged':
+                persistedClientList = message.payload.clients;
+                const newHosts = message.payload.hosts.map(name => ({ name }));
                 hostTableBody.innerHTML = newHosts.map(createHostRow).join('');
+                updateClientsTable(); // ensure the table reflects new clients
                 break;
             case 'LeaseUpdate':
-                const { node, leases } = message.payload;
+                const { host: node, leases } = message.payload;
                 persistedLeaseMap[node] = leases;
                 updateClientsTable(); // Add this line
                 console.log(`Updated leases for ${node}:`, persistedLeaseMap[node]);
@@ -237,10 +243,9 @@ const createClientRow = (clientId: string, leases: string[]) => {
     `;
 };
 
-// Add this function to update the clients table
 const updateClientsTable = () => {
     const clientMap = new Map<string, string[]>();
-    
+
     // Group leases by client
     Object.entries(persistedLeaseMap).forEach(([host, leases]) => {
         leases.forEach(lease => {
@@ -250,6 +255,13 @@ const updateClientsTable = () => {
                 clientMap.set(lease.value, clientLeases);
             }
         });
+    });
+
+    // Ensure all known clients are included
+    persistedClientList.forEach(clientId => {
+        if (!clientMap.has(clientId)) {
+            clientMap.set(clientId, []);
+        }
     });
 
     const clientTableBody = document.getElementById('client-table-body');

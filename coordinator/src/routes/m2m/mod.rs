@@ -211,7 +211,7 @@ pub async fn broadcast_lease_update(
 ) {
     let lease_sources: Vec<_> = lease_set.iter().cloned().collect();
     let msg = WsMessage::LeaseUpdate {
-        node: node.to_string(),
+        host: node.to_string(),
         leases: lease_sources,
     };
     let _ = ws_tx.send(msg);

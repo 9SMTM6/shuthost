@@ -19,14 +19,15 @@ use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
 #[serde(tag = "type", content = "payload")]
 pub enum WsMessage {
     HostStatus(HashMap<String, bool>),
-    UpdateNodes(Vec<String>),
+    ConfigChanged{hosts: Vec<String>, clients: Vec<String>},
     Initial {
-        nodes: Vec<String>,
+        hosts: Vec<String>,
+        clients: Vec<String>,
         status: HashMap<String, bool>,
         leases: HashMap<String, Vec<LeaseSource>>, // Include leases in the initial payload
     },
     LeaseUpdate {
-        node: String,
+        host: String,
         leases: Vec<LeaseSource>,
     },
 }
@@ -74,7 +75,8 @@ async fn handle_socket(
 ) {
     tokio::spawn(async move {
         // Send initial combined state
-        let nodes = config.nodes.keys().cloned().collect();
+        let hosts = config.nodes.keys().cloned().collect();
+        let clients = config.clients.keys().cloned().collect();
         let leases_map = {
             current_leases
                 .lock()
@@ -84,7 +86,8 @@ async fn handle_socket(
                 .collect::<HashMap<_, _>>()
         };
         let initial_msg = WsMessage::Initial {
-            nodes,
+            hosts,
+            clients,
             status: current_state.as_ref().clone(),
             leases: leases_map.clone(), // Pass the lease data
         };

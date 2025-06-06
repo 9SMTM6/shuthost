@@ -69,11 +69,6 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         let ws_tx = ws_tx.clone();
         let mut hoststatus_rx = hoststatus_rx.clone();
         tokio::spawn(async move {
-            {
-                let initial_status = hoststatus_rx.borrow().clone();
-                let msg = WsMessage::HostStatus(initial_status.as_ref().clone());
-                let _ = ws_tx.send(msg);
-            }
             loop {
                 if hoststatus_rx.changed().await.is_ok() {
                     let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
@@ -89,8 +84,9 @@ pub async fn start_http_server(config_path: &std::path::Path) {
             loop {
                 if config_rx.changed().await.is_ok() {
                     let config = config_rx.borrow();
-                    let nodes = config.nodes.keys().cloned().collect::<Vec<_>>();
-                    let msg = WsMessage::UpdateNodes(nodes);
+                    let hosts = config.nodes.keys().cloned().collect::<Vec<_>>();
+                    let clients = config.clients.keys().cloned().collect::<Vec<_>>();
+                    let msg = WsMessage::ConfigChanged{hosts, clients};
                     let _ = ws_tx.send(msg);
                 }
             }
