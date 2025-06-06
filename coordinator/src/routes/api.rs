@@ -16,12 +16,12 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     http::AppState,
-    routes::m2m::{LeaseSource, handle_node_state},
+    routes::m2m::handle_node_state,
 };
 
 use super::m2m::m2m_routes;
 
-pub use super::m2m::LeaseMap;
+pub use super::m2m::{LeaseMap, LeaseSource};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()

@@ -13,13 +13,14 @@ use axum::{
     response::{IntoResponse, Response},
     routing::post,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use shuthost_common::{create_hmac_message, is_timestamp_in_valid_range, sign_hmac, verify_hmac};
-use tokio::sync::Mutex;
+use tokio::sync::{broadcast, Mutex};
 use tracing::{debug, error, info, warn};
 
 use crate::{http::AppState, wol::send_magic_packet};
+use crate::websocket::WsMessage;
 
 use super::api::send_shutdown;
 
@@ -138,6 +139,7 @@ async fn handle_lease(
     match action.as_str() {
         "take" => {
             lease_set.insert(lease_source.clone());
+            broadcast_lease_update(&node, lease_set, &state.ws_tx).await;
             info!("Client '{}' took lease on '{}'", client_id, node);
 
             if is_async {
@@ -155,6 +157,7 @@ async fn handle_lease(
         }
         "release" => {
             lease_set.remove(&lease_source);
+            broadcast_lease_update(&node, lease_set, &state.ws_tx).await;
             info!("Client '{}' released lease on '{}'", client_id, node);
 
             if is_async {
@@ -172,6 +175,19 @@ async fn handle_lease(
         }
         _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
     }
+}
+
+async fn broadcast_lease_update(
+    node: &str,
+    lease_set: &HashSet<LeaseSource>,
+    ws_tx: &broadcast::Sender<WsMessage>,
+) {
+    let lease_sources: Vec<_> = lease_set.iter().cloned().collect();
+    let msg = WsMessage::LeaseUpdate {
+        node: node.to_string(),
+        leases: lease_sources,
+    };
+    let _ = ws_tx.send(msg);
 }
 
 pub async fn handle_node_state(
@@ -338,7 +354,7 @@ async fn shutdown_node(node: &str, state: &AppState) -> Result<(), (StatusCode, 
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum LeaseSource {
     WebInterface,
     Client(String),

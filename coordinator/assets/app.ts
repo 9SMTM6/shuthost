@@ -2,13 +2,20 @@
 type Host = { name: string };
 type StatusMap = Record<string, boolean>;
 
+type LeaseSource =
+    | { type: 'WebInterface' }
+    | { type: 'Client'; value: string };
+
 type WsMessage = 
     | { type: 'HostStatus'; payload: Record<string, boolean> }
     | { type: 'UpdateNodes'; payload: string[] }
-    | { type: 'Initial'; payload: { nodes: string[]; status: Record<string, boolean> } };
+    | { type: 'Initial'; payload: { nodes: string[]; status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
+    | { type: 'LeaseUpdate'; payload: { node: string; leases: LeaseSource[] } };
+
 
 // Persist statusMap globally
 let persistedStatusMap: StatusMap = {};
+let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 
 const connectWebSocket = () => {
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -28,6 +35,7 @@ const handleWebSocketMessage = (event: MessageEvent) => {
         switch (message.type) {
             case 'Initial':
                 persistedStatusMap = message.payload.status;
+                persistedLeaseMap = {}; // Reset lease map on initialization
                 const hosts = message.payload.nodes.map(name => ({ name }));
                 hostTableBody.innerHTML = hosts.map(it => createHostRow(it, persistedStatusMap)).join('');
                 break;
@@ -39,10 +47,14 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 const newHosts = message.payload.map(name => ({ name }));
                 hostTableBody.innerHTML = newHosts.map(it => createHostRow(it, persistedStatusMap)).join('');
                 break;
+            case 'LeaseUpdate':
+                const { node, leases } = message.payload;
+                persistedLeaseMap[node] = leases; // Store raw LeaseSource objects
+                console.log(`Updated leases for ${node}:`, persistedLeaseMap[node]);
+                break;
         }
     } catch (err) {
         console.error('Error handling WS message:', err);
-        throw err; // Re-throw to make the error more visible
     }
 };
 
@@ -57,16 +69,18 @@ const getHostStatus = (hostname: string, statusMap: StatusMap) => {
 
 const createHostRow = (host: Host, statusMap: StatusMap) => {
     const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(host.name, statusMap);
+    const leases = persistedLeaseMap[host.name]?.map(formatLeaseSource).join(', ') || 'None';
     return `
     <tr data-hostname="${host.name}" class="hover:bg-gray-50">
         <td class="table-header border-none">${host.name}</td>
         <td class="table-header border-none status">${statusText}</td>
+        <td class="table-header border-none">${leases}</td>
         <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
             <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')" ${takeLeaseDisabled}>Take Lease</button>
             <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')" ${releaseLeaseDisabled}>Release Lease</button>
         </td>
     </tr>
-`;
+    `;
 };
 
 const updateNodeStatuses = (statusMap: StatusMap) => {
@@ -131,3 +145,12 @@ const initialize = () => {
 };
 
 document.addEventListener('DOMContentLoaded', initialize);
+
+const formatLeaseSource = (lease: LeaseSource): string => {
+    switch (lease.type) {
+        case 'WebInterface':
+            return 'web-interface';
+        case 'Client':
+            return `client-${lease.value}`;
+    }
+};
