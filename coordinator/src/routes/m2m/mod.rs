@@ -355,6 +355,7 @@ async fn shutdown_node(node: &str, state: &AppState) -> Result<(), (StatusCode, 
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum LeaseSource {
     WebInterface,
     Client(String),

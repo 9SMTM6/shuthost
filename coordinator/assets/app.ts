@@ -35,17 +35,16 @@ const handleWebSocketMessage = (event: MessageEvent) => {
         switch (message.type) {
             case 'Initial':
                 persistedStatusMap = message.payload.status;
-                persistedLeaseMap = {}; // Reset lease map on initialization
+                persistedLeaseMap = message.payload.leases;
                 const hosts = message.payload.nodes.map(name => ({ name }));
-                hostTableBody.innerHTML = hosts.map(it => createHostRow(it, persistedStatusMap)).join('');
+                hostTableBody.innerHTML = hosts.map(createHostRow).join('');
                 break;
             case 'HostStatus':
                 persistedStatusMap = message.payload;
-                updateNodeStatuses(persistedStatusMap);
                 break;
             case 'UpdateNodes':
                 const newHosts = message.payload.map(name => ({ name }));
-                hostTableBody.innerHTML = newHosts.map(it => createHostRow(it, persistedStatusMap)).join('');
+                hostTableBody.innerHTML = newHosts.map(createHostRow).join('');
                 break;
             case 'LeaseUpdate':
                 const { node, leases } = message.payload;
@@ -53,13 +52,14 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 console.log(`Updated leases for ${node}:`, persistedLeaseMap[node]);
                 break;
         }
+        updateNodeAttrs();
     } catch (err) {
         console.error('Error handling WS message:', err);
     }
 };
 
-const getHostStatus = (hostname: string, statusMap: StatusMap) => {
-    const status = statusMap[hostname];
+const getHostStatus = (hostname: string) => {
+    const status = persistedStatusMap[hostname];
     return {
         statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline'),
         takeLeaseDisabled: status ? 'disabled' : '',
@@ -67,36 +67,51 @@ const getHostStatus = (hostname: string, statusMap: StatusMap) => {
     };
 };
 
-const createHostRow = (host: Host, statusMap: StatusMap) => {
-    const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(host.name, statusMap);
-    const leases = persistedLeaseMap[host.name]?.map(formatLeaseSource).join(', ') || 'None';
+// Helper function to get formatted leases for a host
+const getFormattedLeases = (hostname: string): string => {
+    console.log(`Formatting leases for ${hostname}:`, persistedLeaseMap[hostname]);
+    return persistedLeaseMap[hostname]?.map(formatLeaseSource).join(', ') || 'None';
+};
+
+// Helper function to update a single row's attributes
+const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
+    const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(hostname);
+    const statusCell = row.querySelector<HTMLElement>('.status');
+    const leaseCell = row.querySelector<HTMLElement>('.leases');
+    const takeLeaseButton = row.querySelector<HTMLButtonElement>('.take-lease');
+    const releaseLeaseButton = row.querySelector<HTMLButtonElement>('.release-lease');
+
+    if (statusCell) statusCell.textContent = statusText;
+    if (leaseCell) leaseCell.textContent = getFormattedLeases(hostname);
+    if (takeLeaseButton) takeLeaseButton.disabled = !!takeLeaseDisabled;
+    if (releaseLeaseButton) releaseLeaseButton.disabled = !!releaseLeaseDisabled;
+};
+
+// Updated updateNodeAttrs function
+const updateNodeAttrs = () => {
+    document.querySelectorAll<HTMLTableRowElement>('#host-table-body tr').forEach(row => {
+        const hostname = row.dataset["hostname"];
+        if (hostname) {
+            updateRowAttributes(row, hostname);
+        }
+    });
+};
+
+// Updated createHostRow function
+const createHostRow = (host: Host) => {
+    const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(host.name);
+    const leases = getFormattedLeases(host.name);
     return `
     <tr data-hostname="${host.name}" class="hover:bg-gray-50">
         <td class="table-header border-none">${host.name}</td>
         <td class="table-header border-none status">${statusText}</td>
-        <td class="table-header border-none">${leases}</td>
+        <td class="table-header border-none leases">${leases}</td>
         <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
             <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')" ${takeLeaseDisabled}>Take Lease</button>
             <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')" ${releaseLeaseDisabled}>Release Lease</button>
         </td>
     </tr>
     `;
-};
-
-const updateNodeStatuses = (statusMap: StatusMap) => {
-    document.querySelectorAll<HTMLTableRowElement>('#host-table-body tr').forEach(row => {
-        const hostname = row.dataset["hostname"];
-        if (hostname) {
-            const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(hostname, statusMap);
-            const statusCell = row.querySelector<HTMLElement>('.status');
-            const takeLeaseButton = row.querySelector<HTMLButtonElement>('.take-lease');
-            const releaseLeaseButton = row.querySelector<HTMLButtonElement>('.release-lease');
-
-            if (statusCell) statusCell.textContent = statusText;
-            if (takeLeaseButton) takeLeaseButton.disabled = !!takeLeaseDisabled;
-            if (releaseLeaseButton) releaseLeaseButton.disabled = !!releaseLeaseDisabled;
-        }
-    });
 };
 
 const updateLease = async (host: string, action: string) => {

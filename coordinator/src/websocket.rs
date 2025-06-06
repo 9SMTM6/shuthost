@@ -4,7 +4,7 @@ use axum::{
 };
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use tokio::sync::{broadcast, Mutex};
-use tracing::warn;
+use tracing::{warn, info};
 use serde::{Serialize, Deserialize};
 
 use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
@@ -84,10 +84,29 @@ async fn handle_socket(
         }
 
         // Handle broadcast messages
-        while let Ok(msg) = rx.recv().await {
-            if let Err(e) = send_ws_message(&mut socket, &msg).await {
-                warn!("Failed to send message, closing connection: {}", e);
-                break;
+        loop {
+            tokio::select! {
+                // Receive messages from the broadcast channel
+                msg = rx.recv() => {
+                    match msg {
+                        Ok(msg) => {
+                            if let Err(e) = send_ws_message(&mut socket, &msg).await {
+                                warn!("Failed to send message, closing connection: {}", e);
+                                break;
+                            }
+                        }
+                        Err(_) => {
+                            warn!("Broadcast channel closed, stopping WebSocket handler");
+                            break;
+                        }
+                    }
+                }
+                // TODO: isnt properly working.
+                // Detect when the WebSocket is closed
+                None = socket.recv() => {
+                    info!("WebSocket connection closed");
+                    break;
+                }
             }
         }
     });
