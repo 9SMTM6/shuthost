@@ -15,18 +15,23 @@
 </head>
 
 <body class="bg-gray-50 font-sans min-h-screen">
-    <header class="bg-white shadow-md py-4 px-4 flex items-center justify-center gap-4">
-        <img src="/favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
-        <h1 class="text-xl sm:text-2xl font-semibold text-gray-800">ShutHost</h1>
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-4">
+                    <img src="/favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
+                    <h1 class="text-xl sm:text-2xl font-semibold text-gray-800">ShutHost</h1>
+                </div>
+                <nav class="flex">
+                    <button class="tab active" data-tab="hosts">Hosts</button>
+                    <button class="tab" data-tab="clients">Clients</button>
+                </nav>
+            </div>
+        </div>
     </header>
 
     <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <main class="py-4 sm:py-6">
-            <div class="tabs-container">
-                <button class="tab active" data-tab="hosts">Hosts</button>
-                <button class="tab" data-tab="clients">Clients</button>
-            </div>
-
             <div id="hosts-tab" class="tab-content active">
                 <div class="section-container mt-0">
                     <div class="table-wrapper">
@@ -89,7 +94,7 @@
         </main>
     </div>
 
-    <footer class="bg-white shadow-md py-4 sm:py-6 px-4 text-center text-gray-600 text-xs sm:text-sm mt-auto">
+    <footer class="bg-white shadow-md py-2 px-4 text-center text-gray-600 text-xs mt-auto">
         ShutHost Coordinator v{version}
     </footer>
 

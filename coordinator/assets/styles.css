@@ -77,19 +77,18 @@ footer { grid-area: footer; }
         @apply text-gray-500 text-sm text-center py-4;
     }
 
-    /* Add these new tab styles */
-    .tabs-container {
-        @apply flex flex-wrap border-b border-gray-200 mb-4;
-    }
-
+    /* Update tab styles */
     .tab {
-        @apply inline-block px-4 py-2 text-sm sm:text-base font-medium text-gray-600 hover:text-gray-800 cursor-pointer;
+        @apply px-4 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 
+               border-b-2 border-transparent hover:border-gray-300 
+               transition-colors focus:outline-none focus:text-gray-700 focus:border-gray-300;
     }
 
     .tab.active {
-        @apply text-blue-600 border-b-2 border-blue-600;
+        @apply text-blue-600 border-blue-600 hover:text-blue-700 hover:border-blue-700;
     }
 
+    /* Remove .tabs-container since we moved tabs to header */
     .tab-content {
         @apply hidden;
     }
