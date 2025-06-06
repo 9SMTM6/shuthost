@@ -42,7 +42,7 @@ footer { grid-area: footer; }
 
 @layer components {
     .section-container {
-        @apply bg-white shadow-md rounded-lg p-4 sm:p-6 mt-4 sm:mt-6 overflow-x-auto;
+        @apply bg-white shadow-md rounded-lg overflow-hidden; /* Remove padding here */
     }
     
     .section-title {
@@ -54,7 +54,10 @@ footer { grid-area: footer; }
     }
     
     .copy-button {
-        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors;
+        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 
+               text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm 
+               transition-all duration-200 cursor-pointer
+               active:scale-95 hover:shadow-sm;
     }
     
     .code-block {
@@ -66,11 +69,13 @@ footer { grid-area: footer; }
     }
     
     .table-header {
-        @apply px-2 sm:px-4 py-2 sm:py-3 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base;
+        @apply px-4 py-3 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base border-b border-gray-200;
     }
 
     .btn {
-        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed;
+        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm 
+               rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed
+               cursor-pointer;
     }
 
     .btn-green {
@@ -83,15 +88,26 @@ footer { grid-area: footer; }
 
     /* New mobile optimizations */
     .table-wrapper {
-        @apply w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+        @apply w-full;  /* Remove overflow and padding/margin adjustments */
     }
 
+    table {
+        @apply border-collapse;
+    }
+    
+    /* Update table header styling */
+    .table-header {
+        @apply px-4 py-3 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base border-b border-gray-200;
+    }
+    
+    /* Update table cell styling */
     .table-cell {
-        @apply px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base;
+        @apply px-4 py-1.5 text-sm sm:text-base border-b border-gray-200;
     }
-
+    
+    /* Update actions cell styling */
     .actions-cell {
-        @apply flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center min-w-[180px];
+        @apply px-4 py-1.5 flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center min-w-[180px];
     }
 
     /* Add these new styles */
@@ -107,7 +123,8 @@ footer { grid-area: footer; }
     .tab {
         @apply px-4 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 
                border-b-2 border-transparent hover:border-gray-300 
-               transition-colors focus:outline-none focus:text-gray-700 focus:border-gray-300;
+               transition-colors focus:outline-none focus:text-gray-700 focus:border-gray-300
+               cursor-pointer;
     }
 
     .tab.active {

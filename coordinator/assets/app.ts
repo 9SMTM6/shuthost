@@ -216,7 +216,6 @@ const formatLeaseSource = (lease: LeaseSource): string => {
     }
 };
 
-// Add this function to create client table rows
 const createClientRow = (clientId: string, leases: string[]) => {
     const hasLeases = leases.length > 0;
     return `
