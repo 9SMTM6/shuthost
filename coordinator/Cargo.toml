@@ -23,6 +23,7 @@ notify = "8.0.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 futures = "0.3.31"
+serde_plain = "1.0.2"
 
 [features]
 default = [

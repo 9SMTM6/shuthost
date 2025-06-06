@@ -22,7 +22,7 @@ use tracing::{debug, error, info, warn};
 use crate::websocket::WsMessage;
 use crate::{http::AppState, wol::send_magic_packet};
 
-use super::api::send_shutdown;
+use super::api::{send_shutdown, LeaseAction};
 
 const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.tmpl.sh");
 
@@ -36,7 +36,7 @@ pub async fn download_client_script() -> impl IntoResponse {
 
 pub fn m2m_routes() -> axum::Router<AppState> {
     axum::Router::new()
-        .route("/lease/{hostname}/{action}", post(handle_lease))
+        .route("/lease/{hostname}/{action}", post(handle_m2m_lease_action))
         .route("/test_wol", post(test_wol))
 }
 
@@ -80,13 +80,22 @@ pub struct LeaseActionQuery {
 /// authorization via HMAC-signed headers. The client must provide a valid `X-Client-ID`
 /// and a signed `X-Request` header containing a timestamp, command, and signature.
 ///
-/// This is distinct from the web interface lease endpoints (`take_lease`/`release_lease`),
-/// which do not require authentication and are used for user-initiated actions from the web UI.
+/// The `action` path parameter must be either `take` or `release` and is mapped to the `LeaseAction` enum.
 ///
-/// Use this endpoint for secure, automated lease management by trusted clients.
+/// The `async` query parameter determines whether the node state change (wake/shutdown) is performed
+/// synchronously (the request waits for the node to reach the desired state, up to a timeout) or asynchronously
+/// (the request returns immediately after triggering the state change, and the node may still be transitioning).
+///
+/// - In synchronous mode (default), the request will block until the node is confirmed online (for take) or offline (for release),
+///   or until a timeout is reached. This provides strong guarantees to the client about the node's state at the time of response.
+/// - In asynchronous mode (`?async=true`), the request returns immediately after triggering the state change, and the node may still
+///   be transitioning. This is useful for clients that want a fast response and can poll for state changes separately.
+///
+/// This is distinct from the web interface lease endpoints, which do not require authentication and are used for
+/// user-initiated actions from the web UI. Use this endpoint for secure, automated lease management by trusted clients.
 #[axum::debug_handler]
-async fn handle_lease(
-    Path((node, action)): Path<(String, String)>,
+async fn handle_m2m_lease_action(
+    Path((node, action)): Path<(String, LeaseAction)>,
     headers: axum::http::HeaderMap,
     State(state): State<AppState>,
     Query(q): Query<LeaseActionQuery>,
@@ -107,7 +116,11 @@ async fn handle_lease(
     }
 
     let (timestamp_str, command, signature) = (parts[0], parts[1], parts[2]);
-    if command != action {
+    // Instead of comparing strings, try to deserialize the command string into a LeaseAction.
+    let command_action: LeaseAction = serde_plain::from_str(command)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid action in X-Request"))?;
+
+    if command_action != action {
         return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
     }
 
@@ -145,13 +158,15 @@ async fn handle_lease(
 
     let is_async = q.r#async.unwrap_or(false);
 
-    match action.as_str() {
-        "take" => {
+    match action {
+        LeaseAction::Take => {
             lease_set.insert(lease_source.clone());
             broadcast_lease_update(&node, lease_set, &state.ws_tx).await;
             info!("Client '{}' took lease on '{}'", client_id, node);
 
             if is_async {
+                // In async mode, the node state change is triggered in the background and the response returns immediately.
+                // The node may still be transitioning to the online state when the client receives the response.
                 let node = node.clone();
                 let lease_set = lease_set.clone();
                 let state = state.clone();
@@ -160,16 +175,19 @@ async fn handle_lease(
                 });
                 Ok("Lease taken (async)".into_response())
             } else {
+                // In sync mode, the request waits for the node to reach the online state (or timeout) before returning.
                 handle_node_state(&node, &lease_set, &state).await?;
                 Ok("Lease taken, node is online".into_response())
             }
         }
-        "release" => {
+        LeaseAction::Release => {
             lease_set.remove(&lease_source);
             broadcast_lease_update(&node, lease_set, &state.ws_tx).await;
             info!("Client '{}' released lease on '{}'", client_id, node);
 
             if is_async {
+                // In async mode, the node state change is triggered in the background and the response returns immediately.
+                // The node may still be transitioning to the offline state when the client receives the response.
                 let node = node.clone();
                 let lease_set = lease_set.clone();
                 let state = state.clone();
@@ -178,11 +196,11 @@ async fn handle_lease(
                 });
                 Ok("Lease released (async)".into_response())
             } else {
+                // In sync mode, the request waits for the node to reach the offline state (or timeout) before returning.
                 handle_node_state(&node, &lease_set, &state).await?;
                 Ok("Lease released, node is offline".into_response())
             }
         }
-        _ => Err((StatusCode::BAD_REQUEST, "Invalid action")),
     }
 }
 

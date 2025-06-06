@@ -5,6 +5,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::time::Duration;
 use tokio::{
@@ -70,21 +71,12 @@ async fn status_host(
     }
 }
 
-/// Lease action for web interface endpoints
-#[derive(Copy, Clone)]
-enum LeaseAction {
+/// Lease action for lease endpoints (shared between web and m2m)
+#[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum LeaseAction {
     Take,
     Release,
-}
-
-impl LeaseAction {
-    fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "take" => Some(LeaseAction::Take),
-            "release" => Some(LeaseAction::Release),
-            _ => None,
-        }
-    }
 }
 
 /// Handles taking or releasing a lease on a node via the web interface.
@@ -95,13 +87,11 @@ impl LeaseAction {
 ///
 /// Use this for user-initiated actions from the web dashboard. For programmatic or
 /// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
+#[axum::debug_handler]
 async fn handle_web_lease_action(
-    Path((hostname, action_str)): Path<(String, String)>,
+    Path((hostname, action)): Path<(String, LeaseAction)>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let Some(action) = LeaseAction::from_str(&action_str) else {
-        return (StatusCode::BAD_REQUEST, "Invalid lease action").into_response();
-    };
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.clone()).or_default();
     match action {
