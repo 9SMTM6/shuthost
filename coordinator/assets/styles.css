@@ -67,4 +67,13 @@ footer { grid-area: footer; }
     .actions-cell {
         @apply flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center min-w-[180px];
     }
+
+    /* Add these new styles */
+    .client-table {
+        @apply mt-4;
+    }
+
+    .empty-state {
+        @apply text-gray-500 text-sm text-center py-4;
+    }
 }

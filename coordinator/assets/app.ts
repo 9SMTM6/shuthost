@@ -12,6 +12,11 @@ type WsMessage =
     | { type: 'Initial'; payload: { nodes: string[]; status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
     | { type: 'LeaseUpdate'; payload: { node: string; leases: LeaseSource[] } };
 
+type Client = {
+    id: string;
+    leases: string[];
+};
+
 
 // Persist statusMap globally
 let persistedStatusMap: StatusMap = {};
@@ -38,6 +43,7 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 persistedLeaseMap = message.payload.leases;
                 const hosts = message.payload.nodes.map(name => ({ name }));
                 hostTableBody.innerHTML = hosts.map(createHostRow).join('');
+                updateClientsTable(); // Add this line
                 break;
             case 'HostStatus':
                 persistedStatusMap = message.payload;
@@ -48,7 +54,8 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 break;
             case 'LeaseUpdate':
                 const { node, leases } = message.payload;
-                persistedLeaseMap[node] = leases; // Store raw LeaseSource objects
+                persistedLeaseMap[node] = leases;
+                updateClientsTable(); // Add this line
                 console.log(`Updated leases for ${node}:`, persistedLeaseMap[node]);
                 break;
         }
@@ -170,5 +177,59 @@ const formatLeaseSource = (lease: LeaseSource): string => {
             return 'web-interface';
         case 'Client':
             return `client-${lease.value}`;
+    }
+};
+
+// Add this function to create client table rows
+const createClientRow = (clientId: string, leases: string[]) => {
+    const hasLeases = leases.length > 0;
+    return `
+    <tr data-client-id="${clientId}" class="hover:bg-gray-50">
+        <td class="table-cell">client-${clientId}</td>
+        <td class="table-cell">${leases.join(', ') || 'None'}</td>
+        <td class="table-cell">
+            <div class="actions-cell">
+                <button 
+                    class="btn btn-red" 
+                    onclick="resetClientLeases('${clientId}')"
+                    ${!hasLeases ? 'disabled' : ''}
+                >
+                    Reset Leases
+                </button>
+            </div>
+        </td>
+    </tr>
+    `;
+};
+
+// Add this function to update the clients table
+const updateClientsTable = () => {
+    const clientMap = new Map<string, string[]>();
+    
+    // Group leases by client
+    Object.entries(persistedLeaseMap).forEach(([host, leases]) => {
+        leases.forEach(lease => {
+            if (lease.type === 'Client') {
+                const clientLeases = clientMap.get(lease.value) || [];
+                clientLeases.push(host);
+                clientMap.set(lease.value, clientLeases);
+            }
+        });
+    });
+
+    const clientTableBody = document.getElementById('client-table-body');
+    if (clientTableBody) {
+        clientTableBody.innerHTML = Array.from(clientMap.entries())
+            .map(([clientId, leases]) => createClientRow(clientId, leases))
+            .join('');
+    }
+};
+
+// Add this function to handle resetting client leases
+const resetClientLeases = async (clientId: string) => {
+    try {
+        await fetch(`/api/client/${clientId}/reset-leases`, { method: 'POST' });
+    } catch (err) {
+        console.error(`Failed to reset leases for client ${clientId}:`, err);
     }
 };
