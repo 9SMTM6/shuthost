@@ -1,24 +1,22 @@
 use axum::{
     Router,
-    extract::State,
-    response::{IntoResponse, Redirect},
+    response::Redirect,
     routing::get,
 };
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use crate::{
     config::{ControllerConfig, load_coordinator_config, watch_config_file},
     routes::{LeaseMap, api_routes, get_download_router},
+    websocket::{WsMessage, ws_handler},
 };
-use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use clap::Parser;
 use std::collections::HashMap;
 use tokio::sync::{broadcast, watch};
-use serde::{Serialize, Deserialize};
 
 use crate::assets::{serve_ui, serve_manifest, serve_favicon};
 
@@ -37,19 +35,8 @@ pub struct AppState {
     pub config_path: std::path::PathBuf,
     pub config_rx: watch::Receiver<Arc<ControllerConfig>>,
     pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
-    pub ws_tx: broadcast::Sender<WsMessage>,  // Changed from String to WsMessage
+    pub ws_tx: broadcast::Sender<WsMessage>,
     pub leases: LeaseMap,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(tag = "type", content = "payload")]
-pub enum WsMessage {
-    HostStatus(HashMap<String, bool>),
-    UpdateNodes(Vec<String>),
-    Initial {
-        nodes: Vec<String>,
-        status: HashMap<String, bool>,
-    },
 }
 
 pub async fn start_http_server(config_path: &std::path::Path) {
@@ -89,12 +76,12 @@ pub async fn start_http_server(config_path: &std::path::Path) {
             {
                 let initial_status = hoststatus_rx.borrow().clone();
                 let msg = WsMessage::HostStatus(initial_status.as_ref().clone());
-                let _ = ws_tx.send(msg);  // Remove json conversion
+                let _ = ws_tx.send(msg);
             }
             loop {
                 if hoststatus_rx.changed().await.is_ok() {
                     let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
-                    let _ = ws_tx.send(msg);  // Remove json conversion
+                    let _ = ws_tx.send(msg);
                 }
             }
         });
@@ -108,7 +95,7 @@ pub async fn start_http_server(config_path: &std::path::Path) {
                     let config = config_rx.borrow();
                     let nodes = config.nodes.keys().cloned().collect::<Vec<_>>();
                     let msg = WsMessage::UpdateNodes(nodes);
-                    let _ = ws_tx.send(msg);  // Remove json conversion
+                    let _ = ws_tx.send(msg);
                 }
             }
         });
@@ -189,61 +176,4 @@ async fn poll_host_statuses(
 
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
-}
-
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(AppState {
-        ws_tx,
-        hoststatus_rx,
-        config_rx,
-        ..
-    }): State<AppState>,
-) -> impl IntoResponse {
-    let current_state = hoststatus_rx.borrow().clone();
-    ws.on_upgrade(move |socket| handle_socket(
-        socket,
-        ws_tx.subscribe(),
-        current_state,
-        config_rx
-    ))
-}
-
-async fn send_ws_message(socket: &mut WebSocket, msg: &WsMessage) -> Result<(), axum::Error> {
-    match serde_json::to_string(msg) {
-        Ok(json) => socket.send(Message::Text(json.into())).await,
-        Err(e) => {
-            warn!("Failed to serialize websocket message: {}", e);
-            Err(axum::Error::new(e))
-        }
-    }
-}
-
-async fn handle_socket(
-    mut socket: WebSocket,
-    mut rx: broadcast::Receiver<WsMessage>,
-    current_state: Arc<HashMap<String, bool>>,
-    config_rx: watch::Receiver<Arc<ControllerConfig>>,
-) {
-    tokio::spawn(async move {
-        // Send initial combined state
-        let nodes = config_rx.borrow().nodes.keys().cloned().collect();
-        let initial_msg = WsMessage::Initial {
-            nodes,
-            status: current_state.as_ref().clone(),
-        };
-        
-        if let Err(e) = send_ws_message(&mut socket, &initial_msg).await {
-            warn!("Failed to send initial state: {}", e);
-            return;
-        }
-
-        // Handle broadcast messages
-        while let Ok(msg) = rx.recv().await {
-            if let Err(e) = send_ws_message(&mut socket, &msg).await {
-                warn!("Failed to send message, closing connection: {}", e);
-                break;
-            }
-        }
-    });
 }

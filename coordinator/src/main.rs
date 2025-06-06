@@ -4,6 +4,7 @@ mod install;
 mod routes;
 mod wol;
 mod assets;
+mod websocket;
 
 use clap::{Parser, Subcommand};
 use install::{InstallArgs, install_coordinator};
