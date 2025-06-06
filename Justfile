@@ -42,3 +42,11 @@ build_coordinator_on_mac:
     wait
 
 build_all: build_all_node_agents_on_mac build_coordinator_on_mac
+
+clean:
+    cargo clean && cargo fetch
+    cd coordinator/assets && rm -rf node_modules && npm ci
+
+update_dependencies:
+    cargo update
+    cd coordinator/assets && npm update
