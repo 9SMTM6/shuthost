@@ -126,59 +126,6 @@ jobs:
           name: coordinator-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_coordinator
 
-  container-build:
-    name: Build & Push Alpine Containers
-    needs:
-      - build-coordinators
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download MUSL coordinator binaries
-        uses: actions/download-artifact@v4
-        with:
-          path: ./rehydrated
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Set lowercase repository name
-        id: repo
-        run: |
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
-
-      - name: Rehydrate target directory structure
-        run: |
-          mkdir -p target
-          for dir in ./rehydrated/coordinator-*; do
-            target=$(basename "$dir" | sed 's/^coordinator-//')
-            mkdir -p "target/$target/release"
-            cp "$dir/shuthost_coordinator" "target/$target/release/"
-          done
-
-      - name: Build & Push Multi-Arch Alpine Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Containerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
-            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-coordinator:latest', steps.repo.outputs.repo_lowercase) || '' }}
-          build-args: |
-            TARGET=x86_64-unknown-linux-musl
-            TARGET=aarch64-unknown-linux-musl
-
   test-installation:
     name: Test Service Installation & Startup
     runs-on: ${{ matrix.runner }}
@@ -281,10 +228,63 @@ jobs:
           sleep 2
           launchctl print system/com.github_9smtm6.shuthost_node_agent
 
+  container-build:
+    name: Build & Push Alpine Containers
+    needs:
+      - test-installation
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download MUSL coordinator binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./rehydrated
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set lowercase repository name
+        id: repo
+        run: |
+          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Rehydrate target directory structure
+        run: |
+          mkdir -p target
+          for dir in ./rehydrated/coordinator-*; do
+            target=$(basename "$dir" | sed 's/^coordinator-//')
+            mkdir -p "target/$target/release"
+            cp "$dir/shuthost_coordinator" "target/$target/release/"
+          done
+
+      - name: Build & Push Multi-Arch Alpine Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Containerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-coordinator:latest', steps.repo.outputs.repo_lowercase) || '' }}
+          build-args: |
+            TARGET=x86_64-unknown-linux-musl
+            TARGET=aarch64-unknown-linux-musl
+
   release:
     name: Upload Release Binaries
     needs:
-      - build-coordinators
+      - test-installation
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write
