@@ -3,6 +3,7 @@ mod http;
 mod install;
 mod routes;
 mod wol;
+mod assets;
 
 use clap::{Parser, Subcommand};
 use install::{InstallArgs, install_coordinator};
