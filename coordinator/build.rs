@@ -18,10 +18,7 @@ fn main() {
     }
 
     // Run `npm ci` to ensure dependencies are installed
-    let npm_ci = Command::new("npm")
-        .arg("ci")
-        .current_dir("assets")
-        .status();
+    let npm_ci = Command::new("npm").arg("ci").current_dir("assets").status();
 
     if let Err(error) = npm_ci {
         eprintln!("Failed to run npm ci: {}", error);

@@ -40,8 +40,16 @@ macro_rules! node_agent_handler {
 }
 
 // Generate all handlers
-node_agent_handler!(node_agent_macos_aarch64, "aarch64-apple-darwin", feature = "build_macos");
-node_agent_handler!(node_agent_macos_x86_64, "x86_64-apple-darwin", feature = "build_macos");
+node_agent_handler!(
+    node_agent_macos_aarch64,
+    "aarch64-apple-darwin",
+    feature = "build_macos"
+);
+node_agent_handler!(
+    node_agent_macos_x86_64,
+    "x86_64-apple-darwin",
+    feature = "build_macos"
+);
 node_agent_handler!(node_agent_linux_x86_64, "x86_64-unknown-linux-gnu");
 node_agent_handler!(node_agent_linux_aarch64, "aarch64-unknown-linux-gnu");
 node_agent_handler!(node_agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");

@@ -1,8 +1,4 @@
-use axum::{
-    Router,
-    response::Redirect,
-    routing::get,
-};
+use axum::{Router, response::Redirect, routing::get};
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::net::TcpStream;
@@ -18,7 +14,7 @@ use clap::Parser;
 use std::collections::HashMap;
 use tokio::sync::{broadcast, watch};
 
-use crate::assets::{serve_ui, serve_manifest, serve_favicon};
+use crate::assets::{serve_favicon, serve_manifest, serve_ui};
 
 #[derive(Debug, Parser)]
 pub struct ServiceArgs {

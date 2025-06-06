@@ -1,8 +1,8 @@
+use crate::http::AppState;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
 };
-use crate::http::AppState;
 
 pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
     let styles = include_str!("../assets/styles_output.css");

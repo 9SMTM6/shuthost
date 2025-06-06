@@ -16,11 +16,11 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use shuthost_common::{create_hmac_message, is_timestamp_in_valid_range, sign_hmac, verify_hmac};
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::{Mutex, broadcast};
 use tracing::{debug, error, info, warn};
 
-use crate::{http::AppState, wol::send_magic_packet};
 use crate::websocket::WsMessage;
+use crate::{http::AppState, wol::send_magic_packet};
 
 use super::api::send_shutdown;
 

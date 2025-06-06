@@ -1,11 +1,17 @@
 use axum::{
-    extract::{ws::{Message, WebSocket, WebSocketUpgrade}, State},
+    extract::{
+        State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+    },
     response::IntoResponse,
 };
-use std::{collections::{HashMap, HashSet}, sync::Arc};
-use tokio::sync::{broadcast, Mutex};
-use tracing::{warn, info};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
+use tokio::sync::{Mutex, broadcast};
+use tracing::{info, warn};
 
 use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
 
@@ -38,13 +44,15 @@ pub async fn ws_handler(
     let current_state = hoststatus_rx.borrow().clone();
     let current_config = config_rx.borrow().clone();
     let current_leases = leases.clone();
-    ws.on_upgrade(move |socket| handle_socket(
-        socket,
-        ws_tx.subscribe(),
-        current_state,
-        current_config,
-        current_leases,
-    ))
+    ws.on_upgrade(move |socket| {
+        handle_socket(
+            socket,
+            ws_tx.subscribe(),
+            current_state,
+            current_config,
+            current_leases,
+        )
+    })
 }
 
 async fn send_ws_message(socket: &mut WebSocket, msg: &WsMessage) -> Result<(), axum::Error> {
@@ -68,7 +76,10 @@ async fn handle_socket(
         // Send initial combined state
         let nodes = config.nodes.keys().cloned().collect();
         let leases_map = {
-            current_leases.lock().await.iter()
+            current_leases
+                .lock()
+                .await
+                .iter()
                 .map(|(node, sources)| (node.clone(), sources.iter().cloned().collect()))
                 .collect::<HashMap<_, _>>()
         };
@@ -77,7 +88,7 @@ async fn handle_socket(
             status: current_state.as_ref().clone(),
             leases: leases_map.clone(), // Pass the lease data
         };
-        
+
         if let Err(e) = send_ws_message(&mut socket, &initial_msg).await {
             warn!("Failed to send initial state: {}", e);
             return;
