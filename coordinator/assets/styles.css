@@ -34,6 +34,8 @@ footer { grid-area: footer; }
     transition: transform 0.2s;
     left: 6px;
     top: 4px;
+    border-color: currentColor;
+    color: inherit;
 }
 
 .collapsible-header[aria-expanded="true"] .collapsible-icon::before {
@@ -42,34 +44,29 @@ footer { grid-area: footer; }
 
 @layer components {
     .section-container {
-        @apply bg-white shadow-md rounded-lg overflow-hidden; /* Remove padding here */
+        @apply bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden;
     }
-    
+
     .section-title {
-        @apply text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4;
+        @apply text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4;
     }
-    
+
     .code-container {
-        @apply bg-gray-50 rounded-lg border border-gray-200 py-2 px-3 relative;
+        @apply bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 py-2 px-3 relative;
     }
-    
+
     .copy-button {
-        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 
-               text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm 
-               transition-all duration-200 cursor-pointer
-               active:scale-95 hover:shadow-sm;
+        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 
+            text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm 
+            transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
     }
-    
+
     .code-block {
         @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-16;
     }
     
     .description-text {
-        @apply mt-2 text-gray-600 text-sm sm:text-base;
-    }
-    
-    .table-header {
-        @apply px-4 py-3 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base border-b border-gray-200;
+        @apply mt-2 text-gray-600 dark:text-gray-300 text-sm sm:text-base;
     }
 
     .btn {
@@ -94,15 +91,20 @@ footer { grid-area: footer; }
     table {
         @apply border-collapse;
     }
-    
-    /* Update table header styling */
+
     .table-header {
-        @apply px-4 py-3 bg-gray-50 text-left font-semibold text-gray-800 text-sm sm:text-base border-b border-gray-200;
+        @apply px-4 py-3 bg-gray-50 dark:bg-gray-700 text-left 
+            font-semibold text-gray-800 dark:text-gray-100 
+            text-sm sm:text-base border-b border-gray-200 dark:border-gray-600;
     }
-    
+
+    .table-row {
+        @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+    }
+
     /* Update table cell styling */
     .table-cell {
-        @apply px-4 py-1.5 text-sm sm:text-base border-b border-gray-200;
+        @apply px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100;
     }
     
     /* Update actions cell styling */
@@ -116,7 +118,7 @@ footer { grid-area: footer; }
     }
 
     .empty-state {
-        @apply text-gray-500 text-sm text-center py-4;
+        @apply text-gray-500 dark:text-gray-400 text-sm text-center py-4;
     }
 
     /* Update tab styles */
@@ -141,7 +143,9 @@ footer { grid-area: footer; }
     }
 
     .collapsible-header {
-        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-gray-50;
+        @apply flex items-center justify-between cursor-pointer 
+                px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 
+                transition-colors;
     }
 
     .collapsible-content {
@@ -153,7 +157,7 @@ footer { grid-area: footer; }
     }
 
     .collapsible-icon {
-        @apply w-4 h-4 transition-transform;
+        @apply w-4 h-4 transition-transform dark:text-white;
     }
 
     .collapsible-icon.expanded {

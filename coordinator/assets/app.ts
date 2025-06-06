@@ -115,7 +115,7 @@ const createHostRow = (host: Host) => {
     const { statusText } = getHostStatus(host.name);
     const leases = getFormattedLeases(host.name);
     return `
-    <tr data-hostname="${host.name}" class="hover:bg-gray-50">
+    <tr data-hostname="${host.name}" class="table-row">
         <td class="table-cell">${host.name}</td>
         <td class="table-cell status">${statusText}</td>
         <td class="table-cell leases">${leases}</td>
@@ -219,7 +219,7 @@ const formatLeaseSource = (lease: LeaseSource): string => {
 const createClientRow = (clientId: string, leases: string[]) => {
     const hasLeases = leases.length > 0;
     return `
-    <tr data-client-id="${clientId}" class="hover:bg-gray-50">
+    <tr data-client-id="${clientId}" class="table-row">
         <td class="table-cell">client-${clientId}</td>
         <td class="table-cell">${leases.join(', ') || 'None'}</td>
         <td class="table-cell">
