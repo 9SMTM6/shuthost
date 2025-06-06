@@ -177,7 +177,7 @@ async fn handle_lease(
     }
 }
 
-async fn broadcast_lease_update(
+pub async fn broadcast_lease_update(
     node: &str,
     lease_set: &HashSet<LeaseSource>,
     ws_tx: &broadcast::Sender<WsMessage>,

@@ -16,7 +16,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     http::AppState,
-    routes::m2m::handle_node_state,
+    routes::m2m::{broadcast_lease_update, handle_node_state},
 };
 
 use super::m2m::m2m_routes;
@@ -81,6 +81,9 @@ async fn take_lease(
 
     info!("Web interface took lease on '{}'", hostname);
 
+    // Broadcast lease update to WebSocket clients
+    broadcast_lease_update(&hostname, lease_set, &state.ws_tx).await;
+
     // Handle node state after lease change
     if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
         return (status, msg).into_response();
@@ -98,6 +101,9 @@ async fn release_lease(
     lease_set.remove(&LeaseSource::WebInterface);
 
     info!("Web interface released lease on '{}'", hostname);
+
+    // Broadcast lease update to WebSocket clients
+    broadcast_lease_update(&hostname, lease_set, &state.ws_tx).await;
 
     // Handle node state after lease change
     if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
