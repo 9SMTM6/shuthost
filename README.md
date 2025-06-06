@@ -10,6 +10,7 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 ## Known issues:
 
 * requires static IPs on the hosts to control
+* UI blocks somewhat when shutting down/starting host 
 * requires that WOL works:
     * motherboard can do it (sometimes its not supported, or only supported in higher power levels, e.g. RAM based sleep) 
         * AND IS CONFIGURED accordingly
