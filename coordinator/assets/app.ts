@@ -61,9 +61,7 @@ const handleWebSocketMessage = (event: MessageEvent) => {
 const getHostStatus = (hostname: string) => {
     const status = persistedStatusMap[hostname];
     return {
-        statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline'),
-        takeLeaseDisabled: status ? 'disabled' : '',
-        releaseLeaseDisabled: !status ? 'disabled' : ''
+        statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline')
     };
 };
 
@@ -75,7 +73,10 @@ const getFormattedLeases = (hostname: string): string => {
 
 // Helper function to update a single row's attributes
 const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
-    const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(hostname);
+    const { statusText } = getHostStatus(hostname);
+    const leases = persistedLeaseMap[hostname] || [];
+    const hasWebInterfaceLease = leases.some(lease => lease.type === 'WebInterface');
+
     const statusCell = row.querySelector<HTMLElement>('.status');
     const leaseCell = row.querySelector<HTMLElement>('.leases');
     const takeLeaseButton = row.querySelector<HTMLButtonElement>('.take-lease');
@@ -83,8 +84,13 @@ const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
 
     if (statusCell) statusCell.textContent = statusText;
     if (leaseCell) leaseCell.textContent = getFormattedLeases(hostname);
-    if (takeLeaseButton) takeLeaseButton.disabled = !!takeLeaseDisabled;
-    if (releaseLeaseButton) releaseLeaseButton.disabled = !!releaseLeaseDisabled;
+
+    if (takeLeaseButton) {
+        takeLeaseButton.style.display = hasWebInterfaceLease ? 'none' : 'inline-block';
+    }
+    if (releaseLeaseButton) {
+        releaseLeaseButton.style.display = hasWebInterfaceLease ? 'inline-block' : 'none';
+    }
 };
 
 // Updated updateNodeAttrs function
@@ -99,7 +105,7 @@ const updateNodeAttrs = () => {
 
 // Updated createHostRow function
 const createHostRow = (host: Host) => {
-    const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(host.name);
+    const { statusText } = getHostStatus(host.name);
     const leases = getFormattedLeases(host.name);
     return `
     <tr data-hostname="${host.name}" class="hover:bg-gray-50">
@@ -107,8 +113,8 @@ const createHostRow = (host: Host) => {
         <td class="table-header border-none status">${statusText}</td>
         <td class="table-header border-none leases">${leases}</td>
         <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')" ${takeLeaseDisabled}>Take Lease</button>
-            <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')" ${releaseLeaseDisabled}>Release Lease</button>
+            <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
+            <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
         </td>
     </tr>
     `;
