@@ -44,8 +44,7 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 <!-- 
     // Re-Verify mobile after tabs were introduced.
     // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count() - needs proper updates when the socket was closed, fails ATM)
-    // Add separate table to show configured clients, with a reset button to fix broken leases.
-    // Add tabs to switch between views
+    // Add endpoint for configured clients and show them all in the UI
     // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
     // Then add a bunch of documentation to explain:
     // - how to configure WOL and gotchas
