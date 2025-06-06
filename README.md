@@ -42,13 +42,13 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 * uninstalls
 
 <!-- 
-    // TODO: add endpoint to get leases, and enable/disable buttons based on lease status.
-    // Re-Improve mobile.
-    // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count())
+    // Re-Verify mobile after tabs were introduced.
+    // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count() - needs proper updates when the socket was closed, fails ATM)
     // Add separate table to show configured clients, with a reset button to fix broken leases.
+    // Add tabs to switch between views
     // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
     // Then add a bunch of documentation to explain:
     // - how to configure WOL and gotchas
     // - shuthost architecture
     // - how leases work
-    // then consider different global layout (with tabs?) -->
+    // -->
