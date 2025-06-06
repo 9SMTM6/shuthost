@@ -35,21 +35,13 @@ pub struct AppState {
     pub leases: LeaseMap,
 }
 
-pub async fn start_http_server(config_path: &std::path::Path) {
+pub async fn start_http_server(config_path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting HTTP server...");
 
-    let initial_config = Arc::new(
-        load_coordinator_config(config_path)
-            .await
-            .expect("Failed to load config"),
-    );
+    let initial_config = Arc::new(load_coordinator_config(config_path).await?);
     let listen_port = initial_config.server.port;
 
-    let listen_ip: IpAddr = initial_config
-        .server
-        .bind
-        .parse()
-        .expect("Invalid bind address");
+    let listen_ip: IpAddr = initial_config.server.bind.parse()?;
 
     let (config_tx, config_rx) = watch::channel(initial_config);
 
@@ -65,30 +57,28 @@ pub async fn start_http_server(config_path: &std::path::Path) {
             poll_host_statuses(config_rx, hoststatus_tx).await;
         });
     }
+
     {
         let ws_tx = ws_tx.clone();
         let mut hoststatus_rx = hoststatus_rx.clone();
         tokio::spawn(async move {
-            loop {
-                if hoststatus_rx.changed().await.is_ok() {
-                    let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
-                    let _ = ws_tx.send(msg);
-                }
+            while hoststatus_rx.changed().await.is_ok() {
+                let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
+                let _ = ws_tx.send(msg);
             }
         });
     }
+
     {
         let ws_tx = ws_tx.clone();
         let mut config_rx = config_rx.clone();
         tokio::spawn(async move {
-            loop {
-                if config_rx.changed().await.is_ok() {
-                    let config = config_rx.borrow();
-                    let hosts = config.nodes.keys().cloned().collect::<Vec<_>>();
-                    let clients = config.clients.keys().cloned().collect::<Vec<_>>();
-                    let msg = WsMessage::ConfigChanged{hosts, clients};
-                    let _ = ws_tx.send(msg);
-                }
+            while config_rx.changed().await.is_ok() {
+                let config = config_rx.borrow();
+                let hosts = config.nodes.keys().cloned().collect::<Vec<_>>();
+                let clients = config.clients.keys().cloned().collect::<Vec<_>>();
+                let msg = WsMessage::ConfigChanged { hosts, clients };
+                let _ = ws_tx.send(msg);
             }
         });
     }
@@ -122,12 +112,10 @@ pub async fn start_http_server(config_path: &std::path::Path) {
     let addr = SocketAddr::from((listen_ip, listen_port));
     info!("Listening on http://{}", addr);
 
-    axum::serve(
-        tokio::net::TcpListener::bind(addr).await.unwrap(),
-        app.into_make_service(),
-    )
-    .await
-    .unwrap();
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app.into_make_service()).await?;
+
+    Ok(())
 }
 
 async fn poll_host_statuses(

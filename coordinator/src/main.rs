@@ -37,23 +37,35 @@ pub enum Command {
 async fn main() {
     let invocation = Cli::parse();
 
-    // TODO: dont panic, throw proper errors and exit.
-
     match invocation.command {
         Command::Install(args) => {
-            install_coordinator(args).unwrap();
+            if let Err(e) = install_coordinator(args) {
+                eprintln!("Error during installation: {}", e);
+                std::process::exit(1);
+            }
         }
         Command::ControlService(args) => {
             tracing_subscriber::fmt()
                 .with_env_filter(
-                    EnvFilter::try_from_default_env().unwrap_or(EnvFilter::new("info")),
+                    EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
                 )
                 .pretty()
                 .init(); // Initialize logging
-            let config_path = fs::canonicalize(&args.config)
-                .unwrap_or_else(|_| panic!("Config file not found at: {}", args.config));
+
+            let config_path = match fs::canonicalize(&args.config) {
+                Ok(path) => path,
+                Err(_) => {
+                    eprintln!("Config file not found at: {}", args.config);
+                    std::process::exit(1);
+                }
+            };
+
             info!("Using config path: {}", config_path.display());
-            start_http_server(&config_path).await;
+
+            if let Err(e) = start_http_server(&config_path).await {
+                eprintln!("Failed to start HTTP server: {}", e);
+                std::process::exit(1);
+            }
         }
     }
 }
