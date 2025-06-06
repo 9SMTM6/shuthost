@@ -27,8 +27,7 @@ pub fn api_routes() -> Router<AppState> {
     Router::new()
         .route("/nodes", get(list_nodes))
         .nest("/m2m", m2m_routes())
-        .route("/lease/{hostname}/take", post(take_lease))
-        .route("/lease/{hostname}/release", post(release_lease))
+        .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route("/status/{hostname}", get(status_host))
 }
 
@@ -71,52 +70,50 @@ async fn status_host(
     }
 }
 
-/// Takes a lease on a node via the web interface.
-///
-/// This function is used by the web UI to take a lease on a node. It does not require
-/// any client authentication or HMAC signature, unlike the m2m `handle_lease` endpoint.
-/// The lease is attributed to the web interface and is visible to all clients.
-///
-/// Use this for user-initiated actions from the web dashboard. For programmatic or
-/// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
-async fn take_lease(
-    Path(hostname): Path<String>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    let mut leases = state.leases.lock().await;
-    let lease_set = leases.entry(hostname.clone()).or_default();
-    lease_set.insert(LeaseSource::WebInterface);
-
-    info!("Web interface took lease on '{}'", hostname);
-
-    // Broadcast lease update to WebSocket clients
-    broadcast_lease_update(&hostname, lease_set, &state.ws_tx).await;
-
-    // Handle node state after lease change
-    if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
-        return (status, msg).into_response();
-    }
-
-    "Lease taken".into_response()
+/// Lease action for web interface endpoints
+#[derive(Copy, Clone)]
+enum LeaseAction {
+    Take,
+    Release,
 }
 
-/// Releases a lease on a node via the web interface.
+impl LeaseAction {
+    fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "take" => Some(LeaseAction::Take),
+            "release" => Some(LeaseAction::Release),
+            _ => None,
+        }
+    }
+}
+
+/// Handles taking or releasing a lease on a node via the web interface.
 ///
-/// This function is used by the web UI to release a lease on a node. It does not require
+/// This function is used by the web UI to take or release a lease on a node. It does not require
 /// any client authentication or HMAC signature, unlike the m2m `handle_lease` endpoint.
 /// The lease is attributed to the web interface and is visible to all clients.
 ///
 /// Use this for user-initiated actions from the web dashboard. For programmatic or
 /// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
-async fn release_lease(
-    Path(hostname): Path<String>,
+async fn handle_web_lease_action(
+    Path((hostname, action_str)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    let Some(action) = LeaseAction::from_str(&action_str) else {
+        return (StatusCode::BAD_REQUEST, "Invalid lease action").into_response();
+    };
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.clone()).or_default();
-    lease_set.remove(&LeaseSource::WebInterface);
-
-    info!("Web interface released lease on '{}'", hostname);
+    match action {
+        LeaseAction::Take => {
+            lease_set.insert(LeaseSource::WebInterface);
+            info!("Web interface took lease on '{}'", hostname);
+        }
+        LeaseAction::Release => {
+            lease_set.remove(&LeaseSource::WebInterface);
+            info!("Web interface released lease on '{}'", hostname);
+        }
+    }
 
     // Broadcast lease update to WebSocket clients
     broadcast_lease_update(&hostname, lease_set, &state.ws_tx).await;
@@ -126,7 +123,10 @@ async fn release_lease(
         return (status, msg).into_response();
     }
 
-    "Lease released".into_response()
+    match action {
+        LeaseAction::Take => "Lease taken".into_response(),
+        LeaseAction::Release => "Lease released".into_response(),
+    }
 }
 
 pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
