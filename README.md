@@ -49,4 +49,9 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     // - how to configure WOL and gotchas
     // - shuthost architecture
     // - how leases work
+    // - authentification requirements (exclusions/oidc if I set it up)
+
+    // fix issue with blocking UI
+    // consider adding oidc with the correct endpoints exposed
+    // consider using a sqlite database for persistence after all
     // -->
