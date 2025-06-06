@@ -2,8 +2,13 @@
 type Host = { name: string };
 type StatusMap = Record<string, boolean>;
 
+type WsMessage = 
+    | { type: 'HostStatus'; payload: Record<string, boolean> }
+    | { type: 'UpdateNodes'; payload: string[] }
+    | { type: 'Initial'; payload: { nodes: string[]; status: Record<string, boolean> } };
+
 // Persist statusMap globally
-let statusMap: StatusMap = {};
+let persistedStatusMap: StatusMap = {};
 
 const connectWebSocket = () => {
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -16,64 +21,72 @@ const connectWebSocket = () => {
 
 const handleWebSocketMessage = (event: MessageEvent) => {
     try {
-        const msg = event.data;
-        if (msg === "config_updated") {
-            fetchNodes();
-        } else {
-            // Update and persist statusMap
-            statusMap = JSON.parse(msg) as StatusMap;
-            updateNodeStatuses(statusMap);
+        const message = JSON.parse(event.data) as WsMessage;
+        
+        switch (message.type) {
+            case 'Initial':
+                persistedStatusMap = message.payload.status;
+                const hosts = message.payload.nodes.map(name => ({ name }));
+                const hostTableBody = document.getElementById('host-table-body');
+                if (hostTableBody) {
+                    hostTableBody.innerHTML = hosts.map((it) => createHostRow(it, persistedStatusMap)).join('');
+                }
+                break;
+            case 'HostStatus':
+                persistedStatusMap = message.payload;
+                updateNodeStatuses(persistedStatusMap);
+                break;
+            case 'UpdateNodes':
+                const newHosts = message.payload.map(name => ({ name }));
+                const newHostTableBody = document.getElementById('host-table-body');
+                if (newHostTableBody) {
+                    newHostTableBody.innerHTML = newHosts.map((it) => createHostRow(it, persistedStatusMap)).join('');
+                }
+                break;
         }
     } catch (err) {
-        console.error('Error parsing WS message:', err);
+        console.error('Error handling WS message:', err);
     }
+};
+
+const getHostStatus = (hostname: string, statusMap: StatusMap) => {
+    const status = statusMap[hostname];
+    return {
+        statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline'),
+        takeLeaseDisabled: status ? 'disabled' : '',
+        releaseLeaseDisabled: !status ? 'disabled' : ''
+    };
+};
+
+const createHostRow = (host: Host, statusMap: StatusMap) => {
+    const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(host.name, statusMap);
+    return `
+    <tr data-hostname="${host.name}" class="hover:bg-gray-50">
+        <td class="table-header border-none">${host.name}</td>
+        <td class="table-header border-none status">${statusText}</td>
+        <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')" ${takeLeaseDisabled}>Take Lease</button>
+            <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')" ${releaseLeaseDisabled}>Release Lease</button>
+        </td>
+    </tr>
+`;
 };
 
 const updateNodeStatuses = (statusMap: StatusMap) => {
     document.querySelectorAll<HTMLTableRowElement>('#host-table-body tr').forEach(row => {
         const hostname = row.dataset["hostname"];
         if (hostname) {
-            const status = statusMap[hostname];
-            if (status !== undefined) {
-                const statusCell = row.querySelector<HTMLElement>('.status');
-                const takeLeaseButton = row.querySelector<HTMLButtonElement>('.take-lease');
-                const releaseLeaseButton = row.querySelector<HTMLButtonElement>('.release-lease');
+            const { statusText, takeLeaseDisabled, releaseLeaseDisabled } = getHostStatus(hostname, statusMap);
+            const statusCell = row.querySelector<HTMLElement>('.status');
+            const takeLeaseButton = row.querySelector<HTMLButtonElement>('.take-lease');
+            const releaseLeaseButton = row.querySelector<HTMLButtonElement>('.release-lease');
 
-                if (statusCell) statusCell.textContent = status ? 'online' : 'offline';
-                if (takeLeaseButton) takeLeaseButton.disabled = status;
-                if (releaseLeaseButton) releaseLeaseButton.disabled = !status;
-            }
+            if (statusCell) statusCell.textContent = statusText;
+            if (takeLeaseButton) takeLeaseButton.disabled = !!takeLeaseDisabled;
+            if (releaseLeaseButton) releaseLeaseButton.disabled = !!releaseLeaseDisabled;
         }
     });
 };
-
-const fetchNodes = async () => {
-    try {
-        const response = await fetch('/api/nodes');
-        const hosts: Host[] = await response.json();
-        const hostTableBody = document.getElementById('host-table-body');
-        if (hostTableBody) {
-            hostTableBody.innerHTML = hosts.map(createHostRow).join('');
-            // After re-render, re-apply statuses if available
-            if (Object.keys(statusMap).length > 0) {
-                updateNodeStatuses(statusMap);
-            }
-        }
-    } catch (err) {
-        console.error('Failed to fetch hosts:', err);
-    }
-};
-
-const createHostRow = (host: Host) => `
-    <tr data-hostname="${host.name}" class="hover:bg-gray-50">
-        <td class="table-header border-none">${host.name}</td>
-        <td class="table-header border-none status">Loading...</td>
-        <td class="table-header border-none flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
-            <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
-        </td>
-    </tr>
-`;
 
 const updateLease = async (host: string, action: string) => {
     try {
@@ -107,7 +120,6 @@ const addBreakOpportunities = (text: string) => {
 
 const initialize = () => {
     connectWebSocket();
-    fetchNodes();
     setupCopyButtons();
 
     const baseUrl = window.location.origin;
