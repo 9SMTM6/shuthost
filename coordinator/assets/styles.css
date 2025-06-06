@@ -14,6 +14,32 @@ header { grid-area: header; }
 .main { grid-area: main; }
 footer { grid-area: footer; }
 
+/* Add to your existing styles */
+.collapsible-icon {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+.collapsible-icon::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transform-origin: center;
+    transition: transform 0.2s;
+    left: 6px;
+    top: 4px;
+}
+
+.collapsible-header[aria-expanded="true"] .collapsible-icon::before {
+    transform: rotate(-135deg);
+}
+
 @layer components {
     .section-container {
         @apply bg-white shadow-md rounded-lg p-4 sm:p-6 mt-4 sm:mt-6 overflow-x-auto;
