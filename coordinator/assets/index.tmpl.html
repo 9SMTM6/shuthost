@@ -33,7 +33,26 @@
     <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <main class="py-4 sm:py-6">
             <div id="hosts-tab" class="tab-content active">
-                <div class="section-container mt-0">
+                <!-- Install Instructions Panel -->
+                <div class="section-container mt-0 py-0">
+                    <div class="collapsible-header py-2" data-target="host-install-content">
+                        <h2 class="section-title mb-0 text-base">Install Node Agent</h2>
+                        <svg class="collapsible-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                        </svg>
+                    </div>
+                    <div id="host-install-content" class="collapsible-content">
+                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#node-install-command">Copy</button>
+                            <code id="node-install-command" class="code-block">Loading...</code>
+                        </div>
+                        <p class="description-text text-xs">Adjust options as needed. Add the output to <code class="bg-gray-100 px-1 rounded">{coordinator_config}</code>.</p>
+                    </div>
+                </div>
+
+                <!-- Hosts Table -->
+                <div class="section-container mt-4">
                     <div class="table-wrapper">
                         <table class="w-full">
                             <thead>
@@ -50,20 +69,29 @@
                         </table>
                     </div>
                 </div>
-
-                <section class="section-container">
-                    <h2 class="section-title">Install Node Agent</h2>
-                    <p class="mb-2">Run the following command in your terminal:</p>
-                    <div class="code-container">
-                        <button class="copy-button" data-copy-target="#node-install-command">Copy</button>
-                        <code id="node-install-command" class="code-block">Loading...</code>
-                    </div>
-                    <p class="description-text">Adjust options as needed. Add the output to <code class="bg-gray-100 px-1 rounded">{coordinator_config}</code>.</p>
-                </section>
             </div>
 
             <div id="clients-tab" class="tab-content">
-                <div class="section-container mt-0">
+                <!-- Install Instructions Panel -->
+                <div class="section-container mt-0 py-0">
+                    <div class="collapsible-header py-2" data-target="client-install-content">
+                        <h2 class="section-title mb-0 text-base">Install Client</h2>
+                        <svg class="collapsible-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                        </svg>
+                    </div>
+                    <div id="client-install-content" class="collapsible-content">
+                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
+                            <code id="client-install-command" class="code-block">Loading...</code>
+                        </div>
+                        <p class="description-text text-xs">Optionally, you can specify a custom client ID as the second argument.</p>
+                    </div>
+                </div>
+
+                <!-- Clients Table -->
+                <div class="section-container mt-4">
                     <h2 class="section-title">Active Clients</h2>
                     <div class="table-wrapper">
                         <table class="w-full">
@@ -80,16 +108,6 @@
                         </table>
                     </div>
                 </div>
-
-                <section class="section-container">
-                    <h2 class="section-title">Install Client</h2>
-                    <p class="mb-2">Run the following command in your terminal:</p>
-                    <div class="code-container">
-                        <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
-                        <code id="client-install-command" class="code-block">Loading...</code>
-                    </div>
-                    <p class="description-text">Optionally, you can specify a custom client ID as the second argument.</p>
-                </section>
             </div>
         </main>
     </div>

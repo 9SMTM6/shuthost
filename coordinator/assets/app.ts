@@ -173,6 +173,21 @@ const setupTabs = () => {
     });
 };
 
+const setupCollapsibleSections = () => {
+    document.querySelectorAll<HTMLElement>('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const targetId = header.dataset["target"];
+            if (targetId) {
+                const content = document.getElementById(targetId);
+                const icon = header.querySelector('.collapsible-icon');
+                
+                content?.classList.toggle('expanded');
+                icon?.classList.toggle('expanded');
+            }
+        });
+    });
+};
+
 const initialize = () => {
     const nodeInstallCommand = document.getElementById('node-install-command');
     const clientInstallCommand = document.getElementById('client-install-command');
@@ -183,6 +198,7 @@ const initialize = () => {
     connectWebSocket();
     setupCopyButtons();
     setupTabs();
+    setupCollapsibleSections();
 
     const baseUrl = window.location.origin;
     nodeInstallCommand.textContent = `curl -fsSL ${`${baseUrl}/download/node_agent_installer.sh`} | sh -s ${baseUrl} --port 5757`;

@@ -24,7 +24,7 @@ footer { grid-area: footer; }
     }
     
     .code-container {
-        @apply bg-gray-50 rounded-lg border border-gray-200 p-3 sm:p-4 relative;
+        @apply bg-gray-50 rounded-lg border border-gray-200 py-2 px-3 relative;
     }
     
     .copy-button {
@@ -95,5 +95,25 @@ footer { grid-area: footer; }
 
     .tab-content.active {
         @apply block;
+    }
+
+    .collapsible-header {
+        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-gray-50;
+    }
+
+    .collapsible-content {
+        @apply hidden px-4 py-2 border-t border-gray-200;
+    }
+
+    .collapsible-content.expanded {
+        @apply block;
+    }
+
+    .collapsible-icon {
+        @apply w-4 h-4 transition-transform;
+    }
+
+    .collapsible-icon.expanded {
+        @apply rotate-180;
     }
 }
