@@ -22,15 +22,14 @@ const connectWebSocket = () => {
 const handleWebSocketMessage = (event: MessageEvent) => {
     try {
         const message = JSON.parse(event.data) as WsMessage;
+        const hostTableBody = document.getElementById('host-table-body');
+        if (!hostTableBody) throw new Error('Missing required element #host-table-body');
         
         switch (message.type) {
             case 'Initial':
                 persistedStatusMap = message.payload.status;
                 const hosts = message.payload.nodes.map(name => ({ name }));
-                const hostTableBody = document.getElementById('host-table-body');
-                if (hostTableBody) {
-                    hostTableBody.innerHTML = hosts.map((it) => createHostRow(it, persistedStatusMap)).join('');
-                }
+                hostTableBody.innerHTML = hosts.map(it => createHostRow(it, persistedStatusMap)).join('');
                 break;
             case 'HostStatus':
                 persistedStatusMap = message.payload;
@@ -38,14 +37,12 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 break;
             case 'UpdateNodes':
                 const newHosts = message.payload.map(name => ({ name }));
-                const newHostTableBody = document.getElementById('host-table-body');
-                if (newHostTableBody) {
-                    newHostTableBody.innerHTML = newHosts.map((it) => createHostRow(it, persistedStatusMap)).join('');
-                }
+                hostTableBody.innerHTML = newHosts.map(it => createHostRow(it, persistedStatusMap)).join('');
                 break;
         }
     } catch (err) {
         console.error('Error handling WS message:', err);
+        throw err; // Re-throw to make the error more visible
     }
 };
 
@@ -119,20 +116,18 @@ const addBreakOpportunities = (text: string) => {
 };
 
 const initialize = () => {
+    const nodeInstallCommand = document.getElementById('node-install-command');
+    const clientInstallCommand = document.getElementById('client-install-command');
+    
+    if (!nodeInstallCommand) throw new Error('Missing required element #node-install-command');
+    if (!clientInstallCommand) throw new Error('Missing required element #client-install-command');
+
     connectWebSocket();
     setupCopyButtons();
 
     const baseUrl = window.location.origin;
-    const nodeInstallCommand = document.getElementById('node-install-command');
-    const clientInstallCommand = document.getElementById('client-install-command');
-
-    if (nodeInstallCommand) {
-        nodeInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/node_agent_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)} --port 5757`;
-    }
-
-    if (clientInstallCommand) {
-        clientInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/client_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)}`;
-    }
+    nodeInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/node_agent_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)} --port 5757`;
+    clientInstallCommand.textContent = `curl -fsSL ${addBreakOpportunities(`${baseUrl}/download/client_installer.sh`)} | sh -s ${addBreakOpportunities(baseUrl)}`;
 };
 
 document.addEventListener('DOMContentLoaded', initialize);
