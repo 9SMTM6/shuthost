@@ -22,61 +22,70 @@
 
     <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <main class="py-4 sm:py-6">
-            <div class="section-container mt-0">
-                <div class="table-wrapper">
-                    <table class="w-full">
-                        <thead>
-                            <tr>
-                                <th class="table-header">Host</th>
-                                <th class="table-header">Status</th>
-                                <th class="table-header">Leases</th>
-                                <th class="table-header">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="host-table-body" class="divide-y divide-gray-200">
-                            <!-- Hosts will be loaded here dynamically -->
-                        </tbody>
-                    </table>
-                </div>
+            <div class="tabs-container">
+                <button class="tab active" data-tab="hosts">Hosts</button>
+                <button class="tab" data-tab="clients">Clients</button>
             </div>
 
-            <div class="section-container">
-                <h2 class="section-title">Active Clients</h2>
-                <div class="table-wrapper">
-                    <table class="w-full">
-                        <thead>
-                            <tr>
-                                <th class="table-header">Client ID</th>
-                                <th class="table-header">Leases</th>
-                                <th class="table-header">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="client-table-body" class="divide-y divide-gray-200">
-                            <!-- Clients will be loaded here dynamically -->
-                        </tbody>
-                    </table>
+            <div id="hosts-tab" class="tab-content active">
+                <div class="section-container mt-0">
+                    <div class="table-wrapper">
+                        <table class="w-full">
+                            <thead>
+                                <tr>
+                                    <th class="table-header">Host</th>
+                                    <th class="table-header">Status</th>
+                                    <th class="table-header">Leases</th>
+                                    <th class="table-header">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="host-table-body" class="divide-y divide-gray-200">
+                                <!-- Hosts will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <section class="section-container">
+                    <h2 class="section-title">Install Node Agent</h2>
+                    <p class="mb-2">Run the following command in your terminal:</p>
+                    <div class="code-container">
+                        <button class="copy-button" data-copy-target="#node-install-command">Copy</button>
+                        <code id="node-install-command" class="code-block">Loading...</code>
+                    </div>
+                    <p class="description-text">Adjust options as needed. Add the output to <code class="bg-gray-100 px-1 rounded">{coordinator_config}</code>.</p>
+                </section>
             </div>
 
-            <section class="section-container">
-                <h2 class="section-title">Install Node Agent</h2>
-                <p class="mb-2">Run the following command in your terminal:</p>
-                <div class="code-container">
-                    <button class="copy-button" data-copy-target="#node-install-command">Copy</button>
-                    <code id="node-install-command" class="code-block">Loading...</code>
+            <div id="clients-tab" class="tab-content">
+                <div class="section-container mt-0">
+                    <h2 class="section-title">Active Clients</h2>
+                    <div class="table-wrapper">
+                        <table class="w-full">
+                            <thead>
+                                <tr>
+                                    <th class="table-header">Client ID</th>
+                                    <th class="table-header">Leases</th>
+                                    <th class="table-header">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-table-body" class="divide-y divide-gray-200">
+                                <!-- Clients will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <p class="description-text">Adjust options as needed. Add the output to <code class="bg-gray-100 px-1 rounded">{coordinator_config}</code>.</p>
-            </section>
 
-            <section class="section-container">
-                <h2 class="section-title">Install Client</h2>
-                <p class="mb-2">Run the following command in your terminal:</p>
-                <div class="code-container">
-                    <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
-                    <code id="client-install-command" class="code-block">Loading...</code>
-                </div>
-                <p class="description-text">Optionally, you can specify a custom client ID as the second argument.</p>
-            </section>
+                <section class="section-container">
+                    <h2 class="section-title">Install Client</h2>
+                    <p class="mb-2">Run the following command in your terminal:</p>
+                    <div class="code-container">
+                        <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
+                        <code id="client-install-command" class="code-block">Loading...</code>
+                    </div>
+                    <p class="description-text">Optionally, you can specify a custom client ID as the second argument.</p>
+                </section>
+            </div>
         </main>
     </div>
 

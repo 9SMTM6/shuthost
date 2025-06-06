@@ -154,6 +154,25 @@ const setupCopyButtons = () => {
     });
 };
 
+const setupTabs = () => {
+    const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and content
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            const tabId = tab.dataset["tab"];
+            document.getElementById(`${tabId}-tab`)?.classList.add('active');
+        });
+    });
+};
+
 const initialize = () => {
     const nodeInstallCommand = document.getElementById('node-install-command');
     const clientInstallCommand = document.getElementById('client-install-command');
@@ -163,6 +182,7 @@ const initialize = () => {
 
     connectWebSocket();
     setupCopyButtons();
+    setupTabs();
 
     const baseUrl = window.location.origin;
     nodeInstallCommand.textContent = `curl -fsSL ${`${baseUrl}/download/node_agent_installer.sh`} | sh -s ${baseUrl} --port 5757`;
