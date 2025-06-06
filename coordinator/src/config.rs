@@ -43,6 +43,9 @@ pub async fn load_coordinator_config<P: AsRef<Path>>(
 
 pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
+    let initial_config = tx.borrow().clone();
+    let initial_port = initial_config.server.port;
+    let initial_bind = initial_config.server.bind.clone();
 
     let mut watcher = RecommendedWatcher::new(
         move |res| {
@@ -63,6 +66,12 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
             info!("Config file modified. Reloading...");
             match load_coordinator_config(&path).await {
                 Ok(new_config) => {
+                    if new_config.server.port != initial_port {
+                        error!("Port change detected in config file. Changing ports while the server is running is not supported. Server will continue to run on port {}", initial_port);
+                    }
+                    if new_config.server.bind != initial_bind {
+                        error!("Bind address change detected in config file. Changing bind address while the server is running is not supported. Server will continue to run on {}", initial_bind);
+                    }
                     let _ = tx.send(Arc::new(new_config));
                     info!("Config reloaded.");
                 }

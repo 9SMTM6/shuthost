@@ -101,7 +101,6 @@ pub async fn start_http_server(config_path: &std::path::Path) {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
         tokio::spawn(async move {
-            // TODO: warn on changed port
             watch_config_file(path, config_tx).await;
         });
     }
