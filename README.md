@@ -42,10 +42,8 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     * to be able to build it locally I'd have to introduce features
 * uninstalls
 
-<!-- 
-    // Re-Verify mobile after tabs were introduced.
+<!-- TODO:
     // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count() - needs proper updates when the socket was closed, fails ATM)
-    // Add endpoint for configured clients and show them all in the UI
     // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
     // Then add a bunch of documentation to explain:
     // - how to configure WOL and gotchas
