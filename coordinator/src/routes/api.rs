@@ -71,6 +71,14 @@ async fn status_host(
     }
 }
 
+/// Takes a lease on a node via the web interface.
+///
+/// This function is used by the web UI to take a lease on a node. It does not require
+/// any client authentication or HMAC signature, unlike the m2m `handle_lease` endpoint.
+/// The lease is attributed to the web interface and is visible to all clients.
+///
+/// Use this for user-initiated actions from the web dashboard. For programmatic or
+/// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
 async fn take_lease(
     Path(hostname): Path<String>,
     State(state): State<AppState>,
@@ -92,6 +100,14 @@ async fn take_lease(
     "Lease taken".into_response()
 }
 
+/// Releases a lease on a node via the web interface.
+///
+/// This function is used by the web UI to release a lease on a node. It does not require
+/// any client authentication or HMAC signature, unlike the m2m `handle_lease` endpoint.
+/// The lease is attributed to the web interface and is visible to all clients.
+///
+/// Use this for user-initiated actions from the web dashboard. For programmatic or
+/// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
 async fn release_lease(
     Path(hostname): Path<String>,
     State(state): State<AppState>,

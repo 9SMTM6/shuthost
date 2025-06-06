@@ -74,7 +74,16 @@ pub struct LeaseActionQuery {
     r#async: Option<bool>,
 }
 
-// Update the handler to accept the query parameter for async operation
+/// Handles machine-to-machine lease actions (take/release) for a node.
+///
+/// This endpoint is intended for programmatic (m2m) clients and requires additional
+/// authorization via HMAC-signed headers. The client must provide a valid `X-Client-ID`
+/// and a signed `X-Request` header containing a timestamp, command, and signature.
+///
+/// This is distinct from the web interface lease endpoints (`take_lease`/`release_lease`),
+/// which do not require authentication and are used for user-initiated actions from the web UI.
+///
+/// Use this endpoint for secure, automated lease management by trusted clients.
 #[axum::debug_handler]
 async fn handle_lease(
     Path((node, action)): Path<(String, String)>,
