@@ -71,8 +71,9 @@ footer { grid-area: footer; }
 
     .btn {
         @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm 
-               rounded transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed
-               cursor-pointer;
+            rounded transition-colors cursor-pointer disabled:cursor-not-allowed
+            disabled:bg-gray-300 dark:disabled:bg-gray-600
+            disabled:text-white dark:disabled:text-gray-300;
     }
 
     .btn-green {
