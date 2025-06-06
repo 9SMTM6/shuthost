@@ -177,11 +177,10 @@ jobs:
 
           # Install dependencies
           if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker exec testinit bash -c "apt-get update; apt-get install -y curl sudo"
+            docker exec testinit bash -c "apt-get update; apt-get install -y curl"
           elif [ "${{ matrix.init }}" = "openrc" ]; then
             docker exec testinit sh -c "apk update"
             docker exec testinit sh -c "apk --no-cache add curl"
-            docker exec testinit sh -c "apk --no-cache add sudo"
           fi
 
           # Copy controller binary
