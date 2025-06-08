@@ -110,7 +110,7 @@ footer { grid-area: footer; }
     
     /* Update actions cell styling */
     .actions-cell {
-        @apply px-4 py-1.5 flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center min-w-[180px];
+        @apply py-1.5 flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center;
     }
 
     /* Add these new styles */
