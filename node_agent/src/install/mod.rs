@@ -89,9 +89,12 @@ pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
         InitSystem::Serviceless => {
             let target_script_path = format!("/usr/local/bin/{}", name);
             shuthost_common::serviceless::generate_self_extracting_script(
-                &arguments.shared_secret,
-                arguments.port,
-                &arguments.shutdown_command,
+                &[
+                    ("SECRET", &arguments.shared_secret),
+                    ("PORT", &arguments.port.to_string()),
+                    ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
+                ],
+                r#""$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" --shared-secret="$SECRET""#,
                 &target_script_path,
             )?;
             println!(
