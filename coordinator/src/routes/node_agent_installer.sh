@@ -57,7 +57,7 @@ echo "Downloading node_agent for $PLATFORM/$ARCH..."
 curl -fL "${REMOTE_URL}/download/node_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
-WOL_TEST_PORT=$(($DEFAULT_PORT + 1))
+WOL_TEST_PORT=$((DEFAULT_PORT + 1))
 
 echo "Testing WOL packet reachability..."
 # Start the test receiver in background
@@ -85,11 +85,11 @@ else
 fi
 
 elevate_privileges() {
-    local cmd="$*"
+    cmd="$*"
     if command -v sudo >/dev/null 2>&1; then
-        sudo $cmd
+        sudo "$cmd"
     elif command -v doas >/dev/null 2>&1; then
-        doas $cmd
+        doas "$cmd"
     else
         echo "Error: Neither sudo nor doas found. Please install sudo or doas."
         exit 1
