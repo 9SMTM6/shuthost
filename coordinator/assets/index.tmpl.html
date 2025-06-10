@@ -50,6 +50,39 @@
                             <button class="copy-button" data-copy-target="#config-location">Copy</button>
                             <code id="config-location" class="code-block">{coordinator_config}</code>
                         </div>
+
+                        <!-- Agent Installation Requirements & Gotchas -->
+                        <div class="alert alert-warning">
+                            <div class="alert-title">⚠️ Agent Installation Requirements</div>
+                            <ul>
+                                <li><strong>Superuser Access:</strong> The installer requires curl and will install as superuser (root/sudo)</li>
+                                <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected download endpoints (see security notes below)</li>
+                                <li><strong>Static IP Required:</strong> The host needs a static IP address for shutdown commands and online status monitoring</li>
+                                <li><strong>Manual Configuration:</strong> The generated config must be manually added to your coordinator configuration file</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert alert-error">
+                            <div class="alert-title">🚫 Platform Limitations</div>
+                            <ul>
+                                <li><strong>No Windows/BSD Support:</strong> Currently only Linux distributions are supported</li>
+                                <li><strong>Docker Networking Issues:</strong> Docker on Windows/macOS won't work for the coordinator due to network broadcast requirements. Use <code>network_mode: host</code> on Linux or use the binary directly</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <div class="alert-title">💡 Wake-on-LAN (WOL) Requirements</div>
+                            <p>The agent requires Wake-on-LAN for remote startup functionality:</p>
+                            <ul>
+                                <li><strong>Motherboard Support:</strong> Your motherboard must support WOL</li>
+                                <li><strong>BIOS Configuration:</strong> WOL must be enabled in BIOS/UEFI settings</li>
+                                <li><strong>OS Configuration:</strong> WOL must be enabled in the operating system</li>
+                                <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown</li>
+                                <li><strong>Network Requirements:</strong> Requires network broadcast support and host reachability</li>
+                                <li><strong>VM Considerations:</strong> If running in a VM, use bridged networking mode</li>
+                            </ul>
+                            <p class="text-xs mt-2"><em>Note: The installer tests network reachability but won't fail if the test is unsuccessful.</em></p>
+                        </div>
                     </div>
                 </div>
 
@@ -92,6 +125,15 @@
                             <code id="config-location" class="code-block">{coordinator_config}</code>
                         </div>
 
+                        <!-- Client Installation Requirements & Gotchas -->
+                        <div class="alert alert-warning">
+                            <div class="alert-title">⚠️ Client Installation Requirements</div>
+                            <ul>
+                                <li><strong>Dependencies:</strong> Installer requires curl; client runtime requires OpenSSL</li>
+                                <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected download endpoints (see security notes below)</li>
+                                <li><strong>Manual Configuration:</strong> The generated config must be manually added to your coordinator configuration file</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -110,6 +152,60 @@
                                 <!-- Clients will be loaded here dynamically -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Configuration Panel (shown on both tabs) -->
+            <div class="section-container mt-4">
+                <div class="collapsible-header collapsed" data-target="security-config-content">
+                    <h2 class="section-title mb-0 text-base">🔒 Required Security Configuration</h2>
+                    <span class="collapsible-icon"></span>
+                </div>
+                <div id="security-config-content" class="collapsible-content collapsed">
+                    <div class="alert alert-info">
+                        <div class="alert-title">Proxy/Authentication Bypass Required</div>
+                        <p>For the installation scripts to work properly, certain endpoints must be accessible without authentication. If you're using a reverse proxy with authentication (like Authelia, NPM with auth, etc.), you need to configure bypass rules for:</p>
+                        <ul>
+                            <li><code>/download/*</code> - Installation script downloads</li>
+                            <li><code>/api/m2m/*</code> - Machine-to-machine API communication</li>
+                        </ul>
+                        <p class="text-xs mt-2"><em>This allows the installer scripts to download necessary files and communicate with the coordinator API without requiring user authentication.</em></p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <div class="alert-title">Configuration Examples</div>
+                        
+                        <p class="text-sm font-semibold mb-2">Authelia:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#authelia-config">Copy</button>
+                            <code id="authelia-config" class="code-block">- domain: your-shuthost-domain.com
+  policy: bypass
+  resources:
+    - '^/download/(.*)
+    - '^/api/m2m/(.*)$'</code>
+                        </div>
+
+                        <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#nginx-config">Copy</button>
+                            <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
+location ~ ^/(download|api/m2m)/ {
+    auth_basic off;
+    proxy_pass http://your-shuthost-backend;
+}</code>
+                        </div>
+
+                        <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#traefik-config">Copy</button>
+                            <code id="traefik-config" class="code-block"># Add to your service labels
+- "traefik.http.routers.shuthost-bypass.rule=Host(`your-domain.com`) && PathPrefix(`/download`, `/api/m2m`)"
+- "traefik.http.routers.shuthost-bypass.priority=100"
+# Remove auth middleware for bypass routes</code>
+                        </div>
+
+                        <p class="text-xs mt-2"><em>Replace domain/backend references with your actual configuration values.</em></p>
                     </div>
                 </div>
             </div>
