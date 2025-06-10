@@ -35,7 +35,9 @@ pub struct AppState {
     pub leases: LeaseMap,
 }
 
-pub async fn start_http_server(config_path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_http_server(
+    config_path: &std::path::Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(load_coordinator_config(config_path).await?);

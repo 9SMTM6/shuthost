@@ -10,9 +10,17 @@ body {
     min-height: 100vh;
 }
 
-header { grid-area: header; }
-.main { grid-area: main; }
-footer { grid-area: footer; }
+header {
+    grid-area: header;
+}
+
+.main {
+    grid-area: main;
+}
+
+footer {
+    grid-area: footer;
+}
 
 /* Add to your existing styles */
 .collapsible-icon {
@@ -56,24 +64,19 @@ footer { grid-area: footer; }
     }
 
     .copy-button {
-        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 
-            text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm 
-            transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
     }
 
     .code-block {
         @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-16;
     }
-    
+
     .description-text {
         @apply mt-2 text-gray-600 dark:text-gray-300 text-sm sm:text-base;
     }
 
     .btn {
-        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm 
-            rounded transition-colors cursor-pointer disabled:cursor-not-allowed
-            disabled:bg-gray-300 dark:disabled:bg-gray-600
-            disabled:text-white dark:disabled:text-gray-300;
+        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-white dark:disabled:text-gray-300;
     }
 
     .btn-green {
@@ -86,7 +89,8 @@ footer { grid-area: footer; }
 
     /* New mobile optimizations */
     .table-wrapper {
-        @apply w-full;  /* Remove overflow and padding/margin adjustments */
+        @apply w-full;
+        /* Remove overflow and padding/margin adjustments */
     }
 
     table {
@@ -94,9 +98,7 @@ footer { grid-area: footer; }
     }
 
     .table-header {
-        @apply px-4 py-3 bg-gray-50 dark:bg-gray-700 text-left 
-            font-semibold text-gray-800 dark:text-gray-100 
-            text-sm sm:text-base border-b border-gray-200 dark:border-gray-600;
+        @apply px-4 py-3 bg-gray-50 dark:bg-gray-700 text-left font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base border-b border-gray-200 dark:border-gray-600;
     }
 
     .table-row {
@@ -107,7 +109,7 @@ footer { grid-area: footer; }
     .table-cell {
         @apply px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100;
     }
-    
+
     /* Update actions cell styling */
     .actions-cell {
         @apply py-1.5 flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center;
@@ -124,10 +126,7 @@ footer { grid-area: footer; }
 
     /* Update tab styles */
     .tab {
-        @apply px-4 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 
-               border-b-2 border-transparent hover:border-gray-300 
-               transition-colors focus:outline-none focus:text-gray-700 focus:border-gray-300
-               cursor-pointer;
+        @apply px-4 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors focus:outline-none focus:text-gray-700 focus:border-gray-300 cursor-pointer;
     }
 
     .tab.active {
@@ -144,9 +143,7 @@ footer { grid-area: footer; }
     }
 
     .collapsible-header {
-        @apply flex items-center justify-between cursor-pointer 
-                px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 
-                transition-colors;
+        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
     }
 
     .collapsible-content {

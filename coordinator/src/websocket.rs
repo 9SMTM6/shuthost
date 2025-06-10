@@ -19,7 +19,10 @@ use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
 #[serde(tag = "type", content = "payload")]
 pub enum WsMessage {
     HostStatus(HashMap<String, bool>),
-    ConfigChanged{hosts: Vec<String>, clients: Vec<String>},
+    ConfigChanged {
+        hosts: Vec<String>,
+        clients: Vec<String>,
+    },
     Initial {
         hosts: Vec<String>,
         clients: Vec<String>,

@@ -22,7 +22,7 @@ use tracing::{debug, error, info, warn};
 use crate::websocket::WsMessage;
 use crate::{http::AppState, wol::send_magic_packet};
 
-use super::api::{send_shutdown, LeaseAction};
+use super::api::{LeaseAction, send_shutdown};
 
 const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.tmpl.sh");
 
