@@ -1,0 +1,25 @@
+digraph HostLifecycle {
+  rankdir=TB;
+  node [shape=ellipse, fontname="Helvetica"];
+
+  client [label="Client\n1 per task"];
+  webui [label="WebUI"];
+  coordinator [label="Coordinator"];
+  agent [label="Agent\n1 per host"];
+  host [label="Host"];
+
+  // Lease interactions (combined arrow)
+  client -> coordinator [label="request/release leases"];
+  webui -> coordinator [label="request/release leases"];
+
+  // Host lifecycle commands
+  coordinator -> host [label="WOL startup\n(if ≥1 lease)"];
+  coordinator -> agent [label="shutdown\n(if =0 leases)"];
+  agent -> host [label="executes shutdown"];
+  agent -> coordinator [label="reports status\n(host online)"];
+  coordinator -> agent [label="WOL startup", style=dashed];
+
+  // Other relationships
+  host -> agent [label="starts agent service\n(on host boot)"];
+  coordinator -> webui [label="serves"];
+}

@@ -7,6 +7,10 @@ The GUI doesn't provide authorization, you'll have to do that yourself (e.g. NGI
 
 Note that LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
+## Architecture:
+
+![shuthost_architecture (generated from architecture.dot)](./coordinator/assets/architecture.svg)
+
 ## Known issues:
 
 * requires static IPs on the hosts to control

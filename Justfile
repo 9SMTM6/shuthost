@@ -43,6 +43,9 @@ build_coordinator_on_mac:
 
 build_all: build_all_node_agents_on_mac build_coordinator_on_mac
 
+build_graphs:
+    dot coordinator/assets/architecture.dot -Tsvg -ocoordinator/assets/architecture.svg
+
 clean:
     cargo clean && cargo fetch
     cd coordinator/assets && rm -rf node_modules && npm ci
