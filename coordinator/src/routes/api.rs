@@ -108,14 +108,17 @@ async fn handle_web_lease_action(
     // Broadcast lease update to WebSocket clients
     broadcast_lease_update(&hostname, lease_set, &state.ws_tx).await;
 
+    let lease_set = lease_set.clone();
+    let state = state.clone();
+
     // Handle node state after lease change
-    if let Err((status, msg)) = handle_node_state(&hostname, &lease_set, &state).await {
-        return (status, msg).into_response();
-    }
+    tokio::spawn(async move {
+        let _ = handle_node_state(&hostname, &lease_set, &state).await;
+    });
 
     match action {
-        LeaseAction::Take => "Lease taken".into_response(),
-        LeaseAction::Release => "Lease released".into_response(),
+        LeaseAction::Take => "Lease taken (async)".into_response(),
+        LeaseAction::Release => "Lease released (async)".into_response(),
     }
 }
 
