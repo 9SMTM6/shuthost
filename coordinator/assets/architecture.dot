@@ -2,11 +2,15 @@ digraph HostLifecycle {
   rankdir=TB;
   node [shape=ellipse, fontname="Helvetica"];
 
-  client [label="Client\n1 per task"];
   webui [label="WebUI"];
+  client [label="Client\n1 per task (e.g. backup of different folders)"];
   coordinator [label="Coordinator"];
   agent [label="Agent\n1 per host"];
   host [label="Host"];
+
+  // Other relationships
+  host -> agent [label="starts agent service\n(on host boot)"];
+  coordinator -> webui [label="serves"];
 
   // Lease interactions (combined arrow)
   client -> coordinator [label="request/release leases"];
@@ -18,8 +22,4 @@ digraph HostLifecycle {
   agent -> host [label="executes shutdown"];
   agent -> coordinator [label="reports status\n(host online)"];
   coordinator -> agent [label="WOL startup", style=dashed];
-
-  // Other relationships
-  host -> agent [label="starts agent service\n(on host boot)"];
-  coordinator -> webui [label="serves"];
 }
