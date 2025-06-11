@@ -13,7 +13,7 @@ pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> i
         .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{version}", env!("CARGO_PKG_VERSION"))
         .replace("/* {styles} */", styles)
-        .replace("{js}", javascript);
+        .replace("{ js }", javascript);
 
     Response::builder()
         .header("Content-Type", "text/html")
