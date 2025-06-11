@@ -13,16 +13,11 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Known issues
 
-* requires static IPs on the hosts to control
-* UI blocks somewhat when shutting down/starting host
 * if the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease)
     * I'm considering regularely "syncing" states, maybe with explicit config on host (seems best) or coordinator-wide
 * the coordinator looses state on update
     * since its not that much, and currently only acts on state changes, not problematic, but could be fixed with persistence with e.g. sqlite. Should be considered before adding status syncing
-* docker is problematic:
-    * its currently untested
-    * according to what I've seen, podman (and likely docker) on macos wont be able to transfer WOL packages to the host LAN, and docker on WSL would also need additional config, if at all possible.
-    * thus on these targets you need to use a VM with dedicated LAN IP, or simply use the binary - its still just a single file to start.
+* docker is currently untested
 * windows agent support currently not planned, due to large differences
 
 ## Planned Features
