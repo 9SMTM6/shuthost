@@ -85,11 +85,11 @@ else
 fi
 
 elevate_privileges() {
-    cmd="$*"
+    local cmd="$*"
     if command -v sudo >/dev/null 2>&1; then
-        sudo "$cmd"
+        sudo $cmd
     elif command -v doas >/dev/null 2>&1; then
-        doas "$cmd"
+        doas $cmd
     else
         echo "Error: Neither sudo nor doas found. Please install sudo or doas."
         exit 1
