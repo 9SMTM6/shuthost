@@ -251,11 +251,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Set lowercase repository name
-        id: repo
-        run: |
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
       - name: Rehydrate target directory structure
         run: |
@@ -266,6 +261,15 @@ jobs:
             cp "$dir/shuthost_coordinator" "target/$target/release/"
           done
 
+      - name: Create a valid release tag and other text outputs
+        id: release_texts
+        run: |
+          string=${{ github.ref }};
+          cleaned_string="${string#refs/tags/}";
+          cleaned_string="${cleaned_string#refs/heads/}";
+          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
+          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+
       - name: Build & Push Multi-Arch Alpine Image
         uses: docker/build-push-action@v6
         with:
@@ -274,8 +278,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ steps.repo.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
-            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-coordinator:latest', steps.repo.outputs.repo_lowercase) || '' }}
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+                format('ghcr.io/{0}/shuthost-coordinator:{1}', steps.repo.outputs.repo_lowercase, steps.release_texts.outputs.tag) || '' }}
+                ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/shuthost-coordinator:latest', steps.repo.outputs.repo_lowercase) || '' }}
           build-args: |
             TARGET=x86_64-unknown-linux-musl
             TARGET=aarch64-unknown-linux-musl
@@ -309,13 +314,14 @@ jobs:
 
       - run: ls -la release-assets/
 
-      - name: Create a valid release tag
-        id: tag
+      - name: Create a valid release tag and other text outputs
+        id: release_texts
         run: |
           string=${{ github.ref }};
           cleaned_string="${string#refs/tags/}";
           cleaned_string="${cleaned_string#refs/heads/}";
           echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
+          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
 
       - name: Upload binaries to release (create one if not existing)
         uses: softprops/action-gh-release@v2
@@ -323,5 +329,14 @@ jobs:
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*
-          tag_name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ steps.release_texts.outputs.tag }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          generate_release_notes: true
+          body: |
+            📦 **Container Image** available at:
+
+            ```
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.tag.outputs.tag }}
+            ```
+
+            Also available as `:latest` if this is a tagged release.
