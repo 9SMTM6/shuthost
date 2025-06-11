@@ -7,11 +7,11 @@ The GUI doesn't provide authorization, you'll have to do that yourself (e.g. NGI
 
 Note that LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
-## Architecture:
+## Architecture
 
 ![shuthost_architecture (generated from architecture.dot)](./coordinator/assets/architecture.svg)
 
-## Known issues:
+## Known issues
 
 * requires static IPs on the hosts to control
 * UI blocks somewhat when shutting down/starting host
@@ -25,7 +25,15 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     * thus on these targets you need to use a VM with dedicated LAN IP, or simply use the binary - its still just a single file to start.
 * windows agent support currently not planned, due to large differences
 
-## Potential Features:
+## Planned Features
+
+* add architecture documentation to WebUI
+* if there are no clients configured, show simplified UI: No Leases column, instead of release/take lease, show startup/shutdown buttons
+
+## Potential Features
+
+* I might add OIDC authorization, where I allow the required endpoints for all
+    * I might consider enabling this by default, and/or showing some kind of error if the UI is shown without any authorization (detect by header presence)
 * BSD support might happen, 
     * requires using cross though, which I wont do locally. This also means refactoring the github pipeline
     * to be able to build it locally I'd have to introduce features
