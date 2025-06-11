@@ -198,11 +198,7 @@
                         <p class="text-sm font-semibold mb-2">Authelia:</p>
                         <div class="code-container">
                             <button class="copy-button" data-copy-target="#authelia-config">Copy</button>
-                            <code id="authelia-config" class="code-block">- domain: your-shuthost-domain.com
-  policy: bypass
-  resources:
-    - '^/download/(.*)
-    - '^/api/m2m/(.*)$'</code>
+                            <code id="authelia-config" class="code-block">Loading...</code>
                         </div>
 
                         <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
@@ -218,10 +214,7 @@ location ~ ^/(download|api/m2m)/ {
                         <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
                         <div class="code-container">
                             <button class="copy-button" data-copy-target="#traefik-config">Copy</button>
-                            <code id="traefik-config" class="code-block"># Add to your service labels
-- "traefik.http.routers.shuthost-bypass.rule=Host(`your-domain.com`) && PathPrefix(`/download`, `/api/m2m`)"
-- "traefik.http.routers.shuthost-bypass.priority=100"
-# Remove auth middleware for bypass routes</code>
+                            <code id="traefik-config" class="code-block">Loading...</code>
                         </div>
 
                         <p class="text-xs mt-2"><em>Replace domain/backend references with your actual configuration

@@ -194,21 +194,48 @@ const setupCollapsibleSections = () => {
     });
 };
 
-const initialize = () => {
+const setupDynamicConfigs = () => {
+    const baseUrl = window.location.origin;
+
+    // Install commands
     const nodeInstallCommand = document.getElementById('node-install-command');
     const clientInstallCommand = document.getElementById('client-install-command');
-    
-    if (!nodeInstallCommand) throw new Error('Missing required element #node-install-command');
-    if (!clientInstallCommand) throw new Error('Missing required element #client-install-command');
 
+    if (!nodeInstallCommand || !clientInstallCommand) {
+        throw new Error('Missing required install command elements');
+    }
+
+    nodeInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+
+    // Configuration examples with replaced domain/backend
+    const autheliaConfig = document.getElementById('authelia-config');
+    const traefikConfig = document.getElementById('traefik-config');
+
+    const domain = baseUrl.replace(/^https?:\/\//, '');
+
+    if (autheliaConfig) {
+        autheliaConfig.textContent = `- domain: ${domain}
+  policy: bypass
+  resources:
+    - '^/download/(.*)'
+    - '^/api/m2m/(.*)$'`;
+    }
+
+    if (traefikConfig) {
+        traefikConfig.textContent = `# Add to your service labels
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && PathPrefix(\`/download\`, \`/api/m2m\`)"
+- "traefik.http.routers.shuthost-bypass.priority=100"
+# Remove auth middleware for bypass routes`;
+    }
+};
+
+const initialize = () => {
+    setupDynamicConfigs();
     connectWebSocket();
     setupCopyButtons();
     setupTabs();
     setupCollapsibleSections();
-
-    const baseUrl = window.location.origin;
-    nodeInstallCommand.textContent = `curl -fsSL ${`${baseUrl}/download/node_agent_installer.sh`} | sh -s ${baseUrl} --port 5757`;
-    clientInstallCommand.textContent = `curl -fsSL ${`${baseUrl}/download/client_installer.sh`} | sh -s ${baseUrl}`;
 };
 
 document.addEventListener('DOMContentLoaded', initialize);
