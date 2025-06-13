@@ -46,8 +46,8 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 persistedLeaseMap = message.payload.leases;
                 persistedClientList = message.payload.clients;
                 const hosts = message.payload.hosts.map(name => ({ name }));
-                hostTableBody.innerHTML = hosts.map(createHostRow).join('');
-                updateClientsTable(); // already included
+                renderHostsTable(hosts);
+                updateClientsTable();
                 break;
             case 'HostStatus':
                 persistedStatusMap = message.payload;
@@ -55,13 +55,13 @@ const handleWebSocketMessage = (event: MessageEvent) => {
             case 'ConfigChanged':
                 persistedClientList = message.payload.clients;
                 const newHosts = message.payload.hosts.map(name => ({ name }));
-                hostTableBody.innerHTML = newHosts.map(createHostRow).join('');
-                updateClientsTable(); // ensure the table reflects new clients
+                renderHostsTable(newHosts);
+                updateClientsTable();
                 break;
             case 'LeaseUpdate':
                 const { host, leases } = message.payload;
                 persistedLeaseMap[host] = leases;
-                updateClientsTable(); // Add this line
+                updateClientsTable();
                 console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
                 break;
         }
@@ -84,6 +84,9 @@ const getFormattedLeases = (hostname: string): string => {
     const clientLeases = (persistedLeaseMap[hostname] || []).filter(lease => lease.type === 'Client');
     return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
 };
+
+// Helper to check if there are any clients configured
+const hasClientsConfigured = () => persistedClientList.length > 0;
 
 // Helper function to update a single row's attributes
 const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
@@ -121,18 +124,19 @@ const updateNodeAttrs = () => {
 const createHostRow = (host: Host) => {
     const { statusText } = getHostStatus(host.name);
     const leases = getFormattedLeases(host.name);
+    const clientsConfigured = hasClientsConfigured();
     return `
-    <tr data-hostname="${host.name}" class="table-row">
-        <td class="table-cell">${host.name}</td>
-        <td class="table-cell status">${statusText}</td>
-        <td class="table-cell leases">${leases}</td>
-        <td class="table-cell">
-            <div class="actions-cell">
-                <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">Take Lease</button>
-                <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">Release Lease</button>
-            </div>
-        </td>
-    </tr>
+        <tr data-hostname="${host.name}" class="table-row">
+            <td class="table-cell">${host.name}</td>
+            <td class="table-cell status">${statusText}</td>
+            ${clientsConfigured ? `<td class="table-cell leases">${leases}</td>` : ''}
+            <td class="table-cell">
+                <div class="actions-cell">
+                    <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">${clientsConfigured ? "Take Lease" : "Start"}</button>
+                    <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
+                </div>
+            </td>
+        </tr>
     `;
 };
 
@@ -312,6 +316,27 @@ const updateClientsTable = () => {
             .join('');
     }
 };
+
+// Helper to update hosts table header for simplified UI
+function updateHostsTableHeader() {
+    const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
+    if (!thead) return;
+    thead.innerHTML = `
+        <th class="table-header">Host</th>
+        <th class="table-header">Status</th>
+        ${hasClientsConfigured() ? '<th class="table-header">Leases</th>' : ''}
+        <th class="table-header">Actions</th>
+    `;
+}
+
+// Patch: call updateHostsTableHeader after table is rendered
+function renderHostsTable(hosts: Host[]) {
+    const hostTableBody = document.getElementById('host-table-body');
+    if (hostTableBody) {
+        hostTableBody.innerHTML = hosts.map(createHostRow).join('');
+        updateHostsTableHeader();
+    }
+}
 
 // Add this function to handle resetting client leases
 const resetClientLeases = async (clientId: string) => {
