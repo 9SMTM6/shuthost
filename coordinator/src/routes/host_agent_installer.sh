@@ -4,7 +4,7 @@ set -e
 
 # TODO: consider a way to embed the install options. Main issue outside of it being annoying: Different defaults between OSs (mostly shutdown argument)
 if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [shuthost_node_agent install options...]"
+  echo "Usage: $0 <remote_url> [shuthost_host_agent install options...]"
   exit 1
 fi
 
@@ -51,10 +51,10 @@ case "$OS" in
         ;;
 esac
 
-OUTFILE="shuthost_node_agent"
+OUTFILE="shuthost_host_agent"
 
-echo "Downloading node_agent for $PLATFORM/$ARCH..."
-curl -fL "${REMOTE_URL}/download/node_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
+echo "Downloading host_agent for $PLATFORM/$ARCH..."
+curl -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
 WOL_TEST_PORT=$((DEFAULT_PORT + 1))

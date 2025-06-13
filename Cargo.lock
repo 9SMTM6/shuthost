@@ -1092,7 +1092,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "shuthost_node_agent"
+name = "shuthost_host_agent"
 version = "0.13.2-beta"
 dependencies = [
  "clap",

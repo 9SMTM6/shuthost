@@ -10,13 +10,13 @@ use crate::http::AppState;
 use super::m2m::download_client_script;
 
 // Macro to define a handler function from a static binary
-macro_rules! node_agent_handler {
-    ($name:ident, $node_agent_target:expr) => {
+macro_rules! host_agent_handler {
+    ($name:ident, $host_agent_target:expr) => {
         async fn $name() -> impl IntoResponse {
             const AGENT_BINARY: &'static [u8] = include_bytes!(concat!(
                 "../../../target/",
-                $node_agent_target,
-                "/release/shuthost_node_agent"
+                $host_agent_target,
+                "/release/shuthost_host_agent"
             ));
             Response::builder()
                 .header("Content-Type", "application/octet-stream")
@@ -26,9 +26,9 @@ macro_rules! node_agent_handler {
                 .unwrap()
         }
     };
-    ($name:ident, $node_agent_target:expr, feature=$feature:expr) => {
+    ($name:ident, $host_agent_target:expr, feature=$feature:expr) => {
         #[cfg(feature = $feature)]
-        node_agent_handler!($name, $node_agent_target);
+        host_agent_handler!($name, $host_agent_target);
         #[cfg(not(feature = $feature))]
         async fn $name() -> impl IntoResponse {
             Response::builder()
@@ -40,23 +40,23 @@ macro_rules! node_agent_handler {
 }
 
 // Generate all handlers
-node_agent_handler!(
-    node_agent_macos_aarch64,
+host_agent_handler!(
+    host_agent_macos_aarch64,
     "aarch64-apple-darwin",
     feature = "build_macos"
 );
-node_agent_handler!(
-    node_agent_macos_x86_64,
+host_agent_handler!(
+    host_agent_macos_x86_64,
     "x86_64-apple-darwin",
     feature = "build_macos"
 );
-node_agent_handler!(node_agent_linux_x86_64, "x86_64-unknown-linux-gnu");
-node_agent_handler!(node_agent_linux_aarch64, "aarch64-unknown-linux-gnu");
-node_agent_handler!(node_agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
-node_agent_handler!(node_agent_linux_musl_aarch64, "aarch64-unknown-linux-musl");
+host_agent_handler!(host_agent_linux_x86_64, "x86_64-unknown-linux-gnu");
+host_agent_handler!(host_agent_linux_aarch64, "aarch64-unknown-linux-gnu");
+host_agent_handler!(host_agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
+host_agent_handler!(host_agent_linux_musl_aarch64, "aarch64-unknown-linux-musl");
 
 async fn get_installer() -> impl IntoResponse {
-    const INSTALLER: &'static [u8] = include_bytes!("./node_agent_installer.sh");
+    const INSTALLER: &'static [u8] = include_bytes!("./host_agent_installer.sh");
     Response::builder()
         .header("Content-Type", "text/plain")
         .header("Content-Length", INSTALLER.len().to_string())
@@ -77,19 +77,19 @@ async fn get_client_installer() -> impl IntoResponse {
 
 pub fn get_download_router() -> Router<AppState> {
     Router::new()
-        .route("/node_agent_installer.sh", get(get_installer))
+        .route("/host_agent_installer.sh", get(get_installer))
         .route("/client_installer.sh", get(get_client_installer))
         .route("/shuthost_client", get(download_client_script))
-        .route("/node_agent/macos/aarch64", get(node_agent_macos_aarch64))
-        .route("/node_agent/macos/x86_64", get(node_agent_macos_x86_64))
-        .route("/node_agent/linux/x86_64", get(node_agent_linux_x86_64))
-        .route("/node_agent/linux/aarch64", get(node_agent_linux_aarch64))
+        .route("/host_agent/macos/aarch64", get(host_agent_macos_aarch64))
+        .route("/host_agent/macos/x86_64", get(host_agent_macos_x86_64))
+        .route("/host_agent/linux/x86_64", get(host_agent_linux_x86_64))
+        .route("/host_agent/linux/aarch64", get(host_agent_linux_aarch64))
         .route(
-            "/node_agent/linux-musl/x86_64",
-            get(node_agent_linux_musl_x86_64),
+            "/host_agent/linux-musl/x86_64",
+            get(host_agent_linux_musl_x86_64),
         )
         .route(
-            "/node_agent/linux-musl/aarch64",
-            get(node_agent_linux_musl_aarch64),
+            "/host_agent/linux-musl/aarch64",
+            get(host_agent_linux_musl_aarch64),
         )
 }

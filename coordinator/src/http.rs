@@ -77,7 +77,7 @@ pub async fn start_http_server(
         tokio::spawn(async move {
             while config_rx.changed().await.is_ok() {
                 let config = config_rx.borrow();
-                let hosts = config.nodes.keys().cloned().collect::<Vec<_>>();
+                let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
                 let clients = config.clients.keys().cloned().collect::<Vec<_>>();
                 let msg = WsMessage::ConfigChanged { hosts, clients };
                 let _ = ws_tx.send(msg);
@@ -127,7 +127,7 @@ async fn poll_host_statuses(
     loop {
         let config = config_rx.borrow().clone();
 
-        let futures = config.nodes.iter().map(|(name, host)| {
+        let futures = config.hosts.iter().map(|(name, host)| {
             let addr = format!("{}:{}", host.ip, host.port);
             let name = name.clone();
             async move {

@@ -59,10 +59,10 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 updateClientsTable(); // ensure the table reflects new clients
                 break;
             case 'LeaseUpdate':
-                const { host: node, leases } = message.payload;
-                persistedLeaseMap[node] = leases;
+                const { host, leases } = message.payload;
+                persistedLeaseMap[host] = leases;
                 updateClientsTable(); // Add this line
-                console.log(`Updated leases for ${node}:`, persistedLeaseMap[node]);
+                console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
                 break;
         }
         updateNodeAttrs();
@@ -198,14 +198,14 @@ const setupDynamicConfigs = () => {
     const baseUrl = window.location.origin;
 
     // Install commands
-    const nodeInstallCommand = document.getElementById('node-install-command');
+    const hostInstallCommand = document.getElementById('host-install-command');
     const clientInstallCommand = document.getElementById('client-install-command');
 
-    if (!nodeInstallCommand || !clientInstallCommand) {
+    if (!hostInstallCommand || !clientInstallCommand) {
         throw new Error('Missing required install command elements');
     }
 
-    nodeInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/node_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
     clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
 
     // Configuration examples with replaced domain/backend

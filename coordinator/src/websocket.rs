@@ -78,14 +78,14 @@ async fn handle_socket(
 ) {
     tokio::spawn(async move {
         // Send initial combined state
-        let hosts = config.nodes.keys().cloned().collect();
+        let hosts = config.hosts.keys().cloned().collect();
         let clients = config.clients.keys().cloned().collect();
         let leases_map = {
             current_leases
                 .lock()
                 .await
                 .iter()
-                .map(|(node, sources)| (node.clone(), sources.iter().cloned().collect()))
+                .map(|(host, sources)| (host.clone(), sources.iter().cloned().collect()))
                 .collect::<HashMap<_, _>>()
         };
         let initial_msg = WsMessage::Initial {

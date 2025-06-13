@@ -8,7 +8,7 @@ use tokio::sync::{mpsc::unbounded_channel, watch};
 use tracing::{error, info};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Node {
+pub struct Host {
     pub ip: String,
     pub mac: String,
     pub port: u16,
@@ -23,7 +23,7 @@ pub struct Client {
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ControllerConfig {
     pub server: ServerConfig,
-    pub nodes: HashMap<String, Node>,
+    pub hosts: HashMap<String, Host>,
     pub clients: HashMap<String, Client>,
 }
 

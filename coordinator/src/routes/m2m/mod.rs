@@ -65,7 +65,7 @@ async fn test_wol(
     }
 }
 
-/// node_name => set of lease sources holding lease
+/// host_name => set of lease sources holding lease
 pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>;
 
 #[derive(Deserialize)]
@@ -74,7 +74,7 @@ pub struct LeaseActionQuery {
     r#async: Option<bool>,
 }
 
-/// Handles machine-to-machine lease actions (take/release) for a node.
+/// Handles machine-to-machine lease actions (take/release) for a host.
 ///
 /// This endpoint is intended for programmatic (m2m) clients and requires additional
 /// authorization via HMAC-signed headers. The client must provide a valid `X-Client-ID`
@@ -82,20 +82,20 @@ pub struct LeaseActionQuery {
 ///
 /// The `action` path parameter must be either `take` or `release` and is mapped to the `LeaseAction` enum.
 ///
-/// The `async` query parameter determines whether the node state change (wake/shutdown) is performed
-/// synchronously (the request waits for the node to reach the desired state, up to a timeout) or asynchronously
-/// (the request returns immediately after triggering the state change, and the node may still be transitioning).
+/// The `async` query parameter determines whether the host state change (wake/shutdown) is performed
+/// synchronously (the request waits for the host to reach the desired state, up to a timeout) or asynchronously
+/// (the request returns immediately after triggering the state change, and the host may still be transitioning).
 ///
-/// - In synchronous mode (default), the request will block until the node is confirmed online (for take) or offline (for release),
-///   or until a timeout is reached. This provides strong guarantees to the client about the node's state at the time of response.
-/// - In asynchronous mode (`?async=true`), the request returns immediately after triggering the state change, and the node may still
+/// - In synchronous mode (default), the request will block until the host is confirmed online (for take) or offline (for release),
+///   or until a timeout is reached. This provides strong guarantees to the client about the host's state at the time of response.
+/// - In asynchronous mode (`?async=true`), the request returns immediately after triggering the state change, and the host may still
 ///   be transitioning. This is useful for clients that want a fast response and can poll for state changes separately.
 ///
 /// This is distinct from the web interface lease endpoints, which do not require authentication and are used for
 /// user-initiated actions from the web UI. Use this endpoint for secure, automated lease management by trusted clients.
 #[axum::debug_handler]
 async fn handle_m2m_lease_action(
-    Path((node, action)): Path<(String, LeaseAction)>,
+    Path((host, action)): Path<(String, LeaseAction)>,
     headers: axum::http::HeaderMap,
     State(state): State<AppState>,
     Query(q): Query<LeaseActionQuery>,
@@ -153,7 +153,7 @@ async fn handle_m2m_lease_action(
     }
 
     let mut leases = state.leases.lock().await;
-    let lease_set = leases.entry(node.clone()).or_default();
+    let lease_set = leases.entry(host.clone()).or_default();
     let lease_source = LeaseSource::Client(client_id.to_string());
 
     let is_async = q.r#async.unwrap_or(false);
@@ -161,136 +161,136 @@ async fn handle_m2m_lease_action(
     match action {
         LeaseAction::Take => {
             lease_set.insert(lease_source.clone());
-            broadcast_lease_update(&node, lease_set, &state.ws_tx).await;
-            info!("Client '{}' took lease on '{}'", client_id, node);
+            broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
+            info!("Client '{}' took lease on '{}'", client_id, host);
 
             if is_async {
-                // In async mode, the node state change is triggered in the background and the response returns immediately.
-                // The node may still be transitioning to the online state when the client receives the response.
-                let node = node.clone();
+                // In async mode, the host state change is triggered in the background and the response returns immediately.
+                // The host may still be transitioning to the online state when the client receives the response.
+                let host = host.clone();
                 let lease_set = lease_set.clone();
                 let state = state.clone();
                 tokio::spawn(async move {
-                    let _ = handle_node_state(&node, &lease_set, &state).await;
+                    let _ = handle_host_state(&host, &lease_set, &state).await;
                 });
                 Ok("Lease taken (async)".into_response())
             } else {
-                // In sync mode, the request waits for the node to reach the online state (or timeout) before returning.
-                handle_node_state(&node, &lease_set, &state).await?;
-                Ok("Lease taken, node is online".into_response())
+                // In sync mode, the request waits for the host to reach the online state (or timeout) before returning.
+                handle_host_state(&host, &lease_set, &state).await?;
+                Ok("Lease taken, host is online".into_response())
             }
         }
         LeaseAction::Release => {
             lease_set.remove(&lease_source);
-            broadcast_lease_update(&node, lease_set, &state.ws_tx).await;
-            info!("Client '{}' released lease on '{}'", client_id, node);
+            broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
+            info!("Client '{}' released lease on '{}'", client_id, host);
 
             if is_async {
-                // In async mode, the node state change is triggered in the background and the response returns immediately.
-                // The node may still be transitioning to the offline state when the client receives the response.
-                let node = node.clone();
+                // In async mode, the host state change is triggered in the background and the response returns immediately.
+                // The host may still be transitioning to the offline state when the client receives the response.
+                let host = host.clone();
                 let lease_set = lease_set.clone();
                 let state = state.clone();
                 tokio::spawn(async move {
-                    let _ = handle_node_state(&node, &lease_set, &state).await;
+                    let _ = handle_host_state(&host, &lease_set, &state).await;
                 });
                 Ok("Lease released (async)".into_response())
             } else {
-                // In sync mode, the request waits for the node to reach the offline state (or timeout) before returning.
-                handle_node_state(&node, &lease_set, &state).await?;
-                Ok("Lease released, node is offline".into_response())
+                // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
+                handle_host_state(&host, &lease_set, &state).await?;
+                Ok("Lease released, host is offline".into_response())
             }
         }
     }
 }
 
 pub async fn broadcast_lease_update(
-    node: &str,
+    host: &str,
     lease_set: &HashSet<LeaseSource>,
     ws_tx: &broadcast::Sender<WsMessage>,
 ) {
     let lease_sources: Vec<_> = lease_set.iter().cloned().collect();
     let msg = WsMessage::LeaseUpdate {
-        host: node.to_string(),
+        host: host.to_string(),
         leases: lease_sources,
     };
     let _ = ws_tx.send(msg);
 }
 
-pub async fn handle_node_state(
-    node: &str,
+pub async fn handle_host_state(
+    host: &str,
     lease_set: &HashSet<LeaseSource>,
     state: &AppState,
 ) -> Result<(), (StatusCode, &'static str)> {
-    // If there are any leases, the node should be running
+    // If there are any leases, the host should be running
     let should_be_running = !lease_set.is_empty();
 
     debug!(
-        "Checking state for node '{}': should_be_running={}, active_leases={:?}",
-        node, should_be_running, lease_set
+        "Checking state for host '{}': should_be_running={}, active_leases={:?}",
+        host, should_be_running, lease_set
     );
 
     let mut host_is_on = {
         let hoststatus_rx = state.hoststatus_rx.borrow();
-        hoststatus_rx.get(node).copied().unwrap_or(false)
+        hoststatus_rx.get(host).copied().unwrap_or(false)
     };
 
-    debug!("Current state for node '{}': is_on={}", node, host_is_on);
+    debug!("Current state for host '{}': is_on={}", host, host_is_on);
 
     if should_be_running && !host_is_on {
         info!(
-            "Node '{}' needs to wake up - has {} active lease(s): {:?}",
-            node,
+            "Host '{}' needs to wake up - has {} active lease(s): {:?}",
+            host,
             lease_set.len(),
             lease_set
         );
-        wake_node(node, state)?;
+        wake_host(host, state)?;
 
-        // Wait until node is reported as online, with timeout
+        // Wait until host is reported as online, with timeout
         let mut waited = 0;
         let max_wait = 60; // seconds
         let poll_interval = 1; // second
         loop {
             host_is_on = {
                 let hoststatus = state.hoststatus_rx.borrow();
-                hoststatus.get(node).copied().unwrap_or(false)
+                hoststatus.get(host).copied().unwrap_or(false)
             };
             if host_is_on {
-                info!("Node '{}' is now online", node);
+                info!("Host '{}' is now online", host);
                 break;
             }
             if waited >= max_wait {
-                warn!("Timeout waiting for node '{}' to become online", node);
+                warn!("Timeout waiting for host '{}' to become online", host);
                 return Err((
                     StatusCode::GATEWAY_TIMEOUT,
-                    "Timeout waiting for node to become online",
+                    "Timeout waiting for host to become online",
                 ));
             }
             sleep(Duration::from_secs(poll_interval)).await;
             waited += poll_interval;
         }
     } else if !should_be_running && host_is_on {
-        info!("Node '{}' should shut down - no active leases", node);
-        shutdown_node(node, state).await?;
+        info!("Host '{}' should shut down - no active leases", host);
+        shutdown_host(host, state).await?;
 
-        // Wait until node is reported as offline, with timeout
+        // Wait until host is reported as offline, with timeout
         let mut waited = 0;
         let max_wait = 60; // seconds
         let poll_interval = 1; // second
         loop {
             host_is_on = {
                 let is_on_rx = state.hoststatus_rx.borrow();
-                is_on_rx.get(node).copied().unwrap_or(false)
+                is_on_rx.get(host).copied().unwrap_or(false)
             };
             if !host_is_on {
-                info!("Node '{}' is now offline", node);
+                info!("Host '{}' is now offline", host);
                 break;
             }
             if waited >= max_wait {
-                warn!("Timeout waiting for node '{}' to become offline", node);
+                warn!("Timeout waiting for host '{}' to become offline", host);
                 return Err((
                     StatusCode::GATEWAY_TIMEOUT,
-                    "Timeout waiting for node to become offline",
+                    "Timeout waiting for host to become offline",
                 ));
             }
             sleep(Duration::from_secs(poll_interval)).await;
@@ -298,86 +298,86 @@ pub async fn handle_node_state(
         }
     } else {
         debug!(
-            "No action needed for node '{}' (is_on={}, should_be_running={})",
-            node, host_is_on, should_be_running
+            "No action needed for host '{}' (is_on={}, should_be_running={})",
+            host, host_is_on, should_be_running
         );
     }
 
     Ok(())
 }
 
-fn wake_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
-    debug!("Attempting to wake node '{}'", node);
+fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
+    debug!("Attempting to wake host '{}'", host_name);
 
-    let host = {
+    let host_config = {
         let config = state.config_rx.borrow();
-        match config.nodes.get(node) {
+        match config.hosts.get(host_name) {
             Some(host) => {
                 debug!(
-                    "Found configuration for node '{}': ip={}, mac={}",
-                    node, host.ip, host.mac
+                    "Found configuration for host '{}': ip={}, mac={}",
+                    host_name, host.ip, host.mac
                 );
                 host.clone()
             }
             None => {
-                error!("No configuration found for node '{}'", node);
+                error!("No configuration found for host '{}'", host_name);
                 return Err((StatusCode::NOT_FOUND, "Unknown host"));
             }
         }
     };
 
-    info!("Sending WoL packet to '{}' (MAC: {})", node, host.mac);
-    send_magic_packet(&host.mac, "255.255.255.255").map_err(|e| {
-        error!("Failed to send WoL packet to '{}': {}", node, e);
+    info!("Sending WoL packet to '{}' (MAC: {})", host_name, host_config.mac);
+    send_magic_packet(&host_config.mac, "255.255.255.255").map_err(|e| {
+        error!("Failed to send WoL packet to '{}': {}", host_name, e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to send wake packet",
         )
     })?;
 
-    info!("Successfully sent WoL packet to '{}'", node);
+    info!("Successfully sent WoL packet to '{}'", host_name);
     Ok(())
 }
 
-async fn shutdown_node(node: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
-    debug!("Attempting to shutdown node '{}'", node);
+async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
+    debug!("Attempting to shutdown host '{}'", host);
 
-    let node_config = {
+    let host_config = {
         let config = state.config_rx.borrow();
-        match config.nodes.get(node) {
+        match config.hosts.get(host) {
             Some(config) => {
                 debug!(
-                    "Found configuration for node '{}': ip={}, port={}",
-                    node, config.ip, config.port
+                    "Found configuration for host '{}': ip={}, port={}",
+                    host, config.ip, config.port
                 );
                 config.clone()
             }
             None => {
-                error!("No configuration found for node '{}'", node);
+                error!("No configuration found for host '{}'", host);
                 return Err((StatusCode::NOT_FOUND, "Unknown host"));
             }
         }
     };
 
     let message = create_hmac_message("shutdown");
-    let signature = sign_hmac(&message, &node_config.shared_secret);
+    let signature = sign_hmac(&message, &host_config.shared_secret);
     let full_message = format!("{}|{}", message, signature);
 
     info!(
         "Sending shutdown command to '{}' ({}:{})",
-        node, node_config.ip, node_config.port
+        host, host_config.ip, host_config.port
     );
-    send_shutdown(&node_config.ip, node_config.port, &full_message)
+    send_shutdown(&host_config.ip, host_config.port, &full_message)
         .await
         .map_err(|e| {
-            error!("Failed to send shutdown command to '{}': {}", node, e);
+            error!("Failed to send shutdown command to '{}': {}", host, e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to send shutdown command",
             )
         })?;
 
-    info!("Successfully sent shutdown command to '{}'", node);
+    info!("Successfully sent shutdown command to '{}'", host);
     Ok(())
 }
 

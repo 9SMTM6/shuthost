@@ -1,14 +1,14 @@
 #!/bin/sh
 
-# Usage: ./shuthost_client_<client_id>.sh <take|release> <node> [remote_url]
+# Usage: ./shuthost_client_<client_id>.sh <take|release> <host> [remote_url]
 # Requires: curl, openssl, date
 
 set -eu
 
 ACTION="$1"
-NODE="$2"
+TARGET_HOST="$2"
 REMOTE_URL="${3:-"{embedded_remote_url}"}"
-COORDINATOR_URL="${REMOTE_URL}/api/m2m/lease/${NODE}/${ACTION}"
+COORDINATOR_URL="${REMOTE_URL}/api/m2m/lease/${TARGET_HOST}/${ACTION}"
 
 CLIENT_ID="{client_id}"
 SECRET="{shared_secret}"

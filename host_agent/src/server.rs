@@ -18,7 +18,7 @@ pub struct ServiceArgs {
     pub shared_secret: String,
 }
 
-pub fn start_node_agent(config: ServiceArgs) {
+pub fn start_host_agent(config: ServiceArgs) {
     let addr = format!("0.0.0.0:{}", config.port);
     let listener = TcpListener::bind(&addr).expect("Failed to bind port");
     println!("Listening on {}", addr);

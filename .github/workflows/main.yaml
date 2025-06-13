@@ -10,8 +10,8 @@ on:
     branches: [main]
 
 jobs:
-  build-node_agents:
-    name: Build node_agent for ${{ matrix.target }}
+  build-host_agents:
+    name: Build host_agent for ${{ matrix.target }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -46,23 +46,23 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Build node_agent
+      - name: Build host_agent
         run: |
           cargo fetch
           if [[ "${{ matrix.linker }}" != "" ]]; then
             export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
           fi
-          cargo build --release --bin shuthost_node_agent --target ${{ matrix.target }}
+          cargo build --release --bin shuthost_host_agent --target ${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: node_agent-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_node_agent
+          name: host_agent-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/shuthost_host_agent
 
   build-coordinators:
     name: Build Controller for ${{ matrix.target }}
-    needs: build-node_agents
+    needs: build-host_agents
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -97,7 +97,7 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Download all node_agent binaries
+      - name: Download all host_agent binaries
         uses: actions/download-artifact@v4
         with:
           path: ./target
@@ -105,9 +105,9 @@ jobs:
       - name: Rehydrate target directory structure
         run: |
           mkdir -p target
-          find ./target -name shuthost_node_agent -exec bash -c '
+          find ./target -name shuthost_host_agent -exec bash -c '
             for path; do
-              dir=$(dirname "${path#./target/node_agent-}")
+              dir=$(dirname "${path#./target/host_agent-}")
               mkdir -p "target/$dir/release"
               cp "$path" "target/$dir/release/"
             done
@@ -129,7 +129,7 @@ jobs:
   test-installation:
     name: Test Service Installation & Startup
     runs-on: ${{ matrix.runner }}
-    needs: [build-node_agents, build-coordinators]
+    needs: [build-host_agents, build-coordinators]
     strategy:
       fail-fast: false
       matrix:
@@ -198,7 +198,7 @@ jobs:
           # Run agent installer (downloads from running coordinator)
           docker exec testinit sh -c "
             export RUST_BACKTRACE=1;
-            curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
+            curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
           "
 
           # Wait for agent to be ready
@@ -206,13 +206,13 @@ jobs:
 
           # Check on agent service according to init system
           if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker exec testinit systemctl status shuthost_node_agent
+            docker exec testinit systemctl status shuthost_host_agent
           elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit rc-service shuthost_node_agent status
+            docker exec testinit rc-service shuthost_host_agent status
           fi
 
           # Check logs or process running
-          docker exec testinit ps aux | grep shuthost_node_agent
+          docker exec testinit ps aux | grep shuthost_host_agent
 
           # Clean up
           docker stop testinit
@@ -223,9 +223,9 @@ jobs:
           set -x
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
           sleep 2
-          curl -fsSL http://localhost:8080/download/node_agent_installer.sh | sh -s http://localhost:8080
+          curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
           sleep 2
-          launchctl print system/com.github_9smtm6.shuthost_node_agent
+          launchctl print system/com.github_9smtm6.shuthost_host_agent
 
   container-build:
     name: Build & Push Alpine Containers

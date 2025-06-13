@@ -1,12 +1,11 @@
 use axum::{
-    Json, Router,
+    Router,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::time::Duration;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -17,7 +16,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     http::AppState,
-    routes::m2m::{broadcast_lease_update, handle_node_state},
+    routes::m2m::{broadcast_lease_update, handle_host_state},
 };
 
 use super::m2m::m2m_routes;
@@ -26,28 +25,9 @@ pub use super::m2m::{LeaseMap, LeaseSource};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
-        .route("/nodes", get(list_nodes))
         .nest("/m2m", m2m_routes())
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route("/status/{hostname}", get(status_host))
-}
-
-async fn list_nodes(State(AppState { config_rx, .. }): State<AppState>) -> impl IntoResponse {
-    let config = config_rx.borrow();
-    let hosts: Vec<_> = config
-        .nodes
-        .iter()
-        .map(|(name, node)| {
-            json!({
-                "name": name,
-                "ip": node.ip,
-                "mac": node.mac,
-                "port": node.port,
-            })
-        })
-        .collect();
-
-    Json(hosts)
 }
 
 async fn status_host(
@@ -79,9 +59,9 @@ pub enum LeaseAction {
     Release,
 }
 
-/// Handles taking or releasing a lease on a node via the web interface.
+/// Handles taking or releasing a lease on a host via the web interface.
 ///
-/// This function is used by the web UI to take or release a lease on a node. It does not require
+/// This function is used by the web UI to take or release a lease on a host. It does not require
 /// any client authentication or HMAC signature, unlike the m2m `handle_lease` endpoint.
 /// The lease is attributed to the web interface and is visible to all clients.
 ///
@@ -111,9 +91,9 @@ async fn handle_web_lease_action(
     let lease_set = lease_set.clone();
     let state = state.clone();
 
-    // Handle node state after lease change
+    // Handle host state after lease change
     tokio::spawn(async move {
-        let _ = handle_node_state(&hostname, &lease_set, &state).await;
+        let _ = handle_host_state(&hostname, &lease_set, &state).await;
     });
 
     match action {

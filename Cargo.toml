@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["node_agent", "coordinator", "common"]
+members = ["host_agent", "coordinator", "common"]
 
 [workspace.package]
 version = "0.13.2-beta"

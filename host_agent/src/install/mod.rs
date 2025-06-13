@@ -12,11 +12,11 @@ pub const DEFAULT_PORT: u16 = 5757;
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 #[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_node_agent.service.ini");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_host_agent.service.ini");
 #[cfg(target_os = "macos")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_node_agent.plist.xml");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_host_agent.plist.xml");
 #[cfg(target_os = "linux")]
-const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_node_agent.sh");
+const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
 
 /// Struct for the install subcommand, with defaults added
 #[derive(Debug, Parser)]
@@ -59,7 +59,7 @@ impl std::string::ToString for InitSystem {
     }
 }
 
-pub fn install_node_agent(arguments: InstallArgs) -> Result<(), String> {
+pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
         arg.replace("{description}", env!("CARGO_PKG_DESCRIPTION"))

@@ -5,7 +5,7 @@ mod server;
 use clap::{Parser, Subcommand};
 use install::DEFAULT_PORT;
 use install::InstallArgs;
-use install::install_node_agent;
+use install::install_host_agent;
 use server::ServiceArgs;
 use std::env;
 
@@ -24,7 +24,7 @@ pub enum Command {
     /// Start the service
     Service(ServiceArgs),
 
-    /// Install the node_agent
+    /// Install the host_agent
     Install(InstallArgs),
 
     /// Test WoL packet reachability
@@ -38,12 +38,12 @@ fn main() {
     let invocation = Cli::parse();
 
     match invocation.command {
-        Command::Install(args) => match install_node_agent(args) {
+        Command::Install(args) => match install_host_agent(args) {
             Ok(_) => println!("Agent installed successfully!"),
-            Err(e) => eprintln!("Error installing node_agent: {}", e),
+            Err(e) => eprintln!("Error installing host_agent: {}", e),
         },
         Command::Service(args) => {
-            server::start_node_agent(args);
+            server::start_host_agent(args);
         }
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
