@@ -37,17 +37,9 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
     * server secret?
     * also page is supposed to be behind reverse proxy, which would have to be dealt with on top...
 
-
 <!-- TODO:
     // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count() - needs proper updates when the socket was closed, fails ATM)
-    // Then add rework wording/UI of GUI leases to be understandable without understanding leases (if someone doesnt need them).
     // Then add a bunch of documentation to explain:
     coordinator: * binary exposes server on localhost only, reach it from docker (bind localhost (NOT `0.0.0.0`) and in docker `http://host.containers.internal:<port>`)
-    // - shuthost architecture
-    // - how leases work
-    // - authentification requirements (exclusions/oidc if I set it up)
-
-    // fix issue with blocking UI
-    // consider adding oidc with the correct endpoints exposed
-    // consider using a sqlite database for persistence after all
+    // fix issue with some blocking tasks
     // -->
