@@ -23,7 +23,6 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 ## Planned Features
 
 * add architecture documentation to WebUI
-* if there are no clients configured, show simplified UI: No Leases column, instead of release/take lease, show startup/shutdown buttons
 
 ## Potential Features
 
