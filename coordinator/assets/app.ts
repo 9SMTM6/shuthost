@@ -80,8 +80,9 @@ const getHostStatus = (hostname: string) => {
 
 // Helper function to get formatted leases for a host
 const getFormattedLeases = (hostname: string): string => {
-    console.log(`Formatting leases for ${hostname}:`, persistedLeaseMap[hostname]);
-    return persistedLeaseMap[hostname]?.map(formatLeaseSource).join(', ') || 'None';
+    // Only show client leases, not WebInterface
+    const clientLeases = (persistedLeaseMap[hostname] || []).filter(lease => lease.type === 'Client');
+    return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
 };
 
 // Helper function to update a single row's attributes
@@ -243,9 +244,11 @@ document.addEventListener('DOMContentLoaded', initialize);
 const formatLeaseSource = (lease: LeaseSource): string => {
     switch (lease.type) {
         case 'WebInterface':
-            return 'web-interface';
+            // Warn if this is called for hosts table or clients table, as it should be filtered out before
+            console.warn('formatLeaseSource called with WebInterface lease. This should be filtered out before display.');
+            return '';
         case 'Client':
-            return `client-${lease.value}`;
+            return lease.value;
     }
 };
 
@@ -253,7 +256,7 @@ const createClientRow = (clientId: string, leases: string[]) => {
     const hasLeases = leases.length > 0;
     return `
     <tr data-client-id="${clientId}" class="table-row">
-        <td class="table-cell">client-${clientId}</td>
+        <td class="table-cell">${clientId}</td>
         <td class="table-cell">${leases.join(', ') || 'None'}</td>
         <td class="table-cell">
             <div class="actions-cell">
@@ -291,9 +294,20 @@ const updateClientsTable = () => {
         }
     });
 
+    // Sort: active clients (with leases) first, then inactive (no leases), both alphabetically
+    const sortedClients = Array.from(clientMap.entries())
+        .sort((a, b) => {
+            const aActive = a[1].length > 0;
+            const bActive = b[1].length > 0;
+            if (aActive && !bActive) return -1;
+            if (!aActive && bActive) return 1;
+            // Both active or both inactive: sort alphabetically by clientId
+            return a[0].localeCompare(b[0]);
+        });
+
     const clientTableBody = document.getElementById('client-table-body');
     if (clientTableBody) {
-        clientTableBody.innerHTML = Array.from(clientMap.entries())
+        clientTableBody.innerHTML = sortedClients
             .map(([clientId, leases]) => createClientRow(clientId, leases))
             .join('');
     }
