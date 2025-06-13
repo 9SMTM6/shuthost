@@ -224,12 +224,14 @@ const setupDynamicConfigs = () => {
   policy: bypass
   resources:
     - '^/download/(.*)'
-    - '^/api/m2m/(.*)$'`;
+    - '^/api/m2m/(.*)$'
+    - '^/manifest.json$'
+    - '^/favicon.ico$'`;
     }
 
     if (traefikConfig) {
         traefikConfig.textContent = `# Add to your service labels
-- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && PathPrefix(\`/download\`, \`/api/m2m\`)"
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.ico\`))"
 - "traefik.http.routers.shuthost-bypass.priority=100"
 # Remove auth middleware for bypass routes`;
     }
