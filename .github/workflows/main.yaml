@@ -335,6 +335,8 @@ jobs:
           body: |
             📦 **Container Image** available at:
 
-            [`ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}`](ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }})`
+            ```
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+            ```
 
             Also available as `:latest` if this is a tagged release.
