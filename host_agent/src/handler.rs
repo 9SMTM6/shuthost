@@ -1,23 +1,31 @@
 use crate::server::ServiceArgs;
 use shuthost_common::{is_timestamp_in_valid_range, parse_hmac_message, verify_hmac};
 
-pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs) -> (String, bool) {
+pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
-        Err(_) => return ("ERROR: Invalid UTF-8".to_string(), false),
+        Err(_) => {
+            eprintln!("Invalid UTF-8 in request from {}: {:?}", peer_addr, data);
+            return ("ERROR: Invalid UTF-8".to_string(), false);
+        }
     };
 
     let (timestamp, command, signature) = match parse_hmac_message(data_str) {
         Some(parts) => parts,
-        None => return ("ERROR: Invalid request format".to_string(), false),
+        None => {
+            eprintln!("Invalid request format from {}: {}", peer_addr, data_str);
+            return ("ERROR: Invalid request format".to_string(), false);
+        }
     };
 
     if !is_timestamp_in_valid_range(timestamp) {
+        eprintln!("Timestamp out of range from {}: {}", peer_addr, timestamp);
         return ("ERROR: Timestamp out of range".to_string(), false);
     }
 
     let message = format!("{}|{}", timestamp, command);
     if !verify_hmac(&message, &signature, &config.shared_secret) {
+        eprintln!("Invalid HMAC signature from {} for message: '{}', signature: '{}'", peer_addr, message, signature);
         return ("ERROR: Invalid HMAC signature".to_string(), false);
     }
 

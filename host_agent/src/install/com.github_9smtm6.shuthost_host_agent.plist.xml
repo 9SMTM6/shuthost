@@ -15,8 +15,13 @@
       <string>service</string>
       <string>--port={port}</string>
       <string>--shutdown-command="{shutdown_command}"</string>
-      <string>--shared-secret={secret}</string>
     </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>SHUTHOST_SHARED_SECRET</key>
+      <string>{secret}</string>
+    </dict>
 
     <key>RunAtLoad</key>
     <true/>
