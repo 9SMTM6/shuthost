@@ -4,7 +4,9 @@ use std::{
     fmt::{self, Display},
     sync::Arc,
 };
-use tokio::time::sleep;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
+use tokio::time::{sleep, timeout};
 
 use axum::{
     Json,
@@ -22,7 +24,7 @@ use tracing::{debug, error, info, warn};
 use crate::websocket::WsMessage;
 use crate::{http::AppState, wol::send_magic_packet};
 
-use super::api::{LeaseAction, send_shutdown};
+use super::api::LeaseAction;
 
 const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.tmpl.sh");
 
@@ -340,6 +342,50 @@ fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'sta
 
     info!("Successfully sent WoL packet to '{}'", host_name);
     Ok(())
+}
+
+pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
+    let addr = format!("{}:{}", ip, port);
+    debug!("Connecting to {}", addr);
+
+    const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
+    let mut stream = match timeout(REQUEST_TIMEOUT, TcpStream::connect(addr)).await {
+        Ok(Ok(s)) => s,
+        Ok(Err(e)) => {
+            error!("TCP connect error: {}", e);
+            return Err(e.to_string());
+        }
+        Err(e) => {
+            error!("Connection timed out: {}", e);
+            return Err("Connection timed out".to_string());
+        }
+    };
+
+    if let Err(e) = timeout(REQUEST_TIMEOUT, stream.writable()).await {
+        error!("Stream not writable: {}", e);
+        return Err("Stream not writable".to_string());
+    }
+
+    debug!("Sending shutdown message...");
+    if let Err(e) = timeout(REQUEST_TIMEOUT, stream.write_all(message.as_bytes())).await {
+        error!("Write failed: {}", e);
+        return Err("Write failed".to_string());
+    }
+
+    let mut buf = vec![0; 1024];
+    let n = match timeout(REQUEST_TIMEOUT, stream.read(&mut buf)).await {
+        Ok(Ok(n)) => n,
+        Ok(Err(e)) => {
+            error!("Read failed: {}", e);
+            return Err("Read failed".to_string());
+        }
+        Err(e) => {
+            error!("Read timed out: {}", e);
+            return Err("Read timed out".to_string());
+        }
+    };
+
+    Ok(String::from_utf8_lossy(&buf[..n]).to_string())
 }
 
 async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {

@@ -6,13 +6,7 @@ use axum::{
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
-    time::timeout,
-};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 use crate::{
     http::AppState,
@@ -100,48 +94,4 @@ async fn handle_web_lease_action(
         LeaseAction::Take => "Lease taken (async)".into_response(),
         LeaseAction::Release => "Lease released (async)".into_response(),
     }
-}
-
-pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
-    let addr = format!("{}:{}", ip, port);
-    debug!("Connecting to {}", addr);
-
-    const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
-    let mut stream = match timeout(REQUEST_TIMEOUT, TcpStream::connect(addr)).await {
-        Ok(Ok(s)) => s,
-        Ok(Err(e)) => {
-            error!("TCP connect error: {}", e);
-            return Err(e.to_string());
-        }
-        Err(e) => {
-            error!("Connection timed out: {}", e);
-            return Err("Connection timed out".to_string());
-        }
-    };
-
-    if let Err(e) = timeout(REQUEST_TIMEOUT, stream.writable()).await {
-        error!("Stream not writable: {}", e);
-        return Err("Stream not writable".to_string());
-    }
-
-    debug!("Sending shutdown message...");
-    if let Err(e) = timeout(REQUEST_TIMEOUT, stream.write_all(message.as_bytes())).await {
-        error!("Write failed: {}", e);
-        return Err("Write failed".to_string());
-    }
-
-    let mut buf = vec![0; 1024];
-    let n = match timeout(REQUEST_TIMEOUT, stream.read(&mut buf)).await {
-        Ok(Ok(n)) => n,
-        Ok(Err(e)) => {
-            error!("Read failed: {}", e);
-            return Err("Read failed".to_string());
-        }
-        Err(e) => {
-            error!("Read timed out: {}", e);
-            return Err("Read timed out".to_string());
-        }
-    };
-
-    Ok(String::from_utf8_lossy(&buf[..n]).to_string())
 }
