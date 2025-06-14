@@ -4,24 +4,58 @@ set -e
 
 # TODO: consider a way to embed the install options. Main issue outside of it being annoying: Different defaults between OSs (mostly shutdown argument)
 if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [shuthost_host_agent install options...]"
+  echo "Usage: $0 <remote_url> [--arch <arch>] [--os <os>] [shuthost_host_agent install options...]"
+  echo "  --arch <arch>   Override detected architecture (e.g. x86_64, aarch64)"
+  echo "  --os <os>       Override detected OS/platform (e.g. linux, linux-musl, macos)"
   exit 1
 fi
 
 REMOTE_URL="$1"
 shift
-# Extract port from installation arguments arguments while preserving them
+
 DEFAULT_PORT="5757"
-for arg in "$@"; do
-    if [ "${arg#--port=}" != "$arg" ]; then
-        DEFAULT_PORT="${arg#--port=}"
-    elif [ "$prev_arg" = "--port" ]; then
-        DEFAULT_PORT="$arg"
-    fi
-    prev_arg="$arg"
+USER_ARCH=""
+USER_OS=""
+INSTALLER_ARGS=()
+prev_arg=""
+
+# Parse arguments for --arch and --os, and extract port
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --arch=*)
+            USER_ARCH="${1#--arch=}"
+            ;;
+        --arch)
+            shift
+            USER_ARCH="$1"
+            ;;
+        --os=*)
+            USER_OS="${1#--os=}"
+            ;;
+        --os)
+            shift
+            USER_OS="$1"
+            ;;
+        --port=*)
+            DEFAULT_PORT="${1#--port=}"
+            INSTALLER_ARGS+=("$1")
+            ;;
+        --port)
+            shift
+            DEFAULT_PORT="$1"
+            INSTALLER_ARGS+=("--port" "$1")
+            ;;
+        *)
+            INSTALLER_ARGS+=("$1")
+            ;;
+    esac
+    shift
 done
 
-# Detect architecture
+# Detect architecture (allow override)
+if [ -n "$USER_ARCH" ]; then
+    ARCH="$USER_ARCH"
+else
 ARCH="$(uname -m)"
 case "$ARCH" in
     x86_64) ARCH="x86_64" ;;
@@ -31,15 +65,19 @@ case "$ARCH" in
         exit 1
         ;;
 esac
+fi
 
-# Detect OS and MUSL
+# Detect OS and MUSL (allow override)
+if [ -n "$USER_OS" ]; then
+    PLATFORM="$USER_OS"
+else
 OS="$(uname -s)"
 case "$OS" in
     Linux)
         if getconf GNU_LIBC_VERSION >/dev/null 2>&1; then
             PLATFORM="linux"
         else
-            PLATFORM="linux-musl"  # If not glibc, assume musl on Linux
+                PLATFORM="linux-musl"
         fi
         ;;
     Darwin)
@@ -50,6 +88,7 @@ case "$OS" in
         exit 1
         ;;
 esac
+fi
 
 OUTFILE="shuthost_host_agent"
 
@@ -98,9 +137,9 @@ elevate_privileges() {
 
 echo "Running installer..."
 if [ "$(id -u)" -eq 0 ]; then
-    ./"$OUTFILE" install "$@"
+    ./"$OUTFILE" install "${INSTALLER_ARGS[@]}"
 else
-    elevate_privileges ./"$OUTFILE" install "$@"
+    elevate_privileges ./"$OUTFILE" install "${INSTALLER_ARGS[@]}"
 fi
 
 echo "Cleaning up..."
