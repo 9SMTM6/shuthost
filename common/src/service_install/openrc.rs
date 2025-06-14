@@ -28,7 +28,8 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {:?}", target_bin);
     // Set binary permissions to 0755 (root can write, others can read/execute)
-    fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
+    fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
+        .map_err(|e| e.to_string())?;
 
     let init_script_content =
         init_script_content.replace("{binary}", &target_bin.to_string_lossy());

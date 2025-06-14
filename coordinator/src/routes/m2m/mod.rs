@@ -326,7 +326,10 @@ fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'sta
         }
     };
 
-    info!("Sending WoL packet to '{}' (MAC: {})", host_name, host_config.mac);
+    info!(
+        "Sending WoL packet to '{}' (MAC: {})",
+        host_name, host_config.mac
+    );
     send_magic_packet(&host_config.mac, "255.255.255.255").map_err(|e| {
         error!("Failed to send WoL packet to '{}': {}", host_name, e);
         (

@@ -1,7 +1,11 @@
 use crate::server::ServiceArgs;
 use shuthost_common::{is_timestamp_in_valid_range, parse_hmac_message, verify_hmac};
 
-pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (String, bool) {
+pub fn handle_request_without_shutdown(
+    data: &[u8],
+    config: &ServiceArgs,
+    peer_addr: &str,
+) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {
@@ -25,7 +29,10 @@ pub fn handle_request_without_shutdown(data: &[u8], config: &ServiceArgs, peer_a
 
     let message = format!("{}|{}", timestamp, command);
     if !verify_hmac(&message, &signature, &config.shared_secret) {
-        eprintln!("Invalid HMAC signature from {} for message: '{}', signature: '{}'", peer_addr, message, signature);
+        eprintln!(
+            "Invalid HMAC signature from {} for message: '{}', signature: '{}'",
+            peer_addr, message, signature
+        );
         return ("ERROR: Invalid HMAC signature".to_string(), false);
     }
 

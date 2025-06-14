@@ -2,8 +2,8 @@ use std::{
     env,
     fs::{self, File},
     io::Write,
-    path::PathBuf,
     os::unix::fs::PermissionsExt,
+    path::PathBuf,
     process::{Command, Stdio},
 };
 
@@ -28,7 +28,8 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
     // Set binary permissions to 0755 (root can write, others can read/execute)
-    fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
+    fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
+        .map_err(|e| e.to_string())?;
 
     let service_file_path = format!("/etc/systemd/system/{service_name}");
     let service_file_content =
@@ -42,7 +43,9 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         .map_err(|e| e.to_string())
         .unwrap();
     // Set service file permissions to 0640 (root:root)
-    fs::set_permissions(&service_file_path, fs::Permissions::from_mode(0o640)).map_err(|e| e.to_string()).unwrap();
+    fs::set_permissions(&service_file_path, fs::Permissions::from_mode(0o640))
+        .map_err(|e| e.to_string())
+        .unwrap();
     println!("Created systemd service file at {service_file_path}");
 
     drop(service_file);
