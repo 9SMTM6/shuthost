@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::Write,
     path::PathBuf,
+    os::unix::fs::PermissionsExt,
     process::{Command, Stdio},
 };
 
