@@ -130,11 +130,34 @@ async fn poll_host_statuses(
         let futures = config.hosts.iter().map(|(name, host)| {
             let addr = format!("{}:{}", host.ip, host.port);
             let name = name.clone();
+            let shared_secret = host.shared_secret.clone();
             async move {
-                let is_online = matches!(
-                    timeout(Duration::from_millis(200), TcpStream::connect(&addr)).await,
-                    Ok(Ok(_))
-                );
+                let is_online = match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
+                    Ok(Ok(mut stream)) => {
+                        use shuthost_common::{create_hmac_message, sign_hmac};
+                        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+                        // Compose status check message
+                        let message = create_hmac_message("status");
+                        let signature = sign_hmac(&message, &shared_secret);
+                        let full_message = format!("{}|{}\n", message, signature);
+                        // Send message
+                        if let Err(e) = stream.write_all(full_message.as_bytes()).await {
+                            debug!("Failed to write to {}: {}", name, e);
+                            return (name, false);
+                        }
+                        // Read response (optional, but let's check for a valid reply)
+                        let mut buf = vec![0u8; 256];
+                        match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
+                            Ok(Ok(n)) if n > 0 => {
+                                let resp = String::from_utf8_lossy(&buf[..n]);
+                                // Accept any non-error response as online
+                                !resp.contains("ERROR")
+                            }
+                            _ => false,
+                        }
+                    }
+                    _ => false,
+                };
                 debug!("Polled {} at {} - online: {}", name, addr, is_online);
                 (name, is_online)
             }

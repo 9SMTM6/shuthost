@@ -36,6 +36,17 @@ pub fn handle_request_without_shutdown(
         return ("ERROR: Invalid HMAC signature".to_string(), false);
     }
 
+    // Special handling for status check command
+    if command == "status" {
+        return ("OK: status".to_string(), false);
+    }
+
+    // Only allow the expected shutdown command
+    if command != "shutdown" {
+        eprintln!("Invalid command from {}: {}", peer_addr, command);
+        return ("ERROR: Invalid command".to_string(), false);
+    }
+
     (
         format!(
             "Now executing command: {}. Hopefully goodbye.",
