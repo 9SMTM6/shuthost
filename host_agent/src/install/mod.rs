@@ -94,7 +94,7 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                r#""$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" --shared-secret="$SECRET""#,
+                &"SHUTHOST_SHARED_SECRET=$SECRET \"$OUT\" service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
                 &target_script_path,
             )?;
             println!(

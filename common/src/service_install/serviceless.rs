@@ -34,7 +34,7 @@ OUT=$(mktemp /tmp/selfbin.XXXXXX)
 TAIL_LINE=$(awk '/^__BINARY_PAYLOAD_BELOW__/ {{ print NR + 1; exit 0; }}' "$0")
 tail -n +$TAIL_LINE "$0" > "$OUT"
 chmod +x "$OUT"
-exec {exec_args} "$@"
+{exec_args} "$@"
 exit 1
 
 __BINARY_PAYLOAD_BELOW__
@@ -46,7 +46,7 @@ __BINARY_PAYLOAD_BELOW__
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
     script.write_all(&self_binary).map_err(|e| e.to_string())?;
-    fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o755))
+    fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750))
         .map_err(|e| e.to_string())?;
 
     println!("Generated self-extracting script: {}", target_script_path);
