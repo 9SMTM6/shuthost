@@ -1,3 +1,5 @@
+use axum::http::Request;
+use axum::routing;
 use axum::{Router, response::Redirect, routing::get};
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
@@ -104,12 +106,21 @@ pub async fn start_http_server(
     };
     
     let app = Router::new()
-        .fallback(get(|| async { Redirect::permanent("/") }))
         .nest("/api", api_routes())
         .nest("/download", get_download_router())
         .merge(asset_routes())
         .route("/ws", get(ws_handler))
-        .with_state(app_state);
+        .with_state(app_state)
+        .fallback(
+            routing::any(|req: Request<axum::body::Body>| async move {
+                tracing::warn!(
+                    method = %req.method(),
+                    uri = %req.uri(),
+                    "Unhandled request"
+                );
+                Redirect::permanent("/")
+            })
+        );
 
     let addr = SocketAddr::from((listen_ip, listen_port));
     info!("Listening on http://{}", addr);
