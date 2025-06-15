@@ -1,9 +1,6 @@
 # ShutHost [WIP]
 
-A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI.
-Since WOL doesn't define a way to shut down (maybe simply for security reasons), and unix doensn't either, this adds host_agents as services to these hosts, that can issue shutdown commands (signed with HMAC and protected against replay attacks with timestamps) and provide status.
-
-The GUI doesn't provide authorization, you'll have to do that yourself (e.g. NGINX Proxy Manager).
+A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
 Note that LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
@@ -17,6 +14,18 @@ For the requirements for the agent, see [Requirements to install the agent](coor
 
 The coordinator must be run on a host that can reach the hosts you want to manage.
 This requires either running the coordinator as a binary on the host, or running it in a docker container with the host network mode enabled - this does not work with the default network mode that docker uses on Windows and MacOS. It will also not work on WSL. On these Hosts, you will have to run the coordinator as a binary, or install a Linux VM with bridged networking.
+
+Windows is currently not supported, even with the binary.
+
+## Security
+
+The WebUI is not secured, so you should run it behind a reverse proxy that provides TLS and authentication.
+
+The host agents are secured with HMAC signatures and timestamps against replay attacks, so they can only be used by the coordinator that knows these secrets.
+
+The client is secured in the same way, so the coordinator only accepts requests from registered clients.
+
+To use the convenience scripts suggested by the WebUI, you will have to configure exceptions in the authorization of your reverse proxy, so that the requests from the host agents and clients are not blocked. The WebUI will show you the required exceptions, alongside convenience configs for Authelia, NGINX Proxy Manager and generic forward-auth in traefik.
 
 ## Known issues
 
