@@ -1,1 +1,0 @@
-coordinator/assets/client_install_requirements_gotchas.html

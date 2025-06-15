@@ -7,9 +7,8 @@ The GUI doesn't provide authorization, you'll have to do that yourself (e.g. NGI
 
 Note that LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
-[Architecture Documentation](README_architecture.md)
-[Gotchas 1](README_agent_install.md)
-[Gotchas 2](README_client_install.md)
+[Architecture Documentation](coordinator/assets/architecture.md)
+[Requirements to install the agent](coordinator/assets/agent_install_requirements_gotchas.md)
 
 ## Known issues
 

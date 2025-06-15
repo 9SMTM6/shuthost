@@ -1,3 +1,5 @@
+<!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
 <div id="architecture-tab" class="tab-content">
     <div class="section-container mt-4">
         <h2 class="section-title px-4 pt-4">Architecture Documentation</h2>

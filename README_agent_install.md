@@ -1,1 +1,0 @@
-coordinator/assets/agent_install_requirements_gotchas.html

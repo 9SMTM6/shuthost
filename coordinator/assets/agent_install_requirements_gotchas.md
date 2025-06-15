@@ -1,3 +1,5 @@
+<!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
 <div class="alert alert-warning">
     <div class="alert-title">⚠️ Agent Installation Requirements</div>
     <ul>
