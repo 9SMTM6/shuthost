@@ -17,7 +17,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use shuthost_common::{create_hmac_message, is_timestamp_in_valid_range, sign_hmac, verify_hmac};
+use shuthost_common::{create_signed_message, validate_hmac_message};
 use tokio::sync::{Mutex, broadcast};
 use tracing::{debug, error, info, warn};
 
@@ -117,19 +117,7 @@ async fn handle_m2m_lease_action(
         return Err((StatusCode::BAD_REQUEST, "Invalid request format"));
     }
 
-    let (timestamp_str, command, signature) = (parts[0], parts[1], parts[2]);
-    // Instead of comparing strings, try to deserialize the command string into a LeaseAction.
-    let command_action: LeaseAction = serde_plain::from_str(command)
-        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid action in X-Request"))?;
-
-    if command_action != action {
-        return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
-    }
-
-    let timestamp: u64 = timestamp_str
-        .parse()
-        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid timestamp"))?;
-
+    // potential enumeration issue, if thats something we want to cover.
     let shared_secret = {
         let config = state.config_rx.borrow();
         config
@@ -143,15 +131,28 @@ async fn handle_m2m_lease_action(
             .clone()
     };
 
-    if !is_timestamp_in_valid_range(timestamp) {
-        info!("Timestamp out of range for client '{}'", client_id);
-        return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
-    }
+    let command = match validate_hmac_message(&data_str, &shared_secret) {
+        shuthost_common::HmacValidationResult::Valid(valid_message) => {
+            valid_message
+        }
+        shuthost_common::HmacValidationResult::InvalidTimestamp => {
+            info!("Timestamp out of range for client '{}'", client_id);
+            return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
+        }
+        shuthost_common::HmacValidationResult::InvalidHmac => {
+            info!("Invalid HMAC signature for client '{}'", client_id);
+            return Err((StatusCode::UNAUTHORIZED, "Invalid HMAC signature"));
+        }
+        shuthost_common::HmacValidationResult::MalformedMessage => {
+            return Err((StatusCode::BAD_REQUEST, "Invalid request format"));
+        }
+    };
 
-    let message = format!("{}|{}", timestamp_str, command);
-    if !verify_hmac(&message, signature, &shared_secret) {
-        info!("Invalid HMAC signature for client '{}'", client_id);
-        return Err((StatusCode::UNAUTHORIZED, "Invalid HMAC signature"));
+    let command_action: LeaseAction = serde_plain::from_str(&command)
+        .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid action in X-Request"))?;
+
+    if command_action != action {
+        return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
     }
 
     let mut leases = state.leases.lock().await;
@@ -408,15 +409,12 @@ async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, 
         }
     };
 
-    let message = create_hmac_message("shutdown");
-    let signature = sign_hmac(&message, &host_config.shared_secret);
-    let full_message = format!("{}|{}", message, signature);
-
     info!(
         "Sending shutdown command to '{}' ({}:{})",
         host, host_config.ip, host_config.port
     );
-    send_shutdown(&host_config.ip, host_config.port, &full_message)
+    let signed_message = create_signed_message("shutdown", &host_config.shared_secret);
+    send_shutdown(&host_config.ip, host_config.port, &signed_message)
         .await
         .map_err(|e| {
             error!("Failed to send shutdown command to '{}': {}", host, e);

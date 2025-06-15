@@ -11,7 +11,9 @@ use crate::{
     websocket::{WsMessage, ws_handler},
 };
 use clap::Parser;
+use shuthost_common::create_signed_message;
 use std::collections::HashMap;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::{broadcast, watch};
 
 use crate::assets::asset_routes;
@@ -39,19 +41,19 @@ pub async fn start_http_server(
     config_path: &std::path::Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting HTTP server...");
-
+    
     let initial_config = Arc::new(load_coordinator_config(config_path).await?);
     let listen_port = initial_config.server.port;
-
+    
     let listen_ip: IpAddr = initial_config.server.bind.parse()?;
-
+    
     let (config_tx, config_rx) = watch::channel(initial_config);
-
+    
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
     let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
-
+    
     let (ws_tx, _) = broadcast::channel(32);
-
+    
     {
         let config_rx = config_rx.clone();
         let hoststatus_tx = hoststatus_tx.clone();
@@ -59,7 +61,7 @@ pub async fn start_http_server(
             poll_host_statuses(config_rx, hoststatus_tx).await;
         });
     }
-
+    
     {
         let ws_tx = ws_tx.clone();
         let mut hoststatus_rx = hoststatus_rx.clone();
@@ -70,7 +72,7 @@ pub async fn start_http_server(
             }
         });
     }
-
+    
     {
         let ws_tx = ws_tx.clone();
         let mut config_rx = config_rx.clone();
@@ -84,7 +86,7 @@ pub async fn start_http_server(
             }
         });
     }
-
+    
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
@@ -92,7 +94,7 @@ pub async fn start_http_server(
             watch_config_file(path, config_tx).await;
         });
     }
-
+    
     let app_state = AppState {
         config_rx,
         hoststatus_rx,
@@ -100,7 +102,7 @@ pub async fn start_http_server(
         config_path: config_path.to_path_buf(),
         leases: LeaseMap::default(),
     };
-
+    
     let app = Router::new()
         .fallback(get(|| async { Redirect::permanent("/") }))
         .nest("/api", api_routes())
@@ -111,10 +113,10 @@ pub async fn start_http_server(
 
     let addr = SocketAddr::from((listen_ip, listen_port));
     info!("Listening on http://{}", addr);
-
+    
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app.into_make_service()).await?;
-
+    
     Ok(())
 }
 
@@ -124,7 +126,7 @@ async fn poll_host_statuses(
 ) {
     loop {
         let config = config_rx.borrow().clone();
-
+        
         let futures = config.hosts.iter().map(|(name, host)| {
             let addr = format!("{}:{}", host.ip, host.port);
             let name = name.clone();
@@ -132,14 +134,9 @@ async fn poll_host_statuses(
             async move {
                 let is_online = match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
                     Ok(Ok(mut stream)) => {
-                        use shuthost_common::{create_hmac_message, sign_hmac};
-                        use tokio::io::{AsyncReadExt, AsyncWriteExt};
-                        // Compose status check message
-                        let message = create_hmac_message("status");
-                        let signature = sign_hmac(&message, &shared_secret);
-                        let full_message = format!("{}|{}\n", message, signature);
+                        let signed_message = create_signed_message("status", &shared_secret);
                         // Send message
-                        if let Err(e) = stream.write_all(full_message.as_bytes()).await {
+                        if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
                             debug!("Failed to write to {}: {}", name, e);
                             return (name, false);
                         }
@@ -160,10 +157,10 @@ async fn poll_host_statuses(
                 (name, is_online)
             }
         });
-
+        
         let results = futures::future::join_all(futures).await;
         let status_map: HashMap<_, _> = results.into_iter().collect();
-
+        
         let is_new = {
             let old_status_map = hoststatus_tx.borrow();
             let old_status_map = old_status_map.as_ref();
@@ -175,7 +172,7 @@ async fn poll_host_statuses(
         } else {
             debug!("No change in host status");
         }
-
+        
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
