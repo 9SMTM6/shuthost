@@ -25,6 +25,7 @@
                 <nav class="flex">
                     <button class="tab active" data-tab="hosts">Hosts</button>
                     <button class="tab" data-tab="clients">Clients</button>
+                    <button class="tab" data-tab="architecture">Architecture</button>
                 </nav>
             </div>
         </div>
@@ -167,6 +168,23 @@
                                 <!-- Clients will be loaded here dynamically -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="architecture-tab" class="tab-content">
+                <div class="section-container mt-4">
+                    <h2 class="section-title">Architecture Documentation</h2>
+                    <p class="description-text">Below are the architecture diagrams for ShutHost:</p>
+
+                    <div class="architecture-diagram">
+                        <h3 class="section-title">Simplified Architecture</h3>
+                        <img src="/architecture_simplified.svg" alt="Simplified Architecture Diagram" class="w-full h-auto">
+                    </div>
+
+                    <div class="architecture-diagram mt-4">
+                        <h3 class="section-title">Complete Architecture</h3>
+                        <img src="/architecture.svg" alt="Complete Architecture Diagram" class="w-full h-auto">
                     </div>
                 </div>
             </div>

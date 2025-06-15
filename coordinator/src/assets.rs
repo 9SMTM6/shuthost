@@ -37,3 +37,17 @@ pub async fn serve_favicon() -> impl IntoResponse {
         .body(include_bytes!("../assets/favicon.svg").into_response())
         .unwrap()
 }
+
+pub async fn serve_architecture_simplified() -> impl IntoResponse {
+    Response::builder()
+        .header("Content-Type", "image/svg+xml")
+        .body(include_bytes!("../assets/architecture_simplified.svg").into_response())
+        .unwrap()
+}
+
+pub async fn serve_architecture_complete() -> impl IntoResponse {
+    Response::builder()
+        .header("Content-Type", "image/svg+xml")
+        .body(include_bytes!("../assets/architecture.svg").into_response())
+        .unwrap()
+}

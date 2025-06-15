@@ -14,7 +14,7 @@ use clap::Parser;
 use std::collections::HashMap;
 use tokio::sync::{broadcast, watch};
 
-use crate::assets::{serve_favicon, serve_manifest, serve_ui};
+use crate::assets::{serve_architecture_complete, serve_architecture_simplified, serve_favicon, serve_manifest, serve_ui};
 
 #[derive(Debug, Parser)]
 pub struct ServiceArgs {
@@ -109,6 +109,8 @@ pub async fn start_http_server(
         .route("/ws", get(ws_handler))
         .route("/manifest.json", get(serve_manifest))
         .route("/favicon.svg", get(serve_favicon))
+        .route("/architecture_simplified.svg", get(serve_architecture_simplified))
+        .route("/architecture.svg", get(serve_architecture_complete))
         .with_state(app_state);
 
     let addr = SocketAddr::from((listen_ip, listen_port));
