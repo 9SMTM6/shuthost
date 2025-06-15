@@ -45,7 +45,11 @@ pub fn validate_hmac_message(data: &str, secret: &str) -> HmacValidationResult {
         if !is_timestamp_in_valid_range(timestamp) {
             return HmacValidationResult::InvalidTimestamp;
         }
-        if !verify_hmac(&format!("{}|{}", timestamp, message), &received_signature, secret) {
+        if !verify_hmac(
+            &format!("{}|{}", timestamp, message),
+            &received_signature,
+            secret,
+        ) {
             return HmacValidationResult::InvalidHmac;
         }
         return HmacValidationResult::Valid(message);

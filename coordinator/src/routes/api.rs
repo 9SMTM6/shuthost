@@ -20,7 +20,10 @@ pub fn api_routes() -> Router<AppState> {
     Router::new()
         .nest("/m2m", m2m_routes())
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
-        .route("/reset_leases/{client_id}", post(handle_reset_client_leases))
+        .route(
+            "/reset_leases/{client_id}",
+            post(handle_reset_client_leases),
+        )
 }
 
 /// Lease action for lease endpoints (shared between web and m2m)

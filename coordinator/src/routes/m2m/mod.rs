@@ -47,9 +47,7 @@ pub struct WolTestQuery {
     port: u16,
 }
 
-async fn test_wol(
-    Query(params): Query<WolTestQuery>,
-) -> impl IntoResponse {
+async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
     match crate::wol::test_wol_reachability(params.port) {
         Ok(broadcast) => Ok(Json(json!({
             "broadcast": broadcast
@@ -124,9 +122,7 @@ async fn handle_m2m_lease_action(
     };
 
     let command = match validate_hmac_message(&data_str, &shared_secret) {
-        shuthost_common::HmacValidationResult::Valid(valid_message) => {
-            valid_message
-        }
+        shuthost_common::HmacValidationResult::Valid(valid_message) => valid_message,
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
             info!("Timestamp out of range for client '{}'", client_id);
             return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
