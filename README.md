@@ -17,6 +17,17 @@ This requires either running the coordinator as a binary on the host, or running
 
 Windows is currently not supported, even with the binary.
 
+The coordinator exposes its server on `127.0.0.1` only by default - so on localhost, ipv4, without remote access. This is for security reasons.
+To access it from Docker, use the address `http://host.containers.internal:<port>` within the Docker container.
+Other container solutions might require additional configuration to access the coordinator.
+On Podman, adding 
+```yaml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+to the container that wants to access the coordinator should work.
+Alternatively you can set the address the coordinator binds to in the configuration file.
+
 ## Security
 
 The WebUI is not secured, so you should run it behind a reverse proxy that provides TLS and authentication.
@@ -35,6 +46,7 @@ To use the convenience scripts suggested by the WebUI, you will have to configur
     * since its not that much, and currently only acts on state changes, not problematic, but could be fixed with persistence with e.g. sqlite. Should be considered before adding status syncing
 * docker is currently untested
 * windows agent support currently not planned, due to large differences
+* Accessing the coordinator from Docker requires proper configuration of the network mode and binding to `localhost`. Misconfiguration may lead to connectivity issues.
 
 ## Planned Features
 
@@ -54,7 +66,4 @@ To use the convenience scripts suggested by the WebUI, you will have to configur
 
 <!-- TODO:
     // poll hosts in the backend with variable polling frequency (whether there is a frontend active or not, should be able to tell with ws_tx.receiver_count() - needs proper updates when the socket was closed, fails ATM)
-    // Then add a bunch of documentation to explain:
-    coordinator: * binary exposes server on localhost only, reach it from docker (bind localhost (NOT `0.0.0.0`) and in docker `http://host.containers.internal:<port>`)
-    // fix issue with some blocking tasks
     // -->
