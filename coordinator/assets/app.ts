@@ -342,7 +342,7 @@ function renderHostsTable(hosts: Host[]) {
 
 const resetClientLeases = async (clientId: string) => {
     try {
-        await fetch(`/api/client/${clientId}/reset-leases`, { method: 'POST' });
+        await fetch(`/api/reset_leases/${clientId}/`, { method: 'POST' });
     } catch (err) {
         console.error(`Failed to reset leases for client ${clientId}:`, err);
     }

@@ -20,6 +20,7 @@ pub fn api_routes() -> Router<AppState> {
     Router::new()
         .nest("/m2m", m2m_routes())
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
+        .route("/reset_leases/{client_id}", post(handle_reset_client_leases))
 }
 
 /// Lease action for lease endpoints (shared between web and m2m)
@@ -71,4 +72,42 @@ async fn handle_web_lease_action(
         LeaseAction::Take => "Lease taken (async)".into_response(),
         LeaseAction::Release => "Lease released (async)".into_response(),
     }
+}
+
+// TODO: this aint pretty. Maybe invert client/host relationship in LeaseMap.
+// TODO: also clean up when a client gets removed from config
+// TODO: This fix-all-state approach leads to an eventual sync of host state to leases. Consider making this regular behavior.
+/// This function is used by the web UI to reset all leases associated with a client.
+/// It does not require any client authentication or HMAC signature.
+#[axum::debug_handler]
+async fn handle_reset_client_leases(
+    Path(client_id): Path<String>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let mut leases = state.leases.lock().await;
+
+    // Remove all leases associated with the client
+    for lease_set in leases.values_mut() {
+        lease_set.retain(|lease| match lease {
+            LeaseSource::Client(id) => id != &client_id,
+            _ => true,
+        });
+    }
+
+    // Broadcast updated lease information to WebSocket clients
+    for (host, lease_set) in leases.iter() {
+        broadcast_lease_update(host, lease_set, &state.ws_tx).await;
+    }
+
+    // Handle host state after lease changes
+    for (host, lease_set) in leases.iter() {
+        let host = host.clone();
+        let lease_set = lease_set.clone();
+        let state = state.clone();
+        tokio::spawn(async move {
+            let _ = handle_host_state(&host, &lease_set, &state).await;
+        });
+    }
+
+    format!("All leases for client '{}' have been reset.", client_id).into_response()
 }
