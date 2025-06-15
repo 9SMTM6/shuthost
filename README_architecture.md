@@ -1,0 +1,1 @@
+coordinator/assets/architecture.html

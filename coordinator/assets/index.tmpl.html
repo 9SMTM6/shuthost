@@ -53,48 +53,7 @@
                             <code id="config-location" class="code-block">{coordinator_config}</code>
                         </div>
 
-                        <!-- Agent Installation Requirements & Gotchas -->
-                        <div class="alert alert-warning">
-                            <div class="alert-title">⚠️ Agent Installation Requirements</div>
-                            <ul>
-                                <li><strong>Superuser Access:</strong> The installer requires curl and will install as
-                                    superuser (root/sudo/doas)</li>
-                                <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
-                                    download endpoints (see security notes below)</li>
-                                <li><strong>Static IP Required:</strong> The host needs a static IP address for shutdown
-                                    commands and online status monitoring</li>
-                                <li><strong>Manual Configuration:</strong> The generated config must be manually added
-                                    to your coordinator configuration file</li>
-                            </ul>
-                        </div>
-
-                        <div class="alert alert-error">
-                            <div class="alert-title">🚫 Platform Limitations</div>
-                            <ul>
-                                <li><strong>No Windows Support:</strong> Only Linux distributions are supported.</li>
-                                <li><strong>No BSD Support:</strong> BSD-based systems are not supported.</li>
-                                <li><strong>Docker Networking Issues:</strong> Docker on macOS won't work for the coordinator due to network broadcast requirements. Use the single binary instead. On Linux use <code>network_mode: host</code> or also use the binary.</li>
-                            </ul>
-                        </div>
-
-                        <div class="alert alert-info">
-                            <div class="alert-title">💡 Wake-on-LAN (WOL) Requirements</div>
-                            <p>The agent requires Wake-on-LAN for remote startup functionality:</p>
-                            <ul>
-                                <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
-                                    <ul>
-                                        <li><strong>BIOS Configuration:</strong> WOL must be enabled in BIOS/UEFI settings.</li>
-                                        <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown.</li>
-                                    </ul>
-                                </li>
-                                <li><strong>OS Configuration:</strong> WOL must be enabled in the operating system.</li>
-                                <li><strong>Network Requirements:</strong> Requires network broadcast support and host reachability.
-                                    <ul>
-                                        <li><em>Note: The installer tests network reachability but won't fail if the test is unsuccessful, so ensure your network supports broadcast for WOL to work properly.</em></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
+                        { agent_install_requirements_gotchas }
                     </div>
                 </div>
 
@@ -138,18 +97,7 @@
                             <code id="config-location" class="code-block">{coordinator_config}</code>
                         </div>
 
-                        <!-- Client Installation Requirements & Gotchas -->
-                        <div class="alert alert-warning">
-                            <div class="alert-title">⚠️ Client Installation Requirements</div>
-                            <ul>
-                                <li><strong>Dependencies:</strong> Installer requires curl; client runtime requires
-                                    OpenSSL</li>
-                                <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
-                                    download endpoints (see security notes below)</li>
-                                <li><strong>Manual Configuration:</strong> The generated config must be manually added
-                                    to your coordinator configuration file</li>
-                            </ul>
-                        </div>
+                        { client_install_requirements_gotchas }
                     </div>
                 </div>
 
@@ -172,87 +120,7 @@
                 </div>
             </div>
 
-            <div id="architecture-tab" class="tab-content">
-                <div class="section-container mt-4">
-                    <h2 class="section-title px-4 pt-4">Architecture Documentation</h2>
-                    <p class="description-text px-4">ShutHost provides two different architectural views depending on your use case:</p>
-
-                    <div class="architecture-section">
-                        <h3 class="architecture-title px-4">Simplified Architecture</h3>
-                        <div class="architecture-diagram-container">
-                            <img src="/architecture_simplified.svg" alt="Simplified Architecture Diagram" class="architecture-diagram">
-                        </div>
-                        
-                        <div class="architecture-content">
-                            <p class="architecture-when-to-use px-4">
-                                <strong>When to use:</strong> This architecture applies when you have <strong>no clients defined</strong> in your configuration. 
-                                In this scenario, only the WebUI interacts with hosts through the coordinator.
-                            </p>
-                            
-                            <div class="alert alert-info">
-                                <div class="alert-title">How it works</div>
-                                <ul class="text-sm">
-                                    <li>The <strong>WebUI</strong> sends startup/shutdown requests directly to the <strong>Coordinator</strong></li>
-                                    <li>The <strong>Coordinator</strong> manages host lifecycle by sending Wake-on-LAN packets for startup and shutdown commands to agents</li>
-                                    <li>Each <strong>Host</strong> runs an <strong>Agent</strong> service that handles shutdown commands and reports status back to the coordinator</li>
-                                    <li>Under the hood, this still uses the lease system, but it's transparent to the user</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="architecture-separator">
-                        <h3 class="architecture-title px-4">Complete Architecture</h3>
-                        <div class="architecture-diagram-container">
-                            <img src="/architecture.svg" alt="Complete Architecture Diagram" class="architecture-diagram">
-                        </div>
-                        
-                        <div class="architecture-content">
-                            <p class="architecture-when-to-use px-4">
-                                <strong>When to use:</strong> This architecture applies when you have <strong>clients defined</strong> in your configuration. 
-                                This enables programmatic access where multiple clients can access hosts concurrently.
-                            </p>
-                            
-                            <div class="alert alert-warning">
-                                <div class="alert-title">Lease System</div>
-                                <p class="text-sm">
-                                    With multiple clients potentially accessing hosts simultaneously, ShutHost introduces a 
-                                    <strong>lease system</strong> to coordinate access and prevent conflicts:
-                                </p>
-                                <ul class="text-sm mt-2">
-                                    <li><strong>Lease Acquisition:</strong> Both WebUI and Clients must request leases before using hosts</li>
-                                    <li><strong>Automatic Startup:</strong> Hosts are automatically started when the first lease is acquired (≥1 leases)</li>
-                                    <li><strong>Automatic Shutdown:</strong> Hosts are automatically shut down when all leases are released (=0 leases)</li>
-                                    <li><strong>Conflict Prevention:</strong> The lease system ensures hosts aren't shut down while still in use by other clients</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="alert alert-info">
-                                <div class="alert-title">Client Use Cases</div>
-                                <p class="text-sm">Clients are typically used for:</p>
-                                <ul class="text-sm mt-2">
-                                    <li><strong>Automated Backups:</strong> Scripts that need to wake up hosts, perform backups, then allow shutdown</li>
-                                    <li><strong>Batch Processing:</strong> Jobs that require access to specific hosts for processing tasks</li>
-                                    <li><strong>CI/CD Pipelines:</strong> Build systems that need temporary access to powerful build machines</li>
-                                    <li><strong>Scheduled Maintenance:</strong> Scripts that perform regular maintenance tasks on hosts</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="architecture-key-points">
-                        <div class="alert alert-info">
-                            <div class="alert-title">💡 Key Points</div>
-                            <ul class="text-sm">
-                                <li><strong>Both architectures use leases internally</strong> - the simplified view just hides this complexity</li>
-                                <li><strong>Wake-on-LAN (WOL)</strong> is used for remote host startup in both cases</li>
-                                <li><strong>Agents report status</strong> to keep the coordinator informed of host availability</li>
-                                <li><strong>The coordinator serves the WebUI</strong> and provides the API for both human and programmatic access</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            { architecture_documentation }
 
             <!-- Security Configuration Panel (shown on both tabs) -->
             <div class="section-container mt-4">
@@ -267,8 +135,8 @@
                         <ul>
                             <li><code>/download/*</code> - Installation script downloads</li>
                             <li><code>/api/m2m/*</code> - Machine-to-machine API communication</li>
-                            <li><code>/manifest.json</code> - PWA manifest (required for browser compatibility)</li>
-                            <li><code>/favicon.ico</code> - Favicon (required for browser compatibility)</li>
+                            <li><code>/manifest.json</code> - PWA manifest (required for webpage installability)</li>
+                            <li><code>/favicon.ico</code> - Favicon (required for webpage installability)</li>
                         </ul>
                         <p class="text-xs mt-2"><em>This allows the installer scripts and web app to download necessary files and communicate with the coordinator API without requiring user authentication. The manifest and favicon exceptions are required for proper browser and PWA support.</em></p>
                     </div>

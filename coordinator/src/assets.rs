@@ -15,15 +15,15 @@ pub fn asset_routes() -> Router<AppState> {
 }
 
 pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
-    let styles = include_str!("../assets/styles_output.css");
-    let javascript = include_str!("../assets/app.js");
-
     let html = include_str!("../assets/index.tmpl.html")
         .replace("{coordinator_config}", &config_path.to_string_lossy())
         .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ architecture_documentation }", include_str!("../assets/architecture.html"))
+        .replace("{ client_install_requirements_gotchas }", include_str!("../assets/client_install_requirements_gotchas.html"))
+        .replace("{ agent_install_requirements_gotchas }", include_str!("../assets/agent_install_requirements_gotchas.html"))
         .replace("{version}", env!("CARGO_PKG_VERSION"))
-        .replace("/* {styles} */", styles)
-        .replace("{ js }", javascript);
+        .replace("/* {styles} */", include_str!("../assets/styles_output.css"))
+        .replace("{ js }", include_str!("../assets/app.js"));
 
     Response::builder()
         .header("Content-Type", "text/html")

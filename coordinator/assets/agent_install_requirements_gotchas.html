@@ -1,0 +1,41 @@
+<div class="alert alert-warning">
+    <div class="alert-title">⚠️ Agent Installation Requirements</div>
+    <ul>
+        <li><strong>Superuser Access:</strong> The installer requires curl and will install as
+            superuser (root/sudo/doas)</li>
+        <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
+            download endpoints (see security notes below)</li>
+        <li><strong>Static IP Required:</strong> The host needs a static IP address for shutdown
+            commands and online status monitoring</li>
+        <li><strong>Manual Configuration:</strong> The generated config must be manually added
+            to your coordinator configuration file</li>
+    </ul>
+</div>
+
+<div class="alert alert-error">
+    <div class="alert-title">🚫 Platform Limitations</div>
+    <ul>
+        <li><strong>No Windows Support:</strong> Only Linux distributions are supported.</li>
+        <li><strong>No BSD Support:</strong> BSD-based systems are not supported.</li>
+        <li><strong>Docker Networking Issues:</strong> Docker on macOS won't work for the coordinator due to network broadcast requirements. Use the single binary instead. On Linux use <code>network_mode: host</code> or also use the binary.</li>
+    </ul>
+</div>
+
+<div class="alert alert-info">
+    <div class="alert-title">💡 Wake-on-LAN (WOL) Requirements</div>
+    <p>The agent requires Wake-on-LAN for remote startup functionality:</p>
+    <ul>
+        <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
+            <ul>
+                <li><strong>BIOS Configuration:</strong> WOL must be enabled in BIOS/UEFI settings.</li>
+                <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown.</li>
+            </ul>
+        </li>
+        <li><strong>OS Configuration:</strong> WOL must be enabled in the operating system.</li>
+        <li><strong>Network Requirements:</strong> Requires network broadcast support and host reachability.
+            <ul>
+                <li><em>Note: The installer tests network reachability but won't fail if the test is unsuccessful, so ensure your network supports broadcast for WOL to work properly.</em></li>
+            </ul>
+        </li>
+    </ul>
+</div>
