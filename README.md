@@ -7,8 +7,16 @@ The GUI doesn't provide authorization, you'll have to do that yourself (e.g. NGI
 
 Note that LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
-[Architecture Documentation](coordinator/assets/architecture.md)
-[Requirements to install the agent](coordinator/assets/agent_install_requirements_gotchas.md)
+## Architecture
+
+See [Architecture Documentation](coordinator/assets/architecture.md)
+
+## Requirements:
+
+For the requirements for the agent, see [Requirements to install the agent](coordinator/assets/agent_install_requirements_gotchas.md).
+
+The coordinator must be run on a host that can reach the hosts you want to manage.
+This requires either running the coordinator as a binary on the host, or running it in a docker container with the host network mode enabled - this does not work with the default network mode that docker uses on Windows and MacOS. It will also not work on WSL. On these Hosts, you will have to run the coordinator as a binary, or install a Linux VM with bridged networking.
 
 ## Known issues
 
