@@ -110,16 +110,10 @@ TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT"
 # kill the agent test process, if its still running.
 kill $RECEIVER_PID || true
 
-if echo "$TEST_RESULT" | grep -q "\"direct\":true"; then
-    echo "✓ Direct WOL packets working"
-else
-    echo "⚠️  Direct WoL packets failed - check firewall rules for UDP port 9"
-fi
-
 if echo "$TEST_RESULT" | grep -q "\"broadcast\":true"; then
     echo "✓ Broadcast WoL packets working"
 else
-    echo "⚠️  Broadcast WoL packets failed - consider using direct WoL"
+    echo "⚠️  Broadcast WoL packets failed - check firewall rules for UDP port 9"
 fi
 
 elevate_privileges() {

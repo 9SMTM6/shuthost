@@ -48,18 +48,10 @@ pub struct WolTestQuery {
 }
 
 async fn test_wol(
-    headers: axum::http::HeaderMap,
     Query(params): Query<WolTestQuery>,
 ) -> impl IntoResponse {
-    let remote_ip = headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .or_else(|| headers.get("x-real-ip").and_then(|v| v.to_str().ok()))
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "No client IP found").into_response())?;
-
-    match crate::wol::test_wol_reachability(remote_ip, params.port) {
-        Ok((direct, broadcast)) => Ok(Json(json!({
-            "direct": direct,
+    match crate::wol::test_wol_reachability(params.port) {
+        Ok(broadcast) => Ok(Json(json!({
             "broadcast": broadcast
         }))
         .into_response()),
