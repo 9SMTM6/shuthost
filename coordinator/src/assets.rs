@@ -1,4 +1,5 @@
 use crate::http::AppState;
+use std::sync::OnceLock;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -15,15 +16,19 @@ pub fn asset_routes() -> Router<AppState> {
 }
 
 pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
-    let html = include_str!("../assets/index.tmpl.html")
-        .replace("{coordinator_config}", &config_path.to_string_lossy())
-        .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-        .replace("{ architecture_documentation }", include_str!("../assets/architecture.md"))
-        .replace("{ client_install_requirements_gotchas }", include_str!("../assets/client_install_requirements_gotchas.md"))
-        .replace("{ agent_install_requirements_gotchas }", include_str!("../assets/agent_install_requirements_gotchas.md"))
-        .replace("{version}", env!("CARGO_PKG_VERSION"))
-        .replace("/* {styles} */", include_str!("../assets/styles_output.css"))
-        .replace("{ js }", include_str!("../assets/app.js"));
+    static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
+
+    let html = HTML_TEMPLATE.get_or_init(|| {
+        include_str!("../assets/index.tmpl.html")
+            .replace("{coordinator_config}", &config_path.to_string_lossy())
+            .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+            .replace("{ architecture_documentation }", include_str!("../assets/architecture.md"))
+            .replace("{ client_install_requirements_gotchas }", include_str!("../assets/client_install_requirements_gotchas.md"))
+            .replace("{ agent_install_requirements_gotchas }", include_str!("../assets/agent_install_requirements_gotchas.md"))
+            .replace("{version}", env!("CARGO_PKG_VERSION"))
+            .replace("/* {styles} */", include_str!("../assets/styles_output.css"))
+            .replace("{ js }", include_str!("../assets/app.js"))
+    }).clone();
 
     Response::builder()
         .header("Content-Type", "text/html")
@@ -32,8 +37,12 @@ pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> i
 }
 
 pub async fn serve_manifest() -> impl IntoResponse {
-    let manifest = include_str!("../assets/manifest.json")
-        .replace("{description}", env!("CARGO_PKG_DESCRIPTION"));
+    static MANIFEST: OnceLock<String> = OnceLock::new();
+
+    let manifest = MANIFEST.get_or_init(|| {
+        include_str!("../assets/manifest.json")
+            .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+    }).clone();
 
     Response::builder()
         .header("Content-Type", "application/json")
