@@ -9,6 +9,10 @@ Note that LARGE parts of this project were LLM generated. I checked over all of 
 
 ## Architecture
 
+### Simplified (Without Clients)
+![simplified shuthost_architecture (generated from architecture_simplified.dot)](./coordinator/assets/architecture_simplified.svg)
+
+### Complete
 ![shuthost_architecture (generated from architecture.dot)](./coordinator/assets/architecture.svg)
 
 ## Known issues

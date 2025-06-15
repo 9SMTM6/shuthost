@@ -3,7 +3,6 @@ digraph HostLifecycle {
   node [shape=ellipse, fontname="Helvetica"];
 
   webui [label="WebUI"];
-  client [label="Client\n1 per task (e.g. backup of different folders)"];
   coordinator [label="Coordinator"];
   host [label="Host"];
   agent [label="Agent\n1 per host"];
@@ -12,14 +11,12 @@ digraph HostLifecycle {
   host -> agent [label="starts agent service\n(on host boot)"];
   coordinator -> webui [label="serves"];
 
-  // Lease interactions (combined arrow)
-  client -> coordinator [label="request/release\nleases"];
-  webui -> coordinator [label="request/release\nleases"];
+  webui -> coordinator [label="request startup/\nshutdown"];
 
   // Host lifecycle commands
-  coordinator -> host [label="WOL startup\n(if ≥1 leases)"];
-  coordinator -> agent [label="shutdown\n(if =0 leases)"];
+  coordinator -> agent [label="shutdown"];
+  coordinator -> host [label="WOL startup"];
   agent -> host [label="executes\nshutdown"];
-  coordinator -> agent [label="WOL\nstartup", style=dashed];
   agent -> coordinator [label="reports status\n(host online)"];
+  coordinator -> agent [label="WOL\nstartup", style=dashed];
 }
