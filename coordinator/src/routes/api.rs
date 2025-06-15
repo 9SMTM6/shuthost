@@ -1,12 +1,11 @@
 use axum::{
     Router,
     extract::{Path, State},
-    http::StatusCode,
     response::IntoResponse,
-    routing::{get, post},
+    routing::post,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, warn};
+use tracing::info;
 
 use crate::{
     http::AppState,
@@ -21,28 +20,6 @@ pub fn api_routes() -> Router<AppState> {
     Router::new()
         .nest("/m2m", m2m_routes())
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
-        .route("/status/{hostname}", get(status_host))
-}
-
-async fn status_host(
-    Path(hostname): Path<String>,
-    State(AppState { hoststatus_rx, .. }): State<AppState>,
-) -> impl IntoResponse {
-    let is_on_rx = hoststatus_rx.borrow();
-    match is_on_rx.get(&hostname) {
-        Some(status) => {
-            debug!("Status check for '{}': {}", hostname, status);
-            match *status {
-                true => "online",
-                false => "offline",
-            }
-            .into_response()
-        }
-        None => {
-            warn!("Status check for unknown host '{}'", hostname);
-            (StatusCode::NOT_FOUND, "Unknown host").into_response()
-        }
-    }
 }
 
 /// Lease action for lease endpoints (shared between web and m2m)

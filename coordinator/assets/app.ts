@@ -340,7 +340,6 @@ function renderHostsTable(hosts: Host[]) {
     }
 }
 
-// Add this function to handle resetting client leases
 const resetClientLeases = async (clientId: string) => {
     try {
         await fetch(`/api/client/${clientId}/reset-leases`, { method: 'POST' });
