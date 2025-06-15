@@ -16,8 +16,7 @@ shift
 DEFAULT_PORT="5757"
 USER_ARCH=""
 USER_OS=""
-INSTALLER_ARGS=()
-prev_arg=""
+INSTALLER_ARGS=""
 
 # Parse arguments for --arch and --os, and extract port
 while [ $# -gt 0 ]; do
@@ -38,15 +37,15 @@ while [ $# -gt 0 ]; do
             ;;
         --port=*)
             DEFAULT_PORT="${1#--port=}"
-            INSTALLER_ARGS+=("$1")
+            INSTALLER_ARGS="$INSTALLER_ARGS $1"
             ;;
         --port)
             shift
             DEFAULT_PORT="$1"
-            INSTALLER_ARGS+=("--port" "$1")
+            INSTALLER_ARGS="$INSTALLER_ARGS --port $1"
             ;;
         *)
-            INSTALLER_ARGS+=("$1")
+            INSTALLER_ARGS="$INSTALLER_ARGS $1"
             ;;
     esac
     shift
@@ -137,9 +136,9 @@ elevate_privileges() {
 
 echo "Running installer..."
 if [ "$(id -u)" -eq 0 ]; then
-    ./"$OUTFILE" install "${INSTALLER_ARGS[@]}"
+    sh -c "./$OUTFILE install $INSTALLER_ARGS"
 else
-    elevate_privileges ./"$OUTFILE" install "${INSTALLER_ARGS[@]}"
+    elevate_privileges ./"$OUTFILE" install "$INSTALLER_ARGS"
 fi
 
 echo "Cleaning up..."
