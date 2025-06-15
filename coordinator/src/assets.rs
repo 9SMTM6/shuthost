@@ -2,7 +2,17 @@ use crate::http::AppState;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
+    Router, routing::get
 };
+
+pub fn asset_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(serve_ui))
+        .route("/manifest.json", get(serve_manifest))
+        .route("/favicon.svg", get(serve_favicon))
+        .route("/architecture_simplified.svg", get(serve_architecture_simplified))
+        .route("/architecture.svg", get(serve_architecture_complete))
+}
 
 pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
     let styles = include_str!("../assets/styles_output.css");
