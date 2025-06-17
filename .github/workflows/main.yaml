@@ -135,7 +135,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run tests
-        run: cargo test --workspace --all-targets
+        run: cargo test --no-default-features --workspace --all-targets
 
   test-installation:
     name: Test Service Installation & Startup

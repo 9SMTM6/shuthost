@@ -56,4 +56,4 @@ update_dependencies:
     cd coordinator/assets && npm update
 
 test_all:
-    cargo test --workspace --all-targets
+    cargo test --no-default-features --workspace --all-targets

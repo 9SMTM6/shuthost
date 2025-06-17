@@ -25,8 +25,12 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 futures = "0.3.31"
 serde_plain = "1.0.2"
 
+# If you add features, add them as features to the test in CI and Justfile.
+# We can't use --all-features in there, as that requires all agents to have been built.
 [features]
 default = [
-    "build_macos",
+    "include_macos_agents",
+    "include_linux_agents",
 ]
-build_macos = []
+include_macos_agents = []
+include_linux_agents = []

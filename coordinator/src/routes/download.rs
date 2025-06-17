@@ -43,17 +43,33 @@ macro_rules! host_agent_handler {
 host_agent_handler!(
     host_agent_macos_aarch64,
     "aarch64-apple-darwin",
-    feature = "build_macos"
+    feature = "include_macos_agents"
 );
 host_agent_handler!(
     host_agent_macos_x86_64,
     "x86_64-apple-darwin",
-    feature = "build_macos"
+    feature = "include_macos_agents"
 );
-host_agent_handler!(host_agent_linux_x86_64, "x86_64-unknown-linux-gnu");
-host_agent_handler!(host_agent_linux_aarch64, "aarch64-unknown-linux-gnu");
-host_agent_handler!(host_agent_linux_musl_x86_64, "x86_64-unknown-linux-musl");
-host_agent_handler!(host_agent_linux_musl_aarch64, "aarch64-unknown-linux-musl");
+host_agent_handler!(
+    host_agent_linux_x86_64,
+    "x86_64-unknown-linux-gnu",
+    feature = "include_linux_agents"
+);
+host_agent_handler!(
+    host_agent_linux_aarch64,
+    "aarch64-unknown-linux-gnu",
+    feature = "include_linux_agents"
+);
+host_agent_handler!(
+    host_agent_linux_musl_x86_64,
+    "x86_64-unknown-linux-musl",
+    feature = "include_linux_agents"
+);
+host_agent_handler!(
+    host_agent_linux_musl_aarch64,
+    "aarch64-unknown-linux-musl",
+    feature = "include_linux_agents"
+);
 
 async fn get_installer() -> impl IntoResponse {
     const INSTALLER: &'static [u8] = include_bytes!("./host_agent_installer.sh");

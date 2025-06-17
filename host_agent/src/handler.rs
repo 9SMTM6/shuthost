@@ -107,7 +107,11 @@ mod tests {
     use crate::server::ServiceArgs;
 
     fn make_args(secret: &str) -> ServiceArgs {
-        ServiceArgs { port: 0, shutdown_command: "shutdown_cmd".to_string(), shared_secret: secret.to_string() }
+        ServiceArgs {
+            port: 0,
+            shutdown_command: "shutdown_cmd".to_string(),
+            shared_secret: secret.to_string(),
+        }
     }
 
     #[test]

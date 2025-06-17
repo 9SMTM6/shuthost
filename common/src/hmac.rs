@@ -154,7 +154,10 @@ mod tests {
         let secret = "mysecret";
         let mut signed = create_signed_message("hello", secret);
         signed.push_str("tampered");
-        assert!(matches!(validate_hmac_message(&signed, secret), HmacValidationResult::InvalidHmac | HmacValidationResult::MalformedMessage));
+        assert!(matches!(
+            validate_hmac_message(&signed, secret),
+            HmacValidationResult::InvalidHmac | HmacValidationResult::MalformedMessage
+        ));
     }
 
     #[test]

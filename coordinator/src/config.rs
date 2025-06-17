@@ -9,7 +9,6 @@ use tokio::fs;
 use tokio::sync::{mpsc::unbounded_channel, watch};
 use tracing::{error, info};
 
-
 /// Represents a configured host entry with network and security parameters.
 ///
 /// # Examples
