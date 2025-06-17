@@ -126,6 +126,22 @@ jobs:
           name: coordinator-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_coordinator
 
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Run tests
+        run: cargo test --workspace --all-targets
+
   test-installation:
     name: Test Service Installation & Startup
     runs-on: ${{ matrix.runner }}
@@ -231,6 +247,7 @@ jobs:
     name: Build & Push Alpine Containers
     needs:
       - test-installation
+      - test
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -289,6 +306,7 @@ jobs:
     name: Upload Release Binaries
     needs:
       - test-installation
+      - test
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write

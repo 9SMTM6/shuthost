@@ -15,6 +15,22 @@ use shuthost_common::validate_hmac_message;
 ///
 /// A tuple `(response, should_shutdown)`, where `response` is sent back to the client, and
 /// `should_shutdown` indicates if the agent should execute a shutdown.
+///
+/// # Examples
+///
+/// ```
+/// use shuthost_host_agent::handler::handle_request_without_shutdown;
+/// use shuthost_common::create_signed_message;
+/// use shuthost_host_agent::server::ServiceArgs;
+///
+/// let secret = "secret";
+/// let args = ServiceArgs { port: 0, shutdown_command: "cmd".to_string(), shared_secret: secret.to_string() };
+/// let signed = create_signed_message("status", secret);
+/// let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+/// assert_eq!(resp, "OK: status");
+/// assert!(!shutdown);
+/// ```
+///
 pub fn handle_request_without_shutdown(
     data: &[u8],
     config: &ServiceArgs,
@@ -83,4 +99,74 @@ pub fn execute_shutdown(config: &ServiceArgs) -> Result<(), std::io::Error> {
         .spawn()?
         .wait()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::ServiceArgs;
+
+    fn make_args(secret: &str) -> ServiceArgs {
+        ServiceArgs { port: 0, shutdown_command: "shutdown_cmd".to_string(), shared_secret: secret.to_string() }
+    }
+
+    #[test]
+    fn test_handle_invalid_utf8() {
+        let args = make_args("s");
+        let data = [0xff, 0xfe, 0xfd];
+        let (resp, shutdown) = handle_request_without_shutdown(&data, &args, "peer");
+        assert_eq!(resp, "ERROR: Invalid UTF-8");
+        assert!(!shutdown);
+    }
+
+    #[test]
+    fn test_handle_status() {
+        let secret = "sec";
+        let args = make_args(secret);
+        // create valid status command
+        let signed = shuthost_common::create_signed_message("status", secret);
+        let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+        assert_eq!(resp, "OK: status");
+        assert!(!shutdown);
+    }
+
+    #[test]
+    fn test_handle_shutdown() {
+        let secret = "sec";
+        let args = make_args(secret);
+        let signed = shuthost_common::create_signed_message("shutdown", secret);
+        let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+        assert!(resp.contains("shutdown_cmd"));
+        assert!(shutdown);
+    }
+
+    #[test]
+    fn test_handle_invalid_timestamp() {
+        let secret = "s";
+        let args = make_args(secret);
+        let data = format!("0|cmd|signature");
+        let (resp, shutdown) = handle_request_without_shutdown(data.as_bytes(), &args, "peer");
+        assert_eq!(resp, "ERROR: Timestamp out of range");
+        assert!(!shutdown);
+    }
+
+    #[test]
+    fn test_handle_invalid_hmac() {
+        let secret = "s";
+        let args = make_args(secret);
+        let signed = shuthost_common::create_signed_message("cmd", secret) + "x";
+        let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+        assert_eq!(resp, "ERROR: Invalid HMAC signature");
+        assert!(!shutdown);
+    }
+
+    #[test]
+    fn test_handle_malformed() {
+        let secret = "s";
+        let args = make_args(secret);
+        let data = "no separators";
+        let (resp, shutdown) = handle_request_without_shutdown(data.as_bytes(), &args, "peer");
+        assert_eq!(resp, "ERROR: Invalid request format");
+        assert!(!shutdown);
+    }
 }

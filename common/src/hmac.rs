@@ -13,7 +13,8 @@
 //!
 //! # Usage
 //!
-//! ```
+//! ```rust
+//! # use shuthost_common::{create_signed_message, validate_hmac_message, generate_secret, HmacValidationResult};
 //! let secret = generate_secret();
 //! let message = "Hello, world!";
 //! let signed_message = create_signed_message(message, &secret);
@@ -21,7 +22,6 @@
 //!     validate_hmac_message(&signed_message, &secret),
 //!     HmacValidationResult::Valid(message.to_string())
 //! );
-//! ```
 
 use hmac::{Hmac, Mac};
 use rand::Rng;
@@ -70,6 +70,7 @@ pub fn create_signed_message(message: &str, secret: &str) -> String {
 }
 
 /// Result of validating an HMAC-signed message.
+#[derive(Debug, PartialEq)]
 pub enum HmacValidationResult {
     /// The HMAC and timestamp are valid; contains the original message.
     Valid(String),
@@ -129,10 +130,37 @@ fn parse_hmac_message(data: &str) -> Option<(u64, String, String)> {
 /// Generates a random secret string suitable for use as an HMAC key.
 ///
 /// Returns a 32-character alphanumeric string.
+///
+/// # Examples
+/// ```
+/// use shuthost_common::generate_secret;
+/// let secret = generate_secret();
+/// assert_eq!(secret.len(), 32);
+/// ```
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
     (0..32)
         .map(|_| rng.sample(rand::distr::Alphanumeric) as char)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_hmac() {
+        let secret = "mysecret";
+        let mut signed = create_signed_message("hello", secret);
+        signed.push_str("tampered");
+        assert!(matches!(validate_hmac_message(&signed, secret), HmacValidationResult::InvalidHmac | HmacValidationResult::MalformedMessage));
+    }
+
+    #[test]
+    fn test_parse_hmac_message() {
+        let data = "123|msg|sig";
+        let parsed = parse_hmac_message(data);
+        assert_eq!(parsed, Some((123, "msg".to_string(), "sig".to_string())));
+    }
 }

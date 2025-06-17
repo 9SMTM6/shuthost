@@ -54,3 +54,6 @@ clean:
 update_dependencies:
     cargo update
     cd coordinator/assets && npm update
+
+test_all:
+    cargo test --workspace --all-targets

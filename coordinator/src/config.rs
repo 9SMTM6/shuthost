@@ -11,6 +11,22 @@ use tracing::{error, info};
 
 
 /// Represents a configured host entry with network and security parameters.
+///
+/// # Examples
+///
+/// ```
+/// use shuthost_coordinator::config::Host;
+/// let host = Host {
+///     ip: "127.0.0.1".to_string(),
+///     mac: "aa:bb:cc:dd:ee:ff".to_string(),
+///     port: 8080,
+///     shared_secret: "secret".to_string(),
+/// };
+/// assert_eq!(host.ip, "127.0.0.1");
+/// assert_eq!(host.mac, "aa:bb:cc:dd:ee:ff");
+/// assert_eq!(host.port, 8080);
+/// assert_eq!(host.shared_secret, "secret");
+/// ```
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Host {
     /// IP address of the host agent.
@@ -24,6 +40,14 @@ pub struct Host {
 }
 
 /// Configuration for a client with its shared secret.
+///
+/// # Examples
+///
+/// ```
+/// use shuthost_coordinator::config::Client;
+/// let client = Client { shared_secret: "secret".to_string() };
+/// assert_eq!(client.shared_secret, "secret");
+/// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Client {
     /// Shared secret used for authenticating callbacks.
@@ -31,6 +55,15 @@ pub struct Client {
 }
 
 /// Root config structure for the coordinator, including server settings, hosts, and clients.
+///
+/// # Examples
+///
+/// ```
+/// use shuthost_coordinator::config::ControllerConfig;
+/// let config = ControllerConfig::default();
+/// assert!(config.hosts.is_empty());
+/// assert!(config.clients.is_empty());
+/// ```
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ControllerConfig {
     /// HTTP server binding configuration.
@@ -42,6 +75,15 @@ pub struct ControllerConfig {
 }
 
 /// HTTP server binding configuration section.
+///
+/// # Examples
+///
+/// ```
+/// use shuthost_coordinator::config::ServerConfig;
+/// let sc = ServerConfig::default();
+/// assert_eq!(sc.port, 0);
+/// assert_eq!(sc.bind, "");
+/// ```
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ServerConfig {
     /// TCP port for the web control service.
@@ -118,5 +160,86 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use toml;
+
+    #[tokio::test]
+    async fn test_load_coordinator_config_file() {
+        let toml_str = r#"
+            [server]
+            port = 9090
+            bind = "0.0.0.0"
+
+            [hosts.foo]
+            ip = "1.2.3.4"
+            mac = "aa:aa:aa:aa:aa:aa"
+            port = 5678
+            shared_secret = "s1"
+
+            [clients.bar]
+            shared_secret = "s2"
+        "#;
+        let tmp = std::env::temp_dir().join("test_config.toml");
+        std::fs::write(&tmp, toml_str).unwrap();
+        let cfg = load_coordinator_config(&tmp).await.unwrap();
+        assert_eq!(cfg.server.port, 9090);
+        assert_eq!(cfg.server.bind, "0.0.0.0");
+        let host = cfg.hosts.get("foo").unwrap();
+        assert_eq!(host.ip, "1.2.3.4");
+        assert_eq!(host.mac, "aa:aa:aa:aa:aa:aa");
+        assert_eq!(host.port, 5678);
+        assert_eq!(host.shared_secret, "s1");
+        let client = cfg.clients.get("bar").unwrap();
+        assert_eq!(client.shared_secret, "s2");
+    }
+
+    #[test]
+    fn test_deserialize_controller_config() {
+        let toml_str = r#"
+            [server]
+            port = 8080
+            bind = "127.0.0.1"
+
+            [hosts.foo]
+            ip = "192.168.0.2"
+            mac = "aa:bb:cc:dd:ee:ff"
+            port = 1234
+            shared_secret = "secret1"
+
+            [clients.bar]
+            shared_secret = "secret2"
+        "#;
+        let cfg: ControllerConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        assert_eq!(cfg.server.port, 8080);
+        assert_eq!(cfg.server.bind, "127.0.0.1");
+        assert_eq!(cfg.hosts.len(), 1);
+        let host = cfg.hosts.get("foo").expect("Missing host foo");
+        assert_eq!(host.ip, "192.168.0.2");
+        assert_eq!(host.mac, "aa:bb:cc:dd:ee:ff");
+        assert_eq!(host.port, 1234);
+        assert_eq!(host.shared_secret, "secret1");
+        assert_eq!(cfg.clients.len(), 1);
+        let client = cfg.clients.get("bar").expect("Missing client bar");
+        assert_eq!(client.shared_secret, "secret2");
+    }
+
+    #[tokio::test]
+    async fn test_load_coordinator_config_missing_file() {
+        let tmp = std::env::temp_dir().join("does_not_exist.toml");
+        let res = load_coordinator_config(&tmp).await;
+        assert!(res.is_err(), "Expected error for missing file");
+    }
+
+    #[tokio::test]
+    async fn test_load_coordinator_config_invalid_toml() {
+        let tmp = std::env::temp_dir().join("invalid.toml");
+        std::fs::write(&tmp, "not valid toml").unwrap();
+        let res = load_coordinator_config(&tmp).await;
+        assert!(res.is_err(), "Expected error for invalid TOML");
     }
 }
