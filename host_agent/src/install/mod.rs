@@ -1,3 +1,7 @@
+//! Installation and runtime utilities for the host_agent binary.
+//!
+//! Handles subcommand parsing, agent installation across init systems, network interface discovery, and Wake-on-LAN testing.
+
 use clap::Parser;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
@@ -7,8 +11,10 @@ use std::net::UdpSocket;
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
-/// From 5hu7ho57 (leet speak)
+/// Default UDP port on which the host_agent listens for commands.
 pub const DEFAULT_PORT: u16 = 5757;
+
+/// Template string for adding an agent entry in coordinator configuration.
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 #[cfg(target_os = "linux")]
@@ -18,7 +24,7 @@ const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_hos
 #[cfg(target_os = "linux")]
 const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
 
-/// Struct for the install subcommand, with defaults added
+/// Arguments for the `install` subcommand of host_agent.
 #[derive(Debug, Parser)]
 pub struct InstallArgs {
     #[arg(long = "port", default_value_t = DEFAULT_PORT)]
@@ -34,13 +40,18 @@ pub struct InstallArgs {
     pub init_system: InitSystem,
 }
 
+/// Supported init systems for installing the host_agent.
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 pub enum InitSystem {
+    /// Systemd init system (Linux).
     #[cfg(target_os = "linux")]
     Systemd,
+    /// OpenRC init system (Linux).
     #[cfg(target_os = "linux")]
     OpenRC,
+    /// No init system; generates a self-extracting script.
     Serviceless,
+    /// Launchd init system (macOS).
     #[cfg(target_os = "macos")]
     Launchd,
 }
@@ -59,6 +70,9 @@ impl std::string::ToString for InitSystem {
     }
 }
 
+/// Performs host_agent installation based on provided arguments.
+///
+/// Selects and invokes the appropriate init system installer or generates a script.
 pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
@@ -143,6 +157,7 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
     Ok(())
 }
 
+/// Auto-detects the host system's init system.
 fn get_inferred_init_system() -> InitSystem {
     #[cfg(target_os = "linux")]
     {
@@ -160,6 +175,7 @@ fn get_inferred_init_system() -> InitSystem {
     }
 }
 
+/// Returns the default shutdown command for this OS and init system.
 pub fn get_default_shutdown_command() -> String {
     #[cfg(target_os = "linux")]
     return if is_systemd() {
@@ -172,6 +188,7 @@ pub fn get_default_shutdown_command() -> String {
     return "shutdown -h now".to_string();
 }
 
+/// Attempts to determine the default network interface by parsing system routing information.
 fn get_default_interface() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
@@ -209,6 +226,7 @@ fn get_default_interface() -> Option<String> {
     }
 }
 
+/// Retrieves the MAC address for the named network interface.
 pub fn get_mac(interface: &str) -> Option<String> {
     #[cfg(target_os = "linux")]
     {
@@ -238,6 +256,7 @@ pub fn get_mac(interface: &str) -> Option<String> {
     }
 }
 
+/// Retrieves the IP address for the named network interface.
 pub fn get_ip(interface: &str) -> Option<String> {
     #[cfg(target_os = "linux")]
     {
@@ -275,6 +294,7 @@ pub fn get_ip(interface: &str) -> Option<String> {
     }
 }
 
+/// Retrieves the system hostname.
 pub fn get_hostname() -> Option<String> {
     let output = Command::new("hostname").output().ok()?;
 
@@ -287,6 +307,7 @@ pub fn get_hostname() -> Option<String> {
     }
 }
 
+/// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
 pub fn test_wol_reachability(port: u16) -> Result<(), String> {
     let socket = UdpSocket::bind(format!("0.0.0.0:{}", port))
         .map_err(|e| format!("Failed to bind test socket: {}", e))?;

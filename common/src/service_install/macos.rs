@@ -1,3 +1,7 @@
+//! macOS service installer using launchd.
+//!
+//! Provides functions to install, start, and enable a service as a system daemon.
+
 use std::path::PathBuf;
 use std::{
     env,
@@ -9,6 +13,16 @@ use std::{
 
 use crate::is_superuser;
 
+/// Installs the current binary as a launchd system service.
+///
+/// # Arguments
+///
+/// * `name` - Identifier to name the service and binary.
+/// * `init_script_content` - Template for the launchd plist content (with `{name}` placeholder).
+///
+/// # Errors
+///
+/// Returns `Err` with a string if any filesystem or command operation fails.
 pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
@@ -54,6 +68,15 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     Ok(())
 }
 
+/// Loads and starts the service via launchctl, printing status.
+///
+/// # Arguments
+///
+/// * `name` - Identifier matching the installed service name.
+///
+/// # Errors
+///
+/// Returns `Err` if `launchctl` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     let label = format!("com.github_9smtm6.{name}");
     let plist_path = PathBuf::from(format!("/Library/LaunchDaemons/{label}.plist"));

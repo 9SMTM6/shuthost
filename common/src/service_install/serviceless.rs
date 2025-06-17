@@ -1,3 +1,7 @@
+//! Generates a platform-agnostic self-extracting script embedding the current binary.
+//!
+//! Allows bundling the binary within a shell script with custom environment and execution.
+
 use std::{
     env,
     fs::{self, File},
@@ -5,12 +9,17 @@ use std::{
     os::unix::fs::PermissionsExt,
 };
 
-/// Generate a self-extracting script with arbitrary environment variables and execution command.
+/// Generates a self-extracting shell script containing the current binary payload.
 ///
 /// # Arguments
-/// * `env_vars` - List of environment variables to include (name, value)
-/// * `exec_args` - The command to run the extracted binary with (e.g., `"$OUT" foo --bar`)
-/// * `target_script_path` - Path to write the resulting script to
+///
+/// * `env_vars` - List of environment variable tuples (name, value) to include in the script.
+/// * `exec_args` - Shell command template to execute the extracted binary.
+/// * `target_script_path` - Destination path for the generated script file.
+///
+/// # Errors
+///
+/// Returns `Err` if any filesystem or I/O operations fail.
 pub fn generate_self_extracting_script(
     env_vars: &[(&str, &str)],
     exec_args: &str,

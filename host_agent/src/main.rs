@@ -1,3 +1,5 @@
+//! Command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
+
 mod handler;
 mod install;
 mod server;
@@ -9,6 +11,7 @@ use install::install_host_agent;
 use server::ServiceArgs;
 use std::env;
 
+/// Top-level CLI parser for host_agent.
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
 #[command(version = env!("CARGO_PKG_VERSION"))]
@@ -19,16 +22,18 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Subcommands available for host_agent execution.
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Start the service
+    /// Start the host_agent as a background service.
     Service(ServiceArgs),
 
-    /// Install the host_agent
+    /// Install the host_agent on the system.
     Install(InstallArgs),
 
-    /// Test WoL packet reachability
+    /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
+        /// UDP port to listen on for WOL test packets.
         #[arg(long = "port", default_value_t = DEFAULT_PORT + 1)]
         port: u16,
     },

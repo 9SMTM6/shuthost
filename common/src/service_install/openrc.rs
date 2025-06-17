@@ -1,3 +1,7 @@
+//! OpenRC service installer for Unix-like systems.
+//!
+//! Provides functions to install the current binary as an OpenRC init script and start it.
+
 use std::{
     env,
     fs::{self, File},
@@ -9,6 +13,16 @@ use std::{
 
 use crate::is_superuser;
 
+/// Installs the current binary as an OpenRC service init script.
+///
+/// # Arguments
+///
+/// * `name` - Name to assign to the service and executable.
+/// * `init_script_content` - Template for the OpenRC init script (with `{binary}` placeholder).
+///
+/// # Errors
+///
+/// Returns `Err` if not running as superuser or if filesystem operations fail.
 pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
@@ -52,6 +66,15 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     Ok(())
 }
 
+/// Adds the service to the default runlevel and starts it.
+///
+/// # Arguments
+///
+/// * `name` - Name of the service to enable and start.
+///
+/// # Errors
+///
+/// Returns `Err` if the `rc-update` or `rc-service` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     Command::new("rc-update")
         .arg("add")

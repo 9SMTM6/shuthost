@@ -1,3 +1,7 @@
+//! Coordinator CLI entrypoint for the `shuthost_coordinator` binary.
+//!
+//! Provides commands to install the service or launch the control web service.
+
 mod assets;
 mod config;
 mod http;
@@ -15,6 +19,7 @@ use std::{env, fs};
 use http::{ServiceArgs, start_http_server};
 use tracing::info;
 
+/// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
 #[command(version = env!("CARGO_PKG_VERSION"))]
@@ -24,15 +29,17 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Available subcommands for the coordinator.
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Start the WebUI
+    /// Launch the control web service (WebUI) for managing hosts.
     ControlService(ServiceArgs),
 
-    /// Install the WebUI as system service, starting on boot
+    /// Install the coordinator service to start on boot.
     Install(InstallArgs),
 }
 
+/// Application entrypoint: parses CLI and dispatches install or server startup.
 #[tokio::main]
 async fn main() {
     let invocation = Cli::parse();

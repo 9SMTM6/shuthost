@@ -1,3 +1,7 @@
+//! Coordinator installer: sets up the service to run the web control interface on boot.
+//!
+//! Supports systemd, OpenRC, and launchd based on target OS.
+
 use clap::Parser;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -21,21 +25,31 @@ const SERVICE_FILE_TEMPLATE: &str =
 #[cfg(target_os = "linux")]
 const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.sh");
 
-/// Struct for the install subcommand
+/// Arguments for the `install` subcommand of the coordinator.
 #[derive(Debug, Parser)]
 pub struct InstallArgs {
-    /// Can be inferred from `$SUDO_USER` on Linux. MacOS doesn't support that, other detection mechanisms are flaky.
+    /// Username to own the generated config file (from $SUDO_USER).
     #[arg(env = "SUDO_USER")]
     user: String,
 
+    /// Port on which the coordinator HTTP server will listen.
     #[arg(long = "port", default_value_t = 8080)]
     port: u16,
 
-    /// IP address to bind the HTTP server to (e.g. 127.0.0.1 / ::1 - ipv4 / ipv6 on only localhost -, 0.0.0.0 / :: - ipv4 / ipv6 on all interfaces)
+    /// Bind address for the HTTP server (e.g., 127.0.0.1 or 0.0.0.0).
     #[arg(long = "bind", default_value = "127.0.0.1")]
     bind: String,
 }
 
+/// Installs the coordinator as a system service and creates its config file.
+///
+/// # Arguments
+///
+/// * `args` - Installation arguments including user, port, and bind address.
+///
+/// # Errors
+///
+/// Returns `Err` if any filesystem, templating, or service management step fails.
 pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let user = args.user;

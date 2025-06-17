@@ -1,3 +1,7 @@
+//! Systemd service installer for Linux systems.
+//!
+//! Provides functions to install and enable a service unit for the current binary.
+
 use std::{
     env,
     fs::{self, File},
@@ -9,6 +13,16 @@ use std::{
 
 use crate::is_superuser;
 
+/// Installs the current binary and creates a systemd service unit file.
+///
+/// # Arguments
+///
+/// * `name` - Base name for the service and binary.
+/// * `init_script_content` - Template for the unit file content (`{binary}` placeholder).
+///
+/// # Errors
+///
+/// Returns `Err` if not root or filesystem writes fail.
 pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
@@ -58,6 +72,15 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     Ok(())
 }
 
+/// Reloads systemd, enables, and starts the service unit.
+///
+/// # Arguments
+///
+/// * `name` - Base name of the service (unit name without `.service`).
+///
+/// # Errors
+///
+/// Returns `Err` if `systemctl` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     let service_name = format!("{name}.service");
 

@@ -1,6 +1,20 @@
+//! Request handler utilities for host_agent: parsing, validating, and executing shutdown commands.
+
 use crate::server::ServiceArgs;
 use shuthost_common::validate_hmac_message;
 
+/// Parses incoming bytes, validates HMAC-signed commands, and returns a response with a flag indicating shutdown.
+///
+/// # Arguments
+///
+/// * `data` - Raw request bytes received over TCP.
+/// * `config` - Shared service configuration including the secret and shutdown command.
+/// * `peer_addr` - String representation of the client's address for logging.
+///
+/// # Returns
+///
+/// A tuple `(response, should_shutdown)`, where `response` is sent back to the client, and
+/// `should_shutdown` indicates if the agent should execute a shutdown.
 pub fn handle_request_without_shutdown(
     data: &[u8],
     config: &ServiceArgs,
@@ -52,6 +66,15 @@ pub fn handle_request_without_shutdown(
     }
 }
 
+/// Executes the configured shutdown command via the shell.
+///
+/// # Arguments
+///
+/// * `config` - ServiceArgs holding the `shutdown_command` to execute.
+///
+/// # Errors
+///
+/// Returns `Err` if spawning or waiting on the process fails.
 pub fn execute_shutdown(config: &ServiceArgs) -> Result<(), std::io::Error> {
     println!("Executing command: {}", &config.shutdown_command);
     std::process::Command::new("sh")

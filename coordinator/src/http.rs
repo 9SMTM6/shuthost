@@ -1,3 +1,7 @@
+//! HTTP server implementation for the coordinator control interface.
+//!
+//! Defines routes, state management, configuration watching, and periodic host polling.
+
 use axum::http::Request;
 use axum::routing;
 use axum::{Router, response::Redirect, routing::get};
@@ -7,6 +11,7 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tracing::{debug, info};
 
+use crate::assets::asset_routes;
 use crate::{
     config::{ControllerConfig, load_coordinator_config, watch_config_file},
     routes::{LeaseMap, api_routes, get_download_router},
@@ -18,10 +23,10 @@ use std::collections::HashMap;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::{broadcast, watch};
 
-use crate::assets::asset_routes;
-
+/// Command-line arguments for the HTTP service subcommand.
 #[derive(Debug, Parser)]
 pub struct ServiceArgs {
+    /// Path to the coordinator TOML config file.
     #[arg(
         long = "config",
         env = "SHUTHOST_CONTROLLER_CONFIG_PATH",
@@ -30,15 +35,34 @@ pub struct ServiceArgs {
     pub config: String,
 }
 
+/// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
 pub struct AppState {
+    /// Path to the configuration file for template injection and reloads.
     pub config_path: std::path::PathBuf,
+
+    /// Receiver for updated `ControllerConfig` when the file changes.
     pub config_rx: watch::Receiver<Arc<ControllerConfig>>,
+
+    /// Receiver for host online/offline status updates.
     pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+
+    /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: broadcast::Sender<WsMessage>,
+
+    /// In-memory map of current leases for hosts.
     pub leases: LeaseMap,
 }
 
+/// Starts the Axum-based HTTP server for the coordinator UI and API.
+///
+/// # Arguments
+///
+/// * `config_path` - Path to the TOML configuration file.
+///
+/// # Returns
+///
+/// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
 pub async fn start_http_server(
     config_path: &std::path::Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -129,6 +153,7 @@ pub async fn start_http_server(
     Ok(())
 }
 
+/// Background task: periodically polls each host for status by attempting a TCP connection and HMAC ping.
 async fn poll_host_statuses(
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
