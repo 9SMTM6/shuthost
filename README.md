@@ -1,6 +1,6 @@
-# 🔌 ShutHost
+# <img src="coordinator/assets/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 > 🚀 A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
@@ -69,7 +69,8 @@ Alternatively, you can set the address the coordinator binds to in the configura
 
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks
-- ✅ Only the coordinator that knows these secrets can use them
+- ✅ Only the coordinator that knows these (shared) secrets can use them
+> ⚠️ **Warning**: All traffic between the coordinator and agents is **unencrypted** and only secured with HMAC signatures. This means that while status checks and commands are protected from tampering, anyone on the same LAN can observe the traffic and infer host statuses.
 
 ### 🔐 Client Security
 - ✅ The client is secured in the same way
@@ -119,4 +120,5 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
+    - Page is supposed to be behind reverse proxy...
     - Page is supposed to be behind reverse proxy...
