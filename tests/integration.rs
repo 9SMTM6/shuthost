@@ -7,17 +7,26 @@ use reqwest::Client;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
+fn get_free_port() -> u16 {
+    std::net::TcpListener::bind("127.0.0.1:0")
+        .expect("failed to bind to address")
+        .local_addr()
+        .unwrap()
+        .port()
+}
+
 #[tokio::test]
 async fn test_coordinator_config_loads() {
-    let toml_str = r#"
+    let port = get_free_port();
+    let toml_str = format!(r#"
         [server]
-        port = 12345
+        port = {port}
         bind = "127.0.0.1"
 
         [hosts]
 
         [clients]
-        "#;
+        "#);
     let tmp = std::env::temp_dir().join("integration_test_config.toml");
     fs::write(&tmp, toml_str).unwrap();
     let mut child = Command::new("cargo")
@@ -44,42 +53,40 @@ fn test_host_agent_binary_runs() {
 
 #[tokio::test]
 async fn test_coordinator_and_agent_online_status() {
-    // Write a config with a host and shared secret
-    let config = r#"
+    let coord_port = get_free_port();
+    let agent_port = get_free_port();
+    let config = format!(r#"
         [server]
-        port = 60100
+        port = {coord_port}
         bind = "127.0.0.1"
 
         [hosts.testhost]
         ip = "127.0.0.1"
         mac = "00:11:22:33:44:55"
-        port = 60101
+        port = {agent_port}
         shared_secret = "testsecret"
 
         [clients]
-    "#;
+    "#);
     let tmp = std::env::temp_dir().join("integration_test_config_online.toml");
     std::fs::write(&tmp, config).unwrap();
 
-    // Start the coordinator
     let mut coordinator = Command::new("cargo")
         .args(["run", "--bin", "shuthost_coordinator", "control-service", "--config", tmp.to_str().unwrap()])
         .spawn()
         .expect("failed to start coordinator");
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-    // Start the agent with the same shared secret and port
     let mut agent = Command::new("env")
         .env("SHUTHOST_SHARED_SECRET", "testsecret")
-        .args(["cargo", "run", "--bin", "shuthost_host_agent", "--", "service", "--port", "60101"])
+        .args(["cargo", "run", "--bin", "shuthost_host_agent", "--", "service", "--port", &agent_port.to_string()])
         .spawn()
         .expect("failed to start agent");
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
-    // Query the coordinator for host status
     let client = Client::new();
-    let url = "http://127.0.0.1:60100/api/hosts_status";
-    let resp = client.get(url).send().await.expect("failed to query hosts_status");
+    let url = format!("http://127.0.0.1:{}/api/hosts_status", coord_port);
+    let resp = client.get(&url).send().await.expect("failed to query hosts_status");
     assert!(resp.status().is_success());
     let json: serde_json::Value = resp.json().await.expect("invalid json");
     assert_eq!(json["testhost"], true, "Host should be online");
@@ -88,4 +95,78 @@ async fn test_coordinator_and_agent_online_status() {
     let _ = agent.wait();
     let _ = coordinator.kill();
     let _ = coordinator.wait();
+}
+
+#[tokio::test]
+async fn test_shutdown_command_execution() {
+    use std::path::Path;
+    let shutdown_file = "/tmp/shuthost_shutdown_test";
+    let _ = std::fs::remove_file(shutdown_file); // Clean up before test
+    let coord_port = get_free_port();
+    let agent_port = get_free_port();
+    let config = format!(r#"
+        [server]
+        port = {coord_port}
+        bind = "127.0.0.1"
+
+        [hosts.testhost]
+        ip = "127.0.0.1"
+        mac = "00:11:22:33:44:55"
+        port = {agent_port}
+        shared_secret = "testsecret"
+
+        [clients]
+    "#);
+    let tmp = std::env::temp_dir().join("integration_test_config_shutdown.toml");
+    std::fs::write(&tmp, config).unwrap();
+
+    let mut coordinator = Command::new("cargo")
+        .args(["run", "--bin", "shuthost_coordinator", "control-service", "--config", tmp.to_str().unwrap()])
+        .spawn()
+        .expect("failed to start coordinator");
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let mut agent = Command::new("env")
+        .env("SHUTHOST_SHARED_SECRET", "testsecret")
+        .args([
+            "cargo", "run", "--bin", "shuthost_host_agent", "--", "service",
+            "--port", &agent_port.to_string(), "--shutdown-command", &format!("echo SHUTDOWN > {}", shutdown_file)
+        ])
+        .spawn()
+        .expect("failed to start agent");
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+
+    let client = Client::new();
+    let status_url = format!("http://127.0.0.1:{}/api/hosts_status", coord_port);
+    let mut online = false;
+    for _ in 0..10 {
+        let resp = client.get(&status_url).send().await;
+        if let Ok(resp) = resp {
+            if let Ok(json) = resp.json::<serde_json::Value>().await {
+                if json["testhost"] == true {
+                    online = true;
+                    break;
+                }
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    }
+    assert!(online, "Host should be online before triggering shutdown");
+
+    let url = format!("http://127.0.0.1:{}/api/lease/testhost/release", coord_port);
+    let resp = client.post(&url).send().await.expect("failed to send shutdown lease");
+    assert!(resp.status().is_success());
+
+    tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+    if Path::new(shutdown_file).exists() {
+        let contents = std::fs::read_to_string(shutdown_file).unwrap_or_default();
+        println!("Shutdown file contents: {}", contents);
+    }
+    assert!(Path::new(shutdown_file).exists(), "Shutdown file should exist after shutdown command");
+
+    let _ = agent.kill();
+    let _ = agent.wait();
+    let _ = coordinator.kill();
+    let _ = coordinator.wait();
+    let _ = std::fs::remove_file(shutdown_file); // Clean up after test
 }
