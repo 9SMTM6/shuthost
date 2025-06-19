@@ -45,7 +45,9 @@ while [ $# -gt 0 ]; do
             INSTALLER_ARGS="$INSTALLER_ARGS --port $1"
             ;;
         *)
-            INSTALLER_ARGS="$INSTALLER_ARGS $1"
+            # Escape any embedded double quotes
+            ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
+            INSTALLER_ARGS="$INSTALLER_ARGS \"$ESCAPED_ARG\""
             ;;
     esac
     shift
@@ -130,9 +132,9 @@ elevate_privileges() {
 
 echo "Running installer..."
 if [ "$(id -u)" -eq 0 ]; then
-    sh -c "./$OUTFILE install $INSTALLER_ARGS"
+    eval "sh -c './$OUTFILE install $INSTALLER_ARGS'"
 else
-    elevate_privileges ./"$OUTFILE" install "$INSTALLER_ARGS"
+    eval "elevate_privileges ./'$OUTFILE' install $INSTALLER_ARGS"
 fi
 
 echo "Cleaning up..."

@@ -14,7 +14,7 @@ use std::{
 /// # Arguments
 ///
 /// * `env_vars` - List of environment variable tuples (name, value) to include in the script.
-/// * `exec_args` - Shell command template to execute the extracted binary.
+/// * `exec_args` - Shell command arguments for the extracted binary.
 /// * `target_script_path` - Destination path for the generated script file.
 ///
 /// # Errors
@@ -31,7 +31,7 @@ pub fn generate_self_extracting_script(
     // Format environment variable declarations
     let env_section = env_vars
         .iter()
-        .map(|(k, v)| format!(r#"{k}="{v}""#))
+        .map(|(k, v)| format!(r#"export {k}="{v}""#))
         .collect::<Vec<_>>()
         .join("\n");
 
@@ -43,8 +43,8 @@ OUT=$(mktemp /tmp/selfbin.XXXXXX)
 TAIL_LINE=$(awk '/^__BINARY_PAYLOAD_BELOW__/ {{ print NR + 1; exit 0; }}' "$0")
 tail -n +$TAIL_LINE "$0" > "$OUT"
 chmod +x "$OUT"
-{exec_args} "$@"
-exit 1
+nohup "$OUT" {exec_args} "$@" >"$OUT.log" 2>&1 &
+exit 0
 
 __BINARY_PAYLOAD_BELOW__
 "#

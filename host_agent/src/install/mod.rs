@@ -49,7 +49,7 @@ pub enum InitSystem {
     /// OpenRC init system (Linux).
     #[cfg(target_os = "linux")]
     OpenRC,
-    /// No init system; generates a self-extracting script.
+    /// No init system; generates a self-extracting script you'll have to start yourself.
     Serviceless,
     /// Launchd init system (macOS).
     #[cfg(target_os = "macos")]
@@ -101,14 +101,14 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
             shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
         }
         InitSystem::Serviceless => {
-            let target_script_path = format!("/usr/local/bin/{}", name);
+            let target_script_path = format!("./{name}_self_extracting");
             shuthost_common::serviceless::generate_self_extracting_script(
                 &[
-                    ("SECRET", &arguments.shared_secret),
+                    ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                &"SHUTHOST_SHARED_SECRET=$SECRET \"$OUT\" service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
+                &"service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
                 &target_script_path,
             )?;
             println!(
