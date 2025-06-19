@@ -1,9 +1,9 @@
 # <img src="coordinator/assets/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
 
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
-> 🚀 A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
+> A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
 ⚠️ **Note**: LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
@@ -44,7 +44,7 @@ This requires either:
 
 ### 🌐 Network Configuration
 
-The coordinator exposes its server on `127.0.0.1` only by default - so on localhost, ipv4, without remote access. This is for security reasons.
+The coordinator binary exposes its server on `127.0.0.1` only by default - so on localhost, ipv4, without remote access. This is for security reasons.
 
 #### 🐳 Docker Access
 To access the binary from Docker, use the address:
@@ -106,19 +106,17 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 
 ### 🔐 Authentication & Authorization
 - 🆔 **OIDC authorization** where I allow the required endpoints for all
+  - alternative to putting the GUI behind external Authorization
   - Might consider enabling this by default
-  - Show error if UI is shown without any authorization (detect by header presence)
+  - Show error if UI is shown without any authorization (detected e.g. by header presence)
 
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
-  - ⚠️ Requires using cross (won't do locally)
-  - Means refactoring the GitHub pipeline
-  - Would need to introduce features to build locally
+  - ⚠️ Requires using cross
+  - I have no ability to test these.
 
 ### 🔧 Management Features
 - 🗑️ **Uninstalls**
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
-    - Page is supposed to be behind reverse proxy...
-    - Page is supposed to be behind reverse proxy...
