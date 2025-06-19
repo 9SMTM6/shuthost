@@ -15,6 +15,16 @@ fn get_free_port() -> u16 {
         .port()
 }
 
+/// Guard that kills and waits on a child process when dropped.
+struct KillOnDrop(std::process::Child);
+
+impl Drop for KillOnDrop {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
 #[tokio::test]
 async fn test_coordinator_config_loads() {
     let port = get_free_port();
@@ -71,17 +81,19 @@ async fn test_coordinator_and_agent_online_status() {
     let tmp = std::env::temp_dir().join("integration_test_config_online.toml");
     std::fs::write(&tmp, config).unwrap();
 
-    let mut coordinator = Command::new("cargo")
+    let coordinator = Command::new("cargo")
         .args(["run", "--bin", "shuthost_coordinator", "control-service", "--config", tmp.to_str().unwrap()])
         .spawn()
         .expect("failed to start coordinator");
+    let _coordinator_guard = KillOnDrop(coordinator);
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-    let mut agent = Command::new("env")
+    let agent = Command::new("env")
         .env("SHUTHOST_SHARED_SECRET", "testsecret")
         .args(["cargo", "run", "--bin", "shuthost_host_agent", "--", "service", "--port", &agent_port.to_string()])
         .spawn()
         .expect("failed to start agent");
+    let _agent_guard = KillOnDrop(agent);
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let client = Client::new();
@@ -90,11 +102,6 @@ async fn test_coordinator_and_agent_online_status() {
     assert!(resp.status().is_success());
     let json: serde_json::Value = resp.json().await.expect("invalid json");
     assert_eq!(json["testhost"], true, "Host should be online");
-
-    let _ = agent.kill();
-    let _ = agent.wait();
-    let _ = coordinator.kill();
-    let _ = coordinator.wait();
 }
 
 #[tokio::test]
@@ -120,13 +127,14 @@ async fn test_shutdown_command_execution() {
     let tmp = std::env::temp_dir().join("integration_test_config_shutdown.toml");
     std::fs::write(&tmp, config).unwrap();
 
-    let mut coordinator = Command::new("cargo")
+    let coordinator = Command::new("cargo")
         .args(["run", "--bin", "shuthost_coordinator", "control-service", "--config", tmp.to_str().unwrap()])
         .spawn()
         .expect("failed to start coordinator");
+    let _coordinator_guard = KillOnDrop(coordinator);
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-    let mut agent = Command::new("env")
+    let agent = Command::new("env")
         .env("SHUTHOST_SHARED_SECRET", "testsecret")
         .args([
             "cargo", "run", "--bin", "shuthost_host_agent", "--", "service",
@@ -134,6 +142,7 @@ async fn test_shutdown_command_execution() {
         ])
         .spawn()
         .expect("failed to start agent");
+    let _agent_guard = KillOnDrop(agent);
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let client = Client::new();
@@ -163,10 +172,5 @@ async fn test_shutdown_command_execution() {
         println!("Shutdown file contents: {}", contents);
     }
     assert!(Path::new(shutdown_file).exists(), "Shutdown file should exist after shutdown command");
-
-    let _ = agent.kill();
-    let _ = agent.wait();
-    let _ = coordinator.kill();
-    let _ = coordinator.wait();
     let _ = std::fs::remove_file(shutdown_file); // Clean up after test
 }
