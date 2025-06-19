@@ -585,6 +585,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "integration-tests"
+version = "1.0.0-rc-1"
+dependencies = [
+ "tokio",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
