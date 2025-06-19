@@ -2,7 +2,7 @@ use axum::{
     Router,
     extract::{Path, State},
     response::IntoResponse,
-    routing::post,
+    routing::{post, get},
 };
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -24,6 +24,7 @@ pub fn api_routes() -> Router<AppState> {
             "/reset_leases/{client_id}",
             post(handle_reset_client_leases),
         )
+        .route("/hosts_status", get(get_hosts_status))
 }
 
 /// Lease action for lease endpoints (shared between web and m2m)
@@ -113,4 +114,10 @@ async fn handle_reset_client_leases(
     }
 
     format!("All leases for client '{}' have been reset.", client_id).into_response()
+}
+
+/// Returns the online status of all hosts as a JSON object.
+async fn get_hosts_status(State(state): State<AppState>) -> impl IntoResponse {
+    let hoststatus = state.hoststatus_rx.borrow().clone();
+    axum::Json((*hoststatus).clone())
 }
