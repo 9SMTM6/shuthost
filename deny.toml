@@ -1,0 +1,21 @@
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+
+# leaving this here for reference. Http links please.
+allow-git = [
+    # "https://github.com/chemicstry/wasm_thread",
+]
+
+[advisories]
+
+[bans]
+# Is a duplicate of rustc::multiple_crate_versions
+multiple-versions = "warn"
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "MIT",
+]

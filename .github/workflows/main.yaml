@@ -1,4 +1,4 @@
-name: Build All Targets
+name: Build and Test Host Agent and Coordinator
 permissions:
   contents: read
 
