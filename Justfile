@@ -57,3 +57,17 @@ update_dependencies:
 
 test_all:
     cargo test --no-default-features --workspace --all-targets
+
+ci_cargo_deny:
+    cargo +stable --locked deny check --hide-inclusion-graph --graph duplicates_tree
+
+alias deny := ci_cargo_deny
+
+ci_semver_updates:
+    cargo +stable --locked generate-lockfile
+
+semver_updates:
+    cargo +stable generate-lockfile
+
+ci_typo:
+    typos
