@@ -69,15 +69,15 @@ pub fn handle_request_without_shutdown(
         }
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
             eprintln!("Timestamp out of range from {}", peer_addr);
-            return ("ERROR: Timestamp out of range".to_string(), false);
+            ("ERROR: Timestamp out of range".to_string(), false)
         }
         shuthost_common::HmacValidationResult::InvalidHmac => {
             eprintln!("Invalid HMAC signature from {}", peer_addr);
-            return ("ERROR: Invalid HMAC signature".to_string(), false);
+            ("ERROR: Invalid HMAC signature".to_string(), false)
         }
         shuthost_common::HmacValidationResult::MalformedMessage => {
             eprintln!("Invalid request format from {}", peer_addr);
-            return ("ERROR: Invalid request format".to_string(), false);
+            ("ERROR: Invalid request format".to_string(), false)
         }
     }
 }
@@ -148,7 +148,7 @@ mod tests {
     fn test_handle_invalid_timestamp() {
         let secret = "s";
         let args = make_args(secret);
-        let data = format!("0|cmd|signature");
+        let data = "0|cmd|signature".to_string();
         let (resp, shutdown) = handle_request_without_shutdown(data.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Timestamp out of range");
         assert!(!shutdown);

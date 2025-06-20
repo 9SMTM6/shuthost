@@ -95,12 +95,12 @@ async fn handle_m2m_lease_action(
     let client_id = headers
         .get("X-Client-ID")
         .and_then(|v| v.to_str().ok())
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing X-Client-ID"))?;
+        .ok_or((StatusCode::BAD_REQUEST, "Missing X-Client-ID"))?;
 
     let data_str = headers
         .get("X-Request")
         .and_then(|v| v.to_str().ok())
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "Missing X-Request"))?;
+        .ok_or((StatusCode::BAD_REQUEST, "Missing X-Request"))?;
 
     let parts: Vec<&str> = data_str.split('|').collect();
     if parts.len() != 3 {
@@ -121,7 +121,7 @@ async fn handle_m2m_lease_action(
             .clone()
     };
 
-    let command = match validate_hmac_message(&data_str, &shared_secret) {
+    let command = match validate_hmac_message(data_str, &shared_secret) {
         shuthost_common::HmacValidationResult::Valid(valid_message) => valid_message,
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
             info!("Timestamp out of range for client '{}'", client_id);
@@ -167,7 +167,7 @@ async fn handle_m2m_lease_action(
                 Ok("Lease taken (async)".into_response())
             } else {
                 // In sync mode, the request waits for the host to reach the online state (or timeout) before returning.
-                handle_host_state(&host, &lease_set, &state).await?;
+                handle_host_state(&host, lease_set, &state).await?;
                 Ok("Lease taken, host is online".into_response())
             }
         }
@@ -188,7 +188,7 @@ async fn handle_m2m_lease_action(
                 Ok("Lease released (async)".into_response())
             } else {
                 // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
-                handle_host_state(&host, &lease_set, &state).await?;
+                handle_host_state(&host, lease_set, &state).await?;
                 Ok("Lease released, host is offline".into_response())
             }
         }

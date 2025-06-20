@@ -169,7 +169,7 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
 #[cfg(test)]
 mod tests {
     use super::*;
-    use toml;
+    
 
     #[tokio::test]
     async fn test_load_coordinator_config_file() {

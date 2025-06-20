@@ -72,7 +72,7 @@ host_agent_handler!(
 );
 
 async fn get_installer() -> impl IntoResponse {
-    const INSTALLER: &'static [u8] = include_bytes!("./host_agent_installer.sh");
+    const INSTALLER: &[u8] = include_bytes!("./host_agent_installer.sh");
     Response::builder()
         .header("Content-Type", "text/plain")
         .header("Content-Length", INSTALLER.len().to_string())
@@ -82,7 +82,7 @@ async fn get_installer() -> impl IntoResponse {
 }
 
 async fn get_client_installer() -> impl IntoResponse {
-    const INSTALLER: &'static [u8] = include_bytes!("./client_installer.sh");
+    const INSTALLER: &[u8] = include_bytes!("./client_installer.sh");
     Response::builder()
         .header("Content-Type", "text/plain")
         .header("Content-Length", INSTALLER.len().to_string())

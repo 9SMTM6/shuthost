@@ -108,7 +108,7 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                &"service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
+                "service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
                 &target_script_path,
             )?;
             println!(
@@ -140,14 +140,14 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
                 "{ip}",
                 &interface
                     .as_ref()
-                    .and_then(|it| get_ip(&it))
+                    .and_then(|it| get_ip(it))
                     .unwrap_or("unrecognized".to_string())
             )
             .replace(
                 "{mac}",
                 &interface
                     .as_ref()
-                    .and_then(|it| get_mac(&it))
+                    .and_then(|it| get_mac(it))
                     .unwrap_or("unrecognized".to_string())
             )
             .replace("{port}", &arguments.port.to_string())
@@ -158,7 +158,7 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
 }
 
 /// Auto-detects the host system's init system.
-fn get_inferred_init_system() -> InitSystem {
+const fn get_inferred_init_system() -> InitSystem {
     #[cfg(target_os = "linux")]
     {
         if is_systemd() {
