@@ -119,12 +119,11 @@ fn is_timestamp_in_valid_range(timestamp: u64) -> bool {
 
 fn parse_hmac_message(data: &str) -> Option<(u64, String, String)> {
     let parts: Vec<&str> = data.split('|').collect();
-    if parts.len() != 3 {
+    let &[timestamp_str, message, signature] = parts.as_slice() else {
         return None;
-    }
-
-    let timestamp = parts[0].parse().ok()?;
-    Some((timestamp, parts[1].to_string(), parts[2].to_string()))
+    };
+    let timestamp = timestamp_str.parse().ok()?;
+    Some((timestamp, message.to_string(), signature.to_string()))
 }
 
 /// Generates a random secret string suitable for use as an HMAC key.

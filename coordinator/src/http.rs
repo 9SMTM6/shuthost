@@ -183,7 +183,10 @@ async fn poll_host_statuses(
                             let mut buf = vec![0u8; 256];
                             match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
                                 Ok(Ok(n)) if n > 0 => {
-                                    let resp = String::from_utf8_lossy(&buf[..n]);
+                                    let Some(data) = buf.get(..n) else {
+                                        unreachable!("Read data size should always be valid, as its >= buffer size");
+                                    };
+                                    let resp = String::from_utf8_lossy(data);
                                     // Accept any non-error response as online
                                     !resp.contains("ERROR")
                                 }

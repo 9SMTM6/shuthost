@@ -19,14 +19,17 @@ pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> Result<(), St
 }
 
 fn parse_mac(mac: &str) -> Result<[u8; 6], String> {
-    let parts: Vec<&str> = mac.split(':').collect();
-    if parts.len() != 6 {
-        return Err("Invalid MAC address format".into());
+    let mut mac_bytes = [0u8; 6];
+    let mut parts = mac.split(':');
+
+    for mac_byte in &mut mac_bytes {
+        let part = parts.next().ok_or("Invalid MAC address format")?;
+        *mac_byte = u8::from_str_radix(part, 16).map_err(|_| "Invalid MAC byte")?;
     }
 
-    let mut mac_bytes = [0u8; 6];
-    for (i, part) in parts.iter().enumerate() {
-        mac_bytes[i] = u8::from_str_radix(part, 16).map_err(|_| "Invalid MAC byte")?;
+    // Ensure there are no extra parts
+    if parts.next().is_some() {
+        return Err("Invalid MAC address format".into());
     }
 
     Ok(mac_bytes)

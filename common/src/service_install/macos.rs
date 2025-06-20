@@ -28,13 +28,13 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         return Err("You must run this command as root or with sudo.".to_string());
     }
 
-    let binary_path = env::current_exe().unwrap();
+    let binary_path = env::current_exe().map_err(|e| e.to_string())?;
 
     let target_bin = PathBuf::from("/usr/local/bin/").join(name);
     let label = format!("com.github_9smtm6.{name}");
     let plist_path = PathBuf::from(format!("/Library/LaunchDaemons/{label}.plist"));
 
-    fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
+    fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
     // Set binary permissions to 0755 (root can write, others can read/execute)
     fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))

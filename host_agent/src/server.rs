@@ -53,7 +53,9 @@ fn handle_client(mut stream: TcpStream, config: &ServiceArgs) {
         .unwrap_or_else(|_| "unknown".to_string());
     match stream.read(&mut buffer) {
         Ok(size) => {
-            let data = &buffer[..size];
+            let Some(data) = buffer.get(..size) else {
+                unreachable!("Read data size should always be valid, as its >= buffer size");
+            };
             let (response, should_shutdown) =
                 handle_request_without_shutdown(data, config, &peer_addr);
             if let Err(e) = stream.write_all(response.as_bytes()) {

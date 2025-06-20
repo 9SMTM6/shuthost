@@ -376,7 +376,10 @@ pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String,
         }
     };
 
-    Ok(String::from_utf8_lossy(&buf[..n]).to_string())
+    let Some(data) = buf.get(..n) else {
+        unreachable!("Read data size should always be valid, as its >= buffer size");
+    };
+    Ok(String::from_utf8_lossy(data).to_string())
 }
 
 async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
