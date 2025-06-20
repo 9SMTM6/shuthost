@@ -23,6 +23,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::websocket::WsMessage;
 use crate::{http::AppState, wol::send_magic_packet};
+use crate::config::Host;
 
 use super::api::LeaseAction;
 
@@ -299,25 +300,27 @@ pub async fn handle_host_state(
     Ok(())
 }
 
+fn get_host_config(host_name: &str, state: &AppState) -> Result<Host, (StatusCode, &'static str)> {
+    let config = state.config_rx.borrow();
+    match config.hosts.get(host_name) {
+        Some(host) => {
+            debug!(
+                "Found configuration for host '{}': ip={}, mac={}",
+                host_name, host.ip, host.mac
+            );
+            Ok(host.clone())
+        }
+        None => {
+            error!("No configuration found for host '{}'", host_name);
+            Err((StatusCode::NOT_FOUND, "Unknown host"))
+        }
+    }
+}
+
 fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
     debug!("Attempting to wake host '{}'", host_name);
 
-    let host_config = {
-        let config = state.config_rx.borrow();
-        match config.hosts.get(host_name) {
-            Some(host) => {
-                debug!(
-                    "Found configuration for host '{}': ip={}, mac={}",
-                    host_name, host.ip, host.mac
-                );
-                host.clone()
-            }
-            None => {
-                error!("No configuration found for host '{}'", host_name);
-                return Err((StatusCode::NOT_FOUND, "Unknown host"));
-            }
-        }
-    };
+    let host_config = get_host_config(host_name, state)?;
 
     info!(
         "Sending WoL packet to '{}' (MAC: {})",
