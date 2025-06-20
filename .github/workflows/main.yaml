@@ -49,9 +49,6 @@ jobs:
       - name: Build host_agent
         run: |
           cargo fetch
-          if [[ "${{ matrix.linker }}" != "" ]]; then
-            export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
-          fi
           cargo build --release --bin shuthost_host_agent --target ${{ matrix.target }}
 
       - name: Upload artifact
@@ -115,9 +112,6 @@ jobs:
 
       - name: Build coordinator
         run: |
-          if [[ "${{ matrix.linker }}" != "" ]]; then
-            export CARGO_TARGET_$(echo ${{ matrix.target }} | tr a-z A-Z | tr '-' '_' )_LINKER=${{ matrix.linker }}
-          fi
           cargo build --release --bin shuthost_coordinator --target ${{ matrix.target }}
 
       - name: Upload coordinator binary
