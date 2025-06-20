@@ -21,9 +21,9 @@ use shuthost_common::{create_signed_message, validate_hmac_message};
 use tokio::sync::{Mutex, broadcast};
 use tracing::{debug, error, info, warn};
 
+use crate::config::Host;
 use crate::websocket::WsMessage;
 use crate::{http::AppState, wol::send_magic_packet};
-use crate::config::Host;
 
 use super::api::LeaseAction;
 

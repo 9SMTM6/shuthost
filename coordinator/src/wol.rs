@@ -5,7 +5,10 @@ pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> Result<(), St
     let mut packet = [0xFFu8; 102];
 
     for i in 0..16 {
-        #[expect(clippy::indexing_slicing, reason = "Should be fine with the provided numbers")]
+        #[expect(
+            clippy::indexing_slicing,
+            reason = "Should be fine with the provided numbers"
+        )]
         packet[(i + 1) * 6..(i + 2) * 6].copy_from_slice(&mac_bytes);
     }
 

@@ -101,7 +101,10 @@ async fn handle_socket(
         }
 
         // Handle broadcast messages
-        #[expect(clippy::pattern_type_mismatch, reason = "Frankly IDK how to fix this, and that lint is fairly pedantic anyways")]
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Frankly IDK how to fix this, and that lint is fairly pedantic anyways"
+        )]
         loop {
             tokio::select! {
                 // Receive messages from the broadcast channel

@@ -159,7 +159,13 @@ pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
 }
 
 /// Auto-detects the host system's init system.
-#[cfg_attr(target_os = "macos", expect(clippy::missing_const_for_fn, reason = "can't be const because of linux"))]
+#[cfg_attr(
+    target_os = "macos",
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "can't be const because of linux"
+    )
+)]
 fn get_inferred_init_system() -> InitSystem {
     #[cfg(target_os = "linux")]
     {

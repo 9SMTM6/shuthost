@@ -2,7 +2,7 @@ use axum::{
     Router,
     extract::{Path, State},
     response::IntoResponse,
-    routing::{post, get},
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 use tracing::info;
