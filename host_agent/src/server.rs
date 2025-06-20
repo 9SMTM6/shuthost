@@ -35,7 +35,7 @@ pub fn start_host_agent(mut config: ServiceArgs) {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                handle_client(stream, config.clone());
+                handle_client(stream, &config);
             }
             Err(e) => {
                 eprintln!("Connection failed: {}", e);
@@ -45,7 +45,7 @@ pub fn start_host_agent(mut config: ServiceArgs) {
 }
 
 /// Handles a client connection: reads data, invokes handler, writes response, and triggers shutdown if needed.
-fn handle_client(mut stream: TcpStream, config: ServiceArgs) {
+fn handle_client(mut stream: TcpStream, config: &ServiceArgs) {
     let mut buffer = [0u8; 1024];
     let peer_addr = stream
         .peer_addr()
@@ -55,12 +55,12 @@ fn handle_client(mut stream: TcpStream, config: ServiceArgs) {
         Ok(size) => {
             let data = &buffer[..size];
             let (response, should_shutdown) =
-                handle_request_without_shutdown(data, &config, &peer_addr);
+                handle_request_without_shutdown(data, config, &peer_addr);
             if let Err(e) = stream.write_all(response.as_bytes()) {
                 eprintln!("Failed to write response to stream ({}): {}", peer_addr, e);
             }
             if should_shutdown {
-                execute_shutdown(&config).unwrap();
+                execute_shutdown(config).unwrap();
             }
         }
         Err(e) => {

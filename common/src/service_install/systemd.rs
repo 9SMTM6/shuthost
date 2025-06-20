@@ -33,11 +33,22 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     let service_name = format!("{name}.service");
 
     // Stop potentially existing service it before overwriting
-    let _ = Command::new("systemctl")
+    match Command::new("systemctl")
         .arg("stop")
         .arg(&service_name)
         .stderr(Stdio::null())
-        .status();
+        .status()
+    {
+        Ok(status) if status.success() => {
+            println!("Stopped existing service {service_name}.");
+        }
+        Ok(_) => {
+            println!("Service {service_name} was not running or could not be stopped.");
+        }
+        Err(e) => {
+            return Err(format!("Failed to execute systemctl stop: {e}"));
+        }
+    }
 
     fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");

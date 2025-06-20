@@ -33,11 +33,23 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     let init_script_path = PathBuf::from(format!("/etc/init.d/{name}"));
 
     // Stop and remove any existing service
-    let _ = Command::new("rc-service")
+    // Attempt to stop the service if it's running, but don't fail if it isn't
+    match Command::new("rc-service")
         .arg(name)
         .arg("stop")
         .stderr(Stdio::null())
-        .status();
+        .status()
+    {
+        Ok(status) if status.success() => {
+            println!("Stopped existing service {name}.");
+        }
+        Ok(_) => {
+            println!("Service {name} was not running or could not be stopped.");
+        }
+        Err(e) => {
+            return Err(format!("Failed to execute rc-service stop: {e}"));
+        }
+    }
 
     fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {:?}", target_bin);

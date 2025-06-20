@@ -41,15 +41,23 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         .map_err(|e| e.to_string())?;
 
     // Stop existing job if it's already loaded (modern launchctl)
-    if let Ok(_) = Command::new("launchctl")
+    match Command::new("launchctl")
         .arg("bootout")
         .arg("system")
         .arg(&plist_path)
         .stderr(Stdio::null())
         .status()
     {
-        println!("Stopped existing service");
-    };
+        Ok(status) if status.success() => {
+            println!("Stopped existing service {label}.");
+        }
+        Ok(_) => {
+            println!("Service {label} was not running or could not be stopped.");
+        }
+        Err(e) => {
+            return Err(format!("Failed to execute launchctl bootout: {e}"));
+        }
+    }
 
     let plist_content = init_script_content.replace("{name}", name);
 

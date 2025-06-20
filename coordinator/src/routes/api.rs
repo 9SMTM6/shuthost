@@ -93,7 +93,7 @@ async fn handle_reset_client_leases(
     // Remove all leases associated with the client
     for lease_set in leases.values_mut() {
         lease_set.retain(|lease| match lease {
-            LeaseSource::Client(id) => id != &client_id,
+            &LeaseSource::Client(ref id) => id != &client_id,
             _ => true,
         });
     }

@@ -7,7 +7,7 @@ use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
-#[allow(unused_imports)]
+#[cfg(target_os = "linux")]
 use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
@@ -56,24 +56,25 @@ pub enum InitSystem {
     Launchd,
 }
 
-impl std::string::ToString for InitSystem {
-    fn to_string(&self) -> String {
-        match self {
+impl std::fmt::Display for InitSystem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match *self {
             #[cfg(target_os = "linux")]
-            InitSystem::Systemd => "systemd".to_string(),
+            InitSystem::Systemd => "systemd",
             #[cfg(target_os = "linux")]
-            InitSystem::OpenRC => "open-rc".to_string(),
-            InitSystem::Serviceless => "serviceless".to_string(),
+            InitSystem::OpenRC => "open-rc",
+            InitSystem::Serviceless => "serviceless",
             #[cfg(target_os = "macos")]
-            InitSystem::Launchd => "launchd".to_string(),
-        }
+            InitSystem::Launchd => "launchd",
+        };
+        write!(f, "{}", s)
     }
 }
 
 /// Performs host_agent installation based on provided arguments.
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
-pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
+pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
         arg.replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
@@ -158,7 +159,8 @@ pub fn install_host_agent(arguments: InstallArgs) -> Result<(), String> {
 }
 
 /// Auto-detects the host system's init system.
-const fn get_inferred_init_system() -> InitSystem {
+#[cfg_attr(target_os = "macos", expect(clippy::missing_const_for_fn, reason = "can't be const because of linux"))]
+fn get_inferred_init_system() -> InitSystem {
     #[cfg(target_os = "linux")]
     {
         if is_systemd() {

@@ -427,9 +427,9 @@ pub enum LeaseSource {
 
 impl Display for LeaseSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
+        match *self {
             LeaseSource::WebInterface => write!(f, "web-interface"),
-            LeaseSource::Client(id) => write!(f, "client-{}", id),
+            LeaseSource::Client(ref id) => write!(f, "client-{}", id),
         }
     }
 }

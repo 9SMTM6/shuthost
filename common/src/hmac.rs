@@ -65,7 +65,7 @@ fn sign_hmac(message: &str, secret: &str) -> String {
 /// A string of the form "timestamp|message|signature".
 pub fn create_signed_message(message: &str, secret: &str) -> String {
     let message = create_hmac_message(message);
-    let signature = sign_hmac(&message, &secret);
+    let signature = sign_hmac(&message, secret);
     format!("{}|{}", message, signature)
 }
 

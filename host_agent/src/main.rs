@@ -43,7 +43,7 @@ fn main() {
     let invocation = Cli::parse();
 
     match invocation.command {
-        Command::Install(args) => match install_host_agent(args) {
+        Command::Install(args) => match install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {}", e),
         },

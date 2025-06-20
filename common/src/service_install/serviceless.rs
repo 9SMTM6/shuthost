@@ -31,7 +31,7 @@ pub fn generate_self_extracting_script(
     // Format environment variable declarations
     let env_section = env_vars
         .iter()
-        .map(|(k, v)| format!(r#"export {k}="{v}""#))
+        .map(|&(k, v)| format!(r#"export {k}="{v}""#))
         .collect::<Vec<_>>()
         .join("\n");
 

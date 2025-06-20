@@ -12,7 +12,9 @@ pub mod systemd;
 /// # Safety
 ///
 /// This calls unsafe `geteuid`; ensure correct platform compatibility.
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "freebsd"))]
 pub fn is_superuser() -> bool {
+    // SAFETY: This is safe on Unix-like systems where `geteuid` is available.
     unsafe { libc::geteuid() == 0 }
 }
 
