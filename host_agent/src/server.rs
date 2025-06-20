@@ -56,7 +56,9 @@ fn handle_client(mut stream: TcpStream, config: ServiceArgs) {
             let data = &buffer[..size];
             let (response, should_shutdown) =
                 handle_request_without_shutdown(data, &config, &peer_addr);
-            let _ = stream.write_all(response.as_bytes());
+            if let Err(e) = stream.write_all(response.as_bytes()) {
+                eprintln!("Failed to write response to stream ({}): {}", peer_addr, e);
+            }
             if should_shutdown {
                 execute_shutdown(&config).unwrap();
             }

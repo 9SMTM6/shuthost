@@ -9,7 +9,7 @@ use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::net::TcpStream;
 use tokio::time::timeout;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use crate::assets::asset_routes;
 use crate::{
@@ -94,7 +94,9 @@ pub async fn start_http_server(
         tokio::spawn(async move {
             while hoststatus_rx.changed().await.is_ok() {
                 let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
-                let _ = ws_tx.send(msg);
+                if ws_tx.send(msg).is_err() {
+                    warn!("Failed to send WebSocket message");
+                }
             }
         });
     }
@@ -108,7 +110,9 @@ pub async fn start_http_server(
                 let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
                 let clients = config.clients.keys().cloned().collect::<Vec<_>>();
                 let msg = WsMessage::ConfigChanged { hosts, clients };
-                let _ = ws_tx.send(msg);
+                if ws_tx.send(msg).is_err() {
+                    warn!("Failed to send WebSocket message");
+                }
             }
         });
     }

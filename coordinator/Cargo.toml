@@ -34,3 +34,6 @@ default = [
 ]
 include_macos_agents = []
 include_linux_agents = []
+
+[lints]
+workspace = true

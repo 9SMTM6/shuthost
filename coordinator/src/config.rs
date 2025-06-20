@@ -123,7 +123,9 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
     let mut watcher = RecommendedWatcher::new(
         move |res| {
             if let Ok(event) = res {
-                let _ = raw_tx.send(event);
+                if raw_tx.send(event).is_err() {
+                    error!("Failed to send event to config watcher channel");
+                }
             }
         },
         notify::Config::default(),
@@ -151,7 +153,9 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
                             initial_bind
                         );
                     }
-                    let _ = tx.send(Arc::new(new_config));
+                    if tx.send(Arc::new(new_config)).is_err() {
+                        error!("Failed to send updated config through watch channel");
+                    }
                     info!("Config reloaded.");
                 }
                 Err(e) => {

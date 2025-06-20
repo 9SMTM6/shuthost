@@ -12,3 +12,6 @@ sha2.workspace = true
 hex.workspace = true
 rand.workspace = true
 libc = "0.2.172"
+
+[lints]
+workspace = true

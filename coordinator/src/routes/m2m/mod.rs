@@ -205,7 +205,9 @@ pub async fn broadcast_lease_update(
         host: host.to_string(),
         leases: lease_sources,
     };
-    let _ = ws_tx.send(msg);
+    if let Err(e) = ws_tx.send(msg) {
+        warn!("Failed to broadcast lease update for '{}': {}", host, e);
+    }
 }
 
 pub async fn handle_host_state(
