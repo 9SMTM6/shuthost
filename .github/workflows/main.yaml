@@ -241,7 +241,7 @@ jobs:
         run: |
           set -x
           # Start the coordinator in the background
-          ./shuthost_coordinator install --port 8080 --bind 127.0.0.1 &
+          ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
           sleep 2
           # Download and install host_agent with serviceless init system
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system serviceless
