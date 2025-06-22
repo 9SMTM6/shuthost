@@ -248,9 +248,9 @@ jobs:
           # Wait for the agent to start
           sleep 2
           # Check if the port is in use (default 5757)
-          ss -ltnp | grep ':5757' || lsof -i :5757 || netstat -tlnp | grep ':5757' || { echo 'Port 5757 is not in use'; exit 1; }
+          sudo ss -ltnp | grep ':5757' || sudo lsof -i :5757 || sudo netstat -tlnp | grep ':5757'
           # Check for a fitting process in the process list
-          pgrep -af '/tmp/selfbin' || ps aux | grep '/tmp/selfbin'
+          sudo pgrep -af '/tmp/selfbin' || sudo ps aux | grep '/tmp/selfbin'
 
   container-build:
     name: Build & Push Alpine Containers (SHA only)
@@ -259,6 +259,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            rustc_target: x86_64-unknown-linux-musl
+          - platform: linux/arm64
+            rustc_target: aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v4
 
@@ -301,12 +309,12 @@ jobs:
         with:
           context: .
           file: ./Containerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: |
             ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
           build-args: |
-            TARGETARCH
+            RUSTC_TARGET=${{ matrix.rustc_target }}
 
   container-test:
     name: Test Container Image

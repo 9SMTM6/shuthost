@@ -1,15 +1,10 @@
 FROM alpine:latest
 # THIS IS NON-TESTED!
 
-# Use TARGETARCH as set by buildx
-ARG TARGETARCH
+ARG RUSTC_TARGET=x86_64-unknown-linux-musl
 
-# Map TARGETARCH to Rust arch
-ENV RUST_ARCH="$(if [ "$TARGETARCH" = "amd64" ]; then echo x86_64; elif [ "$TARGETARCH" = "arm64" ]; then echo aarch64; else echo x86_64; fi)"
-ENV RUST_MUSL_TARGET="$RUST_ARCH-unknown-linux-musl"
-
-# Copy the correct binary based on the mapped target
-COPY target/${RUST_MUSL_TARGET}/release/shuthost_coordinator /usr/sbin/
+# Copy the correct binary based on the provided target
+COPY target/${RUSTC_TARGET}/release/shuthost_coordinator /usr/sbin/
 
 ENV SHUTHOST_CONTROLLER_CONFIG_PATH=/config/coordinator_config.toml
 
