@@ -254,8 +254,7 @@ jobs:
   container-build:
     name: Build & Push Alpine Containers (SHA only)
     needs:
-      - test-installation
-      - test
+      - build-coordinators
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -332,7 +331,9 @@ jobs:
 
   container-release:
     name: Tag & Push Container (branch/tag/latest)
-    needs: container-test
+    needs: 
+      - container-test
+      - test
     runs-on: ubuntu-latest
     permissions:
       packages: write
