@@ -7,8 +7,6 @@ use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
-#[cfg(target_os = "linux")]
-use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 /// Default UDP port on which the host_agent listens for commands.

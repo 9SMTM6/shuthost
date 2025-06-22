@@ -5,8 +5,6 @@
 use clap::Parser;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
-#[cfg(target_os = "linux")]
-use std::os::unix::fs::PermissionsExt;
 use std::{
     fs::File,
     io::Write,
