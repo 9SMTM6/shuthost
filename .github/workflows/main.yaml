@@ -1,4 +1,4 @@
-name: Build and Test Host Agent and Coordinator
+name: Build, Test and Release
 permissions:
   contents: read
 
@@ -153,6 +153,10 @@ jobs:
             runner: macos-latest
             init: launchd
             binary_target: aarch64-apple-darwin
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+            init: serviceless
+            binary_target: x86_64-unknown-linux-gnu
 
     steps:
       - uses: actions/checkout@v4
@@ -231,6 +235,21 @@ jobs:
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
           sleep 2
           launchctl print system/com.github_9smtm6.shuthost_host_agent
+
+      - name: Test on Linux (serviceless)
+        if: ${{ matrix.init == 'serviceless' }}
+        run: |
+          set -x
+          # Download and install host_agent with serviceless init system
+          curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system serviceless
+          # Run the self-extracting script
+          ./shuthost_host_agent_self_extracting
+          # Wait for the agent to start
+          sleep 2
+          # Check if the port is in use (default 5757)
+          ss -ltnp | grep ':5757' || lsof -i :5757 || netstat -tlnp | grep ':5757' || { echo 'Port 5757 is not in use'; exit 1; }
+          # Check for a fitting process in the process list
+          pgrep -af '/tmp/selfbin' || ps aux | grep '/tmp/selfbin'
 
   container-build:
     name: Build & Push Alpine Containers
