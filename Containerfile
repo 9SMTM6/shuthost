@@ -3,7 +3,7 @@ FROM alpine:latest
 
 ARG TARGET="x86_64-unknown-linux-musl"
 
-COPY target/${TARGET}/release/shuthost_coordinator /usr/local/bin/
+COPY target/${TARGET}/release/shuthost_coordinator /usr/sbin/
 
 ENV SHUTHOST_CONTROLLER_CONFIG_PATH=/config/coordinator_config.toml
 
