@@ -284,6 +284,7 @@ jobs:
             target=$(basename "$dir" | sed 's/^coordinator-//')
             mkdir -p "target/$target/release"
             cp "$dir/shuthost_coordinator" "target/$target/release/"
+            chmod +x "target/$target/release/shuthost_coordinator"
           done
 
       - name: Create a valid release tag and other text outputs
