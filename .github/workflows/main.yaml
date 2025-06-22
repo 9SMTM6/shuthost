@@ -169,7 +169,7 @@ jobs:
       - run: chmod +x shuthost_coordinator
 
       - name: Test on Linux (systemd/openrc)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.init == 'systemd' || matrix.init == 'openrc' }}
         run: |
           set -x
           if [ "${{ matrix.init }}" = "systemd" ]; then
