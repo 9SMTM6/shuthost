@@ -241,7 +241,7 @@ jobs:
         run: |
           set -x
           # Start the coordinator in the background
-          ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
           sleep 2
           # Download and install host_agent with serviceless init system
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system serviceless
@@ -306,8 +306,7 @@ jobs:
           tags: |
             ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
           build-args: |
-            TARGET=x86_64-unknown-linux-musl
-            TARGET=aarch64-unknown-linux-musl
+            TARGETARCH
 
   container-test:
     name: Test Container Image
