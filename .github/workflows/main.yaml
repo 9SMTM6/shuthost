@@ -312,9 +312,40 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{matrix.platform }}-${{ github.sha }}
           build-args: |
             RUSTC_TARGET=${{ matrix.rustc_target }}
+
+  container-merge:
+    name: Merge Multi-Arch Manifest
+    needs: container-build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Create a valid release tag and other text outputs
+        id: release_texts
+        run: |
+          string=${{ github.ref }};
+          cleaned_string="${string#refs/tags/}";
+          cleaned_string="${cleaned_string#refs/heads/}";
+          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
+          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and Push Multi-Arch Manifest
+        run: |
+          docker buildx imagetools create \
+            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} \
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:linux/amd64-${{ github.sha }} \
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:linux/arm64-${{ github.sha }}
 
   container-test:
     name: Test Container Image
@@ -332,15 +363,16 @@ jobs:
 
       - name: Pull image
         run: |
-          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:linux/amd64-${{ github.sha }}
 
       - name: Test image runs
         run: |
-          docker run --rm ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} shuthost_coordinator --help
+          docker run --rm ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:linux/amd64-${{ github.sha }} shuthost_coordinator --help
 
   container-release:
     name: Tag & Push Container (branch/tag/latest)
     needs: 
+      - container-merge
       - container-test
       - test
     runs-on: ubuntu-latest

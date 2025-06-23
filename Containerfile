@@ -15,7 +15,7 @@ VOLUME [ "/config" ]
 EXPOSE 8080
 
 # MY current best guess to the current best invocation:
-# podman run -p 8080:8080 -v ./:/config --network host shuthost
+# podman run -v ./:/config --network host shuthost
 
 # Set up the entry point for the coordinator
 CMD ["shuthost_coordinator", "control-service"]
