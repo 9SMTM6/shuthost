@@ -110,19 +110,9 @@ pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
                 "service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
                 &target_script_path,
             )?;
-            println!(
-                "Serviceless installation completed. Script generated at: {}.",
-                target_script_path
-            );
             // Start the self-extracting script in the background
             if let Err(e) = std::process::Command::new(&target_script_path)
-                .arg("--port")
-                .arg(arguments.port.to_string())
-                .arg("--shutdown-command")
-                .arg(&arguments.shutdown_command)
-                .arg("--shared-secret")
-                .arg(&arguments.shared_secret)
-                .spawn()
+                .output()
             {
                 eprintln!("Failed to start self-extracting script: {}", e);
             } else {

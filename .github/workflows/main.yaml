@@ -263,9 +263,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: linux/amd64
+          - platform: amd64
             rustc_target: x86_64-unknown-linux-musl
-          - platform: linux/arm64
+          - platform: arm64
             rustc_target: aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v4
@@ -309,7 +309,7 @@ jobs:
         with:
           context: .
           file: ./Containerfile
-          platforms: ${{ matrix.platform }}
+          platforms: linux/${{ matrix.platform }}
           push: true
           tags: |
             ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{matrix.platform }}-${{ github.sha }}
