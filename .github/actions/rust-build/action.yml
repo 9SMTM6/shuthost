@@ -1,0 +1,30 @@
+name: 'Rust Build'
+description: 'Builds a Rust binary for a specific target'
+inputs:
+  target:
+    description: 'The Rust target to build for'
+    required: true
+  bin-name:
+    description: 'The name of the binary to build'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Rust target
+      shell: bash
+      run: rustup target add ${{ inputs.target }}
+
+    - name: Install dependencies for MUSL targets
+      if: contains(inputs.target, 'musl')
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y musl-tools
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ inputs.target }}
+
+    - name: Build binary
+      shell: bash
+      run: cargo build --release --bin ${{ inputs.bin-name }} --target ${{ inputs.target }}

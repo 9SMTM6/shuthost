@@ -33,23 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust target
-        run: rustup target add ${{ matrix.target }}
-
-      - name: Install dependencies for MUSL targets
-        if: contains(matrix.target, 'musl')
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/rust-build
         with:
-          key: ${{ matrix.target }}
-
-      - name: Build host_agent
-        run: |
-          cargo fetch
-          cargo build --release --bin shuthost_host_agent --target ${{ matrix.target }}
+          target: ${{ matrix.target }}
+          bin-name: shuthost_host_agent
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -81,19 +68,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust target
-        run: rustup target add ${{ matrix.target }}
-
-      - name: Install dependencies for MUSL targets
-        if: contains(matrix.target, 'musl')
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
-
       - name: Download all host_agent binaries
         uses: actions/download-artifact@v4
         with:
@@ -110,9 +84,10 @@ jobs:
             done
           ' bash {} +
 
-      - name: Build coordinator
-        run: |
-          cargo build --release --bin shuthost_coordinator --target ${{ matrix.target }}
+      - uses: ./.github/actions/rust-build
+        with:
+          target: ${{ matrix.target }}
+          bin-name: shuthost_coordinator
 
       - name: Upload coordinator binary
         uses: actions/upload-artifact@v4
@@ -295,14 +270,9 @@ jobs:
             chmod +x "target/$target/release/shuthost_coordinator"
           done
 
-      - name: Create a valid release tag and other text outputs
+      - name: Get release texts
         id: release_texts
-        run: |
-          string=${{ github.ref }};
-          cleaned_string="${string#refs/tags/}";
-          cleaned_string="${cleaned_string#refs/heads/}";
-          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+        uses: ./.github/actions/get-release-texts
 
       - name: Build & Push Multi-Arch Alpine Image (SHA only)
         uses: docker/build-push-action@v6
@@ -324,14 +294,9 @@ jobs:
       packages: write
 
     steps:
-      - name: Create a valid release tag and other text outputs
+      - name: Get release texts
         id: release_texts
-        run: |
-          string=${{ github.ref }};
-          cleaned_string="${string#refs/tags/}";
-          cleaned_string="${cleaned_string#refs/heads/}";
-          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+        uses: ./.github/actions/get-release-texts
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -352,14 +317,9 @@ jobs:
     needs: container-build
     runs-on: ubuntu-latest
     steps:
-      - name: Create a valid release tag and other text outputs
+      - name: Get release texts
         id: release_texts
-        run: |
-          string=${{ github.ref }};
-          cleaned_string="${string#refs/tags/}";
-          cleaned_string="${cleaned_string#refs/heads/}";
-          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+        uses: ./.github/actions/get-release-texts
 
       - name: Pull image
         run: |
@@ -379,14 +339,9 @@ jobs:
     permissions:
       packages: write
     steps:
-      - name: Create a valid release tag and other text outputs
+      - name: Get release texts
         id: release_texts
-        run: |
-          string=${{ github.ref }};
-          cleaned_string="${string#refs/tags/}";
-          cleaned_string="${cleaned_string#refs/heads/}";
-          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+        uses: ./.github/actions/get-release-texts
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -446,16 +401,9 @@ jobs:
             fi
           done
 
-      - run: ls -la release-assets/
-
-      - name: Create a valid release tag and other text outputs
+      - name: Get release texts
         id: release_texts
-        run: |
-          string=${{ github.ref }};
-          cleaned_string="${string#refs/tags/}";
-          cleaned_string="${cleaned_string#refs/heads/}";
-          echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
-          echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
+        uses: ./.github/actions/get-release-texts
 
       - name: Upload binaries to release (create one if not existing)
         uses: softprops/action-gh-release@v2
