@@ -111,9 +111,7 @@ pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
-            if let Err(e) = std::process::Command::new(&target_script_path)
-                .output()
-            {
+            if let Err(e) = std::process::Command::new(&target_script_path).output() {
                 eprintln!("Failed to start self-extracting script: {}", e);
             } else {
                 println!("Started self-extracting agent script in background.");
