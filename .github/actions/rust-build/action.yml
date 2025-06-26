@@ -21,24 +21,6 @@ runs:
         sudo apt-get update
         sudo apt-get install -y musl-tools
 
-    - uses: Swatinem/rust-cache@v2
-      with:
-        key: ${{ inputs.target }}
-
-    - name: Debug working directory
-      shell: bash
-      run: |
-        echo "PWD: $(pwd)"
-        echo "github.workspace: $GITHUB_WORKSPACE"
-        ls -lah
-        ls -lah target
-    
-    - name: List agent binaries
-      shell: bash
-      run: ls -l target/*/release/shuthost_host_agent || echo "Not found"
-
-
     - name: Build binary
-      working-directory: ${{ github.workspace }}
       shell: bash
       run: cargo build --release --bin ${{ inputs.bin-name }} --target ${{ inputs.target }}

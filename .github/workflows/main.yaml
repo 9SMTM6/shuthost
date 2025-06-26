@@ -72,6 +72,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./rehydrate
+      
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
       - name: Rehydrate target directory structure
         run: |
@@ -83,20 +87,7 @@ jobs:
             chmod +x "target/$target/release/shuthost_host_agent"
           done
 
-      - name: Debug working directory
-        shell: bash
-        run: |
-          echo "PWD: $(pwd)"
-          echo "github.workspace: $GITHUB_WORKSPACE"
-          ls -lah
-          ls -lah target
-
-      - name: List agent binaries
-        shell: bash
-        run: ls -l target/*/release/shuthost_host_agent || echo "Not found"
-
       - uses: ./.github/actions/rust-build
-        # working-directory: .
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_coordinator
