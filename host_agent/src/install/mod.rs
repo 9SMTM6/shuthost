@@ -86,18 +86,18 @@ pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
         #[cfg(target_os = "linux")]
         InitSystem::Systemd => {
             shuthost_common::systemd::install_self_as_service(
-                &name,
+                name,
                 &bind_known_vals(SERVICE_FILE_TEMPLATE),
             )?;
-            shuthost_common::systemd::start_and_enable_self_as_service(&name)?;
+            shuthost_common::systemd::start_and_enable_self_as_service(name)?;
         }
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => {
             shuthost_common::openrc::install_self_as_service(
-                &name,
+                name,
                 &bind_known_vals(OPENRC_FILE_TEMPLATE),
             )?;
-            shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
+            shuthost_common::openrc::start_and_enable_self_as_service(name)?;
         }
         InitSystem::Serviceless => {
             let target_script_path = format!("./{name}_self_extracting");
@@ -210,7 +210,7 @@ fn get_default_interface() -> Option<String> {
             if line.starts_with("default") {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() >= 5 {
-                    return Some(parts[4].to_string());
+                    return line.split_whitespace().nth(4).map(|s| s.trim().to_string());
                 }
             }
         }
@@ -245,7 +245,7 @@ pub fn get_mac(interface: &str) -> Option<String> {
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             if line.contains("ether") {
-                return line.trim().split_whitespace().nth(1).map(|s| s.to_string());
+                return line.split_whitespace().nth(1).map(|s| s.to_string());
             }
         }
         None
@@ -279,7 +279,6 @@ pub fn get_ip(interface: &str) -> Option<String> {
             // Looking for the line that contains 'inet', which is typically the IP address line
             if line.contains("inet ") {
                 return line
-                    .trim()
                     .split_whitespace()
                     .nth(1)
                     .and_then(|s| s.split('/').next())

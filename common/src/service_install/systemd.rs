@@ -60,8 +60,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     let service_file_content =
         init_script_content.replace("{binary}", &target_bin.to_string_lossy());
 
-    let mut service_file = File::create(&service_file_path)
-        .map_err(|e| e.to_string())?;
+    let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
     service_file
         .write_all(service_file_content.as_bytes())
         .map_err(|e| e.to_string())?;

@@ -73,12 +73,12 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if is_systemd() {
         shuthost_common::systemd::install_self_as_service(
-            &name,
+            name,
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
         )?;
     } else if is_openrc() {
         shuthost_common::openrc::install_self_as_service(
-            &name,
+            name,
             &bind_known_vals(OPENRC_FILE_TEMPLATE),
         )?;
     } else {
@@ -132,9 +132,9 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        shuthost_common::systemd::start_and_enable_self_as_service(&name)?;
+        shuthost_common::systemd::start_and_enable_self_as_service(name)?;
     } else if is_openrc() {
-        shuthost_common::openrc::start_and_enable_self_as_service(&name)?;
+        shuthost_common::openrc::start_and_enable_self_as_service(name)?;
     } else {
         Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
     }
