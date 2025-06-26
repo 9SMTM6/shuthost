@@ -297,6 +297,8 @@ jobs:
       packages: write
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Get release texts
         id: release_texts
         uses: ./.github/actions/get-release-texts
@@ -320,6 +322,8 @@ jobs:
     needs: container-build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Get release texts
         id: release_texts
         uses: ./.github/actions/get-release-texts
@@ -342,6 +346,8 @@ jobs:
     permissions:
       packages: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Get release texts
         id: release_texts
         uses: ./.github/actions/get-release-texts
@@ -386,6 +392,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all coordinator binaries
         uses: actions/download-artifact@v4
         with:
