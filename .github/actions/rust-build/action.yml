@@ -25,6 +25,13 @@ runs:
       with:
         key: ${{ inputs.target }}
 
+    - name: Debug working directory
+      shell: bash
+      run: |
+        echo "PWD: $(pwd)"
+        echo "github.workspace: $GITHUB_WORKSPACE"
+        ls -lah
+
     - name: Build binary
       working-directory: ${{ github.workspace }}
       shell: bash

@@ -84,7 +84,16 @@ jobs:
             done
           ' bash {} +
 
+      - name: Debug working directory
+        shell: bash
+        run: |
+          echo "PWD: $(pwd)"
+          echo "github.workspace: $GITHUB_WORKSPACE"
+          ls -lah
+          ls -lah target
+
       - uses: ./.github/actions/rust-build
+        # working-directory: .
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_coordinator
