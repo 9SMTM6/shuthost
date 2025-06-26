@@ -380,7 +380,6 @@ jobs:
     needs:
       - test-installation
       - test
-      - container-test
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write
@@ -396,6 +395,7 @@ jobs:
       - name: Prepare release assets directory
         run: |
           # Move coordinator binaries to a common directory with target-based binary names
+          # this is required, as otherwise there'd be naming conflicts
           mkdir -p release-assets/flat
           for dir in release-assets/coordinator-*; do
             target=$(basename "$dir" | sed 's/^coordinator-//')
