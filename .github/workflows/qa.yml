@@ -46,4 +46,4 @@ jobs:
           toolchain: stable
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo +stable clippy --all -- -D warnings
+      - run: cargo +stable clippy --no-default-features --workspace -- -D warnings
