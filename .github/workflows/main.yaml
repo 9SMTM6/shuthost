@@ -71,18 +71,17 @@ jobs:
       - name: Download all host_agent binaries
         uses: actions/download-artifact@v4
         with:
-          path: ./target
+          path: ./rehydrate
 
       - name: Rehydrate target directory structure
         run: |
           mkdir -p target
-          find ./target -name shuthost_host_agent -exec bash -c '
-            for path; do
-              dir=$(dirname "${path#./target/host_agent-}")
-              mkdir -p "target/$dir/release"
-              cp "$path" "target/$dir/release/"
-            done
-          ' bash {} +
+          for dir in ./rehydrate/host_agent-*; do
+            target=$(basename "$dir" | sed 's/^host_agent-//')
+            mkdir -p "target/$target/release"
+            cp "$dir/shuthost_host_agent" "target/$target/release/"
+            chmod +x "target/$target/release/shuthost_host_agent"
+          done
 
       - name: Debug working directory
         shell: bash
@@ -91,6 +90,10 @@ jobs:
           echo "github.workspace: $GITHUB_WORKSPACE"
           ls -lah
           ls -lah target
+
+      - name: List agent binaries
+        shell: bash
+        run: ls -l target/*/release/shuthost_host_agent || echo "Not found"
 
       - uses: ./.github/actions/rust-build
         # working-directory: .
@@ -257,7 +260,7 @@ jobs:
       - name: Download MUSL coordinator binaries
         uses: actions/download-artifact@v4
         with:
-          path: ./rehydrated
+          path: ./rehydrate
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -272,7 +275,7 @@ jobs:
       - name: Rehydrate target directory structure
         run: |
           mkdir -p target
-          for dir in ./rehydrated/coordinator-*; do
+          for dir in ./rehydrate/coordinator-*; do
             target=$(basename "$dir" | sed 's/^coordinator-//')
             mkdir -p "target/$target/release"
             cp "$dir/shuthost_coordinator" "target/$target/release/"
