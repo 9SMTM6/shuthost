@@ -381,11 +381,59 @@ jobs:
         run: |
           docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
 
+  test-compatibility:
+    name: Test Compatibility on Older OS Releases
+    needs: build-coordinators
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rustc_target: x86_64-apple-darwin
+            runner: macos-latest
+          - rustc_target: aarch64-apple-darwin
+            runner: macos-latest
+          - rustc_target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - rustc_target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - rustc_target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+          - rustc_target: aarch64-unknown-linux-musl
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./rehydrate
+
+      - name: Rehydrate target directory structure
+        run: |
+          mkdir -p target
+          for dir in ./rehydrate/*; do
+            target=$(basename "$dir" | sed 's/^host_agent-//;s/^coordinator-//')
+            mkdir -p "target/$target/release"
+            cp "$dir/shuthost_host_agent" "target/$target/release/" 2>/dev/null || true
+            cp "$dir/shuthost_coordinator" "target/$target/release/" 2>/dev/null || true
+            chmod +x "target/$target/release/shuthost_host_agent" "target/$target/release/shuthost_coordinator" 2>/dev/null || true
+          done
+
+      - name: Test Controller Binary
+        run: |
+          ./target/${{ matrix.rustc_target }}/release/shuthost_coordinator --help
+
+      - name: Test Host Agent Binary
+        run: |
+          ./target/${{ matrix.rustc_target }}/release/shuthost_host_agent --help
+
   release:
     name: Upload Release Binaries
     needs:
       - test-installation
       - test
+      - test-compatibility
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write
@@ -433,3 +481,4 @@ jobs:
             ```
 
             Also available as `:latest` if this is a tagged release.
+
