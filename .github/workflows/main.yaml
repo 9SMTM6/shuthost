@@ -390,15 +390,29 @@ jobs:
       matrix:
         include:
           - rustc_target: x86_64-apple-darwin
-            runner: macos-latest
+            runner: macos-13
+          - rustc_target: x86_64-apple-darwin
+            runner: macos-14
           - rustc_target: aarch64-apple-darwin
-            runner: macos-latest
+            runner: macos-14
+          - rustc_target: x86_64-apple-darwin
+            runner: macos-15
+          - rustc_target: aarch64-apple-darwin
+            runner: macos-15
           - rustc_target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
+            runner: ubuntu-22.04
+          - rustc_target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+          - rustc_target: x86_64-unknown-linux-musl
+            runner: ubuntu-22.04
+          - rustc_target: aarch64-unknown-linux-musl
+            runner: ubuntu-22.04-arm
+          - rustc_target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
           - rustc_target: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
           - rustc_target: x86_64-unknown-linux-musl
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
           - rustc_target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
     steps:
