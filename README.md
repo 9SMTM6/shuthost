@@ -91,10 +91,11 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 | Issue | Description | Impact |
 |-------|-------------|---------|
 | 🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium |
-| 💾 **State Loss** | The coordinator loses state on update | Low (currently only acts on state changes) |
-| 🐳 **Docker Testing** | Docker is currently untested | Unknown |
-| 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences | N/A |
+| 💾 **State Loss** | The coordinator loses state on restart (including updates) | Low (currently only acts on state changes) |
+| 🐳 **Docker Testing** | Docker is currently not well tested | Unknown |
+| 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A |
 | 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium |
+| 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Medium |
 
 > 💡 **Potential Solutions**: 
 > - Considering regularly "syncing" states, maybe with explicit config on host (seems best) or coordinator-wide
