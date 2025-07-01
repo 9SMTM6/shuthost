@@ -88,18 +88,15 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 
 ## ⚠️ Known Issues
 
-| Issue | Description | Impact |
-|-------|-------------|---------|
-| 🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium |
-| 💾 **State Loss** | The coordinator loses state on restart (including updates) | Low (currently only acts on state changes) |
-| 🐳 **Docker Testing** | Docker is currently not well tested | Unknown |
-| 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A |
-| 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium |
-| 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Medium |
-
-> 💡 **Potential Solutions**: 
-> - Considering regularly "syncing" states, maybe with explicit config on host (seems best) or coordinator-wide
-> - State persistence could be fixed with e.g. sqlite. Should be considered before adding status syncing
+| Issue | Description | Impact | Solution |
+|-------|-------------|--------|----------|
+| 🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium | [APP-SIDE] Regularly "syncing" states, either with explicit config on the host or coordinator-wide |
+| 💾 **State Loss** | The coordinator loses state on restart (including updates) | Low (currently only acts on state changes) | [APP-SIDE] Considering state persistence with e.g. sqlite or explicit syncing |
+| 🐳 **Docker Testing** | Docker is currently not well tested | Unknown | N/A |
+| 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A | N/A |
+| 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | Ensure proper Docker network configuration |
+| 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Medium | Manually override the network interface in the configuration |
+| 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Medium | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary |
 
 ---
 
