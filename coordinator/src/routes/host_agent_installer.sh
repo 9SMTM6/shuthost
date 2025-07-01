@@ -97,6 +97,20 @@ echo "Downloading host_agent for $PLATFORM/$ARCH..."
 curl -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
+# Test binary execution for glibc-related errors
+if [ "$PLATFORM" = "linux" ]; then
+    if ! ./"$OUTFILE" --version >/dev/null 2>&1; then
+        ERROR_OUTPUT=$(./"$OUTFILE" --version 2>&1)
+        if echo "$ERROR_OUTPUT" | grep -q "version \`GLIBC_"; then
+            echo "Detected glibc-related linker error: $ERROR_OUTPUT"
+            echo "Recommendation: Use the 'linux-musl' version for better compatibility."
+            echo "To override the platform, use the following command:"
+            echo "curl -fsSL ${REMOTE_URL}/download/host_agent_installer.sh | sh -s ${REMOTE_URL} --os linux-musl $INSTALLER_ARGS"
+            exit 1
+        fi
+    fi
+fi
+
 WOL_TEST_PORT=$((DEFAULT_PORT + 1))
 
 echo "Testing WOL packet reachability..."
