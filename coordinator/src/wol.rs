@@ -40,8 +40,7 @@ fn parse_mac(mac: &str) -> Result<[u8; 6], String> {
 }
 
 pub fn test_wol_reachability(target_port: u16) -> Result<bool, String> {
-    let socket =
-        UdpSocket::bind("0.0.0.0:0").map_err(|e| format!("Failed to bind socket: {e}"))?;
+    let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| format!("Failed to bind socket: {e}"))?;
     socket
         .set_read_timeout(Some(std::time::Duration::from_secs(1)))
         .map_err(|e| format!("Failed to set timeout: {e}"))?;
