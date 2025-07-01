@@ -47,7 +47,7 @@ async fn main() {
     match invocation.command {
         Command::Install(args) => {
             if let Err(e) = install_coordinator(args) {
-                eprintln!("Error during installation: {}", e);
+                eprintln!("Error during installation: {e}");
                 std::process::exit(1);
             }
         }
@@ -70,7 +70,7 @@ async fn main() {
             info!("Using config path: {}", config_path.display());
 
             if let Err(e) = start_http_server(&config_path).await {
-                eprintln!("Failed to start HTTP server: {}", e);
+                eprintln!("Failed to start HTTP server: {e}");
                 std::process::exit(1);
             }
         }

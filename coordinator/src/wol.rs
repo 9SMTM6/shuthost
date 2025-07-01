@@ -16,7 +16,7 @@ pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> Result<(), St
     socket.set_broadcast(true).map_err(|e| e.to_string())?;
 
     socket
-        .send_to(&packet, format!("{}:9", broadcast_ip))
+        .send_to(&packet, format!("{broadcast_ip}:9"))
         .map_err(|e| e.to_string())?;
 
     Ok(())
@@ -41,20 +41,20 @@ fn parse_mac(mac: &str) -> Result<[u8; 6], String> {
 
 pub fn test_wol_reachability(target_port: u16) -> Result<bool, String> {
     let socket =
-        UdpSocket::bind("0.0.0.0:0").map_err(|e| format!("Failed to bind socket: {}", e))?;
+        UdpSocket::bind("0.0.0.0:0").map_err(|e| format!("Failed to bind socket: {e}"))?;
     socket
         .set_read_timeout(Some(std::time::Duration::from_secs(1)))
-        .map_err(|e| format!("Failed to set timeout: {}", e))?;
+        .map_err(|e| format!("Failed to set timeout: {e}"))?;
 
     // Test broadcast
     socket
         .set_broadcast(true)
-        .map_err(|e| format!("Failed to set broadcast: {}", e))?;
+        .map_err(|e| format!("Failed to set broadcast: {e}"))?;
 
     let test_message = b"SHUTHOST_WOL_TEST_BROADCAST";
     socket
-        .send_to(test_message, format!("255.255.255.255:{}", target_port))
-        .map_err(|e| format!("Failed to send broadcast test: {}", e))?;
+        .send_to(test_message, format!("255.255.255.255:{target_port}"))
+        .map_err(|e| format!("Failed to send broadcast test: {e}"))?;
 
     let mut buf = [0u8; 32];
     let broadcast_works = socket.recv(&mut buf).is_ok();

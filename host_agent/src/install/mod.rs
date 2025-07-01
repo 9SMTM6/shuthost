@@ -65,7 +65,7 @@ impl std::fmt::Display for InitSystem {
             #[cfg(target_os = "macos")]
             InitSystem::Launchd => "launchd",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -112,7 +112,7 @@ pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
             )?;
             // Start the self-extracting script in the background
             if let Err(e) = std::process::Command::new(&target_script_path).output() {
-                eprintln!("Failed to start self-extracting script: {}", e);
+                eprintln!("Failed to start self-extracting script: {e}");
             } else {
                 println!("Started self-extracting agent script in background.");
             }
@@ -316,14 +316,14 @@ pub fn get_hostname() -> Option<String> {
 
 /// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
 pub fn test_wol_reachability(port: u16) -> Result<(), String> {
-    let socket = UdpSocket::bind(format!("0.0.0.0:{}", port))
-        .map_err(|e| format!("Failed to bind test socket: {}", e))?;
+    let socket = UdpSocket::bind(format!("0.0.0.0:{port}"))
+        .map_err(|e| format!("Failed to bind test socket: {e}"))?;
 
     socket
         .set_broadcast(true)
-        .map_err(|e| format!("Failed to set broadcast: {}", e))?;
+        .map_err(|e| format!("Failed to set broadcast: {e}"))?;
 
-    println!("Listening for WOL test packets on port {}...", port);
+    println!("Listening for WOL test packets on port {port}...");
 
     let mut buf = [0u8; 32];
     for _ in 0..2 {
@@ -332,7 +332,7 @@ pub fn test_wol_reachability(port: u16) -> Result<(), String> {
             // Echo back to confirm receipt
             socket
                 .send_to(b"SHUTHOST_AGENT RECEIVED", addr)
-                .map_err(|e| format!("Failed to send confirmation: {}", e))?;
+                .map_err(|e| format!("Failed to send confirmation: {e}"))?;
         }
     }
 

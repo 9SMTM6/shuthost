@@ -39,7 +39,7 @@ pub fn handle_request_without_shutdown(
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {
-            eprintln!("Invalid UTF-8 in request from {}: {:?}", peer_addr, data);
+            eprintln!("Invalid UTF-8 in request from {peer_addr}: {data:?}");
             return ("ERROR: Invalid UTF-8".to_string(), false);
         }
     };
@@ -55,7 +55,7 @@ pub fn handle_request_without_shutdown(
 
             // Only allow the expected shutdown command
             if command != "shutdown" {
-                eprintln!("Invalid command from {}: {}", peer_addr, command);
+                eprintln!("Invalid command from {peer_addr}: {command}");
                 return ("ERROR: Invalid command".to_string(), false);
             }
 
@@ -68,15 +68,15 @@ pub fn handle_request_without_shutdown(
             )
         }
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
-            eprintln!("Timestamp out of range from {}", peer_addr);
+            eprintln!("Timestamp out of range from {peer_addr}");
             ("ERROR: Timestamp out of range".to_string(), false)
         }
         shuthost_common::HmacValidationResult::InvalidHmac => {
-            eprintln!("Invalid HMAC signature from {}", peer_addr);
+            eprintln!("Invalid HMAC signature from {peer_addr}");
             ("ERROR: Invalid HMAC signature".to_string(), false)
         }
         shuthost_common::HmacValidationResult::MalformedMessage => {
-            eprintln!("Invalid request format from {}", peer_addr);
+            eprintln!("Invalid request format from {peer_addr}");
             ("ERROR: Invalid request format".to_string(), false)
         }
     }

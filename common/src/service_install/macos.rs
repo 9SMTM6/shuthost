@@ -102,7 +102,7 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     // Optionally print the service status
     let status = Command::new("launchctl")
         .arg("print")
-        .arg(format!("system/{}", label))
+        .arg(format!("system/{label}"))
         .output()
         .map_err(|e| e.to_string())?;
 

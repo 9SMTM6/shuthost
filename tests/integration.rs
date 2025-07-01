@@ -131,7 +131,7 @@ async fn test_coordinator_and_agent_online_status() {
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let client = Client::new();
-    let url = format!("http://127.0.0.1:{}/api/hosts_status", coord_port);
+    let url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
     let resp = client
         .get(&url)
         .send()
@@ -194,7 +194,7 @@ async fn test_shutdown_command_execution() {
             "--port",
             &agent_port.to_string(),
             "--shutdown-command",
-            &format!("echo SHUTDOWN > {}", shutdown_file),
+            &format!("echo SHUTDOWN > {shutdown_file}"),
         ])
         .spawn()
         .expect("failed to start agent");
@@ -202,7 +202,7 @@ async fn test_shutdown_command_execution() {
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let client = Client::new();
-    let status_url = format!("http://127.0.0.1:{}/api/hosts_status", coord_port);
+    let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
     let mut online = false;
     for _ in 0..10 {
         let resp = client.get(&status_url).send().await;
@@ -218,7 +218,7 @@ async fn test_shutdown_command_execution() {
     }
     assert!(online, "Host should be online before triggering shutdown");
 
-    let url = format!("http://127.0.0.1:{}/api/lease/testhost/release", coord_port);
+    let url = format!("http://127.0.0.1:{coord_port}/api/lease/testhost/release");
     let resp = client
         .post(&url)
         .send()
@@ -229,7 +229,7 @@ async fn test_shutdown_command_execution() {
     tokio::time::sleep(std::time::Duration::from_secs(4)).await;
     if Path::new(shutdown_file).exists() {
         let contents = std::fs::read_to_string(shutdown_file).unwrap_or_default();
-        println!("Shutdown file contents: {}", contents);
+        println!("Shutdown file contents: {contents}");
     }
     assert!(
         Path::new(shutdown_file).exists(),

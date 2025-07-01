@@ -113,7 +113,7 @@ async fn handle_reset_client_leases(
         });
     }
 
-    format!("All leases for client '{}' have been reset.", client_id).into_response()
+    format!("All leases for client '{client_id}' have been reset.").into_response()
 }
 
 /// Returns the online status of all hosts as a JSON object.

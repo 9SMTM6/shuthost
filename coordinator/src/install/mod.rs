@@ -54,7 +54,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     args.bind
         .parse::<IpAddr>()
-        .map_err(|e| format!("Invalid bind address: {}", e))?;
+        .map_err(|e| format!("Invalid bind address: {e}"))?;
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
@@ -119,7 +119,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
 
         if !status.success() {
-            return Err(format!("Failed to chown file: {}", status));
+            return Err(format!("Failed to chown file: {status}"));
         }
 
         println!("Chowned config file at {config_location:?} for {user}",);

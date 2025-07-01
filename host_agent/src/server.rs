@@ -30,7 +30,7 @@ pub fn start_host_agent(mut config: ServiceArgs) {
         .expect("SHUTHOST_SHARED_SECRET environment variable must be set");
     let addr = format!("0.0.0.0:{}", config.port);
     let listener = TcpListener::bind(&addr).expect("Failed to bind port");
-    println!("Listening on {}", addr);
+    println!("Listening on {addr}");
 
     for stream in listener.incoming() {
         match stream {
@@ -38,7 +38,7 @@ pub fn start_host_agent(mut config: ServiceArgs) {
                 handle_client(stream, &config);
             }
             Err(e) => {
-                eprintln!("Connection failed: {}", e);
+                eprintln!("Connection failed: {e}");
             }
         }
     }
@@ -59,14 +59,14 @@ fn handle_client(mut stream: TcpStream, config: &ServiceArgs) {
             let (response, should_shutdown) =
                 handle_request_without_shutdown(data, config, &peer_addr);
             if let Err(e) = stream.write_all(response.as_bytes()) {
-                eprintln!("Failed to write response to stream ({}): {}", peer_addr, e);
+                eprintln!("Failed to write response to stream ({peer_addr}): {e}");
             }
             if should_shutdown {
                 execute_shutdown(config).unwrap();
             }
         }
         Err(e) => {
-            eprintln!("Failed to read from stream ({}): {}", peer_addr, e);
+            eprintln!("Failed to read from stream ({peer_addr}): {e}");
         }
     }
 }

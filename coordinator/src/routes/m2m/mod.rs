@@ -339,7 +339,7 @@ fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'sta
 }
 
 pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
-    let addr = format!("{}:{}", ip, port);
+    let addr = format!("{ip}:{port}");
     debug!("Connecting to {}", addr);
 
     const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
@@ -435,7 +435,7 @@ impl Display for LeaseSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             LeaseSource::WebInterface => write!(f, "web-interface"),
-            LeaseSource::Client(ref id) => write!(f, "client-{}", id),
+            LeaseSource::Client(ref id) => write!(f, "client-{id}"),
         }
     }
 }

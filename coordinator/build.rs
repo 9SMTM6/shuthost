@@ -20,7 +20,7 @@ fn main() {
     let npm_ci = Command::new("npm").arg("ci").current_dir("assets").status();
 
     if let Err(error) = npm_ci {
-        eprintln!("Failed to run npm ci: {}", error);
+        eprintln!("Failed to run npm ci: {error}");
         exit(1);
     }
 
@@ -37,7 +37,7 @@ fn main() {
         .status();
 
     if let Err(error) = npm_build {
-        eprintln!("Failed to run npm build: {}", error);
+        eprintln!("Failed to run npm build: {error}");
         exit(1);
     }
 

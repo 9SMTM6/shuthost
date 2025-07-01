@@ -45,14 +45,14 @@ fn main() {
     match invocation.command {
         Command::Install(args) => match install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),
-            Err(e) => eprintln!("Error installing host_agent: {}", e),
+            Err(e) => eprintln!("Error installing host_agent: {e}"),
         },
         Command::Service(args) => {
             server::start_host_agent(args);
         }
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
-            Err(e) => eprintln!("Error during WoL test: {}", e),
+            Err(e) => eprintln!("Error during WoL test: {e}"),
         },
     }
 }

@@ -66,7 +66,7 @@ fn sign_hmac(message: &str, secret: &str) -> String {
 pub fn create_signed_message(message: &str, secret: &str) -> String {
     let message = create_hmac_message(message);
     let signature = sign_hmac(&message, secret);
-    format!("{}|{}", message, signature)
+    format!("{message}|{signature}")
 }
 
 /// Result of validating an HMAC-signed message.
@@ -98,7 +98,7 @@ pub fn validate_hmac_message(data: &str, secret: &str) -> HmacValidationResult {
             return HmacValidationResult::InvalidTimestamp;
         }
         if !verify_hmac(
-            &format!("{}|{}", timestamp, message),
+            &format!("{timestamp}|{message}"),
             &received_signature,
             secret,
         ) {

@@ -58,6 +58,6 @@ __BINARY_PAYLOAD_BELOW__
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750))
         .map_err(|e| e.to_string())?;
 
-    println!("Generated self-extracting script: {}", target_script_path);
+    println!("Generated self-extracting script: {target_script_path}");
     Ok(())
 }
