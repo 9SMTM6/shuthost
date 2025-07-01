@@ -108,6 +108,52 @@ pub async fn load_coordinator_config<P: AsRef<Path>>(
     Ok(config)
 }
 
+/// Handles the logic for reloading the configuration file and updating the application state.
+///
+/// This function is called when a file modification event is detected. It loads the new
+/// configuration, checks for unsupported changes (like port or bind address), and sends the
+/// new configuration to the application's state management channel.
+///
+/// # Arguments
+///
+/// * `path` - The path to the configuration file.
+/// * `tx` - The sender part of a watch channel for broadcasting configuration updates.
+/// * `initial_port` - The server port at application startup, used to detect changes.
+/// * `initial_bind` - The server bind address at application startup, used to detect changes.
+async fn validate_and_broadcast_config_change(
+    path: &Path,
+    tx: &watch::Sender<Arc<ControllerConfig>>,
+    initial_config: &ControllerConfig,
+) {
+    info!("Config file modified. Reloading...");
+    match load_coordinator_config(path).await {
+        Ok(new_config) => {
+            let initial_port = initial_config.server.port;
+            if new_config.server.port != initial_port {
+                error!(
+                    "Port change detected in config file. Changing ports while the server is running is not supported. Server will continue to run on port {}",
+                    initial_port
+                );
+            }
+            let initial_bind = &initial_config.server.bind;
+            if new_config.server.bind != *initial_bind {
+                error!(
+                    "Bind address change detected in config file. Changing bind address while the server is running is not supported. Server will continue to run on {}",
+                    initial_bind
+                );
+            }
+            if tx.send(Arc::new(new_config)).is_err() {
+                error!("Failed to send updated config through watch channel");
+                return;
+            }
+            info!("Config reloaded.");
+        }
+        Err(e) => {
+            error!("Failed to reload config: {}", e);
+        }
+    }
+}
+
 /// Watches a config file for modifications and updates the provided channel on changes.
 ///
 /// # Arguments
@@ -117,8 +163,6 @@ pub async fn load_coordinator_config<P: AsRef<Path>>(
 pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
     let initial_config = tx.borrow().clone();
-    let initial_port = initial_config.server.port;
-    let initial_bind = initial_config.server.bind.clone();
 
     let mut watcher = RecommendedWatcher::new(
         move |res| {
@@ -138,30 +182,7 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
 
     while let Some(event) = raw_rx.recv().await {
         if matches!(event.kind, EventKind::Modify(_)) {
-            info!("Config file modified. Reloading...");
-            match load_coordinator_config(&path).await {
-                Ok(new_config) => {
-                    if new_config.server.port != initial_port {
-                        error!(
-                            "Port change detected in config file. Changing ports while the server is running is not supported. Server will continue to run on port {}",
-                            initial_port
-                        );
-                    }
-                    if new_config.server.bind != initial_bind {
-                        error!(
-                            "Bind address change detected in config file. Changing bind address while the server is running is not supported. Server will continue to run on {}",
-                            initial_bind
-                        );
-                    }
-                    if tx.send(Arc::new(new_config)).is_err() {
-                        error!("Failed to send updated config through watch channel");
-                    }
-                    info!("Config reloaded.");
-                }
-                Err(e) => {
-                    error!("Failed to reload config: {}", e);
-                }
-            }
+            validate_and_broadcast_config_change(&path, &tx, &initial_config).await;
         }
     }
 }

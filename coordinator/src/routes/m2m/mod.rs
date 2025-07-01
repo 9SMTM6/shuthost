@@ -93,6 +93,69 @@ async fn handle_m2m_lease_action(
     State(state): State<AppState>,
     Query(q): Query<LeaseActionQuery>,
 ) -> impl IntoResponse {
+    let (client_id, _command_action) = match validate_m2m_request(&headers, &state, &action) {
+        Ok(res) => res,
+        Err(e) => return Err(e),
+    };
+
+    let mut leases = state.leases.lock().await;
+    let lease_set = leases.entry(host.clone()).or_default();
+    let lease_source = LeaseSource::Client(client_id);
+
+    let is_async = q.r#async.unwrap_or(false);
+
+    match action {
+        LeaseAction::Take => {
+            lease_set.insert(lease_source.clone());
+            broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
+            info!("Client '{}' took lease on '{}'", lease_source, host);
+
+            if is_async {
+                // In async mode, the host state change is triggered in the background and the response returns immediately.
+                // The host may still be transitioning to the online state when the client receives the response.
+                let host = host.clone();
+                let lease_set = lease_set.clone();
+                let state = state.clone();
+                tokio::spawn(async move {
+                    let _ = handle_host_state(&host, &lease_set, &state).await;
+                });
+                Ok("Lease taken (async)".into_response())
+            } else {
+                // In sync mode, the request waits for the host to reach the online state (or timeout) before returning.
+                handle_host_state(&host, lease_set, &state).await?;
+                Ok("Lease taken, host is online".into_response())
+            }
+        }
+        LeaseAction::Release => {
+            lease_set.remove(&lease_source);
+            broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
+            info!("Client '{}' released lease on '{}'", lease_source, host);
+
+            if is_async {
+                // In async mode, the host state change is triggered in the background and the response returns immediately.
+                // The host may still be transitioning to the offline state when the client receives the response.
+                let host = host.clone();
+                let lease_set = lease_set.clone();
+                let state = state.clone();
+                tokio::spawn(async move {
+                    let _ = handle_host_state(&host, &lease_set, &state).await;
+                });
+                Ok("Lease released (async)".into_response())
+            } else {
+                // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
+                handle_host_state(&host, lease_set, &state).await?;
+                Ok("Lease released, host is offline".into_response())
+            }
+        }
+    }
+}
+
+/// Validates M2M lease action request headers and returns (client_id, LeaseAction)
+pub fn validate_m2m_request(
+    headers: &axum::http::HeaderMap,
+    state: &AppState,
+    expected_action: &LeaseAction,
+) -> Result<(String, LeaseAction), (StatusCode, &'static str)> {
     let client_id = headers
         .get("X-Client-ID")
         .and_then(|v| v.to_str().ok())
@@ -140,60 +203,11 @@ async fn handle_m2m_lease_action(
     let command_action: LeaseAction = serde_plain::from_str(&command)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid action in X-Request"))?;
 
-    if command_action != action {
+    if &command_action != expected_action {
         return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
     }
 
-    let mut leases = state.leases.lock().await;
-    let lease_set = leases.entry(host.clone()).or_default();
-    let lease_source = LeaseSource::Client(client_id.to_string());
-
-    let is_async = q.r#async.unwrap_or(false);
-
-    match action {
-        LeaseAction::Take => {
-            lease_set.insert(lease_source.clone());
-            broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
-            info!("Client '{}' took lease on '{}'", client_id, host);
-
-            if is_async {
-                // In async mode, the host state change is triggered in the background and the response returns immediately.
-                // The host may still be transitioning to the online state when the client receives the response.
-                let host = host.clone();
-                let lease_set = lease_set.clone();
-                let state = state.clone();
-                tokio::spawn(async move {
-                    let _ = handle_host_state(&host, &lease_set, &state).await;
-                });
-                Ok("Lease taken (async)".into_response())
-            } else {
-                // In sync mode, the request waits for the host to reach the online state (or timeout) before returning.
-                handle_host_state(&host, lease_set, &state).await?;
-                Ok("Lease taken, host is online".into_response())
-            }
-        }
-        LeaseAction::Release => {
-            lease_set.remove(&lease_source);
-            broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
-            info!("Client '{}' released lease on '{}'", client_id, host);
-
-            if is_async {
-                // In async mode, the host state change is triggered in the background and the response returns immediately.
-                // The host may still be transitioning to the offline state when the client receives the response.
-                let host = host.clone();
-                let lease_set = lease_set.clone();
-                let state = state.clone();
-                tokio::spawn(async move {
-                    let _ = handle_host_state(&host, &lease_set, &state).await;
-                });
-                Ok("Lease released (async)".into_response())
-            } else {
-                // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
-                handle_host_state(&host, lease_set, &state).await?;
-                Ok("Lease released, host is offline".into_response())
-            }
-        }
-    }
+    Ok((client_id.to_string(), command_action))
 }
 
 pub async fn broadcast_lease_update(
@@ -211,12 +225,59 @@ pub async fn broadcast_lease_update(
     }
 }
 
+/// Waits for a host to reach the desired state (online/offline) within a timeout.
+/// Returns `Ok(())` if the desired state is reached, or an error if the timeout is exceeded.
+async fn wait_for_host_state(
+    host: &str,
+    state: &AppState,
+    desired_state: bool,
+    timeout_secs: u64,
+    poll_interval_secs: u64,
+) -> Result<(), (StatusCode, &'static str)> {
+    let mut waited = 0;
+
+    loop {
+        let current_state = {
+            let hoststatus_rx = state.hoststatus_rx.borrow();
+            hoststatus_rx.get(host).copied().unwrap_or(false)
+        };
+
+        if current_state == desired_state {
+            info!(
+                "Host '{}' is now {}",
+                host,
+                if desired_state { "online" } else { "offline" }
+            );
+            return Ok(());
+        }
+
+        if waited >= timeout_secs {
+            warn!(
+                "Timeout waiting for host '{}' to become {}",
+                host,
+                if desired_state { "online" } else { "offline" }
+            );
+            return Err((
+                StatusCode::GATEWAY_TIMEOUT,
+                if desired_state {
+                    "Timeout waiting for host to become online"
+                } else {
+                    "Timeout waiting for host to become offline"
+                },
+            ));
+        }
+
+        sleep(Duration::from_secs(poll_interval_secs)).await;
+        waited += poll_interval_secs;
+    }
+}
+
+// Refactored usage in handle_host_state
 pub async fn handle_host_state(
     host: &str,
     lease_set: &HashSet<LeaseSource>,
     state: &AppState,
 ) -> Result<(), (StatusCode, &'static str)> {
-    // If there are any leases, the host should be running
     let should_be_running = !lease_set.is_empty();
 
     debug!(
@@ -224,7 +285,7 @@ pub async fn handle_host_state(
         host, should_be_running, lease_set
     );
 
-    let mut host_is_on = {
+    let host_is_on = {
         let hoststatus_rx = state.hoststatus_rx.borrow();
         hoststatus_rx.get(host).copied().unwrap_or(false)
     };
@@ -233,63 +294,18 @@ pub async fn handle_host_state(
 
     if should_be_running && !host_is_on {
         info!(
-            "Host '{}' needs to wake up - has {} active lease(s): {:?}",
-            host,
+            "Host '{host}' needs to wake up - has {} active lease(s): {:?}",
             lease_set.len(),
             lease_set
         );
         wake_host(host, state)?;
 
-        // Wait until host is reported as online, with timeout
-        let mut waited = 0;
-        let max_wait = 60; // seconds
-        let poll_interval = 1; // second
-        loop {
-            host_is_on = {
-                let hoststatus = state.hoststatus_rx.borrow();
-                hoststatus.get(host).copied().unwrap_or(false)
-            };
-            if host_is_on {
-                info!("Host '{}' is now online", host);
-                break;
-            }
-            if waited >= max_wait {
-                warn!("Timeout waiting for host '{}' to become online", host);
-                return Err((
-                    StatusCode::GATEWAY_TIMEOUT,
-                    "Timeout waiting for host to become online",
-                ));
-            }
-            sleep(Duration::from_secs(poll_interval)).await;
-            waited += poll_interval;
-        }
+        wait_for_host_state(host, state, true, 60, 1).await?;
     } else if !should_be_running && host_is_on {
-        info!("Host '{}' should shut down - no active leases", host);
+        info!("Host '{host}' should shut down - no active leases");
         shutdown_host(host, state).await?;
 
-        // Wait until host is reported as offline, with timeout
-        let mut waited = 0;
-        let max_wait = 60; // seconds
-        let poll_interval = 1; // second
-        loop {
-            host_is_on = {
-                let is_on_rx = state.hoststatus_rx.borrow();
-                is_on_rx.get(host).copied().unwrap_or(false)
-            };
-            if !host_is_on {
-                info!("Host '{}' is now offline", host);
-                break;
-            }
-            if waited >= max_wait {
-                warn!("Timeout waiting for host '{}' to become offline", host);
-                return Err((
-                    StatusCode::GATEWAY_TIMEOUT,
-                    "Timeout waiting for host to become offline",
-                ));
-            }
-            sleep(Duration::from_secs(poll_interval)).await;
-            waited += poll_interval;
-        }
+        wait_for_host_state(host, state, false, 60, 1).await?;
     } else {
         debug!(
             "No action needed for host '{}' (is_on={}, should_be_running={})",
@@ -338,46 +354,42 @@ fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'sta
     Ok(())
 }
 
+async fn execute_tcp_shutdown_request(
+    stream: &mut TcpStream,
+    request: &[u8],
+    response_buf: &mut [u8],
+) -> Result<usize, String> {
+    const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
+
+    timeout(REQUEST_TIMEOUT, stream.writable())
+        .await
+        .map_err(|e| format!("Stream not writable (timeout): {e}"))?
+        .map_err(|e| format!("Stream not writable: {e}"))?;
+
+    debug!("Sending shutdown message...");
+    timeout(REQUEST_TIMEOUT, stream.write_all(request))
+        .await
+        .map_err(|e| format!("Write failed (timeout): {e}"))?
+        .map_err(|e| format!("Write failed: {e}"))?;
+
+    timeout(REQUEST_TIMEOUT, stream.read(response_buf))
+        .await
+        .map_err(|e| format!("Read timed out: {e}"))?
+        .map_err(|e| format!("Read failed: {e}"))
+}
+
 pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
     let addr = format!("{ip}:{port}");
     debug!("Connecting to {}", addr);
 
     const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
-    let mut stream = match timeout(REQUEST_TIMEOUT, TcpStream::connect(addr)).await {
-        Ok(Ok(s)) => s,
-        Ok(Err(e)) => {
-            error!("TCP connect error: {}", e);
-            return Err(e.to_string());
-        }
-        Err(e) => {
-            error!("Connection timed out: {}", e);
-            return Err("Connection timed out".to_string());
-        }
-    };
-
-    if let Err(e) = timeout(REQUEST_TIMEOUT, stream.writable()).await {
-        error!("Stream not writable: {}", e);
-        return Err("Stream not writable".to_string());
-    }
-
-    debug!("Sending shutdown message...");
-    if let Err(e) = timeout(REQUEST_TIMEOUT, stream.write_all(message.as_bytes())).await {
-        error!("Write failed: {}", e);
-        return Err("Write failed".to_string());
-    }
+    let mut stream = timeout(REQUEST_TIMEOUT, TcpStream::connect(&addr))
+        .await
+        .map_err(|e| format!("Connection to {addr} timed out: {e}"))?
+        .map_err(|e| format!("TCP connect error to {addr}: {e}"))?;
 
     let mut buf = vec![0; 1024];
-    let n = match timeout(REQUEST_TIMEOUT, stream.read(&mut buf)).await {
-        Ok(Ok(n)) => n,
-        Ok(Err(e)) => {
-            error!("Read failed: {}", e);
-            return Err("Read failed".to_string());
-        }
-        Err(e) => {
-            error!("Read timed out: {}", e);
-            return Err("Read timed out".to_string());
-        }
-    };
+    let n = execute_tcp_shutdown_request(&mut stream, message.as_bytes(), &mut buf).await?;
 
     let Some(data) = buf.get(..n) else {
         unreachable!("Read data size should always be valid, as its >= buffer size");
