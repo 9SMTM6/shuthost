@@ -19,12 +19,12 @@
     <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
         Skip to main content
     </a>
-    <header class="bg-white dark:bg-gray-800 shadow-md">
+    <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-14">
                 <div class="flex items-center gap-4">
                     <img src="/favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
-                    <h1 class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">ShutHost</h1>
+                    <span class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100" role="heading" aria-level="1">ShutHost</span>
                 </div>
                 <!-- Tablist for navigation -->
                 <nav class="flex" role="tablist" aria-label="Main tabs">
@@ -36,104 +36,106 @@
         </div>
     </header>
 
-    <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" id="main-content" tabindex="-1">
-        <main class="py-4 sm:py-6">
-            <div id="hosts-tab" class="tab-content active">
+    <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
+        <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
+            <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
                 <!-- Install Instructions Panel -->
-                <div class="section-container mt-0 py-0">
-                    <div class="collapsible-header py-2" data-target="host-install-content">
-                        <h2 class="section-title mb-0 text-base">Install Host Agent</h2>
+                <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
+                    <header class="collapsible-header py-2" data-target="host-install-content" aria-expanded="false" aria-controls="host-install-content" id="host-install-header" tabindex="0" role="button">
+                        <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
                         <span class="collapsible-icon"></span>
-                    </div>
-                    <div id="host-install-content" class="collapsible-content">
+                    </header>
+                    <div id="host-install-content" class="collapsible-content" role="region" aria-labelledby="host-install-title">
                         <p class="mb-1 text-sm">Run the following command in your terminal:</p>
                         <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#host-install-command">Copy</button>
+                            <button class="copy-button" data-copy-target="#host-install-command" type="button" aria-label="Copy install command">Copy</button>
                             <code id="host-install-command" class="code-block">Loading...</code>
                         </div>
                         <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
                             section of your config on the Coordinator Host:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#config-location">Copy</button>
+                            <button class="copy-button" data-copy-target="#config-location" type="button" aria-label="Copy config location">Copy</button>
                             <code id="config-location" class="code-block">{coordinator_config}</code>
                         </div>
 
                         { agent_install_requirements_gotchas }
                     </div>
-                </div>
+                </section>
 
                 <!-- Hosts Table -->
-                <div class="section-container mt-4">
+                <section class="section-container mt-4" aria-labelledby="hosts-table-title">
+                    <h2 id="hosts-table-title" class="sr-only">Hosts Table</h2>
                     <div class="table-wrapper">
-                        <table class="w-full">
+                        <table class="w-full" aria-describedby="hosts-table-title">
                             <thead>
                                 <tr id="host-table-header">
-                                    <th class="table-header">Host</th>
-                                    <th class="table-header">Status</th>
-                                    <th class="table-header">Leases</th>
-                                    <th class="table-header">Actions</th>
+                                    <th class="table-header" scope="col">Host</th>
+                                    <th class="table-header" scope="col">Status</th>
+                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" scope="col">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="host-table-body" class="divide-y divide-gray-200">
+                            <tbody id="host-table-body" class="divide-y divide-gray-200" aria-live="polite">
                                 <!-- Hosts will be loaded here dynamically -->
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+                </section>
+            </section>
 
-            <div id="clients-tab" class="tab-content">
+            <section id="clients-tab" class="tab-content" aria-labelledby="tab-clients" role="tabpanel" tabindex="0">
                 <!-- Install Instructions Panel -->
-                <div class="section-container mt-0 py-0">
-                    <div class="collapsible-header py-2" data-target="client-install-content">
-                        <h2 class="section-title mb-0 text-base">Install Client</h2>
+                <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
+                    <header class="collapsible-header py-2" data-target="client-install-content" aria-expanded="false" aria-controls="client-install-content" id="client-install-header" tabindex="0" role="button">
+                        <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
                         <span class="collapsible-icon"></span>
-                    </div>
-                    <div id="client-install-content" class="collapsible-content">
+                    </header>
+                    <div id="client-install-content" class="collapsible-content" role="region" aria-labelledby="client-install-title">
                         <p class="mb-1 text-sm">Run the following command in your terminal:</p>
                         <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#client-install-command">Copy</button>
+                            <button class="copy-button" data-copy-target="#client-install-command" type="button" aria-label="Copy install command">Copy</button>
                             <code id="client-install-command" class="code-block">Loading...</code>
                         </div>
                         <p class="description-text text-xs">Optionally, you can specify a custom client ID as the second
                             argument. Add the output to the clients section of your config on the Coordinator Host:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#config-location">Copy</button>
+                            <button class="copy-button" data-copy-target="#config-location" type="button" aria-label="Copy config location">Copy</button>
                             <code id="config-location" class="code-block">{coordinator_config}</code>
                         </div>
 
                         { client_install_requirements_gotchas }
                     </div>
-                </div>
+                </section>
 
                 <!-- Clients Table -->
-                <div class="section-container mt-4">
+                <section class="section-container mt-4" aria-labelledby="clients-table-title">
+                    <h2 id="clients-table-title" class="sr-only">Clients Table</h2>
                     <div class="table-wrapper">
-                        <table class="w-full">
+                        <table class="w-full" aria-describedby="clients-table-title">
                             <thead>
                                 <tr>
-                                    <th class="table-header">Client ID</th>
-                                    <th class="table-header">Leases</th>
-                                    <th class="table-header">Actions</th>
+                                    <th class="table-header" scope="col">Client ID</th>
+                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" scope="col">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="client-table-body" class="divide-y divide-gray-200">
+                            <tbody id="client-table-body" class="divide-y divide-gray-200" aria-live="polite">
                                 <!-- Clients will be loaded here dynamically -->
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
+                </section>
+            </section>
 
             { architecture_documentation }
 
             <!-- Security Configuration Panel (shown on both tabs) -->
-            <div class="section-container mt-4">
-                <div class="collapsible-header collapsed" data-target="security-config-content">
-                    <h2 class="section-title mb-0 text-base">🔒 Required Security Exceptions</h2>
+            <section class="section-container mt-4" aria-labelledby="security-config-title">
+                <header class="collapsible-header collapsed" data-target="security-config-content" aria-expanded="false" aria-controls="security-config-content" id="security-config-header" tabindex="0" role="button">
+                    <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
                     <span class="collapsible-icon"></span>
-                </div>
-                <div id="security-config-content" class="collapsible-content collapsed">
+                </header>
+                <div id="security-config-content" class="collapsible-content collapsed" role="region" aria-labelledby="security-config-title">
                     <div class="alert alert-info">
                         <div class="alert-title">Authentication Bypass Required</div>
                         <p>For the web app and installation scripts to work properly, certain endpoints must be accessible without authentication. If you're using a reverse proxy with authentication (like Authelia, NPM with auth, etc.), you need to configure bypass rules for:</p>
@@ -151,13 +153,13 @@
 
                         <p class="text-sm font-semibold mb-2">Authelia:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#authelia-config">Copy</button>
+                            <button class="copy-button" data-copy-target="#authelia-config" type="button" aria-label="Copy Authelia config">Copy</button>
                             <code id="authelia-config" class="code-block">Loading...</code>
                         </div>
 
                         <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#nginx-config">Copy</button>
+                            <button class="copy-button" data-copy-target="#nginx-config" type="button" aria-label="Copy Nginx config">Copy</button>
                             <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
 location ~ ^/(download|api/m2m|manifest.json|favicon.ico)$ {
     auth_basic off;
@@ -167,19 +169,20 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.ico)$ {
 
                         <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#traefik-config">Copy</button>
+                            <button class="copy-button" data-copy-target="#traefik-config" type="button" aria-label="Copy Traefik config">Copy</button>
                             <code id="traefik-config" class="code-block">Loading...</code>
                         </div>
 
                         <p class="text-xs mt-2"><em>Replace backend references with your actual configuration values.</em></p>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
+            </section>
+        </section>
+    </main>
 
     <footer
-        class="bg-white dark:bg-gray-800 shadow-md py-2 px-4 text-center text-gray-600 dark:text-gray-400 text-xs mt-auto">
+        class="bg-white dark:bg-gray-800 shadow-md py-2 px-4 text-center text-gray-600 dark:text-gray-400 text-xs mt-auto"
+        role="contentinfo">
         ShutHost Coordinator v{version}
     </footer>
 

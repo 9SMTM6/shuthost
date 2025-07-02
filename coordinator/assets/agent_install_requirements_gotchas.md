@@ -1,9 +1,9 @@
 <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
 
-<div class="alert alert-warning">
-    <div class="alert-title">⚠️ Agent Installation Requirements</div>
+<aside class="alert alert-warning" role="note" aria-label="Agent Installation Requirements">
+    <h3 class="alert-title">⚠️ Agent Installation Requirements</h3>
     <ul>
-        <li><strong>Superuser Access:</strong> The installer requires curl and will install as
+        <li><strong>Superuser Access:</strong> The installer requires <code>curl</code> and will install as
             superuser (root/sudo/doas)</li>
         <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
             download endpoints (see security notes below)</li>
@@ -12,19 +12,19 @@
         <li><strong>Manual Configuration:</strong> The generated config must be manually added
             to your coordinator configuration file</li>
     </ul>
-</div>
+</aside>
 
-<div class="alert alert-error">
-    <div class="alert-title">🚫 Platform Limitations</div>
+<aside class="alert alert-error" role="note" aria-label="Platform Limitations">
+    <h3 class="alert-title">🚫 Platform Limitations</h3>
     <ul>
         <li><strong>No Windows Support:</strong> Only Linux distributions are supported.</li>
         <li><strong>No BSD Support:</strong> BSD-based systems are not supported.</li>
         <li><strong>Docker Networking Issues:</strong> Docker on macOS won't work for the coordinator due to network broadcast requirements. Use the single binary instead. On Linux use <code>network_mode: host</code> or also use the binary.</li>
     </ul>
-</div>
+</aside>
 
-<div class="alert alert-info">
-    <div class="alert-title">💡 Wake-on-LAN (WOL) Requirements</div>
+<aside class="alert alert-info" role="note" aria-label="Wake-on-LAN (WOL) Requirements">
+    <h3 class="alert-title">💡 Wake-on-LAN (WOL) Requirements</h3>
     <p>The agent requires Wake-on-LAN for remote startup functionality:</p>
     <ul>
         <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
@@ -40,4 +40,4 @@
             </ul>
         </li>
     </ul>
-</div>
+</aside>

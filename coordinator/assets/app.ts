@@ -126,14 +126,24 @@ const createHostRow = (host: Host) => {
     const leases = getFormattedLeases(host.name);
     const clientsConfigured = hasClientsConfigured();
     return `
-        <tr data-hostname="${host.name}" class="table-row">
-            <td class="table-cell">${host.name}</td>
-            <td class="table-cell status">${statusText}</td>
-            ${clientsConfigured ? `<td class="table-cell leases">${leases}</td>` : ''}
-            <td class="table-cell">
+        <tr data-hostname="${host.name}" class="table-row" role="row">
+            <th class="table-cell" scope="row">${host.name}</th>
+            <td class="table-cell status" aria-label="Status">${statusText}</td>
+            ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
+            <td class="table-cell" aria-label="Actions">
                 <div class="actions-cell">
-                    <button class="btn btn-green take-lease" onclick="updateLease('${host.name}', 'take')">${clientsConfigured ? "Take Lease" : "Start"}</button>
-                    <button class="btn btn-red release-lease" onclick="updateLease('${host.name}', 'release')">${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
+                    <button 
+                        class="btn btn-green take-lease" 
+                        onclick="updateLease('${host.name}', 'take')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Take lease for ${host.name}` : `Start ${host.name}`}"
+                    >${clientsConfigured ? "Take Lease" : "Start"}</button>
+                    <button 
+                        class="btn btn-red release-lease" 
+                        onclick="updateLease('${host.name}', 'release')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Release lease for ${host.name}` : `Shutdown ${host.name}`}"
+                    >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
                 </div>
             </td>
         </tr>
@@ -261,14 +271,16 @@ const formatLeaseSource = (lease: LeaseSource): string => {
 const createClientRow = (clientId: string, leases: string[]) => {
     const hasLeases = leases.length > 0;
     return `
-    <tr data-client-id="${clientId}" class="table-row">
-        <td class="table-cell">${clientId}</td>
-        <td class="table-cell">${leases.join(', ') || 'None'}</td>
-        <td class="table-cell">
+    <tr data-client-id="${clientId}" class="table-row" role="row">
+        <th class="table-cell" scope="row">${clientId}</th>
+        <td class="table-cell" aria-label="Leases">${leases.join(', ') || 'None'}</td>
+        <td class="table-cell" aria-label="Actions">
             <div class="actions-cell">
                 <button 
                     class="btn btn-red" 
                     onclick="resetClientLeases('${clientId}')"
+                    type="button"
+                    aria-label="Reset leases for ${clientId}"
                     ${!hasLeases ? 'disabled' : ''}
                 >
                     Reset Leases

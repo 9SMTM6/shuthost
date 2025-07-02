@@ -140,6 +140,11 @@ footer {
         @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
     }
 
+    .table-row th[scope="row"] {
+        @apply font-normal text-gray-800 dark:text-gray-100 bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-left;
+        font-weight: 500; /* Slightly bolder than td, but not as bold as header */
+    }
+
     /* Update table cell styling */
     .table-cell {
         @apply px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100;
