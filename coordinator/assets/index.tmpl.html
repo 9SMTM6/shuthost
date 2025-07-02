@@ -15,6 +15,10 @@
 </head>
 
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans min-h-screen">
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
+        Skip to main content
+    </a>
     <header class="bg-white dark:bg-gray-800 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-14">
@@ -22,16 +26,17 @@
                     <img src="/favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
                     <h1 class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100">ShutHost</h1>
                 </div>
-                <nav class="flex">
-                    <button class="tab" data-tab="architecture">Docs</button>
-                    <button class="tab active" data-tab="hosts">Hosts</button>
-                    <button class="tab" data-tab="clients">Clients</button>
+                <!-- Tablist for navigation -->
+                <nav class="flex" role="tablist" aria-label="Main tabs">
+                    <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab" id="tab-architecture" tabindex="0">Docs</button>
+                    <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts" tabindex="0">Hosts</button>
+                    <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients" tabindex="0">Clients</button>
                 </nav>
             </div>
         </div>
     </header>
 
-    <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+    <div class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" id="main-content" tabindex="-1">
         <main class="py-4 sm:py-6">
             <div id="hosts-tab" class="tab-content active">
                 <!-- Install Instructions Panel -->
