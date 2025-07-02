@@ -248,9 +248,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download MUSL coordinator binaries
+      - name: Download MUSL coordinator binary
         uses: actions/download-artifact@v4
         with:
+          name: coordinator-${{ matrix.rustc_target }}
           path: ./rehydrate
 
       - name: Set up Docker Buildx
@@ -263,15 +264,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Rehydrate target directory structure
+      - name: Prepare coordinator binary
         run: |
-          mkdir -p target
-          for dir in ./rehydrate/coordinator-*; do
-            target=$(basename "$dir" | sed 's/^coordinator-//')
-            mkdir -p "target/$target/release"
-            cp "$dir/shuthost_coordinator" "target/$target/release/"
-            chmod +x "target/$target/release/shuthost_coordinator"
-          done
+          mkdir -p target/${{ matrix.rustc_target }}/release
+          cp ./rehydrate/shuthost_coordinator target/${{ matrix.rustc_target }}/release/shuthost_coordinator
+          chmod +x target/${{ matrix.rustc_target }}/release/shuthost_coordinator
 
       - name: Get release texts
         id: release_texts
@@ -419,29 +416,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all binaries
+      - name: Download coordinator binary
         uses: actions/download-artifact@v4
         with:
-          path: ./rehydrate
+          name: coordinator-${{ matrix.rustc_target }}
+          path: ./bin
 
-      - name: Rehydrate target directory structure
-        run: |
-          mkdir -p target
-          for dir in ./rehydrate/*; do
-            target=$(basename "$dir" | sed 's/^host_agent-//;s/^coordinator-//')
-            mkdir -p "target/$target/release"
-            cp "$dir/shuthost_host_agent" "target/$target/release/" 2>/dev/null || true
-            cp "$dir/shuthost_coordinator" "target/$target/release/" 2>/dev/null || true
-            chmod +x "target/$target/release/shuthost_host_agent" "target/$target/release/shuthost_coordinator" 2>/dev/null || true
-          done
+      - name: Download host_agent binary
+        uses: actions/download-artifact@v4
+        with:
+          name: host_agent-${{ matrix.rustc_target }}
+          path: ./bin
 
       - name: Test Controller Binary
         run: |
-          ./target/${{ matrix.rustc_target }}/release/shuthost_coordinator --help
+          chmod +x ./bin/shuthost_coordinator
+          ./bin/shuthost_coordinator --help
 
       - name: Test Host Agent Binary
         run: |
-          ./target/${{ matrix.rustc_target }}/release/shuthost_host_agent --help
+          chmod +x ./bin/shuthost_host_agent
+          ./bin/shuthost_host_agent --help
 
   release:
     name: Upload Release Binaries
