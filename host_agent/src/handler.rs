@@ -47,25 +47,22 @@ pub fn handle_request_without_shutdown(
     match validate_hmac_message(data_str, &config.shared_secret) {
         shuthost_common::HmacValidationResult::Valid(command) => {
             // Proceed with valid command
-
-            // Special handling for status check command
-            if command == "status" {
-                return ("OK: status".to_string(), false);
-            }
-
-            // Only allow the expected shutdown command
-            if command != "shutdown" {
-                eprintln!("Invalid command from {peer_addr}: {command}");
-                return ("ERROR: Invalid command".to_string(), false);
-            }
-
-            (
-                format!(
-                    "Now executing command: {}. Hopefully goodbye.",
-                    config.shutdown_command
+            match command.as_str() {
+                "status" => {
+                    ("OK: status".to_string(), false)
+                }
+                "shutdown" => (
+                    format!(
+                        "Now executing command: {}. Hopefully goodbye.",
+                        config.shutdown_command
+                    ),
+                    true,
                 ),
-                true,
-            )
+                _ => {
+                    eprintln!("Invalid command from {peer_addr}: {command}");
+                    ("ERROR: Invalid command".to_string(), false)
+                }
+            }
         }
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
             eprintln!("Timestamp out of range from {peer_addr}");
