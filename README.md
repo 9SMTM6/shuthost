@@ -12,7 +12,8 @@
 ## 📋 Table of Contents
 
 - [🏗️ Architecture](#️-architecture)
-- [📋 Requirements](#-requirements)
+- [� API Documentation](#-api-documentation)
+- [�📋 Requirements](#-requirements)
 - [🔒 Security](#-security)
 - [⚠️ Known Issues](#️-known-issues)
 - [🚀 Potential Features](#-potential-features)
@@ -23,7 +24,13 @@
 
 📖 See [Architecture Documentation](coordinator/assets/architecture.md)
 
----
+## 📖 API Documentation
+
+📚 See [API Documentation](docs/API.md) for details on:
+- **Coordinator M2M API**: Machine-to-machine lease management and control
+- **Agent Protocol**: Host management commands and status checking
+
+This documentation is intended to help with third-party integrations, including custom scripts and systems like Home Assistant.
 
 ## 📋 Requirements
 
