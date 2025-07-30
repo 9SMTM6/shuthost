@@ -3,7 +3,7 @@ members = ["host_agent", "coordinator", "common"]
 default-members = ["coordinator", "host_agent"]
 
 [workspace.package]
-version = "1.0.0-rc-4"
+version = "1.0.0-rc-5"
 edition = "2024"
 authors = ["Samuel Maier"]
 description = "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."

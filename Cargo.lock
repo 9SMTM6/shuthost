@@ -855,7 +855,7 @@ dependencies = [
 
 [[package]]
 name = "integration-tests"
-version = "1.0.0-rc-4"
+version = "1.0.0-rc-5"
 dependencies = [
  "reqwest",
  "serde_json",
@@ -1591,7 +1591,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shuthost_common"
-version = "1.0.0-rc-4"
+version = "1.0.0-rc-5"
 dependencies = [
  "hex",
  "hmac",
@@ -1602,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_coordinator"
-version = "1.0.0-rc-4"
+version = "1.0.0-rc-5"
 dependencies = [
  "axum",
  "clap",
@@ -1625,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_host_agent"
-version = "1.0.0-rc-4"
+version = "1.0.0-rc-5"
 dependencies = [
  "clap",
  "hex",
