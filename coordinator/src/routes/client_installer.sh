@@ -15,7 +15,7 @@ CLIENT_ID="${2:-$(echo "$ADJECTIVES" | tr ' ' '\n' | sort -R | head -n1)_$(echo 
 
 # Generate a random shared secret using openssl
 SHARED_SECRET=$(openssl rand -hex 16)
-CLIENT_SCRIPT_NAME="shuthost_client_${CLIENT_ID}.sh"
+CLIENT_SCRIPT_NAME="shuthost_client_${CLIENT_ID}"
 
 # Ensure the installation directory exists
 if [ ! -d "$INSTALL_DIR" ]; then

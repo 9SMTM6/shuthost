@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Usage: ./shuthost_client_<client_id>.sh <take|release> <host> [remote_url] [--async]
+# Usage: ./shuthost_client_<client_id> <take|release> <host> [remote_url] [--async]
 # Requires: curl, openssl, date
 
 set -eu
