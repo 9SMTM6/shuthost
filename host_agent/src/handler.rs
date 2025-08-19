@@ -48,9 +48,7 @@ pub fn handle_request_without_shutdown(
         shuthost_common::HmacValidationResult::Valid(command) => {
             // Proceed with valid command
             match command.as_str() {
-                "status" => {
-                    ("OK: status".to_string(), false)
-                }
+                "status" => ("OK: status".to_string(), false),
                 "shutdown" => (
                     format!(
                         "Now executing command: {}. Hopefully goodbye.",

@@ -71,7 +71,7 @@ To access the WebUI served by the binary from Docker containers (e.g. NGINX), us
 http://host.containers.internal:<port>
 ```
 
-Container solutons other than Docker (e.g. Podman) might require additional configuration.
+Container solutions other than Docker (e.g. Podman) might require additional configuration.
 On Podman, add the following to the container that wants to access the coordinator:
 ```yaml
 extra_hosts:

@@ -166,10 +166,10 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
 
     let mut watcher = RecommendedWatcher::new(
         move |res| {
-            if let Ok(event) = res {
-                if raw_tx.send(event).is_err() {
-                    error!("Failed to send event to config watcher channel");
-                }
+            if let Ok(event) = res
+                && raw_tx.send(event).is_err()
+            {
+                error!("Failed to send event to config watcher channel");
             }
         },
         notify::Config::default(),
