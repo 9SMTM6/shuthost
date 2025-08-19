@@ -1,10 +1,15 @@
 // Reusable types
+/**
+ * Map of host name -> online status.
+ */
 type StatusMap = Record<string, boolean>;
 
+/** Represents the source of a lease. */
 type LeaseSource =
     | { type: 'WebInterface' }
     | { type: 'Client'; value: string };
 
+/** WebSocket message types exchanged with the coordinator backend. */
 type WsMessage = 
     | { type: 'HostStatus'; payload: Record<string, boolean> }
     | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[]} }
@@ -22,6 +27,10 @@ let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 let persistedClientList: string[] = [];
 
+/**
+ * Establish and maintain a WebSocket connection to the backend API.
+ * Reconnects automatically on close (with a small delay).
+ */
 const connectWebSocket = () => {
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
     const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
@@ -31,6 +40,10 @@ const connectWebSocket = () => {
     socket.onclose = () => setTimeout(connectWebSocket, 2000);
 };
 
+/**
+ * Handle incoming WebSocket messages and update local state/UI accordingly.
+ * Wraps parsing in a try/catch to avoid uncaught exceptions from malformed messages.
+ */
 const handleWebSocketMessage = (event: MessageEvent) => {
     try {
         const message = JSON.parse(event.data) as WsMessage;
@@ -71,6 +84,10 @@ const handleWebSocketMessage = (event: MessageEvent) => {
     }
 };
 
+/**
+ * Return a small object describing the status text to display for a host.
+ * If status is undefined the host is still loading.
+ */
 const getHostStatus = (hostName: string) => {
     const status = persistedStatusMap[hostName];
     return {
@@ -78,7 +95,11 @@ const getHostStatus = (hostName: string) => {
     };
 };
 
-// Helper function to get formatted leases for a host
+/**
+ * Format leases for display in the hosts table.
+ * Filters out the WebInterface lease (internal UI lease) and returns a comma-separated string
+ * of client IDs or "None" if no client leases exist.
+ */
 const getFormattedLeases = (hostname: string): string => {
     // Only show client leases, not WebInterface
     const clientLeases = (persistedLeaseMap[hostname] || []).filter(lease => lease.type === 'Client');
@@ -88,7 +109,12 @@ const getFormattedLeases = (hostname: string): string => {
 // Helper to check if there are any clients configured
 const hasClientsConfigured = () => persistedClientList.length > 0;
 
-// Helper function to update a single row's attributes
+/**
+ * Update DOM attributes and visibility for a given host table row.
+ * - Updates status cell text
+ * - Updates lease cell text
+ * - Shows/hides take/release buttons depending on whether the WebInterface holds a lease
+ */
 const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
     const { statusText } = getHostStatus(hostname);
     const leases = persistedLeaseMap[hostname] || [];
@@ -110,6 +136,9 @@ const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
     }
 };
 
+/**
+ * Iterate over all host rows and refresh their attributes from current persisted state.
+ */
 const updateNodeAttrs = () => {
     document.querySelectorAll<HTMLTableRowElement>('#host-table-body tr').forEach(row => {
         const hostname = row.dataset["hostname"];
@@ -148,6 +177,10 @@ const createHostRow = (hostName: string) => {
     `;
 };
 
+/**
+ * Send a lease action request to the backend.
+ * action should be 'take' or 'release'.
+ */
 const updateLease = async (host: string, action: string) => {
     try {
         await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
@@ -207,6 +240,10 @@ const setupCollapsibleSections = () => {
     });
 };
 
+/**
+ * Populate dynamic configuration snippets and installer commands based on current origin.
+ * This keeps embedded strings in the UI in sync with where the page is served from.
+ */
 const setupDynamicConfigs = () => {
     const baseUrl = window.location.origin;
 
@@ -255,6 +292,10 @@ const initialize = () => {
 
 document.addEventListener('DOMContentLoaded', initialize);
 
+/**
+ * Convert a LeaseSource to a human readable string.
+ * Note: WebInterface leases are internal and should be filtered out prior to display.
+ */
 const formatLeaseSource = (lease: LeaseSource): string => {
     switch (lease.type) {
         case 'WebInterface':
@@ -289,6 +330,10 @@ const createClientRow = (clientId: string, leases: string[]) => {
     `;
 };
 
+/**
+ * Rebuild the clients table from the persisted lease map and configured clients.
+ * Groups leases by client and sorts active clients first (alphabetically), then inactive.
+ */
 const updateClientsTable = () => {
     const clientMap = new Map<string, string[]>();
 
@@ -342,6 +387,10 @@ function updateHostsTableHeader() {
     `;
 }
 
+/**
+ * Rebuild the hosts table from persisted host list and status map.
+ * Active hosts are sorted alphabetically and displayed before inactive hosts.
+ */
 function updateHostsTable() {
     const hostTableBody = document.getElementById('host-table-body');
     const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el])
@@ -356,6 +405,9 @@ function updateHostsTable() {
     }
 }
 
+/**
+ * Request the backend to clear all leases owned by a given client.
+ */
 const resetClientLeases = async (clientId: string) => {
     try {
         await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
