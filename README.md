@@ -7,6 +7,18 @@
 
 ⚠️ **Note**: LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
+## ✨ Features
+
+- Manage standby state of Unix hosts with Wake-On-Lan (WOL) and lightweight agents
+- Web-based GUI for easy management 
+  - installable as [PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Installing#installing_and_uninstalling_pwas)
+  - this allows behavior similar to an native app on e.g. Android
+- API for machine-to-machine control (e.g. backups)
+- Should support extension (e.g. Home Assistant)
+- Docker and simple binary deployment options (Docker has some strict requirements though)
+- Convenience scripts for simple agent/client installation
+- An attempt at extensive documentation
+
 ---
 
 ## 📋 Table of Contents
@@ -103,7 +115,7 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 | 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A | N/A |
 | 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | Ensure proper Docker network configuration |
 | 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Medium | Manually override the network interface in the configuration |
-| 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Medium | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary |
+| 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Medium | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary if the original binary fails |
 
 ---
 
