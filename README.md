@@ -51,27 +51,28 @@ For the requirements for the agent, see [Requirements to install the agent](coor
 
 ### 🖥️ Coordinator Requirements
 
-The coordinator must be run on a host that can reach the hosts you want to manage.
+The coordinator must be run on a system that can reach the hosts you want to manage.
 
-This requires either:
-- 🔧 Running the coordinator as a **binary** on the host, or
+Assuming that the coordinator-host is on the same network as the hosts, with WOL broadcasts allowed, this requires additionally:
+- 🔧 Running the coordinator as a **binary** on the coordinator-host, or
 - 🐳 Running it in a **docker container** with the host network mode enabled
 
-> ⚠️ **Important**: This does not work with the default network mode that docker uses on Windows and MacOS. It will also not work on WSL. On these Hosts, you will have to run the coordinator as a binary, or install a Linux VM with bridged networking.
+> ⚠️ **Important**: This does not work with the default network mode that docker uses on Windows and MacOS. It will also not work on WSL. On these Hosts, you will have to run the coordinator as a binary, or install a Linux VM with bridged networking to run docker.
 
-❌ **Windows is currently not supported**, even with the binary and/or WSL.
+❌ **Windows is currently not supported**, even with the binary and/or WSL. You need a VM or a dedicated Linux machine.
 
-### 🌐 Network Configuration
+### 🌐 WebUI Network Configuration
 
 The coordinator binary exposes its server on `127.0.0.1` only by default - so on localhost, ipv4, without remote access. This is for security reasons.
 
 #### 🐳 Docker Access
-To access the binary from Docker, use the address:
+To access the WebUI served by the binary from Docker containers (e.g. NGINX), use the address:
 ```
 http://host.containers.internal:<port>
 ```
 
-Other container solutions might require additional configuration. On Podman, add the following to the container that wants to access the coordinator:
+Container solutons other than Docker (e.g. Podman) might require additional configuration.
+On Podman, add the following to the container that wants to access the coordinator:
 ```yaml
 extra_hosts:
   - "host.docker.internal:host-gateway"
