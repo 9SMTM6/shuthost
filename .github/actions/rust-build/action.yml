@@ -10,6 +10,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Ensure latest stable rustc
+      shell: bash
+      run: rustup update stable
+
     - name: Install Rust target
       shell: bash
       run: rustup target add ${{ inputs.target }}
