@@ -1,5 +1,4 @@
 // Reusable types
-type Host = { name: string };
 type StatusMap = Record<string, boolean>;
 
 type LeaseSource =
@@ -18,7 +17,7 @@ type Client = {
 };
 
 
-// Persist statusMap globally
+let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 let persistedClientList: string[] = [];
@@ -45,17 +44,18 @@ const handleWebSocketMessage = (event: MessageEvent) => {
                 persistedStatusMap = message.payload.status;
                 persistedLeaseMap = message.payload.leases;
                 persistedClientList = message.payload.clients;
-                const hosts = message.payload.hosts.map(name => ({ name }));
-                renderHostsTable(hosts);
+                persistedHostsList = message.payload.hosts;
+                updateHostsTable();
                 updateClientsTable();
                 break;
             case 'HostStatus':
                 persistedStatusMap = message.payload;
+                updateHostsTable();
                 break;
             case 'ConfigChanged':
                 persistedClientList = message.payload.clients;
-                const newHosts = message.payload.hosts.map(name => ({ name }));
-                renderHostsTable(newHosts);
+                persistedHostsList = message.payload.hosts;
+                updateHostsTable();
                 updateClientsTable();
                 break;
             case 'LeaseUpdate':
@@ -71,8 +71,8 @@ const handleWebSocketMessage = (event: MessageEvent) => {
     }
 };
 
-const getHostStatus = (hostname: string) => {
-    const status = persistedStatusMap[hostname];
+const getHostStatus = (hostName: string) => {
+    const status = persistedStatusMap[hostName];
     return {
         statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline')
     };
@@ -110,7 +110,6 @@ const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
     }
 };
 
-// Updated updateNodeAttrs function
 const updateNodeAttrs = () => {
     document.querySelectorAll<HTMLTableRowElement>('#host-table-body tr').forEach(row => {
         const hostname = row.dataset["hostname"];
@@ -120,29 +119,28 @@ const updateNodeAttrs = () => {
     });
 };
 
-// Updated createHostRow function
-const createHostRow = (host: Host) => {
-    const { statusText } = getHostStatus(host.name);
-    const leases = getFormattedLeases(host.name);
+const createHostRow = (hostName: string) => {
+    const { statusText } = getHostStatus(hostName);
+    const leases = getFormattedLeases(hostName);
     const clientsConfigured = hasClientsConfigured();
     return `
-        <tr data-hostname="${host.name}" class="table-row" role="row">
-            <th class="table-cell" scope="row">${host.name}</th>
+        <tr data-hostname="${hostName}" class="table-row" role="row">
+            <th class="table-cell" scope="row">${hostName}</th>
             <td class="table-cell status" aria-label="Status">${statusText}</td>
             ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
             <td class="table-cell" aria-label="Actions">
                 <div class="actions-cell">
                     <button 
                         class="btn btn-green take-lease" 
-                        onclick="updateLease('${host.name}', 'take')" 
+                        onclick="updateLease('${hostName}', 'take')" 
                         type="button"
-                        aria-label="${clientsConfigured ? `Take lease for ${host.name}` : `Start ${host.name}`}"
+                        aria-label="${clientsConfigured ? `Take lease for ${hostName}` : `Start ${hostName}`}"
                     >${clientsConfigured ? "Take Lease" : "Start"}</button>
                     <button 
                         class="btn btn-red release-lease" 
-                        onclick="updateLease('${host.name}', 'release')" 
+                        onclick="updateLease('${hostName}', 'release')" 
                         type="button"
-                        aria-label="${clientsConfigured ? `Release lease for ${host.name}` : `Shutdown ${host.name}`}"
+                        aria-label="${clientsConfigured ? `Release lease for ${hostName}` : `Shutdown ${hostName}`}"
                     >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
                 </div>
             </td>
@@ -312,16 +310,18 @@ const updateClientsTable = () => {
         }
     });
 
-    // Sort: active clients (with leases) first, then inactive (no leases), both alphabetically
-    const sortedClients = Array.from(clientMap.entries())
-        .sort((a, b) => {
-            const aActive = a[1].length > 0;
-            const bActive = b[1].length > 0;
-            if (aActive && !bActive) return -1;
-            if (!aActive && bActive) return 1;
-            // Both active or both inactive: sort alphabetically by clientId
-            return a[0].localeCompare(b[0]);
-        });
+    const clientEntries = Array.from(clientMap.entries());
+
+    type ClientMapElement = [string, string[]];
+
+    const hasActiveLeases = ([_, leases]: ClientMapElement) => leases.length > 0;
+
+    const activeClients = clientEntries.filter(hasActiveLeases)
+    const inactiveClients = clientEntries.filter((el) => !hasActiveLeases(el))
+
+    const sortLexicographic = ([clientName1, _1]: ClientMapElement, [clientName2, _2]: ClientMapElement) => clientName1.localeCompare(clientName2)
+
+    const sortedClients = [...activeClients.toSorted(sortLexicographic), ...inactiveClients.toSorted(sortLexicographic)];
 
     const clientTableBody = document.getElementById('client-table-body');
     if (clientTableBody) {
@@ -331,7 +331,6 @@ const updateClientsTable = () => {
     }
 };
 
-// Helper to update hosts table header for simplified UI
 function updateHostsTableHeader() {
     const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
     if (!thead) return;
@@ -343,11 +342,16 @@ function updateHostsTableHeader() {
     `;
 }
 
-// Patch: call updateHostsTableHeader after table is rendered
-function renderHostsTable(hosts: Host[]) {
+function updateHostsTable() {
     const hostTableBody = document.getElementById('host-table-body');
+    const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el])
+    const inactiveHosts = persistedHostsList.filter((el) => !persistedStatusMap[el])
+
+    const sortLexicographic = (hostName1: string, hostName2: string) => hostName1.localeCompare(hostName2)
+
+    const hostList = [...activeHosts.toSorted(sortLexicographic), ...inactiveHosts.toSorted(sortLexicographic)];
     if (hostTableBody) {
-        hostTableBody.innerHTML = hosts.map(createHostRow).join('');
+        hostTableBody.innerHTML = hostList.map(createHostRow).join('');
         updateHostsTableHeader();
     }
 }
