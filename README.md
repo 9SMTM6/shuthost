@@ -25,13 +25,80 @@
 
 ## 📋 Table of Contents
 
+- [💿 Installation](#-installation)
 - [🏗️ Architecture](#️-architecture)
-- [� API Documentation](#-api-documentation)
-- [�📋 Requirements](#-requirements)
-- [💿 Installation](#installation)
+- [📖 API Documentation](#-api-documentation)
+- [📋 Requirements](#-requirements)
 - [🔒 Security](#-security)
 - [⚠️ Known Issues](#️-known-issues)
 - [🚀 Potential Features](#-potential-features)
+
+---
+
+## 💿 Installation
+
+Choose either the binary (recommended for reliability and WOL support) or the container (Linux only — host network required).
+
+Release (binary, recommended)
+- Download the latest release from:
+  - https://github.com/9SMTM6/shuthost/releases/latest
+- Example (adjust filename for the asset you downloaded):
+  ```bash
+  curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/download/latest/shuthost_coordinator-x86_64-unknown-linux-gnu"
+  chmod +x shuthost_coordinator
+  ```
+- Install as a system service (binary supports systemd/openrc/launchd)
+  - Install command (runs the chosen platform service installer, creates config with correct permissions and enables start-on-boot):
+    ```bash
+    # Linux (recommended run with sudo)
+    sudo ./shuthost install <optional user>
+
+    # macOS (user is required on macOS)
+    sudo ./shuthost install your-username
+    ```
+  - Notes:
+    - On Linux the installer infers the target user from SUDO_USER if you run under sudo.
+    - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
+
+Docker (Linux only — host network mode required for WOL)
+- Run with the host network so broadcasts and LAN reachability work:
+  ```bash
+  docker run --rm --network host \
+    -v ./coordinator_config.toml:/config/coordinator_config.toml:ro \
+    ghcr.io/9SMTM6/shuthost:latest
+  ```
+- docker-compose example:
+  ```yaml
+  version: "3.8"
+  services:
+    shuthost:
+      image: ghcr.io/9SMTM6/shuthost:latest
+      network_mode: "host"      # required for WOL
+      restart: unless-stopped
+      volumes:
+        - ./coordinator_config.toml:/config/coordinator_config.toml:ro
+      # no ports, since network-mode: host
+  ```
+-  Both with config file
+  ```toml
+  [server]
+  port = 8080 # change accordingly
+  bind = "127.0.0.1" # forward to this with your reverse proxy, INCLUDING AUTHORIZATION! With exceptions as detailed in the WebUI.
+
+  [hosts]
+
+  [clients]
+  ```
+- Notes:
+  - --network host is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
+
+Quick links & notes
+- Release: https://github.com/9SMTM6/shuthost/releases/latest
+- Homebrew / distro packages: Might be provided if there is community interest and/or support — please file an issue or react to the appropriate.
+
+Agent / Client installation
+- To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
+- To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
 
 ---
 
@@ -141,61 +208,3 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
-
----
-
-## Installation
-
-Choose either the binary (recommended for reliability and WOL support) or the container (Linux only — host network required).
-
-Release (binary, recommended)
-- Download the latest release from:
-  - https://github.com/9SMTM6/shuthost/releases/latest
-- Example (adjust filename for the asset you downloaded):
-  ```bash
-  curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/download/latest/shuthost_coordinator-x86_64-unknown-linux-gnu"
-  chmod +x shuthost_coordinator
-  ```
-- Install as a system service (binary supports systemd/openrc/launchd)
-  - Install command (runs the chosen platform service installer, creates config with correct permissions and enables start-on-boot):
-    ```bash
-    # Linux (recommended run with sudo)
-    sudo ./shuthost install <user>
-
-    # macOS (user is required on macOS)
-    sudo ./shuthost install your-username
-    ```
-  - Notes:
-    - On Linux the installer infers the target user from SUDO_USER if you run under sudo.
-    - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
-
-Docker (Linux only — host network mode required for WOL)
-- Run with the host network so broadcasts and LAN reachability work:
-  ```bash
-  docker run --rm --network host \
-    -v /etc/shuthost/config.yaml:/app/config.yaml:ro \
-    ghcr.io/9SMTM6/shuthost:latest \
-    --config /app/config.yaml
-  ```
-- docker-compose example:
-  ```yaml
-  version: "3.8"
-  services:
-    shuthost:
-      image: ghcr.io/9SMTM6/shuthost:latest
-      network_mode: "host"      # required for WOL and LAN broadcast access
-      restart: unless-stopped
-      volumes:
-        - /etc/shuthost/config.yaml:/app/config.yaml:ro
-      command: ["--config", "/app/config.yaml"]
-  ```
-- Notes:
-  - --network host is Linux-only and will not work on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
-
-Quick links & notes
-- Release: https://github.com/9SMTM6/shuthost/releases/latest
-- Homebrew / distro packages: will be provided only if there is community interest and testing support — please file an issue or react to the appropriate.
-
-Agent / Client installation
-- To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
-- To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
