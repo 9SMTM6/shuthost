@@ -2,6 +2,8 @@
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/main.yaml?label=build%20%26%20test)](https://github.com/9SMTM6/shuthost/actions/workflows/main.yaml)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/qa.yml?label=QA)](https://github.com/9SMTM6/shuthost/actions/workflows/qa.yaml)
 
 > A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
@@ -26,6 +28,7 @@
 - [🏗️ Architecture](#️-architecture)
 - [� API Documentation](#-api-documentation)
 - [�📋 Requirements](#-requirements)
+- [💿 Installation](#installation)
 - [🔒 Security](#-security)
 - [⚠️ Known Issues](#️-known-issues)
 - [🚀 Potential Features](#-potential-features)
@@ -138,3 +141,61 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
+
+---
+
+## Installation
+
+Choose either the binary (recommended for reliability and WOL support) or the container (Linux only — host network required).
+
+Release (binary, recommended)
+- Download the latest release from:
+  - https://github.com/9SMTM6/shuthost/releases/latest
+- Example (adjust filename for the asset you downloaded):
+  ```bash
+  curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/download/latest/shuthost_coordinator-x86_64-unknown-linux-gnu"
+  chmod +x shuthost_coordinator
+  ```
+- Install as a system service (binary supports systemd/openrc/launchd)
+  - Install command (runs the chosen platform service installer, creates config with correct permissions and enables start-on-boot):
+    ```bash
+    # Linux (recommended run with sudo)
+    sudo ./shuthost install <user>
+
+    # macOS (user is required on macOS)
+    sudo ./shuthost install your-username
+    ```
+  - Notes:
+    - On Linux the installer infers the target user from SUDO_USER if you run under sudo.
+    - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
+
+Docker (Linux only — host network mode required for WOL)
+- Run with the host network so broadcasts and LAN reachability work:
+  ```bash
+  docker run --rm --network host \
+    -v /etc/shuthost/config.yaml:/app/config.yaml:ro \
+    ghcr.io/9SMTM6/shuthost:latest \
+    --config /app/config.yaml
+  ```
+- docker-compose example:
+  ```yaml
+  version: "3.8"
+  services:
+    shuthost:
+      image: ghcr.io/9SMTM6/shuthost:latest
+      network_mode: "host"      # required for WOL and LAN broadcast access
+      restart: unless-stopped
+      volumes:
+        - /etc/shuthost/config.yaml:/app/config.yaml:ro
+      command: ["--config", "/app/config.yaml"]
+  ```
+- Notes:
+  - --network host is Linux-only and will not work on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
+
+Quick links & notes
+- Release: https://github.com/9SMTM6/shuthost/releases/latest
+- Homebrew / distro packages: will be provided only if there is community interest and testing support — please file an issue or react to the appropriate.
+
+Agent / Client installation
+- To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
+- To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
