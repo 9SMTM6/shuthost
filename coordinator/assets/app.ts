@@ -1,7 +1,9 @@
-// Reusable types
-/**
- * Map of host name -> online status.
- */
+
+// ==========================
+// Types & State
+// ==========================
+
+/** Map of host name -> online status. */
 type StatusMap = Record<string, boolean>;
 
 /** Represents the source of a lease. */
@@ -20,7 +22,6 @@ type Client = {
     id: string;
     leases: string[];
 };
-
 
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
@@ -106,8 +107,81 @@ const getFormattedLeases = (hostname: string): string => {
     return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
 };
 
-// Helper to check if there are any clients configured
 const hasClientsConfigured = () => persistedClientList.length > 0;
+
+/**
+ * Convert a LeaseSource to a human readable string.
+ */
+const formatLeaseSource = (lease: LeaseSource): string => {
+    switch (lease.type) {
+        case 'WebInterface':
+            // Warn if this is called for hosts table or clients table, as it should be filtered out before
+            console.warn('formatLeaseSource called with WebInterface lease. This should be filtered out before display.');
+            return '';
+        case 'Client':
+            return lease.value;
+    }
+};
+
+// ==========================
+// Table Row Creation
+// ==========================
+
+const createHostRow = (hostName: string) => {
+    const { statusText } = getHostStatus(hostName);
+    const leases = getFormattedLeases(hostName);
+    const clientsConfigured = hasClientsConfigured();
+    return `
+        <tr data-hostname="${hostName}" class="table-row" role="row">
+            <th class="table-cell" scope="row">${hostName}</th>
+            <td class="table-cell status" aria-label="Status">${statusText}</td>
+            ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
+            <td class="table-cell" aria-label="Actions">
+                <div class="actions-cell">
+                    <button 
+                        class="btn btn-green take-lease" 
+                        onclick="updateLease('${hostName}', 'take')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Take lease for ${hostName}` : `Start ${hostName}`}" 
+                    >${clientsConfigured ? "Take Lease" : "Start"}</button>
+                    <button 
+                        class="btn btn-red release-lease" 
+                        onclick="updateLease('${hostName}', 'release')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Release lease for ${hostName}` : `Shutdown ${hostName}`}" 
+                    >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
+                </div>
+            </td>
+        </tr>
+    `;
+};
+
+const createClientRow = (clientId: string, leases: string[]) => {
+    const hasLeases = leases.length > 0;
+    return `
+    <tr data-client-id="${clientId}" class="table-row" role="row">
+        <th class="table-cell" scope="row">${clientId}</th>
+        <td class="table-cell" aria-label="Leases">${leases.join(', ') || 'None'}</td>
+        <td class="table-cell" aria-label="Actions">
+            <div class="actions-cell">
+                <button 
+                    class="btn btn-red" 
+                    onclick="resetClientLeases('${clientId}')"
+                    type="button"
+                    aria-label="Reset leases for ${clientId}"
+                    ${!hasLeases ? 'disabled' : ''}
+                >
+                    Reset Leases
+                </button>
+            </div>
+        </td>
+    </tr>
+    `;
+};
+
+// ==========================
+// Table Update Functions
+// ==========================
 
 /**
  * Update DOM attributes and visibility for a given host table row.
@@ -148,34 +222,84 @@ const updateNodeAttrs = () => {
     });
 };
 
-const createHostRow = (hostName: string) => {
-    const { statusText } = getHostStatus(hostName);
-    const leases = getFormattedLeases(hostName);
-    const clientsConfigured = hasClientsConfigured();
-    return `
-        <tr data-hostname="${hostName}" class="table-row" role="row">
-            <th class="table-cell" scope="row">${hostName}</th>
-            <td class="table-cell status" aria-label="Status">${statusText}</td>
-            ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
-            <td class="table-cell" aria-label="Actions">
-                <div class="actions-cell">
-                    <button 
-                        class="btn btn-green take-lease" 
-                        onclick="updateLease('${hostName}', 'take')" 
-                        type="button"
-                        aria-label="${clientsConfigured ? `Take lease for ${hostName}` : `Start ${hostName}`}"
-                    >${clientsConfigured ? "Take Lease" : "Start"}</button>
-                    <button 
-                        class="btn btn-red release-lease" 
-                        onclick="updateLease('${hostName}', 'release')" 
-                        type="button"
-                        aria-label="${clientsConfigured ? `Release lease for ${hostName}` : `Shutdown ${hostName}`}"
-                    >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
-                </div>
-            </td>
-        </tr>
+const updateHostsTableHeader = () => {
+    const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
+    if (!thead) return;
+    thead.innerHTML = `
+        <th class="table-header">Host</th>
+        <th class="table-header">Status</th>
+        ${hasClientsConfigured() ? '<th class="table-header">Leases</th>' : ''}
+        <th class="table-header">Actions</th>
     `;
+}
+
+/**
+ * Rebuild the hosts table from persisted host list and status map.
+ * Active hosts are sorted alphabetically and displayed before inactive hosts.
+ */
+const updateHostsTable = () => {
+    const hostTableBody = document.getElementById('host-table-body');
+    const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el])
+    const inactiveHosts = persistedHostsList.filter((el) => !persistedStatusMap[el])
+
+    const sortLexicographic = (hostName1: string, hostName2: string) => hostName1.localeCompare(hostName2)
+
+    const hostList = [...activeHosts.toSorted(sortLexicographic), ...inactiveHosts.toSorted(sortLexicographic)];
+    if (hostTableBody) {
+        hostTableBody.innerHTML = hostList.map(createHostRow).join('');
+        updateHostsTableHeader();
+    }
+}
+
+/**
+ * Rebuild the clients table from the persisted lease map and configured clients.
+ * Groups leases by client and sorts active clients first (alphabetically), then inactive.
+ */
+const updateClientsTable = () => {
+    const clientMap = new Map<string, string[]>();
+
+    // Group leases by client
+    Object.entries(persistedLeaseMap).forEach(([host, leases]) => {
+        leases.forEach(lease => {
+            if (lease.type === 'Client') {
+                const clientLeases = clientMap.get(lease.value) || [];
+                clientLeases.push(host);
+                clientMap.set(lease.value, clientLeases);
+            }
+        });
+    });
+
+    // Ensure all known clients are included
+    persistedClientList.forEach(clientId => {
+        if (!clientMap.has(clientId)) {
+            clientMap.set(clientId, []);
+        }
+    });
+
+    const clientEntries = Array.from(clientMap.entries());
+
+    type ClientMapElement = [string, string[]];
+
+    const hasActiveLeases = ([_, leases]: ClientMapElement) => leases.length > 0;
+
+    const activeClients = clientEntries.filter(hasActiveLeases)
+    const inactiveClients = clientEntries.filter((el) => !hasActiveLeases(el))
+
+    const sortLexicographic = ([clientName1, _1]: ClientMapElement, [clientName2, _2]: ClientMapElement) => clientName1.localeCompare(clientName2)
+
+    const sortedClients = [...activeClients.toSorted(sortLexicographic), ...inactiveClients.toSorted(sortLexicographic)];
+
+    const clientTableBody = document.getElementById('client-table-body');
+    if (clientTableBody) {
+        clientTableBody.innerHTML = sortedClients
+            .map(([clientId, leases]) => createClientRow(clientId, leases))
+            .join('');
+    }
 };
+
+// ==========================
+// Backend Actions
+// ==========================
 
 /**
  * Send a lease action request to the backend.
@@ -188,6 +312,21 @@ const updateLease = async (host: string, action: string) => {
         console.error(`Failed to ${action} lease for ${host}:`, err);
     }
 };
+
+/**
+ * Request the backend to clear all leases owned by a given client.
+ */
+const resetClientLeases = async (clientId: string) => {
+    try {
+        await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
+    } catch (err) {
+        console.error(`Failed to reset leases for client ${clientId}:`, err);
+    }
+};
+
+// ==========================
+// UI Setup Functions
+// ==========================
 
 const setupCopyButtons = () => {
     document.querySelectorAll<HTMLButtonElement>('.copy-button').forEach(button => {
@@ -282,6 +421,10 @@ const setupDynamicConfigs = () => {
     }
 };
 
+// ==========================
+// Initialization
+// ==========================
+
 const initialize = () => {
     setupDynamicConfigs();
     connectWebSocket();
@@ -291,127 +434,3 @@ const initialize = () => {
 };
 
 document.addEventListener('DOMContentLoaded', initialize);
-
-/**
- * Convert a LeaseSource to a human readable string.
- * Note: WebInterface leases are internal and should be filtered out prior to display.
- */
-const formatLeaseSource = (lease: LeaseSource): string => {
-    switch (lease.type) {
-        case 'WebInterface':
-            // Warn if this is called for hosts table or clients table, as it should be filtered out before
-            console.warn('formatLeaseSource called with WebInterface lease. This should be filtered out before display.');
-            return '';
-        case 'Client':
-            return lease.value;
-    }
-};
-
-const createClientRow = (clientId: string, leases: string[]) => {
-    const hasLeases = leases.length > 0;
-    return `
-    <tr data-client-id="${clientId}" class="table-row" role="row">
-        <th class="table-cell" scope="row">${clientId}</th>
-        <td class="table-cell" aria-label="Leases">${leases.join(', ') || 'None'}</td>
-        <td class="table-cell" aria-label="Actions">
-            <div class="actions-cell">
-                <button 
-                    class="btn btn-red" 
-                    onclick="resetClientLeases('${clientId}')"
-                    type="button"
-                    aria-label="Reset leases for ${clientId}"
-                    ${!hasLeases ? 'disabled' : ''}
-                >
-                    Reset Leases
-                </button>
-            </div>
-        </td>
-    </tr>
-    `;
-};
-
-/**
- * Rebuild the clients table from the persisted lease map and configured clients.
- * Groups leases by client and sorts active clients first (alphabetically), then inactive.
- */
-const updateClientsTable = () => {
-    const clientMap = new Map<string, string[]>();
-
-    // Group leases by client
-    Object.entries(persistedLeaseMap).forEach(([host, leases]) => {
-        leases.forEach(lease => {
-            if (lease.type === 'Client') {
-                const clientLeases = clientMap.get(lease.value) || [];
-                clientLeases.push(host);
-                clientMap.set(lease.value, clientLeases);
-            }
-        });
-    });
-
-    // Ensure all known clients are included
-    persistedClientList.forEach(clientId => {
-        if (!clientMap.has(clientId)) {
-            clientMap.set(clientId, []);
-        }
-    });
-
-    const clientEntries = Array.from(clientMap.entries());
-
-    type ClientMapElement = [string, string[]];
-
-    const hasActiveLeases = ([_, leases]: ClientMapElement) => leases.length > 0;
-
-    const activeClients = clientEntries.filter(hasActiveLeases)
-    const inactiveClients = clientEntries.filter((el) => !hasActiveLeases(el))
-
-    const sortLexicographic = ([clientName1, _1]: ClientMapElement, [clientName2, _2]: ClientMapElement) => clientName1.localeCompare(clientName2)
-
-    const sortedClients = [...activeClients.toSorted(sortLexicographic), ...inactiveClients.toSorted(sortLexicographic)];
-
-    const clientTableBody = document.getElementById('client-table-body');
-    if (clientTableBody) {
-        clientTableBody.innerHTML = sortedClients
-            .map(([clientId, leases]) => createClientRow(clientId, leases))
-            .join('');
-    }
-};
-
-function updateHostsTableHeader() {
-    const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
-    if (!thead) return;
-    thead.innerHTML = `
-        <th class="table-header">Host</th>
-        <th class="table-header">Status</th>
-        ${hasClientsConfigured() ? '<th class="table-header">Leases</th>' : ''}
-        <th class="table-header">Actions</th>
-    `;
-}
-
-/**
- * Rebuild the hosts table from persisted host list and status map.
- * Active hosts are sorted alphabetically and displayed before inactive hosts.
- */
-function updateHostsTable() {
-    const hostTableBody = document.getElementById('host-table-body');
-    const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el])
-    const inactiveHosts = persistedHostsList.filter((el) => !persistedStatusMap[el])
-
-    const sortLexicographic = (hostName1: string, hostName2: string) => hostName1.localeCompare(hostName2)
-
-    const hostList = [...activeHosts.toSorted(sortLexicographic), ...inactiveHosts.toSorted(sortLexicographic)];
-    if (hostTableBody) {
-        hostTableBody.innerHTML = hostList.map(createHostRow).join('');
-        updateHostsTableHeader();
-    }
-}
-
-/**
- * Request the backend to clear all leases owned by a given client.
- */
-const resetClientLeases = async (clientId: string) => {
-    try {
-        await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
-    } catch (err) {
-        console.error(`Failed to reset leases for client ${clientId}:`, err);
-    }
-};
