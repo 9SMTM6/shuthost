@@ -137,6 +137,7 @@ pub async fn start_http_server(
         .nest("/api", api_routes())
         .nest("/download", get_download_router())
         .merge(asset_routes())
+        .route("/", get(crate::assets::serve_ui))
         .route("/ws", get(ws_handler))
         .with_state(app_state)
         .fallback(routing::any(|req: Request<axum::body::Body>| async move {

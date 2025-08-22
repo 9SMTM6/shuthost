@@ -1,3 +1,5 @@
+// Detect demo mode by presence of disclaimer element
+const isDemoMode = !!document.getElementById('demo-mode-disclaimer');
 
 // ==========================
 // Types & State
@@ -18,11 +20,6 @@ type WsMessage =
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
-type Client = {
-    id: string;
-    leases: string[];
-};
-
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
@@ -33,6 +30,10 @@ let persistedClientList: string[] = [];
  * Reconnects automatically on close (with a small delay).
  */
 const connectWebSocket = () => {
+    if (isDemoMode) {
+        DemoSim.init();
+        return;
+    }
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
     const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
 
@@ -306,6 +307,10 @@ const updateClientsTable = () => {
  * action should be 'take' or 'release'.
  */
 const updateLease = async (host: string, action: string) => {
+    if (isDemoMode) {
+        DemoSim.leaseAction(host, action);
+        return;    
+    }
     try {
         await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
     } catch (err) {
@@ -317,6 +322,10 @@ const updateLease = async (host: string, action: string) => {
  * Request the backend to clear all leases owned by a given client.
  */
 const resetClientLeases = async (clientId: string) => {
+    if (isDemoMode) {
+        DemoSim.resetClientLeases(clientId);
+        return;
+    }
     try {
         await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
     } catch (err) {
@@ -431,6 +440,91 @@ const initialize = () => {
     setupCopyButtons();
     setupTabs();
     setupCollapsibleSections();
+    if (isDemoMode) {
+        console.info('Demo mode enabled: UI is using simulated data.');
+    }
 };
+
+
+// ==========================
+// Demo Mode Simulation Namespace
+// ==========================
+
+namespace DemoSim {
+    let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
+    let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    export const init = () => {
+        // Simulate initial push
+        setTimeout(() => {
+            handleWebSocketMessage({
+                data: JSON.stringify({
+                    type: "Initial",
+                    payload: {
+                        hosts: ["archive", "tarbean"],
+                        clients: [],
+                        status: { tarbean: false, archive: false },
+                        leases: { archive: [] }
+                    }
+                })
+            } as MessageEvent);
+        }, 500);
+    }
+
+    export const leaseAction = (host: string, action: string) => {
+        if (action === "take") {
+            // LeaseUpdate: WebInterface
+            if (leaseTimeout) clearTimeout(leaseTimeout);
+            leaseTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "LeaseUpdate",
+                        payload: { host, leases: [{ type: "WebInterface" }] }
+                    })
+                } as MessageEvent);
+            }, 500);
+            // HostStatus: archive online
+            if (statusTimeout) clearTimeout(statusTimeout);
+            statusTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "HostStatus",
+                        payload: { tarbean: false, archive: true }
+                    })
+                } as MessageEvent);
+            }, 1200);
+        } else if (action === "release") {
+            // LeaseUpdate: no leases
+            if (leaseTimeout) clearTimeout(leaseTimeout);
+            leaseTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "LeaseUpdate",
+                        payload: { host, leases: [] }
+                    })
+                } as MessageEvent);
+            }, 500);
+            // HostStatus: archive offline
+            if (statusTimeout) clearTimeout(statusTimeout);
+            statusTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "HostStatus",
+                        payload: { tarbean: false, archive: false }
+                    })
+                } as MessageEvent);
+            }, 1200);
+        }
+    }
+
+    export const resetClientLeases = (clientId: string) => {
+        // For demo, just clear all leases for that client
+        Object.keys(persistedLeaseMap).forEach(host => {
+            persistedLeaseMap[host] = (persistedLeaseMap[host] || []).filter(l => l.type !== 'Client' || l.value !== clientId);
+        });
+        updateClientsTable();
+        updateHostsTable();
+    }
+}
 
 document.addEventListener('DOMContentLoaded', initialize);
