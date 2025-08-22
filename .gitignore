@@ -2,3 +2,5 @@
 shuthost_coordinator.toml
 .DS_Store
 .vscode
+
+gh-pages

@@ -1,0 +1,37 @@
+# GitHub Actions workflow to build and publish static demo to GitHub Pages
+
+name: Build and Deploy Demo to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Build shuthost_coordinator (release)
+        uses: ./.github/actions/rust-build
+        with:
+          target: x86_64-unknown-linux-gnu
+          bin-name: shuthost_coordinator
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y curl
+
+      - name: Build and snapshot demo
+        run: ./scripts/build-gh-pages.sh
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          publish_branch: gh-pages
+          force_orphan: true
