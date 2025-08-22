@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ShutHost Coordinator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI.">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <style>
+        /*! tailwindcss v4.1.12 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+    --color-red-50: oklch(97.1% 0.013 17.38);
+    --color-red-200: oklch(88.5% 0.062 18.334);
+    --color-red-400: oklch(70.4% 0.191 22.216);
+    --color-red-500: oklch(63.7% 0.237 25.331);
+    --color-red-600: oklch(57.7% 0.245 27.325);
+    --color-red-800: oklch(44.4% 0.177 26.899);
+    --color-red-900: oklch(39.6% 0.141 25.723);
+    --color-yellow-50: oklch(98.7% 0.026 102.212);
+    --color-yellow-200: oklch(94.5% 0.129 101.54);
+    --color-yellow-400: oklch(85.2% 0.199 91.936);
+    --color-yellow-800: oklch(47.6% 0.114 61.907);
+    --color-yellow-900: oklch(42.1% 0.095 57.708);
+    --color-green-500: oklch(72.3% 0.219 149.579);
+    --color-green-600: oklch(62.7% 0.194 149.214);
+    --color-blue-50: oklch(97% 0.014 254.604);
+    --color-blue-200: oklch(88.2% 0.059 254.128);
+    --color-blue-400: oklch(70.7% 0.165 254.624);
+    --color-blue-500: oklch(62.3% 0.214 259.815);
+    --color-blue-600: oklch(54.6% 0.245 262.881);
+    --color-blue-700: oklch(48.8% 0.243 264.376);
+    --color-blue-800: oklch(42.4% 0.199 265.638);
+    --color-blue-900: oklch(37.9% 0.146 265.522);
+    --color-gray-50: oklch(98.5% 0.002 247.839);
+    --color-gray-100: oklch(96.7% 0.003 264.542);
+    --color-gray-200: oklch(92.8% 0.006 264.531);
+    --color-gray-300: oklch(87.2% 0.01 258.338);
+    --color-gray-400: oklch(70.7% 0.022 261.325);
+    --color-gray-500: oklch(55.1% 0.027 264.364);
+    --color-gray-600: oklch(44.6% 0.03 256.802);
+    --color-gray-700: oklch(37.3% 0.034 259.733);
+    --color-gray-800: oklch(27.8% 0.033 256.848);
+    --color-gray-900: oklch(21% 0.034 264.665);
+    --color-white: #fff;
+    --spacing: 0.25rem;
+    --container-7xl: 80rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: calc(1 / 0.75);
+    --text-sm: 0.875rem;
+    --text-sm--line-height: calc(1.25 / 0.875);
+    --text-base: 1rem;
+    --text-base--line-height: calc(1.5 / 1);
+    --text-lg: 1.125rem;
+    --text-lg--line-height: calc(1.75 / 1.125);
+    --text-xl: 1.25rem;
+    --text-xl--line-height: calc(1.75 / 1.25);
+    --text-2xl: 1.5rem;
+    --text-2xl--line-height: calc(2 / 1.5);
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --radius-lg: 0.5rem;
+    --default-transition-duration: 150ms;
+    --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  ::-webkit-calendar-picker-indicator {
+    line-height: 1;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden="until-found"])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  .absolute {
+    position: absolute;
+  }
+  .relative {
+    position: relative;
+  }
+  .static {
+    position: static;
+  }
+  .top-2 {
+    top: calc(var(--spacing) * 2);
+  }
+  .left-2 {
+    left: calc(var(--spacing) * 2);
+  }
+  .z-50 {
+    z-index: 50;
+  }
+  .mx-auto {
+    margin-inline: auto;
+  }
+  .mt-0 {
+    margin-top: calc(var(--spacing) * 0);
+  }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .mt-auto {
+    margin-top: auto;
+  }
+  .mb-0 {
+    margin-bottom: calc(var(--spacing) * 0);
+  }
+  .mb-1 {
+    margin-bottom: calc(var(--spacing) * 1);
+  }
+  .mb-2 {
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+  .flex {
+    display: flex;
+  }
+  .inline-block {
+    display: inline-block;
+  }
+  .table {
+    display: table;
+  }
+  .table-cell {
+    display: table-cell;
+  }
+  .table-row {
+    display: table-row;
+  }
+  .h-6 {
+    height: calc(var(--spacing) * 6);
+  }
+  .h-14 {
+    height: calc(var(--spacing) * 14);
+  }
+  .min-h-screen {
+    min-height: 100vh;
+  }
+  .w-auto {
+    width: auto;
+  }
+  .w-full {
+    width: 100%;
+  }
+  .max-w-7xl {
+    max-width: var(--container-7xl);
+  }
+  .transform {
+    transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
+  }
+  .items-center {
+    align-items: center;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
+  }
+  .divide-y {
+    :where(& > :not(:last-child)) {
+      --tw-divide-y-reverse: 0;
+      border-bottom-style: var(--tw-border-style);
+      border-top-style: var(--tw-border-style);
+      border-top-width: calc(1px * var(--tw-divide-y-reverse));
+      border-bottom-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
+    }
+  }
+  .divide-gray-200 {
+    :where(& > :not(:last-child)) {
+      border-color: var(--color-gray-200);
+    }
+  }
+  .rounded {
+    border-radius: 0.25rem;
+  }
+  .bg-gray-50 {
+    background-color: var(--color-gray-50);
+  }
+  .bg-white {
+    background-color: var(--color-white);
+  }
+  .px-3 {
+    padding-inline: calc(var(--spacing) * 3);
+  }
+  .px-4 {
+    padding-inline: calc(var(--spacing) * 4);
+  }
+  .py-0 {
+    padding-block: calc(var(--spacing) * 0);
+  }
+  .py-2 {
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .py-4 {
+    padding-block: calc(var(--spacing) * 4);
+  }
+  .pt-4 {
+    padding-top: calc(var(--spacing) * 4);
+  }
+  .text-center {
+    text-align: center;
+  }
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+  .text-base {
+    font-size: var(--text-base);
+    line-height: var(--tw-leading, var(--text-base--line-height));
+  }
+  .text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+  .text-xl {
+    font-size: var(--text-xl);
+    line-height: var(--tw-leading, var(--text-xl--line-height));
+  }
+  .text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+  }
+  .font-semibold {
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+  .text-blue-700 {
+    color: var(--color-blue-700);
+  }
+  .text-gray-600 {
+    color: var(--color-gray-600);
+  }
+  .text-gray-800 {
+    color: var(--color-gray-800);
+  }
+  .shadow {
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-md {
+    --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 2px 4px -2px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .focus\:not-sr-only {
+    &:focus {
+      position: static;
+      width: auto;
+      height: auto;
+      padding: 0;
+      margin: 0;
+      overflow: visible;
+      clip: auto;
+      white-space: normal;
+    }
+  }
+  .sm\:h-8 {
+    @media (width >= 40rem) {
+      height: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:px-6 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:py-6 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:text-2xl {
+    @media (width >= 40rem) {
+      font-size: var(--text-2xl);
+      line-height: var(--tw-leading, var(--text-2xl--line-height));
+    }
+  }
+  .lg\:px-8 {
+    @media (width >= 64rem) {
+      padding-inline: calc(var(--spacing) * 8);
+    }
+  }
+  .dark\:bg-gray-800 {
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-gray-800);
+    }
+  }
+  .dark\:bg-gray-900 {
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-gray-900);
+    }
+  }
+  .dark\:text-blue-200 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-blue-200);
+    }
+  }
+  .dark\:text-gray-100 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-100);
+    }
+  }
+  .dark\:text-gray-400 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-400);
+    }
+  }
+}
+body {
+  display: grid;
+  grid-template-areas: "header" "main" "footer";
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+header {
+  grid-area: header;
+}
+.main {
+  grid-area: main;
+}
+footer {
+  grid-area: footer;
+}
+.collapsible-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  display: inline-block;
+}
+.collapsible-icon::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transform-origin: center;
+  transition: transform 0.2s;
+  left: 6px;
+  top: 4px;
+  border-color: currentColor;
+  color: inherit;
+}
+.collapsible-header[aria-expanded="true"] .collapsible-icon::before {
+  transform: rotate(-135deg);
+}
+@layer components {
+  .section-container {
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-white);
+    --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 2px 4px -2px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-gray-800);
+    }
+  }
+  .section-title {
+    margin-bottom: calc(var(--spacing) * 3);
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-800);
+    @media (width >= 40rem) {
+      margin-bottom: calc(var(--spacing) * 4);
+    }
+    @media (width >= 40rem) {
+      font-size: var(--text-xl);
+      line-height: var(--tw-leading, var(--text-xl--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-100);
+    }
+  }
+  .code-container {
+    position: relative;
+    border-radius: var(--radius-lg);
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: var(--color-gray-200);
+    background-color: var(--color-gray-50);
+    padding-inline: calc(var(--spacing) * 3);
+    padding-block: calc(var(--spacing) * 2);
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--color-gray-700);
+    }
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-gray-900);
+    }
+  }
+  .copy-button {
+    position: absolute;
+    top: calc(var(--spacing) * 2);
+    right: calc(var(--spacing) * 2);
+    cursor: pointer;
+    border-radius: 0.25rem;
+    background-color: var(--color-blue-500);
+    padding-inline: calc(var(--spacing) * 2);
+    padding-block: calc(var(--spacing) * 1);
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+    color: var(--color-white);
+    transition-property: all;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    --tw-duration: 200ms;
+    transition-duration: 200ms;
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-blue-600);
+      }
+    }
+    &:hover {
+      @media (hover: hover) {
+        --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+        box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+      }
+    }
+    &:active {
+      --tw-scale-x: 95%;
+      --tw-scale-y: 95%;
+      --tw-scale-z: 95%;
+      scale: var(--tw-scale-x) var(--tw-scale-y);
+    }
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 3);
+    }
+    @media (width >= 40rem) {
+      font-size: var(--text-sm);
+      line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-blue-600);
+    }
+    @media (prefers-color-scheme: dark) {
+      &:hover {
+        @media (hover: hover) {
+          background-color: var(--color-blue-700);
+        }
+      }
+    }
+  }
+  .code-block {
+    display: block;
+    max-width: 100%;
+    padding-right: calc(var(--spacing) * 16);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    @media (width >= 40rem) {
+      font-size: var(--text-sm);
+      line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+  }
+  .description-text {
+    margin-top: calc(var(--spacing) * 2);
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--color-gray-600);
+    @media (width >= 40rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-300);
+    }
+  }
+  .btn {
+    width: 100%;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    padding-inline: calc(var(--spacing) * 2);
+    padding-block: calc(var(--spacing) * 1);
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+    color: var(--color-white);
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    &:disabled {
+      cursor: not-allowed;
+    }
+    &:disabled {
+      background-color: var(--color-gray-300);
+    }
+    &:disabled {
+      color: var(--color-white);
+    }
+    @media (width >= 40rem) {
+      width: auto;
+    }
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 3);
+    }
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 2);
+    }
+    @media (width >= 40rem) {
+      font-size: var(--text-sm);
+      line-height: var(--tw-leading, var(--text-sm--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      &:disabled {
+        background-color: var(--color-gray-600);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      &:disabled {
+        color: var(--color-gray-300);
+      }
+    }
+  }
+  .btn-green {
+    background-color: var(--color-green-500);
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-green-600);
+      }
+    }
+  }
+  .btn-red {
+    background-color: var(--color-red-500);
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-red-600);
+      }
+    }
+  }
+  .architecture-section {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .architecture-title {
+    margin-bottom: calc(var(--spacing) * 3);
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-800);
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-100);
+    }
+  }
+  .architecture-diagram-container {
+    display: flex;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: var(--color-gray-200);
+    background-color: var(--color-gray-50);
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--color-gray-700);
+    }
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-gray-900);
+    }
+  }
+  .architecture-diagram {
+    height: auto;
+    max-width: 100%;
+    border-radius: 0.25rem;
+    background-color: var(--color-white);
+    width: auto;
+    max-height: 500px;
+  }
+  .architecture-content {
+    margin-top: calc(var(--spacing) * 4);
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 3) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 3) * calc(1 - var(--tw-space-y-reverse)));
+    }
+  }
+  .architecture-when-to-use {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--color-gray-700);
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-300);
+    }
+  }
+  .architecture-separator {
+    margin-top: calc(var(--spacing) * 8);
+  }
+  .architecture-key-points {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .table-wrapper {
+    width: 100%;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  .table-header {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+    border-color: var(--color-gray-200);
+    background-color: var(--color-gray-50);
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 3);
+    text-align: left;
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-800);
+    @media (width >= 40rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--color-gray-600);
+    }
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--color-gray-700);
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-100);
+    }
+  }
+  .table-row {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-gray-100);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      &:hover {
+        @media (hover: hover) {
+          background-color: var(--color-gray-700);
+        }
+      }
+    }
+  }
+  .table-row th[scope="row"] {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+    border-color: var(--color-gray-200);
+    background-color: transparent;
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 1.5);
+    text-align: left;
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+    color: var(--color-gray-800);
+    @media (width >= 40rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--color-gray-700);
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-100);
+    }
+    font-weight: 500;
+  }
+  .table-cell {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+    border-color: var(--color-gray-200);
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 1.5);
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--color-gray-800);
+    @media (width >= 40rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--color-gray-700);
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-100);
+    }
+  }
+  .actions-cell {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: calc(var(--spacing) * 1);
+    padding-block: calc(var(--spacing) * 1.5);
+    @media (width >= 40rem) {
+      flex-direction: row;
+    }
+    @media (width >= 40rem) {
+      gap: calc(var(--spacing) * 4);
+    }
+  }
+  .client-table {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .empty-state {
+    padding-block: calc(var(--spacing) * 4);
+    text-align: center;
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--color-gray-500);
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-gray-400);
+    }
+  }
+  .tab {
+    cursor: pointer;
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 2px;
+    border-color: transparent;
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 4);
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-gray-500);
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--color-gray-300);
+      }
+    }
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-gray-700);
+      }
+    }
+    &:focus {
+      border-color: var(--color-gray-300);
+    }
+    &:focus {
+      color: var(--color-gray-700);
+    }
+    &:focus {
+      --tw-outline-style: none;
+      outline-style: none;
+    }
+  }
+  .tab.active {
+    border-color: var(--color-blue-600);
+    color: var(--color-blue-600);
+    &:hover {
+      @media (hover: hover) {
+        border-color: var(--color-blue-700);
+      }
+    }
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-blue-700);
+      }
+    }
+  }
+  .tab-content {
+    display: none;
+  }
+  .tab-content.active {
+    display: block;
+  }
+  .collapsible-header {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 2);
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-gray-50);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      &:hover {
+        @media (hover: hover) {
+          background-color: var(--color-gray-700);
+        }
+      }
+    }
+  }
+  .collapsible-content {
+    display: none;
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+    border-color: var(--color-gray-200);
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .collapsible-content.expanded {
+    display: block;
+  }
+  .collapsible-icon {
+    height: calc(var(--spacing) * 4);
+    width: calc(var(--spacing) * 4);
+    transition-property: transform, translate, scale, rotate;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-white);
+    }
+  }
+  .collapsible-icon.expanded {
+    rotate: 180deg;
+  }
+  .alert {
+    margin-block: calc(var(--spacing) * 3);
+    border-radius: var(--radius-lg);
+    padding: calc(var(--spacing) * 3);
+  }
+  .alert-warning {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 4px;
+    border-color: var(--color-yellow-400);
+    background-color: var(--color-yellow-50);
+    color: var(--color-yellow-800);
+    @media (prefers-color-scheme: dark) {
+      background-color: color-mix(in srgb, oklch(42.1% 0.095 57.708) 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in oklab, var(--color-yellow-900) 20%, transparent);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-yellow-200);
+    }
+  }
+  .alert-info {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 4px;
+    border-color: var(--color-blue-400);
+    background-color: var(--color-blue-50);
+    color: var(--color-blue-800);
+    @media (prefers-color-scheme: dark) {
+      background-color: color-mix(in srgb, oklch(37.9% 0.146 265.522) 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in oklab, var(--color-blue-900) 20%, transparent);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-blue-200);
+    }
+  }
+  .alert-error {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 4px;
+    border-color: var(--color-red-400);
+    background-color: var(--color-red-50);
+    color: var(--color-red-800);
+    @media (prefers-color-scheme: dark) {
+      background-color: color-mix(in srgb, oklch(39.6% 0.141 25.723) 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in oklab, var(--color-red-900) 20%, transparent);
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-red-200);
+    }
+  }
+  .alert-title {
+    margin-bottom: calc(var(--spacing) * 1);
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+  .alert ul {
+    margin-block: calc(var(--spacing) * 2);
+    padding-left: calc(var(--spacing) * 5);
+  }
+  .alert li {
+    margin-bottom: calc(var(--spacing) * 1);
+  }
+}
+@property --tw-rotate-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-rotate-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-rotate-z {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-skew-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-skew-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-divide-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-duration {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-scale-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+@property --tw-scale-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+@property --tw-scale-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: 1;
+}
+@property --tw-space-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-rotate-x: initial;
+      --tw-rotate-y: initial;
+      --tw-rotate-z: initial;
+      --tw-skew-x: initial;
+      --tw-skew-y: initial;
+      --tw-divide-y-reverse: 0;
+      --tw-border-style: solid;
+      --tw-font-weight: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-duration: initial;
+      --tw-scale-x: 1;
+      --tw-scale-y: 1;
+      --tw-scale-z: 1;
+      --tw-space-y-reverse: 0;
+    }
+  }
+}
+
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans min-h-screen">
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
+        Skip to main content
+    </a>
+    <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
+        <div id="demo-mode-disclaimer" style="background:#ffc; color:#222; padding:1em; text-align:center; font-weight:bold;">Demo Mode: Static UI with simulated interactions only</div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14">
+                <div class="flex items-center gap-4">
+                    <img src="./favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
+                    <span class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100" role="heading" aria-level="1">ShutHost</span>
+                </div>
+                <!-- Tablist for navigation -->
+                <nav class="flex" role="tablist" aria-label="Main tabs">
+                    <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab" id="tab-architecture" tabindex="0">Docs</button>
+                    <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts" tabindex="0">Hosts</button>
+                    <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients" tabindex="0">Clients</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
+        <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
+            <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
+                <!-- Install Instructions Panel -->
+                <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
+                    <header class="collapsible-header py-2" data-target="host-install-content" aria-expanded="false" aria-controls="host-install-content" id="host-install-header" tabindex="0" role="button">
+                        <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
+                        <span class="collapsible-icon"></span>
+                    </header>
+                    <div id="host-install-content" class="collapsible-content" role="region" aria-labelledby="host-install-title">
+                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#host-install-command" type="button" aria-label="Copy install command">Copy</button>
+                            <code id="host-install-command" class="code-block">Loading...</code>
+                        </div>
+                        <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
+                            section of your config on the Coordinator Host:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#config-location" type="button" aria-label="Copy config location">Copy</button>
+                            <code id="config-location" class="code-block">/this/is/a/demo.toml</code>
+                        </div>
+
+                        <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
+<aside class="alert alert-warning" role="note" aria-label="Agent Installation Requirements">
+    <h3 class="alert-title">⚠️ Agent Installation Requirements</h3>
+    <ul>
+        <li><strong>Superuser Access:</strong> The installer requires <code>curl</code> and will install as
+            superuser (root/sudo/doas)</li>
+        <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
+            download endpoints (see security notes below)</li>
+        <li><strong>Static IP Required:</strong> The host needs a static IP address for shutdown
+            commands and online status monitoring</li>
+        <li><strong>Manual Configuration:</strong> The generated config must be manually added
+            to your coordinator configuration file</li>
+    </ul>
+</aside>
+
+<aside class="alert alert-error" role="note" aria-label="Platform Limitations">
+    <h3 class="alert-title">🚫 Platform Limitations</h3>
+    <ul>
+        <li><strong>No Windows Support:</strong> Only Unix distributions are supported.</li>
+        <li><strong>No BSD Support:</strong> BSD-based systems are not currently supported.</li>
+    </ul>
+</aside>
+
+<aside class="alert alert-info" role="note" aria-label="Wake-on-LAN (WOL) Requirements">
+    <h3 class="alert-title">💡 Wake-on-LAN (WOL) Requirements</h3>
+    <p>The agent requires Wake-on-LAN for remote startup functionality:</p>
+    <ul>
+        <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
+            <ul>
+                <li><strong>BIOS Configuration:</strong> WOL must be enabled in BIOS/UEFI settings.</li>
+                <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown.</li>
+            </ul>
+        </li>
+        <li><strong>OS Configuration:</strong> WOL must be enabled in the operating system.</li>
+        <li><strong>Network Requirements:</strong> Requires network broadcast support and host reachability.
+            <ul>
+                <li><em>Note: The installer tests network reachability but won't fail if the test is unsuccessful, so ensure your network supports broadcast for WOL to work properly.</em></li>
+            </ul>
+        </li>
+    </ul>
+</aside>
+                    </div>
+                </section>
+
+                <!-- Hosts Table -->
+                <section class="section-container mt-4" aria-labelledby="hosts-table-title">
+                    <h2 id="hosts-table-title" class="sr-only">Hosts Table</h2>
+                    <div class="table-wrapper">
+                        <table class="w-full" aria-describedby="hosts-table-title">
+                            <thead>
+                                <tr id="host-table-header">
+                                    <th class="table-header" scope="col">Host</th>
+                                    <th class="table-header" scope="col">Status</th>
+                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="host-table-body" class="divide-y divide-gray-200" aria-live="polite">
+                                <!-- Hosts will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <section id="clients-tab" class="tab-content" aria-labelledby="tab-clients" role="tabpanel" tabindex="0">
+                <!-- Install Instructions Panel -->
+                <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
+                    <header class="collapsible-header py-2" data-target="client-install-content" aria-expanded="false" aria-controls="client-install-content" id="client-install-header" tabindex="0" role="button">
+                        <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
+                        <span class="collapsible-icon"></span>
+                    </header>
+                    <div id="client-install-content" class="collapsible-content" role="region" aria-labelledby="client-install-title">
+                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#client-install-command" type="button" aria-label="Copy install command">Copy</button>
+                            <code id="client-install-command" class="code-block">Loading...</code>
+                        </div>
+                        <p class="description-text text-xs">Optionally, you can specify a custom client ID as the second
+                            argument. Add the output to the clients section of your config on the Coordinator Host:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#config-location" type="button" aria-label="Copy config location">Copy</button>
+                            <code id="config-location" class="code-block">/this/is/a/demo.toml</code>
+                        </div>
+
+                        <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
+<aside class="alert alert-warning" role="note" aria-label="Client Installation Requirements">
+    <h3 class="alert-title">⚠️ Client Installation Requirements</h3>
+    <ul>
+        <li><strong>Dependencies:</strong> Installer requires <code>curl</code>; client runtime requires
+            <code>OpenSSL</code></li>
+        <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
+            download endpoints (see security notes below)</li>
+        <li><strong>Manual Configuration:</strong> The generated config must be manually added
+            to your coordinator configuration file</li>
+    </ul>
+</aside>
+                    </div>
+                </section>
+
+                <!-- Clients Table -->
+                <section class="section-container mt-4" aria-labelledby="clients-table-title">
+                    <h2 id="clients-table-title" class="sr-only">Clients Table</h2>
+                    <div class="table-wrapper">
+                        <table class="w-full" aria-describedby="clients-table-title">
+                            <thead>
+                                <tr>
+                                    <th class="table-header" scope="col">Client ID</th>
+                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-table-body" class="divide-y divide-gray-200" aria-live="polite">
+                                <!-- Clients will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
+<section id="architecture-tab" class="tab-content">
+    <article class="section-container mt-4">
+        <header>
+            <h2 class="section-title px-4 pt-4">Architecture Documentation</h2>
+            <p class="description-text px-4">ShutHost provides two different architectural views depending on your use case:</p>
+        </header>
+        <section class="architecture-section" aria-labelledby="simplified-architecture-title">
+            <header>
+                <h3 id="simplified-architecture-title" class="architecture-title px-4">Simplified Architecture</h3>
+            </header>
+            <figure class="architecture-diagram-container">
+                <img src="./architecture_simplified.svg" alt="Simplified Architecture Diagram" class="architecture-diagram">
+            </figure>
+            <div class="architecture-content">
+                <p class="architecture-when-to-use px-4">
+                    <strong>When to use:</strong> This architecture applies when you have <strong>no clients defined</strong> in your configuration. 
+                    In this scenario, only the WebUI interacts with hosts through the coordinator.
+                </p>
+                <aside class="alert alert-info" role="note" aria-label="How it works">
+                    <h4 class="alert-title">How it works</h4>
+                    <ul class="text-sm">
+                        <li>The <strong>WebUI</strong> sends startup/shutdown requests directly to the <strong>Coordinator</strong></li>
+                        <li>The <strong>Coordinator</strong> manages host lifecycle by sending Wake-on-LAN packets for startup and shutdown commands to agents</li>
+                        <li>Each <strong>Host</strong> runs an <strong>Agent</strong> service that handles shutdown commands and reports status back to the coordinator</li>
+                        <li>Under the hood, this still uses the lease system, but it's transparent to the user</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+        <section class="architecture-section architecture-separator" aria-labelledby="complete-architecture-title">
+            <header>
+                <h3 id="complete-architecture-title" class="architecture-title px-4">Complete Architecture</h3>
+            </header>
+            <figure class="architecture-diagram-container">
+                <img src="./architecture.svg" alt="Complete Architecture Diagram" class="architecture-diagram">
+            </figure>
+            <div class="architecture-content">
+                <p class="architecture-when-to-use px-4">
+                    <strong>When to use:</strong> This architecture applies when you have <strong>clients defined</strong> in your configuration. 
+                    This enables programmatic access where multiple clients can access hosts concurrently.
+                </p>
+                <aside class="alert alert-warning" role="note" aria-label="Lease System">
+                    <h4 class="alert-title">Lease System</h4>
+                    <p class="text-sm">
+                        With multiple clients potentially accessing hosts simultaneously, ShutHost introduces a 
+                        <strong>lease system</strong> to coordinate access and prevent conflicts:
+                    </p>
+                    <ul class="text-sm mt-2">
+                        <li><strong>Lease Acquisition:</strong> Both WebUI and Clients must request leases before using hosts</li>
+                        <li><strong>Automatic Startup:</strong> Hosts are automatically started when the first lease is acquired (≥1 leases)</li>
+                        <li><strong>Automatic Shutdown:</strong> Hosts are automatically shut down when all leases are released (=0 leases)</li>
+                        <li><strong>Conflict Prevention:</strong> The lease system ensures hosts aren't shut down while still in use by other clients</li>
+                    </ul>
+                </aside>
+                <aside class="alert alert-info" role="note" aria-label="Client Use Cases">
+                    <h4 class="alert-title">Client Use Cases</h4>
+                    <p class="text-sm">Clients are typically used for:</p>
+                    <ul class="text-sm mt-2">
+                        <li><strong>Automated Backups:</strong> Scripts that need to wake up hosts, perform backups, then allow shutdown</li>
+                        <li><strong>Batch Processing:</strong> Jobs that require access to specific hosts for processing tasks</li>
+                        <li><strong>CI/CD Pipelines:</strong> Build systems that need temporary access to powerful build machines</li>
+                        <li><strong>Scheduled Maintenance:</strong> Scripts that perform regular maintenance tasks on hosts</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+        <section class="architecture-key-points" aria-labelledby="architecture-key-points-title">
+            <aside class="alert alert-info" role="note" aria-label="Key Points">
+                <h4 id="architecture-key-points-title" class="alert-title">💡 Key Points</h4>
+                <ul class="text-sm">
+                    <li><strong>Both architectures use leases internally</strong> - the simplified view just hides this complexity</li>
+                    <li><strong>Wake-on-LAN (WOL)</strong> is used for remote host startup in both cases</li>
+                    <li><strong>Agents report status</strong> to keep the coordinator informed of host availability</li>
+                    <li><strong>The coordinator serves the WebUI</strong> and provides the API for both human and programmatic access</li>
+                </ul>
+            </aside>
+        </section>
+    </article>
+</section>
+
+
+            <!-- Security Configuration Panel (shown on both tabs) -->
+            <section class="section-container mt-4" aria-labelledby="security-config-title">
+                <header class="collapsible-header collapsed" data-target="security-config-content" aria-expanded="false" aria-controls="security-config-content" id="security-config-header" tabindex="0" role="button">
+                    <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
+                    <span class="collapsible-icon"></span>
+                </header>
+                <div id="security-config-content" class="collapsible-content collapsed" role="region" aria-labelledby="security-config-title">
+                    <div class="alert alert-info">
+                        <div class="alert-title">Authentication Bypass Required</div>
+                        <p>For the web app and installation scripts to work properly, certain endpoints must be accessible without authentication. If you're using a reverse proxy with authentication (like Authelia, NPM with auth, etc.), you need to configure bypass rules for:</p>
+                        <ul>
+                            <li><code>/download/*</code> - Installation script downloads</li>
+                            <li><code>/api/m2m/*</code> - Machine-to-machine API communication</li>
+                            <li><code>/manifest.json</code> - PWA manifest (required for webpage installability)</li>
+                            <li><code>/favicon.ico</code> - Favicon (required for webpage installability)</li>
+                        </ul>
+                        <p class="text-xs mt-2"><em>This allows the installer scripts and web app to download necessary files and communicate with the coordinator API without requiring user authentication. The manifest and favicon exceptions are required for proper browser and PWA support.</em></p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <div class="alert-title">Configuration Examples</div>
+
+                        <p class="text-sm font-semibold mb-2">Authelia:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#authelia-config" type="button" aria-label="Copy Authelia config">Copy</button>
+                            <code id="authelia-config" class="code-block">Loading...</code>
+                        </div>
+
+                        <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#nginx-config" type="button" aria-label="Copy Nginx config">Copy</button>
+                            <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
+location ~ ^/(download|api/m2m|manifest.json|favicon.ico)$ {
+    auth_basic off;
+    proxy_pass http://your-shuthost-backend;
+}</code>
+                        </div>
+
+                        <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#traefik-config" type="button" aria-label="Copy Traefik config">Copy</button>
+                            <code id="traefik-config" class="code-block">Loading...</code>
+                        </div>
+
+                        <p class="text-xs mt-2"><em>Replace backend references with your actual configuration values.</em></p>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <footer
+        class="bg-white dark:bg-gray-800 shadow-md py-2 px-4 text-center text-gray-600 dark:text-gray-400 text-xs mt-auto"
+        role="contentinfo">
+        ShutHost Coordinator v1.1.0
+    </footer>
+
+    <script>
+        "use strict";
+// Detect demo mode by presence of disclaimer element
+const isDemoMode = !!document.getElementById('demo-mode-disclaimer');
+let persistedHostsList = [];
+let persistedStatusMap = {};
+let persistedLeaseMap = {};
+let persistedClientList = [];
+/**
+ * Establish and maintain a WebSocket connection to the backend API.
+ * Reconnects automatically on close (with a small delay).
+ */
+const connectWebSocket = () => {
+    if (isDemoMode) {
+        DemoSim.init();
+        return;
+    }
+    const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+    socket.onopen = () => console.log('WebSocket connected');
+    socket.onmessage = handleWebSocketMessage;
+    socket.onclose = () => setTimeout(connectWebSocket, 2000);
+};
+/**
+ * Handle incoming WebSocket messages and update local state/UI accordingly.
+ * Wraps parsing in a try/catch to avoid uncaught exceptions from malformed messages.
+ */
+const handleWebSocketMessage = (event) => {
+    try {
+        const message = JSON.parse(event.data);
+        const hostTableBody = document.getElementById('host-table-body');
+        if (!hostTableBody)
+            throw new Error('Missing required element #host-table-body');
+        const clientTableBody = document.getElementById('client-table-body');
+        if (!clientTableBody)
+            return;
+        switch (message.type) {
+            case 'Initial':
+                persistedStatusMap = message.payload.status;
+                persistedLeaseMap = message.payload.leases;
+                persistedClientList = message.payload.clients;
+                persistedHostsList = message.payload.hosts;
+                updateHostsTable();
+                updateClientsTable();
+                break;
+            case 'HostStatus':
+                persistedStatusMap = message.payload;
+                updateHostsTable();
+                break;
+            case 'ConfigChanged':
+                persistedClientList = message.payload.clients;
+                persistedHostsList = message.payload.hosts;
+                updateHostsTable();
+                updateClientsTable();
+                break;
+            case 'LeaseUpdate':
+                const { host, leases } = message.payload;
+                persistedLeaseMap[host] = leases;
+                updateClientsTable();
+                console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
+                break;
+        }
+        updateNodeAttrs();
+    }
+    catch (err) {
+        console.error('Error handling WS message:', err);
+    }
+};
+/**
+ * Return a small object describing the status text to display for a host.
+ * If status is undefined the host is still loading.
+ */
+const getHostStatus = (hostName) => {
+    const status = persistedStatusMap[hostName];
+    return {
+        statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline')
+    };
+};
+/**
+ * Format leases for display in the hosts table.
+ * Filters out the WebInterface lease (internal UI lease) and returns a comma-separated string
+ * of client IDs or "None" if no client leases exist.
+ */
+const getFormattedLeases = (hostname) => {
+    // Only show client leases, not WebInterface
+    const clientLeases = (persistedLeaseMap[hostname] || []).filter(lease => lease.type === 'Client');
+    return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
+};
+const hasClientsConfigured = () => persistedClientList.length > 0;
+/**
+ * Convert a LeaseSource to a human readable string.
+ */
+const formatLeaseSource = (lease) => {
+    switch (lease.type) {
+        case 'WebInterface':
+            // Warn if this is called for hosts table or clients table, as it should be filtered out before
+            console.warn('formatLeaseSource called with WebInterface lease. This should be filtered out before display.');
+            return '';
+        case 'Client':
+            return lease.value;
+    }
+};
+// ==========================
+// Table Row Creation
+// ==========================
+const createHostRow = (hostName) => {
+    const { statusText } = getHostStatus(hostName);
+    const leases = getFormattedLeases(hostName);
+    const clientsConfigured = hasClientsConfigured();
+    return `
+        <tr data-hostname="${hostName}" class="table-row" role="row">
+            <th class="table-cell" scope="row">${hostName}</th>
+            <td class="table-cell status" aria-label="Status">${statusText}</td>
+            ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
+            <td class="table-cell" aria-label="Actions">
+                <div class="actions-cell">
+                    <button 
+                        class="btn btn-green take-lease" 
+                        onclick="updateLease('${hostName}', 'take')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Take lease for ${hostName}` : `Start ${hostName}`}" 
+                    >${clientsConfigured ? "Take Lease" : "Start"}</button>
+                    <button 
+                        class="btn btn-red release-lease" 
+                        onclick="updateLease('${hostName}', 'release')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Release lease for ${hostName}` : `Shutdown ${hostName}`}" 
+                    >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
+                </div>
+            </td>
+        </tr>
+    `;
+};
+const createClientRow = (clientId, leases) => {
+    const hasLeases = leases.length > 0;
+    return `
+    <tr data-client-id="${clientId}" class="table-row" role="row">
+        <th class="table-cell" scope="row">${clientId}</th>
+        <td class="table-cell" aria-label="Leases">${leases.join(', ') || 'None'}</td>
+        <td class="table-cell" aria-label="Actions">
+            <div class="actions-cell">
+                <button 
+                    class="btn btn-red" 
+                    onclick="resetClientLeases('${clientId}')"
+                    type="button"
+                    aria-label="Reset leases for ${clientId}"
+                    ${!hasLeases ? 'disabled' : ''}
+                >
+                    Reset Leases
+                </button>
+            </div>
+        </td>
+    </tr>
+    `;
+};
+// ==========================
+// Table Update Functions
+// ==========================
+/**
+ * Update DOM attributes and visibility for a given host table row.
+ * - Updates status cell text
+ * - Updates lease cell text
+ * - Shows/hides take/release buttons depending on whether the WebInterface holds a lease
+ */
+const updateRowAttributes = (row, hostname) => {
+    const { statusText } = getHostStatus(hostname);
+    const leases = persistedLeaseMap[hostname] || [];
+    const hasWebInterfaceLease = leases.some(lease => lease.type === 'WebInterface');
+    const statusCell = row.querySelector('.status');
+    const leaseCell = row.querySelector('.leases');
+    const takeLeaseButton = row.querySelector('.take-lease');
+    const releaseLeaseButton = row.querySelector('.release-lease');
+    if (statusCell)
+        statusCell.textContent = statusText;
+    if (leaseCell)
+        leaseCell.textContent = getFormattedLeases(hostname);
+    if (takeLeaseButton) {
+        takeLeaseButton.style.display = hasWebInterfaceLease ? 'none' : 'inline-block';
+    }
+    if (releaseLeaseButton) {
+        releaseLeaseButton.style.display = hasWebInterfaceLease ? 'inline-block' : 'none';
+    }
+};
+/**
+ * Iterate over all host rows and refresh their attributes from current persisted state.
+ */
+const updateNodeAttrs = () => {
+    document.querySelectorAll('#host-table-body tr').forEach(row => {
+        const hostname = row.dataset["hostname"];
+        if (hostname) {
+            updateRowAttributes(row, hostname);
+        }
+    });
+};
+const updateHostsTableHeader = () => {
+    const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
+    if (!thead)
+        return;
+    thead.innerHTML = `
+        <th class="table-header">Host</th>
+        <th class="table-header">Status</th>
+        ${hasClientsConfigured() ? '<th class="table-header">Leases</th>' : ''}
+        <th class="table-header">Actions</th>
+    `;
+};
+/**
+ * Rebuild the hosts table from persisted host list and status map.
+ * Active hosts are sorted alphabetically and displayed before inactive hosts.
+ */
+const updateHostsTable = () => {
+    const hostTableBody = document.getElementById('host-table-body');
+    const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el]);
+    const inactiveHosts = persistedHostsList.filter((el) => !persistedStatusMap[el]);
+    const sortLexicographic = (hostName1, hostName2) => hostName1.localeCompare(hostName2);
+    const hostList = [...activeHosts.toSorted(sortLexicographic), ...inactiveHosts.toSorted(sortLexicographic)];
+    if (hostTableBody) {
+        hostTableBody.innerHTML = hostList.map(createHostRow).join('');
+        updateHostsTableHeader();
+    }
+};
+/**
+ * Rebuild the clients table from the persisted lease map and configured clients.
+ * Groups leases by client and sorts active clients first (alphabetically), then inactive.
+ */
+const updateClientsTable = () => {
+    const clientMap = new Map();
+    // Group leases by client
+    Object.entries(persistedLeaseMap).forEach(([host, leases]) => {
+        leases.forEach(lease => {
+            if (lease.type === 'Client') {
+                const clientLeases = clientMap.get(lease.value) || [];
+                clientLeases.push(host);
+                clientMap.set(lease.value, clientLeases);
+            }
+        });
+    });
+    // Ensure all known clients are included
+    persistedClientList.forEach(clientId => {
+        if (!clientMap.has(clientId)) {
+            clientMap.set(clientId, []);
+        }
+    });
+    const clientEntries = Array.from(clientMap.entries());
+    const hasActiveLeases = ([_, leases]) => leases.length > 0;
+    const activeClients = clientEntries.filter(hasActiveLeases);
+    const inactiveClients = clientEntries.filter((el) => !hasActiveLeases(el));
+    const sortLexicographic = ([clientName1, _1], [clientName2, _2]) => clientName1.localeCompare(clientName2);
+    const sortedClients = [...activeClients.toSorted(sortLexicographic), ...inactiveClients.toSorted(sortLexicographic)];
+    const clientTableBody = document.getElementById('client-table-body');
+    if (clientTableBody) {
+        clientTableBody.innerHTML = sortedClients
+            .map(([clientId, leases]) => createClientRow(clientId, leases))
+            .join('');
+    }
+};
+// ==========================
+// Backend Actions
+// ==========================
+/**
+ * Send a lease action request to the backend.
+ * action should be 'take' or 'release'.
+ */
+const updateLease = async (host, action) => {
+    if (isDemoMode) {
+        DemoSim.leaseAction(host, action);
+        return;
+    }
+    try {
+        await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
+    }
+    catch (err) {
+        console.error(`Failed to ${action} lease for ${host}:`, err);
+    }
+};
+/**
+ * Request the backend to clear all leases owned by a given client.
+ */
+const resetClientLeases = async (clientId) => {
+    if (isDemoMode) {
+        DemoSim.resetClientLeases(clientId);
+        return;
+    }
+    try {
+        await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
+    }
+    catch (err) {
+        console.error(`Failed to reset leases for client ${clientId}:`, err);
+    }
+};
+// ==========================
+// UI Setup Functions
+// ==========================
+const setupCopyButtons = () => {
+    document.querySelectorAll('.copy-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetSelector = button.dataset["copyTarget"];
+            if (targetSelector) {
+                const target = document.querySelector(targetSelector)?.textContent;
+                if (target) {
+                    navigator.clipboard.writeText(target).then(() => {
+                        button.textContent = "Copied!";
+                        setTimeout(() => (button.textContent = "Copy"), 1500);
+                    });
+                }
+            }
+        });
+    });
+};
+const setupTabs = () => {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and content
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            const tabId = tab.dataset["tab"];
+            document.getElementById(`${tabId}-tab`)?.classList.add('active');
+        });
+    });
+};
+const setupCollapsibleSections = () => {
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const targetId = header.dataset["target"];
+            if (targetId) {
+                const content = document.getElementById(targetId);
+                const icon = header.querySelector('.collapsible-icon');
+                content?.classList.toggle('expanded');
+                icon?.classList.toggle('expanded');
+            }
+        });
+    });
+};
+/**
+ * Populate dynamic configuration snippets and installer commands based on current origin.
+ * This keeps embedded strings in the UI in sync with where the page is served from.
+ */
+const setupDynamicConfigs = () => {
+    const baseUrl = window.location.origin;
+    // Install commands
+    const hostInstallCommand = document.getElementById('host-install-command');
+    const clientInstallCommand = document.getElementById('client-install-command');
+    if (!hostInstallCommand || !clientInstallCommand) {
+        throw new Error('Missing required install command elements');
+    }
+    hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+    // Configuration examples with replaced domain/backend
+    const autheliaConfig = document.getElementById('authelia-config');
+    const traefikConfig = document.getElementById('traefik-config');
+    const domain = baseUrl.replace(/^https?:\/\//, '');
+    if (autheliaConfig) {
+        autheliaConfig.textContent = `- domain: ${domain}
+  policy: bypass
+  resources:
+    - '^/download/(.*)'
+    - '^/api/m2m/(.*)$'
+    - '^/manifest.json$'
+    - '^/favicon.ico$'`;
+    }
+    if (traefikConfig) {
+        traefikConfig.textContent = `# Add to your service labels
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.ico\`))"
+- "traefik.http.routers.shuthost-bypass.priority=100"
+# Remove auth middleware for bypass routes`;
+    }
+};
+// ==========================
+// Initialization
+// ==========================
+const initialize = () => {
+    setupDynamicConfigs();
+    connectWebSocket();
+    setupCopyButtons();
+    setupTabs();
+    setupCollapsibleSections();
+    if (isDemoMode) {
+        console.info('Demo mode enabled: UI is using simulated data.');
+    }
+};
+// ==========================
+// Demo Mode Simulation Namespace
+// ==========================
+var DemoSim;
+(function (DemoSim) {
+    let leaseTimeout = null;
+    let statusTimeout = null;
+    DemoSim.init = () => {
+        // Simulate initial push
+        setTimeout(() => {
+            handleWebSocketMessage({
+                data: JSON.stringify({
+                    type: "Initial",
+                    payload: {
+                        hosts: ["archive", "tarbean"],
+                        clients: [],
+                        status: { tarbean: false, archive: false },
+                        leases: { archive: [] }
+                    }
+                })
+            });
+        }, 500);
+    };
+    DemoSim.leaseAction = (host, action) => {
+        if (action === "take") {
+            // LeaseUpdate: WebInterface
+            if (leaseTimeout)
+                clearTimeout(leaseTimeout);
+            leaseTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "LeaseUpdate",
+                        payload: { host, leases: [{ type: "WebInterface" }] }
+                    })
+                });
+            }, 500);
+            // HostStatus: archive online
+            if (statusTimeout)
+                clearTimeout(statusTimeout);
+            statusTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "HostStatus",
+                        payload: { tarbean: false, archive: true }
+                    })
+                });
+            }, 1200);
+        }
+        else if (action === "release") {
+            // LeaseUpdate: no leases
+            if (leaseTimeout)
+                clearTimeout(leaseTimeout);
+            leaseTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "LeaseUpdate",
+                        payload: { host, leases: [] }
+                    })
+                });
+            }, 500);
+            // HostStatus: archive offline
+            if (statusTimeout)
+                clearTimeout(statusTimeout);
+            statusTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "HostStatus",
+                        payload: { tarbean: false, archive: false }
+                    })
+                });
+            }, 1200);
+        }
+    };
+    DemoSim.resetClientLeases = (clientId) => {
+        // For demo, just clear all leases for that client
+        Object.keys(persistedLeaseMap).forEach(host => {
+            persistedLeaseMap[host] = (persistedLeaseMap[host] || []).filter(l => l.type !== 'Client' || l.value !== clientId);
+        });
+        updateClientsTable();
+        updateHostsTable();
+    };
+})(DemoSim || (DemoSim = {}));
+document.addEventListener('DOMContentLoaded', initialize);
+
+    </script>
+</body>
+
+</html>
