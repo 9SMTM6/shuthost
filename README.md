@@ -12,6 +12,16 @@
 [![Live demo: PWA controlling NAS (2x speed)](docs/shuthost_live_demo_2x.webp)](./docs/shuthost_live_demo_2x.webp)
 > played at 2x speed, using the WebUI installed as PWA
 
+## 🌐 Live Demo
+
+You can try a static demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
+
+- [Live Demo](https://9SMTM6.github.io/shuthost/)
+
+This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and features without installing anything.
+
+---
+
 ## ✨ Features
 
 - Manage standby state of Unix hosts with Wake-On-Lan (WOL) and lightweight agents
@@ -23,16 +33,6 @@
 - Docker and simple binary deployment options (Docker has some strict requirements though)
 - Convenience scripts for simple agent/client installation
 - An attempt at extensive documentation
-
----
-
-## 🌐 Live Demo
-
-You can try a static demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
-
-- [Live Demo](https://9SMTM6.github.io/shuthost/)
-
-This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and features without installing anything.
 
 ---
 
