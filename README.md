@@ -21,6 +21,15 @@
 - Convenience scripts for simple agent/client installation
 - An attempt at extensive documentation
 
+### Live demo
+
+The following short demo (recorded at 2× playback speed) shows the PWA on Android starting and shutting down a "NAS" (an older PC).
+
+<video controls playsinline width="720">
+  <source src="docs/shuthost_live_demo_2x.mp4" type="video/mp4">
+  Your browser does not support the video tag. You can download the demo: docs/shuthost_live_demo_2x.mp4
+</video>
+
 ---
 
 ## 📋 Table of Contents
