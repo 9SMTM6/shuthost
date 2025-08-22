@@ -206,13 +206,12 @@ async fn test_shutdown_command_execution() {
     let mut online = false;
     for _ in 0..10 {
         let resp = client.get(&status_url).send().await;
-        if let Ok(resp) = resp {
-            if let Ok(json) = resp.json::<serde_json::Value>().await {
-                if json["testhost"] == true {
-                    online = true;
-                    break;
-                }
-            }
+        if let Ok(resp) = resp
+            && let Ok(json) = resp.json::<serde_json::Value>().await
+            && json["testhost"] == true
+        {
+            online = true;
+            break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     }

@@ -89,20 +89,19 @@ async fn main() {
     }
 }
 
-
 // DemoService implementation: serves only static assets for demo mode
 async fn run_demo_service(port: u16, bind: &str) {
-    use axum::{Router};
-    use tokio::net::TcpListener;
-    use tracing::info;
     use crate::assets::asset_routes;
-    use crate::routes::get_download_router;
-    use crate::http::AppState;
-    use std::sync::Arc;
-    use tokio::sync::{broadcast, watch};
     use crate::config::ControllerConfig;
+    use crate::http::AppState;
     use crate::routes::LeaseMap;
+    use crate::routes::get_download_router;
+    use axum::Router;
     use std::collections::HashMap;
+    use std::sync::Arc;
+    use tokio::net::TcpListener;
+    use tokio::sync::{broadcast, watch};
+    use tracing::info;
 
     let addr = format!("{}:{}", bind, port);
     info!("Starting demo service on http://{}", addr);
@@ -113,9 +112,11 @@ async fn run_demo_service(port: u16, bind: &str) {
     use axum::{extract::State, response::IntoResponse};
     use std::sync::OnceLock;
     async fn serve_demo_ui(State(_): State<AppState>) -> impl IntoResponse {
-        use crate::assets::{render_ui_html, UiMode};
+        use crate::assets::{UiMode, render_ui_html};
         static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
-        let html = HTML_TEMPLATE.get_or_init(|| render_ui_html(UiMode::Demo)).clone();
+        let html = HTML_TEMPLATE
+            .get_or_init(|| render_ui_html(&UiMode::Demo))
+            .clone();
         Response::builder()
             .header("Content-Type", "text/html")
             .body(html)
@@ -130,13 +131,15 @@ async fn run_demo_service(port: u16, bind: &str) {
         leases: LeaseMap::default(),
     };
 
-        let app = Router::new()
-            .route("/", axum::routing::get(serve_demo_ui))
-            .merge(asset_routes())
-            .nest("/download", get_download_router())
-            .with_state(app_state);
+    let app = Router::new()
+        .route("/", axum::routing::get(serve_demo_ui))
+        .merge(asset_routes())
+        .nest("/download", get_download_router())
+        .with_state(app_state);
 
-    let listener = TcpListener::bind(&addr).await.expect("Failed to bind address");
+    let listener = TcpListener::bind(&addr)
+        .await
+        .expect("Failed to bind address");
     axum::serve(listener, app.into_make_service())
         .await
         .expect("Demo server failed");

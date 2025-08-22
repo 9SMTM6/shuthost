@@ -29,8 +29,8 @@ pub enum UiMode<'a> {
 }
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
-pub fn render_ui_html(mode: UiMode<'_>) -> String {
-    let (config_path, demo_disclaimer) = match mode {
+pub fn render_ui_html(mode: &UiMode<'_>) -> String {
+    let (config_path, demo_disclaimer) = match *mode {
         UiMode::Normal { config_path } => (
             config_path.to_string_lossy().to_string(),
             "".to_string(),
@@ -68,7 +68,13 @@ pub fn render_ui_html(mode: UiMode<'_>) -> String {
 /// Serves the main HTML template, injecting dynamic content.
 pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
     static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
-    let html = HTML_TEMPLATE.get_or_init(|| render_ui_html(UiMode::Normal { config_path: &config_path })).clone();
+    let html = HTML_TEMPLATE
+        .get_or_init(|| {
+            render_ui_html(&UiMode::Normal {
+                config_path: &config_path,
+            })
+        })
+        .clone();
     Response::builder()
         .header("Content-Type", "text/html")
         .body(html.into_response())
