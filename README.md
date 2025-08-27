@@ -78,14 +78,14 @@ Docker (Linux only — host network mode required for WOL)
   ```bash
   docker run --rm --network host \
     -v ./coordinator_config.toml:/config/coordinator_config.toml:ro \
-    ghcr.io/9SMTM6/shuthost:latest
+    ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
   ```
 - docker-compose example:
   ```yaml
   version: "3.8"
   services:
     shuthost:
-      image: ghcr.io/9SMTM6/shuthost:latest
+      image: ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
       network_mode: "host"      # required for WOL
       restart: unless-stopped
       volumes:
