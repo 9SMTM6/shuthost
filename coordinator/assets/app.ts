@@ -356,21 +356,59 @@ const setupCopyButtons = () => {
 
 const setupTabs = () => {
     const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
+    const validTabs = new Set(['hosts', 'clients', 'architecture']);
+
+    const activateTab = (tabId: string, updateHash: boolean) => {
+        if (!validTabs.has(tabId)) return;
+        // Remove active class from all tabs and content
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // Add active class to clicked tab and corresponding content
+        const tabButton = Array.from(tabs).find(t => t.dataset["tab"] === tabId);
+        tabButton?.classList.add('active');
+        tabButton?.setAttribute('aria-selected', 'true');
+        document.getElementById(`${tabId}-tab`)?.classList.add('active');
+
+        // Update the hash (deep link) if requested
+        if (updateHash) {
+            const newHash = `#${tabId}`;
+            if (location.hash !== newHash) {
+                // Setting location.hash will trigger the hashchange handler
+                location.hash = tabId;
+            }
+        }
+    };
     
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Remove active class from all tabs and content
-            tabs.forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            // Add active class to clicked tab and corresponding content
-            tab.classList.add('active');
             const tabId = tab.dataset["tab"];
-            document.getElementById(`${tabId}-tab`)?.classList.add('active');
+            if (!tabId) return;
+            activateTab(tabId, true);
         });
     });
+
+    // Respond to URL hash changes (back/forward navigation or external links)
+    const handleHashChange = () => {
+        const hash = location.hash.replace('#', '');
+        if (hash && validTabs.has(hash)) {
+            activateTab(hash, false);
+        }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+
+    // Initial activation based on current hash or default to hosts
+    if (location.hash && validTabs.has(location.hash.substring(1))) {
+        activateTab(location.hash.substring(1), false);
+    } else {
+        // Ensure default is reflected when no hash present
+        activateTab('hosts', false);
+    }
 };
 
 const setupCollapsibleSections = () => {
