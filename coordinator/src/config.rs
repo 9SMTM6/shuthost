@@ -108,20 +108,17 @@ pub enum AuthMode {
         issuer: String,
         client_id: String,
         client_secret: String,
-    #[serde(default = "default_oidc_scopes")]
-    scopes: Vec<String>,
+        #[serde(default = "default_oidc_scopes")]
+        scopes: Vec<String>,
         /// The callback path on this server (defaults to /auth/callback)
-    #[serde(default = "default_redirect_path")]
-    redirect_path: String,
+        #[serde(default = "default_redirect_path")]
+        redirect_path: String,
     },
 }
 
 // Defaults for OIDC fields used by serde(default = ...)
 fn default_oidc_scopes() -> Vec<String> {
-    vec![
-        "openid".to_string(),
-        "profile".to_string(),
-    ]
+    vec!["openid".to_string(), "profile".to_string()]
 }
 
 fn default_redirect_path() -> String {

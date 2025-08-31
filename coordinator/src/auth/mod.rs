@@ -49,7 +49,9 @@ pub struct AuthRuntime {
 #[derive(Clone, Debug)]
 pub enum AuthResolved {
     Disabled,
-    Token { token: String },
+    Token {
+        token: String,
+    },
     Oidc {
         issuer: String,
         client_id: String,
@@ -61,21 +63,21 @@ pub enum AuthResolved {
 
 impl AuthRuntime {
     pub fn from_config(cfg: &ControllerConfig) -> Self {
-        let (mode, cookie_key) = match &cfg.server.auth {
+        let (mode, cookie_key) = match cfg.server.auth {
             AuthConfig {
                 mode: AuthMode::None,
-                cookie_secret,
+                ref cookie_secret,
                 ..
             } => (
                 AuthResolved::Disabled,
                 key_from_secret(cookie_secret.as_deref()),
             ),
             AuthConfig {
-                mode: AuthMode::Token { token },
-                cookie_secret,
+                mode: AuthMode::Token { ref token },
+                ref cookie_secret,
                 ..
             } => {
-                let token = token.clone().unwrap_or_else(|| generate_token());
+                let token = token.clone().unwrap_or_else(generate_token);
                 info!("Auth mode: token");
                 info!("Token: {}", token);
                 (
@@ -86,24 +88,22 @@ impl AuthRuntime {
             AuthConfig {
                 mode:
                     AuthMode::Oidc {
-                        issuer,
-                        client_id,
-                        client_secret,
-                        scopes,
-                        redirect_path,
+                        ref issuer,
+                        ref client_id,
+                        ref client_secret,
+                        ref scopes,
+                        ref redirect_path,
                     },
-                cookie_secret,
+                ref cookie_secret,
             } => {
-                let scopes = scopes.clone();
-                let redirect_path = redirect_path.clone();
                 info!("Auth mode: oidc, issuer={}", issuer);
                 (
                     AuthResolved::Oidc {
                         issuer: issuer.clone(),
                         client_id: client_id.clone(),
                         client_secret: client_secret.clone(),
-                        scopes,
-                        redirect_path,
+                        scopes: scopes.clone(),
+                        redirect_path: redirect_path.clone(),
                     },
                     key_from_secret(cookie_secret.as_deref()),
                 )
@@ -170,9 +170,9 @@ pub async fn require_auth(
     next: Next,
 ) -> Response {
     let headers = req.headers();
-    match &auth.mode {
+    match auth.mode {
         AuthResolved::Disabled => next.run(req).await,
-        AuthResolved::Token { token } => {
+        AuthResolved::Token { ref token } => {
             // Accept Bearer token or cookie
             let bearer_ok = headers
                 .get(axum::http::header::AUTHORIZATION)
@@ -185,33 +185,30 @@ pub async fn require_auth(
                 .unwrap_or(false);
             if bearer_ok || cookie_ok {
                 next.run(req).await
+            } else if wants_html(headers) {
+                // remember path for redirect-after-login
+                let return_to = req.uri().to_string();
+                let cookie = Cookie::build((COOKIE_RETURN_TO, return_to))
+                    .path("/")
+                    .build();
+                let mut resp = Redirect::temporary("/login").into_response();
+                resp.headers_mut().append(
+                    axum::http::header::SET_COOKIE,
+                    axum::http::HeaderValue::from_str(&cookie.to_string()).unwrap(),
+                );
+                resp
             } else {
-                if wants_html(headers) {
-                    // remember path for redirect-after-login
-                    let return_to = req.uri().to_string();
-                    let cookie = Cookie::build((COOKIE_RETURN_TO, return_to))
-                        .path("/")
-                        .build();
-                    let mut resp = Redirect::temporary("/login").into_response();
-                    resp.headers_mut().append(
-                        axum::http::header::SET_COOKIE,
-                        axum::http::HeaderValue::from_str(&cookie.to_string()).unwrap(),
-                    );
-                    resp
-                } else {
-                    StatusCode::UNAUTHORIZED.into_response()
-                }
+                StatusCode::UNAUTHORIZED.into_response()
             }
         }
         AuthResolved::Oidc { .. } => {
             // Check signed session cookie via headers
             let signed = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
-            if let Some(session) = signed.get(COOKIE_SESSION) {
-                if let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value()) {
-                    if !sess.is_expired() {
-                        return next.run(req).await;
-                    }
-                }
+            if let Some(session) = signed.get(COOKIE_SESSION)
+                && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
+                && !sess.is_expired()
+            {
+                return next.run(req).await;
             }
             if wants_html(headers) {
                 let return_to = req.uri().to_string();
@@ -262,8 +259,8 @@ async fn login_get(
     headers: HeaderMap,
     Query(LoginQuery { error }): Query<LoginQuery>,
 ) -> impl IntoResponse {
-    match &auth.mode {
-        AuthResolved::Token { token } => {
+    match auth.mode {
+        AuthResolved::Token { ref token } => {
             // If already authenticated via cookie, go home
             let cookie_ok = get_cookie(&headers, COOKIE_TOKEN)
                 .map(|v| v == *token)
@@ -294,12 +291,11 @@ async fn login_get(
         AuthResolved::Oidc { .. } => {
             // If already logged in via OIDC session, go home
             let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
-            if let Some(session) = signed.get(COOKIE_SESSION) {
-                if let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value()) {
-                    if !sess.is_expired() {
-                        return Redirect::to("/").into_response();
-                    }
-                }
+            if let Some(session) = signed.get(COOKIE_SESSION)
+                && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
+                && !sess.is_expired()
+            {
+                return Redirect::to("/").into_response();
             }
             Redirect::temporary("/auth/login").into_response()
         }
@@ -317,8 +313,10 @@ async fn login_post(
     jar: CookieJar,
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
-    match &auth.mode {
-        AuthResolved::Token { token: expected } if &token == expected => {
+    match auth.mode {
+        AuthResolved::Token {
+            token: ref expected,
+        } if &token == expected => {
             let cookie = Cookie::build((COOKIE_TOKEN, token))
                 .http_only(true)
                 .path("/")
@@ -368,24 +366,32 @@ async fn oidc_login(
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let AuthResolved::Oidc { issuer, client_id, client_secret, scopes, redirect_path } = &auth.mode else {
+    let AuthResolved::Oidc {
+        ref issuer,
+        ref client_id,
+        ref client_secret,
+        ref scopes,
+        ref redirect_path,
+    } = auth.mode
+    else {
         return Redirect::to("/").into_response();
     };
 
     // If already logged in, redirect to return_to or home
-    if let Some(session) = jar.get(COOKIE_SESSION) {
-        if let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value()) {
-            if !sess.is_expired() {
-                let return_to = jar
-                    .get(COOKIE_RETURN_TO)
-                    .map(|c| c.value().to_string())
-                    .unwrap_or_else(|| "/".to_string());
-                let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-                return (jar, Redirect::to(&return_to)).into_response();
-            }
-        }
+    if let Some(session) = jar.get(COOKIE_SESSION)
+        && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
+        && !sess.is_expired()
+    {
+        let return_to = jar
+            .get(COOKIE_RETURN_TO)
+            .map(|c| c.value().to_string())
+            .unwrap_or_else(|| "/".to_string());
+        let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+        return (jar, Redirect::to(&return_to)).into_response();
     }
-    let Ok((client, _redirect_url)) = build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await else {
+    let Ok((client, _redirect_url)) =
+        build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await
+    else {
         return (StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
     };
 
@@ -440,7 +446,14 @@ async fn oidc_callback(
         error_description,
     }): Query<OidcCallback>,
 ) -> impl IntoResponse {
-    let AuthResolved::Oidc { issuer, client_id, client_secret, scopes: _, redirect_path } = &auth.mode else {
+    let AuthResolved::Oidc {
+        ref issuer,
+        ref client_id,
+        ref client_secret,
+        scopes: _,
+        ref redirect_path,
+    } = auth.mode
+    else {
         return Redirect::to("/").into_response();
     };
     let signed = jar;
@@ -468,7 +481,9 @@ async fn oidc_callback(
         return (signed, Redirect::to("/login?error=1")).into_response();
     }
 
-    let Ok((client, _redirect_url)) = build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await else {
+    let Ok((client, _redirect_url)) =
+        build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await
+    else {
         return (StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
     };
 

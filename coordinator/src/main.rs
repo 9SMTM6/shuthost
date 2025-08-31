@@ -130,7 +130,9 @@ async fn run_demo_service(port: u16, bind: &str) {
         hoststatus_rx: watch::channel(Arc::new(HashMap::new())).1,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseMap::default(),
-    auth: std::sync::Arc::new(crate::auth::AuthRuntime::from_config(&ControllerConfig::default())),
+        auth: std::sync::Arc::new(crate::auth::AuthRuntime::from_config(
+            &ControllerConfig::default(),
+        )),
     };
 
     let app = Router::new()
