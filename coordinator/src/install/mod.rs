@@ -98,11 +98,11 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
         config_file
             .write_all(
-                toml::to_string(&ControllerConfig {
+        toml::to_string(&ControllerConfig {
                     server: ServerConfig {
                         port: args.port,
                         bind: args.bind,
-                        auth: None, // TODO: change
+            auth: Default::default(),
                     },
                     ..Default::default()
                 })

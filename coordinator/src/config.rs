@@ -89,16 +89,17 @@ pub struct ServerConfig {
     pub port: u16,
     /// Bind address for the HTTP listener.
     pub bind: String,
-    /// Optional authentication configuration (None disables auth)
+    /// Authentication configuration (defaults to no auth when omitted)
     #[serde(default)]
-    pub auth: Option<AuthConfig>,
+    pub auth: AuthConfig,
 }
 
 /// Supported authentication modes for the Web UI
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum AuthMode {
     /// No authentication, everything is public
+    #[default]
     None,
     /// Simple bearer token based auth. If token is not provided, a random token will be generated and logged on startup.
     Token { token: Option<String> },
@@ -107,16 +108,28 @@ pub enum AuthMode {
         issuer: String,
         client_id: String,
         client_secret: String,
-        #[serde(default)]
-        scopes: Option<Vec<String>>,
+    #[serde(default = "default_oidc_scopes")]
+    scopes: Vec<String>,
         /// The callback path on this server (defaults to /auth/callback)
-        #[serde(default)]
-        redirect_path: Option<String>,
+    #[serde(default = "default_redirect_path")]
+    redirect_path: String,
     },
 }
 
+// Defaults for OIDC fields used by serde(default = ...)
+fn default_oidc_scopes() -> Vec<String> {
+    vec![
+        "openid".to_string(),
+        "profile".to_string(),
+    ]
+}
+
+fn default_redirect_path() -> String {
+    "/auth/callback".to_string()
+}
+
 /// Authentication configuration wrapper
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct AuthConfig {
     #[serde(flatten)]
     pub mode: AuthMode,

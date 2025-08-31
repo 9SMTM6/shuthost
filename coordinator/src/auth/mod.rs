@@ -50,35 +50,31 @@ pub struct AuthRuntime {
 pub enum AuthResolved {
     Disabled,
     Token { token: String },
-    Oidc { cfg: OidcResolved },
-}
-
-#[derive(Clone, Debug)]
-pub struct OidcResolved {
-    pub issuer: String,
-    pub client_id: String,
-    pub client_secret: String,
-    pub scopes: Vec<String>,
-    pub redirect_path: String, // path only, build full URL from Host header
+    Oidc {
+        issuer: String,
+        client_id: String,
+        client_secret: String,
+        scopes: Vec<String>,
+        redirect_path: String, // path only, build full URL from Host header
+    },
 }
 
 impl AuthRuntime {
     pub fn from_config(cfg: &ControllerConfig) -> Self {
         let (mode, cookie_key) = match &cfg.server.auth {
-            None => (AuthResolved::Disabled, Key::generate()),
-            Some(AuthConfig {
+            AuthConfig {
                 mode: AuthMode::None,
                 cookie_secret,
                 ..
-            }) => (
+            } => (
                 AuthResolved::Disabled,
                 key_from_secret(cookie_secret.as_deref()),
             ),
-            Some(AuthConfig {
+            AuthConfig {
                 mode: AuthMode::Token { token },
                 cookie_secret,
                 ..
-            }) => {
+            } => {
                 let token = token.clone().unwrap_or_else(|| generate_token());
                 info!("Auth mode: token");
                 info!("Token: {}", token);
@@ -87,7 +83,7 @@ impl AuthRuntime {
                     key_from_secret(cookie_secret.as_deref()),
                 )
             }
-            Some(AuthConfig {
+            AuthConfig {
                 mode:
                     AuthMode::Oidc {
                         issuer,
@@ -97,23 +93,17 @@ impl AuthRuntime {
                         redirect_path,
                     },
                 cookie_secret,
-            }) => {
-                let scopes = scopes
-                    .clone()
-                    .unwrap_or_else(|| vec!["openid".into(), "profile".into(), "email".into()]);
-                let redirect_path = redirect_path
-                    .clone()
-                    .unwrap_or_else(|| "/auth/callback".to_string());
+            } => {
+                let scopes = scopes.clone();
+                let redirect_path = redirect_path.clone();
                 info!("Auth mode: oidc, issuer={}", issuer);
                 (
                     AuthResolved::Oidc {
-                        cfg: OidcResolved {
-                            issuer: issuer.clone(),
-                            client_id: client_id.clone(),
-                            client_secret: client_secret.clone(),
-                            scopes,
-                            redirect_path,
-                        },
+                        issuer: issuer.clone(),
+                        client_id: client_id.clone(),
+                        client_secret: client_secret.clone(),
+                        scopes,
+                        redirect_path,
                     },
                     key_from_secret(cookie_secret.as_deref()),
                 )
@@ -378,7 +368,7 @@ async fn oidc_login(
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let AuthResolved::Oidc { cfg } = &auth.mode else {
+    let AuthResolved::Oidc { issuer, client_id, client_secret, scopes, redirect_path } = &auth.mode else {
         return Redirect::to("/").into_response();
     };
 
@@ -395,20 +385,20 @@ async fn oidc_login(
             }
         }
     }
-    let Ok((client, _redirect_url)) = build_oidc_client(cfg, &headers).await else {
+    let Ok((client, _redirect_url)) = build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await else {
         return (StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
     };
 
     let (pkce_challenge, verifier) = PkceCodeChallenge::new_random_sha256();
-    let (auth_url, csrf_token, nonce) = client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        .add_scope(Scope::new("openid".into()))
-        .set_pkce_challenge(pkce_challenge)
-        .url();
+    let mut authorize = client.authorize_url(
+        CoreAuthenticationFlow::AuthorizationCode,
+        CsrfToken::new_random,
+        Nonce::new_random,
+    );
+    for s in scopes {
+        authorize = authorize.add_scope(Scope::new(s.clone()));
+    }
+    let (auth_url, csrf_token, nonce) = authorize.set_pkce_challenge(pkce_challenge).url();
 
     // Store state + nonce in signed cookies
     let signed = jar
@@ -450,7 +440,7 @@ async fn oidc_callback(
         error_description,
     }): Query<OidcCallback>,
 ) -> impl IntoResponse {
-    let AuthResolved::Oidc { cfg } = &auth.mode else {
+    let AuthResolved::Oidc { issuer, client_id, client_secret, scopes: _, redirect_path } = &auth.mode else {
         return Redirect::to("/").into_response();
     };
     let signed = jar;
@@ -478,7 +468,7 @@ async fn oidc_callback(
         return (signed, Redirect::to("/login?error=1")).into_response();
     }
 
-    let Ok((client, _redirect_url)) = build_oidc_client(cfg, &headers).await else {
+    let Ok((client, _redirect_url)) = build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await else {
         return (StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
     };
 
@@ -553,19 +543,22 @@ async fn oidc_callback(
 }
 
 async fn build_oidc_client(
-    cfg: &OidcResolved,
+    issuer: &str,
+    client_id: &str,
+    client_secret: &str,
+    redirect_path: &str,
     headers: &HeaderMap,
 ) -> Result<(CoreClient, RedirectUrl), anyhow::Error> {
-    let issuer = IssuerUrl::new(cfg.issuer.clone())?;
+    let issuer = IssuerUrl::new(issuer.to_string())?;
     let provider_metadata = CoreProviderMetadata::discover_async(issuer, async_http_client).await?;
-    let client_id = ClientId::new(cfg.client_id.clone());
-    let client_secret = ClientSecret::new(cfg.client_secret.clone());
+    let client_id = ClientId::new(client_id.to_string());
+    let client_secret = ClientSecret::new(client_secret.to_string());
 
     let origin = request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
     let redirect_url = RedirectUrl::new(format!(
         "{}/{}",
         origin.trim_end_matches('/'),
-        cfg.redirect_path.trim_start_matches('/')
+        redirect_path.trim_start_matches('/')
     ))?;
 
     let client =
