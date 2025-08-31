@@ -12,13 +12,10 @@ use crate::{
     routes::m2m::{broadcast_lease_update, handle_host_state},
 };
 
-use super::m2m::m2m_routes;
-
 pub use super::m2m::{LeaseMap, LeaseSource};
 
 pub fn api_routes() -> Router<AppState> {
     Router::new()
-        .nest("/m2m", m2m_routes())
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route(
             "/reset_leases/{client_id}",

@@ -89,6 +89,40 @@ pub struct ServerConfig {
     pub port: u16,
     /// Bind address for the HTTP listener.
     pub bind: String,
+    /// Optional authentication configuration (None disables auth)
+    #[serde(default)]
+    pub auth: Option<AuthConfig>,
+}
+
+/// Supported authentication modes for the Web UI
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum AuthMode {
+    /// No authentication, everything is public
+    None,
+    /// Simple bearer token based auth. If token is not provided, a random token will be generated and logged on startup.
+    Token { token: Option<String> },
+    /// OpenID Connect login via authorization code flow
+    Oidc {
+        issuer: String,
+        client_id: String,
+        client_secret: String,
+        #[serde(default)]
+        scopes: Option<Vec<String>>,
+        /// The callback path on this server (defaults to /auth/callback)
+        #[serde(default)]
+        redirect_path: Option<String>,
+    },
+}
+
+/// Authentication configuration wrapper
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AuthConfig {
+    #[serde(flatten)]
+    pub mode: AuthMode,
+    /// Optional base64-encoded cookie key (32 bytes). If omitted, a random key is generated.
+    #[serde(default)]
+    pub cookie_secret: Option<String>,
 }
 
 /// Reads and parses the coordinator config from a TOML file.

@@ -170,6 +170,44 @@ Alternatively, you can set the address the coordinator binds to in the configura
 ### 🌐 WebUI Security
 > ⚠️ **Warning**: The WebUI is **not secured**, so you should run it behind a reverse proxy that provides TLS and authentication.
 
+#### Built-in Authentication (optional)
+ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you may not need auth in your reverse proxy.
+
+In your `shuthost_coordinator.toml` add under `[server]`:
+
+```toml
+[server]
+port = 8080
+bind = "127.0.0.1"
+
+[server.auth]
+# Choose one mode:
+
+# Token mode: provide a token or omit to auto-generate on startup (printed in logs, but that will be lost on restart)
+type = "token"
+# token = "your-secret-token"
+
+# OIDC mode (authorization code flow)
+# type = "oidc"
+# issuer = "https://issuer.example.com/realms/foo"
+# client_id = "shuthost"
+# client_secret = "supersecret"
+# # optional, defaults to ["openid","profile","email"]
+# scopes = ["openid","profile","email"]
+# # optional, defaults to "/auth/callback"
+# redirect_path = "/auth/callback"
+
+# Optional: base64-encoded cookie signing key (32 bytes). If omitted, a random key is generated
+# cookie_secret = "base64-encoded-32-bytes=="
+```
+
+Public endpoints (bypass):
+- `/login`, `/logout` (token mode)
+- `/auth/login`, `/auth/callback` (OIDC)
+- `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
+
+All other routes require auth. For token mode, either add an HTTP header `Authorization: Bearer <token>` to API calls, or sign in once via `/login` to set a cookie for the WebUI.
+
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks
 - ✅ Only the coordinator that knows these (shared) secrets can use them

@@ -11,10 +11,10 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
-use crate::assets::asset_routes;
+use crate::auth::{AuthRuntime, public_routes, require_auth};
 use crate::{
     config::{ControllerConfig, load_coordinator_config, watch_config_file},
-    routes::{LeaseMap, api_routes, get_download_router},
+    routes::{LeaseMap, api_routes},
     websocket::{WsMessage, ws_handler},
 };
 use clap::Parser;
@@ -52,6 +52,9 @@ pub struct AppState {
 
     /// In-memory map of current leases for hosts.
     pub leases: LeaseMap,
+
+    /// Authentication runtime (mode and secrets)
+    pub auth: std::sync::Arc<AuthRuntime>,
 }
 
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
@@ -73,7 +76,7 @@ pub async fn start_http_server(
 
     let listen_ip: IpAddr = initial_config.server.bind.parse()?;
 
-    let (config_tx, config_rx) = watch::channel(initial_config);
+    let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
     let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
     let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
@@ -125,20 +128,34 @@ pub async fn start_http_server(
         });
     }
 
+    let auth_runtime = std::sync::Arc::new(AuthRuntime::from_config(&initial_config));
+
     let app_state = AppState {
         config_rx,
         hoststatus_rx,
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases: LeaseMap::default(),
+        auth: auth_runtime.clone(),
     };
 
-    let app = Router::new()
+    // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
+    let public = public_routes();
+
+    // Private app routes protected by auth middleware
+    let private = Router::new()
         .nest("/api", api_routes())
-        .nest("/download", get_download_router())
-        .merge(asset_routes())
         .route("/", get(crate::assets::serve_ui))
         .route("/ws", get(ws_handler))
+        .route_layer(axum::middleware::from_fn_with_state(
+            crate::auth::AuthLayerState {
+                auth: auth_runtime.clone(),
+            },
+            require_auth,
+        ));
+
+    let app = public
+        .merge(private)
         .with_state(app_state)
         .fallback(routing::any(|req: Request<axum::body::Body>| async move {
             tracing::warn!(
