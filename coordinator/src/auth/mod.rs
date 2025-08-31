@@ -248,7 +248,7 @@ fn get_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
     }
     None
 }
-/// Minimal login page for Token mode (redirects if already logged in).
+/// Login page for Token mode (redirects if already logged in), styled like the app.
 #[derive(Deserialize, Default)]
 struct LoginQuery {
     error: Option<String>,
@@ -269,23 +269,17 @@ async fn login_get(
                 return Redirect::to("/").into_response();
             }
 
-            let err_html = if error.is_some() {
-                "<p style='color:#b00;margin:0 0 1rem'>Invalid token. Please try again.</p>"
+            let error_html = if error.is_some() {
+                "<div class=\"alert alert-error\"><div class=\"alert-title\">Login failed</div><p>Invalid token. Please try again.</p></div>"
             } else {
                 ""
             };
-
+            let html = include_str!("../../assets/login.tmpl.html")
+                .replace("{error_html}", error_html)
+                .replace("{version}", env!("CARGO_PKG_VERSION"));
             Response::builder()
                 .header("Content-Type", "text/html")
-                .body(format!(r#"<html><head><title>Login</title></head>
-                    <body style='font-family:sans-serif'>
-                    <h1>Login</h1>
-                    {err_html}
-                    <form method='post'>
-                      <label>Access Token <input name='token' type='password' autofocus required /></label>
-                      <button type='submit'>Login</button>
-                    </form>
-                    </body></html>"#).into())
+                .body(axum::body::Body::from(html))
                 .unwrap()
         }
         AuthResolved::Oidc { .. } => {

@@ -15,6 +15,7 @@ use std::sync::OnceLock;
 pub fn asset_routes() -> Router<AppState> {
     Router::new()
         .route("/manifest.json", get(serve_manifest))
+        .route("/styles.css", get(serve_styles))
         .route("/favicon.svg", get(serve_favicon))
         .route(
             "/architecture_simplified.svg",
@@ -57,10 +58,6 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
             include_str!("../assets/agent_install_requirements_gotchas.md"),
         )
         .replace("{version}", env!("CARGO_PKG_VERSION"))
-        .replace(
-            "/* {styles} */",
-            include_str!("../assets/styles_output.css"),
-        )
         .replace("{ js }", include_str!("../assets/app.js"))
         .replace("{demo_disclaimer}", &demo_disclaimer)
 }
@@ -95,6 +92,14 @@ pub async fn serve_manifest() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
         .body(manifest.into_response())
+        .unwrap()
+}
+
+/// Serves the compiled stylesheet for the UI.
+pub async fn serve_styles() -> impl IntoResponse {
+    Response::builder()
+        .header("Content-Type", "text/css")
+        .body(include_str!("../assets/styles_output.css").into_response())
         .unwrap()
 }
 
