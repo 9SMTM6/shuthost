@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::{mpsc::unbounded_channel, watch};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// Represents a configured host entry with network and security parameters.
 ///
@@ -26,7 +26,7 @@ use tracing::{error, info};
 /// assert_eq!(host.port, 8080);
 /// assert_eq!(host.shared_secret, "secret");
 /// ```
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Host {
     /// IP address of the host agent.
     pub ip: String,
@@ -47,7 +47,7 @@ pub struct Host {
 /// let client = Client { shared_secret: "secret".to_string() };
 /// assert_eq!(client.shared_secret, "secret");
 /// ```
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Client {
     /// Shared secret used for authenticating callbacks.
     pub shared_secret: String,
@@ -63,7 +63,7 @@ pub struct Client {
 /// assert!(config.hosts.is_empty());
 /// assert!(config.clients.is_empty());
 /// ```
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct ControllerConfig {
     /// HTTP server binding configuration.
     pub server: ServerConfig,
@@ -83,7 +83,7 @@ pub struct ControllerConfig {
 /// assert_eq!(sc.port, 0);
 /// assert_eq!(sc.bind, "");
 /// ```
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
 pub struct ServerConfig {
     /// TCP port for the web control service.
     pub port: u16,
@@ -95,7 +95,7 @@ pub struct ServerConfig {
 }
 
 /// Supported authentication modes for the Web UI
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum AuthMode {
     /// No authentication, everything is public
@@ -126,7 +126,7 @@ fn default_redirect_path() -> String {
 }
 
 /// Authentication configuration wrapper
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 pub struct AuthConfig {
     #[serde(flatten)]
     pub mode: AuthMode,
@@ -164,33 +164,46 @@ pub async fn load_coordinator_config<P: AsRef<Path>>(
 /// * `tx` - The sender part of a watch channel for broadcasting configuration updates.
 /// * `initial_port` - The server port at application startup, used to detect changes.
 /// * `initial_bind` - The server bind address at application startup, used to detect changes.
-async fn validate_and_broadcast_config_change(
+async fn process_config_change(
     path: &Path,
     tx: &watch::Sender<Arc<ControllerConfig>>,
-    initial_config: &ControllerConfig,
+    rx: &watch::Receiver<Arc<ControllerConfig>>,
 ) {
     info!("Config file modified. Reloading...");
+    let prev = rx.borrow().clone();
     match load_coordinator_config(path).await {
         Ok(new_config) => {
-            let initial_port = initial_config.server.port;
-            if new_config.server.port != initial_port {
-                error!(
-                    "Port change detected in config file. Changing ports while the server is running is not supported. Server will continue to run on port {}",
-                    initial_port
+            // Determine what changed
+            let server_changed = new_config.server != prev.server;
+            let hosts_changed = new_config.hosts != prev.hosts;
+            let clients_changed = new_config.clients != prev.clients;
+
+            if server_changed {
+                warn!(
+                    "Detected change to [server] config during runtime. Changes outside [hosts] and [clients] are not supported and will be ignored."
                 );
             }
-            let initial_bind = &initial_config.server.bind;
-            if new_config.server.bind != *initial_bind {
-                error!(
-                    "Bind address change detected in config file. Changing bind address while the server is running is not supported. Server will continue to run on {}",
-                    initial_bind
+
+            if hosts_changed || clients_changed {
+                // Only apply hosts/clients updates; keep prior server config
+                let effective = ControllerConfig {
+                    server: prev.server.clone(),
+                    hosts: new_config.hosts,
+                    clients: new_config.clients,
+                };
+                if tx.send(Arc::new(effective)).is_err() {
+                    error!("Failed to send updated config through watch channel");
+                    return;
+                }
+                info!("Applied hosts/clients changes from config file.");
+            } else if server_changed {
+                // Only unsupported changes were made; nothing to apply
+                info!(
+                    "No applicable (hosts/clients) changes detected; ignoring unsupported updates."
                 );
+            } else {
+                info!("No changes detected in config.");
             }
-            if tx.send(Arc::new(new_config)).is_err() {
-                error!("Failed to send updated config through watch channel");
-                return;
-            }
-            info!("Config reloaded.");
         }
         Err(e) => {
             error!("Failed to reload config: {}", e);
@@ -206,7 +219,6 @@ async fn validate_and_broadcast_config_change(
 /// * `tx` - Watch channel sender to broadcast new config instances.
 pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
-    let initial_config = tx.borrow().clone();
 
     let mut watcher = RecommendedWatcher::new(
         move |res| {
@@ -224,9 +236,12 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
         .watch(&path, RecursiveMode::NonRecursive)
         .expect("Failed to watch config file");
 
+    // Receiver used to read the current effective config for change comparisons
+    let rx = tx.subscribe();
+
     while let Some(event) = raw_rx.recv().await {
         if matches!(event.kind, EventKind::Modify(_)) {
-            validate_and_broadcast_config_change(&path, &tx, &initial_config).await;
+            process_config_change(&path, &tx, &rx).await;
         }
     }
 }

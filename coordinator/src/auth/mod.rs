@@ -274,8 +274,16 @@ async fn login_get(
             } else {
                 ""
             };
+            let header_tpl = include_str!("../../assets/partials/header.tmpl.html");
+            let footer = include_str!("../../assets/partials/footer.tmpl.html");
+            let header = header_tpl
+                .replace("{ maybe_tabs }", "")
+                .replace("{ maybe_logout }", "")
+                .replace("{maybe_demo_disclaimer}", "");
             let html = include_str!("../../assets/login.tmpl.html")
                 .replace("{error_html}", error_html)
+                .replace("{ header }", &header)
+                .replace("{ footer }", footer)
                 .replace("{version}", env!("CARGO_PKG_VERSION"));
             Response::builder()
                 .header("Content-Type", "text/html")

@@ -2,6 +2,7 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
+use crate::auth::AuthResolved;
 use crate::http::AppState;
 use axum::{
     Router,
@@ -25,22 +26,39 @@ pub fn asset_routes() -> Router<AppState> {
 }
 /// HTML rendering mode for the UI template
 pub enum UiMode<'a> {
-    Normal { config_path: &'a std::path::Path },
+    Normal {
+        config_path: &'a std::path::Path,
+        show_logout: bool,
+    },
     Demo,
 }
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
 pub fn render_ui_html(mode: &UiMode<'_>) -> String {
-    let (config_path, demo_disclaimer) = match *mode {
-        UiMode::Normal { config_path } => (
-            config_path.to_string_lossy().to_string(),
-            "".to_string(),
-        ),
-        UiMode::Demo => (
-            "/this/is/a/demo.toml".to_string(),
-            "<div id=\"demo-mode-disclaimer\" style=\"background:#ffc; color:#222; padding:1em; text-align:center; font-weight:bold;\">Demo Mode: Static UI with simulated interactions only</div>".to_string(),
-        ),
+    let header_tabs = include_str!("../assets/partials/header_tabs.tmpl.html");
+    let maybe_logout = if matches!(
+        mode,
+        UiMode::Normal {
+            show_logout: true,
+            ..
+        }
+    ) {
+        include_str!("../assets/partials/logout_form.tmpl.html")
+    } else {
+        ""
     };
+    let maybe_demo_disclaimer = if matches!(mode, UiMode::Demo) {
+        include_str!("../assets/partials/demo_disclaimer.tmpl.html")
+    } else {
+        ""
+    };
+    let config_path = match *mode {
+        UiMode::Normal { config_path, .. } => config_path.to_string_lossy().to_string(),
+        UiMode::Demo => "/this/is/a/demo.toml".to_string(),
+    };
+
+    let header_tpl = include_str!("../assets/partials/header.tmpl.html");
+    let footer_tpl = include_str!("../assets/partials/footer.tmpl.html");
 
     include_str!("../assets/index.tmpl.html")
         .replace("{coordinator_config}", &config_path)
@@ -57,18 +75,30 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
             "{ agent_install_requirements_gotchas }",
             include_str!("../assets/agent_install_requirements_gotchas.md"),
         )
-        .replace("{version}", env!("CARGO_PKG_VERSION"))
         .replace("{ js }", include_str!("../assets/app.js"))
-        .replace("{demo_disclaimer}", &demo_disclaimer)
+        .replace("{ header }", header_tpl)
+        .replace("{ footer }", footer_tpl)
+        .replace("{version}", env!("CARGO_PKG_VERSION"))
+        .replace("{ maybe_logout }", maybe_logout)
+        .replace("{maybe_demo_disclaimer}", maybe_demo_disclaimer)
+        .replace("{ maybe_tabs }", header_tabs)
+        .replace("{ maybe_tabs }", header_tabs)
+        .replace("{ maybe_logout }", maybe_logout)
 }
 
 /// Serves the main HTML template, injecting dynamic content.
-pub async fn serve_ui(State(AppState { config_path, .. }): State<AppState>) -> impl IntoResponse {
+pub async fn serve_ui(
+    State(AppState {
+        config_path, auth, ..
+    }): State<AppState>,
+) -> impl IntoResponse {
     static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
+    let show_logout = !matches!(auth.mode, AuthResolved::Disabled);
     let html = HTML_TEMPLATE
         .get_or_init(|| {
             render_ui_html(&UiMode::Normal {
                 config_path: &config_path,
+                show_logout,
             })
         })
         .clone();

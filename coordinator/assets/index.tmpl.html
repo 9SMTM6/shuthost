@@ -17,31 +17,7 @@
     <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
         Skip to main content
     </a>
-    <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
-        {demo_disclaimer}
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14">
-                <div class="flex items-center gap-4">
-                    <img src="./favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
-                    <span class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100" role="heading" aria-level="1">ShutHost</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <!-- Tablist for navigation -->
-                    <nav class="flex" role="tablist" aria-label="Main tabs">
-                        <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab" id="tab-architecture" tabindex="0">Docs</button>
-                        <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts" tabindex="0">Hosts</button>
-                        <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients" tabindex="0">Clients</button>
-                    </nav>
-                    <!-- Logout button posts to /logout -->
-                    <form method="post" action="/logout">
-                        <button type="submit" class="text-xs sm:text-sm px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 border border-transparent" aria-label="Logout">
-                            Logout
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </header>
+    { header }
     
     <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
         <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
@@ -187,11 +163,7 @@
                     </section>
                 </main>
                 
-                <footer
-                class="bg-white dark:bg-gray-800 shadow-md py-2 px-4 text-center text-gray-600 dark:text-gray-400 text-xs mt-auto"
-                role="contentinfo">
-                ShutHost Coordinator v{version}
-            </footer>
+            { footer }
             
             <script>
                 { js }
