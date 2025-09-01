@@ -37,7 +37,7 @@ pub enum UiMode<'a> {
 pub fn render_ui_html(mode: &UiMode<'_>) -> String {
     let header_tabs = include_str!("../assets/partials/header_tabs.tmpl.html");
     let maybe_logout = if matches!(
-        mode,
+        *mode,
         UiMode::Normal {
             show_logout: true,
             ..
@@ -47,7 +47,7 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
     } else {
         ""
     };
-    let maybe_demo_disclaimer = if matches!(mode, UiMode::Demo) {
+    let maybe_demo_disclaimer = if matches!(*mode, UiMode::Demo) {
         include_str!("../assets/partials/demo_disclaimer.tmpl.html")
     } else {
         ""
