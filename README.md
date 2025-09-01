@@ -168,7 +168,7 @@ Alternatively, you can set the address the coordinator binds to in the configura
 ## 🔒 Security
 
 ### 🌐 WebUI Security
-> ⚠️ **Warning**: The WebUI is **not secured**, so you should run it behind a reverse proxy that provides TLS and authentication.
+> ⚠️ **Warning**: The WebUI is **not secured by default**, so you should run it behind a reverse proxy that provides TLS and authentication.
 
 #### Built-in Authentication (optional)
 ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you may not need auth in your reverse proxy.
@@ -192,8 +192,8 @@ type = "token"
 # issuer = "https://issuer.example.com/realms/foo"
 # client_id = "shuthost"
 # client_secret = "supersecret"
-# # optional, defaults to ["openid","profile","email"]
-# scopes = ["openid","profile","email"]
+# # optional, defaults to ["openid","profile"]
+# scopes = ["openid","profile"]
 # # optional, defaults to "/auth/callback"
 # redirect_path = "/auth/callback"
 
@@ -214,11 +214,11 @@ All other routes require auth. For token mode, either add an HTTP header `Author
 > ⚠️ **Warning**: All traffic between the coordinator and agents is **unencrypted** and only secured with HMAC signatures. This means that while status checks and commands are protected from tampering, anyone on the same LAN can observe the traffic and infer host statuses.
 
 ### 🔐 Client Security
-- ✅ The client is secured in the same way
+- ✅ The client is secured in the same way as agents are
 - ✅ The coordinator only accepts requests from **registered clients**
 
 ### 🔧 Reverse Proxy Configuration
-To use the convenience scripts suggested by the WebUI, you will have to configure exceptions in the authorization of your reverse proxy, so that the requests from the host agents and clients are not blocked. 
+To use the convenience scripts suggested by the WebUI, you will have to configure exceptions in the authorization of your reverse proxy, so that the requests from the host agents and clients are not blocked. These are detailed [above](#built-in-authentication-optional).
 
 The WebUI will show you the required exceptions, alongside convenience configs for:
 - 🔑 **Authelia**
