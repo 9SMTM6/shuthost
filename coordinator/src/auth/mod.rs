@@ -269,8 +269,8 @@ async fn login_get(
                 return Redirect::to("/").into_response();
             }
 
-            let error_html = if error.is_some() {
-                "<div class=\"alert alert-error\"><div class=\"alert-title\">Login failed</div><p>Invalid token. Please try again.</p></div>"
+            let maybe_error = if error.is_some() {
+                include_str!("../../assets/partials/login_error.tmpl.html")
             } else {
                 ""
             };
@@ -281,7 +281,7 @@ async fn login_get(
                 .replace("{ maybe_logout }", "")
                 .replace("{maybe_demo_disclaimer}", "");
             let html = include_str!("../../assets/login.tmpl.html")
-                .replace("{error_html}", error_html)
+                .replace("{maybe_error}", maybe_error)
                 .replace("{ header }", &header)
                 .replace("{ footer }", footer)
                 .replace("{version}", env!("CARGO_PKG_VERSION"));
