@@ -6,9 +6,9 @@
 //!   session cookie once the user is authenticated.
 
 use axum::{
-    Form, Router,
+    Router,
     body::Body,
-    extract::{FromRef, Query, State},
+    extract::{FromRef, State},
     http::{HeaderMap, Request, StatusCode},
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
@@ -16,19 +16,14 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar, Key, SignedCookieJar};
 use base64::Engine;
-use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
-use openidconnect::reqwest::async_http_client;
-use openidconnect::{
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope,
-};
+// OIDC-specific imports moved to `oidc.rs`.
 use rand::{Rng as _, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
 use std::{
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tracing::{error, info, warn};
+use tracing::info;
 
 use crate::config::{AuthConfig, AuthMode, ControllerConfig};
 use crate::http::AppState;
@@ -39,6 +34,9 @@ const COOKIE_STATE: &str = "shuthost_oidc_state";
 const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 const COOKIE_RETURN_TO: &str = "shuthost_return_to";
+
+mod token;
+mod oidc;
 
 #[derive(Clone)]
 pub struct AuthRuntime {
@@ -152,10 +150,10 @@ pub fn public_routes() -> Router<AppState> {
 
     Router::new()
         // Auth endpoints
-        .route("/login", get(login_get).post(login_post))
-        .route("/logout", post(logout))
-        .route("/auth/login", get(oidc_login))
-        .route("/auth/callback", get(oidc_callback))
+    .route("/login", get(token::login_get).post(token::login_post))
+    .route("/logout", post(logout))
+    .route("/auth/login", get(oidc::oidc_login))
+    .route("/auth/callback", get(oidc::oidc_callback))
         // PWA & static assets bundled via asset_routes
         .merge(crate::assets::asset_routes())
         // Bypass routes
@@ -248,94 +246,7 @@ fn get_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
     }
     None
 }
-/// Login page for Token mode (redirects if already logged in), styled like the app.
-#[derive(Deserialize, Default)]
-struct LoginQuery {
-    error: Option<String>,
-}
-
-async fn login_get(
-    State(AppState { auth, .. }): State<AppState>,
-    headers: HeaderMap,
-    Query(LoginQuery { error }): Query<LoginQuery>,
-) -> impl IntoResponse {
-    match auth.mode {
-        AuthResolved::Token { ref token } => {
-            // If already authenticated via cookie, go home
-            let cookie_ok = get_cookie(&headers, COOKIE_TOKEN)
-                .map(|v| v == *token)
-                .unwrap_or(false);
-            if cookie_ok {
-                return Redirect::to("/").into_response();
-            }
-
-            let maybe_error = if error.is_some() {
-                include_str!("../../assets/partials/login_error.tmpl.html")
-            } else {
-                ""
-            };
-            let header_tpl = include_str!("../../assets/partials/header.tmpl.html");
-            let footer = include_str!("../../assets/partials/footer.tmpl.html");
-            let header = header_tpl
-                .replace("{ maybe_tabs }", "")
-                .replace("{ maybe_logout }", "")
-                .replace("{maybe_demo_disclaimer}", "");
-            let html = include_str!("../../assets/login.tmpl.html")
-                .replace("{maybe_error}", maybe_error)
-                .replace("{ header }", &header)
-                .replace("{ footer }", footer)
-                .replace("{version}", env!("CARGO_PKG_VERSION"));
-            Response::builder()
-                .header("Content-Type", "text/html")
-                .body(axum::body::Body::from(html))
-                .unwrap()
-        }
-        AuthResolved::Oidc { .. } => {
-            // If already logged in via OIDC session, go home
-            let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
-            if let Some(session) = signed.get(COOKIE_SESSION)
-                && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
-                && !sess.is_expired()
-            {
-                return Redirect::to("/").into_response();
-            }
-            Redirect::temporary("/auth/login").into_response()
-        }
-        AuthResolved::Disabled => Redirect::temporary("/").into_response(),
-    }
-}
-
-#[derive(Deserialize)]
-struct LoginForm {
-    token: String,
-}
-
-async fn login_post(
-    State(AppState { auth, .. }): State<AppState>,
-    jar: CookieJar,
-    Form(LoginForm { token }): Form<LoginForm>,
-) -> impl IntoResponse {
-    match auth.mode {
-        AuthResolved::Token {
-            token: ref expected,
-        } if &token == expected => {
-            let cookie = Cookie::build((COOKIE_TOKEN, token))
-                .http_only(true)
-                .path("/")
-                .build();
-            let jar = jar.add(cookie);
-            // Try redirect back to original path
-            let return_to = jar
-                .get(COOKIE_RETURN_TO)
-                .map(|c| c.value().to_string())
-                .unwrap_or_else(|| "/".to_string());
-            let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-            (jar, Redirect::to(&return_to)).into_response()
-        }
-        // Wrong token: redirect back to login with an error flag
-        _ => Redirect::to("/login?error=1").into_response(),
-    }
-}
+// token and oidc handlers are moved into `token.rs` and `oidc.rs`.
 
 async fn logout(jar: CookieJar) -> impl IntoResponse {
     let jar = jar
@@ -362,228 +273,11 @@ fn now_ts() -> u64 {
         .as_secs()
 }
 
-/// Initiate OIDC login.
-async fn oidc_login(
-    State(AppState { auth, .. }): State<AppState>,
-    jar: SignedCookieJar,
-    headers: HeaderMap,
-) -> impl IntoResponse {
-    let AuthResolved::Oidc {
-        ref issuer,
-        ref client_id,
-        ref client_secret,
-        ref scopes,
-        ref redirect_path,
-    } = auth.mode
-    else {
-        return Redirect::to("/").into_response();
-    };
+// OIDC handlers moved to `oidc.rs`.
 
-    // If already logged in, redirect to return_to or home
-    if let Some(session) = jar.get(COOKIE_SESSION)
-        && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
-        && !sess.is_expired()
-    {
-        let return_to = jar
-            .get(COOKIE_RETURN_TO)
-            .map(|c| c.value().to_string())
-            .unwrap_or_else(|| "/".to_string());
-        let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-        return (jar, Redirect::to(&return_to)).into_response();
-    }
-    let Ok((client, _redirect_url)) =
-        build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await
-    else {
-        return (StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
-    };
+// OIDC callback moved to `oidc.rs`.
 
-    let (pkce_challenge, verifier) = PkceCodeChallenge::new_random_sha256();
-    let mut authorize = client.authorize_url(
-        CoreAuthenticationFlow::AuthorizationCode,
-        CsrfToken::new_random,
-        Nonce::new_random,
-    );
-    for s in scopes {
-        authorize = authorize.add_scope(Scope::new(s.clone()));
-    }
-    let (auth_url, csrf_token, nonce) = authorize.set_pkce_challenge(pkce_challenge).url();
-
-    // Store state + nonce in signed cookies
-    let signed = jar
-        .add(
-            Cookie::build((COOKIE_STATE, csrf_token.secret().clone()))
-                .path("/")
-                .build(),
-        )
-        .add(
-            Cookie::build((COOKIE_NONCE, nonce.secret().clone()))
-                .path("/")
-                .build(),
-        )
-        .add(
-            Cookie::build((COOKIE_PKCE, verifier.secret().clone()))
-                .path("/")
-                .build(),
-        );
-
-    (signed, Redirect::to(auth_url.as_str())).into_response()
-}
-
-#[derive(Deserialize)]
-struct OidcCallback {
-    code: Option<String>,
-    state: Option<String>,
-    error: Option<String>,
-    error_description: Option<String>,
-}
-
-async fn oidc_callback(
-    State(AppState { auth, .. }): State<AppState>,
-    jar: SignedCookieJar,
-    headers: HeaderMap,
-    Query(OidcCallback {
-        code,
-        state,
-        error,
-        error_description,
-    }): Query<OidcCallback>,
-) -> impl IntoResponse {
-    let AuthResolved::Oidc {
-        ref issuer,
-        ref client_id,
-        ref client_secret,
-        scopes: _,
-        ref redirect_path,
-    } = auth.mode
-    else {
-        return Redirect::to("/").into_response();
-    };
-    let signed = jar;
-    // Verify state (present and matches)
-    let Some(state_cookie) = signed.get(COOKIE_STATE) else {
-        warn!("OIDC callback missing state cookie");
-        return Redirect::to("/login?error=1").into_response();
-    };
-    let Some(state_param) = state.as_deref() else {
-        warn!("OIDC callback missing state param");
-        return Redirect::to("/login?error=1").into_response();
-    };
-    if state_cookie.value() != state_param {
-        warn!("OIDC callback state mismatch");
-        return Redirect::to("/login?error=1").into_response();
-    }
-
-    // If provider returned an error, bounce back to login with message
-    if let Some(err) = error {
-        warn!("OIDC error from provider: {} {:?}", err, error_description);
-        let signed = signed
-            .remove(Cookie::build(COOKIE_STATE).path("/").build())
-            .remove(Cookie::build(COOKIE_NONCE).path("/").build())
-            .remove(Cookie::build(COOKIE_PKCE).path("/").build());
-        return (signed, Redirect::to("/login?error=1")).into_response();
-    }
-
-    let Ok((client, _redirect_url)) =
-        build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await
-    else {
-        return (StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
-    };
-
-    // PKCE verifier
-    let pkce_verifier = signed
-        .get(COOKIE_PKCE)
-        .map(|c| PkceCodeVerifier::new(c.value().to_string()));
-
-    let Some(code) = code else {
-        warn!("OIDC callback missing code");
-        return Redirect::to("/login?error=1").into_response();
-    };
-    let mut req = client.exchange_code(AuthorizationCode::new(code));
-    if let Some(v) = pkce_verifier {
-        req = req.set_pkce_verifier(v);
-    }
-
-    let token_response = match req.request_async(async_http_client).await {
-        Ok(r) => r,
-        Err(e) => {
-            error!("Token exchange failed: {}", e);
-            return StatusCode::BAD_GATEWAY.into_response();
-        }
-    };
-
-    // ID token optional but recommended
-    let id_token = match token_response.extra_fields().id_token() {
-        Some(id) => id.clone(),
-        None => {
-            warn!("No id_token in response; refusing login");
-            return StatusCode::BAD_REQUEST.into_response();
-        }
-    };
-
-    // Verify nonce
-    let nonce_cookie = signed
-        .get(COOKIE_NONCE)
-        .map(|c| Nonce::new(c.value().to_string()));
-    let claims = match id_token.claims(
-        &client.id_token_verifier(),
-        nonce_cookie.as_ref().unwrap_or(&Nonce::new(String::new())),
-    ) {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Invalid id token: {}", e);
-            return StatusCode::UNAUTHORIZED.into_response();
-        }
-    };
-
-    let sub = claims.subject().to_string();
-    let exp = claims.expiration().timestamp() as u64;
-    let session = SessionClaims { sub, exp };
-
-    let signed = signed
-        .remove(Cookie::build(COOKIE_STATE).path("/").build())
-        .remove(Cookie::build(COOKIE_NONCE).path("/").build())
-        .remove(Cookie::build(COOKIE_PKCE).path("/").build())
-        .add(
-            Cookie::build((COOKIE_SESSION, serde_json::to_string(&session).unwrap()))
-                .http_only(true)
-                .path("/")
-                .build(),
-        );
-
-    // Redirect back if present
-    let return_to = signed
-        .get(COOKIE_RETURN_TO)
-        .map(|c| c.value().to_string())
-        .unwrap_or_else(|| "/".to_string());
-    let signed = signed.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-    (signed, Redirect::to(&return_to)).into_response()
-}
-
-async fn build_oidc_client(
-    issuer: &str,
-    client_id: &str,
-    client_secret: &str,
-    redirect_path: &str,
-    headers: &HeaderMap,
-) -> Result<(CoreClient, RedirectUrl), anyhow::Error> {
-    let issuer = IssuerUrl::new(issuer.to_string())?;
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer, async_http_client).await?;
-    let client_id = ClientId::new(client_id.to_string());
-    let client_secret = ClientSecret::new(client_secret.to_string());
-
-    let origin = request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
-    let redirect_url = RedirectUrl::new(format!(
-        "{}/{}",
-        origin.trim_end_matches('/'),
-        redirect_path.trim_start_matches('/')
-    ))?;
-
-    let client =
-        CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
-            .set_redirect_uri(redirect_url.clone());
-
-    Ok((client, redirect_url))
-}
+// build_oidc_client moved to `oidc.rs`.
 
 fn request_origin(headers: &HeaderMap) -> Option<String> {
     let host = headers
