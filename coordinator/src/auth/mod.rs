@@ -14,7 +14,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
     routing::{get, post},
 };
-use axum_extra::extract::cookie::{Cookie, CookieJar, Key, SignedCookieJar};
+use axum_extra::extract::cookie::{Cookie, Key, SignedCookieJar};
 use base64::Engine;
 use rand::{Rng as _, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,7 @@ const COOKIE_STATE: &str = "shuthost_oidc_state";
 const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 const COOKIE_RETURN_TO: &str = "shuthost_return_to";
+const COOKIE_LOGGED_OUT: &str = "shuthost_logged_out";
 
 mod token;
 mod oidc;
@@ -246,10 +247,17 @@ fn get_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
     None
 }
 
-async fn logout(jar: CookieJar) -> impl IntoResponse {
+async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
     let jar = jar
         .remove(Cookie::build(COOKIE_TOKEN).path("/").build())
-        .remove(Cookie::build(COOKIE_SESSION).path("/").build());
+        .remove(Cookie::build(COOKIE_SESSION).path("/").build())
+        // Mark that the user intentionally logged out to force interactive login on next OIDC auth
+        .add(
+            Cookie::build((COOKIE_LOGGED_OUT, "1"))
+                .http_only(true)
+                .path("/")
+                .build(),
+        );
     (jar, Redirect::to("/login")).into_response()
 }
 

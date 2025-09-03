@@ -10,7 +10,7 @@ use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
 use reqwest::redirect::Policy;
 use serde::Deserialize;
 use crate::http::AppState;
-use crate::auth::{COOKIE_STATE, COOKIE_NONCE, COOKIE_PKCE, COOKIE_SESSION, COOKIE_RETURN_TO, SessionClaims};
+use crate::auth::{COOKIE_STATE, COOKIE_NONCE, COOKIE_PKCE, COOKIE_SESSION, COOKIE_RETURN_TO, SessionClaims, COOKIE_LOGGED_OUT};
 
 fn build_redirect_url(headers: &axum::http::HeaderMap, redirect_path: &str) -> Result<RedirectUrl, anyhow::Error> {
     let origin = super::request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
@@ -121,6 +121,10 @@ pub async fn oidc_login(
     for s in scopes {
         authorize = authorize.add_scope(Scope::new(s.clone()));
     }
+    // If the user just logged out, force interactive login at the IdP once
+    if jar.get(COOKIE_LOGGED_OUT).is_some() {
+        authorize = authorize.add_extra_param("prompt", "login");
+    }
     let (auth_url, csrf_token, nonce) = authorize.set_pkce_challenge(pkce_challenge).url();
 
     // Store state + nonce in signed cookies
@@ -135,11 +139,13 @@ pub async fn oidc_login(
                 .path("/")
                 .build(),
         )
-        .add(
+    .add(
             Cookie::build((COOKIE_PKCE, verifier.secret().clone()))
                 .path("/")
                 .build(),
-        );
+    )
+    // Clear the flag so it applies only to the next attempt
+    .remove(Cookie::build(COOKIE_LOGGED_OUT).path("/").build());
 
     (signed, Redirect::to(auth_url.as_str())).into_response()
 }
