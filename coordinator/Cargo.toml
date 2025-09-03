@@ -21,19 +21,20 @@ regex = "1.11.1"
 axum = { version = "0.8.3", features = ["macros", "ws"] }
 notify = "8.0.0"
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
 futures = "0.3.31"
 serde_plain = "1.0.2"
 axum-extra = { version = "0.10.0", features = ["cookie", "cookie-signed"] }
-openidconnect = { version = "3.5.0", default-features = false, features = ["reqwest", "rustls-tls"] }
+openidconnect = { version = "4.x", default-features = false, features = ["reqwest", "rustls-tls"] }
 anyhow = "1.0.94"
 base64 = "0.22.1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "charset"] }
 
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
 default = [
-    "include_macos_agents",
+    # "include_macos_agents",
     "include_linux_agents",
 ]
 include_macos_agents = []

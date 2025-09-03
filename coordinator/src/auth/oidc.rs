@@ -1,40 +1,87 @@
 use axum::{response::{IntoResponse, Redirect}, extract::State};
 use axum::http::HeaderMap;
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
-use openidconnect::reqwest::async_http_client;
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
-    AuthorizationCode, CsrfToken, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
-    IssuerUrl, ClientId, ClientSecret,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope,
 };
+use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
+use reqwest::redirect::Policy;
 use serde::Deserialize;
-
 use crate::http::AppState;
 use crate::auth::{COOKIE_STATE, COOKIE_NONCE, COOKIE_PKCE, COOKIE_SESSION, COOKIE_RETURN_TO, SessionClaims};
+
+fn build_redirect_url(headers: &axum::http::HeaderMap, redirect_path: &str) -> Result<RedirectUrl, anyhow::Error> {
+    let origin = super::request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
+    Ok(RedirectUrl::new(format!(
+        "{}/{}",
+        origin.trim_end_matches('/'),
+        redirect_path.trim_start_matches('/')
+    ))?)
+}
+
+// Ready-to-use OIDC client type with the endpoints we require set
+type OidcClientReady = CoreClient<
+    EndpointSet,      // HasAuthUrl
+    EndpointNotSet,   // HasDeviceAuthUrl
+    EndpointNotSet,   // HasIntrospectionUrl (OIDC discovery does not provide this)
+    EndpointNotSet,   // HasRevocationUrl (OIDC discovery does not provide this)
+    EndpointSet,      // HasTokenUrl
+    EndpointMaybeSet, // HasUserInfoUrl (from discovery, optional)
+>;
 
 async fn build_oidc_client(
     issuer: &str,
     client_id: &str,
     client_secret: &str,
+    headers: &HeaderMap,
     redirect_path: &str,
-    headers: &axum::http::HeaderMap,
-) -> Result<(CoreClient, RedirectUrl), anyhow::Error> {
-    let issuer = IssuerUrl::new(issuer.to_string())?;
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer, async_http_client).await?;
-    let client_id = ClientId::new(client_id.to_string());
-    let client_secret = ClientSecret::new(client_secret.to_string());
+) -> Result<(OidcClientReady, reqwest::Client), axum::http::StatusCode> {
+    // Build HTTP client (no redirects per SSRF guidance)
+    let http = reqwest::Client::builder()
+        .redirect(Policy::none())
+        .build()
+        .map_err(|e| {
+            tracing::error!("failed to build HTTP client: {e}");
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
-    let origin = super::request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
-    let redirect_url = RedirectUrl::new(format!(
-        "{}/{}",
-        origin.trim_end_matches('/'),
-        redirect_path.trim_start_matches('/')
-    ))?;
+    // Discover provider
+    let issuer = IssuerUrl::new(issuer.to_string()).map_err(|e| {
+        tracing::error!("invalid issuer URL: {e}");
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+    let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http)
+        .await
+        .map_err(|e| {
+            tracing::error!("OIDC discovery failed: {e}");
+            axum::http::StatusCode::BAD_GATEWAY
+        })?;
 
-    let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
-        .set_redirect_uri(redirect_url.clone());
+    // Construct client and set required endpoints
+    let client = CoreClient::from_provider_metadata(
+        provider_metadata.clone(),
+        ClientId::new(client_id.to_string()),
+        Some(ClientSecret::new(client_secret.to_string())),
+    )
+    .set_auth_uri(provider_metadata.authorization_endpoint().clone());
+    let client = if let Some(token_url) = provider_metadata.token_endpoint().cloned() {
+        client.set_token_uri(token_url)
+    } else {
+        tracing::error!("OIDC provider missing token endpoint");
+        return Err(axum::http::StatusCode::BAD_GATEWAY);
+    };
 
-    Ok((client, redirect_url))
+    let client = match build_redirect_url(headers, redirect_path) {
+        Ok(u) => client.set_redirect_uri(u),
+        Err(e) => {
+            tracing::error!("invalid redirect URL: {e}");
+            return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    Ok((client, http))
 }
 
 
@@ -60,10 +107,9 @@ pub async fn oidc_login(
         let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
         return (jar, Redirect::to(&return_to)).into_response();
     }
-    let Ok((client, _redirect_url)) =
-        build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await
-    else {
-        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
+    let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
+        Ok(ok) => ok,
+        Err(sc) => return sc.into_response(),
     };
 
     let (pkce_challenge, verifier) = PkceCodeChallenge::new_random_sha256();
@@ -141,10 +187,9 @@ pub async fn oidc_callback(
         return (signed, Redirect::to("/login?error=1")).into_response();
     }
 
-    let Ok((client, _redirect_url)) =
-        build_oidc_client(issuer, client_id, client_secret, redirect_path, &headers).await
-    else {
-        return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "OIDC setup failed").into_response();
+    let (client, http) = match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
+        Ok(ok) => ok,
+        Err(sc) => return sc.into_response(),
     };
 
     // PKCE verifier
@@ -161,7 +206,7 @@ pub async fn oidc_callback(
         req = req.set_pkce_verifier(v);
     }
 
-    let token_response = match req.request_async(async_http_client).await {
+    let token_response = match req.request_async(&http).await {
         Ok(r) => r,
         Err(e) => {
             tracing::error!("Token exchange failed: {}", e);
