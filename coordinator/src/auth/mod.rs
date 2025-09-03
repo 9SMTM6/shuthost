@@ -16,7 +16,6 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar, Key, SignedCookieJar};
 use base64::Engine;
-// OIDC-specific imports moved to `oidc.rs`.
 use rand::{Rng as _, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -246,7 +245,6 @@ fn get_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
     }
     None
 }
-// token and oidc handlers are moved into `token.rs` and `oidc.rs`.
 
 async fn logout(jar: CookieJar) -> impl IntoResponse {
     let jar = jar
@@ -272,12 +270,6 @@ fn now_ts() -> u64 {
         .unwrap()
         .as_secs()
 }
-
-// OIDC handlers moved to `oidc.rs`.
-
-// OIDC callback moved to `oidc.rs`.
-
-// build_oidc_client moved to `oidc.rs`.
 
 fn request_origin(headers: &HeaderMap) -> Option<String> {
     let host = headers
