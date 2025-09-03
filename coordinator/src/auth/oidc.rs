@@ -39,8 +39,9 @@ async fn build_oidc_client(
     redirect_path: &str,
 ) -> Result<(OidcClientReady, reqwest::Client), axum::http::StatusCode> {
     // Build HTTP client (no redirects per SSRF guidance)
+    // Allow a small number of redirects for discovery only (some providers redirect .well-known)
     let http = reqwest::Client::builder()
-        .redirect(Policy::none())
+        .redirect(Policy::limited(3))
         .build()
         .map_err(|e| {
             tracing::error!("failed to build HTTP client: {e}");

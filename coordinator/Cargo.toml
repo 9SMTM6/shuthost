@@ -28,7 +28,7 @@ axum-extra = { version = "0.10.0", features = ["cookie", "cookie-signed"] }
 openidconnect = { version = "4.x", default-features = false, features = ["reqwest", "rustls-tls"] }
 anyhow = "1.0.94"
 base64 = "0.22.1"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "charset"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "charset", "gzip", "brotli", "deflate"] }
 
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
