@@ -61,7 +61,7 @@ pub async fn login_get(
             {
                 return Redirect::to("/").into_response();
             }
-            Redirect::temporary("/auth/login").into_response()
+            Redirect::temporary("/oidc/login").into_response()
         }
         AuthResolved::Disabled => Redirect::temporary("/").into_response(),
     }

@@ -110,7 +110,7 @@ pub enum AuthMode {
         client_secret: String,
         #[serde(default = "default_oidc_scopes")]
         scopes: Vec<String>,
-        /// The callback path on this server (defaults to /auth/callback)
+        /// The callback path on this server (defaults to /oidc/callback)
         #[serde(default = "default_redirect_path")]
         redirect_path: String,
     },
@@ -122,7 +122,7 @@ fn default_oidc_scopes() -> Vec<String> {
 }
 
 fn default_redirect_path() -> String {
-    "/auth/callback".to_string()
+    "/oidc/callback".to_string()
 }
 
 /// Authentication configuration wrapper

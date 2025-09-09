@@ -194,8 +194,8 @@ type = "token"
 # client_secret = "supersecret"
 # # optional, defaults to ["openid","profile"]
 # scopes = ["openid","profile"]
-# # optional, defaults to "/auth/callback"
-# redirect_path = "/auth/callback"
+# # optional, defaults to "/oidc/callback"
+# redirect_path = "/oidc/callback"
 
 # Optional: base64-encoded cookie signing key (32 bytes). If omitted, a random key is generated
 # cookie_secret = "base64-encoded-32-bytes=="
@@ -203,7 +203,7 @@ type = "token"
 
 Public endpoints (bypass):
 - `/login`, `/logout` (token mode)
-- `/auth/login`, `/auth/callback` (OIDC)
+- `/oidc/login`, `/oidc/callback` (OIDC)
 - `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
 
 All other routes require auth. For token mode, either add an HTTP header `Authorization: Bearer <token>` to API calls, or sign in once via `/login` to set a cookie for the WebUI.

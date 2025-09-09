@@ -152,8 +152,8 @@ pub fn public_routes() -> Router<AppState> {
         // Auth endpoints
     .route("/login", get(token::login_get).post(token::login_post))
     .route("/logout", post(logout))
-    .route("/auth/login", get(oidc::oidc_login))
-    .route("/auth/callback", get(oidc::oidc_callback))
+    .route("/oidc/login", get(oidc::oidc_login))
+    .route("/oidc/callback", get(oidc::oidc_callback))
         // PWA & static assets bundled via asset_routes
         .merge(crate::assets::asset_routes())
         // Bypass routes
@@ -213,7 +213,7 @@ pub async fn require_auth(
                 let cookie = Cookie::build((COOKIE_RETURN_TO, return_to))
                     .path("/")
                     .build();
-                let mut resp = Redirect::temporary("/auth/login").into_response();
+                let mut resp = Redirect::temporary("/oidc/login").into_response();
                 resp.headers_mut().append(
                     axum::http::header::SET_COOKIE,
                     axum::http::HeaderValue::from_str(&cookie.to_string()).unwrap(),
