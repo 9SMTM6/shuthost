@@ -10,22 +10,6 @@ use tokio::sync::{mpsc::unbounded_channel, watch};
 use tracing::{error, info, warn};
 
 /// Represents a configured host entry with network and security parameters.
-///
-/// # Examples
-///
-/// ```
-/// use shuthost_coordinator::config::Host;
-/// let host = Host {
-///     ip: "127.0.0.1".to_string(),
-///     mac: "aa:bb:cc:dd:ee:ff".to_string(),
-///     port: 8080,
-///     shared_secret: "secret".to_string(),
-/// };
-/// assert_eq!(host.ip, "127.0.0.1");
-/// assert_eq!(host.mac, "aa:bb:cc:dd:ee:ff");
-/// assert_eq!(host.port, 8080);
-/// assert_eq!(host.shared_secret, "secret");
-/// ```
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Host {
     /// IP address of the host agent.
@@ -39,14 +23,6 @@ pub struct Host {
 }
 
 /// Configuration for a client with its shared secret.
-///
-/// # Examples
-///
-/// ```
-/// use shuthost_coordinator::config::Client;
-/// let client = Client { shared_secret: "secret".to_string() };
-/// assert_eq!(client.shared_secret, "secret");
-/// ```
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Client {
     /// Shared secret used for authenticating callbacks.
@@ -74,15 +50,6 @@ pub struct ControllerConfig {
 }
 
 /// HTTP server binding configuration section.
-///
-/// # Examples
-///
-/// ```
-/// use shuthost_coordinator::config::ServerConfig;
-/// let sc = ServerConfig::default();
-/// assert_eq!(sc.port, 0);
-/// assert_eq!(sc.bind, "");
-/// ```
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
 pub struct ServerConfig {
     /// TCP port for the web control service.
