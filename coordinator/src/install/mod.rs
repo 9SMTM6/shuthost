@@ -64,10 +64,10 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
 
     let bind_known_vals = |arg: &str| {
         arg.to_owned()
-            .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-            .replace("{user}", &user)
-            .replace("{name}", name)
-            .replace("{config_location}", &config_location.to_string_lossy())
+            .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+            .replace("{ user }", &user)
+            .replace("{ name }", name)
+            .replace("{ config_location }", &config_location.to_string_lossy())
     };
 
     #[cfg(target_os = "linux")]

@@ -75,11 +75,11 @@ impl std::fmt::Display for InitSystem {
 pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
-        arg.replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
-            .replace("{port}", &arguments.port.to_string())
-            .replace("{shutdown_command}", &arguments.shutdown_command)
-            .replace("{secret}", &arguments.shared_secret)
-            .replace("{name}", name)
+        arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+            .replace("{ port }", &arguments.port.to_string())
+            .replace("{ shutdown_command }", &arguments.shutdown_command)
+            .replace("{ secret }", &arguments.shared_secret)
+            .replace("{ name }", name)
     };
 
     match arguments.init_system {

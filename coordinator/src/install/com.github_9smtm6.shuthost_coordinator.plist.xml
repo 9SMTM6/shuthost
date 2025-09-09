@@ -4,16 +4,16 @@
   <dict>
     <key>Label</key>
     <!-- none of the domains must start with a number... this cost me hours of debugging. Thanks Apple. -->
-    <string>com.github_9smtm6.{name}</string>
+    <string>com.github_9smtm6.{ name }</string>
 
     <key>Description</key>
-    <string>{description}</string>
+    <string>{ description }</string>
 
     <key>ProgramArguments</key>
     <array>
       <string>/usr/local/bin/{name}</string>
       <string>control-service</string>
-      <string>--config={config_location}</string>
+      <string>--config={ config_location }</string>
     </array>
 
     <key>RunAtLoad</key>
@@ -23,8 +23,8 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/var/log/{name}.log</string>
+    <string>/var/log/{ name }.log</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/{name}.err</string>
+    <string>/var/log/{ name }.err</string>
   </dict>
 </plist>

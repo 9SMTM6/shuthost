@@ -4,23 +4,23 @@
   <dict>
     <key>Label</key>
     <!-- none of the domains must start with a number... this cost me hours of debugging. Thanks Apple. -->
-    <string>com.github_9smtm6.{name}</string>
+    <string>com.github_9smtm6.{ name }</string>
 
     <key>Description</key>
-    <string>{description}</string>
+    <string>{ description }</string>
 
     <key>ProgramArguments</key>
     <array>
-      <string>/usr/local/bin/{name}</string>
+      <string>/usr/local/bin/{ name }</string>
       <string>service</string>
-      <string>--port={port}</string>
-      <string>--shutdown-command="{shutdown_command}"</string>
+      <string>--port={ port }</string>
+      <string>--shutdown-command="{ shutdown_command }"</string>
     </array>
 
     <key>EnvironmentVariables</key>
     <dict>
       <key>SHUTHOST_SHARED_SECRET</key>
-      <string>{secret}</string>
+      <string>{ secret }</string>
     </dict>
 
     <key>RunAtLoad</key>
@@ -30,8 +30,8 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/var/log/{name}.out</string>
+    <string>/var/log/{ name }.out</string>
     <key>StandardErrorPath</key>
-    <string>/var/log/{name}.err</string>
+    <string>/var/log/{ name }.err</string>
   </dict>
 </plist>

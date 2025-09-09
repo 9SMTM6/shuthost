@@ -61,8 +61,8 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
     let footer_tpl = include_str!("../assets/partials/footer.tmpl.html");
 
     include_str!("../assets/index.tmpl.html")
-        .replace("{coordinator_config}", &config_path)
-        .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ coordinator_config }", &config_path)
+        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace(
             "{ architecture_documentation }",
             include_str!("../assets/architecture.md"),
@@ -78,9 +78,9 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
         .replace("{ js }", include_str!("../assets/app.js"))
         .replace("{ header }", header_tpl)
         .replace("{ footer }", footer_tpl)
-        .replace("{version}", env!("CARGO_PKG_VERSION"))
+        .replace("{ version }", env!("CARGO_PKG_VERSION"))
         .replace("{ maybe_logout }", maybe_logout)
-        .replace("{maybe_demo_disclaimer}", maybe_demo_disclaimer)
+        .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
         .replace("{ maybe_tabs }", header_tabs)
         .replace("{ maybe_tabs }", header_tabs)
         .replace("{ maybe_logout }", maybe_logout)
@@ -115,7 +115,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
     let manifest = MANIFEST
         .get_or_init(|| {
             include_str!("../assets/manifest.json")
-                .replace("{description}", env!("CARGO_PKG_DESCRIPTION"))
+                .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         })
         .clone();
 

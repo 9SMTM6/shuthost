@@ -41,12 +41,12 @@ pub async fn login_get(
             let header = header_tpl
                 .replace("{ maybe_tabs }", "")
                 .replace("{ maybe_logout }", "")
-                .replace("{maybe_demo_disclaimer}", "");
+                .replace("{ maybe_demo_disclaimer }", "");
             let html = include_str!("../../assets/login.tmpl.html")
-                .replace("{maybe_error}", maybe_error)
+                .replace("{ maybe_error }", maybe_error)
                 .replace("{ header }", &header)
                 .replace("{ footer }", footer)
-                .replace("{version}", env!("CARGO_PKG_VERSION"));
+                .replace("{ version }", env!("CARGO_PKG_VERSION"));
             axum::response::Response::builder()
                 .header("Content-Type", "text/html")
                 .body(axum::body::Body::from(html))
