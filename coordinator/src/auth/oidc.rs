@@ -75,7 +75,10 @@ async fn build_oidc_client(
     };
 
     let client = match build_redirect_url(headers, redirect_path) {
-        Ok(u) => client.set_redirect_uri(u),
+        Ok(u) => {
+            tracing::debug!(redirect_uri = %u.as_str(), "OIDC redirect URI computed");
+            client.set_redirect_uri(u)
+        }
         Err(e) => {
             tracing::error!("invalid redirect URL: {e}");
             return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
@@ -112,6 +115,8 @@ pub async fn oidc_login(
         Ok(ok) => ok,
         Err(sc) => return sc.into_response(),
     };
+
+    tracing::info!(issuer = %issuer, "Initiating OIDC login");
 
     let (pkce_challenge, verifier) = PkceCodeChallenge::new_random_sha256();
     let mut authorize = client.authorize_url(
@@ -199,15 +204,22 @@ pub async fn oidc_callback(
         Err(sc) => return sc.into_response(),
     };
 
+    // Log useful debug info to diagnose token exchange issues
+    if let Ok(u) = build_redirect_url(&headers, redirect_path) {
+        tracing::debug!(redirect_uri = %u.as_str(), "OIDC callback computed redirect URI");
+    }
+
     // PKCE verifier
     let pkce_verifier = signed
         .get(COOKIE_PKCE)
         .map(|c| PkceCodeVerifier::new(c.value().to_string()));
+    tracing::debug!(pkce_present = pkce_verifier.is_some(), "PKCE verifier present in cookie");
 
     let Some(code) = code else {
         tracing::warn!("OIDC callback missing code");
         return Redirect::to("/login?error=1").into_response();
     };
+    tracing::debug!(code_len = code.len(), "Authorization code received (length)");
     let mut req = client.exchange_code(AuthorizationCode::new(code));
     if let Some(v) = pkce_verifier {
         req = req.set_pkce_verifier(v);
@@ -216,7 +228,7 @@ pub async fn oidc_callback(
     let token_response = match req.request_async(&http).await {
         Ok(r) => r,
         Err(e) => {
-            tracing::error!("Token exchange failed: {}", e);
+            tracing::error!("Token exchange failed: {:#?}", e);
             return axum::http::StatusCode::BAD_GATEWAY.into_response();
         }
     };
