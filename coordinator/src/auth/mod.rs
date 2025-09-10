@@ -178,20 +178,19 @@ pub async fn require_auth(
             let cookie_ok = get_cookie(headers, COOKIE_TOKEN)
                 .map(|v| v == *token)
                 .unwrap_or(false);
+            tracing::debug!(cookie_ok, "require_auth: token cookie check");
             if cookie_ok {
                 next.run(req).await
             } else if wants_html(headers) {
                 // remember path for redirect-after-login
                 let return_to = req.uri().to_string();
-                let cookie = Cookie::build((COOKIE_RETURN_TO, return_to))
-                    .path("/")
-                    .build();
-                let mut resp = Redirect::temporary("/login").into_response();
-                resp.headers_mut().append(
-                    axum::http::header::SET_COOKIE,
-                    axum::http::HeaderValue::from_str(&cookie.to_string()).unwrap(),
+                tracing::info!(return_to = %return_to, "require_auth: no token, redirecting to /login and setting return_to cookie");
+                let jar = SignedCookieJar::from_headers(headers, auth.cookie_key.clone()).add(
+                    Cookie::build((COOKIE_RETURN_TO, return_to))
+                        .path("/")
+                        .build(),
                 );
-                resp
+                (jar, Redirect::temporary("/login")).into_response()
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
@@ -205,17 +204,16 @@ pub async fn require_auth(
             {
                 return next.run(req).await;
             }
+            tracing::info!("require_auth: no valid session cookie, initiating OIDC login flow");
             if wants_html(headers) {
                 let return_to = req.uri().to_string();
-                let cookie = Cookie::build((COOKIE_RETURN_TO, return_to))
-                    .path("/")
-                    .build();
-                let mut resp = Redirect::temporary("/oidc/login").into_response();
-                resp.headers_mut().append(
-                    axum::http::header::SET_COOKIE,
-                    axum::http::HeaderValue::from_str(&cookie.to_string()).unwrap(),
+                tracing::info!(return_to = %return_to, "require_auth: setting return_to cookie and redirecting to /oidc/login");
+                let jar = SignedCookieJar::from_headers(headers, auth.cookie_key.clone()).add(
+                    Cookie::build((COOKIE_RETURN_TO, return_to))
+                        .path("/")
+                        .build(),
                 );
-                resp
+                (jar, Redirect::temporary("/oidc/login")).into_response()
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
@@ -245,6 +243,17 @@ fn get_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
 }
 
 async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
+    // Log what cookies we saw when logout was invoked so we can ensure the path is hit
+    let had_session = jar.get(COOKIE_SESSION).is_some();
+    let had_token = jar.get(COOKIE_TOKEN).is_some();
+    let had_logged_out = jar.get(COOKIE_LOGGED_OUT).is_some();
+    tracing::info!(
+        had_session,
+        had_token,
+        had_logged_out,
+        "logout: received request"
+    );
+
     let jar = jar
         .remove(Cookie::build(COOKIE_TOKEN).path("/").build())
         .remove(Cookie::build(COOKIE_SESSION).path("/").build())
@@ -255,6 +264,8 @@ async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
                 .path("/")
                 .build(),
         );
+
+    tracing::info!("logout: removed session/token and set logged_out cookie");
     (jar, Redirect::to("/login")).into_response()
 }
 

@@ -114,8 +114,9 @@ pub async fn oidc_login(
     else {
         return Redirect::to("/").into_response();
     };
-
     // If already logged in, redirect to return_to or home
+    let had_session = jar.get(COOKIE_SESSION).is_some();
+    tracing::debug!(had_session, "oidc_login: called");
     if let Some(session) = jar.get(COOKIE_SESSION)
         && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
         && !sess.is_expired()
@@ -125,6 +126,7 @@ pub async fn oidc_login(
             .map(|c| c.value().to_string())
             .unwrap_or_else(|| "/".to_string());
         let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+        tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
         return (jar, Redirect::to(&return_to)).into_response();
     }
     let (client, _http) =
@@ -145,12 +147,19 @@ pub async fn oidc_login(
         authorize = authorize.add_scope(Scope::new(s.clone()));
     }
     // If the user just logged out, force interactive login at the IdP once
-    if jar.get(COOKIE_LOGGED_OUT).is_some() {
+    let logged_out_flag = jar.get(COOKIE_LOGGED_OUT).is_some();
+    tracing::debug!(logged_out_flag, "oidc_login: logged_out cookie present");
+    if logged_out_flag {
+        tracing::info!(
+            "oidc_login: adding prompt=login to authorization request to force interactive login"
+        );
         authorize = authorize.add_extra_param("prompt", "login");
     }
     let (auth_url, csrf_token, nonce) = authorize.set_pkce_challenge(pkce_challenge).url();
 
-    // Store state + nonce in signed cookies
+    // Store state + nonce + pkce in signed cookies and clear logged_out flag so it applies only to
+    // the next attempt
+    tracing::debug!(state = %csrf_token.secret(), nonce = %nonce.secret(), pkce_len = verifier.secret().len(), "oidc_login: storing state/nonce/pkce in cookies");
     let signed = jar
         .add(
             Cookie::build((COOKIE_STATE, csrf_token.secret().clone()))
@@ -170,6 +179,7 @@ pub async fn oidc_login(
         // Clear the flag so it applies only to the next attempt
         .remove(Cookie::build(COOKIE_LOGGED_OUT).path("/").build());
 
+    tracing::info!(auth_url = %auth_url, "oidc_login: redirecting to provider authorization endpoint");
     (signed, Redirect::to(auth_url.as_str())).into_response()
 }
 

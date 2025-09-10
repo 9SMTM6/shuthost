@@ -3,7 +3,7 @@ use axum::{
     Form,
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::cookie::{Cookie, CookieJar};
+use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use serde::Deserialize;
 
 use crate::auth::{AuthResolved, COOKIE_RETURN_TO, COOKIE_TOKEN};
@@ -75,7 +75,7 @@ pub async fn login_get(
 
 pub async fn login_post(
     State(AppState { auth, .. }): State<AppState>,
-    jar: CookieJar,
+    jar: SignedCookieJar,
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
     match auth.mode {
@@ -87,7 +87,7 @@ pub async fn login_post(
                 .path("/")
                 .build();
             let jar = jar.add(cookie);
-            // Try redirect back to original path
+            // Try redirect back to original path (read signed return_to cookie)
             let return_to = jar
                 .get(COOKIE_RETURN_TO)
                 .map(|c| c.value().to_string())
