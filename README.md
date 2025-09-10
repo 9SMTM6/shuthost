@@ -205,8 +205,9 @@ Public endpoints (bypass):
 - `/login`, `/logout` (token mode)
 - `/oidc/login`, `/oidc/callback` (OIDC)
 - `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
+- `/api/m2m/*` (M2M API, e.g. for clients)
 
-All other routes require auth. For token mode, either add an HTTP header `Authorization: Bearer <token>` to API calls, or sign in once via `/login` to set a cookie for the WebUI.
+All other routes require auth.
 
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks

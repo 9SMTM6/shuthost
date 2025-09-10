@@ -1,9 +1,13 @@
 //! Authentication for the coordinator: optional Token or OIDC based login.
 //!
-//! - Token mode: static bearer token, generated if not provided. Expects either
-//!   Authorization: Bearer <token> or a cookie set via the built-in /login form.
+//! - Token mode: static bearer token, generated if not provided. Expects a cookie set via the built-in /login form.
 //! - OIDC mode: standard authorization code flow with PKCE. Maintains a signed
 //!   session cookie once the user is authenticated.
+
+// TODO:
+// 2) remove token header auth, unless theres a good reason for it
+// 3) Check back on logout button issue, doesnt seem to be fixed. Code path seems active, but doesnt seem to work.
+// 4) I think there was something else
 
 use axum::{
     Router,
@@ -171,17 +175,10 @@ pub async fn require_auth(
     match auth.mode {
         AuthResolved::Disabled => next.run(req).await,
         AuthResolved::Token { ref token } => {
-            // Accept Bearer token or cookie
-            let bearer_ok = headers
-                .get(axum::http::header::AUTHORIZATION)
-                .and_then(|v| v.to_str().ok())
-                .and_then(|s| s.strip_prefix("Bearer "))
-                .map(|t| t == token)
-                .unwrap_or(false);
             let cookie_ok = get_cookie(headers, COOKIE_TOKEN)
                 .map(|v| v == *token)
                 .unwrap_or(false);
-            if bearer_ok || cookie_ok {
+            if cookie_ok {
                 next.run(req).await
             } else if wants_html(headers) {
                 // remember path for redirect-after-login
