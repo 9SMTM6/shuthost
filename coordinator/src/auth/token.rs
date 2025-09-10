@@ -1,10 +1,13 @@
-use axum::{Form, response::{IntoResponse, Redirect}};
-use axum_extra::extract::cookie::{Cookie, CookieJar};
 use axum::extract::State;
+use axum::{
+    Form,
+    response::{IntoResponse, Redirect},
+};
+use axum_extra::extract::cookie::{Cookie, CookieJar};
 use serde::Deserialize;
 
+use crate::auth::{AuthResolved, COOKIE_RETURN_TO, COOKIE_TOKEN};
 use crate::http::AppState;
-use crate::auth::{AuthResolved, COOKIE_TOKEN, COOKIE_RETURN_TO};
 
 #[derive(Deserialize)]
 pub(super) struct LoginForm {
@@ -54,7 +57,10 @@ pub async fn login_get(
         }
         AuthResolved::Oidc { .. } => {
             // If already logged in via OIDC session, go home
-            let signed = axum_extra::extract::cookie::SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
+            let signed = axum_extra::extract::cookie::SignedCookieJar::from_headers(
+                &headers,
+                auth.cookie_key.clone(),
+            );
             if let Some(session) = signed.get(super::COOKIE_SESSION)
                 && let Ok(sess) = serde_json::from_str::<super::SessionClaims>(session.value())
                 && !sess.is_expired()
@@ -73,7 +79,9 @@ pub async fn login_post(
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
     match auth.mode {
-        AuthResolved::Token { token: ref expected } if &token == expected => {
+        AuthResolved::Token {
+            token: ref expected,
+        } if &token == expected => {
             let cookie = Cookie::build((COOKIE_TOKEN, token))
                 .http_only(true)
                 .path("/")

@@ -1,5 +1,13 @@
-use axum::{response::{IntoResponse, Redirect}, extract::State};
+use crate::auth::{
+    COOKIE_LOGGED_OUT, COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
+    SessionClaims,
+};
+use crate::http::AppState;
 use axum::http::HeaderMap;
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect},
+};
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
@@ -9,11 +17,13 @@ use openidconnect::{
 use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
 use reqwest::redirect::Policy;
 use serde::Deserialize;
-use crate::http::AppState;
-use crate::auth::{COOKIE_STATE, COOKIE_NONCE, COOKIE_PKCE, COOKIE_SESSION, COOKIE_RETURN_TO, SessionClaims, COOKIE_LOGGED_OUT};
 
-fn build_redirect_url(headers: &axum::http::HeaderMap, redirect_path: &str) -> Result<RedirectUrl, anyhow::Error> {
-    let origin = super::request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
+fn build_redirect_url(
+    headers: &axum::http::HeaderMap,
+    redirect_path: &str,
+) -> Result<RedirectUrl, anyhow::Error> {
+    let origin =
+        super::request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
     Ok(RedirectUrl::new(format!(
         "{}/{}",
         origin.trim_end_matches('/'),
@@ -88,14 +98,20 @@ async fn build_oidc_client(
     Ok((client, http))
 }
 
-
 /// Initiate OIDC login.
 pub async fn oidc_login(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let crate::auth::AuthResolved::Oidc { ref issuer, ref client_id, ref client_secret, ref scopes, ref redirect_path, } = auth.mode else {
+    let crate::auth::AuthResolved::Oidc {
+        ref issuer,
+        ref client_id,
+        ref client_secret,
+        ref scopes,
+        ref redirect_path,
+    } = auth.mode
+    else {
         return Redirect::to("/").into_response();
     };
 
@@ -111,10 +127,11 @@ pub async fn oidc_login(
         let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
         return (jar, Redirect::to(&return_to)).into_response();
     }
-    let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
-        Ok(ok) => ok,
-        Err(sc) => return sc.into_response(),
-    };
+    let (client, _http) =
+        match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
+            Ok(ok) => ok,
+            Err(sc) => return sc.into_response(),
+        };
 
     tracing::info!(issuer = %issuer, "Initiating OIDC login");
 
@@ -145,13 +162,13 @@ pub async fn oidc_login(
                 .path("/")
                 .build(),
         )
-    .add(
+        .add(
             Cookie::build((COOKIE_PKCE, verifier.secret().clone()))
                 .path("/")
                 .build(),
-    )
-    // Clear the flag so it applies only to the next attempt
-    .remove(Cookie::build(COOKIE_LOGGED_OUT).path("/").build());
+        )
+        // Clear the flag so it applies only to the next attempt
+        .remove(Cookie::build(COOKIE_LOGGED_OUT).path("/").build());
 
     (signed, Redirect::to(auth_url.as_str())).into_response()
 }
@@ -169,9 +186,21 @@ pub async fn oidc_callback(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
-    axum::extract::Query(OidcCallback { code, state, error, error_description }): axum::extract::Query<OidcCallback>,
+    axum::extract::Query(OidcCallback {
+        code,
+        state,
+        error,
+        error_description,
+    }): axum::extract::Query<OidcCallback>,
 ) -> impl IntoResponse {
-    let crate::auth::AuthResolved::Oidc { ref issuer, ref client_id, ref client_secret, scopes: _, ref redirect_path, } = auth.mode else {
+    let crate::auth::AuthResolved::Oidc {
+        ref issuer,
+        ref client_id,
+        ref client_secret,
+        scopes: _,
+        ref redirect_path,
+    } = auth.mode
+    else {
         return Redirect::to("/").into_response();
     };
     let signed = jar;
@@ -199,10 +228,11 @@ pub async fn oidc_callback(
         return (signed, Redirect::to("/login?error=1")).into_response();
     }
 
-    let (client, http) = match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
-        Ok(ok) => ok,
-        Err(sc) => return sc.into_response(),
-    };
+    let (client, http) =
+        match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
+            Ok(ok) => ok,
+            Err(sc) => return sc.into_response(),
+        };
 
     // Log useful debug info to diagnose token exchange issues
     if let Ok(u) = build_redirect_url(&headers, redirect_path) {
@@ -213,13 +243,19 @@ pub async fn oidc_callback(
     let pkce_verifier = signed
         .get(COOKIE_PKCE)
         .map(|c| PkceCodeVerifier::new(c.value().to_string()));
-    tracing::debug!(pkce_present = pkce_verifier.is_some(), "PKCE verifier present in cookie");
+    tracing::debug!(
+        pkce_present = pkce_verifier.is_some(),
+        "PKCE verifier present in cookie"
+    );
 
     let Some(code) = code else {
         tracing::warn!("OIDC callback missing code");
         return Redirect::to("/login?error=1").into_response();
     };
-    tracing::debug!(code_len = code.len(), "Authorization code received (length)");
+    tracing::debug!(
+        code_len = code.len(),
+        "Authorization code received (length)"
+    );
     let mut req = client.exchange_code(AuthorizationCode::new(code));
     if let Some(v) = pkce_verifier {
         req = req.set_pkce_verifier(v);

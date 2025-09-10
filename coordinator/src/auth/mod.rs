@@ -39,8 +39,8 @@ const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 const COOKIE_RETURN_TO: &str = "shuthost_return_to";
 const COOKIE_LOGGED_OUT: &str = "shuthost_logged_out";
 
-mod token;
 mod oidc;
+mod token;
 
 #[derive(Clone)]
 pub struct AuthRuntime {
@@ -154,10 +154,10 @@ pub fn public_routes() -> Router<AppState> {
 
     Router::new()
         // Auth endpoints
-    .route("/login", get(token::login_get).post(token::login_post))
-    .route("/logout", post(logout))
-    .route("/oidc/login", get(oidc::oidc_login))
-    .route("/oidc/callback", get(oidc::oidc_callback))
+        .route("/login", get(token::login_get).post(token::login_post))
+        .route("/logout", post(logout))
+        .route("/oidc/login", get(oidc::oidc_login))
+        .route("/oidc/callback", get(oidc::oidc_callback))
         // PWA & static assets bundled via asset_routes
         .merge(crate::assets::asset_routes())
         // Bypass routes
