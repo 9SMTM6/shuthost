@@ -8,6 +8,7 @@
 // 2) remove token header auth, unless theres a good reason for it
 // 3) Check back on logout button issue, doesnt seem to be fixed. Code path seems active, but doesnt seem to work.
 // 4) I think there was something else
+// 5) why is it possible to set redirect_path at all? seems like it has to fit to the app anyways, so should be fixed.
 
 use axum::{
     Router,
