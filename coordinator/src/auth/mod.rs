@@ -6,8 +6,9 @@
 
 // TODO:
 // 2) remove token header auth, unless theres a good reason for it
-// 3) Check back on logout button issue, doesnt seem to be fixed. Code path seems active, but doesnt seem to work.
-// 4) I think there was something else
+// 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
+//  ==> kanidm doesnt support prompt=login, need alternative for at least it.
+// 4) token auth doesnt work properly right now
 // 5) why is it possible to set redirect_path at all? seems like it has to fit to the app anyways, so should be fixed.
 
 use axum::{
