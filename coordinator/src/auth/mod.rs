@@ -5,11 +5,10 @@
 //!   session cookie once the user is authenticated.
 
 // TODO:
-// 2) remove token header auth, unless theres a good reason for it
 // 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
 //  ==> kanidm doesnt support prompt=login, need alternative for at least it.
-// 4) token auth doesnt work properly right now
 // 5) why is it possible to set redirect_path at all? seems like it has to fit to the app anyways, so should be fixed.
+// 6) Change config + behavior. Always have physical key file (paths, default values), with a flag to allow writing them if not present (on by default).
 
 use axum::{
     Router,
