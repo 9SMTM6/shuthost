@@ -177,8 +177,12 @@ pub async fn require_auth(
     match auth.mode {
         AuthResolved::Disabled => next.run(req).await,
         AuthResolved::Token { ref token } => {
-            let cookie_ok = get_cookie(headers, COOKIE_TOKEN)
-                .map(|v| v == *token)
+            // Token auth uses a signed cookie. Read via SignedCookieJar instead
+            // of parsing raw headers to ensure the signature is validated.
+            let signed = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
+            let cookie_ok = signed
+                .get(COOKIE_TOKEN)
+                .map(|c| c.value() == token)
                 .unwrap_or(false);
             tracing::debug!(cookie_ok, "require_auth: token cookie check");
             if cookie_ok {
@@ -187,7 +191,7 @@ pub async fn require_auth(
                 // remember path for redirect-after-login
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require_auth: no token, redirecting to /login and setting return_to cookie");
-                let jar = SignedCookieJar::from_headers(headers, auth.cookie_key.clone()).add(
+                let jar = signed.add(
                     Cookie::build((COOKIE_RETURN_TO, return_to))
                         .path("/")
                         .build(),
@@ -231,18 +235,7 @@ fn wants_html(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
-fn get_cookie(headers: &HeaderMap, name: &str) -> Option<String> {
-    let header = headers.get(axum::http::header::COOKIE)?.to_str().ok()?;
-    for pair in header.split(';') {
-        let mut parts = pair.trim().splitn(2, '=');
-        let k = parts.next()?;
-        let v = parts.next().unwrap_or("");
-        if k == name {
-            return Some(v.to_string());
-        }
-    }
-    None
-}
+// cookie parsing helper removed: token and session cookies are read via SignedCookieJar
 
 async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit

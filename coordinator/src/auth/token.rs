@@ -26,9 +26,13 @@ pub async fn login_get(
 ) -> impl IntoResponse {
     match auth.mode {
         AuthResolved::Token { ref token } => {
-            // If already authenticated via cookie, go home
-            let cookie_ok = super::get_cookie(&headers, COOKIE_TOKEN)
-                .map(|v| v == *token)
+            // If already authenticated via cookie, go home.
+            // The cookie used in login_post is a signed cookie, so read it
+            // through a SignedCookieJar instead of reading raw headers.
+            let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
+            let cookie_ok = signed
+                .get(COOKIE_TOKEN)
+                .map(|c| c.value() == token)
                 .unwrap_or(false);
             if cookie_ok {
                 return Redirect::to("/").into_response();
