@@ -18,12 +18,25 @@ use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
 use reqwest::redirect::Policy;
 use serde::Deserialize;
 
+fn request_origin(headers: &HeaderMap) -> Option<String> {
+    let host = headers
+        .get("x-forwarded-host")
+        .or_else(|| headers.get("host"))?
+        .to_str()
+        .ok()?;
+    let proto = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("http");
+    Some(format!("{}://{}", proto, host))
+}
+
 fn build_redirect_url(
     headers: &axum::http::HeaderMap,
     redirect_path: &str,
 ) -> Result<RedirectUrl, anyhow::Error> {
     let origin =
-        super::request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
+        request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
     Ok(RedirectUrl::new(format!(
         "{}/{}",
         origin.trim_end_matches('/'),

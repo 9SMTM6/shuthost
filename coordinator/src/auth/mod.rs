@@ -288,16 +288,3 @@ fn now_ts() -> u64 {
         .unwrap()
         .as_secs()
 }
-
-fn request_origin(headers: &HeaderMap) -> Option<String> {
-    let host = headers
-        .get("x-forwarded-host")
-        .or_else(|| headers.get("host"))?
-        .to_str()
-        .ok()?;
-    let proto = headers
-        .get("x-forwarded-proto")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("http");
-    Some(format!("{}://{}", proto, host))
-}
