@@ -227,19 +227,20 @@ pub async fn oidc_callback(
     else {
         return Redirect::to("/").into_response();
     };
+    let login_error= Redirect::to("/login?error=1").into_response();
     let signed = jar;
     // Verify state (present and matches)
     let Some(state_cookie) = signed.get(COOKIE_STATE) else {
         tracing::warn!("OIDC callback missing state cookie");
-        return Redirect::to("/login?error=1").into_response();
+        return login_error;
     };
     let Some(state_param) = state.as_deref() else {
         tracing::warn!("OIDC callback missing state param");
-        return Redirect::to("/login?error=1").into_response();
+        return login_error;
     };
     if state_cookie.value() != state_param {
         tracing::warn!("OIDC callback state mismatch");
-        return Redirect::to("/login?error=1").into_response();
+        return login_error;
     }
 
     // If provider returned an error, bounce back to login with message
@@ -249,7 +250,7 @@ pub async fn oidc_callback(
             .remove(Cookie::build(COOKIE_STATE).path("/").build())
             .remove(Cookie::build(COOKIE_NONCE).path("/").build())
             .remove(Cookie::build(COOKIE_PKCE).path("/").build());
-        return (signed, Redirect::to("/login?error=1")).into_response();
+        return (signed, login_error).into_response();
     }
 
     let (client, http) =
@@ -274,7 +275,7 @@ pub async fn oidc_callback(
 
     let Some(code) = code else {
         tracing::warn!("OIDC callback missing code");
-        return Redirect::to("/login?error=1").into_response();
+        return login_error;
     };
     tracing::debug!(
         code_len = code.len(),

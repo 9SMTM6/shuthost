@@ -235,8 +235,6 @@ fn wants_html(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
-// cookie parsing helper removed: token and session cookies are read via SignedCookieJar
-
 async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session = jar.get(COOKIE_SESSION).is_some();
