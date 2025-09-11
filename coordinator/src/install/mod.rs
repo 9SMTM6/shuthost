@@ -102,7 +102,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
                     server: ServerConfig {
                         port: args.port,
                         bind: args.bind,
-                        auth: Default::default(),
+                        ..Default::default()
                     },
                     ..Default::default()
                 })

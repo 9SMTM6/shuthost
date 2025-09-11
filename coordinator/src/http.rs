@@ -5,6 +5,7 @@
 use axum::http::Request;
 use axum::routing;
 use axum::{Router, response::Redirect, routing::get};
+use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::net::TcpStream;
@@ -167,10 +168,50 @@ pub async fn start_http_server(
         }));
 
     let addr = SocketAddr::from((listen_ip, listen_port));
-    info!("Listening on http://{}", addr);
+    // Decide whether to serve plain HTTP or HTTPS depending on config
+    let tls_cfg = &initial_config.server.tls;
+    match tls_cfg.mode {
+        // Provided certs: load PEM files and delegate to axum-server's rustls config
+        crate::config::TlsMode::Provided => {
+            let cert_path = tls_cfg
+                .cert_path
+                .as_ref()
+                .ok_or("TLS mode 'Provided' requires cert_path")?;
+            let key_path = tls_cfg
+                .key_path
+                .as_ref()
+                .ok_or("TLS mode 'Provided' requires key_path")?;
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app.into_make_service()).await?;
+            let rustls_cfg = AxumRustlsConfig::from_pem_file(cert_path, key_path).await?;
+            info!("Listening on https://{} (provided certs)", addr);
+            axum_server::bind_rustls(addr, rustls_cfg)
+                .serve(app.into_make_service())
+                .await?;
+        }
+        // Self-signed: generate a temporary cert/key pair and use them
+        crate::config::TlsMode::SelfSigned => {
+            // Use the listen host as CN/SAN when possible
+            let hostnames = vec![listen_ip.to_string()];
+            let rcgen::CertifiedKey { cert, signing_key } =
+                rcgen::generate_simple_self_signed(hostnames)
+                    .map_err(|e| format!("Failed to generate self-signed certificate: {}", e))?;
+            // `cert.pem()` and `signing_key.serialize_pem()` give PEM-encoded strings
+            let cert_pem = cert.pem();
+            let key_pem = signing_key.serialize_pem();
+
+            let rustls_cfg =
+                AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
+            info!("Listening on https://{} (self-signed)", addr);
+            axum_server::bind_rustls(addr, rustls_cfg)
+                .serve(app.into_make_service())
+                .await?;
+        }
+        crate::config::TlsMode::Off => {
+            info!("Listening on http://{}", addr);
+            let listener = tokio::net::TcpListener::bind(addr).await?;
+            axum::serve(listener, app.into_make_service()).await?;
+        }
+    }
 
     Ok(())
 }

@@ -56,9 +56,38 @@ pub struct ServerConfig {
     pub port: u16,
     /// Bind address for the HTTP listener.
     pub bind: String,
+    /// Optional TLS configuration for serving HTTPS.
+    #[serde(default)]
+    pub tls: TlsConfig,
     /// Authentication configuration (defaults to no auth when omitted)
     #[serde(default)]
     pub auth: AuthConfig,
+}
+
+/// TLS configuration for the HTTP server.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+pub struct TlsConfig {
+    /// Mode of TLS operation.
+    #[serde(default)]
+    pub mode: TlsMode,
+    /// Path to certificate file (PEM) when using provided certs.
+    #[serde(default)]
+    pub cert_path: Option<String>,
+    /// Path to private key file (PEM) when using provided certs.
+    #[serde(default)]
+    pub key_path: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+#[serde(rename_all = "kebab-case")]
+pub enum TlsMode {
+    /// Do not use TLS (default)
+    #[default]
+    Off,
+    /// Use provided certificate and key files
+    Provided,
+    /// Generate a temporary self-signed certificate for ease of use
+    SelfSigned,
 }
 
 /// Supported authentication modes for the Web UI
