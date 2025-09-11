@@ -36,20 +36,15 @@ async fn token_login_flow() {
     // Prefer to run the built binary directly to avoid invoking `cargo run` while
     // `cargo test` holds the build lock. Cargo provides an env var pointing to
     // the built binary; fall back to the default target path.
-    let bin = std::env::var("CARGO_BIN_EXE_shuthost_coordinator")
-        .unwrap_or_else(|_| {
-            std::env::current_dir()
-                .unwrap()
-                .join("target/debug/shuthost_coordinator")
-                .to_string_lossy()
-                .into_owned()
-        });
+    let bin = std::env::var("CARGO_BIN_EXE_shuthost_coordinator").unwrap_or_else(|_| {
+        std::env::current_dir()
+            .unwrap()
+            .join("target/debug/shuthost_coordinator")
+            .to_string_lossy()
+            .into_owned()
+    });
     let child = Command::new(bin)
-        .args([
-            "control-service",
-            "--config",
-            tmp.to_str().unwrap(),
-        ])
+        .args(["control-service", "--config", tmp.to_str().unwrap()])
         .spawn()
         .expect("failed to start coordinator");
     // ensure child is killed on test end
@@ -74,7 +69,10 @@ async fn token_login_flow() {
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
-    let client = Client::builder().redirect(reqwest::redirect::Policy::none()).build().unwrap();
+    let client = Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
 
     // POST to /login with the correct token
     let url = format!("http://127.0.0.1:{port}/login");
@@ -108,5 +106,8 @@ async fn token_login_flow() {
         .expect("failed to GET protected");
 
     // Token auth should allow access (200)
-    assert!(resp2.status().is_success(), "protected endpoint not accessible");
+    assert!(
+        resp2.status().is_success(),
+        "protected endpoint not accessible"
+    );
 }

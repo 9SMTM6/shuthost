@@ -35,8 +35,7 @@ fn build_redirect_url(
     headers: &axum::http::HeaderMap,
     redirect_path: &str,
 ) -> Result<RedirectUrl, anyhow::Error> {
-    let origin =
-        request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
+    let origin = request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
     Ok(RedirectUrl::new(format!(
         "{}/{}",
         origin.trim_end_matches('/'),
@@ -163,10 +162,12 @@ pub async fn oidc_login(
     let logged_out_flag = jar.get(COOKIE_LOGGED_OUT).is_some();
     tracing::debug!(logged_out_flag, "oidc_login: logged_out cookie present");
     if logged_out_flag {
-    tracing::info!("oidc_login: adding prompt=login and max_age=0 to authorization request to force interactive login");
-    // Some OPs ignore prompt=login; adding max_age=0 asks the provider to re-authenticate.
-    authorize = authorize.add_extra_param("prompt", "login");
-    authorize = authorize.add_extra_param("max_age", "0");
+        tracing::info!(
+            "oidc_login: adding prompt=login and max_age=0 to authorization request to force interactive login"
+        );
+        // Some OPs ignore prompt=login; adding max_age=0 asks the provider to re-authenticate.
+        authorize = authorize.add_extra_param("prompt", "login");
+        authorize = authorize.add_extra_param("max_age", "0");
     }
     let (auth_url, csrf_token, nonce) = authorize.set_pkce_challenge(pkce_challenge).url();
 
