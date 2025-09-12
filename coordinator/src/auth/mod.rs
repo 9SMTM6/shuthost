@@ -251,9 +251,14 @@ fn wants_html(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
-/// Heuristic to determine whether the incoming request is over TLS.
-/// Checks common proxy headers: X-Forwarded-Proto, Forwarded and X-Forwarded-SSL.
-pub fn connection_is_secure(headers: &HeaderMap) -> bool {
+/// Determine whether the incoming request should be considered secure.
+/// First considers whether the server was started with TLS enabled. If so,
+/// all requests are treated as secure. Otherwise falls back to the common
+/// proxy headers: X-Forwarded-Proto, Forwarded and X-Forwarded-SSL.
+pub fn request_is_secure(headers: &HeaderMap, tls_enabled: bool) -> bool {
+    if tls_enabled {
+        return true;
+    }
     if let Some(p) = headers
         .get("x-forwarded-proto")
         .and_then(|v| v.to_str().ok())

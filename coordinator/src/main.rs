@@ -137,6 +137,7 @@ async fn run_demo_service(port: u16, bind: &str) {
         auth: std::sync::Arc::new(crate::auth::AuthRuntime::from_config(
             &ControllerConfig::default(),
         )),
+        tls_enabled: false,
     };
 
     let app = Router::new()

@@ -114,7 +114,9 @@ async fn build_oidc_client(
 
 /// Initiate OIDC login.
 pub async fn oidc_login(
-    State(AppState { auth, .. }): State<AppState>,
+    State(AppState {
+        auth, tls_enabled, ..
+    }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
@@ -129,7 +131,7 @@ pub async fn oidc_login(
     };
     // Refuse to start OIDC flow if request doesn't appear secure, because we
     // rely on Secure cookies for the OIDC state/nonce/pkce exchange.
-    if !crate::auth::connection_is_secure(&headers) {
+    if !crate::auth::request_is_secure(&headers, tls_enabled) {
         tracing::warn!("oidc_login: insecure connection detected; refusing to set OIDC cookies");
         return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
     }

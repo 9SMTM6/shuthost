@@ -91,13 +91,15 @@ pub async fn login_get(
 }
 
 pub async fn login_post(
-    State(AppState { auth, .. }): State<AppState>,
+    State(AppState {
+        auth, tls_enabled, ..
+    }): State<AppState>,
     jar: SignedCookieJar,
     headers: axum::http::HeaderMap,
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
     // If the connection doesn't look secure, surface an error instead of setting Secure cookies
-    if !crate::auth::connection_is_secure(&headers) {
+    if !crate::auth::request_is_secure(&headers, tls_enabled) {
         tracing::warn!(
             "login_post: insecure connection detected; refusing to set Secure auth cookie"
         );

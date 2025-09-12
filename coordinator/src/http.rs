@@ -59,6 +59,8 @@ pub struct AppState {
 
     /// Authentication runtime (mode and secrets)
     pub auth: std::sync::Arc<AuthRuntime>,
+    /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
+    pub tls_enabled: bool,
 }
 
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
@@ -160,6 +162,7 @@ pub async fn start_http_server(
         config_path: config_path.to_path_buf(),
         leases: LeaseMap::default(),
         auth: auth_runtime.clone(),
+        tls_enabled,
     };
 
     // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
