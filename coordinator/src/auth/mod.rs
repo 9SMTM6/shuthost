@@ -41,6 +41,11 @@ const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 const COOKIE_RETURN_TO: &str = "shuthost_return_to";
 const COOKIE_LOGGED_OUT: &str = "shuthost_logged_out";
 
+// Centralized login error keys used as query values on /login?error=<key>
+pub const LOGIN_ERROR_INSECURE: &str = "insecure";
+pub const LOGIN_ERROR_UNKNOWN: &str = "unknown";
+pub const LOGIN_ERROR_TOKEN: &str = "token";
+
 mod oidc;
 mod token;
 

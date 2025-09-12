@@ -1,6 +1,6 @@
 use crate::auth::{
     COOKIE_LOGGED_OUT, COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
-    SessionClaims,
+    SessionClaims, LOGIN_ERROR_INSECURE, LOGIN_ERROR_UNKNOWN,
 };
 use crate::http::AppState;
 use axum::http::HeaderMap;
@@ -131,7 +131,7 @@ pub async fn oidc_login(
     // rely on Secure cookies for the OIDC state/nonce/pkce exchange.
     if !crate::auth::connection_is_secure(&headers) {
         tracing::warn!("oidc_login: insecure connection detected; refusing to set OIDC cookies");
-        return Redirect::to("/login?error=insecure").into_response();
+        return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
     }
     // If already logged in, redirect to return_to or home
     let had_session = jar.get(COOKIE_SESSION).is_some();
@@ -247,7 +247,7 @@ pub async fn oidc_callback(
     else {
         return Redirect::to("/").into_response();
     };
-    let login_error = Redirect::to("/login?error=unknown").into_response();
+    let login_error = Redirect::to(&format!("/login?error={}", LOGIN_ERROR_UNKNOWN)).into_response();
     let signed = jar;
     // Verify state (present and matches)
     let Some(state_cookie) = signed.get(COOKIE_STATE) else {

@@ -8,7 +8,7 @@ use cookie::SameSite;
 use cookie::time::Duration as CookieDuration;
 use serde::Deserialize;
 
-use crate::auth::{AuthResolved, COOKIE_RETURN_TO, COOKIE_TOKEN};
+use crate::auth::{AuthResolved, COOKIE_RETURN_TO, COOKIE_TOKEN, LOGIN_ERROR_INSECURE, LOGIN_ERROR_UNKNOWN, LOGIN_ERROR_TOKEN};
 use crate::http::AppState;
 
 #[derive(Deserialize)]
@@ -41,8 +41,9 @@ pub async fn login_get(
             }
 
             let maybe_error = match error.as_deref() {
-                Some("insecure") => include_str!("../../assets/partials/login_error_insecure.tmpl.html"),
-                Some("invalid_token") => include_str!("../../assets/partials/login_error_token.tmpl.html"),
+                Some(v) if v == LOGIN_ERROR_INSECURE => include_str!("../../assets/partials/login_error_insecure.tmpl.html"),
+                Some(v) if v == LOGIN_ERROR_TOKEN => include_str!("../../assets/partials/login_error_token.tmpl.html"),
+                Some(v) if v == LOGIN_ERROR_UNKNOWN => include_str!("../../assets/partials/login_error_unknown.tmpl.html"),
                 Some(_) => include_str!("../../assets/partials/login_error_unknown.tmpl.html"),
                 None => "",
             };
@@ -89,7 +90,7 @@ pub async fn login_post(
     // If the connection doesn't look secure, surface an error instead of setting Secure cookies
     if !crate::auth::connection_is_secure(&headers) {
         tracing::warn!("login_post: insecure connection detected; refusing to set Secure auth cookie");
-        return Redirect::to("/login?error=insecure").into_response();
+        return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
     }
     match auth.mode {
         AuthResolved::Token {
@@ -115,6 +116,6 @@ pub async fn login_post(
             (jar, Redirect::to(&return_to)).into_response()
         }
     // Wrong token: redirect back to login with an error flag
-    _ => Redirect::to("/login?error=invalid_token").into_response(),
+    _ => Redirect::to(&format!("/login?error={}", LOGIN_ERROR_TOKEN)).into_response(),
     }
 }
