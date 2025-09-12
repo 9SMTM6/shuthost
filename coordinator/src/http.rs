@@ -6,10 +6,10 @@ use axum::http::Request;
 use axum::routing;
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
-use tokio::fs;
 use std::path::Path;
 use std::{net::IpAddr, time::Duration};
 use std::{net::SocketAddr, sync::Arc};
+use tokio::fs;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tracing::{debug, info, warn};
@@ -213,8 +213,10 @@ pub async fn start_http_server(
 
                 // Generate self-signed cert using listen host as CN/SAN
                 let hostnames = vec![listen_ip.to_string()];
-                let rcgen::CertifiedKey { cert, signing_key } = rcgen::generate_simple_self_signed(hostnames)
-                    .map_err(|e| format!("Failed to generate self-signed certificate: {}", e))?;
+                let rcgen::CertifiedKey { cert, signing_key } =
+                    rcgen::generate_simple_self_signed(hostnames).map_err(|e| {
+                        format!("Failed to generate self-signed certificate: {}", e)
+                    })?;
                 let cert_pem = cert.pem();
                 let key_pem = signing_key.serialize_pem();
 
@@ -228,21 +230,28 @@ pub async fn start_http_server(
                     fs::write(&key_path, key_pem.as_bytes())
                 )?;
 
-                let rustls_cfg = AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
-                info!("Listening on https://{} (self-signed, persisted at {:?})", addr, cfg_dir);
+                let rustls_cfg =
+                    AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
+                info!(
+                    "Listening on https://{} (self-signed, persisted at {:?})",
+                    addr, cfg_dir
+                );
                 rustls_cfg
             } else {
-                return Err("TLS configuration error: neither provided certs nor self-signed allowed".into());
+                return Err(
+                    "TLS configuration error: neither provided certs nor self-signed allowed"
+                        .into(),
+                );
             };
             axum_server::bind_rustls(addr, rustls_cfg)
-                    .serve(app.into_make_service())
-                    .await?;
-        },
+                .serve(app.into_make_service())
+                .await?;
+        }
         None => {
             info!("Listening on http://{}", addr);
             let listener = tokio::net::TcpListener::bind(addr).await?;
             axum::serve(listener, app.into_make_service()).await?;
-        },
+        }
     };
 
     Ok(())
