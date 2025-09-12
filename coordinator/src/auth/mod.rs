@@ -78,9 +78,19 @@ impl AuthRuntime {
                 ref cookie_secret,
                 ..
             } => {
-                let token = token.clone().unwrap_or_else(generate_token);
-                info!("Auth mode: token");
-                info!("Token: {}", token);
+                // If a token was configured in the TOML config, don't log its value
+                // (it is already present in the config file). Only log the token
+                // value when we auto-generate one on startup so operators can copy it.
+                let token = if let Some(cfg_token) = token.clone() {
+                    info!("Auth mode: token (configured)");
+                    cfg_token
+                } else {
+                    let generated = generate_token();
+                    info!("Auth mode: token");
+                    info!("Token: {}", generated);
+                    generated
+                };
+
                 (
                     AuthResolved::Token { token },
                     key_from_secret(cookie_secret.as_deref()),
