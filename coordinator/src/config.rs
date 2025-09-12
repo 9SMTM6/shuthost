@@ -337,4 +337,66 @@ mod tests {
         let res = load_coordinator_config(&tmp).await;
         assert!(res.is_err(), "Expected error for invalid TOML");
     }
+
+    #[tokio::test]
+    async fn test_tls_absent_field_results_in_none() {
+        let toml_str = r#"
+            [server]
+            port = 8081
+            bind = "127.0.0.1"
+
+            [hosts]
+
+            [clients]
+        "#;
+        let tmp = std::env::temp_dir().join("test_config_no_tls.toml");
+        std::fs::write(&tmp, toml_str).unwrap();
+        let cfg = load_coordinator_config(&tmp).await.unwrap();
+        assert!(cfg.server.tls.is_none(), "Expected tls to be None when omitted");
+    }
+
+    #[tokio::test]
+    async fn test_tls_empty_table_uses_defaults() {
+        let toml_str = r#"
+            [server]
+            port = 8082
+            bind = "0.0.0.0"
+
+            [server.tls]
+
+            [hosts]
+
+            [clients]
+        "#;
+        let tmp = std::env::temp_dir().join("test_config_tls_defaults.toml");
+        std::fs::write(&tmp, toml_str).unwrap();
+        let cfg = load_coordinator_config(&tmp).await.unwrap();
+        let tls = cfg.server.tls.expect("tls should be present when table exists");
+        assert_eq!(tls.cert_path, "./tls_cert.pem");
+        assert_eq!(tls.key_path, "./tls_key.pem");
+        assert!(tls.persist_self_signed, "persist_self_signed should default to true");
+    }
+
+    #[test]
+    fn test_tls_custom_values_deserialize() {
+        let toml_str = r#"
+            [server]
+            port = 8083
+            bind = "::1"
+
+            [server.tls]
+            cert_path = "certs/mycert.pem"
+            key_path = "certs/mykey.pem"
+            persist_self_signed = false
+
+            [hosts]
+
+            [clients]
+        "#;
+        let cfg: ControllerConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        let tls = cfg.server.tls.expect("tls should be present");
+        assert_eq!(tls.cert_path, "certs/mycert.pem");
+        assert_eq!(tls.key_path, "certs/mykey.pem");
+        assert!(!tls.persist_self_signed);
+    }
 }

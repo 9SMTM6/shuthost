@@ -201,6 +201,21 @@ type = "token"
 # cookie_secret = "base64-encoded-32-bytes=="
 ```
 
+#### TLS configuration
+If you want the coordinator to serve HTTPS directly (not recommended for production — prefer a reverse proxy), add a `[server.tls]` table. Paths are interpreted relative to the config file when not absolute. Example:
+
+```toml
+[server.tls]
+cert_path = "./tls_cert.pem"    # path to certificate PEM (default: ./tls_cert.pem)
+key_path = "./tls_key.pem"     # path to private key PEM (default: ./tls_key.pem)
+persist_self_signed = true       # if true (default) generate and persist a self-signed cert when none provided
+```
+
+Behavior:
+- If both `cert_path` and `key_path` point to existing files, the coordinator will use them for TLS.
+- If they are absent and `persist_self_signed` is true, the coordinator will generate a self-signed cert/key and write them next to the config file for reuse across restarts.
+
+
 Public endpoints (bypass):
 - `/login`, `/logout` (token mode)
 - `/oidc/login`, `/oidc/callback` (OIDC)
