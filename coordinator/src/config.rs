@@ -58,36 +58,53 @@ pub struct ServerConfig {
     pub bind: String,
     /// Optional TLS configuration for serving HTTPS.
     #[serde(default)]
-    pub tls: TlsConfig,
+    pub tls: Option<TlsConfig>,
     /// Authentication configuration (defaults to no auth when omitted)
     #[serde(default)]
     pub auth: AuthConfig,
 }
 
 /// TLS configuration for the HTTP server.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+///
+/// Paths in the config are interpreted relative to the config file when not absolute.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct TlsConfig {
-    /// Mode of TLS operation.
-    #[serde(default)]
-    pub mode: TlsMode,
-    /// Path to certificate file (PEM) when using provided certs.
-    #[serde(default)]
-    pub cert_path: Option<String>,
-    /// Path to private key file (PEM) when using provided certs.
-    #[serde(default)]
-    pub key_path: Option<String>,
+    /// Optional path to a certificate PEM file. If present, enables TLS when paired with `key_path`.
+    #[serde(default = "relative_cert_path")]
+    pub cert_path: String,
+
+    /// Optional path to a private key PEM file. If present, enables TLS when paired with `cert_path`.
+    #[serde(default = "relative_key_path")]
+    pub key_path: String,
+
+    /// When true (default), if no cert/key are provided a self-signed
+    /// certificate will be generated and written next to the coordinator
+    /// config so it persists across restarts.
+    #[serde(default = "do_persist_self_signed")]
+    pub persist_self_signed: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
-#[serde(rename_all = "kebab-case")]
-pub enum TlsMode {
-    /// Do not use TLS (default)
-    #[default]
-    Off,
-    /// Use provided certificate and key files
-    Provided,
-    /// Generate a temporary self-signed certificate for ease of use
-    SelfSigned,
+impl Default for TlsConfig {
+    fn default() -> Self {
+        Self {
+            cert_path: relative_cert_path(),
+            key_path: relative_key_path(),
+            persist_self_signed: do_persist_self_signed(),
+        }
+    }
+}
+
+fn relative_cert_path() -> String {
+    // Relative default path next to config file (must not be empty)
+    "./tls_cert.pem".to_string()
+}
+
+fn relative_key_path() -> String {
+    "./tls_key.pem".to_string()
+}
+
+fn do_persist_self_signed() -> bool {
+    true
 }
 
 /// Supported authentication modes for the Web UI
