@@ -1,6 +1,6 @@
 use crate::auth::{
     COOKIE_LOGGED_OUT, COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
-    SessionClaims, LOGIN_ERROR_INSECURE, LOGIN_ERROR_UNKNOWN,
+    LOGIN_ERROR_INSECURE, LOGIN_ERROR_UNKNOWN, SessionClaims,
 };
 use crate::http::AppState;
 use axum::http::HeaderMap;
@@ -247,7 +247,8 @@ pub async fn oidc_callback(
     else {
         return Redirect::to("/").into_response();
     };
-    let login_error = Redirect::to(&format!("/login?error={}", LOGIN_ERROR_UNKNOWN)).into_response();
+    let login_error =
+        Redirect::to(&format!("/login?error={}", LOGIN_ERROR_UNKNOWN)).into_response();
     let signed = jar;
     // Verify state (present and matches)
     let Some(state_cookie) = signed.get(COOKIE_STATE) else {
@@ -348,7 +349,8 @@ pub async fn oidc_callback(
         .unwrap()
         .as_secs();
     let session_exp_seconds = session.exp.saturating_sub(now);
-    let session_max_age = CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
+    let session_max_age =
+        CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
     let signed = signed
         .remove(Cookie::build(COOKIE_STATE).path("/").build())
         .remove(Cookie::build(COOKIE_NONCE).path("/").build())

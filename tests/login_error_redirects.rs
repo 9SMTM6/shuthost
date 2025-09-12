@@ -73,10 +73,24 @@ async fn insecure_post_redirects_with_insecure_error() {
 
     let url = format!("http://127.0.0.1:{port}/login");
     // No x-forwarded-proto header -> considered insecure
-    let resp = client.post(&url).form(&[("token", token)]).send().await.unwrap();
+    let resp = client
+        .post(&url)
+        .form(&[("token", token)])
+        .send()
+        .await
+        .unwrap();
     assert!(resp.status().is_redirection());
-    let loc = resp.headers().get(reqwest::header::LOCATION).unwrap().to_str().unwrap();
-    assert!(loc.contains("error=insecure"), "location did not contain insecure error: {}", loc);
+    let loc = resp
+        .headers()
+        .get(reqwest::header::LOCATION)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        loc.contains("error=insecure"),
+        "location did not contain insecure error: {}",
+        loc
+    );
 }
 
 #[tokio::test]
@@ -117,6 +131,15 @@ async fn invalid_token_redirects_with_token_error() {
         .await
         .unwrap();
     assert!(resp.status().is_redirection());
-    let loc = resp.headers().get(reqwest::header::LOCATION).unwrap().to_str().unwrap();
-    assert!(loc.contains("error=token"), "location did not contain token error: {}", loc);
+    let loc = resp
+        .headers()
+        .get(reqwest::header::LOCATION)
+        .unwrap()
+        .to_str()
+        .unwrap();
+    assert!(
+        loc.contains("error=token"),
+        "location did not contain token error: {}",
+        loc
+    );
 }

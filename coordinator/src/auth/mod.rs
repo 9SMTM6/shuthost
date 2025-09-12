@@ -19,9 +19,9 @@ use axum::{
     routing::{get, post},
 };
 use axum_extra::extract::cookie::{Cookie, Key, SignedCookieJar};
+use base64::Engine;
 use cookie::SameSite;
 use cookie::time::Duration as CookieDuration;
-use base64::Engine;
 use rand::{Rng as _, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -204,13 +204,13 @@ pub async fn require_auth(
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require_auth: no token, redirecting to /login and setting return_to cookie");
                 let jar = signed.add(
-                        Cookie::build((COOKIE_RETURN_TO, return_to))
-                            .http_only(true)
-                            .secure(true)
-                            .same_site(SameSite::Strict)
-                            .max_age(CookieDuration::minutes(10))
-                            .path("/")
-                            .build(),
+                    Cookie::build((COOKIE_RETURN_TO, return_to))
+                        .http_only(true)
+                        .secure(true)
+                        .same_site(SameSite::Strict)
+                        .max_age(CookieDuration::minutes(10))
+                        .path("/")
+                        .build(),
                 );
                 (jar, Redirect::temporary("/login")).into_response()
             } else {
@@ -254,7 +254,10 @@ fn wants_html(headers: &HeaderMap) -> bool {
 /// Heuristic to determine whether the incoming request is over TLS.
 /// Checks common proxy headers: X-Forwarded-Proto, Forwarded and X-Forwarded-SSL.
 pub fn connection_is_secure(headers: &HeaderMap) -> bool {
-    if let Some(p) = headers.get("x-forwarded-proto").and_then(|v| v.to_str().ok()) {
+    if let Some(p) = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+    {
         if p.eq_ignore_ascii_case("https") {
             return true;
         }
@@ -283,13 +286,16 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
         had_logged_out,
         "logout: received request"
     );
-    
+
     // Basic origin/referrer check to avoid cross-site logout triggers. If the
     // request includes Origin or Referer, ensure it matches the Host or
     // X-Forwarded-Host header. If it doesn't match, reject the request.
     if let Some(orig) = headers.get("origin").or_else(|| headers.get("referer")) {
         if let Ok(orig_s) = orig.to_str() {
-            if let Some(host_hdr) = headers.get("x-forwarded-host").or_else(|| headers.get("host")) {
+            if let Some(host_hdr) = headers
+                .get("x-forwarded-host")
+                .or_else(|| headers.get("host"))
+            {
                 if let Ok(host_s) = host_hdr.to_str() {
                     if !orig_s.contains(host_s) {
                         tracing::warn!(origin = %orig_s, host = %host_s, "logout: origin/referrer mismatch");
