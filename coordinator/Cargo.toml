@@ -25,6 +25,7 @@ tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
 futures = "0.3.31"
 serde_plain = "1.0.2"
 axum-extra = { version = "0.10.0", features = ["cookie", "cookie-signed"] }
+cookie = "0.18"
 openidconnect = { version = "4.x", default-features = false, features = ["reqwest", "rustls-tls"] }
 anyhow = "1.0.94"
 base64 = "0.22.1"

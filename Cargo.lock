@@ -2682,6 +2682,7 @@ dependencies = [
  "axum-server",
  "base64 0.22.1",
  "clap",
+ "cookie",
  "futures",
  "hex",
  "hmac",

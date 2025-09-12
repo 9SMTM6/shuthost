@@ -7,7 +7,7 @@
 // TODO:
 // 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
 //  ==> kanidm doesnt support prompt=login, need alternative for at least it.
-// 5) why is it possible to set redirect_path at all? seems like it has to fit to the app anyways, so should be fixed.
+// 7) OIDC errors redirect to login page for token, this will lead to confusion
 
 use axum::{
     Router,
@@ -19,6 +19,8 @@ use axum::{
     routing::{get, post},
 };
 use axum_extra::extract::cookie::{Cookie, Key, SignedCookieJar};
+use cookie::SameSite;
+use cookie::time::Duration as CookieDuration;
 use base64::Engine;
 use rand::{Rng as _, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
@@ -197,9 +199,13 @@ pub async fn require_auth(
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require_auth: no token, redirecting to /login and setting return_to cookie");
                 let jar = signed.add(
-                    Cookie::build((COOKIE_RETURN_TO, return_to))
-                        .path("/")
-                        .build(),
+                        Cookie::build((COOKIE_RETURN_TO, return_to))
+                            .http_only(true)
+                            .secure(true)
+                            .same_site(SameSite::Strict)
+                            .max_age(CookieDuration::minutes(10))
+                            .path("/")
+                            .build(),
                 );
                 (jar, Redirect::temporary("/login")).into_response()
             } else {
@@ -240,7 +246,7 @@ fn wants_html(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
-async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
+async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session = jar.get(COOKIE_SESSION).is_some();
     let had_token = jar.get(COOKIE_TOKEN).is_some();
@@ -251,6 +257,22 @@ async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
         had_logged_out,
         "logout: received request"
     );
+    
+    // Basic origin/referrer check to avoid cross-site logout triggers. If the
+    // request includes Origin or Referer, ensure it matches the Host or
+    // X-Forwarded-Host header. If it doesn't match, reject the request.
+    if let Some(orig) = headers.get("origin").or_else(|| headers.get("referer")) {
+        if let Ok(orig_s) = orig.to_str() {
+            if let Some(host_hdr) = headers.get("x-forwarded-host").or_else(|| headers.get("host")) {
+                if let Ok(host_s) = host_hdr.to_str() {
+                    if !orig_s.contains(host_s) {
+                        tracing::warn!(origin = %orig_s, host = %host_s, "logout: origin/referrer mismatch");
+                        return StatusCode::BAD_REQUEST.into_response();
+                    }
+                }
+            }
+        }
+    }
 
     let jar = jar
         .remove(Cookie::build(COOKIE_TOKEN).path("/").build())
@@ -259,6 +281,9 @@ async fn logout(jar: SignedCookieJar) -> impl IntoResponse {
         .add(
             Cookie::build((COOKIE_LOGGED_OUT, "1"))
                 .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .max_age(CookieDuration::minutes(10))
                 .path("/")
                 .build(),
         );

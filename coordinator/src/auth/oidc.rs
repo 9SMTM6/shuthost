@@ -9,6 +9,8 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
+use cookie::SameSite;
+use cookie::time::Duration as CookieDuration;
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
@@ -17,6 +19,7 @@ use openidconnect::{
 use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
 use reqwest::redirect::Policy;
 use serde::Deserialize;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // Fixed redirect path used by the application for OIDC callbacks
 const OIDC_CALLBACK_PATH: &str = "/oidc/callback";
@@ -172,19 +175,33 @@ pub async fn oidc_login(
     // Store state + nonce + pkce in signed cookies and clear logged_out flag so it applies only to
     // the next attempt
     tracing::debug!(state = %csrf_token.secret(), nonce = %nonce.secret(), pkce_len = verifier.secret().len(), "oidc_login: storing state/nonce/pkce in cookies");
+    // Short-lived cookies for OIDC state to mitigate replay attacks
+    let short_exp = CookieDuration::minutes(10);
     let signed = jar
         .add(
             Cookie::build((COOKIE_STATE, csrf_token.secret().clone()))
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .max_age(short_exp)
                 .path("/")
                 .build(),
         )
         .add(
             Cookie::build((COOKIE_NONCE, nonce.secret().clone()))
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .max_age(short_exp)
                 .path("/")
                 .build(),
         )
         .add(
             Cookie::build((COOKIE_PKCE, verifier.secret().clone()))
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .max_age(short_exp)
                 .path("/")
                 .build(),
         )
@@ -318,6 +335,14 @@ pub async fn oidc_callback(
     let exp = claims.expiration().timestamp() as u64;
     let session = SessionClaims { sub, exp };
 
+    // Remove ephemeral OIDC cookies and add a session cookie with expiry matching
+    // the ID token exp claim.
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let session_exp_seconds = session.exp.saturating_sub(now);
+    let session_max_age = CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
     let signed = signed
         .remove(Cookie::build(COOKIE_STATE).path("/").build())
         .remove(Cookie::build(COOKIE_NONCE).path("/").build())
@@ -325,6 +350,9 @@ pub async fn oidc_callback(
         .add(
             Cookie::build((COOKIE_SESSION, serde_json::to_string(&session).unwrap()))
                 .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .max_age(session_max_age)
                 .path("/")
                 .build(),
         );

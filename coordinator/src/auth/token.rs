@@ -4,6 +4,8 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
+use cookie::SameSite;
+use cookie::time::Duration as CookieDuration;
 use serde::Deserialize;
 
 use crate::auth::{AuthResolved, COOKIE_RETURN_TO, COOKIE_TOKEN};
@@ -86,8 +88,14 @@ pub async fn login_post(
         AuthResolved::Token {
             token: ref expected,
         } if &token == expected => {
+            // Persistent token cookie: mark Secure, HttpOnly and SameSite=strict
+            // so it cannot be leaked via JS and is protected from CSRF. Use a
+            // reasonable expiry for long-lived bearer tokens.
             let cookie = Cookie::build((COOKIE_TOKEN, token))
                 .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .max_age(CookieDuration::days(30))
                 .path("/")
                 .build();
             let jar = jar.add(cookie);
