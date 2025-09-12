@@ -15,6 +15,7 @@ use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
+use crate::config::TlsConfig;
 use crate::{
     config::{ControllerConfig, load_coordinator_config, watch_config_file},
     routes::{LeaseMap, api_routes},
@@ -172,7 +173,7 @@ pub async fn start_http_server(
     let addr = SocketAddr::from((listen_ip, listen_port));
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match &initial_config.server.tls {
-        Some(tls_cfg) => {
+        Some(tls_cfg@TlsConfig { enable: true, .. }) => {
             // Helper: resolve a configured path relative to the config file unless it's absolute
             let resolve_path = |p: &str| {
                 let path = std::path::Path::new(p);
@@ -247,7 +248,7 @@ pub async fn start_http_server(
                 .serve(app.into_make_service())
                 .await?;
         }
-        None => {
+        _ => {
             info!("Listening on http://{}", addr);
             let listener = tokio::net::TcpListener::bind(addr).await?;
             axum::serve(listener, app.into_make_service()).await?;

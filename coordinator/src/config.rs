@@ -82,6 +82,10 @@ pub struct TlsConfig {
     /// config so it persists across restarts.
     #[serde(default = "do_persist_self_signed")]
     pub persist_self_signed: bool,
+    /// Whether TLS is enabled. When false the server will serve plain HTTP even if the
+    /// `tls` table is present. Defaults to true.
+    #[serde(default = "do_tls_enable")]
+    pub enable: bool,
 }
 
 impl Default for TlsConfig {
@@ -90,6 +94,7 @@ impl Default for TlsConfig {
             cert_path: relative_cert_path(),
             key_path: relative_key_path(),
             persist_self_signed: do_persist_self_signed(),
+            enable: do_tls_enable(),
         }
     }
 }
@@ -104,6 +109,10 @@ fn relative_key_path() -> String {
 }
 
 fn do_persist_self_signed() -> bool {
+    true
+}
+
+fn do_tls_enable() -> bool {
     true
 }
 
