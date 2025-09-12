@@ -59,7 +59,6 @@ pub enum AuthResolved {
         client_id: String,
         client_secret: String,
         scopes: Vec<String>,
-        redirect_path: String, // path only, build full URL from Host header
     },
 }
 
@@ -88,14 +87,7 @@ impl AuthRuntime {
                 )
             }
             AuthConfig {
-                mode:
-                    AuthMode::Oidc {
-                        ref issuer,
-                        ref client_id,
-                        ref client_secret,
-                        ref scopes,
-                        ref redirect_path,
-                    },
+                mode: AuthMode::Oidc { ref issuer, ref client_id, ref client_secret, ref scopes, },
                 ref cookie_secret,
             } => {
                 info!("Auth mode: oidc, issuer={}", issuer);
@@ -105,7 +97,7 @@ impl AuthRuntime {
                         client_id: client_id.clone(),
                         client_secret: client_secret.clone(),
                         scopes: scopes.clone(),
-                        redirect_path: redirect_path.clone(),
+                        
                     },
                     key_from_secret(cookie_secret.as_deref()),
                 )

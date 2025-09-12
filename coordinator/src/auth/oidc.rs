@@ -18,6 +18,9 @@ use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
 use reqwest::redirect::Policy;
 use serde::Deserialize;
 
+// Fixed redirect path used by the application for OIDC callbacks
+const OIDC_CALLBACK_PATH: &str = "/oidc/callback";
+
 fn request_origin(headers: &HeaderMap) -> Option<String> {
     let host = headers
         .get("x-forwarded-host")
@@ -33,13 +36,12 @@ fn request_origin(headers: &HeaderMap) -> Option<String> {
 
 fn build_redirect_url(
     headers: &axum::http::HeaderMap,
-    redirect_path: &str,
 ) -> Result<RedirectUrl, anyhow::Error> {
     let origin = request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
     Ok(RedirectUrl::new(format!(
         "{}/{}",
         origin.trim_end_matches('/'),
-        redirect_path.trim_start_matches('/')
+        OIDC_CALLBACK_PATH.trim_start_matches('/')
     ))?)
 }
 
@@ -58,7 +60,6 @@ async fn build_oidc_client(
     client_id: &str,
     client_secret: &str,
     headers: &HeaderMap,
-    redirect_path: &str,
 ) -> Result<(OidcClientReady, reqwest::Client), axum::http::StatusCode> {
     // Build HTTP client (no redirects per SSRF guidance)
     // Allow a small number of redirects for discovery only (some providers redirect .well-known)
@@ -96,7 +97,7 @@ async fn build_oidc_client(
         return Err(axum::http::StatusCode::BAD_GATEWAY);
     };
 
-    let client = match build_redirect_url(headers, redirect_path) {
+    let client = match build_redirect_url(headers) {
         Ok(u) => {
             tracing::debug!(redirect_uri = %u.as_str(), "OIDC redirect URI computed");
             client.set_redirect_uri(u)
@@ -121,7 +122,6 @@ pub async fn oidc_login(
         ref client_id,
         ref client_secret,
         ref scopes,
-        ref redirect_path,
     } = auth.mode
     else {
         return Redirect::to("/").into_response();
@@ -142,7 +142,7 @@ pub async fn oidc_login(
         return (jar, Redirect::to(&return_to)).into_response();
     }
     let (client, _http) =
-        match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
+        match build_oidc_client(issuer, client_id, client_secret, &headers).await {
             Ok(ok) => ok,
             Err(sc) => return sc.into_response(),
         };
@@ -221,8 +221,7 @@ pub async fn oidc_callback(
         ref issuer,
         ref client_id,
         ref client_secret,
-        scopes: _,
-        ref redirect_path,
+    scopes: _,
     } = auth.mode
     else {
         return Redirect::to("/").into_response();
@@ -254,13 +253,13 @@ pub async fn oidc_callback(
     }
 
     let (client, http) =
-        match build_oidc_client(issuer, client_id, client_secret, &headers, redirect_path).await {
+        match build_oidc_client(issuer, client_id, client_secret, &headers).await {
             Ok(ok) => ok,
             Err(sc) => return sc.into_response(),
         };
 
     // Log useful debug info to diagnose token exchange issues
-    if let Ok(u) = build_redirect_url(&headers, redirect_path) {
+    if let Ok(u) = build_redirect_url(&headers) {
         tracing::debug!(redirect_uri = %u.as_str(), "OIDC callback computed redirect URI");
     }
 
