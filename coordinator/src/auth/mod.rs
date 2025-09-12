@@ -246,6 +246,27 @@ fn wants_html(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
+/// Heuristic to determine whether the incoming request is over TLS.
+/// Checks common proxy headers: X-Forwarded-Proto, Forwarded and X-Forwarded-SSL.
+pub fn connection_is_secure(headers: &HeaderMap) -> bool {
+    if let Some(p) = headers.get("x-forwarded-proto").and_then(|v| v.to_str().ok()) {
+        if p.eq_ignore_ascii_case("https") {
+            return true;
+        }
+    }
+    if let Some(fwd) = headers.get("forwarded").and_then(|v| v.to_str().ok()) {
+        if fwd.to_lowercase().contains("proto=https") {
+            return true;
+        }
+    }
+    if let Some(x) = headers.get("x-forwarded-ssl").and_then(|v| v.to_str().ok()) {
+        if x.eq_ignore_ascii_case("on") {
+            return true;
+        }
+    }
+    false
+}
+
 async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session = jar.get(COOKIE_SESSION).is_some();

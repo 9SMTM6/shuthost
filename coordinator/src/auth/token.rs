@@ -40,10 +40,11 @@ pub async fn login_get(
                 return Redirect::to("/").into_response();
             }
 
-            let maybe_error = if error.is_some() {
-                include_str!("../../assets/partials/login_error.tmpl.html")
-            } else {
-                ""
+            let maybe_error = match error.as_deref() {
+                Some("insecure") => include_str!("../../assets/partials/login_error_insecure.tmpl.html"),
+                Some("invalid_token") => include_str!("../../assets/partials/login_error_token.tmpl.html"),
+                Some(_) => include_str!("../../assets/partials/login_error_unknown.tmpl.html"),
+                None => "",
             };
             let header_tpl = include_str!("../../assets/partials/header.tmpl.html");
             let footer = include_str!("../../assets/partials/footer.tmpl.html");
@@ -82,8 +83,14 @@ pub async fn login_get(
 pub async fn login_post(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
+    headers: axum::http::HeaderMap,
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
+    // If the connection doesn't look secure, surface an error instead of setting Secure cookies
+    if !crate::auth::connection_is_secure(&headers) {
+        tracing::warn!("login_post: insecure connection detected; refusing to set Secure auth cookie");
+        return Redirect::to("/login?error=insecure").into_response();
+    }
     match auth.mode {
         AuthResolved::Token {
             token: ref expected,
@@ -107,7 +114,7 @@ pub async fn login_post(
             let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
             (jar, Redirect::to(&return_to)).into_response()
         }
-        // Wrong token: redirect back to login with an error flag
-        _ => Redirect::to("/login?error=1").into_response(),
+    // Wrong token: redirect back to login with an error flag
+    _ => Redirect::to("/login?error=invalid_token").into_response(),
     }
 }

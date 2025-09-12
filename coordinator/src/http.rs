@@ -134,6 +134,25 @@ pub async fn start_http_server(
 
     let auth_runtime = std::sync::Arc::new(AuthRuntime::from_config(&initial_config));
 
+    // Startup-time warning: if TLS is not enabled but authentication is active,
+    // browsers will ignore cookies marked Secure. Warn operators so they can
+    // enable TLS or place the app behind an HTTPS reverse proxy that sets
+    // X-Forwarded-Proto: https.
+    let tls_enabled = match &initial_config.server.tls {
+        Some(t) => t.enable,
+        None => false,
+    };
+    if !tls_enabled {
+        match &auth_runtime.mode {
+            crate::auth::AuthResolved::Disabled => {}
+            _ => {
+                warn!(
+                    "TLS appears disabled but authentication is enabled. Authentication cookies are set with Secure=true and will not be sent by browsers over plain HTTP. Enable TLS or run behind an HTTPS reverse proxy (ensure it sets X-Forwarded-Proto: https)."
+                );
+            }
+        }
+    }
+
     let app_state = AppState {
         config_rx,
         hoststatus_rx,

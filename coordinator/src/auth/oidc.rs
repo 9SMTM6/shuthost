@@ -127,6 +127,12 @@ pub async fn oidc_login(
     else {
         return Redirect::to("/").into_response();
     };
+    // Refuse to start OIDC flow if request doesn't appear secure, because we
+    // rely on Secure cookies for the OIDC state/nonce/pkce exchange.
+    if !crate::auth::connection_is_secure(&headers) {
+        tracing::warn!("oidc_login: insecure connection detected; refusing to set OIDC cookies");
+        return Redirect::to("/login?error=insecure").into_response();
+    }
     // If already logged in, redirect to return_to or home
     let had_session = jar.get(COOKIE_SESSION).is_some();
     tracing::debug!(had_session, "oidc_login: called");
@@ -241,7 +247,7 @@ pub async fn oidc_callback(
     else {
         return Redirect::to("/").into_response();
     };
-    let login_error = Redirect::to("/login?error=1").into_response();
+    let login_error = Redirect::to("/login?error=unknown").into_response();
     let signed = jar;
     // Verify state (present and matches)
     let Some(state_cookie) = signed.get(COOKIE_STATE) else {
