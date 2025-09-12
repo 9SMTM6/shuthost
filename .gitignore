@@ -1,5 +1,7 @@
 /target
 shuthost_coordinator.toml
+tls_cert.pem
+tls_key.pem
 .DS_Store
 .vscode
 
