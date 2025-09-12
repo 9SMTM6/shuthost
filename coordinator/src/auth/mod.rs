@@ -87,7 +87,13 @@ impl AuthRuntime {
                 )
             }
             AuthConfig {
-                mode: AuthMode::Oidc { ref issuer, ref client_id, ref client_secret, ref scopes, },
+                mode:
+                    AuthMode::Oidc {
+                        ref issuer,
+                        ref client_id,
+                        ref client_secret,
+                        ref scopes,
+                    },
                 ref cookie_secret,
             } => {
                 info!("Auth mode: oidc, issuer={}", issuer);
@@ -97,7 +103,6 @@ impl AuthRuntime {
                         client_id: client_id.clone(),
                         client_secret: client_secret.clone(),
                         scopes: scopes.clone(),
-                        
                     },
                     key_from_secret(cookie_secret.as_deref()),
                 )

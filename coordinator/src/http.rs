@@ -173,7 +173,7 @@ pub async fn start_http_server(
     let addr = SocketAddr::from((listen_ip, listen_port));
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match &initial_config.server.tls {
-        Some(tls_cfg@TlsConfig { enable: true, .. }) => {
+        Some(tls_cfg @ TlsConfig { enable: true, .. }) => {
             // Helper: resolve a configured path relative to the config file unless it's absolute
             let resolve_path = |p: &str| {
                 let path = std::path::Path::new(p);

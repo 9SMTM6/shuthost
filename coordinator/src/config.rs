@@ -354,7 +354,10 @@ mod tests {
         let tmp = std::env::temp_dir().join("test_config_no_tls.toml");
         std::fs::write(&tmp, toml_str).unwrap();
         let cfg = load_coordinator_config(&tmp).await.unwrap();
-        assert!(cfg.server.tls.is_none(), "Expected tls to be None when omitted");
+        assert!(
+            cfg.server.tls.is_none(),
+            "Expected tls to be None when omitted"
+        );
     }
 
     #[tokio::test]
@@ -373,10 +376,16 @@ mod tests {
         let tmp = std::env::temp_dir().join("test_config_tls_defaults.toml");
         std::fs::write(&tmp, toml_str).unwrap();
         let cfg = load_coordinator_config(&tmp).await.unwrap();
-        let tls = cfg.server.tls.expect("tls should be present when table exists");
+        let tls = cfg
+            .server
+            .tls
+            .expect("tls should be present when table exists");
         assert_eq!(tls.cert_path, "./tls_cert.pem");
         assert_eq!(tls.key_path, "./tls_key.pem");
-        assert!(tls.persist_self_signed, "persist_self_signed should default to true");
+        assert!(
+            tls.persist_self_signed,
+            "persist_self_signed should default to true"
+        );
     }
 
     #[test]

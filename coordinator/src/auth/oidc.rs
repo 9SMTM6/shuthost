@@ -34,9 +34,7 @@ fn request_origin(headers: &HeaderMap) -> Option<String> {
     Some(format!("{}://{}", proto, host))
 }
 
-fn build_redirect_url(
-    headers: &axum::http::HeaderMap,
-) -> Result<RedirectUrl, anyhow::Error> {
+fn build_redirect_url(headers: &axum::http::HeaderMap) -> Result<RedirectUrl, anyhow::Error> {
     let origin = request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
     Ok(RedirectUrl::new(format!(
         "{}/{}",
@@ -141,11 +139,11 @@ pub async fn oidc_login(
         tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
         return (jar, Redirect::to(&return_to)).into_response();
     }
-    let (client, _http) =
-        match build_oidc_client(issuer, client_id, client_secret, &headers).await {
-            Ok(ok) => ok,
-            Err(sc) => return sc.into_response(),
-        };
+    let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await
+    {
+        Ok(ok) => ok,
+        Err(sc) => return sc.into_response(),
+    };
 
     tracing::info!(issuer = %issuer, "Initiating OIDC login");
 
@@ -221,7 +219,7 @@ pub async fn oidc_callback(
         ref issuer,
         ref client_id,
         ref client_secret,
-    scopes: _,
+        scopes: _,
     } = auth.mode
     else {
         return Redirect::to("/").into_response();
@@ -252,11 +250,10 @@ pub async fn oidc_callback(
         return (signed, login_error).into_response();
     }
 
-    let (client, http) =
-        match build_oidc_client(issuer, client_id, client_secret, &headers).await {
-            Ok(ok) => ok,
-            Err(sc) => return sc.into_response(),
-        };
+    let (client, http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await {
+        Ok(ok) => ok,
+        Err(sc) => return sc.into_response(),
+    };
 
     // Log useful debug info to diagnose token exchange issues
     if let Ok(u) = build_redirect_url(&headers) {
