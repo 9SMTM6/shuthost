@@ -1,17 +1,14 @@
+use std::process::Child;
+
 use reqwest::Client;
-use std::fs;
-use std::process::Command;
-use std::time::Duration;
 
-fn get_free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("failed to bind to address")
-        .local_addr()
-        .unwrap()
-        .port()
-}
+mod common;
+use common::{get_free_port, KillOnDrop, wait_for_listening};
 
-async fn spawn_coordinator_with_token(port: u16, token: &str) -> std::process::Child {
+use crate::common::spawn_coordinator_with_config;
+
+/// Convenience: spawn a coordinator configured to use token auth.
+pub fn spawn_coordinator_with_token(port: u16, token: &str) -> Child {
     let config = format!(
         r#"
         [server]
@@ -26,45 +23,20 @@ async fn spawn_coordinator_with_token(port: u16, token: &str) -> std::process::C
 
     [clients]
         "#,
+        port = port,
+        token = token
     );
-    let tmp = std::env::temp_dir().join(format!("integration_test_token_{}.toml", port));
-    fs::write(&tmp, config).expect("failed to write config");
-
-    let bin = std::env::var("CARGO_BIN_EXE_shuthost_coordinator").unwrap_or_else(|_| {
-        std::env::current_dir()
-            .unwrap()
-            .join("target/debug/shuthost_coordinator")
-            .to_string_lossy()
-            .into_owned()
-    });
-    Command::new(bin)
-        .args(["control-service", "--config", tmp.to_str().unwrap()])
-        .spawn()
-        .expect("failed to start coordinator")
+    spawn_coordinator_with_config(port, &config)
 }
+
 
 #[tokio::test]
 async fn insecure_post_redirects_with_insecure_error() {
     let port = get_free_port();
     let token = "correct-token";
-    let child = spawn_coordinator_with_token(port, token).await;
-    struct DropKill(std::process::Child);
-    impl Drop for DropKill {
-        fn drop(&mut self) {
-            let _ = self.0.kill();
-            let _ = self.0.wait();
-        }
-    }
-    let _guard = DropKill(child);
-
-    // wait for server to start
-    let start = std::time::Instant::now();
-    while std::net::TcpStream::connect(("127.0.0.1", port)).is_err() {
-        if start.elapsed() > Duration::from_secs(10) {
-            panic!("server did not start");
-        }
-        tokio::time::sleep(Duration::from_millis(100)).await;
-    }
+    let child = spawn_coordinator_with_token(port, token);
+    let _guard = KillOnDrop(child);
+    wait_for_listening(port, 10).await;
 
     let client = Client::builder()
         .redirect(reqwest::redirect::Policy::none())
@@ -97,24 +69,9 @@ async fn insecure_post_redirects_with_insecure_error() {
 async fn invalid_token_redirects_with_token_error() {
     let port = get_free_port();
     let token = "correct-token";
-    let child = spawn_coordinator_with_token(port, token).await;
-    struct DropKill(std::process::Child);
-    impl Drop for DropKill {
-        fn drop(&mut self) {
-            let _ = self.0.kill();
-            let _ = self.0.wait();
-        }
-    }
-    let _guard = DropKill(child);
-
-    // wait for server to start
-    let start = std::time::Instant::now();
-    while std::net::TcpStream::connect(("127.0.0.1", port)).is_err() {
-        if start.elapsed() > Duration::from_secs(10) {
-            panic!("server did not start");
-        }
-        tokio::time::sleep(Duration::from_millis(100)).await;
-    }
+    let child = spawn_coordinator_with_token(port, token);
+    let _guard = KillOnDrop(child);
+    wait_for_listening(port, 10).await;
 
     let client = Client::builder()
         .redirect(reqwest::redirect::Policy::none())

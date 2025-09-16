@@ -1,15 +1,7 @@
 use reqwest::Client;
-use std::fs;
-use std::process::Command;
-use std::time::Duration;
 
-fn get_free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("failed to bind to address")
-        .local_addr()
-        .unwrap()
-        .port()
-}
+mod common;
+use common::{get_free_port, KillOnDrop, spawn_coordinator_with_config, wait_for_listening};
 
 #[tokio::test]
 async fn token_login_flow() {
@@ -25,57 +17,25 @@ async fn token_login_flow() {
     type = "token"
     token = "{token}"
 
+    [server.tls]
+
     [hosts]
 
     [clients]
         "#
     );
-    let tmp = std::env::temp_dir().join("integration_test_token.toml");
-    fs::write(&tmp, config).expect("failed to write config");
-
-    // Prefer to run the built binary directly to avoid invoking `cargo run` while
-    // `cargo test` holds the build lock. Cargo provides an env var pointing to
-    // the built binary; fall back to the default target path.
-    let bin = std::env::var("CARGO_BIN_EXE_shuthost_coordinator").unwrap_or_else(|_| {
-        std::env::current_dir()
-            .unwrap()
-            .join("target/debug/shuthost_coordinator")
-            .to_string_lossy()
-            .into_owned()
-    });
-    let child = Command::new(bin)
-        .args(["control-service", "--config", tmp.to_str().unwrap()])
-        .spawn()
-        .expect("failed to start coordinator");
-    // ensure child is killed on test end
-    struct KillOnDrop(std::process::Child);
-    impl Drop for KillOnDrop {
-        fn drop(&mut self) {
-            let _ = self.0.kill();
-            let _ = self.0.wait();
-        }
-    }
+    let child = spawn_coordinator_with_config(port, &config);
     let _guard = KillOnDrop(child);
-
-    // Wait for the server to start accepting connections (up to 20s).
-    let start = std::time::Instant::now();
-    loop {
-        if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
-            break;
-        }
-        if start.elapsed() > Duration::from_secs(20) {
-            panic!("server did not start listening within timeout");
-        }
-        tokio::time::sleep(Duration::from_millis(100)).await;
-    }
+    wait_for_listening(port, 20).await;
 
     let client = Client::builder()
         .redirect(reqwest::redirect::Policy::none())
+        .danger_accept_invalid_certs(true)
         .build()
         .unwrap();
 
     // POST to /login with the correct token
-    let url = format!("http://127.0.0.1:{port}/login");
+    let url = format!("https://127.0.0.1:{port}/login");
     let resp = client
         .post(&url)
         .form(&[("token", token)])
@@ -97,7 +57,7 @@ async fn token_login_flow() {
 
     // Now query a protected endpoint, forwarding cookies
     let cookies_header = cookies.join("; ");
-    let protected = format!("http://127.0.0.1:{port}/api/hosts_status");
+    let protected = format!("https://127.0.0.1:{port}/api/hosts_status");
     let resp2 = client
         .get(&protected)
         .header(reqwest::header::COOKIE, cookies_header)
