@@ -134,9 +134,7 @@ impl AuthRuntime {
             } => {
                 info!("Auth mode: external (reverse proxy)");
                 (
-                    AuthResolved::External {
-                        exceptions_version,
-                    },
+                    AuthResolved::External { exceptions_version },
                     key_from_secret(cookie_secret.as_deref()),
                 )
             }

@@ -101,9 +101,15 @@ pub async fn serve_ui(
             // Disabled we must show it. If Auth::External is configured but its
             // exceptions_version doesn't match the current expected version, show it.
             type A = AuthResolved;
-            let maybe_external_auth_config =  match &auth.mode {
-                A::Token { .. } | A::Oidc { .. } | A::External { exceptions_version: EXPECTED_EXCEPTIONS_VERSION } => "",
-                A::Disabled | A::External { .. } => include_str!("../assets/partials/maybe_external_auth_config.tmpl.html"),
+            let maybe_external_auth_config = match &auth.mode {
+                A::Token { .. }
+                | A::Oidc { .. }
+                | A::External {
+                    exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
+                } => "",
+                A::Disabled | A::External { .. } => {
+                    include_str!("../assets/partials/maybe_external_auth_config.tmpl.html")
+                }
             };
 
             render_ui_html(
