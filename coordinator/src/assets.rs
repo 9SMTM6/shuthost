@@ -68,6 +68,10 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
             include_str!("../assets/architecture.md"),
         )
         .replace(
+            "{ external_auth_exceptions }",
+            include_str!("../assets/partials/external_auth_exceptions.tmpl.html"),
+        )
+        .replace(
             "{ client_install_requirements_gotchas }",
             include_str!("../assets/client_install_requirements_gotchas.md"),
         )

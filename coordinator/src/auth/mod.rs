@@ -8,6 +8,7 @@
 // 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
 //  ==> kanidm doesnt support prompt=login, need alternative for at least it.
 // 7) OIDC errors redirect to login page for token, this will lead to confusion
+// 8) new behavior for external auth: Instead of permanently showing required exceptions thingy, show that only when no internal auth is configured, and show it more prominently (either only move it to top, or perhaps also open it by default). Then add a flag to config, to aknowledge that you added external auth (should perhaps be versioned for potential expansion of exceptions), which rmeoves that.
 
 use axum::{
     Router,

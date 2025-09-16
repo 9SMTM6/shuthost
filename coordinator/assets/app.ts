@@ -466,6 +466,10 @@ const setupDynamicConfigs = () => {
 - "traefik.http.routers.shuthost-bypass.priority=100"
 # Remove auth middleware for bypass routes`;
     }
+
+    if (!autheliaConfig || !traefikConfig) {
+        console.info("No dynamic security exceptions found to be populated.")
+    }
 };
 
 // ==========================

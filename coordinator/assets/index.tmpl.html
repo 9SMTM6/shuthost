@@ -121,66 +121,8 @@
 
             { architecture_documentation }
 
-            <!-- Security Configuration Panel (shown on both tabs) -->
-            <section class="section-container mt-4" aria-labelledby="security-config-title">
-                <header class="collapsible-header collapsed" data-target="security-config-content" aria-expanded="false"
-                    aria-controls="security-config-content" id="security-config-header" tabindex="0" role="button">
-                    <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions
-                    </h2>
-                    <span class="collapsible-icon"></span>
-                </header>
-                <div id="security-config-content" class="collapsible-content collapsed" role="region"
-                    aria-labelledby="security-config-title">
-                    <div class="alert alert-info">
-                        <div class="alert-title">Authentication Bypass Required</div>
-                        <p>For the web app and installation scripts to work properly, certain endpoints must be
-                            accessible without authentication. If you're using a reverse proxy with authentication (like
-                            Authelia, NPM with auth, etc.), you need to configure bypass rules for:</p>
-                        <ul>
-                            <li><code>/download/*</code> - Installation script downloads</li>
-                            <li><code>/api/m2m/*</code> - Machine-to-machine API communication</li>
-                            <li><code>/manifest.json</code> - PWA manifest (required for webpage installability)</li>
-                            <li><code>/favicon.svg</code> - Favicon (required for webpage installability)</li>
-                        </ul>
-                        <p class="text-xs mt-2"><em>This allows the installer scripts and web app to download necessary
-                                files and communicate with the coordinator API without requiring user authentication.
-                                The manifest and favicon exceptions are required for proper browser and PWA
-                                support.</em></p>
-                    </div>
+            { external_auth_exceptions }
 
-                    <div class="alert alert-warning">
-                        <div class="alert-title">Configuration Examples</div>
-
-                        <p class="text-sm font-semibold mb-2">Authelia:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#authelia-config" type="button"
-                                aria-label="Copy Authelia config">Copy</button>
-                            <code id="authelia-config" class="code-block">Loading...</code>
-                        </div>
-
-                        <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#nginx-config" type="button"
-                                aria-label="Copy Nginx config">Copy</button>
-                            <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
-                                        location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
-                                            auth_basic off;
-                                            proxy_pass http://your-shuthost-backend;
-                                        }</code>
-                        </div>
-
-                        <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#traefik-config" type="button"
-                                aria-label="Copy Traefik config">Copy</button>
-                            <code id="traefik-config" class="code-block">Loading...</code>
-                        </div>
-
-                        <p class="text-xs mt-2"><em>Replace backend references with your actual configuration
-                                values.</em></p>
-                    </div>
-                </div>
-            </section>
         </section>
     </main>
 
