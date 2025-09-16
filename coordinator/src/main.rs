@@ -120,7 +120,7 @@ async fn run_demo_service(port: u16, bind: &str) {
         use crate::assets::{UiMode, render_ui_html};
         static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
         let html = HTML_TEMPLATE
-            .get_or_init(|| render_ui_html(&UiMode::Demo))
+            .get_or_init(|| render_ui_html(&UiMode::Demo, ""))
             .clone();
         Response::builder()
             .header("Content-Type", "text/html")

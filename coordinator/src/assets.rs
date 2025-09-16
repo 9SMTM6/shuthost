@@ -2,7 +2,7 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
-use crate::auth::AuthResolved;
+use crate::auth::{AuthResolved, EXPECTED_EXCEPTIONS_VERSION};
 use crate::http::AppState;
 use axum::{
     Router,
@@ -34,7 +34,7 @@ pub enum UiMode<'a> {
 }
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
-pub fn render_ui_html(mode: &UiMode<'_>) -> String {
+pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> String {
     let header_tabs = include_str!("../assets/partials/header_tabs.tmpl.html");
     let maybe_logout = if matches!(
         *mode,
@@ -67,10 +67,7 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
             "{ architecture_documentation }",
             include_str!("../assets/architecture.md"),
         )
-        .replace(
-            "{ external_auth_exceptions }",
-            include_str!("../assets/partials/external_auth_exceptions.tmpl.html"),
-        )
+        .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
         .replace(
             "{ client_install_requirements_gotchas }",
             include_str!("../assets/client_install_requirements_gotchas.md"),
@@ -100,10 +97,22 @@ pub async fn serve_ui(
     let show_logout = !matches!(auth.mode, AuthResolved::Disabled);
     let html = HTML_TEMPLATE
         .get_or_init(|| {
-            render_ui_html(&UiMode::Normal {
-                config_path: &config_path,
-                show_logout,
-            })
+            // Determine whether to include the external auth config warning. If Auth is
+            // Disabled we must show it. If Auth::External is configured but its
+            // exceptions_version doesn't match the current expected version, show it.
+            type A = AuthResolved;
+            let maybe_external_auth_config =  match &auth.mode {
+                A::Token { .. } | A::Oidc { .. } | A::External { exceptions_version: EXPECTED_EXCEPTIONS_VERSION } => "",
+                A::Disabled | A::External { .. } => include_str!("../assets/partials/maybe_external_auth_config.tmpl.html"),
+            };
+
+            render_ui_html(
+                &UiMode::Normal {
+                    config_path: &config_path,
+                    show_logout,
+                },
+                maybe_external_auth_config,
+            )
         })
         .clone();
     Response::builder()

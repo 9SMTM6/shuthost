@@ -8,7 +8,6 @@
 // 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
 //  ==> kanidm doesnt support prompt=login, need alternative for at least it.
 // 7) OIDC errors redirect to login page for token, this will lead to confusion
-// 8) new behavior for external auth: Instead of permanently showing required exceptions thingy, show that only when no internal auth is configured, and show it more prominently (either only move it to top, or perhaps also open it by default). Then add a flag to config, to aknowledge that you added external auth (should perhaps be versioned for potential expansion of exceptions), which rmeoves that.
 
 use axum::{
     Router,
@@ -68,6 +67,10 @@ pub enum AuthResolved {
         client_secret: String,
         scopes: Vec<String>,
     },
+    /// External auth (reverse proxy / external provider) acknowledged by operator.
+    External {
+        exceptions_version: u32,
+    },
 }
 
 impl AuthRuntime {
@@ -125,6 +128,18 @@ impl AuthRuntime {
                     key_from_secret(cookie_secret.as_deref()),
                 )
             }
+            AuthConfig {
+                mode: AuthMode::External { exceptions_version },
+                ref cookie_secret,
+            } => {
+                info!("Auth mode: external (reverse proxy)");
+                (
+                    AuthResolved::External {
+                        exceptions_version,
+                    },
+                    key_from_secret(cookie_secret.as_deref()),
+                )
+            }
         };
         Self { mode, cookie_key }
     }
@@ -164,6 +179,8 @@ impl FromRef<AppState> for Key {
     }
 }
 
+pub const EXPECTED_EXCEPTIONS_VERSION: u32 = 1;
+
 pub fn public_routes() -> Router<AppState> {
     use crate::routes::{get_download_router, m2m_routes};
 
@@ -189,6 +206,13 @@ pub async fn require_auth(
     let headers = req.headers();
     match auth.mode {
         AuthResolved::Disabled => next.run(req).await,
+        AuthResolved::External { .. } => {
+            // External auth (reverse proxy or external provider) is handled
+            // outside the app; do not enforce internal auth here and let
+            // requests through. The UI will show a prominent notice when
+            // external auth is not acknowledged or has mismatched version.
+            next.run(req).await
+        }
         AuthResolved::Token { ref token } => {
             // Token auth uses a signed cookie. Read via SignedCookieJar instead
             // of parsing raw headers to ensure the signature is validated.
