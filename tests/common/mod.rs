@@ -20,13 +20,17 @@ impl Drop for KillOnDrop {
 }
 
 fn get_coordinator_bin() -> String {
-    std::env::var("CARGO_BIN_EXE_shuthost_coordinator").unwrap_or_else(|_| {
-        std::env::current_dir()
-            .unwrap()
-            .join("target/debug/shuthost_coordinator")
-            .to_string_lossy()
-            .into_owned()
-    })
+    // Ensure the coordinator binary is built before returning the path
+    let status = std::process::Command::new("cargo")
+        .args(["build", "--bin", "shuthost_coordinator"])
+        .status()
+        .expect("failed to run cargo build for shuthost_coordinator");
+    assert!(status.success(), "cargo build for shuthost_coordinator failed");
+    std::env::current_dir()
+        .unwrap()
+        .join("target/debug/shuthost_coordinator")
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Spawn the coordinator service from a given config string.

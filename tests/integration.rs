@@ -16,13 +16,17 @@ use common::{
 };
 
 fn get_agent_bin() -> String {
-    std::env::var("CARGO_BIN_EXE_shuthost_host_agent").unwrap_or_else(|_| {
-        std::env::current_dir()
-            .unwrap()
-            .join("target/debug/shuthost_host_agent")
-            .to_string_lossy()
-            .into_owned()
-    })
+    // Ensure the agent binary is built before returning the path
+    let status = std::process::Command::new("cargo")
+        .args(["build", "--bin", "shuthost_host_agent"])
+        .status()
+        .expect("failed to run cargo build for shuthost_host_agent");
+    assert!(status.success(), "cargo build for shuthost_host_agent failed");
+    std::env::current_dir()
+        .unwrap()
+        .join("target/debug/shuthost_host_agent")
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Run the host agent binary and return its Output (useful for `--help` checks).
