@@ -12,7 +12,7 @@ documentation = "https://example.com/bar"
 [workspace.dependencies]
 hmac = "0.12.1"
 sha2 = "0.10.8"
-rand = "0.9.1"
+rand = "0.9.x"
 hex = "0.4.3"
 clap = { version = "4.5.37", features = ["derive"] }
 global_service_install = {path = "./global_service_install"}
