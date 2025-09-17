@@ -2,18 +2,13 @@
 // Place integration tests here for API, config, WOL, and binary startup functionality
 
 use reqwest::Client;
-use std::process::{Child, Command};
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+use std::process::{Child, Command};
 // ...existing code...
 
 mod common;
-use common::{
-    get_free_port,
-    KillOnDrop,
-    spawn_coordinator_with_config,
-    wait_for_listening,
-};
+use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 fn get_agent_bin() -> String {
     // Ensure the agent binary is built before returning the path
@@ -21,7 +16,10 @@ fn get_agent_bin() -> String {
         .args(["build", "--bin", "shuthost_host_agent"])
         .status()
         .expect("failed to run cargo build for shuthost_host_agent");
-    assert!(status.success(), "cargo build for shuthost_host_agent failed");
+    assert!(
+        status.success(),
+        "cargo build for shuthost_host_agent failed"
+    );
     std::env::current_dir()
         .unwrap()
         .join("target/debug/shuthost_host_agent")
@@ -57,8 +55,10 @@ pub fn spawn_host_agent(args: &[&str]) -> Child {
 #[tokio::test]
 async fn test_coordinator_config_loads() {
     let port = get_free_port();
-    let mut child = spawn_coordinator_with_config(port, &format!(
-        r#"
+    let mut child = spawn_coordinator_with_config(
+        port,
+        &format!(
+            r#"
         [server]
         port = {port}
         bind = "127.0.0.1"
@@ -67,7 +67,8 @@ async fn test_coordinator_config_loads() {
 
         [clients]
         "#
-    ));
+        ),
+    );
     wait_for_listening(port, 2).await;
     let _ = child.kill();
     let status = child.wait().expect("failed to wait on child");
@@ -95,8 +96,10 @@ async fn test_coordinator_and_agent_online_status() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
 
-    let coordinator_child = spawn_coordinator_with_config(coord_port, &format!(
-        r#"
+    let coordinator_child = spawn_coordinator_with_config(
+        coord_port,
+        &format!(
+            r#"
         [server]
         port = {coord_port}
         bind = "127.0.0.1"
@@ -109,7 +112,8 @@ async fn test_coordinator_and_agent_online_status() {
 
         [clients]
     "#
-    ));
+        ),
+    );
     let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
@@ -138,8 +142,10 @@ async fn test_shutdown_command_execution() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
 
-    let coordinator_child = spawn_coordinator_with_config(coord_port, &format!(
-        r#"
+    let coordinator_child = spawn_coordinator_with_config(
+        coord_port,
+        &format!(
+            r#"
         [server]
         port = {coord_port}
         bind = "127.0.0.1"
@@ -152,7 +158,8 @@ async fn test_shutdown_command_execution() {
 
         [clients]
     "#
-    ));
+        ),
+    );
     let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
@@ -163,7 +170,10 @@ async fn test_shutdown_command_execution() {
             "--port",
             &agent_port.to_string(),
             "--shutdown-command",
-            &format!("echo SHUTDOWN > {shutdown_file}", shutdown_file = shutdown_file.to_string_lossy()),
+            &format!(
+                "echo SHUTDOWN > {shutdown_file}",
+                shutdown_file = shutdown_file.to_string_lossy()
+            ),
         ]
         .as_slice(),
     );

@@ -1,7 +1,7 @@
 use reqwest::Client;
 
 mod common;
-use common::{get_free_port, KillOnDrop, spawn_coordinator_with_config, wait_for_listening};
+use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 #[tokio::test]
 async fn token_login_flow() {

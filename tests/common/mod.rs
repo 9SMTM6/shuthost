@@ -25,7 +25,10 @@ fn get_coordinator_bin() -> String {
         .args(["build", "--bin", "shuthost_coordinator"])
         .status()
         .expect("failed to run cargo build for shuthost_coordinator");
-    assert!(status.success(), "cargo build for shuthost_coordinator failed");
+    assert!(
+        status.success(),
+        "cargo build for shuthost_coordinator failed"
+    );
     std::env::current_dir()
         .unwrap()
         .join("target/debug/shuthost_coordinator")

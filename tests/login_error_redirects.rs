@@ -3,7 +3,7 @@ use std::process::Child;
 use reqwest::Client;
 
 mod common;
-use common::{get_free_port, KillOnDrop, wait_for_listening};
+use common::{KillOnDrop, get_free_port, wait_for_listening};
 
 use crate::common::spawn_coordinator_with_config;
 
@@ -28,7 +28,6 @@ pub fn spawn_coordinator_with_token(port: u16, token: &str) -> Child {
     );
     spawn_coordinator_with_config(port, &config)
 }
-
 
 #[tokio::test]
 async fn insecure_post_redirects_with_insecure_error() {
