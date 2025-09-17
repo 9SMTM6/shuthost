@@ -18,7 +18,7 @@ use crate::is_superuser;
 /// # Arguments
 ///
 /// * `name` - Base name for the service and binary.
-/// * `init_script_content` - Template for the unit file content (`{binary}` placeholder).
+/// * `init_script_content` - Template for the unit file content (`{ binary }` placeholder).
 ///
 /// # Errors
 ///
@@ -58,7 +58,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     let service_file_path = format!("/etc/systemd/system/{service_name}");
     let service_file_content =
-        init_script_content.replace("{binary}", &target_bin.to_string_lossy());
+        init_script_content.replace("{ binary }", &target_bin.to_string_lossy());
 
     let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
     service_file

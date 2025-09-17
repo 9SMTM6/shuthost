@@ -175,7 +175,7 @@ jobs:
           docker cp ./shuthost_coordinator testinit:/
 
           # Install the coordinator as a service (it gets started automatically)
-          docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
+          docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1"
 
           # Wait for coordinator to be ready
           sleep 2
