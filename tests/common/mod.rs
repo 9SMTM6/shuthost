@@ -22,7 +22,7 @@ impl Drop for KillOnDrop {
 fn get_coordinator_bin() -> String {
     // Ensure the coordinator binary is built before returning the path
     let status = std::process::Command::new("cargo")
-        .args(["build", "--bin", "shuthost_coordinator"])
+        .args(["build", "--bin", "shuthost_coordinator", "--no-default-features"])
         .status()
         .expect("failed to run cargo build for shuthost_coordinator");
     assert!(
