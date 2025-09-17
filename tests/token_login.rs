@@ -1,6 +1,7 @@
+mod common;
+
 use reqwest::Client;
 
-mod common;
 use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 #[tokio::test]

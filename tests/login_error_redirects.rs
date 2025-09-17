@@ -1,8 +1,9 @@
+mod common;
+
 use std::process::Child;
 
 use reqwest::Client;
 
-mod common;
 use common::{KillOnDrop, get_free_port, wait_for_listening};
 
 use crate::common::spawn_coordinator_with_config;

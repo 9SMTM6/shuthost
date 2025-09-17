@@ -1,13 +1,14 @@
 // Integration tests for shuthost_coordinator and shuthost_host_agent
 // Place integration tests here for API, config, WOL, and binary startup functionality
 
+mod common;
+
 use reqwest::Client;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Child, Command};
 // ...existing code...
 
-mod common;
 use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 fn get_agent_bin() -> String {

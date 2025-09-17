@@ -7,7 +7,12 @@
 // TODO:
 // 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
 //  ==> kanidm doesnt support prompt=login, need alternative for at least it.
+//  ==> remove logged out cookie, when I use an alternative method.
 // 7) OIDC errors redirect to login page for token, this will lead to confusion
+// 8) I need to add the groups scope by default, and test group membership to support all OIDC IdPs
+
+mod oidc;
+mod token;
 
 use axum::{
     Router,
@@ -45,9 +50,6 @@ const COOKIE_LOGGED_OUT: &str = "shuthost_logged_out";
 pub const LOGIN_ERROR_INSECURE: &str = "insecure";
 pub const LOGIN_ERROR_UNKNOWN: &str = "unknown";
 pub const LOGIN_ERROR_TOKEN: &str = "token";
-
-mod oidc;
-mod token;
 
 #[derive(Clone)]
 pub struct AuthRuntime {
