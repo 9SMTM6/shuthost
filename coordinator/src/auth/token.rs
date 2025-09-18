@@ -9,7 +9,8 @@ use cookie::time::Duration as CookieDuration;
 use serde::Deserialize;
 
 use crate::auth::{
-    AuthResolved, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_TOKEN, EXPECTED_EXCEPTIONS_VERSION, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN
+    AuthResolved, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_TOKEN, EXPECTED_EXCEPTIONS_VERSION,
+    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
 };
 use crate::http::AppState;
 
@@ -38,7 +39,10 @@ pub async fn login_get(
             .get(COOKIE_SESSION)
             .and_then(|session| serde_json::from_str::<super::SessionClaims>(session.value()).ok())
             .is_some_and(|session| !session.is_expired()),
-        A::Disabled | A::External { exceptions_version: EXPECTED_EXCEPTIONS_VERSION } => true,
+        A::Disabled
+        | A::External {
+            exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
+        } => true,
         _ => false,
     };
     if is_authenticated {
@@ -75,7 +79,10 @@ pub async fn login_get(
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "");
     let html = include_str!("../../assets/login.tmpl.html")
-        .replace("{ html_head }", include_str!("../../assets/partials/html_head.tmlp.html"))
+        .replace(
+            "{ html_head }",
+            include_str!("../../assets/partials/html_head.tmlp.html"),
+        )
         .replace("{ title }", "Login • ShutHost")
         .replace("{ maybe_error }", maybe_error)
         .replace("{ header }", &header)
