@@ -61,6 +61,8 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
     let footer_tpl = include_str!("../assets/partials/footer.tmpl.html");
 
     include_str!("../assets/index.tmpl.html")
+        .replace("{ html_head }", include_str!("../assets/partials/html_head.tmlp.html"))
+        .replace("{ title }", "ShutHost Coordinator")
         .replace("{ coordinator_config }", &config_path)
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace(

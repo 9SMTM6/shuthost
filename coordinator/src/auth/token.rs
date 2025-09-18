@@ -75,6 +75,8 @@ pub async fn login_get(
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "");
     let html = include_str!("../../assets/login.tmpl.html")
+        .replace("{ html_head }", include_str!("../../assets/partials/html_head.tmlp.html"))
+        .replace("{ title }", "Login • ShutHost")
         .replace("{ maybe_error }", maybe_error)
         .replace("{ header }", &header)
         .replace("{ footer }", footer)
