@@ -140,13 +140,13 @@ pub async fn start_http_server(
     // browsers will ignore cookies marked Secure. Warn operators so they can
     // enable TLS or place the app behind an HTTPS reverse proxy that sets
     // X-Forwarded-Proto: https.
-    let tls_enabled = match &initial_config.server.tls {
-        Some(t) => t.enable,
+    let tls_enabled = match initial_config.server.tls {
+        Some(ref t) => t.enable,
         None => false,
     };
     if !tls_enabled {
         match &auth_runtime.mode {
-            crate::auth::AuthResolved::Disabled => {}
+            &crate::auth::AuthResolved::Disabled => {}
             _ => {
                 warn!(
                     "TLS appears disabled but authentication is enabled. Authentication cookies are set with Secure=true and will not be sent by browsers over plain HTTP. Enable TLS or run behind an HTTPS reverse proxy (ensure it sets X-Forwarded-Proto: https)."
@@ -195,7 +195,7 @@ pub async fn start_http_server(
     let addr = SocketAddr::from((listen_ip, listen_port));
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match &initial_config.server.tls {
-        Some(tls_cfg @ TlsConfig { enable: true, .. }) => {
+        &Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => {
             // Helper: resolve a configured path relative to the config file unless it's absolute
             let resolve_path = |p: &str| {
                 let path = std::path::Path::new(p);

@@ -280,20 +280,19 @@ pub fn request_is_secure(headers: &HeaderMap, tls_enabled: bool) -> bool {
     if let Some(p) = headers
         .get("x-forwarded-proto")
         .and_then(|v| v.to_str().ok())
+        && p.eq_ignore_ascii_case("https")
     {
-        if p.eq_ignore_ascii_case("https") {
-            return true;
-        }
+        return true;
     }
-    if let Some(fwd) = headers.get("forwarded").and_then(|v| v.to_str().ok()) {
-        if fwd.to_lowercase().contains("proto=https") {
-            return true;
-        }
+    if let Some(fwd) = headers.get("forwarded").and_then(|v| v.to_str().ok())
+        && fwd.to_lowercase().contains("proto=https")
+    {
+        return true;
     }
-    if let Some(x) = headers.get("x-forwarded-ssl").and_then(|v| v.to_str().ok()) {
-        if x.eq_ignore_ascii_case("on") {
-            return true;
-        }
+    if let Some(x) = headers.get("x-forwarded-ssl").and_then(|v| v.to_str().ok())
+        && x.eq_ignore_ascii_case("on")
+    {
+        return true;
     }
     false
 }
@@ -307,20 +306,16 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Basic origin/referrer check to avoid cross-site logout triggers. If the
     // request includes Origin or Referer, ensure it matches the Host or
     // X-Forwarded-Host header. If it doesn't match, reject the request.
-    if let Some(orig) = headers.get("origin").or_else(|| headers.get("referer")) {
-        if let Ok(orig_s) = orig.to_str() {
-            if let Some(host_hdr) = headers
-                .get("x-forwarded-host")
-                .or_else(|| headers.get("host"))
-            {
-                if let Ok(host_s) = host_hdr.to_str() {
-                    if !orig_s.contains(host_s) {
-                        tracing::warn!(origin = %orig_s, host = %host_s, "logout: origin/referrer mismatch");
-                        return StatusCode::BAD_REQUEST.into_response();
-                    }
-                }
-            }
-        }
+    if let Some(orig) = headers.get("origin").or_else(|| headers.get("referer"))
+        && let Ok(orig_s) = orig.to_str()
+        && let Some(host_hdr) = headers
+            .get("x-forwarded-host")
+            .or_else(|| headers.get("host"))
+        && let Ok(host_s) = host_hdr.to_str()
+        && !orig_s.contains(host_s)
+    {
+        tracing::warn!(origin = %orig_s, host = %host_s, "logout: origin/referrer mismatch");
+        return StatusCode::BAD_REQUEST.into_response();
     }
 
     let jar = jar

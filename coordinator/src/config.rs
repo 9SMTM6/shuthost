@@ -108,11 +108,11 @@ fn relative_key_path() -> String {
     "./tls_key.pem".to_string()
 }
 
-fn do_persist_self_signed() -> bool {
+const fn do_persist_self_signed() -> bool {
     true
 }
 
-fn do_tls_enable() -> bool {
+const fn do_tls_enable() -> bool {
     true
 }
 
