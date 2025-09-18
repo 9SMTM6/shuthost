@@ -236,8 +236,7 @@ pub async fn oidc_callback(
     else {
         return Redirect::to("/").into_response();
     };
-    let login_error =
-        Redirect::to(&format!("/login?error={}", LOGIN_ERROR_OIDC)).into_response();
+    let login_error = Redirect::to(&format!("/login?error={}", LOGIN_ERROR_OIDC)).into_response();
     let signed = jar;
     // Verify state (present and matches)
     let Some(state_cookie) = signed.get(COOKIE_STATE) else {

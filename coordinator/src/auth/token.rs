@@ -34,9 +34,7 @@ pub async fn login_get(
 
     let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
     let is_authenticated = match auth.mode {
-        A::Token { ref token } => signed
-            .get(COOKIE_TOKEN)
-            .is_some_and(|c| c.value() == token),
+        A::Token { ref token } => signed.get(COOKIE_TOKEN).is_some_and(|c| c.value() == token),
         A::Oidc { .. } => signed
             .get(COOKIE_SESSION)
             .and_then(|session| serde_json::from_str::<super::SessionClaims>(session.value()).ok())

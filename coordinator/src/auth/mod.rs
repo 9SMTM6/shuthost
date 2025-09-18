@@ -302,11 +302,7 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session = jar.get(COOKIE_SESSION).is_some();
     let had_token = jar.get(COOKIE_TOKEN).is_some();
-    tracing::info!(
-        had_session,
-        had_token,
-        "logout: received request"
-    );
+    tracing::info!(had_session, had_token, "logout: received request");
 
     // Basic origin/referrer check to avoid cross-site logout triggers. If the
     // request includes Origin or Referer, ensure it matches the Host or
