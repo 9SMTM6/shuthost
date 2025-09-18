@@ -171,7 +171,7 @@ Alternatively, you can set the address the coordinator binds to in the configura
 > ⚠️ **Warning**: The WebUI is **not secured by default**, so you should run it behind a reverse proxy that provides TLS and authentication.
 
 #### Built-in Authentication (optional)
-ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you may not need auth in your reverse proxy.
+ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you don't need external auth.
 
 In your `shuthost_coordinator.toml` add under `[server]`:
 
@@ -203,8 +203,12 @@ type = "token"
 # cookie_secret = "base64-encoded-32-bytes=="
 ```
 
+Note that token auth and OIDC auth are mutually exclusive, and both require TLS on the browser end, so need either configured TLS or a reverse proxy that provides TLS.
+
+If proxy unencrypted traffic with an external proxy, this will not be detected, and poses a security risk, as well as a potential source for issues. Such a setup is neither recommended nor supported.
+
 #### TLS configuration
-If you want the coordinator to serve HTTPS directly (not recommended for production — prefer a reverse proxy), add a `[server.tls]` table. Paths are interpreted relative to the config file when not absolute. Example:
+If you want the coordinator to serve HTTPS directly, add a `[server.tls]` table. Paths are interpreted relative to the config file when not absolute. Example:
 
 ```toml
 [server.tls]
@@ -215,7 +219,7 @@ persist_self_signed = true       # if true (default) generate and persist a self
 
 Behavior:
 - If both `cert_path` and `key_path` point to existing files, the coordinator will use them for TLS.
-- If they are absent and `persist_self_signed` is true, the coordinator will generate a self-signed cert/key and write them next to the config file for reuse across restarts.
+- If the files they point to are absent and `persist_self_signed` is true (the default), the coordinator will generate a self-signed cert/key and write them next to the config file for reuse across restarts.
 
 
 Public endpoints (bypass):
