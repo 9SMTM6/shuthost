@@ -1,3 +1,4 @@
+use crate::auth::cookies::create_session_cookie;
 use crate::auth::{
     COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
     LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, SessionClaims,
@@ -343,15 +344,7 @@ pub async fn oidc_callback(
         .remove(Cookie::build(COOKIE_STATE).path("/").build())
         .remove(Cookie::build(COOKIE_NONCE).path("/").build())
         .remove(Cookie::build(COOKIE_PKCE).path("/").build())
-        .add(
-            Cookie::build((COOKIE_SESSION, serde_json::to_string(&session).unwrap()))
-                .http_only(true)
-                .secure(true)
-                .same_site(SameSite::Strict)
-                .max_age(session_max_age)
-                .path("/")
-                .build(),
-        );
+        .add(create_session_cookie(&serde_json::to_string(&session).unwrap(), session_max_age));
 
     // Redirect back if present
     let return_to = signed
