@@ -1,8 +1,9 @@
 //! Command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
 
-mod handler;
+mod commands;
 mod install;
 mod server;
+mod validation;
 
 use clap::{Parser, Subcommand};
 use install::DEFAULT_PORT;

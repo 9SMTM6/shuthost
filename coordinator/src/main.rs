@@ -4,50 +4,24 @@
 
 mod assets;
 mod auth;
+mod cli;
 mod config;
+mod demo;
 mod http;
 mod install;
 mod routes;
 mod websocket;
 mod wol;
 
-use axum::http::Response;
-use clap::{Parser, Subcommand};
-use install::{InstallArgs, install_coordinator};
-use tracing_subscriber::EnvFilter;
+use std::fs;
 
-use std::{env, fs};
-
-use http::{ServiceArgs, start_http_server};
+use clap::Parser;
+use cli::{Cli, Command};
+use demo::run_demo_service;
+use http::start_http_server;
+use install::install_coordinator;
 use tracing::info;
-
-/// Top-level command-line interface definition.
-#[derive(Debug, Parser)]
-#[command(name = env!("CARGO_PKG_NAME"))]
-#[command(version = env!("CARGO_PKG_VERSION"))]
-#[command(about = env!("CARGO_PKG_DESCRIPTION"))]
-pub struct Cli {
-    #[command(subcommand)]
-    pub command: Command,
-}
-
-/// Available subcommands for the coordinator.
-#[derive(Debug, Subcommand)]
-pub enum Command {
-    /// Launch the control web service (WebUI) for managing hosts.
-    ControlService(ServiceArgs),
-
-    /// Install the coordinator service to start on boot.
-    Install(InstallArgs),
-
-    /// Serve only static assets for demo mode (no backend, no state).
-    DemoService {
-        #[arg(long, default_value = "8080")]
-        port: u16,
-        #[arg(long, default_value = "0.0.0.0")]
-        bind: String,
-    },
-}
+use tracing_subscriber::EnvFilter;
 
 /// Application entrypoint: parses CLI and dispatches install or server startup.
 #[tokio::main]
@@ -94,62 +68,4 @@ async fn main() {
     }
 }
 
-// DemoService implementation: serves only static assets for demo mode
-async fn run_demo_service(port: u16, bind: &str) {
-    use crate::assets::asset_routes;
-    use crate::config::ControllerConfig;
-    use crate::http::AppState;
-    use crate::routes::LeaseMap;
-    use crate::routes::get_download_router;
-    use axum::Router;
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use tokio::net::TcpListener;
-    use tokio::sync::{broadcast, watch};
-    use tracing::info;
 
-    let addr = format!("{}:{}", bind, port);
-    info!("Starting demo service on http://{}", addr);
-
-    // Minimal dummy AppState for asset/download routes
-
-    // Custom asset route for demo mode: inject disclaimer into HTML
-    use axum::{extract::State, response::IntoResponse};
-    use std::sync::OnceLock;
-    async fn serve_demo_ui(State(_): State<AppState>) -> impl IntoResponse {
-        use crate::assets::{UiMode, render_ui_html};
-        static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
-        let html = HTML_TEMPLATE
-            .get_or_init(|| render_ui_html(&UiMode::Demo, ""))
-            .clone();
-        Response::builder()
-            .header("Content-Type", "text/html")
-            .body(html)
-            .unwrap()
-    }
-
-    let app_state = AppState {
-        config_path: std::path::PathBuf::from("demo"),
-        config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
-        hoststatus_rx: watch::channel(Arc::new(HashMap::new())).1,
-        ws_tx: broadcast::channel(1).0,
-        leases: LeaseMap::default(),
-        auth: std::sync::Arc::new(crate::auth::AuthRuntime::from_config(
-            &ControllerConfig::default(),
-        )),
-        tls_enabled: false,
-    };
-
-    let app = Router::new()
-        .route("/", axum::routing::get(serve_demo_ui))
-        .merge(asset_routes())
-        .nest("/download", get_download_router())
-        .with_state(app_state);
-
-    let listener = TcpListener::bind(&addr)
-        .await
-        .expect("Failed to bind address");
-    axum::serve(listener, app.into_make_service())
-        .await
-        .expect("Demo server failed");
-}
