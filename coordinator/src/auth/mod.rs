@@ -28,7 +28,7 @@ use std::{
 };
 use tracing::info;
 
-use crate::config::{AuthConfig, AuthMode, ControllerConfig};
+use crate::{auth::token::LoginQuery, config::{AuthConfig, AuthMode, ControllerConfig}};
 use crate::http::AppState;
 
 const COOKIE_SESSION: &str = "shuthost_session";
@@ -179,7 +179,7 @@ pub fn public_routes() -> Router<AppState> {
 
     Router::new()
         // Auth endpoints
-        .route("/login", get(token::login_get).post(token::login_post))
+        .route("/login", get(login_get).post(token::login_post))
         .route("/logout", post(logout))
         .route("/oidc/login", get(oidc::oidc_login))
         .route("/oidc/callback", get(oidc::oidc_callback))
@@ -188,6 +188,77 @@ pub fn public_routes() -> Router<AppState> {
         // Bypass routes
         .nest("/download", get_download_router())
         .nest("/api/m2m", m2m_routes())
+}
+
+pub async fn login_get(
+    State(AppState { auth, .. }): State<AppState>,
+    headers: axum::http::HeaderMap,
+    axum::extract::Query(LoginQuery { error }): axum::extract::Query<LoginQuery>,
+) -> impl IntoResponse {
+    // Check if already authenticated
+    type A = AuthResolved;
+
+    let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
+    let is_authenticated = match auth.mode {
+        A::Token { ref token } => signed.get(COOKIE_TOKEN).is_some_and(|c| c.value() == token),
+        A::Oidc { .. } => signed
+            .get(COOKIE_SESSION)
+            .and_then(|session| serde_json::from_str::<SessionClaims>(session.value()).ok())
+            .is_some_and(|session| !session.is_expired()),
+        A::Disabled
+        | A::External {
+            exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
+        } => true,
+        _ => false,
+    };
+    if is_authenticated {
+        return Redirect::to("/").into_response();
+    }
+
+    let maybe_error = match error.as_deref() {
+        Some(v) if v == LOGIN_ERROR_INSECURE => {
+            include_str!("../../assets/partials/login_error_insecure.tmpl.html")
+        }
+        Some(v) if v == LOGIN_ERROR_TOKEN => {
+            include_str!("../../assets/partials/login_error_token.tmpl.html")
+        }
+        Some(v) if v == LOGIN_ERROR_UNKNOWN => {
+            include_str!("../../assets/partials/login_error_unknown.tmpl.html")
+        }
+        Some(v) if v == LOGIN_ERROR_OIDC => {
+            include_str!("../../assets/partials/login_error_oidc.tmpl.html")
+        }
+        Some(_) => include_str!("../../assets/partials/login_error_unknown.tmpl.html"),
+        None => "",
+    };
+
+    let login_form = match auth.mode {
+        A::Token { .. } => include_str!("../../assets/partials/token_login.tmpl.html"),
+        A::Oidc { .. } => include_str!("../../assets/partials/oidc_login.tmpl.html"),
+        _ => "",
+    };
+
+    let header_tpl = include_str!("../../assets/partials/header.tmpl.html");
+    let footer = include_str!("../../assets/partials/footer.tmpl.html");
+    let header = header_tpl
+        .replace("{ maybe_tabs }", "")
+        .replace("{ maybe_logout }", "")
+        .replace("{ maybe_demo_disclaimer }", "");
+    let html = include_str!("../../assets/login.tmpl.html")
+        .replace(
+            "{ html_head }",
+            include_str!("../../assets/partials/html_head.tmlp.html"),
+        )
+        .replace("{ title }", "Login • ShutHost")
+        .replace("{ maybe_error }", maybe_error)
+        .replace("{ header }", &header)
+        .replace("{ footer }", footer)
+        .replace("{ login_form }", login_form)
+        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+    axum::response::Response::builder()
+        .header("Content-Type", "text/html")
+        .body(axum::body::Body::from(html))
+        .unwrap()
 }
 
 /// Middleware that enforces auth depending on configured mode.
