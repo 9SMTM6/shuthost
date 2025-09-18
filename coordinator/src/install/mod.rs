@@ -13,7 +13,7 @@ use std::{
     process::Command,
 };
 
-use crate::config::{ControllerConfig, ServerConfig};
+use crate::config::{AuthConfig, AuthMode, ControllerConfig, ServerConfig};
 
 #[cfg(target_os = "linux")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.ini");
@@ -102,6 +102,10 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
                     server: ServerConfig {
                         port: args.port,
                         bind: args.bind,
+                        auth: AuthConfig {
+                            mode: AuthMode::Token { token: None },
+                            ..Default::default()
+                        },
                         ..Default::default()
                     },
                     ..Default::default()
