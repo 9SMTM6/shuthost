@@ -14,10 +14,10 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// Start all background tasks for the HTTP server.
 pub fn start_background_tasks(
-    config_rx: watch::Receiver<Arc<ControllerConfig>>,
-    hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
-    ws_tx: broadcast::Sender<WsMessage>,
-    config_tx: watch::Sender<Arc<ControllerConfig>>,
+    config_rx: &watch::Receiver<Arc<ControllerConfig>>,
+    hoststatus_tx: &watch::Sender<Arc<HashMap<String, bool>>>,
+    ws_tx: &broadcast::Sender<WsMessage>,
+    config_tx: &watch::Sender<Arc<ControllerConfig>>,
     config_path: &Path,
 ) {
     // Start host status polling task

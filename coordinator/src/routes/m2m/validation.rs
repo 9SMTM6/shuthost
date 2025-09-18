@@ -1,7 +1,6 @@
 //! HMAC validation and request parsing for M2M endpoints.
 
 use axum::http::StatusCode;
-use serde_plain;
 use shuthost_common::validate_hmac_message;
 use tracing::{info, warn};
 

@@ -18,7 +18,7 @@ use std::fs;
 use clap::Parser;
 use cli::{Cli, Command};
 use demo::run_demo_service;
-use http::start_http_server;
+use http::start;
 use install::install_coordinator;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -57,7 +57,7 @@ async fn main() {
 
             info!("Using config path: {}", config_path.display());
 
-            if let Err(e) = start_http_server(&config_path).await {
+            if let Err(e) = start(&config_path).await {
                 eprintln!("Failed to start HTTP server: {e}");
                 std::process::exit(1);
             }

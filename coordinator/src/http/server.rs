@@ -67,9 +67,7 @@ pub struct AppState {
 /// # Returns
 ///
 /// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
-pub async fn start_http_server(
-    config_path: &std::path::Path,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start(config_path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(load_coordinator_config(config_path).await?);
@@ -86,10 +84,10 @@ pub async fn start_http_server(
 
     // Start background tasks
     crate::http::polling::start_background_tasks(
-        config_rx.clone(),
-        hoststatus_tx,
-        ws_tx.clone(),
-        config_tx,
+        &config_rx,
+        &hoststatus_tx,
+        &ws_tx,
+        &config_tx,
         config_path,
     );
 
