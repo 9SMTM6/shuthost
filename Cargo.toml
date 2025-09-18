@@ -7,7 +7,7 @@ version = "1.2.0"
 edition = "2024"
 authors = ["Samuel Maier"]
 description = "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."
-documentation = "https://example.com/bar"
+documentation = "https://github.com/9SMTM6/shuthost"
 
 [workspace.dependencies]
 hmac = "0.12.1"
