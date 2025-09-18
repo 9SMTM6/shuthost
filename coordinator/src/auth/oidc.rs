@@ -1,6 +1,6 @@
 use crate::auth::{
-    COOKIE_LOGGED_OUT, COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
-    LOGIN_ERROR_INSECURE, LOGIN_ERROR_UNKNOWN, SessionClaims,
+    COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
+    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, SessionClaims,
 };
 use crate::http::AppState;
 use axum::http::HeaderMap;
@@ -167,17 +167,6 @@ pub async fn oidc_login(
     for s in scopes {
         authorize = authorize.add_scope(Scope::new(s.clone()));
     }
-    // If the user just logged out, force interactive login at the IdP once
-    let logged_out_flag = jar.get(COOKIE_LOGGED_OUT).is_some();
-    tracing::debug!(logged_out_flag, "oidc_login: logged_out cookie present");
-    if logged_out_flag {
-        tracing::info!(
-            "oidc_login: adding prompt=login and max_age=0 to authorization request to force interactive login"
-        );
-        // Some OPs ignore prompt=login; adding max_age=0 asks the provider to re-authenticate.
-        authorize = authorize.add_extra_param("prompt", "login");
-        authorize = authorize.add_extra_param("max_age", "0");
-    }
     let (auth_url, csrf_token, nonce) = authorize.set_pkce_challenge(pkce_challenge).url();
 
     // Store state + nonce + pkce in signed cookies and clear logged_out flag so it applies only to
@@ -212,9 +201,7 @@ pub async fn oidc_login(
                 .max_age(short_exp)
                 .path("/")
                 .build(),
-        )
-        // Clear the flag so it applies only to the next attempt
-        .remove(Cookie::build(COOKIE_LOGGED_OUT).path("/").build());
+        );
 
     tracing::info!(auth_url = %auth_url, "oidc_login: redirecting to provider authorization endpoint");
     (signed, Redirect::to(auth_url.as_str())).into_response()
@@ -250,7 +237,7 @@ pub async fn oidc_callback(
         return Redirect::to("/").into_response();
     };
     let login_error =
-        Redirect::to(&format!("/login?error={}", LOGIN_ERROR_UNKNOWN)).into_response();
+        Redirect::to(&format!("/login?error={}", LOGIN_ERROR_OIDC)).into_response();
     let signed = jar;
     // Verify state (present and matches)
     let Some(state_cookie) = signed.get(COOKIE_STATE) else {

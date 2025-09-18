@@ -20,32 +20,10 @@
     <!-- Login card -->
     <section class="section-container max-w-md w-full" aria-labelledby="login-title">
       <header class="py-3 text-center">
-        <h1 id="login-title" class="text-lg font-semibold">Sign in with Access Token</h1>
+        <h1 id="login-title" class="text-lg font-semibold">Sign in</h1>
       </header>
       <div class="p-4">
-        <form method="post" action="/login" class="space-y-4">
-          <div>
-            <label class="block text-sm mb-1" for="token">Access Token</label>
-            <div class="flex items-stretch gap-2 max-w-sm mx-auto">
-              <input id="token" name="token" type="password" required autofocus autocomplete="current-password"
-                spellcheck="false"
-                class="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2" />
-              <button type="button" id="toggle-token"
-                class="px-3 py-2 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 leading-none"
-                aria-label="Show token" aria-pressed="false" title="Show token">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"
-                  aria-hidden="true">
-                  <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <button type="submit"
-            class="w-full text-xs sm:text-sm px-3 py-2 mt-3 rounded bg-green-600 text-white hover:bg-green-700 border border-transparent">
-            Login
-          </button>
-        </form>
+        { login_form }
       </div>
     </section>
   </main>

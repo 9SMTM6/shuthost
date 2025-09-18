@@ -4,13 +4,6 @@
 //! - OIDC mode: standard authorization code flow with PKCE. Maintains a signed
 //!   session cookie once the user is authenticated.
 
-// TODO:
-// 3) Check back on logout button issue with oidc (prompt=login), doesnt seem to be fixed.
-//  ==> kanidm doesnt support prompt=login, need alternative for at least it.
-//  ==> remove logged out cookie, when I use an alternative method.
-// 7) OIDC errors redirect to login page for token, this will lead to confusion
-// 8) I need to add the groups scope by default, and test group membership to support all OIDC IdPs
-
 mod oidc;
 mod token;
 
@@ -44,12 +37,12 @@ const COOKIE_STATE: &str = "shuthost_oidc_state";
 const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 const COOKIE_RETURN_TO: &str = "shuthost_return_to";
-const COOKIE_LOGGED_OUT: &str = "shuthost_logged_out";
 
 // Centralized login error keys used as query values on /login?error=<key>
 pub const LOGIN_ERROR_INSECURE: &str = "insecure";
 pub const LOGIN_ERROR_UNKNOWN: &str = "unknown";
 pub const LOGIN_ERROR_TOKEN: &str = "token";
+pub const LOGIN_ERROR_OIDC: &str = "oidc";
 
 #[derive(Clone)]
 pub struct AuthRuntime {
@@ -309,11 +302,9 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session = jar.get(COOKIE_SESSION).is_some();
     let had_token = jar.get(COOKIE_TOKEN).is_some();
-    let had_logged_out = jar.get(COOKIE_LOGGED_OUT).is_some();
     tracing::info!(
         had_session,
         had_token,
-        had_logged_out,
         "logout: received request"
     );
 
@@ -338,17 +329,7 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
 
     let jar = jar
         .remove(Cookie::build(COOKIE_TOKEN).path("/").build())
-        .remove(Cookie::build(COOKIE_SESSION).path("/").build())
-        // Mark that the user intentionally logged out to force interactive login on next OIDC auth
-        .add(
-            Cookie::build((COOKIE_LOGGED_OUT, "1"))
-                .http_only(true)
-                .secure(true)
-                .same_site(SameSite::Strict)
-                .max_age(CookieDuration::minutes(10))
-                .path("/")
-                .build(),
-        );
+        .remove(Cookie::build(COOKIE_SESSION).path("/").build());
 
     tracing::info!("logout: removed session/token and set logged_out cookie");
     (jar, Redirect::to("/login")).into_response()
