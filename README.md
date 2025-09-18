@@ -117,7 +117,7 @@ Agent / Client installation
 
 ## 🏗️ Architecture
 
-📖 See [Architecture Documentation](coordinator/assets/architecture.md)
+📖 See [Architecture Documentation](https://9smtm6.github.io/shuthost/#architecture)
 
 ## 📖 API Documentation
 

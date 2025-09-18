@@ -67,7 +67,7 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace(
             "{ architecture_documentation }",
-            include_str!("../assets/architecture.md"),
+            include_str!("../assets/architecture.html"),
         )
         .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
         .replace(
