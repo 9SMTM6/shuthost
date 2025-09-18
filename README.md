@@ -89,14 +89,20 @@ Docker (Linux only — host network mode required for WOL)
       network_mode: "host"      # required for WOL
       restart: unless-stopped
       volumes:
-        - ./coordinator_config.toml:/config/coordinator_config.toml:ro
+        - ./coordinator_config/:/config/:ro
       # no ports, since network-mode: host
   ```
 -  Both with config file
   ```toml
+  # coordinator_config.toml
+  # ensure only you can read this file with `chmod 600 $(whoami) ./coordinator_config/coordinator_config.toml`
   [server]
   port = 8080 # change accordingly
-  bind = "127.0.0.1" # forward to this with your reverse proxy, INCLUDING AUTHORIZATION! With exceptions as detailed in the WebUI.
+  bind = "127.0.0.1" # forward to this with your local reverse proxy with TLS.
+
+  [server.auth]
+  type = "token"
+  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation on each start
 
   [hosts]
 
@@ -203,9 +209,17 @@ type = "token"
 # cookie_secret = "base64-encoded-32-bytes=="
 ```
 
-Note that token auth and OIDC auth are mutually exclusive, and both require TLS on the browser end, so need either configured TLS or a reverse proxy that provides TLS.
+Note that auth modes are mutually exclusive, and both require TLS on the browser end, so need either configured TLS or a reverse proxy that provides TLS.
 
 If proxy unencrypted traffic with an external proxy, this will not be detected, and poses a security risk, as well as a potential source for issues. Such a setup is neither recommended nor supported.
+
+For external auth, you need to add the following exceptions. The WebUI will show you convenience configs for some auth providers if you set `exceptions_version=0`.
+
+Public endpoints (bypass):
+- `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
+- `/api/m2m/*` (M2M API, e.g. for clients)
+
+All other routes should be protected by your external auth.
 
 #### TLS configuration
 If you want the coordinator to serve HTTPS directly, add a `[server.tls]` table. Paths are interpreted relative to the config file when not absolute. Example:
@@ -219,16 +233,7 @@ persist_self_signed = true       # if true (default) generate and persist a self
 
 Behavior:
 - If both `cert_path` and `key_path` point to existing files, the coordinator will use them for TLS.
-- If the files they point to are absent and `persist_self_signed` is true (the default), the coordinator will generate a self-signed cert/key and write them next to the config file for reuse across restarts.
-
-
-Public endpoints (bypass):
-- `/login`, `/logout` (token mode)
-- `/oidc/login`, `/oidc/callback` (OIDC)
-- `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
-- `/api/m2m/*` (M2M API, e.g. for clients)
-
-All other routes require auth.
+- If the files they point to are absent and `persist_self_signed` is true (the default), the coordinator will generate a self-signed cert/key and write them to the provided locations for reuse across restarts.
 
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks
