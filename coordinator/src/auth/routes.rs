@@ -2,20 +2,20 @@
 
 use axum::{
     Router,
-    extract::{State},
+    extract::State,
     http::HeaderMap,
     response::{IntoResponse, Redirect},
     routing::{get, post},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use serde::{Deserialize, Serialize};
-use std::{
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::auth::cookies::{COOKIE_SESSION, COOKIE_TOKEN};
 use crate::auth::token::LoginQuery;
-use crate::auth::{AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN};
+use crate::auth::{
+    AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
+};
 use crate::http::AppState;
 
 pub const EXPECTED_EXCEPTIONS_VERSION: u32 = 1;
@@ -26,7 +26,10 @@ pub fn public_routes() -> Router<AppState> {
 
     Router::new()
         // Auth endpoints
-        .route("/login", get(login_get).post(crate::auth::token::login_post))
+        .route(
+            "/login",
+            get(login_get).post(crate::auth::token::login_post),
+        )
         .route("/logout", post(logout))
         .route("/oidc/login", get(crate::auth::oidc::oidc_login))
         .route("/oidc/callback", get(crate::auth::oidc::oidc_callback))

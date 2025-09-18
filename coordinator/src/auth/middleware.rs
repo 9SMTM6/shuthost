@@ -9,7 +9,9 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 
-use crate::auth::cookies::{COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_TOKEN, create_return_to_cookie};
+use crate::auth::cookies::{
+    COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_TOKEN, create_return_to_cookie,
+};
 use crate::auth::{AuthLayerState, AuthResolved, SessionClaims};
 
 /// Middleware that enforces authentication depending on configured mode.

@@ -4,7 +4,7 @@
 //! without any backend state or functionality.
 
 use axum::http::Response;
-use axum::{extract::State, response::IntoResponse, Router};
+use axum::{Router, extract::State, response::IntoResponse};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::OnceLock;
@@ -12,10 +12,10 @@ use tokio::net::TcpListener;
 use tokio::sync::{broadcast, watch};
 use tracing::info;
 
-use crate::assets::{asset_routes, render_ui_html, UiMode};
+use crate::assets::{UiMode, asset_routes, render_ui_html};
 use crate::config::ControllerConfig;
 use crate::http::AppState;
-use crate::routes::{get_download_router, LeaseMap};
+use crate::routes::{LeaseMap, get_download_router};
 
 /// Run the demo service on the specified port and bind address.
 pub async fn run_demo_service(port: u16, bind: &str) {

@@ -33,11 +33,7 @@ use shuthost_common::validate_hmac_message;
 /// assert_eq!(resp, "OK: status");
 /// assert!(!shutdown);
 /// ```
-pub fn validate_request(
-    data: &[u8],
-    config: &ServiceArgs,
-    peer_addr: &str,
-) -> (String, bool) {
+pub fn validate_request(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {

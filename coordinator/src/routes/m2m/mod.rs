@@ -19,7 +19,7 @@ use crate::routes::api::LeaseAction;
 
 // Re-export public API
 pub use host_control::handle_host_state;
-pub use leases::{broadcast_lease_update, LeaseMap, LeaseSource};
+pub use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
 const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.tmpl.sh");
 
@@ -84,10 +84,11 @@ async fn handle_m2m_lease_action(
     State(state): State<AppState>,
     Query(q): Query<LeaseActionQuery>,
 ) -> impl IntoResponse {
-    let (client_id, _command_action) = match validation::validate_m2m_request(&headers, &state, &action) {
-        Ok(res) => res,
-        Err(e) => return Err(e),
-    };
+    let (client_id, _command_action) =
+        match validation::validate_m2m_request(&headers, &state, &action) {
+            Ok(res) => res,
+            Err(e) => return Err(e),
+        };
 
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(host.clone()).or_default();

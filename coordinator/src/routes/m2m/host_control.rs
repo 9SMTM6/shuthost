@@ -109,7 +109,10 @@ pub async fn handle_host_state(
 }
 
 /// Get host configuration from the current config.
-pub fn get_host_config(host_name: &str, state: &AppState) -> Result<Host, (StatusCode, &'static str)> {
+pub fn get_host_config(
+    host_name: &str,
+    state: &AppState,
+) -> Result<Host, (StatusCode, &'static str)> {
     let config = state.config_rx.borrow();
     match config.hosts.get(host_name) {
         Some(host) => {

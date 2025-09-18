@@ -137,7 +137,8 @@ mod tests {
 
             [clients]
         "#;
-        let cfg: crate::config::ControllerConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        let cfg: crate::config::ControllerConfig =
+            toml::from_str(toml_str).expect("Failed to parse TOML");
         let tls = cfg.server.tls.expect("tls should be present");
         assert_eq!(tls.cert_path, "certs/mycert.pem");
         assert_eq!(tls.key_path, "certs/mykey.pem");

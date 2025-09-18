@@ -48,14 +48,17 @@ pub fn create_token_cookie(token: &str) -> Cookie<'static> {
     Cookie::build((COOKIE_TOKEN, token.to_string()))
         .http_only(true)
         .secure(true)
-        .same_site(SameSite::Strict)                
+        .same_site(SameSite::Strict)
         .max_age(CookieDuration::days(30))
         .path("/")
         .build()
 }
 
 /// Create a session cookie for OIDC authentication.
-pub fn create_session_cookie(session_data: &str, session_max_age: CookieDuration) -> Cookie<'static> {
+pub fn create_session_cookie(
+    session_data: &str,
+    session_max_age: CookieDuration,
+) -> Cookie<'static> {
     Cookie::build((COOKIE_SESSION, session_data.to_string()))
         .http_only(true)
         .secure(true)

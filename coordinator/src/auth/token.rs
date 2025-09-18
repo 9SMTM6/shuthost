@@ -7,10 +7,7 @@ use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use serde::Deserialize;
 
 use crate::auth::cookies::create_token_cookie;
-use crate::auth::{
-    AuthResolved, COOKIE_RETURN_TO,
-    LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN,
-};
+use crate::auth::{AuthResolved, COOKIE_RETURN_TO, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN};
 use crate::http::AppState;
 
 #[derive(Deserialize)]

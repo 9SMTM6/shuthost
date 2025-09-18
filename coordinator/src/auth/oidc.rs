@@ -344,7 +344,10 @@ pub async fn oidc_callback(
         .remove(Cookie::build(COOKIE_STATE).path("/").build())
         .remove(Cookie::build(COOKIE_NONCE).path("/").build())
         .remove(Cookie::build(COOKIE_PKCE).path("/").build())
-        .add(create_session_cookie(&serde_json::to_string(&session).unwrap(), session_max_age));
+        .add(create_session_cookie(
+            &serde_json::to_string(&session).unwrap(),
+            session_max_age,
+        ));
 
     // Redirect back if present
     let return_to = signed
