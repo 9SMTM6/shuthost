@@ -194,8 +194,10 @@ type = "token"
 # client_secret = "supersecret"
 # # optional, defaults to ["openid","profile"]
 # scopes = ["openid","profile"]
-# # optional, defaults to "/oidc/callback"
-# redirect_path = "/oidc/callback"
+
+# External auth mode (reverse proxy or external authentication provider)
+# type = "external"
+# exceptions_version = 1  # Version of exceptions acknowledged by operator
 
 # Optional: base64-encoded cookie signing key (32 bytes). If omitted, a random key is generated
 # cookie_secret = "base64-encoded-32-bytes=="
