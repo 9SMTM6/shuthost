@@ -181,7 +181,7 @@ jobs:
           sleep 2
 
           # Check on coordinator service
-          docker exec testinit curl -fsSL http://localhost:8080 || { echo "Coordinator service is not running"; exit 1; }
+          docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
 
           # Run agent installer (downloads from running coordinator)
           docker exec testinit sh -c "
