@@ -4,7 +4,7 @@ version.workspace = true
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
-documentation.workspace = true
+repository.workspace = true
 
 [dependencies]
 hmac.workspace = true
@@ -38,7 +38,7 @@ rcgen = "0.14.x"
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
 default = [
-    "include_macos_agents",
+    # "include_macos_agents",
     "include_linux_agents",
 ]
 include_macos_agents = []
