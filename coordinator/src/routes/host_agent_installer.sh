@@ -53,6 +53,64 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+elevate_privileges() {
+    cmd="$*"
+    if command -v sudo >/dev/null 2>&1; then
+        sudo "$cmd"
+    elif command -v doas >/dev/null 2>&1; then
+        doas "$cmd"
+    else
+        echo "Error: Neither sudo nor doas found. Please install sudo or doas."
+        exit 1
+    fi
+}
+
+run_as_elevated() {
+    if [ "$(id -u)" -eq 0 ]; then
+        sh -c "$*"
+    else
+        elevate_privileges "$*"
+    fi
+}
+
+exit_on_glibc_error() {
+    if [ "$PLATFORM" = "linux" ]; then
+        if ! ./"$OUTFILE" --version >/dev/null 2>&1; then
+            ERROR_OUTPUT=$(./"$OUTFILE" --version 2>&1)
+            if echo "$ERROR_OUTPUT" | grep -q "version \`GLIBC_"; then
+                echo "Detected glibc-related linker error: $ERROR_OUTPUT"
+                echo "Recommendation: Use the 'linux-musl' version for better compatibility."
+                echo "To override the platform, use the following command:"
+                echo "curl -fsSL ${REMOTE_URL}/download/host_agent_installer.sh | sh -s ${REMOTE_URL} --os linux-musl $INSTALLER_ARGS"
+                exit 1
+            fi
+        fi
+    fi
+}
+
+test_wol_packet_reachability() {
+    WOL_TEST_PORT=$((DEFAULT_PORT + 1))
+
+    echo "Testing WOL packet reachability..."
+    # Start the test receiver in background
+    ./"$OUTFILE" test-wol --port $WOL_TEST_PORT &
+    RECEIVER_PID=$!
+
+    # Give it time to start
+    sleep 1
+
+    # Test via coordinator API
+    TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
+    # kill the agent test process, if its still running.
+    kill $RECEIVER_PID || true
+
+    if echo "$TEST_RESULT" | grep -q "\"broadcast\":true"; then
+        echo "✓ Broadcast WoL packets working"
+    else
+        echo "⚠️  Broadcast WoL packets failed - check firewall rules for UDP port 9"
+    fi
+}
+
 # Detect architecture (allow override)
 if [ -n "$USER_ARCH" ]; then
     ARCH="$USER_ARCH"
@@ -94,62 +152,20 @@ fi
 OUTFILE="shuthost_host_agent"
 
 echo "Downloading host_agent for $PLATFORM/$ARCH..."
+
+################## Boring setup complete ------------- Interesting starting here
+
+set -x
 curl -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
-# Test binary execution for glibc-related errors
-if [ "$PLATFORM" = "linux" ]; then
-    if ! ./"$OUTFILE" --version >/dev/null 2>&1; then
-        ERROR_OUTPUT=$(./"$OUTFILE" --version 2>&1)
-        if echo "$ERROR_OUTPUT" | grep -q "version \`GLIBC_"; then
-            echo "Detected glibc-related linker error: $ERROR_OUTPUT"
-            echo "Recommendation: Use the 'linux-musl' version for better compatibility."
-            echo "To override the platform, use the following command:"
-            echo "curl -fsSL ${REMOTE_URL}/download/host_agent_installer.sh | sh -s ${REMOTE_URL} --os linux-musl $INSTALLER_ARGS"
-            exit 1
-        fi
-    fi
-fi
+exit_on_glibc_error
 
-WOL_TEST_PORT=$((DEFAULT_PORT + 1))
+test_wol_packet_reachability
 
-echo "Testing WOL packet reachability..."
-# Start the test receiver in background
-./"$OUTFILE" test-wol --port $WOL_TEST_PORT &
-RECEIVER_PID=$!
+run_as_elevated ./"$OUTFILE" install "$INSTALLER_ARGS"
 
-# Give it time to start
-sleep 1
-
-# Test via coordinator API
-TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
-# kill the agent test process, if its still running.
-kill $RECEIVER_PID || true
-
-if echo "$TEST_RESULT" | grep -q "\"broadcast\":true"; then
-    echo "✓ Broadcast WoL packets working"
-else
-    echo "⚠️  Broadcast WoL packets failed - check firewall rules for UDP port 9"
-fi
-
-elevate_privileges() {
-    cmd="$*"
-    if command -v sudo >/dev/null 2>&1; then
-        sudo $cmd
-    elif command -v doas >/dev/null 2>&1; then
-        doas $cmd
-    else
-        echo "Error: Neither sudo nor doas found. Please install sudo or doas."
-        exit 1
-    fi
-}
-
-echo "Running installer..."
-if [ "$(id -u)" -eq 0 ]; then
-    eval "sh -c './$OUTFILE install $INSTALLER_ARGS'"
-else
-    eval "elevate_privileges ./'$OUTFILE' install $INSTALLER_ARGS"
-fi
+set +x
 
 echo "Cleaning up..."
 rm -f "$OUTFILE"
