@@ -47,6 +47,7 @@ while [ $# -gt 0 ]; do
         *)
             # Escape any embedded double quotes
             ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
+            # shellcheck disable=SC2089
             INSTALLER_ARGS="$INSTALLER_ARGS \"$ESCAPED_ARG\""
             ;;
     esac
@@ -56,9 +57,11 @@ done
 elevate_privileges() {
     cmd="$*"
     if command -v sudo >/dev/null 2>&1; then
-        sudo "$cmd"
+        # shellcheck disable=SC2086
+        sudo $cmd
     elif command -v doas >/dev/null 2>&1; then
-        doas "$cmd"
+        # shellcheck disable=SC2086
+        doas $cmd
     else
         echo "Error: Neither sudo nor doas found. Please install sudo or doas."
         exit 1
@@ -67,9 +70,11 @@ elevate_privileges() {
 
 run_as_elevated() {
     if [ "$(id -u)" -eq 0 ]; then
-        sh -c "$*"
+        # shellcheck disable=SC2048,SC2086
+        sh -c $*
     else
-        elevate_privileges "$*"
+        # shellcheck disable=SC2048,SC2086
+        elevate_privileges $*
     fi
 }
 
@@ -91,7 +96,6 @@ exit_on_glibc_error() {
 test_wol_packet_reachability() {
     WOL_TEST_PORT=$((DEFAULT_PORT + 1))
 
-    echo "Testing WOL packet reachability..."
     # Start the test receiver in background
     ./"$OUTFILE" test-wol --port $WOL_TEST_PORT &
     RECEIVER_PID=$!
@@ -155,7 +159,16 @@ echo "Downloading host_agent for $PLATFORM/$ARCH..."
 
 ################## Boring setup complete ------------- Interesting starting here
 
-set -x
+set -v
+echo "$REMOTE_URL"
+
+echo "$ARCH"
+
+echo "$PLATFORM"
+
+echo "$INSTALLER_ARGS"
+
+
 curl -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
@@ -163,9 +176,10 @@ exit_on_glibc_error
 
 test_wol_packet_reachability
 
-run_as_elevated ./"$OUTFILE" install "$INSTALLER_ARGS"
+# shellcheck disable=SC2090,SC2086
+run_as_elevated ./$OUTFILE install $INSTALLER_ARGS
 
-set +x
+set +v
 
 echo "Cleaning up..."
 rm -f "$OUTFILE"

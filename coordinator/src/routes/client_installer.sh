@@ -33,7 +33,12 @@ CLIENT_SCRIPT_NAME="shuthost_client_${CLIENT_ID}"
 
 # Download the client script template
 echo "Downloading client script template..."
-set -x
+set -v
+echo "$REMOTE_URL"
+
+echo "$CLIENT_ID"
+
+
 curl -L --fail-with-body "${REMOTE_URL}/download/shuthost_client" -o "/tmp/$CLIENT_SCRIPT_NAME.tmpl"
 
 # Generate a random shared secret using openssl
@@ -48,7 +53,7 @@ mv "/tmp/$CLIENT_SCRIPT_NAME" "$INSTALL_DIR/$CLIENT_SCRIPT_NAME"
 # Make script executable, readable and writeable for you, but noone else 
 chmod 700 "$INSTALL_DIR/$CLIENT_SCRIPT_NAME"
 
-set +x
+set +v
 ################## Aaand done -----------------------------------------------------
 
 # Print the configuration line for the coordinator
