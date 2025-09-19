@@ -28,7 +28,7 @@
     <ul>
         <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
             <ul>
-                <li><strong>BIOS Configuration:</strong> WOL must be enabled in BIOS/UEFI settings.</li>
+                <li><strong>BIOS Configuration:</strong> WOL must be enabled (and thus available, which isnt guaranteed, e.g. Raspberry Pi) in BIOS/UEFI settings.</li>
                 <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown.</li>
             </ul>
         </li>
