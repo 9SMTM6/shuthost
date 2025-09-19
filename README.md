@@ -272,16 +272,10 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 
 ## 🚀 Potential Features
 
-### 🔐 Authentication & Authorization
-- 🆔 **OIDC authorization** where I allow the required endpoints for all
-  - alternative to putting the GUI behind external Authorization
-  - Might consider enabling this by default
-  - Show error if UI is shown without any authorization (detected e.g. by header presence)
-
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
-  - ⚠️ Requires using cross
-  - I have no ability to test these.
+  - ⚠️ Requires using more advanced cross compilation
+  - I have no ability to test these practically myself.
 
 ### 🔧 Management Features
 - 🗑️ **Uninstalls**
