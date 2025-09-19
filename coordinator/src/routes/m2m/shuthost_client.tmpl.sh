@@ -52,7 +52,7 @@ for arg in "$@"; do
 done
 
 # Reset positional parameters
-eval set "$POSITIONAL"
+eval set -- "$POSITIONAL"
 
 if [ $# -lt 2 ]; then
     echo "Error: Missing required arguments." >&2
@@ -81,6 +81,8 @@ MESSAGE="${TIMESTAMP}|${ACTION}"
 SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET" -binary | hexdump -ve '/1 "%02x"')
 
 # Combine into final X-Request header
+set -v
+
 X_REQUEST="${TIMESTAMP}|${ACTION}|${SIGNATURE}"
 
 set -x
