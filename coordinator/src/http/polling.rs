@@ -1,85 +1,26 @@
-//! HTTP server implementation for the coordinator control interface.
-//!
-//! Defines routes, state management, configuration watching, and periodic host polling.
+//! Background polling tasks for the coordinator.
 
-use axum::http::Request;
-use axum::routing;
-use axum::{Router, response::Redirect, routing::get};
-use std::{net::IpAddr, time::Duration};
-use std::{net::SocketAddr, sync::Arc};
+use std::path::Path;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::net::TcpStream;
+use tokio::sync::{broadcast, watch};
 use tokio::time::timeout;
 use tracing::{debug, info, warn};
 
-use crate::assets::asset_routes;
-use crate::{
-    config::{ControllerConfig, load_coordinator_config, watch_config_file},
-    routes::{LeaseMap, api_routes, get_download_router},
-    websocket::{WsMessage, ws_handler},
-};
-use clap::Parser;
+use crate::config::{ControllerConfig, watch_config_file};
+use crate::websocket::WsMessage;
 use shuthost_common::create_signed_message;
-use std::collections::HashMap;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::{broadcast, watch};
 
-/// Command-line arguments for the HTTP service subcommand.
-#[derive(Debug, Parser)]
-pub struct ServiceArgs {
-    /// Path to the coordinator TOML config file.
-    #[arg(
-        long = "config",
-        env = "SHUTHOST_CONTROLLER_CONFIG_PATH",
-        default_value = "shuthost_coordinator.toml"
-    )]
-    pub config: String,
-}
-
-/// Application state shared across request handlers and background tasks.
-#[derive(Clone)]
-pub struct AppState {
-    /// Path to the configuration file for template injection and reloads.
-    pub config_path: std::path::PathBuf,
-
-    /// Receiver for updated `ControllerConfig` when the file changes.
-    pub config_rx: watch::Receiver<Arc<ControllerConfig>>,
-
-    /// Receiver for host online/offline status updates.
-    pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
-
-    /// Broadcast sender for distributing WebSocket messages.
-    pub ws_tx: broadcast::Sender<WsMessage>,
-
-    /// In-memory map of current leases for hosts.
-    pub leases: LeaseMap,
-}
-
-/// Starts the Axum-based HTTP server for the coordinator UI and API.
-///
-/// # Arguments
-///
-/// * `config_path` - Path to the TOML configuration file.
-///
-/// # Returns
-///
-/// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
-pub async fn start_http_server(
-    config_path: &std::path::Path,
-) -> Result<(), Box<dyn std::error::Error>> {
-    info!("Starting HTTP server...");
-
-    let initial_config = Arc::new(load_coordinator_config(config_path).await?);
-    let listen_port = initial_config.server.port;
-
-    let listen_ip: IpAddr = initial_config.server.bind.parse()?;
-
-    let (config_tx, config_rx) = watch::channel(initial_config);
-
-    let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
-    let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
-
-    let (ws_tx, _) = broadcast::channel(32);
-
+/// Start all background tasks for the HTTP server.
+pub fn start_background_tasks(
+    config_rx: &watch::Receiver<Arc<ControllerConfig>>,
+    hoststatus_tx: &watch::Sender<Arc<HashMap<String, bool>>>,
+    ws_tx: &broadcast::Sender<WsMessage>,
+    config_tx: &watch::Sender<Arc<ControllerConfig>>,
+    config_path: &Path,
+) {
+    // Start host status polling task
     {
         let config_rx = config_rx.clone();
         let hoststatus_tx = hoststatus_tx.clone();
@@ -88,9 +29,10 @@ pub async fn start_http_server(
         });
     }
 
+    // Start WebSocket host status broadcaster
     {
         let ws_tx = ws_tx.clone();
-        let mut hoststatus_rx = hoststatus_rx.clone();
+        let mut hoststatus_rx = hoststatus_tx.subscribe();
         tokio::spawn(async move {
             while hoststatus_rx.changed().await.is_ok() {
                 let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
@@ -101,6 +43,7 @@ pub async fn start_http_server(
         });
     }
 
+    // Start WebSocket config change broadcaster
     {
         let ws_tx = ws_tx.clone();
         let mut config_rx = config_rx.clone();
@@ -117,6 +60,7 @@ pub async fn start_http_server(
         });
     }
 
+    // Start config file watcher
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
@@ -124,38 +68,6 @@ pub async fn start_http_server(
             watch_config_file(path, config_tx).await;
         });
     }
-
-    let app_state = AppState {
-        config_rx,
-        hoststatus_rx,
-        ws_tx,
-        config_path: config_path.to_path_buf(),
-        leases: LeaseMap::default(),
-    };
-
-    let app = Router::new()
-        .nest("/api", api_routes())
-        .nest("/download", get_download_router())
-        .merge(asset_routes())
-        .route("/", get(crate::assets::serve_ui))
-        .route("/ws", get(ws_handler))
-        .with_state(app_state)
-        .fallback(routing::any(|req: Request<axum::body::Body>| async move {
-            tracing::warn!(
-                method = %req.method(),
-                uri = %req.uri(),
-                "Unhandled request"
-            );
-            Redirect::permanent("/")
-        }));
-
-    let addr = SocketAddr::from((listen_ip, listen_port));
-    info!("Listening on http://{}", addr);
-
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app.into_make_service()).await?;
-
-    Ok(())
 }
 
 /// Background task: periodically polls each host for status by attempting a TCP connection and HMAC ping.

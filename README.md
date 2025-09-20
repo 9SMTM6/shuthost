@@ -89,14 +89,19 @@ Docker (Linux only — host network mode required for WOL)
       network_mode: "host"      # required for WOL
       restart: unless-stopped
       volumes:
-        - ./coordinator_config.toml:/config/coordinator_config.toml:ro
+        - ./coordinator_config/:/config/:ro
       # no ports, since network-mode: host
   ```
 -  Both with config file
   ```toml
+  # coordinator_config.toml
+  # ensure only you can read this file with `chmod 600 $(whoami) ./coordinator_config/coordinator_config.toml`
   [server]
   port = 8080 # change accordingly
-  bind = "127.0.0.1" # forward to this with your reverse proxy, INCLUDING AUTHORIZATION! With exceptions as detailed in the WebUI.
+  bind = "127.0.0.1" # forward to this with your local reverse proxy with TLS.
+
+  [server.auth.token]
+  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation on each start
 
   [hosts]
 
@@ -117,7 +122,7 @@ Agent / Client installation
 
 ## 🏗️ Architecture
 
-📖 See [Architecture Documentation](coordinator/assets/architecture.md)
+📖 See [Architecture Documentation](https://9smtm6.github.io/shuthost/#architecture)
 
 ## 📖 API Documentation
 
@@ -168,7 +173,65 @@ Alternatively, you can set the address the coordinator binds to in the configura
 ## 🔒 Security
 
 ### 🌐 WebUI Security
-> ⚠️ **Warning**: The WebUI is **not secured**, so you should run it behind a reverse proxy that provides TLS and authentication.
+> ⚠️ **Warning**: The WebUI is **not secured by default**, so you should run it behind a reverse proxy that provides TLS and authentication.
+
+#### Built-in Authentication (optional)
+ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you don't need external auth.
+
+In your `shuthost_coordinator.toml` add under `[server]`:
+
+```toml
+[server]
+port = 8080
+bind = "127.0.0.1"
+
+# Choose one auth mode:
+
+[server.auth.token]
+# Token mode: provide a token or omit to auto-generate on startup (printed in logs, but that will be lost on restart)
+# token = "your-secret-token"
+
+# OIDC mode (authorization code flow)
+# [server.auth.oidc]
+# issuer = "https://issuer.example.com/realms/foo"
+# client_id = "shuthost"
+# client_secret = "supersecret"
+# # optional, defaults to ["openid","profile"]
+# scopes = ["openid","profile"]
+
+# External auth mode (reverse proxy or external authentication provider)
+# [server.auth.external]
+# exceptions_version = 1  # Version of exceptions acknowledged by operator
+
+# Optional: base64-encoded cookie signing key (32 bytes). If omitted, a random key is generated
+# cookie_secret = "base64-encoded-32-bytes=="
+```
+
+Note that auth modes are mutually exclusive, and both require TLS on the browser end, so need either configured TLS or a reverse proxy that provides TLS.
+
+If proxy unencrypted traffic with an external proxy, this will not be detected, and poses a security risk, as well as a potential source for issues. Such a setup is neither recommended nor supported.
+
+For external auth, you need to add the following exceptions. The WebUI will show you convenience configs for some auth providers if you set `exceptions_version=0`.
+
+Public endpoints (bypass):
+- `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
+- `/api/m2m/*` (M2M API, e.g. for clients)
+
+All other routes should be protected by your external auth.
+
+#### TLS configuration
+If you want the coordinator to serve HTTPS directly, add a `[server.tls]` table. Paths are interpreted relative to the config file when not absolute. Example:
+
+```toml
+[server.tls]
+cert_path = "./tls_cert.pem"    # path to certificate PEM (default: ./tls_cert.pem)
+key_path = "./tls_key.pem"     # path to private key PEM (default: ./tls_key.pem)
+persist_self_signed = true       # if true (default) generate and persist a self-signed cert when none provided
+```
+
+Behavior:
+- If both `cert_path` and `key_path` point to existing files, the coordinator will use them for TLS.
+- If the files they point to are absent and `persist_self_signed` is true (the default), the coordinator will generate a self-signed cert/key and write them to the provided locations for reuse across restarts.
 
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks
@@ -176,11 +239,11 @@ Alternatively, you can set the address the coordinator binds to in the configura
 > ⚠️ **Warning**: All traffic between the coordinator and agents is **unencrypted** and only secured with HMAC signatures. This means that while status checks and commands are protected from tampering, anyone on the same LAN can observe the traffic and infer host statuses.
 
 ### 🔐 Client Security
-- ✅ The client is secured in the same way
+- ✅ The client is secured in the same way as agents are
 - ✅ The coordinator only accepts requests from **registered clients**
 
 ### 🔧 Reverse Proxy Configuration
-To use the convenience scripts suggested by the WebUI, you will have to configure exceptions in the authorization of your reverse proxy, so that the requests from the host agents and clients are not blocked. 
+To use the convenience scripts suggested by the WebUI, you will have to configure exceptions in the authorization of your reverse proxy, so that the requests from the host agents and clients are not blocked. These are detailed [above](#built-in-authentication-optional).
 
 The WebUI will show you the required exceptions, alongside convenience configs for:
 - 🔑 **Authelia**
@@ -195,26 +258,20 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 |-------|-------------|--------|----------|
 | 🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium | [APP-SIDE] Regularly "syncing" states, either with explicit config on the host or coordinator-wide |
 | 💾 **State Loss** | The coordinator loses state on restart (including updates) | Low (currently only acts on state changes) | [APP-SIDE] Considering state persistence with e.g. sqlite or explicit syncing |
-| 🐳 **Docker Testing** | Docker is currently not well tested | Unknown | N/A |
 | 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A | N/A |
 | 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | Ensure proper Docker network configuration |
-| 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Medium | Manually override the network interface in the configuration |
-| 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Medium | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary if the original binary fails |
+| 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Low | Manually override the network interface in the configuration |
+| 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Low | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary if the original binary fails |
+| 🔏 **Self-signed Certs & Install Scripts** | The client and agent install scripts may fail if you use self-signed certs without proxying these elsewhere | Medium | proxy self-signed certs through a trusted endpoint |
 
 ---
 
 ## 🚀 Potential Features
 
-### 🔐 Authentication & Authorization
-- 🆔 **OIDC authorization** where I allow the required endpoints for all
-  - alternative to putting the GUI behind external Authorization
-  - Might consider enabling this by default
-  - Show error if UI is shown without any authorization (detected e.g. by header presence)
-
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
-  - ⚠️ Requires using cross
-  - I have no ability to test these.
+  - ⚠️ Requires using more advanced cross compilation
+  - I have no ability to test these practically myself.
 
 ### 🔧 Management Features
 - 🗑️ **Uninstalls**

@@ -4,8 +4,9 @@ use std::env;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 
-use crate::handler::{execute_shutdown, handle_request_without_shutdown};
+use crate::commands::execute_shutdown;
 use crate::install::get_default_shutdown_command;
+use crate::validation::validate_request;
 use clap::Parser;
 
 /// Configuration options for running the host_agent service.
@@ -56,8 +57,7 @@ fn handle_client(mut stream: TcpStream, config: &ServiceArgs) {
             let Some(data) = buffer.get(..size) else {
                 unreachable!("Read data size should always be valid, as its >= buffer size");
             };
-            let (response, should_shutdown) =
-                handle_request_without_shutdown(data, config, &peer_addr);
+            let (response, should_shutdown) = validate_request(data, config, &peer_addr);
             if let Err(e) = stream.write_all(response.as_bytes()) {
                 eprintln!("Failed to write response to stream ({peer_addr}): {e}");
             }

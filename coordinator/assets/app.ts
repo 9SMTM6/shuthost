@@ -457,14 +457,18 @@ const setupDynamicConfigs = () => {
     - '^/download/(.*)'
     - '^/api/m2m/(.*)$'
     - '^/manifest.json$'
-    - '^/favicon.ico$'`;
+    - '^/favicon.svg$'`;
     }
 
     if (traefikConfig) {
         traefikConfig.textContent = `# Add to your service labels
-- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.ico\`))"
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.svg\`))"
 - "traefik.http.routers.shuthost-bypass.priority=100"
 # Remove auth middleware for bypass routes`;
+    }
+
+    if (!autheliaConfig || !traefikConfig) {
+        console.info("No dynamic security exceptions found to be populated.")
     }
 };
 

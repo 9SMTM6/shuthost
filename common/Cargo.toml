@@ -4,14 +4,14 @@ version.workspace = true
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
-documentation.workspace = true
+repository.workspace = true
 
 [dependencies]
 hmac.workspace = true
 sha2.workspace = true
 hex.workspace = true
 rand.workspace = true
-libc = "0.2.172"
+libc = "0.2.x"
 
 [lints]
 workspace = true

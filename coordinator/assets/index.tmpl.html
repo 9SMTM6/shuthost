@@ -1,62 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <title>ShutHost Coordinator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{description}">
-    <meta name="theme-color" content="#4CAF50">
-    <link rel="manifest" href="./manifest.json">
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <style>
-        /* {styles} */
-    </style>
-</head>
+{ html_head }
 
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans min-h-screen">
+<body class="html-body">
     <!-- Skip to main content link for accessibility -->
-    <a href="#main-content" class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
+    <a href="#main-content"
+        class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
         Skip to main content
     </a>
-    <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
-        {demo_disclaimer}
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14">
-                <div class="flex items-center gap-4">
-                    <img src="./favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
-                    <span class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100" role="heading" aria-level="1">ShutHost</span>
-                </div>
-                <!-- Tablist for navigation -->
-                <nav class="flex" role="tablist" aria-label="Main tabs">
-                    <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab" id="tab-architecture" tabindex="0">Docs</button>
-                    <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts" tabindex="0">Hosts</button>
-                    <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients" tabindex="0">Clients</button>
-                </nav>
-            </div>
-        </div>
-    </header>
+    { header }
 
     <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
         <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
+            { maybe_external_auth_config }
+
             <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
                 <!-- Install Instructions Panel -->
                 <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
-                    <header class="collapsible-header py-2" data-target="host-install-content" aria-expanded="false" aria-controls="host-install-content" id="host-install-header" tabindex="0" role="button">
+                    <header class="collapsible-header py-2" data-target="host-install-content" aria-expanded="false"
+                        aria-controls="host-install-content" id="host-install-header" tabindex="0" role="button">
                         <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
                         <span class="collapsible-icon"></span>
                     </header>
-                    <div id="host-install-content" class="collapsible-content" role="region" aria-labelledby="host-install-title">
+                    <div id="host-install-content" class="collapsible-content" role="region"
+                        aria-labelledby="host-install-title">
                         <p class="mb-1 text-sm">Run the following command in your terminal:</p>
                         <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#host-install-command" type="button" aria-label="Copy install command">Copy</button>
+                            <button class="copy-button" data-copy-target="#host-install-command" type="button"
+                                aria-label="Copy install command">Copy</button>
                             <code id="host-install-command" class="code-block">Loading...</code>
                         </div>
                         <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
                             section of your config on the Coordinator Host:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#config-location" type="button" aria-label="Copy config location">Copy</button>
-                            <code id="config-location" class="code-block">{coordinator_config}</code>
+                            <button class="copy-button" data-copy-target="#config-location" type="button"
+                                aria-label="Copy config location">Copy</button>
+                            <code id="config-location" class="code-block">{ coordinator_config }</code>
                         </div>
 
                         { agent_install_requirements_gotchas }
@@ -87,21 +67,25 @@
             <section id="clients-tab" class="tab-content" aria-labelledby="tab-clients" role="tabpanel" tabindex="0">
                 <!-- Install Instructions Panel -->
                 <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
-                    <header class="collapsible-header py-2" data-target="client-install-content" aria-expanded="false" aria-controls="client-install-content" id="client-install-header" tabindex="0" role="button">
+                    <header class="collapsible-header py-2" data-target="client-install-content" aria-expanded="false"
+                        aria-controls="client-install-content" id="client-install-header" tabindex="0" role="button">
                         <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
                         <span class="collapsible-icon"></span>
                     </header>
-                    <div id="client-install-content" class="collapsible-content" role="region" aria-labelledby="client-install-title">
+                    <div id="client-install-content" class="collapsible-content" role="region"
+                        aria-labelledby="client-install-title">
                         <p class="mb-1 text-sm">Run the following command in your terminal:</p>
                         <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#client-install-command" type="button" aria-label="Copy install command">Copy</button>
+                            <button class="copy-button" data-copy-target="#client-install-command" type="button"
+                                aria-label="Copy install command">Copy</button>
                             <code id="client-install-command" class="code-block">Loading...</code>
                         </div>
                         <p class="description-text text-xs">Optionally, you can specify a custom client ID as the second
                             argument. Add the output to the clients section of your config on the Coordinator Host:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#config-location" type="button" aria-label="Copy config location">Copy</button>
-                            <code id="config-location" class="code-block">{coordinator_config}</code>
+                            <button class="copy-button" data-copy-target="#config-location" type="button"
+                                aria-label="Copy config location">Copy</button>
+                            <code id="config-location" class="code-block">{ coordinator_config }</code>
                         </div>
 
                         { client_install_requirements_gotchas }
@@ -129,63 +113,10 @@
             </section>
 
             { architecture_documentation }
-
-            <!-- Security Configuration Panel (shown on both tabs) -->
-            <section class="section-container mt-4" aria-labelledby="security-config-title">
-                <header class="collapsible-header collapsed" data-target="security-config-content" aria-expanded="false" aria-controls="security-config-content" id="security-config-header" tabindex="0" role="button">
-                    <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
-                    <span class="collapsible-icon"></span>
-                </header>
-                <div id="security-config-content" class="collapsible-content collapsed" role="region" aria-labelledby="security-config-title">
-                    <div class="alert alert-info">
-                        <div class="alert-title">Authentication Bypass Required</div>
-                        <p>For the web app and installation scripts to work properly, certain endpoints must be accessible without authentication. If you're using a reverse proxy with authentication (like Authelia, NPM with auth, etc.), you need to configure bypass rules for:</p>
-                        <ul>
-                            <li><code>/download/*</code> - Installation script downloads</li>
-                            <li><code>/api/m2m/*</code> - Machine-to-machine API communication</li>
-                            <li><code>/manifest.json</code> - PWA manifest (required for webpage installability)</li>
-                            <li><code>/favicon.ico</code> - Favicon (required for webpage installability)</li>
-                        </ul>
-                        <p class="text-xs mt-2"><em>This allows the installer scripts and web app to download necessary files and communicate with the coordinator API without requiring user authentication. The manifest and favicon exceptions are required for proper browser and PWA support.</em></p>
-                    </div>
-
-                    <div class="alert alert-warning">
-                        <div class="alert-title">Configuration Examples</div>
-
-                        <p class="text-sm font-semibold mb-2">Authelia:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#authelia-config" type="button" aria-label="Copy Authelia config">Copy</button>
-                            <code id="authelia-config" class="code-block">Loading...</code>
-                        </div>
-
-                        <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#nginx-config" type="button" aria-label="Copy Nginx config">Copy</button>
-                            <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
-location ~ ^/(download|api/m2m|manifest.json|favicon.ico)$ {
-    auth_basic off;
-    proxy_pass http://your-shuthost-backend;
-}</code>
-                        </div>
-
-                        <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#traefik-config" type="button" aria-label="Copy Traefik config">Copy</button>
-                            <code id="traefik-config" class="code-block">Loading...</code>
-                        </div>
-
-                        <p class="text-xs mt-2"><em>Replace backend references with your actual configuration values.</em></p>
-                    </div>
-                </div>
-            </section>
         </section>
     </main>
 
-    <footer
-        class="bg-white dark:bg-gray-800 shadow-md py-2 px-4 text-center text-gray-600 dark:text-gray-400 text-xs mt-auto"
-        role="contentinfo">
-        ShutHost Coordinator v{version}
-    </footer>
+    { footer }
 
     <script>
         { js }

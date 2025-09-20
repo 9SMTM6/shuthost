@@ -6,7 +6,7 @@
         <li><strong>Superuser Access:</strong> The installer requires <code>curl</code> and will install as
             superuser (root/sudo/doas)</li>
         <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
-            download endpoints (see security notes below)</li>
+            download endpoints (only a consideration if you use external auth)</li>
         <li><strong>Static IP Required:</strong> The host needs a static IP address for shutdown
             commands and online status monitoring</li>
         <li><strong>Manual Configuration:</strong> The generated config must be manually added
@@ -28,7 +28,7 @@
     <ul>
         <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
             <ul>
-                <li><strong>BIOS Configuration:</strong> WOL must be enabled in BIOS/UEFI settings.</li>
+                <li><strong>BIOS Configuration:</strong> WOL must be enabled (and thus available, which isnt guaranteed, e.g. Raspberry Pi) in BIOS/UEFI settings.</li>
                 <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown.</li>
             </ul>
         </li>

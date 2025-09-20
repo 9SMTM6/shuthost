@@ -4,8 +4,12 @@
 //! - Timestamped HMAC message signing and validation
 //! - OS-specific service installation helpers
 
-mod hmac;
+mod secrets;
 mod service_install;
+mod signing;
+mod validation;
 
-pub use hmac::*;
+pub use secrets::*;
 pub use service_install::*;
+pub use signing::*;
+pub use validation::*;

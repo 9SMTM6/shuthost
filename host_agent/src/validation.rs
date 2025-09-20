@@ -1,4 +1,7 @@
-//! Request handler utilities for host_agent: parsing, validating, and executing shutdown commands.
+//! Request validation utilities for the host agent.
+//!
+//! This module provides functions for parsing and validating
+//! incoming HMAC-signed requests from the coordinator.
 
 use crate::server::ServiceArgs;
 use shuthost_common::validate_hmac_message;
@@ -19,23 +22,18 @@ use shuthost_common::validate_hmac_message;
 /// # Examples
 ///
 /// ```
-/// use shuthost_host_agent::handler::handle_request_without_shutdown;
+/// use shuthost_host_agent::validation::validate_request;
 /// use shuthost_common::create_signed_message;
 /// use shuthost_host_agent::server::ServiceArgs;
 ///
 /// let secret = "secret";
 /// let args = ServiceArgs { port: 0, shutdown_command: "cmd".to_string(), shared_secret: secret.to_string() };
 /// let signed = create_signed_message("status", secret);
-/// let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+/// let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
 /// assert_eq!(resp, "OK: status");
 /// assert!(!shutdown);
 /// ```
-///
-pub fn handle_request_without_shutdown(
-    data: &[u8],
-    config: &ServiceArgs,
-    peer_addr: &str,
-) -> (String, bool) {
+pub fn validate_request(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {
@@ -77,25 +75,6 @@ pub fn handle_request_without_shutdown(
     }
 }
 
-/// Executes the configured shutdown command via the shell.
-///
-/// # Arguments
-///
-/// * `config` - ServiceArgs holding the `shutdown_command` to execute.
-///
-/// # Errors
-///
-/// Returns `Err` if spawning or waiting on the process fails.
-pub fn execute_shutdown(config: &ServiceArgs) -> Result<(), std::io::Error> {
-    println!("Executing command: {}", &config.shutdown_command);
-    std::process::Command::new("sh")
-        .arg("-c")
-        .arg(&config.shutdown_command)
-        .spawn()?
-        .wait()?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -113,7 +92,7 @@ mod tests {
     fn test_handle_invalid_utf8() {
         let args = make_args("s");
         let data = [0xff, 0xfe, 0xfd];
-        let (resp, shutdown) = handle_request_without_shutdown(&data, &args, "peer");
+        let (resp, shutdown) = validate_request(&data, &args, "peer");
         assert_eq!(resp, "ERROR: Invalid UTF-8");
         assert!(!shutdown);
     }
@@ -124,7 +103,7 @@ mod tests {
         let args = make_args(secret);
         // create valid status command
         let signed = shuthost_common::create_signed_message("status", secret);
-        let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+        let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "OK: status");
         assert!(!shutdown);
     }
@@ -134,7 +113,7 @@ mod tests {
         let secret = "sec";
         let args = make_args(secret);
         let signed = shuthost_common::create_signed_message("shutdown", secret);
-        let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+        let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
         assert!(resp.contains("shutdown_cmd"));
         assert!(shutdown);
     }
@@ -144,7 +123,7 @@ mod tests {
         let secret = "s";
         let args = make_args(secret);
         let data = "0|cmd|signature".to_string();
-        let (resp, shutdown) = handle_request_without_shutdown(data.as_bytes(), &args, "peer");
+        let (resp, shutdown) = validate_request(data.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Timestamp out of range");
         assert!(!shutdown);
     }
@@ -154,7 +133,7 @@ mod tests {
         let secret = "s";
         let args = make_args(secret);
         let signed = shuthost_common::create_signed_message("cmd", secret) + "x";
-        let (resp, shutdown) = handle_request_without_shutdown(signed.as_bytes(), &args, "peer");
+        let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Invalid HMAC signature");
         assert!(!shutdown);
     }
@@ -164,7 +143,7 @@ mod tests {
         let secret = "s";
         let args = make_args(secret);
         let data = "no separators";
-        let (resp, shutdown) = handle_request_without_shutdown(data.as_bytes(), &args, "peer");
+        let (resp, shutdown) = validate_request(data.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Invalid request format");
         assert!(!shutdown);
     }

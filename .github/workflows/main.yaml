@@ -4,7 +4,8 @@ permissions:
 
 on:
   push:
-    branches: [main]
+    branches:
+      - '**'
     tags: ['*']
   pull_request:
     branches: [main]
@@ -180,7 +181,7 @@ jobs:
           sleep 2
 
           # Check on coordinator service
-          docker exec testinit curl -fsSL http://localhost:8080 || { echo "Coordinator service is not running"; exit 1; }
+          docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
 
           # Run agent installer (downloads from running coordinator)
           docker exec testinit sh -c "
@@ -342,6 +343,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    if: ${{ github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
 

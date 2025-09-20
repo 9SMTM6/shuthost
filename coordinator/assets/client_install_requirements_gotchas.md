@@ -6,7 +6,7 @@
         <li><strong>Dependencies:</strong> Installer requires <code>curl</code>; client runtime requires
             <code>OpenSSL</code></li>
         <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
-            download endpoints (see security notes below)</li>
+            download endpoints (only a consideration if you use external auth)</li>
         <li><strong>Manual Configuration:</strong> The generated config must be manually added
             to your coordinator configuration file</li>
     </ul>

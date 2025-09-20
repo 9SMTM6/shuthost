@@ -18,7 +18,7 @@ use crate::is_superuser;
 /// # Arguments
 ///
 /// * `name` - Name to assign to the service and executable.
-/// * `init_script_content` - Template for the OpenRC init script (with `{binary}` placeholder).
+/// * `init_script_content` - Template for the OpenRC init script (with `{ binary }` placeholder).
 ///
 /// # Errors
 ///
@@ -58,7 +58,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         .map_err(|e| e.to_string())?;
 
     let init_script_content =
-        init_script_content.replace("{binary}", &target_bin.to_string_lossy());
+        init_script_content.replace("{ binary }", &target_bin.to_string_lossy());
 
     let mut script_file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     script_file
