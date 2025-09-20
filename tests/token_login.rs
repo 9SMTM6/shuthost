@@ -10,12 +10,11 @@ async fn token_login_flow() {
     let token = "testtoken123";
     let config = format!(
         r#"
-        [server]
-        port = {port}
-        bind = "127.0.0.1"
+    [server]
+    port = {port}
+    bind = "127.0.0.1"
 
-    [server.auth]
-    type = "token"
+    [server.auth.token]
     token = "{token}"
 
     [server.tls]

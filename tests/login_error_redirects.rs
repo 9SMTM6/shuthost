@@ -12,12 +12,11 @@ use crate::common::spawn_coordinator_with_config;
 pub fn spawn_coordinator_with_token(port: u16, token: &str) -> Child {
     let config = format!(
         r#"
-        [server]
-        port = {port}
-        bind = "127.0.0.1"
+    [server]
+    port = {port}
+    bind = "127.0.0.1"
 
-    [server.auth]
-    type = "token"
+    [server.auth.token]
     token = "{token}"
 
     [hosts]
