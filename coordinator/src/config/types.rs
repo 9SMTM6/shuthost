@@ -95,7 +95,7 @@ const fn do_tls_enable() -> bool {
 
 /// Supported authentication modes for the Web UI
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum AuthMode {
     /// No authentication, everything is public
     #[default]

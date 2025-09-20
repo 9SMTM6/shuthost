@@ -100,8 +100,7 @@ Docker (Linux only — host network mode required for WOL)
   port = 8080 # change accordingly
   bind = "127.0.0.1" # forward to this with your local reverse proxy with TLS.
 
-  [server.auth]
-  type = "token"
+  [server.auth.token]
   # token = "change-me" # uncomment and change to a secure token to avoid auto-generation on each start
 
   [hosts]
@@ -186,15 +185,14 @@ In your `shuthost_coordinator.toml` add under `[server]`:
 port = 8080
 bind = "127.0.0.1"
 
-[server.auth]
-# Choose one mode:
+# Choose one auth mode:
 
+[server.auth.token]
 # Token mode: provide a token or omit to auto-generate on startup (printed in logs, but that will be lost on restart)
-type = "token"
 # token = "your-secret-token"
 
 # OIDC mode (authorization code flow)
-# type = "oidc"
+# [server.auth.oidc]
 # issuer = "https://issuer.example.com/realms/foo"
 # client_id = "shuthost"
 # client_secret = "supersecret"
@@ -202,7 +200,7 @@ type = "token"
 # scopes = ["openid","profile"]
 
 # External auth mode (reverse proxy or external authentication provider)
-# type = "external"
+# [server.auth.external]
 # exceptions_version = 1  # Version of exceptions acknowledged by operator
 
 # Optional: base64-encoded cookie signing key (32 bytes). If omitted, a random key is generated
