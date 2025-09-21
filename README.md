@@ -191,7 +191,7 @@ bind = "127.0.0.1"
 # Token mode: provide a token or omit to auto-generate on startup (printed in logs, but that will be lost on restart)
 # token = "your-secret-token"
 
-# OIDC mode (authorization code flow)
+# OIDC mode (authorization code flow with PKCE)
 # [server.auth.oidc]
 # issuer = "https://issuer.example.com/realms/foo"
 # client_id = "shuthost"
@@ -232,6 +232,37 @@ persist_self_signed = true       # if true (default) generate and persist a self
 Behavior:
 - If both `cert_path` and `key_path` point to existing files, the coordinator will use them for TLS.
 - If the files they point to are absent and `persist_self_signed` is true (the default), the coordinator will generate a self-signed cert/key and write them to the provided locations for reuse across restarts.
+
+### 🪪 Example: OIDC Authentication (tested with kanidm)
+
+OIDC authentication in ShutHost has only been tested with kanidm. The following steps describe how to set up OIDC login using kanidm:
+
+1. **Create the OAuth2 application in kanidm:**
+   ```sh
+   kanidm system oauth2 create shuthost "Shuthost" https://shuthost.example.com
+   kanidm system oauth2 add-redirect-url shuthost https://shuthost.example.com/oidc/callback
+   kanidm group create shuthost_users
+   kanidm group add-members shuthost_users <groups or users allowed to see UI>
+   kanidm system oauth2 update-scope-map shuthost shuthost_users profile openid
+   kanidm system oauth2 show-basic-secret shuthost
+   ```
+   - Replace `https://shuthost.example.com` with your actual ShutHost URL.
+   - Note the client secret output by the last command.
+
+2. **Configure ShutHost to use OIDC:**
+   In your `coordinator_config.toml`:
+   ```toml
+   [server.auth.oidc]
+   issuer = "https://kanidm.example.com/oauth2/openid/shuthost"
+   client_id = "shuthost"
+   client_secret = "<the secret from above>"
+   ```
+   - Adjust the `issuer` URL to match your kanidm instance.
+   - Use the client secret from the previous step.
+
+3. **Restart ShutHost** to apply the changes.
+
+> With this setup, users will be able to log in to the WebUI using their kanidm credentials. Only members of the `shuthost_users` group will have access.
 
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks
