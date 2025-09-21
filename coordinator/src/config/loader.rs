@@ -1,4 +1,4 @@
-//! Configuration utilities for the coordinator.
+//! Configuration loading utilities for the coordinator.
 //!
 //! This module provides functions for reading and parsing
 //! configuration files from disk.
