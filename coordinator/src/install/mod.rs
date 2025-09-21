@@ -89,7 +89,8 @@ pub fn install_coordinator(args: InstallArgs) -> eyre::Result<()> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))
+        .map_err(eyre::Report::msg)?;
 
     if !Path::new(&config_location).exists() {
         if let Some(parent_dir) = config_location.parent()
@@ -137,7 +138,8 @@ pub fn install_coordinator(args: InstallArgs) -> eyre::Result<()> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::macos::start_and_enable_self_as_service(name)?;
+    shuthost_common::macos::start_and_enable_self_as_service(name)
+        .map_err(eyre::Report::msg)?;
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
