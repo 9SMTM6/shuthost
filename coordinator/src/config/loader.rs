@@ -6,6 +6,7 @@
 use std::path::Path;
 
 use crate::config::ControllerConfig;
+use eyre::WrapErr;
 
 /// Reads and parses the coordinator config from a TOML file.
 ///
@@ -15,12 +16,13 @@ use crate::config::ControllerConfig;
 ///
 /// # Returns
 ///
-/// A `ControllerConfig` on success, or an error boxed trait object.
-pub async fn load_coordinator_config<P: AsRef<Path>>(
-    path: P,
-) -> Result<ControllerConfig, Box<dyn std::error::Error>> {
-    let content = tokio::fs::read_to_string(path).await?;
-    let config: ControllerConfig = toml::from_str(&content)?;
+/// A `ControllerConfig` on success, or an error.
+pub async fn load_coordinator_config<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
+    let content = tokio::fs::read_to_string(path)
+        .await
+        .wrap_err("Failed to read config file")?;
+    let config: ControllerConfig =
+        toml::from_str(&content).wrap_err("Failed to parse config as TOML")?;
     Ok(config)
 }
 

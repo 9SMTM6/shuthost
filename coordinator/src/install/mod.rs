@@ -3,6 +3,7 @@
 //! Supports systemd, OpenRC, and launchd based on target OS.
 
 use clap::Parser;
+use eyre::WrapErr;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 use std::{
@@ -48,13 +49,13 @@ pub struct InstallArgs {
 /// # Errors
 ///
 /// Returns `Err` if any filesystem, templating, or service management step fails.
-pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
+pub fn install_coordinator(args: InstallArgs) -> eyre::Result<()> {
     let name = env!("CARGO_PKG_NAME");
     let user = args.user;
 
     args.bind
         .parse::<IpAddr>()
-        .map_err(|e| format!("Invalid bind address: {e}"))?;
+        .wrap_err("Invalid bind address")?;
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
@@ -75,27 +76,31 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
         shuthost_common::systemd::install_self_as_service(
             name,
             &bind_known_vals(SERVICE_FILE_TEMPLATE),
-        )?;
+        )
+        .map_err(eyre::Report::msg)?;
     } else if is_openrc() {
         shuthost_common::openrc::install_self_as_service(
             name,
             &bind_known_vals(OPENRC_FILE_TEMPLATE),
-        )?;
+        )
+        .map_err(eyre::Report::msg)?;
     } else {
-        Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
+        eyre::bail!("Unsupported init system: expected systemd, OpenRC or sysvinit style.");
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))
+        .map_err(eyre::Report::msg)?;
 
     if !Path::new(&config_location).exists() {
         if let Some(parent_dir) = config_location.parent()
             && !parent_dir.exists()
         {
-            std::fs::create_dir_all(parent_dir).map_err(|e| e.to_string())?;
+            std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
         }
 
-        let mut config_file = File::create(&config_location).map_err(|e| e.to_string())?;
+        let mut config_file =
+            File::create(&config_location).wrap_err("Failed to create config file")?;
         config_file
             .write_all(
                 toml::to_string(&ControllerConfig {
@@ -113,7 +118,7 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
                 .unwrap()
                 .as_bytes(),
             )
-            .map_err(|e| e.to_string())?;
+            .wrap_err("Failed to write config file")?;
 
         println!("Created config file at {config_location:?}");
 
@@ -121,10 +126,10 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
             .arg(format!("{user}:")) // ":" = default group
             .arg(&config_location)
             .status()
-            .map_err(|e| e.to_string())?;
+            .wrap_err("Failed to run chown")?;
 
         if !status.success() {
-            return Err(format!("Failed to chown file: {status}"));
+            eyre::bail!("Failed to chown file: {status}");
         }
 
         println!("Chowned config file at {config_location:?} for {user}",);
@@ -133,15 +138,17 @@ pub fn install_coordinator(args: InstallArgs) -> Result<(), String> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::macos::start_and_enable_self_as_service(name)?;
+    shuthost_common::macos::start_and_enable_self_as_service(name).map_err(eyre::Report::msg)?;
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
-        shuthost_common::systemd::start_and_enable_self_as_service(name)?;
+        shuthost_common::systemd::start_and_enable_self_as_service(name)
+            .map_err(eyre::Report::msg)?;
     } else if is_openrc() {
-        shuthost_common::openrc::start_and_enable_self_as_service(name)?;
+        shuthost_common::openrc::start_and_enable_self_as_service(name)
+            .map_err(eyre::Report::msg)?;
     } else {
-        Err("Unsupported init system: expected systemd, OpenRC or sysvinit style.".to_string())?;
+        eyre::bail!("Unsupported init system: expected systemd, OpenRC or sysvinit style.");
     }
 
     Ok(())
