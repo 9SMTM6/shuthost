@@ -47,8 +47,7 @@ while [ $# -gt 0 ]; do
         *)
             # Escape any embedded double quotes
             ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
-            # shellcheck disable=SC2089
-            INSTALLER_ARGS="$INSTALLER_ARGS \"$ESCAPED_ARG\""
+            INSTALLER_ARGS="$INSTALLER_ARGS $ESCAPED_ARG"
             ;;
     esac
     shift
@@ -70,11 +69,9 @@ elevate_privileges() {
 
 run_as_elevated() {
     if [ "$(id -u)" -eq 0 ]; then
-        # shellcheck disable=SC2048,SC2086
-        sh -c $*
+        sh -c "$*"
     else
-        # shellcheck disable=SC2048,SC2086
-        elevate_privileges $*
+        elevate_privileges "$*"
     fi
 }
 
