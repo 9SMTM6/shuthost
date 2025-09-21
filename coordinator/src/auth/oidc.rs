@@ -210,7 +210,7 @@ pub async fn oidc_login(
 }
 
 #[derive(Deserialize)]
-/// Just there to deserialize query params from the OIDC Callback
+/// Query parameters for OIDC callback deserialization.
 pub(super) struct OidcCallbackQueryParams {
     code: Option<String>,
     state: Option<String>,
