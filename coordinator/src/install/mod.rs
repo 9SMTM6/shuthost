@@ -138,8 +138,7 @@ pub fn install_coordinator(args: InstallArgs) -> eyre::Result<()> {
     }
 
     #[cfg(target_os = "macos")]
-    shuthost_common::macos::start_and_enable_self_as_service(name)
-        .map_err(eyre::Report::msg)?;
+    shuthost_common::macos::start_and_enable_self_as_service(name).map_err(eyre::Report::msg)?;
 
     #[cfg(target_os = "linux")]
     if is_systemd() {
