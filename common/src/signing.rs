@@ -8,7 +8,10 @@ use sha2::Sha256;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Creates an HMAC instance for the given message and secret.
-#[expect(clippy::missing_panics_doc, reason="Expectation should never be false")]
+#[expect(
+    clippy::missing_panics_doc,
+    reason = "Expectation should never be false"
+)]
 pub fn create_hmac(message: &str, secret: &[u8]) -> Hmac<Sha256> {
     let mut mac = Hmac::<Sha256>::new_from_slice(secret).expect("HMAC can take a key of any size");
     mac.update(message.as_bytes());
@@ -43,7 +46,10 @@ pub fn create_signed_message(message: &str, secret: &str) -> String {
 }
 
 /// Gets the current Unix timestamp in seconds.
-#[expect(clippy::missing_panics_doc, reason="Expectation should never be false")]
+#[expect(
+    clippy::missing_panics_doc,
+    reason = "Expectation should never be false"
+)]
 pub fn unix_time_seconds() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

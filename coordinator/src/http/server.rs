@@ -6,6 +6,7 @@ use axum::http::Request;
 use axum::routing;
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
+use eyre::WrapErr;
 use std::path::Path;
 use std::{net::IpAddr, sync::Arc};
 use tokio::fs;
@@ -67,7 +68,7 @@ pub struct AppState {
 /// # Returns
 ///
 /// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
-pub async fn start(config_path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(load_coordinator_config(config_path).await?);
@@ -188,15 +189,14 @@ pub async fn start(config_path: &std::path::Path) -> Result<(), Box<dyn std::err
             } else if tls_cfg.persist_self_signed {
                 // If cert files already exist partially, refuse to do anything.
                 if cert_exists ^ key_exists {
-                    return Err("TLS configuration error: partial cert/key files exist".into());
+                    eyre::bail!("TLS configuration error: partial cert/key files exist");
                 }
 
                 // Generate self-signed cert using listen host as CN/SAN
                 let hostnames = vec![listen_ip.to_string()];
                 let rcgen::CertifiedKey { cert, signing_key } =
-                    rcgen::generate_simple_self_signed(hostnames).map_err(|e| {
-                        format!("Failed to generate self-signed certificate: {}", e)
-                    })?;
+                    rcgen::generate_simple_self_signed(hostnames)
+                        .wrap_err("Failed to generate self-signed certificate")?;
                 let cert_pem = cert.pem();
                 let key_pem = signing_key.serialize_pem();
 
@@ -218,9 +218,8 @@ pub async fn start(config_path: &std::path::Path) -> Result<(), Box<dyn std::err
                 );
                 rustls_cfg
             } else {
-                return Err(
+                eyre::bail!(
                     "TLS configuration error: neither provided certs nor self-signed allowed"
-                        .into(),
                 );
             };
             axum_server::bind_rustls(addr, rustls_cfg)

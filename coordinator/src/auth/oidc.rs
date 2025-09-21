@@ -4,15 +4,16 @@ use crate::auth::{
     LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, SessionClaims,
 };
 use crate::http::AppState;
+use axum::extract::State;
 use axum::http::HeaderMap;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use cookie::SameSite;
 use cookie::time::Duration as CookieDuration;
-use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
+use eyre::{Result, eyre};
+use openidconnect::core::{
+    CoreAuthenticationFlow, CoreClient, CoreIdToken, CoreProviderMetadata, CoreTokenResponse,
+};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
     PkceCodeVerifier, RedirectUrl, Scope,
@@ -25,6 +26,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // Fixed redirect path used by the application for OIDC callbacks
 const OIDC_CALLBACK_PATH: &str = "/oidc/callback";
 
+// Compute request origin from headers
 fn request_origin(headers: &HeaderMap) -> Option<String> {
     let host = headers
         .get("x-forwarded-host")
@@ -38,12 +40,12 @@ fn request_origin(headers: &HeaderMap) -> Option<String> {
     Some(format!("{}://{}", proto, host))
 }
 
-fn build_redirect_url(headers: &axum::http::HeaderMap) -> Result<RedirectUrl, anyhow::Error> {
-    let origin = request_origin(headers).ok_or_else(|| anyhow::anyhow!("missing Host header"))?;
+fn build_redirect_url(headers: &HeaderMap) -> Result<RedirectUrl> {
+    let origin = request_origin(headers).ok_or_else(|| eyre!("missing Host header"))?;
     Ok(RedirectUrl::new(format!(
         "{}/{}",
         origin.trim_end_matches('/'),
-        OIDC_CALLBACK_PATH.trim_start_matches('/')
+        OIDC_CALLBACK_PATH.trim_start_matches('/'),
     ))?)
 }
 
@@ -63,8 +65,7 @@ async fn build_oidc_client(
     client_secret: &str,
     headers: &HeaderMap,
 ) -> Result<(OidcClientReady, reqwest::Client), axum::http::StatusCode> {
-    // Build HTTP client (no redirects per SSRF guidance)
-    // Allow a small number of redirects for discovery only (some providers redirect .well-known)
+    // HTTP client for discovery and token exchange
     let http = reqwest::Client::builder()
         .redirect(Policy::limited(3))
         .build()
@@ -209,11 +210,179 @@ pub async fn oidc_login(
 }
 
 #[derive(Deserialize)]
-pub(super) struct OidcCallback {
+/// Just there to deserialize query params from the OIDC Callback
+pub(super) struct OidcCallbackQueryParams {
     code: Option<String>,
     state: Option<String>,
     error: Option<String>,
     error_description: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum OidcFlowError {
+    /// Redirect to login with a generic OIDC error message
+    LoginRedirect,
+    /// Return a StatusCode (expected to be in the 4XX range)
+    Status(axum::http::StatusCode),
+}
+
+fn login_error_response() -> Response {
+    Redirect::to(&format!("/login?error={}", LOGIN_ERROR_OIDC)).into_response()
+}
+
+fn clear_oidc_ephemeral_cookies(jar: SignedCookieJar) -> SignedCookieJar {
+    jar.remove(Cookie::build(COOKIE_STATE).path("/").build())
+        .remove(Cookie::build(COOKIE_NONCE).path("/").build())
+        .remove(Cookie::build(COOKIE_PKCE).path("/").build())
+}
+
+/// Verify state (present in query params and matches cookies)
+fn validate_state_or_redirect(
+    jar: &SignedCookieJar,
+    state_param: &Option<String>,
+) -> Option<Response> {
+    let Some(state_cookie) = jar.get(COOKIE_STATE) else {
+        tracing::warn!("OIDC callback missing state cookie");
+        return Some(login_error_response());
+    };
+    let Some(state_param) = state_param.as_deref() else {
+        tracing::warn!("OIDC callback missing state param");
+        return Some(login_error_response());
+    };
+    if state_cookie.value() != state_param {
+        tracing::warn!("OIDC callback state mismatch");
+        return Some(login_error_response());
+    }
+    None
+}
+
+fn pkce_from_cookie(jar: &SignedCookieJar) -> Option<PkceCodeVerifier> {
+    jar.get(COOKIE_PKCE)
+        .map(|c| PkceCodeVerifier::new(c.value().to_string()))
+}
+
+fn nonce_from_cookie(jar: &SignedCookieJar) -> Option<Nonce> {
+    jar.get(COOKIE_NONCE)
+        .map(|c| Nonce::new(c.value().to_string()))
+}
+
+fn finalize_session_and_redirect(jar: SignedCookieJar, session: &SessionClaims) -> Response {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let session_exp_seconds = session.exp.saturating_sub(now);
+    let session_max_age =
+        CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
+    let jar = clear_oidc_ephemeral_cookies(jar).add(create_session_cookie(
+        &serde_json::to_string(session).unwrap(),
+        session_max_age,
+    ));
+
+    let return_to = jar
+        .get(COOKIE_RETURN_TO)
+        .map(|c| c.value().to_string())
+        .unwrap_or_else(|| "/".to_string());
+    let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+    (jar, Redirect::to(&return_to)).into_response()
+}
+
+/// If provider returned an error, bounce back to login with message
+fn handle_provider_error(
+    error: Option<String>,
+    error_description: &Option<String>,
+    jar: SignedCookieJar,
+) -> Option<Response> {
+    if let Some(err) = error {
+        tracing::warn!("OIDC error from provider: {} {:?}", err, error_description);
+        let jar = clear_oidc_ephemeral_cookies(jar);
+        return Some((jar, login_error_response()).into_response());
+    }
+    None
+}
+
+fn extract_authorization_code(code: Option<String>) -> Result<String, OidcFlowError> {
+    match code {
+        Some(c) => Ok(c),
+        None => {
+            tracing::warn!("OIDC callback missing code");
+            Err(OidcFlowError::LoginRedirect)
+        }
+    }
+}
+
+async fn exchange_code_for_token(
+    client: &OidcClientReady,
+    http: &reqwest::Client,
+    code: String,
+    pkce_verifier: Option<PkceCodeVerifier>,
+) -> Result<CoreTokenResponse, OidcFlowError> {
+    let mut req = client.exchange_code(AuthorizationCode::new(code));
+    if let Some(v) = pkce_verifier {
+        req = req.set_pkce_verifier(v);
+    }
+    match req.request_async(http).await {
+        Ok(r) => Ok(r),
+        Err(e) => {
+            tracing::error!("Token exchange failed: {:#?}", e);
+            Err(OidcFlowError::Status(axum::http::StatusCode::BAD_GATEWAY))
+        }
+    }
+}
+
+fn id_token_from_response(
+    token_response: &CoreTokenResponse,
+) -> Result<CoreIdToken, OidcFlowError> {
+    match token_response.extra_fields().id_token() {
+        Some(id) => Ok(id.clone()),
+        None => {
+            tracing::warn!("No id_token in response; refusing login");
+            Err(OidcFlowError::Status(axum::http::StatusCode::BAD_REQUEST))
+        }
+    }
+}
+
+fn verify_id_token_and_build_session(
+    client: &OidcClientReady,
+    id_token: &CoreIdToken,
+    nonce_cookie: Option<&Nonce>,
+) -> Result<SessionClaims, OidcFlowError> {
+    let claims = match id_token.claims(
+        &client.id_token_verifier(),
+        nonce_cookie.unwrap_or(&Nonce::new(String::new())),
+    ) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("Invalid id token: {}", e);
+            return Err(OidcFlowError::Status(axum::http::StatusCode::UNAUTHORIZED));
+        }
+    };
+    let sub = claims.subject().to_string();
+    let exp = claims.expiration().timestamp() as u64;
+    Ok(SessionClaims { sub, exp })
+}
+
+/// Exchange code, verify id_token and build session
+async fn process_token_and_build_session(
+    client: &OidcClientReady,
+    http: &reqwest::Client,
+    signed: &SignedCookieJar,
+    code: Option<String>,
+) -> Result<SessionClaims, OidcFlowError> {
+    let code = extract_authorization_code(code)?;
+    tracing::debug!(
+        code_len = code.len(),
+        "Authorization code received (length)"
+    );
+    let pkce_verifier = pkce_from_cookie(signed);
+    tracing::debug!(
+        pkce_present = pkce_verifier.is_some(),
+        "PKCE verifier present in cookie"
+    );
+    let token_response = exchange_code_for_token(client, http, code, pkce_verifier).await?;
+    let id_token = id_token_from_response(&token_response)?;
+    let nonce_cookie = nonce_from_cookie(signed);
+    verify_id_token_and_build_session(client, &id_token, nonce_cookie.as_ref())
 }
 
 /// OIDC callback handler
@@ -221,12 +390,12 @@ pub async fn oidc_callback(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
-    axum::extract::Query(OidcCallback {
+    axum::extract::Query(OidcCallbackQueryParams {
         code,
         state,
         error,
         error_description,
-    }): axum::extract::Query<OidcCallback>,
+    }): axum::extract::Query<OidcCallbackQueryParams>,
 ) -> impl IntoResponse {
     let crate::auth::AuthResolved::Oidc {
         ref issuer,
@@ -237,30 +406,13 @@ pub async fn oidc_callback(
     else {
         return Redirect::to("/").into_response();
     };
-    let login_error = Redirect::to(&format!("/login?error={}", LOGIN_ERROR_OIDC)).into_response();
-    let signed = jar;
-    // Verify state (present and matches)
-    let Some(state_cookie) = signed.get(COOKIE_STATE) else {
-        tracing::warn!("OIDC callback missing state cookie");
-        return login_error;
-    };
-    let Some(state_param) = state.as_deref() else {
-        tracing::warn!("OIDC callback missing state param");
-        return login_error;
-    };
-    if state_cookie.value() != state_param {
-        tracing::warn!("OIDC callback state mismatch");
-        return login_error;
+
+    if let Some(resp) = validate_state_or_redirect(&jar, &state) {
+        return resp;
     }
 
-    // If provider returned an error, bounce back to login with message
-    if let Some(err) = error {
-        tracing::warn!("OIDC error from provider: {} {:?}", err, error_description);
-        let signed = signed
-            .remove(Cookie::build(COOKIE_STATE).path("/").build())
-            .remove(Cookie::build(COOKIE_NONCE).path("/").build())
-            .remove(Cookie::build(COOKIE_PKCE).path("/").build());
-        return (signed, login_error).into_response();
+    if let Some(resp) = handle_provider_error(error, &error_description, jar.clone()) {
+        return resp;
     }
 
     let (client, http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await {
@@ -273,87 +425,11 @@ pub async fn oidc_callback(
         tracing::debug!(redirect_uri = %u.as_str(), "OIDC callback computed redirect URI");
     }
 
-    // PKCE verifier
-    let pkce_verifier = signed
-        .get(COOKIE_PKCE)
-        .map(|c| PkceCodeVerifier::new(c.value().to_string()));
-    tracing::debug!(
-        pkce_present = pkce_verifier.is_some(),
-        "PKCE verifier present in cookie"
-    );
-
-    let Some(code) = code else {
-        tracing::warn!("OIDC callback missing code");
-        return login_error;
-    };
-    tracing::debug!(
-        code_len = code.len(),
-        "Authorization code received (length)"
-    );
-    let mut req = client.exchange_code(AuthorizationCode::new(code));
-    if let Some(v) = pkce_verifier {
-        req = req.set_pkce_verifier(v);
-    }
-
-    let token_response = match req.request_async(&http).await {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::error!("Token exchange failed: {:#?}", e);
-            return axum::http::StatusCode::BAD_GATEWAY.into_response();
-        }
+    let session = match process_token_and_build_session(&client, &http, &jar, code).await {
+        Ok(s) => s,
+        Err(OidcFlowError::LoginRedirect) => return login_error_response(),
+        Err(OidcFlowError::Status(sc)) => return sc.into_response(),
     };
 
-    // ID token optional but recommended
-    let id_token = match token_response.extra_fields().id_token() {
-        Some(id) => id.clone(),
-        None => {
-            tracing::warn!("No id_token in response; refusing login");
-            return axum::http::StatusCode::BAD_REQUEST.into_response();
-        }
-    };
-
-    // Verify nonce
-    let nonce_cookie = signed
-        .get(COOKIE_NONCE)
-        .map(|c| Nonce::new(c.value().to_string()));
-    let claims = match id_token.claims(
-        &client.id_token_verifier(),
-        nonce_cookie.as_ref().unwrap_or(&Nonce::new(String::new())),
-    ) {
-        Ok(c) => c,
-        Err(e) => {
-            tracing::error!("Invalid id token: {}", e);
-            return axum::http::StatusCode::UNAUTHORIZED.into_response();
-        }
-    };
-
-    let sub = claims.subject().to_string();
-    let exp = claims.expiration().timestamp() as u64;
-    let session = SessionClaims { sub, exp };
-
-    // Remove ephemeral OIDC cookies and add a session cookie with expiry matching
-    // the ID token exp claim.
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let session_exp_seconds = session.exp.saturating_sub(now);
-    let session_max_age =
-        CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
-    let signed = signed
-        .remove(Cookie::build(COOKIE_STATE).path("/").build())
-        .remove(Cookie::build(COOKIE_NONCE).path("/").build())
-        .remove(Cookie::build(COOKIE_PKCE).path("/").build())
-        .add(create_session_cookie(
-            &serde_json::to_string(&session).unwrap(),
-            session_max_age,
-        ));
-
-    // Redirect back if present
-    let return_to = signed
-        .get(COOKIE_RETURN_TO)
-        .map(|c| c.value().to_string())
-        .unwrap_or_else(|| "/".to_string());
-    let signed = signed.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-    (signed, Redirect::to(&return_to)).into_response()
+    finalize_session_and_redirect(jar, &session)
 }
