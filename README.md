@@ -293,7 +293,7 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 | 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | Ensure proper Docker network configuration |
 | 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Low | Manually override the network interface in the configuration |
 | 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Low | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary if the original binary fails |
-| 🔏 **Self-signed Certs & Install Scripts** | The client and agent install scripts may fail if you use self-signed certs without proxying these elsewhere | Medium | proxy self-signed certs through a trusted endpoint |
+| 🔏 **Self-signed Certs & Install Scripts** | The client and agent install scripts may fail if you use self-signed certs without proxying these elsewhere | Medium | proxy self-signed certs through a trusted endpoint or provide accepted certs from letsencrypt |
 
 ---
 
