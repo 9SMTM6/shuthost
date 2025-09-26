@@ -1,14 +1,28 @@
 <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
     { maybe_demo_disclaimer }
+    <input type="checkbox" id="mobile-menu-toggle" class="hidden">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-14">
             <div class="flex items-center gap-4">
+                <label for="mobile-menu-toggle" class="hamburger md:hidden" aria-label="Toggle menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </label>
                 <img src="./favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
                 <span class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100" role="heading"
                     aria-level="1">ShutHost</span>
             </div>
             <div class="flex items-center gap-2">
-                { maybe_tabs }
+                <nav class="nav-tabs" role="tablist" aria-label="Main tabs">
+                    <!-- Tablist for navigation -->
+                    <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab"
+                        id="tab-architecture" tabindex="0">Docs</button>
+                    <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts"
+                        tabindex="0">Hosts</button>
+                    <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients"
+                        tabindex="0">Clients</button>
+                </nav>
                 { maybe_logout }
             </div>
         </div>

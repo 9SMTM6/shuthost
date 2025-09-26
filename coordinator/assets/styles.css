@@ -234,4 +234,112 @@ footer {
     .alert li {
         @apply mb-1;
     }
+
+    /* Hamburger menu styles */
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+    .hamburger:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .hamburger-line {
+        width: 20px;
+        height: 2px;
+        background-color: currentColor;
+        margin: 2px 0;
+        transition: transform 0.3s, opacity 0.3s;
+    }
+
+    /* Hide hamburger on login page but keep space */
+    .login-page .hamburger {
+        visibility: hidden;
+    }
+
+    /* Hide nav-tabs and logout on login page but keep space */
+    .login-page .nav-tabs {
+        visibility: hidden;
+    }
+
+    .login-page .logout {
+        visibility: hidden;
+    }
+
+    /* Mobile menu styles */
+    .nav-tabs {
+        display: flex;
+        transition: left 0.3s ease;
+    }
+
+    /* Mobile: Position as side menu */
+    @media (max-width: 767px) {
+        .nav-tabs {
+            position: fixed;
+            top: 3.5rem; /* Below header (h-14 = 3.5rem) */
+            left: -100%;
+            width: 250px;
+            height: calc(100vh - 3.5rem);
+            flex-direction: column;
+            @apply bg-white dark:bg-gray-800 shadow-lg;
+            z-index: 1000;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .nav-tabs .tab {
+            width: 100%;
+            text-align: left;
+            @apply px-4 py-3 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors;
+            border: none;
+            background: none;
+        }
+
+        .nav-tabs .tab.active {
+            @apply bg-blue-500 text-white hover:bg-blue-600;
+        }
+
+        /* Show menu when checkbox is checked */
+        #mobile-menu-toggle:checked ~ div .nav-tabs {
+            left: 0;
+        }
+
+        /* Animate hamburger to X */
+        #mobile-menu-toggle:checked ~ div .hamburger .hamburger-line:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+        }
+
+        #mobile-menu-toggle:checked ~ div .hamburger .hamburger-line:nth-child(2) {
+            opacity: 0;
+        }
+
+        #mobile-menu-toggle:checked ~ div .hamburger .hamburger-line:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+        }
+    }
+
+    /* Desktop: Keep nav inline */
+    @media (min-width: 768px) {
+        .nav-tabs {
+            position: static;
+            width: auto;
+            height: auto;
+            flex-direction: row;
+            background: none;
+            box-shadow: none;
+            padding: 0;
+            gap: 0;
+        }
+
+        .nav-tabs .tab {
+            width: auto;
+            text-align: center;
+            padding: 1rem;
+        }
+    }
 }

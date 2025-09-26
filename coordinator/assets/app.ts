@@ -390,6 +390,9 @@ const setupTabs = () => {
             const tabId = tab.dataset["tab"];
             if (!tabId) return;
             activateTab(tabId, true);
+            // Close mobile menu after tab click
+            const toggle = document.getElementById('mobile-menu-toggle') as HTMLInputElement;
+            if (toggle) toggle.checked = false;
         });
     });
 
@@ -398,6 +401,9 @@ const setupTabs = () => {
         const hash = location.hash.replace('#', '');
         if (hash && validTabs.has(hash)) {
             activateTab(hash, false);
+            // Close mobile menu on hash change
+            const toggle = document.getElementById('mobile-menu-toggle') as HTMLInputElement;
+            if (toggle) toggle.checked = false;
         }
     };
     window.addEventListener('hashchange', handleHashChange);

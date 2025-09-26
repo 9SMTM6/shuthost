@@ -35,7 +35,6 @@ pub enum UiMode<'a> {
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
 pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> String {
-    let header_tabs = include_str!("../assets/partials/header_tabs.tmpl.html");
     let maybe_logout = if matches!(
         *mode,
         UiMode::Normal {
@@ -87,9 +86,6 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
         .replace("{ version }", env!("CARGO_PKG_VERSION"))
         .replace("{ maybe_logout }", maybe_logout)
         .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
-        .replace("{ maybe_tabs }", header_tabs)
-        .replace("{ maybe_tabs }", header_tabs)
-        .replace("{ maybe_logout }", maybe_logout)
 }
 
 /// Serves the main HTML template, injecting dynamic content.
