@@ -39,10 +39,10 @@ This demo runs entirely in your browser and does not control any real hosts. It 
 ## 📋 Table of Contents
 
 - [💿 Installation](#-installation)
-- [🏗️ Architecture](#️-architecture)
-- [📖 API Documentation](#-api-documentation)
 - [📋 Requirements](#-requirements)
 - [🔒 Security](#-security)
+- [🏗️ Architecture](#️-architecture)
+- [📖 API Documentation](#-api-documentation)
 - [⚠️ Known Issues](#️-known-issues)
 - [🚀 Potential Features](#-potential-features)
 
@@ -120,18 +120,6 @@ Agent / Client installation
 
 ---
 
-## 🏗️ Architecture
-
-📖 See [Architecture Documentation](https://9smtm6.github.io/shuthost/#architecture)
-
-## 📖 API Documentation
-
-📚 See [API Documentation](docs/API.md) for details on:
-- **Coordinator M2M API**: Machine-to-machine lease management and control
-- **Agent Protocol**: Host management commands and status checking
-
-This documentation is intended to help with third-party integrations, including custom scripts and systems like Home Assistant.
-
 ## 📋 Requirements
 
 ### 🤖 Agent Requirements
@@ -173,7 +161,7 @@ Alternatively, you can set the address the coordinator binds to in the configura
 ## 🔒 Security
 
 ### 🌐 WebUI Security
-> ⚠️ **Warning**: The WebUI is **not secured by default**, so you should run it behind a reverse proxy that provides TLS and authentication.
+> ⚠️ **Warning**: The WebUI is **not secured by default**, you should enable the built-in authentication or use a reverse proxy that provides authentication, and do the same with TLS.
 
 #### Built-in Authentication (optional)
 ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you don't need external auth.
@@ -224,9 +212,9 @@ If you want the coordinator to serve HTTPS directly, add a `[server.tls]` table.
 
 ```toml
 [server.tls]
-cert_path = "./tls_cert.pem"    # path to certificate PEM (default: ./tls_cert.pem)
-key_path = "./tls_key.pem"     # path to private key PEM (default: ./tls_key.pem)
-persist_self_signed = true       # if true (default) generate and persist a self-signed cert when none provided
+# cert_path = "./tls_cert.pem"    # path to certificate PEM (default: ./tls_cert.pem)
+# key_path = "./tls_key.pem"     # path to private key PEM (default: ./tls_key.pem)
+# persist_self_signed = true       # if true (default) generate and persist a self-signed cert when none provided
 ```
 
 Behavior:
@@ -280,6 +268,19 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 - 🔑 **Authelia**
 - 🌐 **NGINX Proxy Manager** 
 - 🚦 **Generic forward-auth in traefik**
+
+
+## 🏗️ Architecture
+
+📖 See [Architecture Documentation](https://9smtm6.github.io/shuthost/#architecture)
+
+## 📖 API Documentation
+
+📚 See [API Documentation](docs/API.md) for details on:
+- **Coordinator M2M API**: Machine-to-machine lease management and control
+- **Agent Protocol**: Host management commands and status checking
+
+This documentation is intended to help with third-party integrations, including custom scripts and systems like Home Assistant.
 
 ---
 
