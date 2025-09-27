@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ShutHost Coordinator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI.">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+
+<body class="html-body">
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content"
+        class="sr-only focus:not-sr-only absolute left-2 top-2 bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-200 px-3 py-2 rounded z-50 shadow transition-all">
+        Skip to main content
+    </a>
+    <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
+    <div id="demo-mode-disclaimer"
+    class="w-full bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-700 px-4 py-2 text-center font-semibold">
+    Demo Mode: Static UI with simulated interactions only
+</div>
+
+    <input type="checkbox" id="mobile-menu-toggle" class="hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-14">
+            <div class="flex items-center gap-4">
+                <label for="mobile-menu-toggle" class="hamburger md:hidden" aria-label="Toggle menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </label>
+                <img src="./favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
+                <span class="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-gray-100" role="heading"
+                    aria-level="1">ShutHost</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <nav class="nav-tabs" role="tablist" aria-label="Main tabs">
+                    <!-- Tablist for navigation -->
+                    <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab"
+                        id="tab-architecture" tabindex="0">Docs</button>
+                    <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts"
+                        tabindex="0">Hosts</button>
+                    <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients"
+                        tabindex="0">Clients</button>
+                </nav>
+                
+            </div>
+        </div>
+    </div>
+</header>
+
+
+    <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
+        <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
+            
+
+            <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
+                <!-- Install Instructions Panel -->
+                <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
+                    <input type="checkbox" id="host-install-toggle" class="collapsible-toggle" hidden>
+                    <label for="host-install-toggle" class="collapsible-header py-2" aria-controls="host-install-content" id="host-install-header" tabindex="0" role="button">
+                        <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
+                        <span class="collapsible-icon"></span>
+                    </label>
+                    <div id="host-install-content" class="collapsible-content" role="region"
+                        aria-labelledby="host-install-title">
+                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#host-install-command" type="button"
+                                aria-label="Copy install command">Copy</button>
+                            <code id="host-install-command" class="code-block">Loading...</code>
+                        </div>
+                        <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
+                            section of your config on the Coordinator Host:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#config-location" type="button"
+                                aria-label="Copy config location">Copy</button>
+                            <code id="config-location" class="code-block">/this/is/a/demo.toml</code>
+                        </div>
+
+                        <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
+<aside class="alert alert-warning" role="note" aria-label="Agent Installation Requirements">
+    <h3 class="alert-title">⚠️ Agent Installation Requirements</h3>
+    <ul>
+        <li><strong>Superuser Access:</strong> The installer requires <code>curl</code> and will install as
+            superuser (root/sudo/doas)</li>
+        <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
+            download endpoints (only a consideration if you use external auth)</li>
+        <li><strong>Static IP Required:</strong> The host needs a static IP address for shutdown
+            commands and online status monitoring</li>
+        <li><strong>Manual Configuration:</strong> The generated config must be manually added
+            to your coordinator configuration file</li>
+    </ul>
+</aside>
+
+<aside class="alert alert-error" role="note" aria-label="Platform Limitations">
+    <h3 class="alert-title">🚫 Platform Limitations</h3>
+    <ul>
+        <li><strong>No Windows Support:</strong> Only Unix distributions are supported.</li>
+        <li><strong>No BSD Support:</strong> BSD-based systems are not currently supported.</li>
+    </ul>
+</aside>
+
+<aside class="alert alert-info" role="note" aria-label="Wake-on-LAN (WOL) Requirements">
+    <h3 class="alert-title">💡 Wake-on-LAN (WOL) Requirements</h3>
+    <p>The agent requires Wake-on-LAN for remote startup functionality:</p>
+    <ul>
+        <li><strong>Motherboard Support:</strong> Your motherboard must support WOL.
+            <ul>
+                <li><strong>BIOS Configuration:</strong> WOL must be enabled (and thus available, which isnt guaranteed, e.g. Raspberry Pi) in BIOS/UEFI settings.</li>
+                <li><strong>Power State Limitation:</strong> Some systems only support WOL from sleep mode, not full shutdown.</li>
+            </ul>
+        </li>
+        <li><strong>OS Configuration:</strong> WOL must be enabled in the operating system.</li>
+        <li><strong>Network Requirements:</strong> Requires network broadcast support and host reachability.
+            <ul>
+                <li><em>Note: The installer tests network reachability but won't fail if the test is unsuccessful, so ensure your network supports broadcast for WOL to work properly.</em></li>
+            </ul>
+        </li>
+    </ul>
+</aside>
+
+                    </div>
+                </section>
+
+                <!-- Hosts Table -->
+                <section class="section-container mt-4" aria-labelledby="hosts-table-title">
+                    <h2 id="hosts-table-title" class="sr-only">Hosts Table</h2>
+                    <div class="table-wrapper">
+                        <table class="w-full" aria-describedby="hosts-table-title">
+                            <thead>
+                                <tr id="host-table-header">
+                                    <th class="table-header" scope="col">Host</th>
+                                    <th class="table-header" scope="col">Status</th>
+                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="host-table-body" class="divide-y divide-gray-200" aria-live="polite">
+                                <!-- Hosts will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <section id="clients-tab" class="tab-content" aria-labelledby="tab-clients" role="tabpanel" tabindex="0">
+                <!-- Install Instructions Panel -->
+                <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
+                    <input type="checkbox" id="client-install-toggle" class="collapsible-toggle" hidden>
+                    <label for="client-install-toggle" class="collapsible-header py-2" aria-controls="client-install-content" id="client-install-header" tabindex="0" role="button">
+                        <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
+                        <span class="collapsible-icon"></span>
+                    </label>
+                    <div id="client-install-content" class="collapsible-content" role="region"
+                        aria-labelledby="client-install-title">
+                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#client-install-command" type="button"
+                                aria-label="Copy install command">Copy</button>
+                            <code id="client-install-command" class="code-block">Loading...</code>
+                        </div>
+                        <p class="description-text text-xs">Optionally, you can specify a custom client ID as the second
+                            argument. Add the output to the clients section of your config on the Coordinator Host:</p>
+                        <div class="code-container">
+                            <button class="copy-button" data-copy-target="#config-location" type="button"
+                                aria-label="Copy config location">Copy</button>
+                            <code id="config-location" class="code-block">/this/is/a/demo.toml</code>
+                        </div>
+
+                        <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
+
+<aside class="alert alert-warning" role="note" aria-label="Client Installation Requirements">
+    <h3 class="alert-title">⚠️ Client Installation Requirements</h3>
+    <ul>
+        <li><strong>Dependencies:</strong> Installer requires <code>curl</code>; client runtime requires
+            <code>OpenSSL</code></li>
+        <li><strong>Unprotected Resources:</strong> Installation requires access to unprotected
+            download endpoints (only a consideration if you use external auth)</li>
+        <li><strong>Manual Configuration:</strong> The generated config must be manually added
+            to your coordinator configuration file</li>
+    </ul>
+</aside>
+
+                    </div>
+                </section>
+
+                <!-- Clients Table -->
+                <section class="section-container mt-4" aria-labelledby="clients-table-title">
+                    <h2 id="clients-table-title" class="sr-only">Clients Table</h2>
+                    <div class="table-wrapper">
+                        <table class="w-full" aria-describedby="clients-table-title">
+                            <thead>
+                                <tr>
+                                    <th class="table-header" scope="col">Client ID</th>
+                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-table-body" class="divide-y divide-gray-200" aria-live="polite">
+                                <!-- Clients will be loaded here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+
+            <section id="architecture-tab" class="tab-content">
+    <article class="section-container mt-0">
+        <header>
+            <h2 class="section-title px-4 pt-4">Architecture Documentation</h2>
+            <p class="description-text px-4">ShutHost provides two different architectural views depending on your use case:</p>
+        </header>
+        <section class="architecture-section" aria-labelledby="simplified-architecture-title">
+            <header>
+                <h3 id="simplified-architecture-title" class="architecture-title px-4">Simplified Architecture</h3>
+            </header>
+            <figure class="architecture-diagram-container">
+                <img src="./architecture_simplified.svg" alt="Simplified Architecture Diagram" class="architecture-diagram">
+            </figure>
+            <div class="architecture-content">
+                <p class="architecture-when-to-use px-4">
+                    <strong>When to use:</strong> This architecture applies when you have <strong>no clients defined</strong> in your configuration. 
+                    In this scenario, only the WebUI interacts with hosts through the coordinator.
+                </p>
+                <aside class="alert alert-info" role="note" aria-label="How it works">
+                    <h4 class="alert-title">How it works</h4>
+                    <ul class="text-sm">
+                        <li>The <strong>WebUI</strong> sends startup/shutdown requests directly to the <strong>Coordinator</strong></li>
+                        <li>The <strong>Coordinator</strong> manages host lifecycle by sending Wake-on-LAN packets for startup and shutdown commands to agents</li>
+                        <li>Each <strong>Host</strong> runs an <strong>Agent</strong> service that handles shutdown commands and reports status back to the coordinator</li>
+                        <li>Under the hood, this still uses the lease system, but it's transparent to the user</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+        <section class="architecture-section architecture-separator" aria-labelledby="complete-architecture-title">
+            <header>
+                <h3 id="complete-architecture-title" class="architecture-title px-4">Complete Architecture</h3>
+            </header>
+            <figure class="architecture-diagram-container">
+                <img src="./architecture.svg" alt="Complete Architecture Diagram" class="architecture-diagram">
+            </figure>
+            <div class="architecture-content">
+                <p class="architecture-when-to-use px-4">
+                    <strong>When to use:</strong> This architecture applies when you have <strong>clients defined</strong> in your configuration. 
+                    This enables programmatic access where multiple clients can access hosts concurrently.
+                </p>
+                <aside class="alert alert-warning" role="note" aria-label="Lease System">
+                    <h4 class="alert-title">Lease System</h4>
+                    <p class="text-sm">
+                        With multiple clients potentially accessing hosts simultaneously, ShutHost introduces a 
+                        <strong>lease system</strong> to coordinate access and prevent conflicts:
+                    </p>
+                    <ul class="text-sm mt-2">
+                        <li><strong>Lease Acquisition:</strong> Both WebUI and Clients must request leases before using hosts</li>
+                        <li><strong>Automatic Startup:</strong> Hosts are automatically started when the first lease is acquired (≥1 leases)</li>
+                        <li><strong>Automatic Shutdown:</strong> Hosts are automatically shut down when all leases are released (=0 leases)</li>
+                        <li><strong>Conflict Prevention:</strong> The lease system ensures hosts aren't shut down while still in use by other clients</li>
+                    </ul>
+                </aside>
+                <aside class="alert alert-info" role="note" aria-label="Client Use Cases">
+                    <h4 class="alert-title">Client Use Cases</h4>
+                    <p class="text-sm">Clients are typically used for:</p>
+                    <ul class="text-sm mt-2">
+                        <li><strong>Automated Backups:</strong> Scripts that need to wake up hosts, perform backups, then allow shutdown</li>
+                        <li><strong>Batch Processing:</strong> Jobs that require access to specific hosts for processing tasks</li>
+                        <li><strong>CI/CD Pipelines:</strong> Build systems that need temporary access to powerful build machines</li>
+                        <li><strong>Scheduled Maintenance:</strong> Scripts that perform regular maintenance tasks on hosts</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+        <section class="architecture-key-points" aria-labelledby="architecture-key-points-title">
+            <aside class="alert alert-info" role="note" aria-label="Key Points">
+                <h4 id="architecture-key-points-title" class="alert-title">💡 Key Points</h4>
+                <ul class="text-sm">
+                    <li><strong>Both architectures use leases internally</strong> - the simplified view just hides this complexity</li>
+                    <li><strong>Wake-on-LAN (WOL)</strong> is used for remote host startup in both cases</li>
+                    <li><strong>Agents report status</strong> to keep the coordinator informed of host availability</li>
+                    <li><strong>The coordinator serves the WebUI</strong> and provides the API for both human and programmatic access</li>
+                </ul>
+            </aside>
+        </section>
+    </article>
+</section>
+
+        </section>
+    </main>
+
+    <footer
+    class="bg-white dark:bg-gray-800 shadow-md py-2 px-4 text-center text-gray-600 dark:text-gray-400 text-xs mt-auto"
+    role="contentinfo">
+    ShutHost Coordinator v1.2.2
+</footer>
+
+
+    <script>
+        "use strict";
+// Detect demo mode by presence of disclaimer element
+const isDemoMode = !!document.getElementById('demo-mode-disclaimer');
+let persistedHostsList = [];
+let persistedStatusMap = {};
+let persistedLeaseMap = {};
+let persistedClientList = [];
+/**
+ * Establish and maintain a WebSocket connection to the backend API.
+ * Reconnects automatically on close (with a small delay).
+ */
+const connectWebSocket = () => {
+    if (isDemoMode) {
+        DemoSim.init();
+        return;
+    }
+    const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+    socket.onopen = () => console.log('WebSocket connected');
+    socket.onmessage = handleWebSocketMessage;
+    socket.onclose = () => setTimeout(connectWebSocket, 2000);
+};
+/**
+ * Handle incoming WebSocket messages and update local state/UI accordingly.
+ * Wraps parsing in a try/catch to avoid uncaught exceptions from malformed messages.
+ */
+const handleWebSocketMessage = (event) => {
+    try {
+        const message = JSON.parse(event.data);
+        const hostTableBody = document.getElementById('host-table-body');
+        if (!hostTableBody)
+            throw new Error('Missing required element #host-table-body');
+        const clientTableBody = document.getElementById('client-table-body');
+        if (!clientTableBody)
+            return;
+        switch (message.type) {
+            case 'Initial':
+                persistedStatusMap = message.payload.status;
+                persistedLeaseMap = message.payload.leases;
+                persistedClientList = message.payload.clients;
+                persistedHostsList = message.payload.hosts;
+                updateHostsTable();
+                updateClientsTable();
+                break;
+            case 'HostStatus':
+                persistedStatusMap = message.payload;
+                updateHostsTable();
+                break;
+            case 'ConfigChanged':
+                persistedClientList = message.payload.clients;
+                persistedHostsList = message.payload.hosts;
+                updateHostsTable();
+                updateClientsTable();
+                break;
+            case 'LeaseUpdate':
+                const { host, leases } = message.payload;
+                persistedLeaseMap[host] = leases;
+                updateClientsTable();
+                console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
+                break;
+        }
+        updateNodeAttrs();
+    }
+    catch (err) {
+        console.error('Error handling WS message:', err);
+    }
+};
+/**
+ * Return a small object describing the status text to display for a host.
+ * If status is undefined the host is still loading.
+ */
+const getHostStatus = (hostName) => {
+    const status = persistedStatusMap[hostName];
+    return {
+        statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline')
+    };
+};
+/**
+ * Format leases for display in the hosts table.
+ * Filters out the WebInterface lease (internal UI lease) and returns a comma-separated string
+ * of client IDs or "None" if no client leases exist.
+ */
+const getFormattedLeases = (hostname) => {
+    // Only show client leases, not WebInterface
+    const clientLeases = (persistedLeaseMap[hostname] || []).filter(lease => lease.type === 'Client');
+    return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
+};
+const hasClientsConfigured = () => persistedClientList.length > 0;
+/**
+ * Convert a LeaseSource to a human readable string.
+ */
+const formatLeaseSource = (lease) => {
+    switch (lease.type) {
+        case 'WebInterface':
+            // Warn if this is called for hosts table or clients table, as it should be filtered out before
+            console.warn('formatLeaseSource called with WebInterface lease. This should be filtered out before display.');
+            return '';
+        case 'Client':
+            return lease.value;
+    }
+};
+// ==========================
+// Table Row Creation
+// ==========================
+const createHostRow = (hostName) => {
+    const { statusText } = getHostStatus(hostName);
+    const leases = getFormattedLeases(hostName);
+    const clientsConfigured = hasClientsConfigured();
+    return `
+        <tr data-hostname="${hostName}" class="table-row" role="row">
+            <th class="table-cell" scope="row">${hostName}</th>
+            <td class="table-cell status" aria-label="Status">${statusText}</td>
+            ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
+            <td class="table-cell" aria-label="Actions">
+                <div class="actions-cell">
+                    <button 
+                        class="btn btn-green take-lease" 
+                        onclick="updateLease('${hostName}', 'take')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Take lease for ${hostName}` : `Start ${hostName}`}" 
+                    >${clientsConfigured ? "Take Lease" : "Start"}</button>
+                    <button 
+                        class="btn btn-red release-lease" 
+                        onclick="updateLease('${hostName}', 'release')" 
+                        type="button"
+                        aria-label="${clientsConfigured ? `Release lease for ${hostName}` : `Shutdown ${hostName}`}" 
+                    >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
+                </div>
+            </td>
+        </tr>
+    `;
+};
+const createClientRow = (clientId, leases) => {
+    const hasLeases = leases.length > 0;
+    return `
+    <tr data-client-id="${clientId}" class="table-row" role="row">
+        <th class="table-cell" scope="row">${clientId}</th>
+        <td class="table-cell" aria-label="Leases">${leases.join(', ') || 'None'}</td>
+        <td class="table-cell" aria-label="Actions">
+            <div class="actions-cell">
+                <button 
+                    class="btn btn-red" 
+                    onclick="resetClientLeases('${clientId}')"
+                    type="button"
+                    aria-label="Reset leases for ${clientId}"
+                    ${!hasLeases ? 'disabled' : ''}
+                >
+                    Reset Leases
+                </button>
+            </div>
+        </td>
+    </tr>
+    `;
+};
+// ==========================
+// Table Update Functions
+// ==========================
+/**
+ * Update DOM attributes and visibility for a given host table row.
+ * - Updates status cell text
+ * - Updates lease cell text
+ * - Shows/hides take/release buttons depending on whether the WebInterface holds a lease
+ */
+const updateRowAttributes = (row, hostname) => {
+    const { statusText } = getHostStatus(hostname);
+    const leases = persistedLeaseMap[hostname] || [];
+    const hasWebInterfaceLease = leases.some(lease => lease.type === 'WebInterface');
+    const statusCell = row.querySelector('.status');
+    const leaseCell = row.querySelector('.leases');
+    const takeLeaseButton = row.querySelector('.take-lease');
+    const releaseLeaseButton = row.querySelector('.release-lease');
+    if (statusCell)
+        statusCell.textContent = statusText;
+    if (leaseCell)
+        leaseCell.textContent = getFormattedLeases(hostname);
+    if (takeLeaseButton) {
+        takeLeaseButton.style.display = hasWebInterfaceLease ? 'none' : 'inline-block';
+    }
+    if (releaseLeaseButton) {
+        releaseLeaseButton.style.display = hasWebInterfaceLease ? 'inline-block' : 'none';
+    }
+};
+/**
+ * Iterate over all host rows and refresh their attributes from current persisted state.
+ */
+const updateNodeAttrs = () => {
+    document.querySelectorAll('#host-table-body tr').forEach(row => {
+        const hostname = row.dataset["hostname"];
+        if (hostname) {
+            updateRowAttributes(row, hostname);
+        }
+    });
+};
+const updateHostsTableHeader = () => {
+    const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
+    if (!thead)
+        return;
+    thead.innerHTML = `
+        <th class="table-header">Host</th>
+        <th class="table-header">Status</th>
+        ${hasClientsConfigured() ? '<th class="table-header">Leases</th>' : ''}
+        <th class="table-header">Actions</th>
+    `;
+};
+/**
+ * Rebuild the hosts table from persisted host list and status map.
+ * Active hosts are sorted alphabetically and displayed before inactive hosts.
+ */
+const updateHostsTable = () => {
+    const hostTableBody = document.getElementById('host-table-body');
+    const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el]);
+    const inactiveHosts = persistedHostsList.filter((el) => !persistedStatusMap[el]);
+    const sortLexicographic = (hostName1, hostName2) => hostName1.localeCompare(hostName2);
+    const hostList = [...activeHosts.toSorted(sortLexicographic), ...inactiveHosts.toSorted(sortLexicographic)];
+    if (hostTableBody) {
+        hostTableBody.innerHTML = hostList.map(createHostRow).join('');
+        updateHostsTableHeader();
+    }
+};
+/**
+ * Rebuild the clients table from the persisted lease map and configured clients.
+ * Groups leases by client and sorts active clients first (alphabetically), then inactive.
+ */
+const updateClientsTable = () => {
+    const clientMap = new Map();
+    // Group leases by client
+    Object.entries(persistedLeaseMap).forEach(([host, leases]) => {
+        leases.forEach(lease => {
+            if (lease.type === 'Client') {
+                const clientLeases = clientMap.get(lease.value) || [];
+                clientLeases.push(host);
+                clientMap.set(lease.value, clientLeases);
+            }
+        });
+    });
+    // Ensure all known clients are included
+    persistedClientList.forEach(clientId => {
+        if (!clientMap.has(clientId)) {
+            clientMap.set(clientId, []);
+        }
+    });
+    const clientEntries = Array.from(clientMap.entries());
+    const hasActiveLeases = ([_, leases]) => leases.length > 0;
+    const activeClients = clientEntries.filter(hasActiveLeases);
+    const inactiveClients = clientEntries.filter((el) => !hasActiveLeases(el));
+    const sortLexicographic = ([clientName1, _1], [clientName2, _2]) => clientName1.localeCompare(clientName2);
+    const sortedClients = [...activeClients.toSorted(sortLexicographic), ...inactiveClients.toSorted(sortLexicographic)];
+    const clientTableBody = document.getElementById('client-table-body');
+    if (clientTableBody) {
+        clientTableBody.innerHTML = sortedClients
+            .map(([clientId, leases]) => createClientRow(clientId, leases))
+            .join('');
+    }
+};
+// ==========================
+// Backend Actions
+// ==========================
+/**
+ * Send a lease action request to the backend.
+ * action should be 'take' or 'release'.
+ */
+const updateLease = async (host, action) => {
+    if (isDemoMode) {
+        DemoSim.leaseAction(host, action);
+        return;
+    }
+    try {
+        await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
+    }
+    catch (err) {
+        console.error(`Failed to ${action} lease for ${host}:`, err);
+    }
+};
+/**
+ * Request the backend to clear all leases owned by a given client.
+ */
+const resetClientLeases = async (clientId) => {
+    if (isDemoMode) {
+        DemoSim.resetClientLeases(clientId);
+        return;
+    }
+    try {
+        await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
+    }
+    catch (err) {
+        console.error(`Failed to reset leases for client ${clientId}:`, err);
+    }
+};
+// ==========================
+// UI Setup Functions
+// ==========================
+const setupCopyButtons = () => {
+    document.querySelectorAll('.copy-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetSelector = button.dataset["copyTarget"];
+            if (targetSelector) {
+                const target = document.querySelector(targetSelector)?.textContent;
+                if (target) {
+                    navigator.clipboard.writeText(target).then(() => {
+                        button.textContent = "Copied!";
+                        setTimeout(() => (button.textContent = "Copy"), 1500);
+                    });
+                }
+            }
+        });
+    });
+};
+const setupTabs = () => {
+    const tabs = document.querySelectorAll('.tab');
+    const validTabs = new Set(['hosts', 'clients', 'architecture']);
+    const activateTab = (tabId, updateHash) => {
+        if (!validTabs.has(tabId))
+            return;
+        // Remove active class from all tabs and content
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        // Add active class to clicked tab and corresponding content
+        const tabButton = Array.from(tabs).find(t => t.dataset["tab"] === tabId);
+        tabButton?.classList.add('active');
+        tabButton?.setAttribute('aria-selected', 'true');
+        document.getElementById(`${tabId}-tab`)?.classList.add('active');
+        // Update the hash (deep link) if requested
+        if (updateHash) {
+            const newHash = `#${tabId}`;
+            if (location.hash !== newHash) {
+                // Setting location.hash will trigger the hashchange handler
+                location.hash = tabId;
+            }
+        }
+    };
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.dataset["tab"];
+            if (!tabId)
+                return;
+            activateTab(tabId, true);
+            // Close mobile menu after tab click
+            const toggle = document.getElementById('mobile-menu-toggle');
+            if (toggle)
+                toggle.checked = false;
+        });
+    });
+    // Respond to URL hash changes (back/forward navigation or external links)
+    const handleHashChange = () => {
+        const hash = location.hash.replace('#', '');
+        if (hash && validTabs.has(hash)) {
+            activateTab(hash, false);
+            // Close mobile menu on hash change
+            const toggle = document.getElementById('mobile-menu-toggle');
+            if (toggle)
+                toggle.checked = false;
+        }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    // Initial activation based on current hash or default to hosts
+    if (location.hash && validTabs.has(location.hash.substring(1))) {
+        activateTab(location.hash.substring(1), false);
+    }
+    else {
+        // Ensure default is reflected when no hash present
+        activateTab('hosts', false);
+    }
+};
+/**
+ * Populate dynamic configuration snippets and installer commands based on current origin.
+ * This keeps embedded strings in the UI in sync with where the page is served from.
+ */
+const setupDynamicConfigs = () => {
+    const baseUrl = window.location.origin;
+    // Install commands
+    const hostInstallCommand = document.getElementById('host-install-command');
+    const clientInstallCommand = document.getElementById('client-install-command');
+    if (!hostInstallCommand || !clientInstallCommand) {
+        throw new Error('Missing required install command elements');
+    }
+    hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+    // Configuration examples with replaced domain/backend
+    const autheliaConfig = document.getElementById('authelia-config');
+    const traefikConfig = document.getElementById('traefik-config');
+    const domain = baseUrl.replace(/^https?:\/\//, '');
+    if (autheliaConfig) {
+        autheliaConfig.textContent = `- domain: ${domain}
+  policy: bypass
+  resources:
+    - '^/download/(.*)'
+    - '^/api/m2m/(.*)$'
+    - '^/manifest.json$'
+    - '^/favicon.svg$'`;
+    }
+    if (traefikConfig) {
+        traefikConfig.textContent = `# Add to your service labels
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.svg\`))"
+- "traefik.http.routers.shuthost-bypass.priority=100"
+# Remove auth middleware for bypass routes`;
+    }
+    if (!autheliaConfig || !traefikConfig) {
+        console.info("No dynamic security exceptions found to be populated.");
+    }
+};
+// ==========================
+// Initialization
+// ==========================
+const initialize = () => {
+    setupDynamicConfigs();
+    connectWebSocket();
+    setupCopyButtons();
+    setupTabs();
+    if (isDemoMode) {
+        console.info('Demo mode enabled: UI is using simulated data.');
+    }
+};
+// ==========================
+// Demo Mode Simulation Namespace
+// ==========================
+var DemoSim;
+(function (DemoSim) {
+    let leaseTimeout = null;
+    let statusTimeout = null;
+    DemoSim.init = () => {
+        // Simulate initial push
+        setTimeout(() => {
+            handleWebSocketMessage({
+                data: JSON.stringify({
+                    type: "Initial",
+                    payload: {
+                        hosts: ["archive", "tarbean"],
+                        clients: [],
+                        status: { tarbean: false, archive: false },
+                        leases: { archive: [] }
+                    }
+                })
+            });
+        }, 500);
+    };
+    DemoSim.leaseAction = (host, action) => {
+        if (action === "take") {
+            // LeaseUpdate: WebInterface
+            if (leaseTimeout)
+                clearTimeout(leaseTimeout);
+            leaseTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "LeaseUpdate",
+                        payload: { host, leases: [{ type: "WebInterface" }] }
+                    })
+                });
+            }, 500);
+            // HostStatus: archive online
+            if (statusTimeout)
+                clearTimeout(statusTimeout);
+            statusTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "HostStatus",
+                        payload: { tarbean: false, archive: true }
+                    })
+                });
+            }, 1200);
+        }
+        else if (action === "release") {
+            // LeaseUpdate: no leases
+            if (leaseTimeout)
+                clearTimeout(leaseTimeout);
+            leaseTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "LeaseUpdate",
+                        payload: { host, leases: [] }
+                    })
+                });
+            }, 500);
+            // HostStatus: archive offline
+            if (statusTimeout)
+                clearTimeout(statusTimeout);
+            statusTimeout = setTimeout(() => {
+                handleWebSocketMessage({
+                    data: JSON.stringify({
+                        type: "HostStatus",
+                        payload: { tarbean: false, archive: false }
+                    })
+                });
+            }, 1200);
+        }
+    };
+    DemoSim.resetClientLeases = (clientId) => {
+        // For demo, just clear all leases for that client
+        Object.keys(persistedLeaseMap).forEach(host => {
+            persistedLeaseMap[host] = (persistedLeaseMap[host] || []).filter(l => l.type !== 'Client' || l.value !== clientId);
+        });
+        updateClientsTable();
+        updateHostsTable();
+    };
+})(DemoSim || (DemoSim = {}));
+document.addEventListener('DOMContentLoaded', initialize);
+
+    </script>
+</body>
+
+</html>
