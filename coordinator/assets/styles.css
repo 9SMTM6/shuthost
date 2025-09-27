@@ -46,7 +46,7 @@ footer {
     color: inherit;
 }
 
-.collapsible-header[aria-expanded="true"] .collapsible-icon::before {
+.collapsible-toggle:checked ~ .collapsible-header .collapsible-icon::before {
     transform: rotate(-135deg);
 }
 
@@ -194,7 +194,7 @@ footer {
         @apply hidden px-4 py-2 border-t border-gray-200;
     }
 
-    .collapsible-content.expanded {
+    .collapsible-toggle:checked ~ .collapsible-content {
         @apply block;
     }
 

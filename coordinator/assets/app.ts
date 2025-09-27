@@ -417,21 +417,6 @@ const setupTabs = () => {
     }
 };
 
-const setupCollapsibleSections = () => {
-    document.querySelectorAll<HTMLElement>('.collapsible-header').forEach(header => {
-        header.addEventListener('click', () => {
-            const targetId = header.dataset["target"];
-            if (targetId) {
-                const content = document.getElementById(targetId);
-                const icon = header.querySelector('.collapsible-icon');
-                
-                content?.classList.toggle('expanded');
-                icon?.classList.toggle('expanded');
-            }
-        });
-    });
-};
-
 /**
  * Populate dynamic configuration snippets and installer commands based on current origin.
  * This keeps embedded strings in the UI in sync with where the page is served from.
@@ -487,7 +472,6 @@ const initialize = () => {
     connectWebSocket();
     setupCopyButtons();
     setupTabs();
-    setupCollapsibleSections();
     if (isDemoMode) {
         console.info('Demo mode enabled: UI is using simulated data.');
     }
