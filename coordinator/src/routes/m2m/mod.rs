@@ -87,7 +87,7 @@ async fn handle_m2m_lease_action(
     let (client_id, _command_action) =
         match validation::validate_m2m_request(&headers, &state, &action) {
             Ok(res) => res,
-            Err(e) => return Err(e),
+            Err((sc, err)) => return Err((sc, err.to_owned())),
         };
 
     let mut leases = state.leases.lock().await;
@@ -109,7 +109,7 @@ async fn handle_m2m_lease_action(
                 let lease_set = lease_set.clone();
                 let state = state.clone();
                 tokio::spawn(async move {
-                    let _ = host_control::handle_host_state(&host, &lease_set, &state).await;
+                    drop(host_control::handle_host_state(&host, &lease_set, &state).await);
                 });
                 Ok("Lease taken (async)".into_response())
             } else {
@@ -130,7 +130,7 @@ async fn handle_m2m_lease_action(
                 let lease_set = lease_set.clone();
                 let state = state.clone();
                 tokio::spawn(async move {
-                    let _ = host_control::handle_host_state(&host, &lease_set, &state).await;
+                    drop(host_control::handle_host_state(&host, &lease_set, &state).await);
                 });
                 Ok("Lease released (async)".into_response())
             } else {

@@ -46,6 +46,8 @@ pub struct AppState {
 
     /// Receiver for host online/offline status updates.
     pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+    /// Sender for host online/offline status updates.
+    pub hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
 
     /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: broadcast::Sender<WsMessage>,
@@ -116,6 +118,7 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     let app_state = AppState {
         config_rx,
         hoststatus_rx,
+        hoststatus_tx,
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases: LeaseMap::default(),

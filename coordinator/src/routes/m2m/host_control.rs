@@ -3,7 +3,7 @@
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::time::{sleep, timeout};
+use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
 use axum::http::StatusCode;
@@ -11,65 +11,19 @@ use shuthost_common::create_signed_message;
 
 use crate::config::Host;
 use crate::http::AppState;
+use crate::http::polling::poll_until_host_state;
 use crate::routes::m2m::leases::LeaseSource;
 use crate::wol::send_magic_packet;
 
 /// Timeout for TCP operations
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
 
-/// Waits for a host to reach the desired state (online/offline) within a timeout.
-/// Returns `Ok(())` if the desired state is reached, or an error if the timeout is exceeded.
-pub async fn wait_for_host_state(
-    host: &str,
-    state: &AppState,
-    desired_state: bool,
-    timeout_secs: u64,
-    poll_interval_secs: u64,
-) -> Result<(), (StatusCode, &'static str)> {
-    let mut waited = 0;
-
-    loop {
-        let current_state = {
-            let hoststatus_rx = state.hoststatus_rx.borrow();
-            hoststatus_rx.get(host).copied().unwrap_or(false)
-        };
-
-        if current_state == desired_state {
-            info!(
-                "Host '{}' is now {}",
-                host,
-                if desired_state { "online" } else { "offline" }
-            );
-            return Ok(());
-        }
-
-        if waited >= timeout_secs {
-            warn!(
-                "Timeout waiting for host '{}' to become {}",
-                host,
-                if desired_state { "online" } else { "offline" }
-            );
-            return Err((
-                StatusCode::GATEWAY_TIMEOUT,
-                if desired_state {
-                    "Timeout waiting for host to become online"
-                } else {
-                    "Timeout waiting for host to become offline"
-                },
-            ));
-        }
-
-        sleep(Duration::from_secs(poll_interval_secs)).await;
-        waited += poll_interval_secs;
-    }
-}
-
 /// Handle host state changes based on lease status.
 pub async fn handle_host_state(
     host: &str,
     lease_set: &std::collections::HashSet<LeaseSource>,
     state: &AppState,
-) -> Result<(), (StatusCode, &'static str)> {
+) -> Result<(), (StatusCode, String)> {
     let should_be_running = !lease_set.is_empty();
 
     debug!(
@@ -84,20 +38,47 @@ pub async fn handle_host_state(
 
     debug!("Current state for host '{}': is_on={}", host, host_is_on);
 
+    let poll_with_err = |desired_state: bool| async move {
+        match poll_until_host_state(
+            host,
+            desired_state,
+            60,
+            200,
+            &state.config_rx,
+            &state.hoststatus_tx,
+        )
+        .await
+        {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                warn!("{e}");
+                return Err((
+                    StatusCode::GATEWAY_TIMEOUT,
+                    format!(
+                        "Timeout waiting for host {host} to become {}",
+                        if desired_state { "online" } else { "offline" }
+                    ),
+                ));
+            }
+        }
+    };
+
     if should_be_running && !host_is_on {
         info!(
             "Host '{host}' needs to wake up - has {} active lease(s): {:?}",
             lease_set.len(),
             lease_set
         );
-        wake_host(host, state)?;
-
-        wait_for_host_state(host, state, true, 60, 1).await?;
+        wake_host(host, state).map_err(|(sc, err)| (sc, err.to_owned()))?;
+        // Poll until host is online, updating global state
+        poll_with_err(true).await?
     } else if !should_be_running && host_is_on {
         info!("Host '{host}' should shut down - no active leases");
-        shutdown_host(host, state).await?;
-
-        wait_for_host_state(host, state, false, 60, 1).await?;
+        shutdown_host(host, state)
+            .await
+            .map_err(|(sc, err)| (sc, err.to_owned()))?;
+        // Poll until host is offline, updating global state
+        poll_with_err(false).await?
     } else {
         debug!(
             "No action needed for host '{}' (is_on={}, should_be_running={})",

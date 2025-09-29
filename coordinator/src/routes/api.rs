@@ -66,7 +66,7 @@ async fn handle_web_lease_action(
 
     // Handle host state after lease change
     tokio::spawn(async move {
-        let _ = handle_host_state(&hostname, &lease_set, &state).await;
+        drop(handle_host_state(&hostname, &lease_set, &state).await);
     });
 
     match action {
@@ -106,7 +106,7 @@ async fn handle_reset_client_leases(
         let lease_set = lease_set.clone();
         let state = state.clone();
         tokio::spawn(async move {
-            let _ = handle_host_state(&host, &lease_set, &state).await;
+            drop(handle_host_state(&host, &lease_set, &state).await);
         });
     }
 

@@ -34,10 +34,13 @@ pub async fn run_demo_service(port: u16, bind: &str) {
             .unwrap()
     }
 
+    let (hoststatus_tx, hoststatus_rx) = watch::channel(Arc::new(HashMap::new()));
+
     let app_state = AppState {
         config_path: std::path::PathBuf::from("demo"),
         config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
-        hoststatus_rx: watch::channel(Arc::new(HashMap::new())).1,
+        hoststatus_rx,
+        hoststatus_tx,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseMap::default(),
         auth: std::sync::Arc::new(crate::auth::AuthRuntime::from_config(
