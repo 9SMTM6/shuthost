@@ -43,44 +43,50 @@ const connectWebSocket = () => {
 };
 
 /**
+ * Handle a parsed WebSocket message and update state/UI accordingly.
+ */
+const handleMessage = (message: WsMessage) => {
+    const hostTableBody = document.getElementById('host-table-body');
+    if (!hostTableBody) throw new Error('Missing required element #host-table-body');
+    const clientTableBody = document.getElementById('client-table-body');
+    if (!clientTableBody) return;
+
+    switch (message.type) {
+        case 'Initial':
+            persistedStatusMap = message.payload.status;
+            persistedLeaseMap = message.payload.leases;
+            persistedClientList = message.payload.clients;
+            persistedHostsList = message.payload.hosts;
+            updateHostsTable();
+            updateClientsTable();
+            break;
+        case 'HostStatus':
+            persistedStatusMap = message.payload;
+            updateHostsTable();
+            break;
+        case 'ConfigChanged':
+            persistedClientList = message.payload.clients;
+            persistedHostsList = message.payload.hosts;
+            updateHostsTable();
+            updateClientsTable();
+            break;
+        case 'LeaseUpdate':
+            const { host, leases } = message.payload;
+            persistedLeaseMap[host] = leases;
+            updateClientsTable();
+            console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
+            break;
+    }
+    updateNodeAttrs();
+};
+
+/**
  * Handle incoming WebSocket messages and update local state/UI accordingly.
- * Wraps parsing in a try/catch to avoid uncaught exceptions from malformed messages.
  */
 const handleWebSocketMessage = (event: MessageEvent) => {
     try {
         const message = JSON.parse(event.data) as WsMessage;
-        const hostTableBody = document.getElementById('host-table-body');
-        if (!hostTableBody) throw new Error('Missing required element #host-table-body');
-        const clientTableBody = document.getElementById('client-table-body');
-        if (!clientTableBody) return;
-
-        switch (message.type) {
-            case 'Initial':
-                persistedStatusMap = message.payload.status;
-                persistedLeaseMap = message.payload.leases;
-                persistedClientList = message.payload.clients;
-                persistedHostsList = message.payload.hosts;
-                updateHostsTable();
-                updateClientsTable();
-                break;
-            case 'HostStatus':
-                persistedStatusMap = message.payload;
-                updateHostsTable();
-                break;
-            case 'ConfigChanged':
-                persistedClientList = message.payload.clients;
-                persistedHostsList = message.payload.hosts;
-                updateHostsTable();
-                updateClientsTable();
-                break;
-            case 'LeaseUpdate':
-                const { host, leases } = message.payload;
-                persistedLeaseMap[host] = leases;
-                updateClientsTable();
-                console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
-                break;
-        }
-        updateNodeAttrs();
+        handleMessage(message);
     } catch (err) {
         console.error('Error handling WS message:', err);
     }
@@ -122,6 +128,28 @@ const formatLeaseSource = (lease: LeaseSource): string => {
         case 'Client':
             return lease.value;
     }
+};
+
+/**
+ * Close the mobile menu by unchecking the toggle.
+ */
+const closeMobileMenu = () => {
+    const toggle = document.getElementById('mobile-menu-toggle') as HTMLInputElement;
+    if (toggle) toggle.checked = false;
+};
+
+/**
+ * Sort items into active and inactive groups, then combine with active first, sorted lexicographically.
+ */
+const sortActiveFirst = <T>(
+    items: T[],
+    isActive: (item: T) => boolean,
+    getName: (item: T) => string
+): T[] => {
+    const active = items.filter(isActive);
+    const inactive = items.filter(item => !isActive(item));
+    const sortLexicographic = (a: T, b: T) => getName(a).localeCompare(getName(b));
+    return [...active.toSorted(sortLexicographic), ...inactive.toSorted(sortLexicographic)];
 };
 
 // ==========================
@@ -240,12 +268,11 @@ const updateHostsTableHeader = () => {
  */
 const updateHostsTable = () => {
     const hostTableBody = document.getElementById('host-table-body');
-    const activeHosts = persistedHostsList.filter((el) => persistedStatusMap[el])
-    const inactiveHosts = persistedHostsList.filter((el) => !persistedStatusMap[el])
-
-    const sortLexicographic = (hostName1: string, hostName2: string) => hostName1.localeCompare(hostName2)
-
-    const hostList = [...activeHosts.toSorted(sortLexicographic), ...inactiveHosts.toSorted(sortLexicographic)];
+    const hostList = sortActiveFirst(
+        persistedHostsList,
+        host => !!persistedStatusMap[host],
+        host => host
+    );
     if (hostTableBody) {
         hostTableBody.innerHTML = hostList.map(createHostRow).join('');
         updateHostsTableHeader();
@@ -279,16 +306,11 @@ const updateClientsTable = () => {
 
     const clientEntries = Array.from(clientMap.entries());
 
-    type ClientMapElement = [string, string[]];
-
-    const hasActiveLeases = ([_, leases]: ClientMapElement) => leases.length > 0;
-
-    const activeClients = clientEntries.filter(hasActiveLeases)
-    const inactiveClients = clientEntries.filter((el) => !hasActiveLeases(el))
-
-    const sortLexicographic = ([clientName1, _1]: ClientMapElement, [clientName2, _2]: ClientMapElement) => clientName1.localeCompare(clientName2)
-
-    const sortedClients = [...activeClients.toSorted(sortLexicographic), ...inactiveClients.toSorted(sortLexicographic)];
+    const sortedClients = sortActiveFirst(
+        clientEntries,
+        ([_, leases]) => leases.length > 0,
+        ([clientId, _]) => clientId
+    );
 
     const clientTableBody = document.getElementById('client-table-body');
     if (clientTableBody) {
@@ -384,6 +406,12 @@ const setupTabs = () => {
             }
         }
     };
+
+    // Setup backdrop click to close mobile menu
+    const backdrop = document.querySelector('.menu-backdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', closeMobileMenu);
+    }
     
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -391,8 +419,7 @@ const setupTabs = () => {
             if (!tabId) return;
             activateTab(tabId, true);
             // Close mobile menu after tab click
-            const toggle = document.getElementById('mobile-menu-toggle') as HTMLInputElement;
-            if (toggle) toggle.checked = false;
+            closeMobileMenu();
         });
     });
 
@@ -402,8 +429,7 @@ const setupTabs = () => {
         if (hash && validTabs.has(hash)) {
             activateTab(hash, false);
             // Close mobile menu on hash change
-            const toggle = document.getElementById('mobile-menu-toggle') as HTMLInputElement;
-            if (toggle) toggle.checked = false;
+            closeMobileMenu();
         }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -489,17 +515,15 @@ namespace DemoSim {
     export const init = () => {
         // Simulate initial push
         setTimeout(() => {
-            handleWebSocketMessage({
-                data: JSON.stringify({
-                    type: "Initial",
-                    payload: {
-                        hosts: ["archive", "tarbean"],
-                        clients: [],
-                        status: { tarbean: false, archive: false },
-                        leases: { archive: [] }
-                    }
-                })
-            } as MessageEvent);
+            handleMessage({
+                type: "Initial",
+                payload: {
+                    hosts: ["archive", "tarbean"],
+                    clients: [],
+                    status: { tarbean: false, archive: false },
+                    leases: { archive: [] }
+                }
+            });
         }, 500);
     }
 
@@ -508,43 +532,23 @@ namespace DemoSim {
             // LeaseUpdate: WebInterface
             if (leaseTimeout) clearTimeout(leaseTimeout);
             leaseTimeout = setTimeout(() => {
-                handleWebSocketMessage({
-                    data: JSON.stringify({
-                        type: "LeaseUpdate",
-                        payload: { host, leases: [{ type: "WebInterface" }] }
-                    })
-                } as MessageEvent);
+                handleMessage({ type: "LeaseUpdate", payload: { host, leases: [{ type: "WebInterface" }] } });
             }, 500);
             // HostStatus: archive online
             if (statusTimeout) clearTimeout(statusTimeout);
             statusTimeout = setTimeout(() => {
-                handleWebSocketMessage({
-                    data: JSON.stringify({
-                        type: "HostStatus",
-                        payload: { tarbean: false, archive: true }
-                    })
-                } as MessageEvent);
+                handleMessage({ type: "HostStatus", payload: { tarbean: false, archive: true } });
             }, 1200);
         } else if (action === "release") {
             // LeaseUpdate: no leases
             if (leaseTimeout) clearTimeout(leaseTimeout);
             leaseTimeout = setTimeout(() => {
-                handleWebSocketMessage({
-                    data: JSON.stringify({
-                        type: "LeaseUpdate",
-                        payload: { host, leases: [] }
-                    })
-                } as MessageEvent);
+                handleMessage({ type: "LeaseUpdate", payload: { host, leases: [] } });
             }, 500);
             // HostStatus: archive offline
             if (statusTimeout) clearTimeout(statusTimeout);
             statusTimeout = setTimeout(() => {
-                handleWebSocketMessage({
-                    data: JSON.stringify({
-                        type: "HostStatus",
-                        payload: { tarbean: false, archive: false }
-                    })
-                } as MessageEvent);
+                handleMessage({ type: "HostStatus", payload: { tarbean: false, archive: false } });
             }, 1200);
         }
     }
