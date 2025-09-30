@@ -3,7 +3,7 @@
 //! Defines routes, state management, configuration watching, and server startup.
 
 use axum::http::Request;
-use axum::routing;
+use axum::routing::{self, any};
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use eyre::WrapErr;
@@ -133,7 +133,7 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     let private = Router::new()
         .nest("/api", api_routes())
         .route("/", get(crate::assets::serve_ui))
-        .route("/ws", get(ws_handler))
+        .route("/ws", any(ws_handler))
         .route_layer(axum::middleware::from_fn_with_state(
             crate::auth::AuthLayerState {
                 auth: auth_runtime.clone(),
