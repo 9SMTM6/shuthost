@@ -52,13 +52,13 @@ pub async fn handle_host_state(
             Ok(()) => Ok(()),
             Err(e) => {
                 warn!("{e}");
-                return Err((
+                Err((
                     StatusCode::GATEWAY_TIMEOUT,
                     format!(
                         "Timeout waiting for host {host} to become {}",
                         if desired_state { "online" } else { "offline" }
                     ),
-                ));
+                ))
             }
         }
     };
@@ -71,14 +71,14 @@ pub async fn handle_host_state(
         );
         wake_host(host, state).map_err(|(sc, err)| (sc, err.to_owned()))?;
         // Poll until host is online, updating global state
-        poll_with_err(true).await?
+        poll_with_err(true).await?;
     } else if !should_be_running && host_is_on {
         info!("Host '{host}' should shut down - no active leases");
         shutdown_host(host, state)
             .await
             .map_err(|(sc, err)| (sc, err.to_owned()))?;
         // Poll until host is offline, updating global state
-        poll_with_err(false).await?
+        poll_with_err(false).await?;
     } else {
         debug!(
             "No action needed for host '{}' (is_on={}, should_be_running={})",

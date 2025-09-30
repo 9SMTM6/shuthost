@@ -7,8 +7,7 @@ body {
         "main"
         "footer";
     grid-template-rows: auto 1fr auto;
-    min-height: 100vdh;
-    min-height: 100vh; /* fallback for older browsers */
+    min-height: 100svh;
 }
 
 header {
