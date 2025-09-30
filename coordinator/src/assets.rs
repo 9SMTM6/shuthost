@@ -24,6 +24,21 @@ pub fn asset_routes() -> Router<AppState> {
         )
         .route("/architecture.svg", get(serve_architecture_complete))
 }
+
+/// Macro to define a static SVG download handler using include_bytes!
+macro_rules! static_svg_download_handler {
+    (fn $name:ident, file=$file:expr) => {
+        async fn $name() -> impl IntoResponse {
+            const SVG: &[u8] = include_bytes!($file);
+            Response::builder()
+                .header("Content-Type", "image/svg+xml")
+                .header("Content-Length", SVG.len().to_string())
+                .body(SVG.into_response())
+                .unwrap()
+        }
+    };
+}
+
 /// HTML rendering mode for the UI template
 pub enum UiMode<'a> {
     Normal {
@@ -153,26 +168,6 @@ pub async fn serve_styles() -> impl IntoResponse {
         .unwrap()
 }
 
-/// Serves the site favicon (SVG).
-pub async fn serve_favicon() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "image/svg+xml")
-        .body(include_bytes!("../assets/favicon.svg").into_response())
-        .unwrap()
-}
-
-/// Serves simplified architecture SVG.
-pub async fn serve_architecture_simplified() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "image/svg+xml")
-        .body(include_bytes!("../assets/architecture_simplified.svg").into_response())
-        .unwrap()
-}
-
-/// Serves full architecture SVG.
-pub async fn serve_architecture_complete() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "image/svg+xml")
-        .body(include_bytes!("../assets/architecture.svg").into_response())
-        .unwrap()
-}
+static_svg_download_handler!(fn serve_favicon, file = "../assets/favicon.svg");
+static_svg_download_handler!(fn serve_architecture_simplified, file = "../assets/architecture_simplified.svg");
+static_svg_download_handler!(fn serve_architecture_complete, file = "../assets/architecture.svg");

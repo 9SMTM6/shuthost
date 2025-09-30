@@ -8,7 +8,7 @@ use axum::{
     Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     routing::post,
 };
 use serde_json::json;
@@ -20,16 +20,6 @@ use crate::routes::api::LeaseAction;
 // Re-export public API
 pub use host_control::handle_host_state;
 pub use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
-
-const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.tmpl.sh");
-
-pub async fn download_client_script() -> impl IntoResponse {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("Content-Type", "text/plain")
-        .body(CLIENT_SCRIPT_TEMPLATE.to_owned())
-        .unwrap()
-}
 
 pub fn m2m_routes() -> axum::Router<AppState> {
     axum::Router::new()
