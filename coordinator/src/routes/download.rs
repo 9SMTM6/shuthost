@@ -9,9 +9,9 @@ use crate::http::AppState;
 
 use super::m2m::download_client_script;
 
-// Macro to define a handler function from a static binary
+/// Macro to define a download handler function for a static agent binary
 macro_rules! host_agent_handler {
-    ($name:ident, $host_agent_target:expr) => {
+    (fn $name:ident, target=$host_agent_target:expr) => {
         async fn $name() -> impl IntoResponse {
             const AGENT_BINARY: &'static [u8] = include_bytes!(concat!(
                 "../../../target/",
@@ -26,9 +26,9 @@ macro_rules! host_agent_handler {
                 .unwrap()
         }
     };
-    ($name:ident, $host_agent_target:expr, feature=$feature:expr) => {
+    (fn $name:ident, target=$host_agent_target:expr, feature=$feature:expr) => {
         #[cfg(feature = $feature)]
-        host_agent_handler!($name, $host_agent_target);
+        host_agent_handler!(fn $name, target=$host_agent_target);
         #[cfg(not(feature = $feature))]
         async fn $name() -> impl IntoResponse {
             Response::builder()
@@ -41,33 +41,33 @@ macro_rules! host_agent_handler {
 
 // Generate all handlers
 host_agent_handler!(
-    host_agent_macos_aarch64,
-    "aarch64-apple-darwin",
+    fn host_agent_macos_aarch64,
+    target = "aarch64-apple-darwin",
     feature = "include_macos_agents"
 );
 host_agent_handler!(
-    host_agent_macos_x86_64,
-    "x86_64-apple-darwin",
+    fn host_agent_macos_x86_64,
+    target = "x86_64-apple-darwin",
     feature = "include_macos_agents"
 );
 host_agent_handler!(
-    host_agent_linux_x86_64,
-    "x86_64-unknown-linux-gnu",
+    fn host_agent_linux_x86_64,
+    target = "x86_64-unknown-linux-gnu",
     feature = "include_linux_agents"
 );
 host_agent_handler!(
-    host_agent_linux_aarch64,
-    "aarch64-unknown-linux-gnu",
+    fn host_agent_linux_aarch64,
+    target = "aarch64-unknown-linux-gnu",
     feature = "include_linux_agents"
 );
 host_agent_handler!(
-    host_agent_linux_musl_x86_64,
-    "x86_64-unknown-linux-musl",
+    fn host_agent_linux_musl_x86_64,
+    target = "x86_64-unknown-linux-musl",
     feature = "include_linux_agents"
 );
 host_agent_handler!(
-    host_agent_linux_musl_aarch64,
-    "aarch64-unknown-linux-musl",
+    fn host_agent_linux_musl_aarch64,
+    target = "aarch64-unknown-linux-musl",
     feature = "include_linux_agents"
 );
 

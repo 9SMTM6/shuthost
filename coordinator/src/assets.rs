@@ -12,7 +12,7 @@ use axum::{
 };
 use std::sync::OnceLock;
 
-/// Returns the router handling core UI assets (HTML, manifest, favicon, SVGs).
+/// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.
 pub fn asset_routes() -> Router<AppState> {
     Router::new()
         .route("/manifest.json", get(serve_manifest))
