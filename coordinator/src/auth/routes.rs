@@ -123,9 +123,9 @@ pub async fn login_get(
 /// Handle logout requests.
 async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
-    let had_session = jar.get(COOKIE_OIDC_SESSION).is_some();
-    let had_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
-    tracing::info!(had_session, had_token, "logout: received request");
+    let had_session_oidc = jar.get(COOKIE_OIDC_SESSION).is_some();
+    let had_session_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
+    tracing::info!(had_session_oidc, had_session_token, "logout: received request");
 
     // Basic origin/referrer check to avoid cross-site logout triggers. If the
     // request includes Origin or Referer, ensure it matches the Host or
@@ -146,7 +146,7 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
         .remove(Cookie::build(COOKIE_TOKEN_SESSION).path("/").build())
         .remove(Cookie::build(COOKIE_OIDC_SESSION).path("/").build());
 
-    tracing::info!("logout: removed session/token and set logged_out cookie");
+    tracing::info!("logout: removed session cookies");
     (jar, Redirect::to("/login")).into_response()
 }
 
