@@ -18,9 +18,9 @@ use tracing::info;
 use crate::config::{AuthConfig, AuthMode, ControllerConfig};
 use crate::http::AppState;
 
-pub use cookies::{COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE};
+pub use cookies::{COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE};
 pub use middleware::{request_is_secure, require_auth};
-pub use routes::{EXPECTED_EXCEPTIONS_VERSION, SessionClaims, public_routes};
+pub use routes::{EXPECTED_EXCEPTIONS_VERSION, OIDCSessionClaims, public_routes};
 
 // Centralized login error keys used as query values on /login?error=<key>
 pub const LOGIN_ERROR_INSECURE: &str = "insecure";
