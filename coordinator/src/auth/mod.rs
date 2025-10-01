@@ -27,6 +27,7 @@ pub const LOGIN_ERROR_INSECURE: &str = "insecure";
 pub const LOGIN_ERROR_UNKNOWN: &str = "unknown";
 pub const LOGIN_ERROR_TOKEN: &str = "token";
 pub const LOGIN_ERROR_OIDC: &str = "oidc";
+pub const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";
 
 #[derive(Clone)]
 pub struct AuthRuntime {

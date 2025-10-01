@@ -1,7 +1,7 @@
 use crate::auth::cookies::create_session_cookie;
 use crate::auth::{
     COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
-    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, SessionClaims,
+    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, SessionClaims,
 };
 use crate::http::AppState;
 use axum::extract::State;
@@ -142,15 +142,19 @@ pub async fn oidc_login(
     tracing::debug!(had_session, "oidc_login: called");
     if let Some(session) = jar.get(COOKIE_SESSION)
         && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
-        && !sess.is_expired()
     {
-        let return_to = jar
-            .get(COOKIE_RETURN_TO)
-            .map(|c| c.value().to_string())
-            .unwrap_or_else(|| "/".to_string());
-        let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-        tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
-        return (jar, Redirect::to(&return_to)).into_response();
+        if !sess.is_expired() {
+            let return_to = jar
+                .get(COOKIE_RETURN_TO)
+                .map(|c| c.value().to_string())
+                .unwrap_or_else(|| "/".to_string());
+            let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+            tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
+            return (jar, Redirect::to(&return_to)).into_response();
+        } else {
+            // Session expired, redirect with specific error
+            return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED)).into_response();
+        }
     }
     let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await
     {
@@ -426,7 +430,12 @@ pub async fn oidc_callback(
     }
 
     let session = match process_token_and_build_session(&client, &http, &jar, code).await {
-        Ok(s) => s,
+        Ok(s) => {
+            if s.is_expired() {
+                return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED)).into_response();
+            }
+            s
+        },
         Err(OidcFlowError::LoginRedirect) => return login_error_response(),
         Err(OidcFlowError::Status(sc)) => return sc.into_response(),
     };

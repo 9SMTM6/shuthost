@@ -14,7 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::auth::cookies::{COOKIE_SESSION, COOKIE_TOKEN};
 use crate::auth::token::LoginQuery;
 use crate::auth::{
-    AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
+    AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN, LOGIN_ERROR_SESSION_EXPIRED,
 };
 use crate::http::AppState;
 
@@ -78,6 +78,9 @@ pub async fn login_get(
         }
         Some(v) if v == LOGIN_ERROR_OIDC => {
             include_str!("../../assets/partials/login_error_oidc.tmpl.html")
+        }
+        Some(v) if v == LOGIN_ERROR_SESSION_EXPIRED => {
+            include_str!("../../assets/partials/login_error_session_expired.tmpl.html")
         }
         Some(_) => include_str!("../../assets/partials/login_error_unknown.tmpl.html"),
         None => "",

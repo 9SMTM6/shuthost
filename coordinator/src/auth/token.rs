@@ -38,6 +38,7 @@ pub async fn login_post(
     match auth.mode {
         AuthResolved::Token {
             token: ref expected,
+            ..
         } if &token == expected => {
             // Persistent token cookie: mark Secure, HttpOnly and SameSite=strict
             // so it cannot be leaked via JS and is protected from CSRF. Use a
