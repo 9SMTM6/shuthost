@@ -8,7 +8,7 @@ use axum::{
     Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     routing::post,
 };
 use serde_json::json;
@@ -20,16 +20,6 @@ use crate::routes::api::LeaseAction;
 // Re-export public API
 pub use host_control::handle_host_state;
 pub use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
-
-const CLIENT_SCRIPT_TEMPLATE: &str = include_str!("shuthost_client.tmpl.sh");
-
-pub async fn download_client_script() -> impl IntoResponse {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("Content-Type", "text/plain")
-        .body(CLIENT_SCRIPT_TEMPLATE.to_owned())
-        .unwrap()
-}
 
 pub fn m2m_routes() -> axum::Router<AppState> {
     axum::Router::new()
@@ -87,7 +77,7 @@ async fn handle_m2m_lease_action(
     let (client_id, _command_action) =
         match validation::validate_m2m_request(&headers, &state, &action) {
             Ok(res) => res,
-            Err(e) => return Err(e),
+            Err((sc, err)) => return Err((sc, err.to_owned())),
         };
 
     let mut leases = state.leases.lock().await;
@@ -109,7 +99,7 @@ async fn handle_m2m_lease_action(
                 let lease_set = lease_set.clone();
                 let state = state.clone();
                 tokio::spawn(async move {
-                    let _ = host_control::handle_host_state(&host, &lease_set, &state).await;
+                    drop(host_control::handle_host_state(&host, &lease_set, &state).await);
                 });
                 Ok("Lease taken (async)".into_response())
             } else {
@@ -130,7 +120,7 @@ async fn handle_m2m_lease_action(
                 let lease_set = lease_set.clone();
                 let state = state.clone();
                 tokio::spawn(async move {
-                    let _ = host_control::handle_host_state(&host, &lease_set, &state).await;
+                    drop(host_control::handle_host_state(&host, &lease_set, &state).await);
                 });
                 Ok("Lease released (async)".into_response())
             } else {

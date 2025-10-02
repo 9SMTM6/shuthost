@@ -1,14 +1,19 @@
 //! Cookie handling utilities for authentication.
 
-use axum_extra::extract::cookie::{Cookie, Key};
+use axum_extra::extract::{
+    SignedCookieJar,
+    cookie::{Cookie, Key},
+};
 use base64::Engine;
 use cookie::SameSite;
 use cookie::time::Duration as CookieDuration;
 use rand::{Rng as _, distr::Alphanumeric};
 
+use crate::auth::{OIDCSessionClaims, routes::TokenSessionClaims};
+
 /// Cookie name constants for authentication
-pub const COOKIE_SESSION: &str = "shuthost_session";
-pub const COOKIE_TOKEN: &str = "shuthost_token";
+pub const COOKIE_OIDC_SESSION: &str = "shuthost_oidc_session";
+pub const COOKIE_TOKEN_SESSION: &str = "shuthost_token_session";
 pub const COOKIE_STATE: &str = "shuthost_oidc_state";
 pub const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 pub const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
@@ -44,26 +49,47 @@ pub fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
 }
 
 /// Create a token cookie for authentication.
-pub fn create_token_cookie(token: &str) -> Cookie<'static> {
-    Cookie::build((COOKIE_TOKEN, token.to_string()))
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
-        .max_age(CookieDuration::days(30))
-        .path("/")
-        .build()
+pub fn create_token_session_cookie(
+    token_data: &TokenSessionClaims,
+    session_max_age: CookieDuration,
+) -> Cookie<'static> {
+    Cookie::build((
+        COOKIE_TOKEN_SESSION,
+        serde_json::to_string(&token_data).unwrap(),
+    ))
+    .http_only(true)
+    .secure(true)
+    .same_site(SameSite::Strict)
+    .max_age(session_max_age)
+    .path("/")
+    .build()
 }
 
 /// Create a session cookie for OIDC authentication.
-pub fn create_session_cookie(
-    session_data: &str,
+pub fn create_oidc_session_cookie(
+    session_data: &OIDCSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
-    Cookie::build((COOKIE_SESSION, session_data.to_string()))
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
-        .max_age(session_max_age)
-        .path("/")
-        .build()
+    Cookie::build((
+        COOKIE_OIDC_SESSION,
+        serde_json::to_string(session_data).unwrap(),
+    ))
+    .http_only(true)
+    .secure(true)
+    .same_site(SameSite::Strict)
+    .max_age(session_max_age)
+    .path("/")
+    .build()
+}
+
+pub fn get_oidc_session_from_cookie(signed: &SignedCookieJar) -> Option<OIDCSessionClaims> {
+    signed
+        .get(COOKIE_OIDC_SESSION)
+        .and_then(|session| serde_json::from_str::<OIDCSessionClaims>(session.value()).ok())
+}
+
+pub fn get_token_session_from_cookie(signed: &SignedCookieJar) -> Option<TokenSessionClaims> {
+    signed
+        .get(COOKIE_TOKEN_SESSION)
+        .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
 }

@@ -10,9 +10,10 @@ use axum::{
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 
 use crate::auth::cookies::{
-    COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_TOKEN, create_return_to_cookie,
+    COOKIE_RETURN_TO, create_return_to_cookie, get_oidc_session_from_cookie,
+    get_token_session_from_cookie,
 };
-use crate::auth::{AuthLayerState, AuthResolved, SessionClaims};
+use crate::auth::{AuthLayerState, AuthResolved};
 
 /// Middleware that enforces authentication depending on configured mode.
 pub async fn require_auth(
@@ -21,30 +22,28 @@ pub async fn require_auth(
     next: Next,
 ) -> Response {
     let headers = req.headers();
+    let signed = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
     match auth.mode {
-        AuthResolved::Disabled => next.run(req).await,
-        AuthResolved::External { .. } => {
-            // External auth (reverse proxy or external provider) is handled
-            // outside the app; do not enforce internal auth here and let
-            // requests through. The UI will show a prominent notice when
-            // external auth is not acknowledged or has mismatched version.
-            next.run(req).await
-        }
+        // External auth (reverse proxy or external provider) is handled
+        // outside the app; do not enforce internal auth here and let
+        // requests through. The UI will show a prominent notice when
+        // external auth is not acknowledged or has mismatched version.
+        AuthResolved::Disabled | AuthResolved::External { .. } => next.run(req).await,
         AuthResolved::Token { ref token } => {
-            // Token auth uses a signed cookie. Read via SignedCookieJar instead
-            // of parsing raw headers to ensure the signature is validated.
-            let signed = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
-            let cookie_ok = signed
-                .get(COOKIE_TOKEN)
-                .map(|c| c.value() == token)
-                .unwrap_or(false);
-            tracing::debug!(cookie_ok, "require_auth: token cookie check");
-            if cookie_ok {
-                next.run(req).await
-            } else if wants_html(headers) {
+            // Token auth uses a signed cookie with claims (iat, exp, token_hash)
+            if let Some(claims) = get_token_session_from_cookie(&signed) {
+                if claims.is_expired() {
+                    tracing::info!("require_auth: token session expired, redirecting to login");
+                    return Redirect::to("/login?error=session_expired").into_response();
+                }
+                if claims.matches_token(token) {
+                    return next.run(req).await;
+                }
+            }
+            if wants_html(headers) {
                 // remember path for redirect-after-login
                 let return_to = req.uri().to_string();
-                tracing::info!(return_to = %return_to, "require_auth: no token, redirecting to /login and setting return_to cookie");
+                tracing::info!(return_to = %return_to, "require_auth: no valid token, redirecting to /login and setting return_to cookie");
                 let jar = signed.add(create_return_to_cookie(return_to));
                 (jar, Redirect::temporary("/login")).into_response()
             } else {
@@ -53,9 +52,7 @@ pub async fn require_auth(
         }
         AuthResolved::Oidc { .. } => {
             // Check signed session cookie via headers
-            let signed = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
-            if let Some(session) = signed.get(COOKIE_SESSION)
-                && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
+            if let Some(sess) = get_oidc_session_from_cookie(&signed)
                 && !sess.is_expired()
             {
                 return next.run(req).await;
@@ -64,7 +61,7 @@ pub async fn require_auth(
             if wants_html(headers) {
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require_auth: setting return_to cookie and redirecting to /oidc/login");
-                let jar = SignedCookieJar::from_headers(headers, auth.cookie_key.clone()).add(
+                let jar = signed.add(
                     Cookie::build((COOKIE_RETURN_TO, return_to))
                         .path("/")
                         .build(),

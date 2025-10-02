@@ -1,7 +1,7 @@
-use crate::auth::cookies::create_session_cookie;
+use crate::auth::cookies::{create_oidc_session_cookie, get_oidc_session_from_cookie};
 use crate::auth::{
-    COOKIE_NONCE, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_SESSION, COOKIE_STATE,
-    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, SessionClaims,
+    COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
 };
 use crate::http::AppState;
 use axum::extract::State;
@@ -138,19 +138,21 @@ pub async fn oidc_login(
         return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
     }
     // If already logged in, redirect to return_to or home
-    let had_session = jar.get(COOKIE_SESSION).is_some();
+    let had_session = jar.get(COOKIE_OIDC_SESSION).is_some();
     tracing::debug!(had_session, "oidc_login: called");
-    if let Some(session) = jar.get(COOKIE_SESSION)
-        && let Ok(sess) = serde_json::from_str::<SessionClaims>(session.value())
-        && !sess.is_expired()
-    {
-        let return_to = jar
-            .get(COOKIE_RETURN_TO)
-            .map(|c| c.value().to_string())
-            .unwrap_or_else(|| "/".to_string());
-        let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-        tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
-        return (jar, Redirect::to(&return_to)).into_response();
+    if let Some(sess) = get_oidc_session_from_cookie(&jar) {
+        if !sess.is_expired() {
+            let return_to = jar
+                .get(COOKIE_RETURN_TO)
+                .map(|c| c.value().to_string())
+                .unwrap_or_else(|| "/".to_string());
+            let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+            tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
+            return (jar, Redirect::to(&return_to)).into_response();
+        }
+        // Session expired, redirect with specific error
+        return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
+            .into_response();
     }
     let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await
     {
@@ -266,7 +268,7 @@ fn nonce_from_cookie(jar: &SignedCookieJar) -> Option<Nonce> {
         .map(|c| Nonce::new(c.value().to_string()))
 }
 
-fn finalize_session_and_redirect(jar: SignedCookieJar, session: &SessionClaims) -> Response {
+fn finalize_session_and_redirect(jar: SignedCookieJar, session: &OIDCSessionClaims) -> Response {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -274,10 +276,8 @@ fn finalize_session_and_redirect(jar: SignedCookieJar, session: &SessionClaims) 
     let session_exp_seconds = session.exp.saturating_sub(now);
     let session_max_age =
         CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
-    let jar = clear_oidc_ephemeral_cookies(jar).add(create_session_cookie(
-        &serde_json::to_string(session).unwrap(),
-        session_max_age,
-    ));
+    let jar =
+        clear_oidc_ephemeral_cookies(jar).add(create_oidc_session_cookie(session, session_max_age));
 
     let return_to = jar
         .get(COOKIE_RETURN_TO)
@@ -346,7 +346,7 @@ fn verify_id_token_and_build_session(
     client: &OidcClientReady,
     id_token: &CoreIdToken,
     nonce_cookie: Option<&Nonce>,
-) -> Result<SessionClaims, OidcFlowError> {
+) -> Result<OIDCSessionClaims, OidcFlowError> {
     let claims = match id_token.claims(
         &client.id_token_verifier(),
         nonce_cookie.unwrap_or(&Nonce::new(String::new())),
@@ -359,7 +359,7 @@ fn verify_id_token_and_build_session(
     };
     let sub = claims.subject().to_string();
     let exp = claims.expiration().timestamp() as u64;
-    Ok(SessionClaims { sub, exp })
+    Ok(OIDCSessionClaims { sub, exp })
 }
 
 /// Exchange code, verify id_token and build session
@@ -368,7 +368,7 @@ async fn process_token_and_build_session(
     http: &reqwest::Client,
     signed: &SignedCookieJar,
     code: Option<String>,
-) -> Result<SessionClaims, OidcFlowError> {
+) -> Result<OIDCSessionClaims, OidcFlowError> {
     let code = extract_authorization_code(code)?;
     tracing::debug!(
         code_len = code.len(),
@@ -426,7 +426,13 @@ pub async fn oidc_callback(
     }
 
     let session = match process_token_and_build_session(&client, &http, &jar, code).await {
-        Ok(s) => s,
+        Ok(s) => {
+            if s.is_expired() {
+                return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
+                    .into_response();
+            }
+            s
+        }
         Err(OidcFlowError::LoginRedirect) => return login_error_response(),
         Err(OidcFlowError::Status(sc)) => return sc.into_response(),
     };

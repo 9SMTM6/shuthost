@@ -3,7 +3,7 @@
 //! Defines routes, state management, configuration watching, and server startup.
 
 use axum::http::Request;
-use axum::routing;
+use axum::routing::{self, any};
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use eyre::WrapErr;
@@ -46,6 +46,8 @@ pub struct AppState {
 
     /// Receiver for host online/offline status updates.
     pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+    /// Sender for host online/offline status updates.
+    pub hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
 
     /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: broadcast::Sender<WsMessage>,
@@ -98,11 +100,11 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     // browsers will ignore cookies marked Secure. Warn operators so they can
     // enable TLS or place the app behind an HTTPS reverse proxy that sets
     // X-Forwarded-Proto: https.
-    let tls_enabled = match initial_config.server.tls {
-        Some(ref t) => t.enable,
-        None => false,
+    let tls_opt = match initial_config.server.tls {
+        Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg),
+        _ => None,
     };
-    if !tls_enabled {
+    if tls_opt.is_none() {
         match &auth_runtime.mode {
             &crate::auth::AuthResolved::Disabled => {}
             _ => {
@@ -116,11 +118,12 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     let app_state = AppState {
         config_rx,
         hoststatus_rx,
+        hoststatus_tx,
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases: LeaseMap::default(),
         auth: auth_runtime.clone(),
-        tls_enabled,
+        tls_enabled: tls_opt.is_some(),
     };
 
     // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
@@ -130,7 +133,7 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     let private = Router::new()
         .nest("/api", api_routes())
         .route("/", get(crate::assets::serve_ui))
-        .route("/ws", get(ws_handler))
+        .route("/ws", any(ws_handler))
         .route_layer(axum::middleware::from_fn_with_state(
             crate::auth::AuthLayerState {
                 auth: auth_runtime.clone(),
@@ -152,8 +155,8 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
-    match &initial_config.server.tls {
-        &Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => {
+    match tls_opt {
+        Some(tls_cfg) => {
             // Helper: resolve a configured path relative to the config file unless it's absolute
             let resolve_path = |p: &str| {
                 let path = std::path::Path::new(p);

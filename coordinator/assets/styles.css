@@ -7,7 +7,7 @@ body {
         "main"
         "footer";
     grid-template-rows: auto 1fr auto;
-    min-height: 100vh;
+    min-height: 100svh;
 }
 
 header {
@@ -305,21 +305,37 @@ footer {
         }
 
         /* Show menu when checkbox is checked */
-        #mobile-menu-toggle:checked ~ div .nav-tabs {
+        #mobile-menu-toggle:checked ~ header .nav-tabs {
             left: 0;
         }
 
         /* Animate hamburger to X */
-        #mobile-menu-toggle:checked ~ div .hamburger .hamburger-line:nth-child(1) {
+        #mobile-menu-toggle:checked ~ header .hamburger .hamburger-line:nth-child(1) {
             transform: translateY(6px) rotate(45deg);
         }
 
-        #mobile-menu-toggle:checked ~ div .hamburger .hamburger-line:nth-child(2) {
+        #mobile-menu-toggle:checked ~ header .hamburger .hamburger-line:nth-child(2) {
             opacity: 0;
         }
 
-        #mobile-menu-toggle:checked ~ div .hamburger .hamburger-line:nth-child(3) {
+        #mobile-menu-toggle:checked ~ header .hamburger .hamburger-line:nth-child(3) {
             transform: translateY(-6px) rotate(-45deg);
+        }
+
+        /* Backdrop for tinting main page */
+        .menu-backdrop {
+            display: none;
+            position: fixed;
+            top: 3.5rem;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - 3.5rem);
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #mobile-menu-toggle:checked ~ .menu-backdrop {
+            display: block;
         }
     }
 

@@ -9,12 +9,17 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::auth::cookies::{COOKIE_SESSION, COOKIE_TOKEN};
+use crate::auth::cookies::{
+    COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION, get_oidc_session_from_cookie,
+    get_token_session_from_cookie,
+};
 use crate::auth::token::LoginQuery;
 use crate::auth::{
-    AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
+    AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
+    LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
 };
 use crate::http::AppState;
 
@@ -51,11 +56,11 @@ pub async fn login_get(
 
     let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
     let is_authenticated = match auth.mode {
-        A::Token { ref token } => signed.get(COOKIE_TOKEN).is_some_and(|c| c.value() == token),
-        A::Oidc { .. } => signed
-            .get(COOKIE_SESSION)
-            .and_then(|session| serde_json::from_str::<SessionClaims>(session.value()).ok())
-            .is_some_and(|session| !session.is_expired()),
+        A::Token { ref token } => get_token_session_from_cookie(&signed)
+            .is_some_and(|session| !session.is_expired() && session.matches_token(token)),
+        A::Oidc { .. } => {
+            get_oidc_session_from_cookie(&signed).is_some_and(|session| !session.is_expired())
+        }
         A::Disabled
         | A::External {
             exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
@@ -78,6 +83,9 @@ pub async fn login_get(
         }
         Some(v) if v == LOGIN_ERROR_OIDC => {
             include_str!("../../assets/partials/login_error_oidc.tmpl.html")
+        }
+        Some(v) if v == LOGIN_ERROR_SESSION_EXPIRED => {
+            include_str!("../../assets/partials/login_error_session_expired.tmpl.html")
         }
         Some(_) => include_str!("../../assets/partials/login_error_unknown.tmpl.html"),
         None => "",
@@ -115,9 +123,13 @@ pub async fn login_get(
 /// Handle logout requests.
 async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
-    let had_session = jar.get(COOKIE_SESSION).is_some();
-    let had_token = jar.get(COOKIE_TOKEN).is_some();
-    tracing::info!(had_session, had_token, "logout: received request");
+    let had_session_oidc = jar.get(COOKIE_OIDC_SESSION).is_some();
+    let had_session_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
+    tracing::info!(
+        had_session_oidc,
+        had_session_token,
+        "logout: received request"
+    );
 
     // Basic origin/referrer check to avoid cross-site logout triggers. If the
     // request includes Origin or Referer, ensure it matches the Host or
@@ -135,21 +147,60 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     }
 
     let jar = jar
-        .remove(Cookie::build(COOKIE_TOKEN).path("/").build())
-        .remove(Cookie::build(COOKIE_SESSION).path("/").build());
+        .remove(Cookie::build(COOKIE_TOKEN_SESSION).path("/").build())
+        .remove(Cookie::build(COOKIE_OIDC_SESSION).path("/").build());
 
-    tracing::info!("logout: removed session/token and set logged_out cookie");
+    tracing::info!("logout: removed session cookies");
     (jar, Redirect::to("/login")).into_response()
 }
 
-/// Session claims for OIDC authentication.
+/// Session claims for token authentication.
 #[derive(Serialize, Deserialize)]
-pub struct SessionClaims {
+pub struct TokenSessionClaims {
+    pub iat: u64,           // issued at
+    pub exp: u64,           // expiry
+    pub token_hash: String, // hash of the token
+}
+
+impl TokenSessionClaims {
+    pub fn new(token: &str) -> Self {
+        let now = now_ts();
+        let exp_duration: i64 = 60 * 60 * 8; // 8 hours expiry
+        Self {
+            iat: now,
+            exp: now + exp_duration as u64,
+            token_hash: {
+                let mut hasher = Sha256::new();
+                hasher.update(token.as_bytes());
+                format!("{:x}", hasher.finalize())
+            },
+        }
+    }
+
+    /// Check if the session has expired.
+    pub fn is_expired(&self) -> bool {
+        now_ts() >= self.exp
+    }
+    /// Check if the token matches (by hash).
+    pub fn matches_token(&self, token: &str) -> bool {
+        let mut hasher = Sha256::new();
+        hasher.update(token.as_bytes());
+        let hash = format!("{:x}", hasher.finalize());
+        self.token_hash == hash
+    }
+}
+
+/// Session claims for OIDC authentication.
+/// Contains some claims from the [OIDC Id Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken)
+#[derive(Serialize, Deserialize)]
+pub struct OIDCSessionClaims {
+    /// The sub claim, a unique user identifier
     pub sub: String,
+    /// The expiry as provided by the IdP, after which shuthost should reject the session. Unix second timestamp
     pub exp: u64,
 }
 
-impl SessionClaims {
+impl OIDCSessionClaims {
     /// Check if the session has expired.
     pub fn is_expired(&self) -> bool {
         now_ts() >= self.exp
@@ -157,7 +208,7 @@ impl SessionClaims {
 }
 
 /// Get the current timestamp in seconds since UNIX epoch.
-fn now_ts() -> u64 {
+pub fn now_ts() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()

@@ -18,23 +18,28 @@ use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]
 pub enum WsMessage {
+    /// Gets sent on host status changes
     HostStatus(HashMap<String, bool>),
+    /// We watch for select config changes and update the WebUI to immediately reflect additions to hosts or clients
     ConfigChanged {
         hosts: Vec<String>,
         clients: Vec<String>,
     },
+    /// Send the entire state in the beginning to bootstrap the web client UI.
     Initial {
         hosts: Vec<String>,
         clients: Vec<String>,
         status: HashMap<String, bool>,
-        leases: HashMap<String, Vec<LeaseSource>>, // Include leases in the initial payload
+        leases: HashMap<String, Vec<LeaseSource>>,
     },
+    /// Gets sent on Lease status updates
     LeaseUpdate {
         host: String,
         leases: Vec<LeaseSource>,
     },
 }
 
+/// Gets called for every new web client and spins up an event loop
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(AppState {
@@ -49,7 +54,7 @@ pub async fn ws_handler(
     let current_config = config_rx.borrow().clone();
     let current_leases = leases.clone();
     ws.on_upgrade(move |socket| {
-        handle_socket(
+        start_webui_ws_loop(
             socket,
             ws_tx.subscribe(),
             current_state,
@@ -69,7 +74,8 @@ async fn send_ws_message(socket: &mut WebSocket, msg: &WsMessage) -> Result<(), 
     }
 }
 
-async fn handle_socket(
+/// We start one event loop per client
+async fn start_webui_ws_loop(
     mut socket: WebSocket,
     mut rx: broadcast::Receiver<WsMessage>,
     current_state: Arc<HashMap<String, bool>>,

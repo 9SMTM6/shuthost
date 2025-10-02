@@ -11,6 +11,83 @@ use crate::config::{ControllerConfig, watch_config_file};
 use crate::websocket::WsMessage;
 use shuthost_common::create_signed_message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::time::{Instant, MissedTickBehavior, interval};
+
+/// Poll a single host for its online status.
+pub async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &str) -> bool {
+    let addr = format!("{}:{}", ip, port);
+    match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
+        Ok(Ok(mut stream)) => {
+            let signed_message = create_signed_message("status", shared_secret);
+            if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
+                debug!("Failed to write to {}: {}", name, e);
+                return false;
+            }
+            let mut buf = vec![0u8; 256];
+            match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
+                Ok(Ok(n)) if n > 0 => {
+                    let Some(data) = buf.get(..n) else {
+                        unreachable!(
+                            "Read data size should always be valid, as its >= buffer size"
+                        );
+                    };
+                    let resp = String::from_utf8_lossy(data);
+                    // Accept any non-error response as online
+                    !resp.contains("ERROR")
+                }
+                _ => false,
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Poll a host until its state matches desired_state or timeout is reached. Updates global state.
+pub async fn poll_until_host_state(
+    host_name: &str,
+    desired_state: bool,
+    timeout_secs: u64,
+    poll_interval_ms: u64,
+    config_rx: &watch::Receiver<Arc<ControllerConfig>>,
+    hoststatus_tx: &watch::Sender<Arc<HashMap<String, bool>>>,
+) -> Result<(), String> {
+    let mut ticker = interval(Duration::from_millis(poll_interval_ms));
+    ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+    let start = Instant::now();
+    loop {
+        let host = {
+            let config = config_rx.borrow();
+            match config.hosts.get(host_name) {
+                Some(h) => h.clone(),
+                None => return Err(format!("No configuration found for host '{}'.", host_name)),
+            }
+        };
+        let poll_fut = poll_host_status(host_name, &host.ip, host.port, &host.shared_secret);
+        let tick_fut = ticker.tick();
+        let (is_online, _) = tokio::join!(poll_fut, tick_fut);
+        // Update global state
+        let mut status_map = hoststatus_tx.borrow().as_ref().clone();
+        if status_map.get(host_name) != Some(&is_online) {
+            status_map.insert(host_name.to_string(), is_online);
+            match hoststatus_tx.send(Arc::new(status_map)) {
+                Ok(_) => {}
+                Err(e) => {
+                    warn!("Failed to send host status update: {}", e);
+                }
+            }
+        }
+        if is_online == desired_state {
+            return Ok(());
+        }
+        if start.elapsed().as_secs() >= timeout_secs {
+            return Err(format!(
+                "Timeout waiting for host '{}' to become {}.",
+                host_name,
+                if desired_state { "online" } else { "offline" }
+            ));
+        }
+    }
+}
 
 /// Start all background tasks for the HTTP server.
 pub fn start_background_tasks(
@@ -75,40 +152,20 @@ async fn poll_host_statuses(
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
 ) {
+    let poll_interval = Duration::from_secs(2);
+    let mut ticker = interval(poll_interval);
+    ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
         let config = config_rx.borrow().clone();
 
         let futures = config.hosts.iter().map(|(name, host)| {
-            let addr = format!("{}:{}", host.ip, host.port);
             let name = name.clone();
+            let ip = host.ip.clone();
+            let port = host.port;
             let shared_secret = host.shared_secret.clone();
             async move {
-                let is_online =
-                    match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
-                        Ok(Ok(mut stream)) => {
-                            let signed_message = create_signed_message("status", &shared_secret);
-                            // Send message
-                            if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
-                                debug!("Failed to write to {}: {}", name, e);
-                                return (name, false);
-                            }
-                            // Read response (optional, but let's check for a valid reply)
-                            let mut buf = vec![0u8; 256];
-                            match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
-                                Ok(Ok(n)) if n > 0 => {
-                                    let Some(data) = buf.get(..n) else {
-                                        unreachable!("Read data size should always be valid, as its >= buffer size");
-                                    };
-                                    let resp = String::from_utf8_lossy(data);
-                                    // Accept any non-error response as online
-                                    !resp.contains("ERROR")
-                                }
-                                _ => false,
-                            }
-                        }
-                        _ => false,
-                    };
-                debug!("Polled {} at {} - online: {}", name, addr, is_online);
+                let is_online = poll_host_status(&name, &ip, port, &shared_secret).await;
+                debug!("Polled {} at {}:{} - online: {}", name, ip, port, is_online);
                 (name, is_online)
             }
         });
@@ -128,6 +185,6 @@ async fn poll_host_statuses(
             debug!("No change in host status");
         }
 
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        ticker.tick().await;
     }
 }
