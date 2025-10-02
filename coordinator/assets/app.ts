@@ -14,9 +14,9 @@ type LeaseSource =
     | { type: 'Client'; value: string };
 
 /** WebSocket message types exchanged with the coordinator backend. */
-type WsMessage = 
+type WsMessage =
     | { type: 'HostStatus'; payload: Record<string, boolean> }
-    | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[]} }
+    | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[] } }
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
@@ -331,7 +331,7 @@ const updateClientsTable = () => {
 const updateLease = async (host: string, action: string) => {
     if (isDemoMode) {
         DemoSim.leaseAction(host, action);
-        return;    
+        return;
     }
     try {
         await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
@@ -412,7 +412,7 @@ const setupTabs = () => {
     if (backdrop) {
         backdrop.addEventListener('click', closeMobileMenu);
     }
-    
+
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const tabId = tab.dataset["tab"];

@@ -15,7 +15,4 @@ allow-git = [
 multiple-versions = "warn"
 
 [licenses]
-allow = [
-    "Apache-2.0",
-    "MIT",
-]
+allow = ["Apache-2.0", "MIT"]

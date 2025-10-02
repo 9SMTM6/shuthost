@@ -46,7 +46,7 @@ footer {
     color: inherit;
 }
 
-.collapsible-toggle:checked ~ .collapsible-header .collapsible-icon::before {
+.collapsible-toggle:checked~.collapsible-header .collapsible-icon::before {
     transform: rotate(-135deg);
 }
 
@@ -146,7 +146,8 @@ footer {
 
     .table-row th[scope="row"] {
         @apply font-normal text-gray-800 dark:text-gray-100 bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-left;
-        font-weight: 500; /* Slightly bolder than td, but not as bold as header */
+        font-weight: 500;
+        /* Slightly bolder than td, but not as bold as header */
     }
 
     /* Update table cell styling */
@@ -194,7 +195,7 @@ footer {
         @apply hidden px-4 py-2 border-t border-gray-200;
     }
 
-    .collapsible-toggle:checked ~ .collapsible-content {
+    .collapsible-toggle:checked~.collapsible-content {
         @apply block;
     }
 
@@ -281,7 +282,8 @@ footer {
     @media (max-width: 767px) {
         .nav-tabs {
             position: fixed;
-            top: 3.5rem; /* Below header (h-14 = 3.5rem) */
+            top: 3.5rem;
+            /* Below header (h-14 = 3.5rem) */
             left: -100%;
             width: 250px;
             height: calc(100vh - 3.5rem);
@@ -305,20 +307,20 @@ footer {
         }
 
         /* Show menu when checkbox is checked */
-        #mobile-menu-toggle:checked ~ header .nav-tabs {
+        #mobile-menu-toggle:checked~header .nav-tabs {
             left: 0;
         }
 
         /* Animate hamburger to X */
-        #mobile-menu-toggle:checked ~ header .hamburger .hamburger-line:nth-child(1) {
+        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(1) {
             transform: translateY(6px) rotate(45deg);
         }
 
-        #mobile-menu-toggle:checked ~ header .hamburger .hamburger-line:nth-child(2) {
+        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(2) {
             opacity: 0;
         }
 
-        #mobile-menu-toggle:checked ~ header .hamburger .hamburger-line:nth-child(3) {
+        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(3) {
             transform: translateY(-6px) rotate(-45deg);
         }
 
@@ -334,7 +336,7 @@ footer {
             z-index: 999;
         }
 
-        #mobile-menu-toggle:checked ~ .menu-backdrop {
+        #mobile-menu-toggle:checked~.menu-backdrop {
             display: block;
         }
     }
