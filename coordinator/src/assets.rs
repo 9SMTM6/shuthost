@@ -149,7 +149,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 
     let manifest = MANIFEST
         .get_or_init(|| {
-            include_str!("../assets/manifest.json")
+            include_str!("../assets/manifest.tmpl.json")
                 .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         })
         .clone();
