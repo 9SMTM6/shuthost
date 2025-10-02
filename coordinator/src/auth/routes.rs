@@ -183,7 +183,6 @@ impl TokenSessionClaims {
     }
     /// Check if the token matches (by hash).
     pub fn matches_token(&self, token: &str) -> bool {
-        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(token.as_bytes());
         let hash = format!("{:x}", hasher.finalize());
