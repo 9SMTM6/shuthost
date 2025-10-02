@@ -7,10 +7,10 @@ use axum::routing::{self, any};
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use eyre::WrapErr;
-use tower_http::compression::CompressionLayer;
 use std::path::Path;
 use std::{net::IpAddr, sync::Arc};
 use tokio::fs;
+use tower_http::compression::CompressionLayer;
 use tracing::{info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
@@ -153,8 +153,7 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
             );
             Redirect::permanent("/")
         }))
-        .layer(CompressionLayer::new())
-    ;
+        .layer(CompressionLayer::new());
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
