@@ -5,7 +5,7 @@
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/main.yaml?label=build%20%26%20test)](https://github.com/9SMTM6/shuthost/actions/workflows/main.yaml)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/qa.yml?label=QA)](https://github.com/9SMTM6/shuthost/actions/workflows/qa.yaml)
 
-> A neat little (well, at one time it was) helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
+> A neat helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
 ⚠️ **Note**: LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
 
@@ -50,9 +50,9 @@ This demo runs entirely in your browser and does not control any real hosts. It 
 
 ## 💿 Installation
 
-Choose either the binary (recommended for reliability and WOL support) or the container (Linux only — host network required).
+Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
 
-Release (binary, recommended)
+Binary (recommended)
 - Download the latest release from:
   - https://github.com/9SMTM6/shuthost/releases/latest
 - Example (adjust filename for the asset you downloaded):
@@ -73,7 +73,7 @@ Release (binary, recommended)
     - On Linux the installer infers the target user from SUDO_USER if you run under sudo.
     - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
 
-Docker (Linux only — host network mode required for WOL)
+Docker (Linux only)
 - Run with the host network so broadcasts and LAN reachability work:
   ```bash
   docker run --rm --network host \
@@ -90,7 +90,7 @@ Docker (Linux only — host network mode required for WOL)
       restart: unless-stopped
       volumes:
         - ./coordinator_config/:/config/:ro
-      # no ports, since network-mode: host
+      # no ports, since network_mode: host
   ```
 -  Both with config file
   ```toml
@@ -108,7 +108,7 @@ Docker (Linux only — host network mode required for WOL)
   [clients]
   ```
 - Notes:
-  - --network host is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
+  - `--network host` is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
 
 Quick links & notes
 - Release: https://github.com/9SMTM6/shuthost/releases/latest
