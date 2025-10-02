@@ -149,11 +149,10 @@ pub async fn oidc_login(
             let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
             tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
             return (jar, Redirect::to(&return_to)).into_response();
-        } else {
-            // Session expired, redirect with specific error
-            return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
-                .into_response();
         }
+        // Session expired, redirect with specific error
+        return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
+            .into_response();
     }
     let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await
     {
@@ -277,8 +276,8 @@ fn finalize_session_and_redirect(jar: SignedCookieJar, session: &OIDCSessionClai
     let session_exp_seconds = session.exp.saturating_sub(now);
     let session_max_age =
         CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
-    let jar = clear_oidc_ephemeral_cookies(jar)
-        .add(create_oidc_session_cookie(&session, session_max_age));
+    let jar =
+        clear_oidc_ephemeral_cookies(jar).add(create_oidc_session_cookie(session, session_max_age));
 
     let return_to = jar
         .get(COOKIE_RETURN_TO)

@@ -37,12 +37,15 @@ pub async fn login_post(
         return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
     }
     match &auth.mode {
-        AuthResolved::Token {
-            token: expected, ..
+        &AuthResolved::Token {
+            token: ref expected,
+            ..
         } if &token == expected => {
-            let claims = TokenSessionClaims::new(&expected);
-            let cookie =
-                create_token_session_cookie(&claims, cookie::time::Duration::seconds((claims.exp - claims.iat) as i64));
+            let claims = TokenSessionClaims::new(expected);
+            let cookie = create_token_session_cookie(
+                &claims,
+                cookie::time::Duration::seconds((claims.exp - claims.iat) as i64),
+            );
             let jar = jar.add(cookie);
             (jar, Redirect::to("/")).into_response()
         }

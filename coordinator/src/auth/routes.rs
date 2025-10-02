@@ -125,7 +125,11 @@ async fn logout(jar: SignedCookieJar, headers: HeaderMap) -> impl IntoResponse {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session_oidc = jar.get(COOKIE_OIDC_SESSION).is_some();
     let had_session_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
-    tracing::info!(had_session_oidc, had_session_token, "logout: received request");
+    tracing::info!(
+        had_session_oidc,
+        had_session_token,
+        "logout: received request"
+    );
 
     // Basic origin/referrer check to avoid cross-site logout triggers. If the
     // request includes Origin or Referer, ensure it matches the Host or
@@ -161,16 +165,16 @@ pub struct TokenSessionClaims {
 impl TokenSessionClaims {
     pub fn new(token: &str) -> Self {
         let now = now_ts();
-            let exp_duration: i64 = 60 * 60 * 8; // 8 hours expiry
-            Self {
-                iat: now,
-                exp: now + exp_duration as u64,
-                token_hash: {
-                    let mut hasher = Sha256::new();
-                    hasher.update(token.as_bytes());
-                    format!("{:x}", hasher.finalize())
-                },
-            }
+        let exp_duration: i64 = 60 * 60 * 8; // 8 hours expiry
+        Self {
+            iat: now,
+            exp: now + exp_duration as u64,
+            token_hash: {
+                let mut hasher = Sha256::new();
+                hasher.update(token.as_bytes());
+                format!("{:x}", hasher.finalize())
+            },
+        }
     }
 
     /// Check if the session has expired.
