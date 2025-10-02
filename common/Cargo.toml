@@ -5,6 +5,10 @@ authors.workspace = true
 description.workspace = true
 edition.workspace = true
 repository.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 hmac.workspace = true

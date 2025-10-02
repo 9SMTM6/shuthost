@@ -3,7 +3,7 @@
 unknown-registry = "deny"
 unknown-git = "deny"
 
-# leaving this here for reference. Http links please.
+# leaving this here for reference. Https links please.
 allow-git = [
     # "https://github.com/chemicstry/wasm_thread",
 ]

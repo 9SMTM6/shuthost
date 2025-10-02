@@ -8,6 +8,11 @@ edition = "2024"
 authors = ["Samuel Maier"]
 description = "A neat little helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."
 repository = "https://github.com/9SMTM6/shuthost"
+license = "MIT OR Apache-2.0"
+readme = true
+keywords = ["wol", "wake-on-lan", "pwa", "progressive-web-app", "oidc", "openid-connect", "oidc-client", "homelab", "power-management", "energy-consumption", "green-computing", "energy-management", "machine-to-machine"]
+# this ain't no crate
+categories = []
 
 [workspace.dependencies]
 hmac = "0.12.1"
@@ -30,9 +35,15 @@ edition_2024_expr_fragment_specifier = "allow"
 # must_not_suspend = "deny"
 
 [workspace.lints.clippy]
+# AFAICT this contains groups correctness, suspicious, complexity, perf, style, and pendantic. 
+# But not restriction, cargo, nursery, and deprecated.
 all = { level = "warn", priority = -1 }
+# nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
 allow_attributes_without_reason = "warn"
 branches_sharing_code = "warn"
+# this seems to have false positives
+cargo_common_metadata = "allow"
 checked_conversions = "warn"
 cognitive_complexity = "warn"
 dbg_macro = "warn"
@@ -46,6 +57,8 @@ missing_const_for_fn = "warn"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 module_name_repetitions = "warn"
+# handled with cargo-deny
+multiple_crate_versions = "allow"
 needless_borrowed_reference = "allow"
 needless_pass_by_value = "warn"
 no_effect_underscore_binding = "warn"
