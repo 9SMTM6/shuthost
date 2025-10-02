@@ -166,7 +166,7 @@ echo "$PLATFORM"
 echo "$INSTALLER_ARGS"
 
 
-curl -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
+curl --compressed -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
 exit_on_glibc_error
