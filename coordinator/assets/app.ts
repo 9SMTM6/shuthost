@@ -1,6 +1,3 @@
-// Detect demo mode by presence of disclaimer element
-const isDemoMode = !!document.getElementById('demo-mode-disclaimer');
-
 // ==========================
 // Types & State
 // ==========================
@@ -30,8 +27,8 @@ let persistedClientList: string[] = [];
  * Reconnects automatically on close (with a small delay).
  */
 const connectWebSocket = () => {
-    if (isDemoMode) {
-        DemoSim.init();
+    if (DemoMode.isActive) {
+        DemoMode.init();
         return;
     }
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -326,11 +323,10 @@ const updateClientsTable = () => {
 
 /**
  * Send a lease action request to the backend.
- * action should be 'take' or 'release'.
  */
-const updateLease = async (host: string, action: string) => {
-    if (isDemoMode) {
-        DemoSim.leaseAction(host, action);
+const updateLease = async (host: string, action: 'take' | 'release') => {
+    if (DemoMode.isActive) {
+        DemoMode.updateLease(host, action);
         return;
     }
     try {
@@ -340,12 +336,14 @@ const updateLease = async (host: string, action: string) => {
     }
 };
 
+type UpdateLease = typeof updateLease;
+
 /**
  * Request the backend to clear all leases owned by a given client.
  */
 const resetClientLeases = async (clientId: string) => {
-    if (isDemoMode) {
-        DemoSim.resetClientLeases(clientId);
+    if (DemoMode.isActive) {
+        DemoMode.resetClientLeases(clientId);
         return;
     }
     try {
@@ -354,6 +352,8 @@ const resetClientLeases = async (clientId: string) => {
         console.error(`Failed to reset leases for client ${clientId}:`, err);
     }
 };
+
+type ResetClientLeases = typeof resetClientLeases;
 
 // ==========================
 // UI Setup Functions
@@ -443,72 +443,28 @@ const setupTabs = () => {
     }
 };
 
-/**
- * Populate dynamic configuration snippets and installer commands based on current origin.
- * This keeps embedded strings in the UI in sync with where the page is served from.
- */
-const setupDynamicConfigs = () => {
-    const baseUrl = window.location.origin;
-
-    // Install commands
-    const hostInstallCommand = document.getElementById('host-install-command');
-    const clientInstallCommand = document.getElementById('client-install-command');
-
-    if (!hostInstallCommand || !clientInstallCommand) {
-        throw new Error('Missing required install command elements');
-    }
-
-    hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
-    clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
-
-    // Configuration examples with replaced domain/backend
-    const autheliaConfig = document.getElementById('authelia-config');
-    const traefikConfig = document.getElementById('traefik-config');
-
-    const domain = baseUrl.replace(/^https?:\/\//, '');
-
-    if (autheliaConfig) {
-        autheliaConfig.textContent = `- domain: ${domain}
-  policy: bypass
-  resources:
-    - '^/download/(.*)'
-    - '^/api/m2m/(.*)$'
-    - '^/manifest.json$'
-    - '^/favicon.svg$'`;
-    }
-
-    if (traefikConfig) {
-        traefikConfig.textContent = `# Add to your service labels
-- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.svg\`))"
-- "traefik.http.routers.shuthost-bypass.priority=100"
-# Remove auth middleware for bypass routes`;
-    }
-
-    if (!autheliaConfig || !traefikConfig) {
-        console.info("No dynamic security exceptions found to be populated.")
-    }
-};
-
 // ==========================
 // Initialization
 // ==========================
 
 const initialize = () => {
-    setupDynamicConfigs();
     connectWebSocket();
     setupCopyButtons();
     setupTabs();
-    if (isDemoMode) {
+    if (DemoMode.isActive) {
         console.info('Demo mode enabled: UI is using simulated data.');
     }
 };
 
+document.addEventListener('DOMContentLoaded', initialize);
 
-// ==========================
-// Demo Mode Simulation Namespace
-// ==========================
+/**
+ * This code is made to run in Github Pages demo mode, to simulate a backend
+ */
+namespace DemoMode {
+    /** Detected demo mode by presence of disclaimer element  */
+    export const isActive = !!document.getElementById('demo-mode-disclaimer');
 
-namespace DemoSim {
     let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
     let statusTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -527,7 +483,7 @@ namespace DemoSim {
         }, 500);
     }
 
-    export const leaseAction = (host: string, action: string) => {
+    export const updateLease: UpdateLease = async (host, action) => {
         if (action === "take") {
             // LeaseUpdate: WebInterface
             if (leaseTimeout) clearTimeout(leaseTimeout);
@@ -553,7 +509,7 @@ namespace DemoSim {
         }
     }
 
-    export const resetClientLeases = (clientId: string) => {
+    export const resetClientLeases: ResetClientLeases = async (clientId) => {
         // For demo, just clear all leases for that client
         Object.keys(persistedLeaseMap).forEach(host => {
             persistedLeaseMap[host] = (persistedLeaseMap[host] || []).filter(l => l.type !== 'Client' || l.value !== clientId);
@@ -562,5 +518,3 @@ namespace DemoSim {
         updateHostsTable();
     }
 }
-
-document.addEventListener('DOMContentLoaded', initialize);

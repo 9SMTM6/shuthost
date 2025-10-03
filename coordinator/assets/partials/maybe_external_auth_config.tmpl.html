@@ -10,14 +10,17 @@
             <li>Enable the built-in Token (easy to configure) or OIDC authentication in the coordinator config.</li>
             <li>Use an external authentication gateway (reverse proxy) and set the
                 <code>exceptions_version</code> in your auth config to acknowledge you have configured
-                the required bypass rules.</li>
+                the required bypass rules.
+            </li>
         </ul>
         <p class="text-xs mt-2"><em>When using an external auth reverse proxy, you must allow unauthenticated access to
-                certain endpoints so installers and machine-to-machine clients can work. See the examples below.</em></p>
+                certain endpoints so installers and machine-to-machine clients can work. See the examples below.</em>
+        </p>
     </div>
 
     <input type="checkbox" id="security-config-toggle" class="collapsible-toggle" hidden>
-    <label for="security-config-toggle" class="collapsible-header collapsed" aria-controls="security-config-content" id="security-config-header" tabindex="0" role="button">
+    <label for="security-config-toggle" class="collapsible-header collapsed" aria-controls="security-config-content"
+        id="security-config-header" tabindex="0" role="button">
         <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
         <span class="collapsible-icon"></span>
     </label>
@@ -67,8 +70,57 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
             </div>
 
             <p class="text-xs mt-2"><em>Replace backend references with your actual configuration
-                    values. After configuring your proxy rules, set <code>auth = {{ type = "external", exceptions_version = 1 }}</code>
+                    values. After configuring your proxy rules, set
+                    <code>auth = {{ type = "external", exceptions_version = 1 }}</code>
                     (or the matching version) in the coordinator config to acknowledge the exceptions.</em></p>
         </div>
     </div>
+    <script type="module">
+        /**
+         * Populate dynamic configuration snippets and installer commands based on current origin.
+         * This keeps embedded strings in the UI in sync with where the page is served from.
+         */
+        function setupDynamicConfigs() {
+            const baseUrl = window.location.origin;
+
+            // Install commands
+            const hostInstallCommand = document.getElementById('host-install-command');
+            const clientInstallCommand = document.getElementById('client-install-command');
+
+            if (!hostInstallCommand || !clientInstallCommand) {
+                throw new Error('Missing required install command elements');
+            }
+
+            hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+            clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+
+            // Configuration examples with replaced domain/backend
+            const autheliaConfig = document.getElementById('authelia-config');
+            const traefikConfig = document.getElementById('traefik-config');
+
+            const domain = baseUrl.replace(/^https?:\/\//, '');
+
+            if (autheliaConfig) {
+                autheliaConfig.textContent = `- domain: ${domain}
+    policy: bypass
+    resources:
+        - '^/download/(.*)'
+        - '^/api/m2m/(.*)$'
+        - '^/manifest.json$'
+        - '^/favicon.svg$'`;
+            }
+
+            if (traefikConfig) {
+                traefikConfig.textContent = `# Add to your service labels
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.svg\`))"
+- "traefik.http.routers.shuthost-bypass.priority=100"
+# Remove auth middleware for bypass routes`;
+            }
+
+            if (!autheliaConfig || !traefikConfig) {
+                console.info("No dynamic security exceptions found to be populated.")
+            }
+        }
+        document.addEventListener('DOMContentLoaded', setupDynamicConfigs);
+    </script>
 </section>
