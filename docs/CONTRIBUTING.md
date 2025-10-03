@@ -4,10 +4,9 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 
 ## Minimum Supported Rust Version (MSRV)
 - The MSRV is generally set to the latest stable `rustc` as of the most recent commit.
-- This is not a strict dependency for downstream consumers, but contributors should use the latest stable Rust.
 
 ## Frontend Dependencies
-- The project depends on an installed `npm` to build frontend assets (TailwindCSS and TypeScript).
+- The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../coordinator/assets/package.json)).
 - `npm` is invoked from [`coordinator/build.rs`](./coordinator/build.rs) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
 
 ## Host Agent Artifacts
