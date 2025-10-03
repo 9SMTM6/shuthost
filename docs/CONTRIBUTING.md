@@ -7,13 +7,13 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 
 ## Frontend Dependencies
 - The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../coordinator/assets/package.json)).
-- `npm` is invoked from [`coordinator/build.rs`](./coordinator/build.rs) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
+- `npm` is invoked from [`coordinator/build.rs`](../coordinator/build.rs) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
 
 ## Host Agent Artifacts
 - Host agent binaries (the binaries that are run on every host to be controlled) and other artifacts are included in the build using `include_bytes!` (for portability of the controller binary), so they must be present in the expected locations (e.g. the Cargo target directory for host agents).
 - Building macOS agents on Linux is not supported. To avoid build failures:
-  - You can comment out the default features `include_macos_agents` and `include_linux_agents` in your local [`coordinator/Cargo.toml`](./coordinator/Cargo.toml). Do not commit these changes ;-P.
-  - Alternatively, for supported agents, use cross-compilation toolchains as described in the [`Justfile`](./Justfile) - similar to Gnu Make - to build the required agents in release mode.
+  - You can comment out the default features `include_macos_agents` and `include_linux_agents` in your local [`coordinator/Cargo.toml`](../coordinator/Cargo.toml). Do not commit these changes ;-P.
+  - Alternatively, for supported agents, use cross-compilation toolchains as described in the [`Justfile`](../Justfile) - similar to Gnu Make - to build the required agents in release mode.
 
 ## Shell Scripts & Portability
 - To support many platforms, shell scripts should **not** use bashisms.
