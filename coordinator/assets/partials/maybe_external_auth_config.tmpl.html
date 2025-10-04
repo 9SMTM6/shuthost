@@ -77,22 +77,11 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
     </div>
     <script type="module">
         /**
-         * Populate dynamic configuration snippets and installer commands based on current origin.
+         * Populate dynamic configuration snippets based on current origin.
          * This keeps embedded strings in the UI in sync with where the page is served from.
          */
-        function setupDynamicConfigs() {
+        function setupExclusionConfigs() {
             const baseUrl = window.location.origin;
-
-            // Install commands
-            const hostInstallCommand = document.getElementById('host-install-command');
-            const clientInstallCommand = document.getElementById('client-install-command');
-
-            if (!hostInstallCommand || !clientInstallCommand) {
-                throw new Error('Missing required install command elements');
-            }
-
-            hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
-            clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
 
             // Configuration examples with replaced domain/backend
             const autheliaConfig = document.getElementById('authelia-config');
@@ -121,6 +110,6 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
                 console.info("No dynamic security exceptions found to be populated.")
             }
         }
-        document.addEventListener('DOMContentLoaded', setupDynamicConfigs);
+        document.addEventListener('DOMContentLoaded', setupExclusionConfigs);
     </script>
 </section>

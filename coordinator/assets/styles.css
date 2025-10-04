@@ -263,6 +263,10 @@ footer {
         visibility: hidden;
     }
 
+    .login-page .mobile-menu-backdrop {
+        display: none;
+    }
+
     /* Hide nav-tabs and logout on login page but keep space */
     .login-page .nav-tabs {
         visibility: hidden;
@@ -325,7 +329,7 @@ footer {
         }
 
         /* Backdrop for tinting main page */
-        .menu-backdrop {
+        .mobile-menu-backdrop {
             display: none;
             position: fixed;
             top: 3.5rem;
@@ -336,7 +340,7 @@ footer {
             z-index: 999;
         }
 
-        #mobile-menu-toggle:checked~.menu-backdrop {
+        #mobile-menu-toggle:checked~.mobile-menu-backdrop {
             display: block;
         }
     }

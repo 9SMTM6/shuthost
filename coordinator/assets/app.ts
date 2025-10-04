@@ -128,14 +128,6 @@ const formatLeaseSource = (lease: LeaseSource): string => {
 };
 
 /**
- * Close the mobile menu by unchecking the toggle.
- */
-const closeMobileMenu = () => {
-    const toggle = document.getElementById('mobile-menu-toggle') as HTMLInputElement;
-    if (toggle) toggle.checked = false;
-};
-
-/**
  * Sort items into active and inactive groups, then combine with active first, sorted lexicographically.
  */
 const sortActiveFirst = <T>(
@@ -355,108 +347,52 @@ const resetClientLeases = async (clientId: string) => {
 
 type ResetClientLeases = typeof resetClientLeases;
 
-// ==========================
-// UI Setup Functions
-// ==========================
-
 const setupCopyButtons = () => {
     document.querySelectorAll<HTMLButtonElement>('.copy-button').forEach(button => {
         button.addEventListener('click', () => {
-            const targetSelector = button.dataset["copyTarget"];
-            if (targetSelector) {
-                const target = document.querySelector<HTMLElement>(targetSelector)?.textContent;
-                if (target) {
-                    navigator.clipboard.writeText(target).then(() => {
-                        button.textContent = "Copied!";
-                        setTimeout(() => (button.textContent = "Copy"), 1500);
-                    });
-                }
+            const target = document.querySelector<HTMLElement>(button.dataset["copyTarget"] ?? "::ensureEmptyQuery")
+                ?.textContent;
+            if (target) {
+                navigator.clipboard.writeText(target).then(() => {
+                    button.textContent = "Copied!";
+                    setTimeout(() => (button.textContent = "Copy"), 1500);
+                });
             }
         });
     });
 };
 
-const setupTabs = () => {
-    const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
-    const validTabs = new Set(['hosts', 'clients', 'architecture']);
+/**
+ * Populate installer commands based on current origin.
+ * This keeps embedded strings in the UI in sync with where the page is served from.
+ */
+const setupInstallerCommands = () => {
+    const baseUrl = window.location.origin;
 
-    const activateTab = (tabId: string, updateHash: boolean) => {
-        if (!validTabs.has(tabId)) return;
-        // Remove active class from all tabs and content
-        tabs.forEach(t => {
-            t.classList.remove('active');
-            t.setAttribute('aria-selected', 'false');
-        });
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
+    // Install commands
+    const hostInstallCommand = document.getElementById('host-install-command');
+    const clientInstallCommand = document.getElementById('client-install-command');
 
-        // Add active class to clicked tab and corresponding content
-        const tabButton = Array.from(tabs).find(t => t.dataset["tab"] === tabId);
-        tabButton?.classList.add('active');
-        tabButton?.setAttribute('aria-selected', 'true');
-        document.getElementById(`${tabId}-tab`)?.classList.add('active');
-
-        // Update the hash (deep link) if requested
-        if (updateHash) {
-            const newHash = `#${tabId}`;
-            if (location.hash !== newHash) {
-                // Setting location.hash will trigger the hashchange handler
-                location.hash = tabId;
-            }
-        }
-    };
-
-    // Setup backdrop click to close mobile menu
-    const backdrop = document.querySelector('.menu-backdrop');
-    if (backdrop) {
-        backdrop.addEventListener('click', closeMobileMenu);
+    if (!hostInstallCommand || !clientInstallCommand) {
+        throw new Error('Missing required install command elements');
     }
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabId = tab.dataset["tab"];
-            if (!tabId) return;
-            activateTab(tabId, true);
-            // Close mobile menu after tab click
-            closeMobileMenu();
-        });
-    });
-
-    // Respond to URL hash changes (back/forward navigation or external links)
-    const handleHashChange = () => {
-        const hash = location.hash.replace('#', '');
-        if (hash && validTabs.has(hash)) {
-            activateTab(hash, false);
-            // Close mobile menu on hash change
-            closeMobileMenu();
-        }
-    };
-    window.addEventListener('hashchange', handleHashChange);
-
-    // Initial activation based on current hash or default to hosts
-    if (location.hash && validTabs.has(location.hash.substring(1))) {
-        activateTab(location.hash.substring(1), false);
-    } else {
-        // Ensure default is reflected when no hash present
-        activateTab('hosts', false);
-    }
-};
+    hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+}
 
 // ==========================
 // Initialization
 // ==========================
 
-const initialize = () => {
+document.addEventListener('DOMContentLoaded', () => {
     connectWebSocket();
     setupCopyButtons();
-    setupTabs();
+    setupInstallerCommands();
     if (DemoMode.isActive) {
         console.info('Demo mode enabled: UI is using simulated data.');
     }
-};
-
-document.addEventListener('DOMContentLoaded', initialize);
+});
 
 /**
  * This code is made to run in Github Pages demo mode, to simulate a backend

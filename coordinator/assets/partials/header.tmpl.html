@@ -1,3 +1,4 @@
+<input type="checkbox" id="mobile-menu-toggle" class="hidden">
 <header class="bg-white dark:bg-gray-800 shadow-md" role="banner">
     { maybe_demo_disclaimer }
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,11 +16,11 @@
             <div class="flex items-center gap-2">
                 <nav class="nav-tabs" role="tablist" aria-label="Main tabs">
                     <!-- Tablist for navigation -->
-                    <button class="tab" data-tab="architecture" role="tab" aria-selected="false" aria-controls="architecture-tab"
-                        id="tab-architecture" tabindex="0">Docs</button>
-                    <button class="tab active" data-tab="hosts" role="tab" aria-selected="true" aria-controls="hosts-tab" id="tab-hosts"
-                        tabindex="0">Hosts</button>
-                    <button class="tab" data-tab="clients" role="tab" aria-selected="false" aria-controls="clients-tab" id="tab-clients"
+                    <button class="tab" data-tab-content="architecture" role="tab" aria-selected="false"
+                        aria-controls="architecture-tab" tabindex="0">Docs</button>
+                    <button class="tab active" data-tab-content="hosts" role="tab" aria-selected="true"
+                        aria-controls="hosts-tab" tabindex="0">Hosts</button>
+                    <button class="tab" data-tab-content="clients" role="tab" aria-selected="false" aria-controls="clients-tab"
                         tabindex="0">Clients</button>
                 </nav>
                 { maybe_logout }
@@ -27,3 +28,68 @@
         </div>
     </div>
 </header>
+<div class="mobile-menu-backdrop"></div>
+
+<script type="module">
+    // Setup tab navigation with nav buttons as well as `location.hash`.
+    // The tabs control the selection of elements with `#<data-tab-content>-tab`
+
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const validTabs = new Set(tabs.map(t => t.dataset["tabContent"]));
+
+    const activateTab = (tabId, updateHash) => {
+        if (!validTabs.has(tabId)) return;
+        tabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        const tabButton = tabs.find(t => t.dataset["tabContent"] === tabId);
+        tabButton?.classList.add('active');
+        tabButton?.setAttribute('aria-selected', 'true');
+        document.querySelector(`#${tabId}-tab`)?.classList.add('active');
+        if (updateHash) {
+            const newHash = `#${tabId}`;
+            if (location.hash !== newHash) {
+                location.hash = tabId;
+            }
+        }
+    };
+
+    const closeMobileMenu = () => {
+        const toggle = document.getElementById('mobile-menu-toggle');
+        if (toggle) toggle.checked = false;
+    };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.dataset["tabContent"];
+            if (!tabId) return;
+            activateTab(tabId, true);
+            closeMobileMenu();
+        });
+    });
+
+    const hashNavigate = () => {
+        const hash = location.hash.replace('#', '');
+        if (hash && validTabs.has(hash)) {
+            activateTab(hash, false);
+            closeMobileMenu();
+        }
+    };
+
+    window.addEventListener('hashchange', hashNavigate);
+
+    const backdrop = document.querySelector('.mobile-menu-backdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', closeMobileMenu);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (location.hash) {
+            hashNavigate();
+        }
+    });
+</script>
