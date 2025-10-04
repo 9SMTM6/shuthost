@@ -154,7 +154,7 @@ OUTFILE="shuthost_host_agent"
 
 echo "Downloading host_agent for $PLATFORM/$ARCH..."
 
-################## Boring setup complete ------------- Interesting starting here
+################## Boring setup complete ------------- Interesting stuff is starting here
 
 set -v
 echo "$REMOTE_URL"

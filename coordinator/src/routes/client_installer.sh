@@ -29,7 +29,7 @@ CLIENT_ID="${2:-$(echo "$ADJECTIVES" | tr ' ' '\n' | sort -R | head -n1)_$(echo 
 
 CLIENT_SCRIPT_NAME="shuthost_client_${CLIENT_ID}"
 
-################## Boring setup complete ------------- Interesting starting here
+################## Boring setup complete ------------- Interesting stuff is starting here
 
 # Download the client script template
 echo "Downloading client script template..."

@@ -73,6 +73,8 @@ fi
 CLIENT_ID="{client_id}"
 SECRET="{shared_secret}"
 
+################## Boring setup complete ------------- Interesting stuff is starting here
+
 # Get current timestamp (UTC)
 TIMESTAMP=$(date -u +%s)
 
