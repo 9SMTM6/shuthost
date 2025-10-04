@@ -263,8 +263,7 @@ jobs:
       - name: Start controller service (background)
         run: |
           chmod +x shuthost_coordinator
-          nohup ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1 &
-          sleep 2
+          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
 
       - name: Prepare macOS
