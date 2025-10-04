@@ -293,7 +293,9 @@ jobs:
           CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
           echo "Detected client path: $CLIENT_PATH"
 
-          # Run the client and capture output
+          # Run the client and capture output.
+          # We expect this to fail, since the client never was registered.
+          # We only want to test for the request sent off to the coordinator in this test
           OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost http://localhost:8080 2>&1 || true")
           echo "--- client output start ---"
           echo "$OUTPUT"
