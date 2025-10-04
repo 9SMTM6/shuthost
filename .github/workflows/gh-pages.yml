@@ -8,12 +8,17 @@ on:
       - main
   workflow_dispatch:
 
+# Use minimal permissions needed: Pages write + id-token for deploy, contents read for checkout
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: macos-latest
+    outputs:
+      artifact-path: gh-pages
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,10 +26,14 @@ jobs:
       - name: Build and snapshot demo
         run: ./scripts/build-gh-pages.sh
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./gh-pages
-          publish_branch: gh-pages
-          force_orphan: true
+          path: ./gh-pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
