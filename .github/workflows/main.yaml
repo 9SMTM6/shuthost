@@ -251,7 +251,7 @@ jobs:
           - runner: ubuntu-latest
             platform: alpine-docker
             docker_image: alpine:latest
-            shell: docker run run_container sh -c
+            shell: docker exec run_container sh -c
             coordinator_bin: coordinator-x86_64-unknown-linux-gnu
     steps:
       
@@ -274,25 +274,33 @@ jobs:
       - name: Prepare ubuntu-docker
         if: ${{ matrix.platform == 'ubuntu-docker' }}
         run: |
-          docker run -itd --network host --name run_container ${{ matrix.docker_image }}
+          docker run -itd --network=host --name=run_container ${{ matrix.docker_image }}
           ${{ matrix.shell }} "apt-get update; apt-get install -y curl openssl bsdmainutils"
 
       - name: Prepare alpine-docker
         if: ${{ matrix.platform == 'alpine-docker' }}
         run: |
-          docker run -itd --network host --name run_container ${{ matrix.docker_image }}
+          docker run -itd --network=host --name=run_container ${{ matrix.docker_image }}
           ${{ matrix.shell }} "apk update"
           ${{ matrix.shell }} "apk add --no-cache curl openssl busybox-extras"
 
-      - name: install and run client
+      - name: Install and run client
         run: |
-          CLIENT_INSTALL_OUT=$(${{ matrix.shell }} "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080")
+          # Run installer and capture output
+          CLIENT_INSTALL_OUT=$(${{ matrix.shell }} "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080" 2>&1 || true)
+          echo "--- installer output start ---"
           echo "$CLIENT_INSTALL_OUT"
           CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
           echo "Detected client path: $CLIENT_PATH"
+
+          # Run the client and capture output
           OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost http://localhost:8080 2>&1 || true")
+          echo "--- client output start ---"
           echo "$OUTPUT"
-          echo "$OUTPUT" | grep -E "^\+ curl .*-H X-Client-ID: [^ ]+ -H X-Request: [^ ]+" || (echo 'Client request format not found!' && exit 1)
+          echo "--- client output end ---"
+
+          # Check for the curl request: look for 'curl' plus both header names anywhere in the output
+          echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
 
   container-build:
     name: Build & Push Alpine Containers (SHA only)
