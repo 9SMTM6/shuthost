@@ -47,7 +47,8 @@ reqwest = { version = "0.12", default-features = false, features = [
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 rustls = "0.23.x"
 rcgen = "0.14.x"
-tower-http = { version = "0.6", features = ["compression-full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["compression-br", "compression-zstd", "trace", "request-id", "sensitive-headers", "timeout", "util"] }
 
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.

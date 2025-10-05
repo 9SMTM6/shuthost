@@ -2,15 +2,21 @@
 //!
 //! Defines routes, state management, configuration watching, and server startup.
 
+use axum::body::Body;
 use axum::http::Request;
+use axum::http::header::{AUTHORIZATION, COOKIE};
 use axum::routing::{self, any};
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use eyre::WrapErr;
 use std::path::Path;
+use std::time::Duration;
 use std::{net::IpAddr, sync::Arc};
 use tokio::fs;
-use tower_http::compression::CompressionLayer;
+use tower::ServiceBuilder;
+use tower_http::ServiceBuilderExt as _;
+use tower_http::request_id::MakeRequestUuid;
+use tower_http::timeout::TimeoutLayer;
 use tracing::{info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
@@ -142,10 +148,20 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
             require_auth,
         ));
 
+    // TODO: figure out rate limiting
+    let middleware_stack = ServiceBuilder::new()
+        .sensitive_headers([AUTHORIZATION, COOKIE])
+        .set_x_request_id(MakeRequestUuid)
+        .propagate_x_request_id()
+        // must be after request-id
+        .trace_for_http()
+        .compression()
+        .layer(TimeoutLayer::new(Duration::from_secs(30)));
+
     let app = public
         .merge(private)
         .with_state(app_state)
-        .fallback(routing::any(|req: Request<axum::body::Body>| async move {
+        .fallback(routing::any(|req: Request<Body>| async move {
             tracing::warn!(
                 method = %req.method(),
                 uri = %req.uri(),
@@ -153,7 +169,7 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
             );
             Redirect::permanent("/")
         }))
-        .layer(CompressionLayer::new());
+        .layer(middleware_stack);
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
