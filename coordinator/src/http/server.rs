@@ -265,7 +265,7 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
 /// Middleware to set security headers on all responses
 /// 
 /// This is less strict than possible. 
-/// It avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
+/// it allows inlined scripts (!), it avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
 /// since these might block some embedings etc.
 /// 
 /// These would help against clickjacking etc.
@@ -278,7 +278,7 @@ async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -
     response.headers_mut().insert(
         HeaderName::from_static("content-security-policy"),
         HeaderValue::from_static(
-            "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; require-trusted-types-for 'script';"
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self'; object-src 'none'; base-uri 'self'; require-trusted-types-for 'script';"
         ),
     );
     response
