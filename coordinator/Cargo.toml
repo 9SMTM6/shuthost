@@ -36,13 +36,12 @@ openidconnect = { version = "4.x", default-features = false, features = [
 ] }
 eyre = "0.6.12"
 base64 = "0.22.1"
-reqwest = { version = "0.12", default-features = false, features = [
+reqwest = { workspace = true, features = [
     "rustls-tls",
     "http2",
     "charset",
-    "gzip",
     "brotli",
-    "deflate",
+    "zstd",
 ] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 rustls = "0.23.x"
