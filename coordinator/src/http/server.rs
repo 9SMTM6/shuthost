@@ -17,6 +17,10 @@ use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt as _;
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::timeout::TimeoutLayer;
+use axum::http::HeaderValue;
+use axum::middleware::Next;
+use axum::response::Response;
+use axum::http::header::{HeaderName};
 use tracing::{info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
@@ -156,7 +160,8 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
         // must be after request-id
         .trace_for_http()
         .compression()
-        .layer(TimeoutLayer::new(Duration::from_secs(30)));
+        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        .layer(axum::middleware::from_fn(secure_headers_middleware));
 
     let app = public
         .merge(private)
@@ -255,4 +260,26 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
     };
 
     Ok(())
+}
+
+/// Middleware to set security headers on all responses
+/// 
+/// This is less strict than possible. 
+/// It avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
+/// since these might block some embedings etc.
+/// 
+/// These would help against clickjacking etc.
+async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
+    let mut response = next.run(req).await;
+    response.headers_mut().insert(
+        HeaderName::from_static("cross-origin-opener-policy"),
+        HeaderValue::from_static("same-origin"),
+    );
+    response.headers_mut().insert(
+        HeaderName::from_static("content-security-policy"),
+        HeaderValue::from_static(
+            "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; require-trusted-types-for 'script';"
+        ),
+    );
+    response
 }
