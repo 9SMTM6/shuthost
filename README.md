@@ -288,7 +288,6 @@ This documentation is intended to help with third-party integrations, including 
 
 | Issue | Description | Impact | Solution |
 |-------|-------------|--------|----------|
-| �️ **Client Install Platform Coverage** | The `client_install` and client script are not tested on all deployment platforms or shells | Unknown | May require manual adaptation or troubleshooting on less common platforms/shells |
 | �🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium | [APP-SIDE] Regularly "syncing" states, either with explicit config on the host or coordinator-wide |
 | 💾 **State Loss** | The coordinator loses state on restart (including updates) | Low (currently only acts on state changes) | [APP-SIDE] Considering state persistence with e.g. sqlite or explicit syncing |
 | 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A | N/A |

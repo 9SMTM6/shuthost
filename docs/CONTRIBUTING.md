@@ -20,7 +20,7 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - Scripts should be POSIX-compliant and tested with `sh`.
 - [`shellcheck`](https://www.shellcheck.net/) should suffice to catch bashisms, especially since scripts have a shebang. Please lint your scripts before submitting.
 - There is also a ShellCheck VSCode extension available for convenient linting in your editor.
-- The GitHub pipeline currently only catches some bashisms and portability issues. **Known Issue:** The pipeline does not fully test `client_installer` and the client itself on all platforms/shells.
+- The [GitHub pipeline](../.github/workflows/main.yaml) should catch remaining bashisms and portability issues.
 
 ## Rust Lints
 - The project enables a variety of pedantic and strict Rust lints to maintain code quality.
