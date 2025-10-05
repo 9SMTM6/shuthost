@@ -26,7 +26,7 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The project enables a variety of pedantic and strict Rust lints to maintain code quality.
 - Lints may be ignored using `#[expect(clippy::lint, reason="provide a reason")]` if necessary.
 - Please try to address all lint warnings and errors before submitting a pull request (if it's difficult its okay to ask for help in a PR).
-- Run `cargo clippy --no-default-features --workspace` to check for lint issues (including warnings, which will fail the pipeline).
+- Run `cargo clippy --workspace` to check for lint issues (including warnings, which will fail the pipeline).
 
 ## Additional Quality Checks
 - This project uses [`cargo-deny`](https://github.com/EmbarkStudios/cargo-deny) for dependency and license checks.
