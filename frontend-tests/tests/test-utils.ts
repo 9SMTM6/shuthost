@@ -31,7 +31,7 @@ export async function startBackend(configPath: string) {
   // Build release binary and spawn the control-service with provided config.
   const { execSync, spawn } = await import('node:child_process');
   // repo layout: frontend-tests is cwd when Playwright runs tests, binary is at ../target/release
-  execSync('cargo build --release', { cwd: '..', stdio: 'inherit' });
+  execSync('cargo build --release --no-default-features', { cwd: '..', stdio: 'inherit' });
   const backendBin = '../target/release/shuthost_coordinator';
   const proc = spawn(backendBin, ['control-service', '--config', configPath], { stdio: 'inherit' });
   await waitForServerReady('127.0.0.1', 8081, 30000);

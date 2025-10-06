@@ -513,6 +513,37 @@ jobs:
           chmod +x ./bin/shuthost_host_agent
           ./bin/shuthost_host_agent --help
 
+  playwright-tests:
+    name: Run Playwright (frontend) tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Install Node deps
+        run: |
+          cd frontend-tests
+          npm ci
+
+      - name: Install Playwright Chromium and system deps
+        run: |
+          cd frontend-tests
+          npm run install-chromium
+          # install system dependencies for Playwright
+          npx playwright install-deps || true
+
+      - name: Run Playwright tests
+        env:
+          CI: true
+        run: |
+          cd frontend-tests
+          npx playwright test
+
   release:
     name: Upload Release Binaries
     needs:
