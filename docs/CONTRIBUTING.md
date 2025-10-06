@@ -9,6 +9,26 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../coordinator/assets/package.json)).
 - `npm` is invoked from [`coordinator/build.rs`](../coordinator/build.rs) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
 
+## Playwright frontend tests
+
+The repository includes ARIA snapshot and visual regression tests based on Playwright under `frontend-tests/`. They run a local instance of the Rust backend and use Playwright's Chromium to exercise the Web UI and collect snapshots.
+
+Quick checklist:
+- Install Node dependencies and Playwright (from the repository root):
+  - cd frontend-tests
+  - npm ci
+  - npm run install-chromium
+
+Running tests:
+- From `frontend-tests/` run:
+  - npm test
+
+Notes and tips:
+- Tests run fully parallel by default. Each worker uses a per-worker port computed as `8081 + workerIndex` via the environment variables `TEST_PARALLEL_INDEX` or `TEST_WORKER_INDEX`. You can force a single-worker run by exporting `TEST_WORKER_INDEX=0` before starting tests.
+- To install missing system dependencies for Chromium on Linux (Debian/Ubuntu) run:
+  - npx playwright install-deps
+- Playwright collects traces and generates an HTML report by default; run `npx playwright show-report` after a run for debugging.
+
 ## Host Agent Artifacts
 - Host agent binaries (the binaries that are run on every host to be controlled) and other artifacts are included in the build using `include_bytes!` (for portability of the controller binary), so they must be present in the expected locations (e.g. the Cargo target directory for host agents).
 - Building macOS agents on Linux is not supported. To avoid build failures:
