@@ -1,0 +1,71 @@
+- main:
+  - region:
+    - tabpanel:
+      - region "Install Host Agent":
+        - button "Install Host Agent":
+          - heading "Install Host Agent" [level=2]
+        - region "Install Host Agent":
+          - paragraph: "Run the following command in your terminal:"
+          - button "Copy install command"
+          - code: /curl -fsSL https:\/\/\d+\.\d+\.0\.1:\d+\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s https:\/\/\d+\.\d+\.0\.1:\d+ --port \d+/
+          - paragraph: "Adjust options as needed. Add the output to the hosts section of your config on the Coordinator Host:"
+          - button "Copy config location"
+          - code: /home/smaier/workspace/private/shuthost/frontend-tests/configs/nada.toml
+          - note "Agent Installation Requirements":
+            - heading "⚠️ Agent Installation Requirements" [level=3]
+            - list:
+              - listitem:
+                - strong: "Superuser Access:"
+                - text: The installer requires
+                - code: curl
+                - text: and will install as superuser (root/sudo/doas)
+              - listitem:
+                - strong: "Unprotected Resources:"
+                - text: Installation requires access to unprotected download endpoints (only a consideration if you use external auth)
+              - listitem:
+                - strong: "Static IP Required:"
+                - text: The host needs a static IP address for shutdown commands and online status monitoring
+              - listitem:
+                - strong: "Manual Configuration:"
+                - text: The generated config must be manually added to your coordinator configuration file
+          - note "Platform Limitations":
+            - heading "🚫 Platform Limitations" [level=3]
+            - list:
+              - listitem:
+                - strong: "No Windows Support:"
+                - text: Only Unix distributions are supported.
+              - listitem:
+                - strong: "No BSD Support:"
+                - text: BSD-based systems are not currently supported.
+          - note "Wake-on-LAN (WOL) Requirements":
+            - heading "💡 Wake-on-LAN (WOL) Requirements" [level=3]
+            - paragraph: "The agent requires Wake-on-LAN for remote startup functionality:"
+            - list:
+              - listitem:
+                - strong: "Motherboard Support:"
+                - text: Your motherboard must support WOL.
+                - list:
+                  - listitem:
+                    - strong: "BIOS Configuration:"
+                    - text: WOL must be enabled (and thus available, which isnt guaranteed, e.g. Raspberry Pi) in BIOS/UEFI settings.
+                  - listitem:
+                    - strong: "Power State Limitation:"
+                    - text: Some systems only support WOL from sleep mode, not full shutdown.
+              - listitem:
+                - strong: "OS Configuration:"
+                - text: WOL must be enabled in the operating system.
+              - listitem:
+                - strong: "Network Requirements:"
+                - text: Requires network broadcast support and host reachability.
+                - list:
+                  - listitem:
+                    - emphasis: "Note: The installer tests network reachability but won't fail if the test is unsuccessful, so ensure your network supports broadcast for WOL to work properly."
+      - region "Hosts Table":
+        - heading "Hosts Table" [level=2]
+        - table:
+          - rowgroup:
+            - row "Host Status Actions":
+              - cell "Host"
+              - cell "Status"
+              - cell "Actions"
+          - rowgroup

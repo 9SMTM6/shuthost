@@ -1,0 +1,37 @@
+- main:
+  - region:
+    - tabpanel:
+      - region "Install Client":
+        - button "Install Client":
+          - heading "Install Client" [level=2]
+        - region "Install Client":
+          - paragraph: "Run the following command in your terminal:"
+          - button "Copy install command"
+          - code: /curl -fsSL https:\/\/\d+\.\d+\.0\.1:\d+\/download\/client_installer[\d,.]+[hmsp]+ \| sh -s https:\/\/\d+\.\d+\.0\.1:\d+/
+          - paragraph: "Optionally, you can specify a custom client ID as the second argument. Add the output to the clients section of your config on the Coordinator Host:"
+          - button "Copy config location"
+          - code: /home/smaier/workspace/private/shuthost/frontend-tests/configs/nada.toml
+          - note "Client Installation Requirements":
+            - heading "⚠️ Client Installation Requirements" [level=3]
+            - list:
+              - listitem:
+                - strong: "Dependencies:"
+                - text: Installer requires
+                - code: curl
+                - text: ; client runtime requires
+                - code: OpenSSL
+              - listitem:
+                - strong: "Unprotected Resources:"
+                - text: Installation requires access to unprotected download endpoints (only a consideration if you use external auth)
+              - listitem:
+                - strong: "Manual Configuration:"
+                - text: The generated config must be manually added to your coordinator configuration file
+      - region "Clients Table":
+        - heading "Clients Table" [level=2]
+        - table:
+          - rowgroup:
+            - row "Client ID Leases Actions":
+              - columnheader "Client ID"
+              - columnheader "Leases"
+              - columnheader "Actions"
+          - rowgroup

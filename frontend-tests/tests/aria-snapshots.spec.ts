@@ -1,0 +1,100 @@
+import { test, expect } from '@playwright/test';
+import { startBackend, stopBackend, configs } from './test-utils';
+
+let backendProcess: any | undefined;
+
+const hostsConfigs = ['hosts-only', 'hosts-and-clients'] as const;
+for (const name of hostsConfigs) {
+  const path = configs[name];
+  test.describe(`${name} config`, () => {
+
+    test.beforeAll(async () => {
+      backendProcess = await startBackend(path);
+    });
+
+    test(`ARIA snapshot for hosts tab (${name})`, async ({ page }) => {
+      await page.goto('#hosts');
+      await page.waitForSelector('#host-table-body', { state: 'attached' });
+      await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `at_hosts-cfg_${name}.aria.yml` });
+    });
+
+    test(`ARIA snapshot for clients tab (${name})`, async ({ page }) => {
+      await page.goto('#clients');
+      await page.waitForSelector('#client-table-body', { state: 'attached' });
+      await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `at_clients-cfg_${name}.aria.yml` });
+    });
+
+    // Ensure we stop the backend for this config describe to avoid cross-describe state/port issues
+    test.afterAll(async () => {
+      stopBackend(backendProcess);
+      backendProcess = undefined;
+    });
+  });
+}
+
+// Architecture tab is independent of config
+test.describe('architecture tab', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs["hosts-and-clients"]);
+  });
+
+  test('ARIA snapshot for architecture tab', async ({ page }) => {
+    await page.goto('#architecture');
+    await page.waitForSelector('#architecture-tab', { state: 'attached' });
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `at_architecture.aria.yml` });
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+});
+
+// Additional test: expanded Install sections for the 'nada' config
+test.describe('expanded install panels', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs['nada']);
+  });
+
+  test('ARIA snapshot with Install Host Agent expanded (nada)', async ({ page }) => {
+    await page.goto('#hosts');
+    // Open the collapsible by checking the toggle input
+    // The checkbox input is hidden (CSS); click the visible header/label instead.
+    await page.waitForSelector('#host-install-header');
+    await page.click('#host-install-header');
+    await page.waitForSelector('#host-install-content', { state: 'visible' });
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_hosts-expanded_install.aria.yml` });
+  });
+
+  test('ARIA snapshot with Install Client expanded (nada)', async ({ page }) => {
+    await page.goto('#clients');
+    // The checkbox input is hidden (CSS); click the visible header/label instead.
+    await page.waitForSelector('#client-install-header');
+    await page.click('#client-install-header');
+    await page.waitForSelector('#client-install-content', { state: 'visible' });
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_clients-expanded_install.aria.yml` });
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+});
+
+// Snapshot the root page with the 'no-auth' config
+test.describe('no-auth landing page', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs['no-auth']);
+  });
+
+  test('ARIA snapshot of root page (no-auth)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#main-content', { state: 'attached' });
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_no-auth-root.aria.yml` });
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+});

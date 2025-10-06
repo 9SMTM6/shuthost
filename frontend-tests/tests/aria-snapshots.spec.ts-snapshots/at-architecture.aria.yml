@@ -1,0 +1,93 @@
+- main:
+  - region:
+    - article:
+      - heading "Architecture Documentation" [level=2]
+      - paragraph: "ShutHost provides two different architectural views depending on your use case:"
+      - region "Simplified Architecture":
+        - heading "Simplified Architecture" [level=3]
+        - figure:
+          - img "Simplified Architecture Diagram"
+        - paragraph:
+          - strong: "When to use:"
+          - text: This architecture applies when you have
+          - strong: no clients defined
+          - text: in your configuration. In this scenario, only the WebUI interacts with hosts through the coordinator.
+        - note "How it works":
+          - heading "How it works" [level=4]
+          - list:
+            - listitem:
+              - text: The
+              - strong: WebUI
+              - text: sends startup/shutdown requests directly to the
+              - strong: Coordinator
+            - listitem:
+              - text: The
+              - strong: Coordinator
+              - text: manages host lifecycle by sending Wake-on-LAN packets for startup and shutdown commands to agents
+            - listitem:
+              - text: Each
+              - strong: Host
+              - text: runs an
+              - strong: Agent
+              - text: service that handles shutdown commands and reports status back to the coordinator
+            - listitem: Under the hood, this still uses the lease system, but it's transparent to the user
+      - region "Complete Architecture":
+        - heading "Complete Architecture" [level=3]
+        - figure:
+          - img "Complete Architecture Diagram"
+        - paragraph:
+          - strong: "When to use:"
+          - text: This architecture applies when you have
+          - strong: clients defined
+          - text: in your configuration. This enables programmatic access where multiple clients can access hosts concurrently.
+        - note "Lease System":
+          - heading "Lease System" [level=4]
+          - paragraph:
+            - text: With multiple clients potentially accessing hosts simultaneously, ShutHost introduces a
+            - strong: lease system
+            - text: "to coordinate access and prevent conflicts:"
+          - list:
+            - listitem:
+              - strong: "Lease Acquisition:"
+              - text: Both WebUI and Clients must request leases before using hosts
+            - listitem:
+              - strong: "Automatic Startup:"
+              - text: Hosts are automatically started when the first lease is acquired (≥1 leases)
+            - listitem:
+              - strong: "Automatic Shutdown:"
+              - text: Hosts are automatically shut down when all leases are released (=0 leases)
+            - listitem:
+              - strong: "Conflict Prevention:"
+              - text: The lease system ensures hosts aren't shut down while still in use by other clients
+        - note "Client Use Cases":
+          - heading "Client Use Cases" [level=4]
+          - paragraph: "Clients are typically used for:"
+          - list:
+            - listitem:
+              - strong: "Automated Backups:"
+              - text: Scripts that need to wake up hosts, perform backups, then allow shutdown
+            - listitem:
+              - strong: "Batch Processing:"
+              - text: Jobs that require access to specific hosts for processing tasks
+            - listitem:
+              - strong: "CI/CD Pipelines:"
+              - text: Build systems that need temporary access to powerful build machines
+            - listitem:
+              - strong: "Scheduled Maintenance:"
+              - text: Scripts that perform regular maintenance tasks on hosts
+      - region "💡 Key Points":
+        - note "Key Points":
+          - heading "💡 Key Points" [level=4]
+          - list:
+            - listitem:
+              - strong: Both architectures use leases internally
+              - text: "- the simplified view just hides this complexity"
+            - listitem:
+              - strong: Wake-on-LAN (WOL)
+              - text: is used for remote host startup in both cases
+            - listitem:
+              - strong: Agents report status
+              - text: to keep the coordinator informed of host availability
+            - listitem:
+              - strong: The coordinator serves the WebUI
+              - text: and provides the API for both human and programmatic access

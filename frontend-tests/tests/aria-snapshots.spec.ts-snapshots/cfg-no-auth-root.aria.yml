@@ -1,0 +1,29 @@
+- main:
+  - region:
+    - region "🔒 Required Security Exceptions":
+      - text: "Important: No Internal Authentication, or outdated External Auth config"
+      - paragraph: If you do not configure external authentication (reverse proxy auth) or an internal authentication mode (Token or OIDC), the web UI will allow any visitor to switch hosts on or off. This is a security risk.
+      - paragraph: "Options:"
+      - list:
+        - listitem: Enable the built-in Token (easy to configure) or OIDC authentication in the coordinator config.
+        - listitem:
+          - text: Use an external authentication gateway (reverse proxy) and set the
+          - code: exceptions_version
+          - text: in your auth config to acknowledge you have configured the required bypass rules.
+      - paragraph:
+        - emphasis: When using an external auth reverse proxy, you must allow unauthenticated access to certain endpoints so installers and machine-to-machine clients can work. See the examples below.
+      - button "🔒 Required Security Exceptions":
+        - heading "🔒 Required Security Exceptions" [level=2]
+    - tabpanel:
+      - region "Install Host Agent":
+        - button "Install Host Agent":
+          - heading "Install Host Agent" [level=2]
+      - region "Hosts Table":
+        - heading "Hosts Table" [level=2]
+        - table:
+          - rowgroup:
+            - row "Host Status Actions":
+              - cell "Host"
+              - cell "Status"
+              - cell "Actions"
+          - rowgroup
