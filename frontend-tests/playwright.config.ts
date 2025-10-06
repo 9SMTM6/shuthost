@@ -21,22 +21,23 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'Desktop Chrome Light',
+            name: 'Desktop Light',
+            testIgnore: ["mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome'], colorScheme: 'light' },
         },
         {
-            name: 'Desktop Chrome Dark',
-            testIgnore: "aria-snapshots.spec.*",
+            name: 'Desktop Dark',
+            testIgnore: ["aria-snapshots.spec.*", "mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome'], colorScheme: 'dark' },
         },
         {
-            name: 'Mobile Chrome Light',
-            testIgnore: "aria-snapshots.spec.*",
+            name: 'Mobile Light',
+            testIgnore: ["aria-snapshots.spec.*"],
             use: { ...devices['Pixel 5'], colorScheme: 'light' },
         },
         {
-            name: 'Mobile Chrome Dark',
-            testIgnore: "aria-snapshots.spec.*",
+            name: 'Mobile Dark',
+            testIgnore: ["aria-snapshots.spec.*"],
             use: { ...devices['Pixel 5'], colorScheme: 'dark' },
         },
     ],
