@@ -7,6 +7,10 @@ inputs:
   bin-name:
     description: 'The name of the binary to build'
     required: true
+  additional-flags:
+    description: 'Optional additional flags to pass to cargo build (e.g. --features "foo")'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -27,4 +31,4 @@ runs:
 
     - name: Build binary
       shell: bash
-      run: cargo build --release --bin ${{ inputs.bin-name }} --target ${{ inputs.target }}
+      run: cargo build --release --bin ${{ inputs.bin-name }} --target ${{ inputs.target }} ${{ inputs.additional-flags }}

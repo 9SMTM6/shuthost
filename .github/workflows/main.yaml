@@ -407,52 +407,6 @@ jobs:
         run: |
           docker run --rm ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:amd64-${{ github.sha }} shuthost_coordinator --help
 
-  container-release:
-    name: Tag & Push Container (branch/tag/latest)
-    needs: 
-      - container-merge
-      - container-test
-      - test
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull image by SHA
-        run: |
-          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
-
-      - name: Tag image with branch/tag name
-        run: |
-          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
-
-      - name: Tag image as latest (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
-
-      - name: Push branch/tag image
-        run: |
-          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
-
-      - name: Push latest image (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
-
   test-compatibility:
     name: Test Compatibility on Older OS Releases
     needs: build-coordinators
@@ -514,11 +468,19 @@ jobs:
           ./bin/shuthost_host_agent --help
 
   playwright-tests:
-    name: Run Playwright (frontend) tests
+    name: Run Playwright (Web GUI) tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: ./.github/actions/rust-build
+        with:
+          target: x86_64-unknown-linux-gnu
+          bin-name: shuthost_coordinator
+          additional-flags: --no-default-features
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -544,6 +506,55 @@ jobs:
           cd frontend-tests
           npx playwright test
 
+  container-release:
+    name: Tag & Push Container (branch/tag/latest)
+    needs: 
+      - container-merge
+      - container-test
+      - test
+      - test-compatibility
+      - test-client-scripts
+      - playwright-tests
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get release texts
+        id: release_texts
+        uses: ./.github/actions/get-release-texts
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image by SHA
+        run: |
+          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+
+      - name: Tag image with branch/tag name
+        run: |
+          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+
+      - name: Tag image as latest (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
+
+      - name: Push branch/tag image
+        run: |
+          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+
+      - name: Push latest image (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
+
   release:
     name: Upload Release Binaries
     needs:
@@ -551,6 +562,7 @@ jobs:
       - test-client-scripts
       - test
       - test-compatibility
+      - playwright-tests
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write

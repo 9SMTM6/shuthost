@@ -23,6 +23,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Build and snapshot demo
         run: ./scripts/build-gh-pages.sh
 
