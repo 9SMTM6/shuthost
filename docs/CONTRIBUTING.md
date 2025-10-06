@@ -15,18 +15,22 @@ The repository includes ARIA snapshot and visual regression tests based on Playw
 
 Quick checklist:
 - Install Node dependencies and Playwright (from the repository root):
-  - cd frontend-tests
-  - npm ci
-  - npm run install-chromium
+  - `cd frontend-tests`
+  - `npm ci`
+  - `npm run install-chromium`
+ - Install Git LFS and fetch visual-regression assets (if you only run ARIA snapshot tests, this is not needed):
+   - Install Git LFS for your OS (see https://git-lfs.com/)
+   - `git lfs install`
+   - `git lfs pull`
 
 Running tests:
 - From `frontend-tests/` run:
-  - npm test
+  - `npm test`
 
 Notes and tips:
 - Tests run fully parallel by default. Each worker uses a per-worker port computed as `8081 + workerIndex` via the environment variables `TEST_PARALLEL_INDEX` or `TEST_WORKER_INDEX`. You can force a single-worker run by exporting `TEST_WORKER_INDEX=0` before starting tests.
 - To install missing system dependencies for Chromium on Linux (Debian/Ubuntu) run:
-  - npx playwright install-deps
+  - `npx playwright install-deps`
 - Playwright collects traces and generates an HTML report by default; run `npx playwright show-report` after a run for debugging.
 
 ## Host Agent Artifacts
