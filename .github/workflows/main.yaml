@@ -474,14 +474,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: Swatinem/rust-cache@v2
-
-      - uses: ./.github/actions/rust-build
-        with:
-          target: x86_64-unknown-linux-gnu
-          bin-name: shuthost_coordinator
-          additional-flags: --no-default-features
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -498,6 +490,13 @@ jobs:
           npm run install-chromium
           # install system dependencies for Playwright
           npx playwright install-deps || true
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: ./.github/actions/rust-build
+        with:
+          bin-name: shuthost_coordinator
+          additional-flags: --no-default-features
 
       - name: Run Playwright tests
         env:
