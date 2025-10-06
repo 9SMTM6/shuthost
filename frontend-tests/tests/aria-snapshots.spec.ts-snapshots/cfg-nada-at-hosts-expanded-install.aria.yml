@@ -7,10 +7,10 @@
         - region "Install Host Agent":
           - paragraph: "Run the following command in your terminal:"
           - button "Copy install command"
-          - code: /curl -fsSL https:\/\/\d+\.\d+\.0\.1:\d+\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s https:\/\/\d+\.\d+\.0\.1:\d+ --port \d+/
+          - code: <<INSTALL_COMMAND_REDACTED>>
           - paragraph: "Adjust options as needed. Add the output to the hosts section of your config on the Coordinator Host:"
           - button "Copy config location"
-          - code: /home/smaier/workspace/private/shuthost/frontend-tests/configs/nada.toml
+          - code: <<COORDINATOR_CONFIG>>
           - note "Agent Installation Requirements":
             - heading "⚠️ Agent Installation Requirements" [level=3]
             - list:

@@ -63,6 +63,12 @@ test.describe('expanded install panels', () => {
     await page.waitForSelector('#host-install-header');
     await page.click('#host-install-header');
     await page.waitForSelector('#host-install-content', { state: 'visible' });
+    // Sanitize dynamic install command and config path for stable snapshots
+    await page.evaluate(() => {
+      const cmd = document.querySelector('#host-install-command');
+      if (cmd) cmd.textContent = '<<INSTALL_COMMAND_REDACTED>>';
+      document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
+    });
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_hosts-expanded_install.aria.yml` });
   });
 
@@ -72,6 +78,12 @@ test.describe('expanded install panels', () => {
     await page.waitForSelector('#client-install-header');
     await page.click('#client-install-header');
     await page.waitForSelector('#client-install-content', { state: 'visible' });
+    // Sanitize dynamic install command and config path for stable snapshots
+    await page.evaluate(() => {
+      const cmd = document.querySelector('#client-install-command');
+      if (cmd) cmd.textContent = '<<INSTALL_COMMAND_REDACTED>>';
+      document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
+    });
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_clients-expanded_install.aria.yml` });
   });
 
