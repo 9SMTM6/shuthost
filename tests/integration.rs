@@ -8,7 +8,9 @@ use reqwest::Client;
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Child, Command};
 
-use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening, ensure_built};
+use common::{
+    KillOnDrop, ensure_built, get_free_port, spawn_coordinator_with_config, wait_for_listening,
+};
 
 fn get_agent_bin() -> String {
     // Ensure all binaries are built once per process.

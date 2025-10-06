@@ -1,6 +1,6 @@
 use std::process::{Child, Command};
-use std::time::{Duration, Instant};
 use std::sync::Once;
+use std::time::{Duration, Instant};
 
 pub fn get_free_port() -> u16 {
     std::net::TcpListener::bind("127.0.0.1:0")
