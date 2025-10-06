@@ -3,8 +3,12 @@
 //! Defines routes, state management, configuration watching, and server startup.
 
 use axum::body::Body;
+use axum::http::HeaderValue;
 use axum::http::Request;
+use axum::http::header::HeaderName;
 use axum::http::header::{AUTHORIZATION, COOKIE};
+use axum::middleware::Next;
+use axum::response::Response;
 use axum::routing::{self, any};
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
@@ -17,10 +21,6 @@ use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt as _;
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::timeout::TimeoutLayer;
-use axum::http::HeaderValue;
-use axum::middleware::Next;
-use axum::response::Response;
-use axum::http::header::{HeaderName};
 use tracing::{info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
@@ -77,17 +77,28 @@ pub struct AppState {
 /// # Arguments
 ///
 /// * `config_path` - Path to the TOML configuration file.
+/// * `port_override` - Optional port to override the config value.
+/// * `bind_override` - Optional bind address to override the config value.
 ///
 /// # Returns
 ///
 /// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
-pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
+pub async fn start(
+    config_path: &std::path::Path,
+    port_override: Option<u16>,
+    bind_override: Option<&str>,
+) -> eyre::Result<()> {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(load_coordinator_config(config_path).await?);
-    let listen_port = initial_config.server.port;
 
-    let listen_ip: IpAddr = initial_config.server.bind.parse()?;
+    // Apply optional overrides from CLI/tests
+    let listen_port = port_override.unwrap_or(initial_config.server.port);
+    let bind_str = bind_override
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| initial_config.server.bind.clone());
+
+    let listen_ip: IpAddr = bind_str.parse()?;
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
@@ -263,14 +274,14 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
 }
 
 /// Middleware to set security headers on all responses
-/// 
-/// This is less strict than possible. 
+///
+/// This is less strict than possible.
 /// it avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
 /// since these might block some embedings etc.
-/// 
-/// It also allows inlined scripts (!) and doesn't require-trusted-types-for, 
+///
+/// It also allows inlined scripts (!) and doesn't require-trusted-types-for,
 /// since these have limited compatibility and/or require a bundler for effective application management
-/// 
+///
 /// These would help against clickjacking etc.
 async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
     let mut response = next.run(req).await;

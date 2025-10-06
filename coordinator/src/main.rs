@@ -51,7 +51,8 @@ async fn main() -> Result<()> {
 
             info!("Using config path: {}", config_path.display());
 
-            start(&config_path).await?;
+            // Pass through optional port/bind overrides from CLI
+            start(&config_path, args.port, args.bind.as_deref()).await?;
             Ok(())
         }
         Command::DemoService { port, bind } => {

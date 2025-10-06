@@ -2,11 +2,16 @@ name: 'Rust Build'
 description: 'Builds a Rust binary for a specific target'
 inputs:
   target:
-    description: 'The Rust target to build for'
-    required: true
+    description: 'The Rust target to build for (optional). If omitted, the host target will be used.'
+    required: false
+    default: ''
   bin-name:
     description: 'The name of the binary to build'
     required: true
+  additional-flags:
+    description: 'Optional additional flags to pass to cargo build (e.g. --features "foo")'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -15,11 +20,12 @@ runs:
       run: rustup update stable
 
     - name: Install Rust target
+      if: ${{ inputs.target != '' }}
       shell: bash
       run: rustup target add ${{ inputs.target }}
 
     - name: Install dependencies for MUSL targets
-      if: contains(inputs.target, 'musl')
+      if: ${{ inputs.target != '' && contains(inputs.target, 'musl') }}
       shell: bash
       run: |
         sudo apt-get update
@@ -27,4 +33,10 @@ runs:
 
     - name: Build binary
       shell: bash
-      run: cargo build --release --bin ${{ inputs.bin-name }} --target ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        if [ -n """${{ inputs.target }}""" ]; then
+          cargo build --release --bin "${{ inputs.bin-name }}" --target "${{ inputs.target }}" ${{ inputs.additional-flags }}
+        else
+          cargo build --release --bin "${{ inputs.bin-name }}" ${{ inputs.additional-flags }}
+        fi

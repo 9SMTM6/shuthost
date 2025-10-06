@@ -34,6 +34,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
       - uses: ./.github/actions/rust-build
         with:
           target: ${{ matrix.target }}
@@ -73,7 +77,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ./rehydrate
-      
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
@@ -108,7 +112,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run tests
-        run: cargo test --no-default-features --workspace --all-targets -- --test-threads=1
+        run: cargo test --no-default-features --workspace --all-targets
 
   test-service-installation:
     name: Test Service Installation & Startup
@@ -177,10 +181,10 @@ jobs:
           # Install the coordinator as a service (it gets started automatically)
           docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
 
-          # Wait for coordinator to be ready
-          sleep 2
-
-          # Check on coordinator service
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            docker exec testinit curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
           docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
 
           # Run agent installer (downloads from running coordinator)
@@ -189,8 +193,13 @@ jobs:
             curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
           "
 
-          # Wait for agent to be ready
-          sleep 2
+          # Wait for agent to be ready (timeout 30s) - wait for process to appear
+          for i in $(seq 1 30); do
+            if docker exec testinit pgrep -af shuthost_host_agent >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
 
           # Check on agent service according to init system
           if [ "${{ matrix.init }}" = "systemd" ]; then
@@ -210,9 +219,18 @@ jobs:
         run: |
           set -x
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          sleep 2
+
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
-          sleep 2
+
+          # Wait for agent to be installed/started (timeout 30s)
+          for i in $(seq 1 30); do
+            launchctl print system/com.github_9smtm6.shuthost_host_agent >/dev/null 2>&1 && break || sleep 1
+          done
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
       - name: Test on Linux (serviceless)
@@ -221,11 +239,19 @@ jobs:
           set -x
           # Start the coordinator in the background
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          sleep 2
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+
+          curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
           # Download and install host_agent with serviceless init system
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system serviceless
-          # Wait for the agent to start
-          sleep 2
+          # Wait for the agent to start (timeout 30s) - check for listening port or process
+          for i in $(seq 1 30); do
+            sudo ss -ltnp | grep ':5757' >/dev/null 2>&1 || sudo lsof -i :5757 >/dev/null 2>&1 || sudo netstat -tlnp | grep ':5757' >/dev/null 2>&1 || sudo pgrep -af '/tmp/selfbin' >/dev/null 2>&1 && break || true
+            sleep 1
+          done
           # Check if the port is in use (default 5757)
           sudo ss -ltnp | grep ':5757' || sudo lsof -i :5757 || sudo netstat -tlnp | grep ':5757'
           # Check for a fitting process in the process list
@@ -264,12 +290,16 @@ jobs:
         run: |
           chmod +x shuthost_coordinator
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
 
       - name: Prepare macOS
         if: ${{ matrix.platform == 'macos' }}
         run: |
-          brew install curl openssl hexdump || true
+          brew install curl openssl || true
 
       - name: Prepare ubuntu-docker
         if: ${{ matrix.platform == 'ubuntu-docker' }}
@@ -292,6 +322,15 @@ jobs:
           echo "$CLIENT_INSTALL_OUT"
           CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
           echo "Detected client path: $CLIENT_PATH"
+          if [ -z "$CLIENT_PATH" ]; then
+            echo "Client path not found in installer output"; exit 1
+          fi
+
+          # Wait for the client binary to appear/be executable (timeout 20s)
+          for i in $(seq 1 20); do
+            # execute the test inside the same environment/shell used to run the installer
+            ${{ matrix.shell }} "test -x $CLIENT_PATH" && break || sleep 1
+          done
 
           # Run the client and capture output.
           # We expect this to fail, since the client never was registered.
@@ -407,52 +446,6 @@ jobs:
         run: |
           docker run --rm ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:amd64-${{ github.sha }} shuthost_coordinator --help
 
-  container-release:
-    name: Tag & Push Container (branch/tag/latest)
-    needs: 
-      - container-merge
-      - container-test
-      - test
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    if: ${{ github.event_name == 'push' }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull image by SHA
-        run: |
-          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
-
-      - name: Tag image with branch/tag name
-        run: |
-          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
-
-      - name: Tag image as latest (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
-
-      - name: Push branch/tag image
-        run: |
-          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
-
-      - name: Push latest image (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
-
   test-compatibility:
     name: Test Compatibility on Older OS Releases
     needs: build-coordinators
@@ -513,6 +506,107 @@ jobs:
           chmod +x ./bin/shuthost_host_agent
           ./bin/shuthost_host_agent --help
 
+  playwright-tests:
+    name: Run Playwright (Web GUI) tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (with LFS because pngs for visual regression are saved there)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Install Node deps
+        run: |
+          cd frontend-tests
+          npm ci
+
+      - name: Install Playwright Chromium and system deps
+        run: |
+          cd frontend-tests
+          npm run install-chromium
+          # install system dependencies for Playwright
+          npx playwright install-deps || true
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: ./.github/actions/rust-build
+        with:
+          bin-name: shuthost_coordinator
+          additional-flags: --no-default-features
+
+      - name: Run Playwright tests
+        env:
+          CI: true
+        run: |
+          cd frontend-tests
+          npx playwright test
+
+      - name: Upload Playwright report + test-results (zip via Actions)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ github.run_id }}
+          path: |
+            frontend-tests/playwright-report
+            frontend-tests/test-results
+          compression-level: 9
+
+  container-release:
+    name: Tag & Push Container (branch/tag/latest)
+    needs: 
+      - container-merge
+      - container-test
+      - test-service-installation
+      - test-client-scripts
+      - test
+      - test-compatibility
+      - playwright-tests
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get release texts
+        id: release_texts
+        uses: ./.github/actions/get-release-texts
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image by SHA
+        run: |
+          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+
+      - name: Tag image with branch/tag name
+        run: |
+          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+
+      - name: Tag image as latest (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
+
+      - name: Push branch/tag image
+        run: |
+          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+
+      - name: Push latest image (if tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
+
   release:
     name: Upload Release Binaries
     needs:
@@ -520,6 +614,7 @@ jobs:
       - test-client-scripts
       - test
       - test-compatibility
+      - playwright-tests
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: write

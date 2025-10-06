@@ -1,0 +1,28 @@
+- main:
+  - region:
+    - tabpanel:
+      - region "Install Host Agent":
+        - button "Install Host Agent":
+          - heading "Install Host Agent" [level=2]
+      - region "Hosts Table":
+        - heading "Hosts Table" [level=2]
+        - table:
+          - rowgroup:
+            - row "Host Status Leases Actions":
+              - cell "Host"
+              - cell "Status"
+              - cell "Leases"
+              - cell "Actions"
+          - rowgroup:
+            - row "host1 Status Leases Actions":
+              - rowheader "host1"
+              - cell "Status": offline
+              - cell "Leases"
+              - cell "Actions":
+                - button "Take lease for host1"
+            - row "host2 Status Leases Actions":
+              - rowheader "host2"
+              - cell "Status": offline
+              - cell "Leases"
+              - cell "Actions":
+                - button "Take lease for host2"

@@ -1,0 +1,13 @@
+{
+  "name": "frontend-tests",
+  "version": "1.0.0",
+  "description": "Playwright-based frontend testing for shuthost WebUI.",
+  "scripts": {
+    "test": "playwright test",
+    "install-chromium": "npx playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.43.0",
+    "@types/node": "24.X"
+  }
+}

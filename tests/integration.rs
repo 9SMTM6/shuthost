@@ -7,20 +7,15 @@ use reqwest::Client;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Child, Command};
-// ...existing code...
 
-use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
+use common::{
+    KillOnDrop, ensure_built, get_free_port, spawn_coordinator_with_config, wait_for_listening,
+};
 
 fn get_agent_bin() -> String {
-    // Ensure the agent binary is built before returning the path
-    let status = std::process::Command::new("cargo")
-        .args(["build", "--bin", "shuthost_host_agent"])
-        .status()
-        .expect("failed to run cargo build for shuthost_host_agent");
-    assert!(
-        status.success(),
-        "cargo build for shuthost_host_agent failed"
-    );
+    // Ensure all binaries are built once per process.
+    ensure_built();
+
     std::env::current_dir()
         .unwrap()
         .join("target/debug/shuthost_host_agent")
