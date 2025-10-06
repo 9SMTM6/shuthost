@@ -8,15 +8,16 @@ export default defineConfig({
         timeout: 5000,
     },
     fullyParallel: true,
-    // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
+    // 'github' for GitHub Actions CI to generate annotations
     // default 'list' when running locally
+    // HTML report to have easy access to the traces
     reporter: [[process.env.CI ? 'github' : 'list'], ['html']],
     use: {
         baseURL: 'https://127.0.0.1:8081',
         trace: 'on',
         ignoreHTTPSErrors: true,
-        // Force headless Chromium (use the Playwright-downloaded Chromium)
-        headless: true,
+        // Explicitly use Playwright's Chromium browser so projects don't try to use a system Chrome
+        browserName: 'chromium',
         channel: 'chromium',
     },
     projects: [

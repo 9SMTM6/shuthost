@@ -4,7 +4,7 @@
   "description": "Playwright-based frontend testing for shuthost WebUI.",
   "scripts": {
     "test": "playwright test",
-    "install-chromium": "npx playwright install chromium-headless-shell"
+    "install-chromium": "npx playwright install chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",
