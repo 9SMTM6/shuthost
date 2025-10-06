@@ -181,10 +181,10 @@ jobs:
           # Install the coordinator as a service (it gets started automatically)
           docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
 
-          # Wait for coordinator to be ready
-          sleep 2
-
-          # Check on coordinator service
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            docker exec testinit curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
           docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
 
           # Run agent installer (downloads from running coordinator)
@@ -193,8 +193,13 @@ jobs:
             curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
           "
 
-          # Wait for agent to be ready
-          sleep 2
+          # Wait for agent to be ready (timeout 30s) - wait for process to appear
+          for i in $(seq 1 30); do
+            if docker exec testinit pgrep -af shuthost_host_agent >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
 
           # Check on agent service according to init system
           if [ "${{ matrix.init }}" = "systemd" ]; then
@@ -214,9 +219,18 @@ jobs:
         run: |
           set -x
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          sleep 2
+
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
-          sleep 2
+
+          # Wait for agent to be installed/started (timeout 30s)
+          for i in $(seq 1 30); do
+            launchctl print system/com.github_9smtm6.shuthost_host_agent >/dev/null 2>&1 && break || sleep 1
+          done
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
       - name: Test on Linux (serviceless)
@@ -225,11 +239,19 @@ jobs:
           set -x
           # Start the coordinator in the background
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          sleep 2
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+
+          curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
           # Download and install host_agent with serviceless init system
           curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system serviceless
-          # Wait for the agent to start
-          sleep 2
+          # Wait for the agent to start (timeout 30s) - check for listening port or process
+          for i in $(seq 1 30); do
+            sudo ss -ltnp | grep ':5757' >/dev/null 2>&1 || sudo lsof -i :5757 >/dev/null 2>&1 || sudo netstat -tlnp | grep ':5757' >/dev/null 2>&1 || sudo pgrep -af '/tmp/selfbin' >/dev/null 2>&1 && break || true
+            sleep 1
+          done
           # Check if the port is in use (default 5757)
           sudo ss -ltnp | grep ':5757' || sudo lsof -i :5757 || sudo netstat -tlnp | grep ':5757'
           # Check for a fitting process in the process list
@@ -268,6 +290,10 @@ jobs:
         run: |
           chmod +x shuthost_coordinator
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
 
       - name: Prepare macOS
@@ -296,6 +322,15 @@ jobs:
           echo "$CLIENT_INSTALL_OUT"
           CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
           echo "Detected client path: $CLIENT_PATH"
+          if [ -z "$CLIENT_PATH" ]; then
+            echo "Client path not found in installer output"; exit 1
+          fi
+
+          # Wait for the client binary to appear/be executable (timeout 20s)
+          for i in $(seq 1 20); do
+            # execute the test inside the same environment/shell used to run the installer
+            ${{ matrix.shell }} "test -x $CLIENT_PATH" && break || sleep 1
+          done
 
           # Run the client and capture output.
           # We expect this to fail, since the client never was registered.
