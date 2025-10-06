@@ -269,7 +269,7 @@ jobs:
       - name: Prepare macOS
         if: ${{ matrix.platform == 'macos' }}
         run: |
-          brew install curl openssl hexdump || true
+          brew install curl openssl || true
 
       - name: Prepare ubuntu-docker
         if: ${{ matrix.platform == 'ubuntu-docker' }}
@@ -508,25 +508,15 @@ jobs:
           cd frontend-tests
           npx playwright test
 
-      - name: Package Playwright report + test-results (zstd)
-        if: always()
-        run: |
-          set -eux
-          cd frontend-tests
-          mkdir -p .ci_artifacts
-          TAR_BASE="playwright-artifacts-${{ github.run_id }}"
-          TAR_ZST="$TAR_BASE.tar.zst"
-          # Create tar and compress with zstd (high compression, long window)
-          tar -cf - playwright-report test-results 2>/dev/null | zstd -19 --long=31 -o "$TAR_ZST" || true
-          mv "$TAR_ZST" .ci_artifacts/
-        shell: bash
-
-      - name: Upload packaged Playwright artifacts
+      - name: Upload Playwright report + test-results (zip via Actions)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-artifacts-${{ github.run_id }}
-          path: frontend-tests/.ci_artifacts/playwright-artifacts-${{ github.run_id }}.tar.zst
+          path: |
+            frontend-tests/playwright-report
+            frontend-tests/test-results
+          compression-level: 9
 
   container-release:
     name: Tag & Push Container (branch/tag/latest)

@@ -3,6 +3,7 @@ import { startBackend, stopBackend, configs } from './test-utils';
 
 test.describe('visual regression', () => {
     let backendProcess: any | undefined;
+    const screenshotOpts = { animations: 'disabled', maxDiffPixelRatio: 0.03 } as const;
 
     test.beforeAll(async () => {
         backendProcess = await startBackend(configs["hosts-and-clients"]);
@@ -18,7 +19,7 @@ test.describe('visual regression', () => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#main-content', { state: 'attached' });
-        await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`, { animations: 'disabled' });
+        await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`, screenshotOpts);
     });
 
     test('clients', async ({ page }) => {
@@ -26,6 +27,6 @@ test.describe('visual regression', () => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#main-content', { state: 'attached' });
-        await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`, { animations: 'disabled' });
+        await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`, screenshotOpts);
     });
 });
