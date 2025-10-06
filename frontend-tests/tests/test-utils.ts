@@ -30,10 +30,8 @@ export async function waitForServerReady(port: number, timeout = 30000) {
 }
 
 export async function startBackend(configPath: string) {
-  // Build release binary and spawn the control-service with provided config.
-  const { execSync, spawn } = await import('node:child_process');
-  // repo layout: frontend-tests is cwd when Playwright runs tests, binary is at ../target/release
-  execSync('cargo build --release --no-default-features', { cwd: '..', stdio: 'inherit' });
+  // Spawn the control-service with provided config. Build is performed in globalSetup.
+  const { spawn } = await import('node:child_process');
   const backendBin = '../target/release/shuthost_coordinator';
   // Determine per-worker port to allow parallel test workers.
   // fall back to 0 for single-worker runs.
