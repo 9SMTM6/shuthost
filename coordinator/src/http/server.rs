@@ -3,8 +3,12 @@
 //! Defines routes, state management, configuration watching, and server startup.
 
 use axum::body::Body;
+use axum::http::HeaderValue;
 use axum::http::Request;
+use axum::http::header::HeaderName;
 use axum::http::header::{AUTHORIZATION, COOKIE};
+use axum::middleware::Next;
+use axum::response::Response;
 use axum::routing::{self, any};
 use axum::{Router, response::Redirect, routing::get};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
@@ -17,10 +21,6 @@ use tower::ServiceBuilder;
 use tower_http::ServiceBuilderExt as _;
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::timeout::TimeoutLayer;
-use axum::http::HeaderValue;
-use axum::middleware::Next;
-use axum::response::Response;
-use axum::http::header::{HeaderName};
 use tracing::{info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
@@ -263,14 +263,14 @@ pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
 }
 
 /// Middleware to set security headers on all responses
-/// 
-/// This is less strict than possible. 
+///
+/// This is less strict than possible.
 /// it avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
 /// since these might block some embedings etc.
-/// 
-/// It also allows inlined scripts (!) and doesn't require-trusted-types-for, 
+///
+/// It also allows inlined scripts (!) and doesn't require-trusted-types-for,
 /// since these have limited compatibility and/or require a bundler for effective application management
-/// 
+///
 /// These would help against clickjacking etc.
 async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
     let mut response = next.run(req).await;

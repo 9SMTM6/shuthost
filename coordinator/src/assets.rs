@@ -110,7 +110,10 @@ pub async fn serve_ui(
     }): State<AppState>,
 ) -> impl IntoResponse {
     static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
-    let show_logout = !matches!(auth.mode, AuthResolved::Disabled | AuthResolved::External { .. });
+    let show_logout = !matches!(
+        auth.mode,
+        AuthResolved::Disabled | AuthResolved::External { .. }
+    );
     let html = HTML_TEMPLATE
         .get_or_init(|| {
             // Determine whether to include the external auth config warning. If Auth is
