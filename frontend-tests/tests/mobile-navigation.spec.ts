@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, screenshotOpts } from './test-utils';
+import { startBackend, stopBackend, configs } from './test-utils';
 
 let backendProcess: any | undefined;
 
@@ -21,7 +21,7 @@ test.describe('mobile navigation', () => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
 
-        await expect(page).toHaveScreenshot(`mobile-navigation.png`, screenshotOpts);
+        await expect(page).toHaveScreenshot(`mobile-navigation.png`);
     });
 
     test.afterAll(async () => {

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, screenshotOpts } from './test-utils';
+import { startBackend, stopBackend, configs } from './test-utils';
 
 test.describe('visual regression', () => {
     let backendProcess: any | undefined;
@@ -18,7 +18,7 @@ test.describe('visual regression', () => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#main-content', { state: 'attached' });
-        await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`, screenshotOpts);
+        await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`);
     });
 
     test('clients', async ({ page }) => {
@@ -26,6 +26,6 @@ test.describe('visual regression', () => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#main-content', { state: 'attached' });
-        await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`, screenshotOpts);
+        await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`);
     });
 });

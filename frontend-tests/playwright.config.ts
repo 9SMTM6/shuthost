@@ -6,6 +6,11 @@ export default defineConfig({
     timeout: 30000,
     expect: {
         timeout: 5000,
+        toHaveScreenshot: {
+            maxDiffPixelRatio: 0.03,
+            // have nice hi-res screenshots that can double as images in Docs.
+            scale: 'device',
+        }
     },
     fullyParallel: true,
     // 'github' for GitHub Actions CI to generate annotations
@@ -25,22 +30,22 @@ export default defineConfig({
         {
             name: 'Desktop Light',
             testIgnore: ["mobile-navigation.spec.*"],
-            use: { ...devices['Desktop Chrome'], colorScheme: 'light' },
+            use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
         },
         {
             name: 'Desktop Dark',
             testIgnore: ["aria-snapshots.spec.*", "mobile-navigation.spec.*"],
-            use: { ...devices['Desktop Chrome'], colorScheme: 'dark' },
+            use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
         },
         {
             name: 'Mobile Light',
             testIgnore: ["aria-snapshots.spec.*"],
-            use: { ...devices['Pixel 5'], colorScheme: 'light' },
+            use: { ...devices['Pixel 7'], colorScheme: 'light' },
         },
         {
             name: 'Mobile Dark',
             testIgnore: ["aria-snapshots.spec.*"],
-            use: { ...devices['Pixel 5'], colorScheme: 'dark' },
+            use: { ...devices['Pixel 7'], colorScheme: 'dark' },
         },
     ],
 });
