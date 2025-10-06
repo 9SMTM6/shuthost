@@ -471,8 +471,11 @@ jobs:
     name: Run Playwright (Web GUI) tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout code (with LFS because pngs for visual regression are saved there)
         uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -504,6 +507,26 @@ jobs:
         run: |
           cd frontend-tests
           npx playwright test
+
+      - name: Package Playwright report + test-results (zstd)
+        if: always()
+        run: |
+          set -eux
+          cd frontend-tests
+          mkdir -p .ci_artifacts
+          TAR_BASE="playwright-artifacts-${{ github.run_id }}"
+          TAR_ZST="$TAR_BASE.tar.zst"
+          # Create tar and compress with zstd (high compression, long window)
+          tar -cf - playwright-report test-results 2>/dev/null | zstd -19 --long=31 -o "$TAR_ZST" || true
+          mv "$TAR_ZST" .ci_artifacts/
+        shell: bash
+
+      - name: Upload packaged Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-${{ github.run_id }}
+          path: frontend-tests/.ci_artifacts/playwright-artifacts-${{ github.run_id }}.tar.zst
 
   container-release:
     name: Tag & Push Container (branch/tag/latest)
