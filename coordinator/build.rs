@@ -4,7 +4,10 @@ fn main() {
     // Inform Cargo to rerun the build script if these files change
     println!("cargo::rerun-if-changed=assets/styles.css");
     println!("cargo::rerun-if-changed=assets/app.ts");
+    // we scan these html files for tailscale classes
     println!("cargo::rerun-if-changed=assets/index.tmpl.html");
+    println!("cargo::rerun-if-changed=assets/login.tmpl.html");
+    println!("cargo::rerun-if-changed=assets/partials");
 
     // Check if `npm` is installed
     let npm_check = Command::new("npm").arg("--version").output();
