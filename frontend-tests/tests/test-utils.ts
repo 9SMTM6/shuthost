@@ -5,6 +5,8 @@ export const configs = {
   "no-auth": './configs/no-auth.toml',
 }
 
+export const screenshotOpts = { animations: 'disabled', maxDiffPixelRatio: 0.03 } as const;
+
 // Utilities to build, start, wait for, and stop the Rust backend used by Playwright tests.
 export async function waitForServerReady(host: string, port: number, timeout = 30000) {
   const start = Date.now();

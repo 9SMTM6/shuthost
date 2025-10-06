@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs } from './test-utils';
+import { startBackend, stopBackend, configs, screenshotOpts } from './test-utils';
 
 test.describe('visual regression', () => {
     let backendProcess: any | undefined;
-    const screenshotOpts = { animations: 'disabled', maxDiffPixelRatio: 0.03 } as const;
 
     test.beforeAll(async () => {
         backendProcess = await startBackend(configs["hosts-and-clients"]);
