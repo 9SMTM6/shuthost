@@ -42,4 +42,11 @@ pub struct ServiceArgs {
     /// Path to the configuration file
     #[arg(short, long, default_value = "shuthost_coordinator.toml")]
     pub config: String,
+    /// Optional override for the listen port (overrides port in config)
+    #[arg(long)]
+    pub port: Option<u16>,
+
+    /// Optional override for the bind address (overrides bind in config)
+    #[arg(long)]
+    pub bind: Option<String>,
 }

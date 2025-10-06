@@ -77,17 +77,28 @@ pub struct AppState {
 /// # Arguments
 ///
 /// * `config_path` - Path to the TOML configuration file.
+/// * `port_override` - Optional port to override the config value.
+/// * `bind_override` - Optional bind address to override the config value.
 ///
 /// # Returns
 ///
 /// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
-pub async fn start(config_path: &std::path::Path) -> eyre::Result<()> {
+pub async fn start(
+    config_path: &std::path::Path,
+    port_override: Option<u16>,
+    bind_override: Option<&str>,
+) -> eyre::Result<()> {
     info!("Starting HTTP server...");
 
     let initial_config = Arc::new(load_coordinator_config(config_path).await?);
-    let listen_port = initial_config.server.port;
 
-    let listen_ip: IpAddr = initial_config.server.bind.parse()?;
+    // Apply optional overrides from CLI/tests
+    let listen_port = port_override.unwrap_or(initial_config.server.port);
+    let bind_str = bind_override
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| initial_config.server.bind.clone());
+
+    let listen_ip: IpAddr = bind_str.parse()?;
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 

@@ -5,8 +5,6 @@ bind = "127.0.0.1"
 [server.auth.external]
 exceptions_version = 1
 
-[server.tls]
-
 [hosts]
 
 [clients]
