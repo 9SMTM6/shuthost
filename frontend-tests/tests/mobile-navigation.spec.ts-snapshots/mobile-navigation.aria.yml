@@ -1,0 +1,25 @@
+- link "Skip to main content":
+  - /url: "#main-content"
+- banner:
+  - img "ShutHost Logo"
+  - heading "ShutHost" [level=1]
+  - tablist "Main tabs":
+    - tab "Docs"
+    - tab "Hosts" [selected]
+    - tab "Clients"
+- main:
+  - region:
+    - tabpanel:
+      - region "Install Host Agent":
+        - button "Install Host Agent":
+          - heading "Install Host Agent" [level=2]
+      - region "Hosts Table":
+        - heading "Hosts Table" [level=2]
+        - table:
+          - rowgroup:
+            - row "Host Status Actions":
+              - cell "Host"
+              - cell "Status"
+              - cell "Actions"
+          - rowgroup
+- contentinfo: ShutHost Coordinator v<<VERSION>>

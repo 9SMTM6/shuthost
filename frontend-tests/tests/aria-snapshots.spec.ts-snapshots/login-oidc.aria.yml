@@ -1,0 +1,5 @@
+- main:
+  - region "Sign in":
+    - heading "Sign in" [level=1]
+    - link "Login with SSO":
+      - /url: /oidc/login

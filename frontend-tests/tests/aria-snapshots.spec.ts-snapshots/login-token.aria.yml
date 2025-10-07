@@ -1,0 +1,7 @@
+- main:
+  - region "Sign in":
+    - heading "Sign in" [level=1]
+    - text: Access Token
+    - textbox "Access Token"
+    - button "Show token"
+    - button "Login"

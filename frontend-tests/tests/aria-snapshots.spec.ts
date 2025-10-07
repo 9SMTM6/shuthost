@@ -82,6 +82,45 @@ test.describe('expanded install panels', () => {
   });
 });
 
+// ARIA snapshots for login pages
+test.describe('token login', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs["auth-token"], true);
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+
+  test('ARIA snapshot for login page (token)', async ({ page }) => {
+    const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+    const port = 8081 + parallelIndex;
+    await page.goto(`https://127.0.0.1:${port}/login`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: 'login_token.aria.yml' });
+  });
+});
+
+test.describe('OIDC login', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs["auth-oidc"], true);
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+
+  test('ARIA snapshot for login page (OIDC)', async ({ page }) => {
+    const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+    const port = 8081 + parallelIndex;
+    await page.goto(`https://127.0.0.1:${port}/login`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: 'login_oidc.aria.yml' });
+  });
+});
+
 // Snapshot the root page with the 'no-auth' config
 test.describe('no-auth landing page', () => {
   test.beforeAll(async () => {
@@ -92,6 +131,22 @@ test.describe('no-auth landing page', () => {
     await page.goto('/');
     await page.waitForSelector('#main-content', { state: 'attached' });
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_no-auth-root.aria.yml` });
+  });
+
+  test('ARIA snapshot with security config expanded (no-auth)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#main-content', { state: 'attached' });
+    // Expand the security config section
+    await page.click('#security-config-header');
+    await page.waitForSelector('#security-config-content', { state: 'visible' });
+    // Sanitize dynamic config examples for stable snapshots
+    await page.evaluate(() => {
+      const authelia = document.getElementById('authelia-config');
+      if (authelia) authelia.textContent = '<<AUTHELIA_CONFIG_REDACTED>>';
+      const traefik = document.getElementById('traefik-config');
+      if (traefik) traefik.textContent = '<<TRAEFIK_CONFIG_REDACTED>>';
+    });
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: 'cfg_no-auth-root-expanded-security.aria.yml' });
   });
 
   test.afterAll(async () => {
