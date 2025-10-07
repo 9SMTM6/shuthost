@@ -12,11 +12,11 @@
           - text: in your auth config to acknowledge you have configured the required bypass rules.
       - paragraph:
         - emphasis: When using an external auth reverse proxy, you must allow unauthenticated access to certain endpoints so installers and machine-to-machine clients can work. See the examples below.
-      - button "🔒 Required Security Exceptions":
+      - group "🔒 Required Security Exceptions":
         - heading "🔒 Required Security Exceptions" [level=2]
     - tabpanel:
       - region "Install Host Agent":
-        - button "Install Host Agent":
+        - group "Install Host Agent":
           - heading "Install Host Agent" [level=2]
       - region "Hosts Table":
         - heading "Hosts Table" [level=2]

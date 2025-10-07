@@ -10,8 +10,6 @@ test.beforeAll(async () => {
 
 test.describe('main page(s)', () => {
     test('hosts page should not have any automatically detectable accessibility issues', async ({ page }) => {
-        test.fixme(true, "These themes are about to change");
-
         await expand_and_sanitize_host_install(page);
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
@@ -20,8 +18,6 @@ test.describe('main page(s)', () => {
     });
 
     test('clients page should not have any automatically detectable accessibility issues', async ({ page }) => {
-        test.fixme(true, "These themes are about to change");
-
         await page.goto('#clients');
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
@@ -30,7 +26,6 @@ test.describe('main page(s)', () => {
     });
 
     test('docs page should not have any automatically detectable accessibility issues', async ({ page }, testInfo) => {
-        test.fixme(testInfo.project.name === 'Desktop Dark', "These themes are about to change");
         await page.goto('#architecture');
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();

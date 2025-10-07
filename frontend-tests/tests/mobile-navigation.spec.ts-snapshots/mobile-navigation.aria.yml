@@ -11,7 +11,7 @@
   - region:
     - tabpanel:
       - region "Install Host Agent":
-        - button "Install Host Agent":
+        - group "Install Host Agent":
           - heading "Install Host Agent" [level=2]
       - region "Hosts Table":
         - heading "Hosts Table" [level=2]

@@ -18,14 +18,13 @@
         </p>
     </div>
 
-    <input type="checkbox" id="security-config-toggle" class="collapsible-toggle" hidden>
-    <label for="security-config-toggle" class="collapsible-header collapsed" aria-controls="security-config-content"
-        id="security-config-header" tabindex="0" role="button">
-        <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
-        <span class="collapsible-icon"></span>
-    </label>
-    <div id="security-config-content" class="collapsible-content collapsed" role="region"
-        aria-labelledby="security-config-title">
+    <details class="collapsible-details" aria-labelledby="security-config-title">
+        <summary class="collapsible-header collapsed" aria-controls="security-config-content" id="security-config-header">
+            <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
+            <span class="collapsible-icon" aria-hidden="true"></span>
+        </summary>
+        <div id="security-config-content" class="collapsible-content collapsed" role="region"
+            aria-labelledby="security-config-title">
         <div class="alert alert-info">
             <div class="alert-title">Authentication Bypass Required</div>
             <p>For the web app and installation scripts to work properly, these endpoints must be reachable without

@@ -14,14 +14,13 @@
             <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
                 <!-- Install Instructions Panel -->
                 <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
-                    <input type="checkbox" id="host-install-toggle" class="collapsible-toggle" hidden>
-                    <label for="host-install-toggle" class="collapsible-header py-2"
-                        aria-controls="host-install-content" id="host-install-header" tabindex="0" role="button">
-                        <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
-                        <span class="collapsible-icon"></span>
-                    </label>
-                    <div id="host-install-content" class="collapsible-content" role="region"
-                        aria-labelledby="host-install-title">
+                    <details class="collapsible-details" aria-labelledby="host-install-title">
+                        <summary class="collapsible-header py-2" aria-controls="host-install-content" id="host-install-header">
+                            <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
+                            <span class="collapsible-icon" aria-hidden="true"></span>
+                        </summary>
+                        <div id="host-install-content" class="collapsible-content" role="region"
+                            aria-labelledby="host-install-title">
                         <p class="mb-1 text-sm">Run the following command in your terminal:</p>
                         <div class="code-container py-2">
                             <button class="copy-button" data-copy-target="#host-install-command" type="button"
@@ -38,6 +37,7 @@
 
                         { agent_install_requirements_gotchas }
                     </div>
+                    </details>
                 </section>
 
                 <!-- Hosts Table -->
@@ -64,14 +64,13 @@
             <section id="clients-tab" class="tab-content" aria-labelledby="tab-clients" role="tabpanel" tabindex="0">
                 <!-- Install Instructions Panel -->
                 <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
-                    <input type="checkbox" id="client-install-toggle" class="collapsible-toggle" hidden>
-                    <label for="client-install-toggle" class="collapsible-header py-2"
-                        aria-controls="client-install-content" id="client-install-header" tabindex="0" role="button">
-                        <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
-                        <span class="collapsible-icon"></span>
-                    </label>
-                    <div id="client-install-content" class="collapsible-content" role="region"
-                        aria-labelledby="client-install-title">
+                    <details class="collapsible-details" aria-labelledby="client-install-title">
+                        <summary class="collapsible-header py-2" aria-controls="client-install-content" id="client-install-header">
+                            <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
+                            <span class="collapsible-icon" aria-hidden="true"></span>
+                        </summary>
+                        <div id="client-install-content" class="collapsible-content" role="region"
+                            aria-labelledby="client-install-title">
                         <p class="mb-1 text-sm">Run the following command in your terminal:</p>
                         <div class="code-container py-2">
                             <button class="copy-button" data-copy-target="#client-install-command" type="button"
@@ -88,6 +87,7 @@
 
                         { client_install_requirements_gotchas }
                     </div>
+                    </details>
                 </section>
 
                 <!-- Clients Table -->

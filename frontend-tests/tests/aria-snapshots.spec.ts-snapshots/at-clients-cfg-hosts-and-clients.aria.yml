@@ -2,7 +2,7 @@
   - region:
     - tabpanel:
       - region "Install Client":
-        - button "Install Client":
+        - group "Install Client":
           - heading "Install Client" [level=2]
       - region "Clients Table":
         - heading "Clients Table" [level=2]

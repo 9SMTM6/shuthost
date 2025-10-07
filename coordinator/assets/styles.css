@@ -22,32 +22,11 @@ footer {
     grid-area: footer;
 }
 
-/* Add to your existing styles */
 .collapsible-icon {
     width: 20px;
     height: 20px;
     position: relative;
     display: inline-block;
-}
-
-.collapsible-icon::before {
-    content: '';
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg);
-    transform-origin: center;
-    transition: transform 0.2s;
-    left: 6px;
-    top: 4px;
-    border-color: currentColor;
-    color: inherit;
-}
-
-.collapsible-toggle:checked~.collapsible-header .collapsible-icon::before {
-    transform: rotate(-135deg);
 }
 
 @layer components {
@@ -192,19 +171,44 @@ footer {
     }
 
     .collapsible-content {
-        @apply hidden px-4 py-2 border-t border-gray-200;
+        @apply px-4 py-2 border-t border-gray-200;
     }
 
-    .collapsible-toggle:checked~.collapsible-content {
-        @apply block;
+    .collapsible-icon::before {
+        @apply absolute origin-center;
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transition: transform 0.2s;
+        left: 6px;
+        top: 4px;
+        border-color: currentColor;
+        color: inherit;
+    }
+
+    details .collapsible-icon::before {
+        transform: rotate(45deg);
+    }
+
+    /* Stronger selector to guarantee the rotated state when details is open. */
+    details[open] .collapsible-icon::before {
+        transform: rotate(-135deg);
     }
 
     .collapsible-icon {
         @apply w-4 h-4 transition-transform dark:text-white;
     }
 
-    .collapsible-icon.expanded {
-        @apply rotate-180;
+
+    /* Hide the native details marker and ensure summary visuals match header */
+    summary.collapsible-header {
+        @apply flex items-center justify-between cursor-pointer;
+    }
+
+    summary.collapsible-header::marker {
+        @apply content-none;
     }
 
     /* Alert styles */

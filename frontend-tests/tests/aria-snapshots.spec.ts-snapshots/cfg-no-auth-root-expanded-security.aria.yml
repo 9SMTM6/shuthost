@@ -12,42 +12,42 @@
           - text: in your auth config to acknowledge you have configured the required bypass rules.
       - paragraph:
         - emphasis: When using an external auth reverse proxy, you must allow unauthenticated access to certain endpoints so installers and machine-to-machine clients can work. See the examples below.
-      - button "🔒 Required Security Exceptions":
+      - group "🔒 Required Security Exceptions":
         - heading "🔒 Required Security Exceptions" [level=2]
-      - region "🔒 Required Security Exceptions":
-        - paragraph: "For the web app and installation scripts to work properly, these endpoints must be reachable without authentication. If your reverse proxy enforces authentication (Authelia, NPM with auth, etc.), create bypass rules for:"
-        - list:
-          - listitem:
-            - code: /download/*
-            - text: "- Installation script and binary downloads"
-          - listitem:
-            - code: /api/m2m/*
-            - text: "- Machine-to-machine API communication used by agents/clients"
-          - listitem:
-            - code: /manifest.json
-            - text: "- PWA manifest required for webpage installability"
-          - listitem:
-            - code: /favicon.svg
-            - text: "- Favicon required for browser installability"
-        - paragraph:
-          - emphasis: These exceptions let installer scripts and the web UI fetch resources and allow agent clients to call machine-to-machine APIs without user login. The manifest and favicon entries are necessary for correct browser/PWA behaviour.
-        - paragraph: "Authelia:"
-        - button "Copy Authelia config"
-        - code: <<AUTHELIA_CONFIG_REDACTED>>
-        - paragraph: "Nginx Proxy Manager with Authentication:"
-        - button "Copy Nginx config"
-        - code: "# In your proxy host's advanced configuration location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ { auth_basic off; proxy_pass http://your-shuthost-backend; }"
-        - paragraph: "Traefik with ForwardAuth:"
-        - button "Copy Traefik config"
-        - code: <<TRAEFIK_CONFIG_REDACTED>>
-        - paragraph:
-          - emphasis:
-            - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set
-            - code: "auth = {{ type = \"external\", exceptions_version = 1 }}"
-            - text: (or the matching version) in the coordinator config to acknowledge the exceptions.
+        - region "🔒 Required Security Exceptions":
+          - paragraph: "For the web app and installation scripts to work properly, these endpoints must be reachable without authentication. If your reverse proxy enforces authentication (Authelia, NPM with auth, etc.), create bypass rules for:"
+          - list:
+            - listitem:
+              - code: /download/*
+              - text: "- Installation script and binary downloads"
+            - listitem:
+              - code: /api/m2m/*
+              - text: "- Machine-to-machine API communication used by agents/clients"
+            - listitem:
+              - code: /manifest.json
+              - text: "- PWA manifest required for webpage installability"
+            - listitem:
+              - code: /favicon.svg
+              - text: "- Favicon required for browser installability"
+          - paragraph:
+            - emphasis: These exceptions let installer scripts and the web UI fetch resources and allow agent clients to call machine-to-machine APIs without user login. The manifest and favicon entries are necessary for correct browser/PWA behaviour.
+          - paragraph: "Authelia:"
+          - button "Copy Authelia config"
+          - code: <<AUTHELIA_CONFIG_REDACTED>>
+          - paragraph: "Nginx Proxy Manager with Authentication:"
+          - button "Copy Nginx config"
+          - code: "# In your proxy host's advanced configuration location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ { auth_basic off; proxy_pass http://your-shuthost-backend; }"
+          - paragraph: "Traefik with ForwardAuth:"
+          - button "Copy Traefik config"
+          - code: <<TRAEFIK_CONFIG_REDACTED>>
+          - paragraph:
+            - emphasis:
+              - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set
+              - code: "auth = {{ type = \"external\", exceptions_version = 1 }}"
+              - text: (or the matching version) in the coordinator config to acknowledge the exceptions.
     - tabpanel:
       - region "Install Host Agent":
-        - button "Install Host Agent":
+        - group "Install Host Agent":
           - heading "Install Host Agent" [level=2]
       - region "Hosts Table":
         - heading "Hosts Table" [level=2]
