@@ -72,11 +72,11 @@ footer {
     }
 
     .btn-green {
-        @apply bg-[#16825d] hover:bg-[#125a41] dark:bg-[#2d7a6e] dark:text-black dark:hover:bg-[#1f5d54];
+        @apply bg-[rgba(34,197,138,0.90)] hover:bg-[rgba(31,164,121,0.94)] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
     }
 
     .btn-red {
-        @apply bg-[#d13438] hover:bg-[#a8282b] dark:bg-[#c17178] dark:hover:bg-[#a85d64];
+        @apply bg-[#e04b4b] hover:bg-[#c13a3a] dark:bg-[#d36f78] dark:hover:bg-[#b85a62] text-white dark:text-black;
     }
 
     /* Architecture documentation styles */
@@ -226,15 +226,15 @@ footer {
     }
 
     .alert-warning {
-        @apply bg-[#fff8e1] border-l-4 border-[#ffd54f] text-[#bf8803] dark:bg-[rgba(204,167,0,0.25)] dark:border-[#cca700] dark:text-[#ffd54f];
+        @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#bf8803] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
     }
 
     .alert-info {
-        @apply bg-[#e3f2fd] border-l-4 border-[#90caf9] text-[#005fb8] dark:bg-[rgba(0,120,212,0.25)] dark:border-[#0078d4] dark:text-[#4fc3f7];
+        @apply bg-[#d8f3ff] border-l-4 border-[#64b5f6] text-[#005fb8] dark:bg-[rgba(0,120,212,0.10)] dark:border-[#0078d4] dark:text-[#4fc3f7];
     }
 
     .alert-error {
-        @apply bg-[#ffebee] border-l-4 border-[#ef5350] text-[#d13438] dark:bg-[rgba(244,135,113,0.25)] dark:border-[#f48771] dark:text-[#ff9090];
+        @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#d13438] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
     }
 
     .alert-title {
