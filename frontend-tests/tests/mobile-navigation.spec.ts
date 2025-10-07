@@ -10,15 +10,13 @@ test.describe('mobile navigation', () => {
         backendProcess = await startBackend(configs['nada']);
     });
 
-    test('mobile navigation opens and shows backdrop', async ({ page, browserName }) => {
+    test('mobile navigation opens and shows backdrop', async ({ page }) => {
         await page.goto('/');
         // Click the visible hamburger label (aria-label="Toggle menu")
         await page.waitForSelector('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
         await page.click('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
         // Wait for the mobile menu backdrop or nav tabs to appear
         await page.waitForSelector('.mobile-menu-backdrop, header .nav-tabs', { state: 'visible' });
-        // Stabilize animations
-        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
 
         await expect(page).toHaveScreenshot(`mobile-navigation.png`);

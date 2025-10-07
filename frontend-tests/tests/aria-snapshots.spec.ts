@@ -96,7 +96,7 @@ test.describe('expanded install panels', () => {
 // Snapshot the root page with the 'no-auth' config
 test.describe('no-auth landing page', () => {
   test.beforeAll(async () => {
-    backendProcess = await startBackend(configs['no-auth']);
+    backendProcess = await startBackend(configs['auth-none']);
   });
 
   test('ARIA snapshot of root page (no-auth)', async ({ page }) => {

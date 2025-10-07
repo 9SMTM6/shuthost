@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { startBackend, stopBackend, configs } from './test-utils';
 
-test.describe('visual regression', () => {
+test.describe('main pages', () => {
     let backendProcess: any | undefined;
 
     test.beforeAll(async () => {
@@ -15,7 +15,6 @@ test.describe('visual regression', () => {
 
     test('hosts', async ({ page }) => {
         await page.goto('#hosts');
-        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#main-content', { state: 'attached' });
         await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`);
@@ -23,9 +22,72 @@ test.describe('visual regression', () => {
 
     test('clients', async ({ page }) => {
         await page.goto('#clients');
-        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#main-content', { state: 'attached' });
         await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`);
+    });
+});
+
+test.describe('token login', () => {
+    let backendProcess: any | undefined;
+
+    test.beforeAll(async () => {
+        backendProcess = await startBackend(configs["auth-token"], true);
+    });
+
+    test.afterAll(async () => {
+        stopBackend(backendProcess);
+        backendProcess = undefined;
+    });
+
+    test('login page', async ({ page }) => {
+        // Use HTTPS for TLS-enabled configs
+        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const port = 8081 + parallelIndex;
+        await page.goto(`https://127.0.0.1:${port}/login`);
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('body')).toHaveScreenshot(`login_token_auth.png`);
+    });
+
+    test('login page - session expired', async ({ page }) => {
+        // Use HTTPS for TLS-enabled configs
+        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const port = 8081 + parallelIndex;
+        await page.goto(`https://127.0.0.1:${port}/login?error=session_expired`);
+        await page.waitForSelector('.alert-warning', { state: 'visible' });
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('body')).toHaveScreenshot(`login_token_session_expired.png`);
+    });
+});
+
+test.describe('OIDC login', () => {
+    let backendProcess: any | undefined;
+
+    test.beforeAll(async () => {
+        backendProcess = await startBackend(configs["auth-oidc"], true);
+    });
+
+    test.afterAll(async () => {
+        stopBackend(backendProcess);
+        backendProcess = undefined;
+    });
+
+    test('login page', async ({ page }) => {
+        // Use HTTPS for TLS-enabled configs
+        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const port = 8081 + parallelIndex;
+        await page.goto(`https://127.0.0.1:${port}/login`);
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('body')).toHaveScreenshot(`login_oidc_auth.png`);
+    });
+
+    test('login page - session expired', async ({ page }) => {
+        // Use HTTPS for TLS-enabled configs
+        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const port = 8081 + parallelIndex;
+        await page.goto(`https://127.0.0.1:${port}/login?error=session_expired`);
+        await page.waitForSelector('.alert-warning', { state: 'visible' });
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('body')).toHaveScreenshot(`login_oidc_session_expired.png`);
     });
 });

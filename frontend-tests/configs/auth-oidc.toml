@@ -1,0 +1,15 @@
+[server]
+port = 8081
+bind = "127.0.0.1"
+
+[server.auth.oidc]
+issuer = "https://your-oidc-provider.com"
+client_id = "your-client-id"
+client_secret = "your-client-secret"
+
+[server.tls]
+
+[hosts]
+
+[clients]
+
