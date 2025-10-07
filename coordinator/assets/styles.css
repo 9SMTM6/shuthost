@@ -40,23 +40,23 @@ footer {
 
 @layer components {
     .html-body {
-        @apply bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-sans min-h-screen;
+        @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen;
     }
 
     .section-container {
-        @apply bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden;
+        @apply bg-white dark:bg-[#1e1e1e] shadow-md rounded-lg overflow-hidden;
     }
 
     .section-title {
-        @apply text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4;
+        @apply text-lg sm:text-xl font-semibold text-black dark:text-[#cccccc] mb-3 sm:mb-4;
     }
 
     .code-container {
-        @apply bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 py-2 px-3 relative;
+        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative;
     }
 
     .copy-button {
-        @apply absolute right-2 top-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+        @apply absolute right-2 top-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
     }
 
     .code-block {
@@ -64,19 +64,19 @@ footer {
     }
 
     .description-text {
-        @apply mt-2 text-gray-600 dark:text-gray-300 text-sm sm:text-base;
+        @apply mt-2 text-[#616161] dark:text-[#9d9d9d] text-sm sm:text-base;
     }
 
     .btn {
-        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-white dark:disabled:text-gray-300;
+        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer disabled:cursor-not-allowed disabled:bg-[#e5e5e5] dark:disabled:bg-[#2d2d30] disabled:text-[#616161] dark:disabled:text-[#858585];
     }
 
     .btn-green {
-        @apply bg-green-500 hover:bg-green-600;
+        @apply bg-[#007a4d] hover:bg-[#006f3f] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
     }
 
     .btn-red {
-        @apply bg-red-500 hover:bg-red-600;
+        @apply bg-[#e04b4b] hover:bg-[#c13a3a] dark:bg-[#d36f78] dark:hover:bg-[#b85a62] text-white dark:text-black;
     }
 
     /* Architecture documentation styles */
@@ -85,11 +85,11 @@ footer {
     }
 
     .architecture-title {
-        @apply text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3;
+        @apply text-lg font-semibold text-black dark:text-[#cccccc] mb-3;
     }
 
     .architecture-diagram-container {
-        @apply bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex justify-center;
+        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] flex justify-center;
     }
 
     .architecture-diagram {
@@ -103,7 +103,7 @@ footer {
     }
 
     .architecture-when-to-use {
-        @apply text-sm text-gray-700 dark:text-gray-300;
+        @apply text-sm text-[#616161] dark:text-[#9d9d9d];
     }
 
     .architecture-separator {
@@ -125,22 +125,22 @@ footer {
     }
 
     .table-header {
-        @apply px-4 py-3 bg-gray-50 dark:bg-gray-700 text-left font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base border-b border-gray-200 dark:border-gray-600;
+        @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
     }
 
     .table-row {
-        @apply hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors;
+        @apply hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
     }
 
     .table-row th[scope="row"] {
-        @apply font-normal text-gray-800 dark:text-gray-100 bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-left;
+        @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
         font-weight: 500;
         /* Slightly bolder than td, but not as bold as header */
     }
 
     /* Update table cell styling */
     .table-cell {
-        @apply px-4 py-1.5 text-sm sm:text-base border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100;
+        @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
     }
 
     /* Update actions cell styling */
@@ -154,16 +154,16 @@ footer {
     }
 
     .empty-state {
-        @apply text-gray-500 dark:text-gray-400 text-sm text-center py-4;
+        @apply text-[#616161] dark:text-[#9d9d9d] text-sm text-center py-4;
     }
 
     /* Update tab styles */
     .tab {
-        @apply px-4 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors focus:outline-none focus:text-gray-700 focus:border-gray-300 cursor-pointer;
+        @apply px-4 py-4 text-sm font-medium text-[#616161] hover:text-black dark:text-[#a0a0a0] dark:hover:text-[#e0e0e0] border-b-2 border-transparent hover:border-[#e5e5e5] dark:hover:border-[#3e3e42] transition-colors focus:outline-none focus:text-black dark:focus:text-[#e0e0e0] focus:border-[#e5e5e5] dark:focus:border-[#3e3e42] cursor-pointer;
     }
 
     .tab.active {
-        @apply text-blue-600 border-blue-600 hover:text-blue-700 hover:border-blue-700;
+        @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#3794ff] dark:border-[#0078d4] dark:hover:text-[#6fb6ff] dark:hover:border-[#006cbe];
     }
 
     /* Remove .tabs-container since we moved tabs to header */
@@ -176,11 +176,11 @@ footer {
     }
 
     .collapsible-header {
-        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors;
+        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
     }
 
     .collapsible-content {
-        @apply px-4 py-2 border-t border-gray-200;
+        @apply px-4 py-2 border-t border-[#e5e5e5] dark:border-[#3e3e42];
     }
 
     .collapsible-icon::before {
@@ -207,7 +207,7 @@ footer {
     }
 
     .collapsible-icon {
-        @apply w-4 h-4 transition-transform dark:text-white;
+        @apply w-4 h-4 transition-transform dark:text-[#cccccc];
     }
 
 
@@ -226,15 +226,15 @@ footer {
     }
 
     .alert-warning {
-        @apply bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200;
+        @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
     }
 
     .alert-info {
-        @apply bg-blue-50 border-l-4 border-blue-400 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200;
+        @apply bg-[#d8f3ff] border-l-4 border-[#64b5f6] text-[#005fb8] dark:bg-[rgba(0,120,212,0.10)] dark:border-[#0078d4] dark:text-[#4fc3f7];
     }
 
     .alert-error {
-        @apply bg-red-50 border-l-4 border-red-400 text-red-800 dark:bg-red-900/20 dark:text-red-200;
+        @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#8b0000] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
     }
 
     .alert-title {
@@ -305,7 +305,7 @@ footer {
             width: 250px;
             height: calc(100vh - 3.5rem);
             flex-direction: column;
-            @apply bg-white dark:bg-gray-800 shadow-lg;
+            @apply bg-white dark:bg-[#1e1e1e] shadow-lg;
             z-index: 1000;
             padding: 1rem;
             gap: 1rem;
@@ -314,13 +314,13 @@ footer {
         .nav-tabs .tab {
             width: 100%;
             text-align: left;
-            @apply px-4 py-3 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors;
+            @apply px-4 py-3 text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
             border: none;
             background: none;
         }
 
         .nav-tabs .tab.active {
-            @apply bg-blue-500 text-white hover:bg-blue-600;
+            @apply bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe];
         }
 
         /* Show menu when checkbox is checked */
