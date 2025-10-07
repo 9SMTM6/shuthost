@@ -1,6 +1,8 @@
 digraph HostLifecycle {
   rankdir=TB;
-  node [shape=ellipse, fontname="Helvetica"];
+  // Prefer Inter for generated diagrams to avoid serif fallbacks.
+  node [shape=ellipse, fontname="Inter"];
+  edge [fontname="Inter"];
 
   webui [label="WebUI"];
   coordinator [label="Coordinator"];
