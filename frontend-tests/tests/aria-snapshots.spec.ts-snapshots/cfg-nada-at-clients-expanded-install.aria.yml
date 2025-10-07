@@ -4,7 +4,7 @@
       - region "Install Client":
         - group "Install Client":
           - heading "Install Client" [level=2]
-          - region "Install Client":
+          - group "Install Client":
             - paragraph: "Run the following command in your terminal:"
             - button "Copy install command"
             - code: <<INSTALL_COMMAND_REDACTED>>

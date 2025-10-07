@@ -4,7 +4,7 @@
       - region "Install Host Agent":
         - group "Install Host Agent":
           - heading "Install Host Agent" [level=2]
-          - region "Install Host Agent":
+          - group "Install Host Agent":
             - paragraph: "Run the following command in your terminal:"
             - button "Copy install command"
             - code: <<INSTALL_COMMAND_REDACTED>>
