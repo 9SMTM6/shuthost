@@ -56,11 +56,15 @@ footer {
     }
 
     .copy-button {
-        @apply absolute right-2 top-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+        /* vertically center the button inside the code container so it doesn't overlap wrapped text */
+        @apply absolute right-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .code-block {
-        @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-16;
+        /* add extra right padding so the copy button doesn't overlap wrapped content */
+        @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-20;
     }
 
     .description-text {
