@@ -131,7 +131,7 @@ Agent / Client installation
     <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-Mobile-Dark-linux.png" alt="Hosts — mobile dark" width="220"></td>
   </tr>
   <tr>
-    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Desktop-Dark-linux.png" alt="Hosts expanded — desktop dark" width="540"></td>
+    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Desktop-Light-linux.png" alt="Hosts expanded — desktop light" width="540"></td>
     <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Dark-linux.png" alt="Hosts expanded — mobile dark" width="220"></td>
   </tr>
 </table>
