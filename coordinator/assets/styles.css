@@ -72,7 +72,7 @@ footer {
     }
 
     .btn-green {
-        @apply bg-[rgba(34,197,138,0.90)] hover:bg-[rgba(31,164,121,0.94)] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
+        @apply bg-[#007a4d] hover:bg-[#006f3f] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
     }
 
     .btn-red {
@@ -163,7 +163,7 @@ footer {
     }
 
     .tab.active {
-        @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#0078d4] dark:border-[#0078d4] dark:hover:text-[#006cbe] dark:hover:border-[#006cbe];
+        @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#3794ff] dark:border-[#0078d4] dark:hover:text-[#6fb6ff] dark:hover:border-[#006cbe];
     }
 
     /* Remove .tabs-container since we moved tabs to header */
@@ -226,7 +226,7 @@ footer {
     }
 
     .alert-warning {
-        @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#bf8803] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
+        @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
     }
 
     .alert-info {
@@ -234,7 +234,7 @@ footer {
     }
 
     .alert-error {
-        @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#d13438] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
+        @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#8b0000] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
     }
 
     .alert-title {
