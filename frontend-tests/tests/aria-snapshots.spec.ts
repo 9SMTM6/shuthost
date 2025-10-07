@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs } from './test-utils';
+import { test, expect, Page } from '@playwright/test';
+import { startBackend, stopBackend, configs, expand_and_sanitize_host_install } from './test-utils';
 
 let backendProcess: any | undefined;
 
@@ -57,18 +57,7 @@ test.describe('expanded install panels', () => {
   });
 
   test('ARIA snapshot with Install Host Agent expanded (nada)', async ({ page }) => {
-    await page.goto('#hosts');
-    // Open the collapsible by checking the toggle input
-    // The checkbox input is hidden (CSS); click the visible header/label instead.
-    await page.waitForSelector('#host-install-header');
-    await page.click('#host-install-header');
-    await page.waitForSelector('#host-install-content', { state: 'visible' });
-    // Sanitize dynamic install command and config path for stable snapshots
-    await page.evaluate(() => {
-      const cmd = document.querySelector('#host-install-command');
-      if (cmd) cmd.textContent = '<<INSTALL_COMMAND_REDACTED>>';
-      document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
-    });
+    await expand_and_sanitize_host_install(page);
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_hosts-expanded_install.aria.yml` });
   });
 

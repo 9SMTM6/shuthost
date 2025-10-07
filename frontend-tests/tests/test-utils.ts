@@ -1,3 +1,5 @@
+import { Page } from '@playwright/test';
+
 export const configs = {
   "hosts-only": './configs/hosts-only.toml',
   "hosts-and-clients": './configs/hosts-and-clients.toml',
@@ -58,4 +60,19 @@ export function stopBackend(proc: any) {
   } catch (e) {
     // ignore
   }
+}
+
+export const expand_and_sanitize_host_install = async (page: Page) => {
+  await page.goto('#hosts');
+  // Open the collapsible by checking the toggle input
+  // The checkbox input is hidden (CSS); click the visible header/label instead.
+  await page.waitForSelector('#host-install-header');
+  await page.click('#host-install-header');
+  await page.waitForSelector('#host-install-content', { state: 'visible' });
+  // Sanitize dynamic install command and config path for stable snapshots
+  await page.evaluate(() => {
+    const cmd = document.querySelector('#host-install-command');
+    if (cmd) cmd.textContent = '<<INSTALL_COMMAND_REDACTED>>';
+    document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
+  });
 }
