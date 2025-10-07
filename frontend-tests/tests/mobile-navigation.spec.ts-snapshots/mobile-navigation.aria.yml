@@ -18,8 +18,8 @@
         - table:
           - rowgroup:
             - row "Host Status Actions":
-              - cell "Host"
-              - cell "Status"
-              - cell "Actions"
+              - columnheader "Host"
+              - columnheader "Status"
+              - columnheader "Actions"
           - rowgroup
 - contentinfo: ShutHost Coordinator v<<VERSION>>

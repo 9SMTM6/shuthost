@@ -49,13 +49,26 @@
                                 <tr id="host-table-header">
                                     <th class="table-header" scope="col">Host</th>
                                     <th class="table-header" scope="col">Status</th>
-                                    <th class="table-header" scope="col">Leases</th>
+                                    <th class="table-header" id="host-table-leases-header" scope="col">Leases</th>
                                     <th class="table-header" scope="col">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="host-table-body" class="divide-y divide-gray-200" aria-live="polite">
                                 <!-- Hosts will be loaded here dynamically -->
                             </tbody>
+                            <template id="host-row-template">
+                                <tr class="table-row" role="row" data-hostname="todo">
+                                    <th class="table-cell" scope="row"></th>
+                                    <td class="table-cell status" aria-label="Status"></td>
+                                    <td class="table-cell leases" aria-label="Leases"></td>
+                                    <td class="table-cell" aria-label="Actions">
+                                        <div class="actions-cell">
+                                            <button class="btn btn-green take-lease" type="button"></button>
+                                            <button class="btn btn-red release-lease" type="button"></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
                         </table>
                     </div>
                 </section>
@@ -98,13 +111,24 @@
                             <thead>
                                 <tr>
                                     <th class="table-header" scope="col">Client ID</th>
-                                    <th class="table-header" scope="col">Leases</th>
+                                    <th id="host-table-leases-header" class="table-header" scope="col">Leases</th>
                                     <th class="table-header" scope="col">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="client-table-body" class="divide-y divide-gray-200" aria-live="polite">
                                 <!-- Clients will be loaded here dynamically -->
                             </tbody>
+                            <template id="client-row-template">
+                                <tr class="table-row" role="row" data-client-id="todo">
+                                    <th class="table-cell" scope="row"></th>
+                                    <td class="table-cell leases" aria-label="Leases"></td>
+                                    <td class="table-cell" aria-label="Actions">
+                                        <div class="actions-cell">
+                                            <button class="btn btn-red reset-client" type="button"></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
                         </table>
                     </div>
                 </section>

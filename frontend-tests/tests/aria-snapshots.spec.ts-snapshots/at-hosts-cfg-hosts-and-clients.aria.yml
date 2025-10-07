@@ -9,20 +9,20 @@
         - table:
           - rowgroup:
             - row "Host Status Leases Actions":
-              - cell "Host"
-              - cell "Status"
-              - cell "Leases"
-              - cell "Actions"
+              - columnheader "Host"
+              - columnheader "Status"
+              - columnheader "Leases"
+              - columnheader "Actions"
           - rowgroup:
             - row "host1 Status Leases Actions":
               - rowheader "host1"
               - cell "Status": offline
               - cell "Leases"
               - cell "Actions":
-                - button "Take lease for host1"
+                - button "Take Lease"
             - row "host2 Status Leases Actions":
               - rowheader "host2"
               - cell "Status": offline
               - cell "Leases"
               - cell "Actions":
-                - button "Take lease for host2"
+                - button "Take Lease"

@@ -145,56 +145,60 @@ const sortActiveFirst = <T>(
 // Table Row Creation
 // ==========================
 
-const createHostRow = (hostName: string) => {
-    const { statusText } = getHostStatus(hostName);
-    const leases = getFormattedLeases(hostName);
+const createHostRow = (hostName: string): HTMLTableRowElement => {
+    const template = (
+        document.querySelector('#host-row-template') as HTMLTemplateElement
+    ).content.firstElementChild!.cloneNode(true) as HTMLTableRowElement;
+    template.dataset['hostname'] = hostName;
+
+    template.querySelector('th')!
+        .textContent = hostName;
+
+    template.querySelector('.status')!
+        .textContent = getHostStatus(hostName).statusText;
+
+    template.querySelector('.leases')!
+        .textContent = getFormattedLeases(hostName);
+
     const clientsConfigured = hasClientsConfigured();
-    return `
-        <tr data-hostname="${hostName}" class="table-row" role="row">
-            <th class="table-cell" scope="row">${hostName}</th>
-            <td class="table-cell status" aria-label="Status">${statusText}</td>
-            ${clientsConfigured ? `<td class="table-cell leases" aria-label="Leases">${leases}</td>` : ''}
-            <td class="table-cell" aria-label="Actions">
-                <div class="actions-cell">
-                    <button 
-                        class="btn btn-green take-lease" 
-                        onclick="updateLease('${hostName}', 'take')" 
-                        type="button"
-                        aria-label="${clientsConfigured ? `Take lease for ${hostName}` : `Start ${hostName}`}" 
-                    >${clientsConfigured ? "Take Lease" : "Start"}</button>
-                    <button 
-                        class="btn btn-red release-lease" 
-                        onclick="updateLease('${hostName}', 'release')" 
-                        type="button"
-                        aria-label="${clientsConfigured ? `Release lease for ${hostName}` : `Shutdown ${hostName}`}" 
-                    >${clientsConfigured ? "Release Lease" : "Shutdown"}</button>
-                </div>
-            </td>
-        </tr>
-    `;
+
+    if (!clientsConfigured) template.querySelector('.leases')!.remove();
+
+    const takeBtn = template.querySelector<HTMLButtonElement>('.take-lease')!;
+    const releaseBtn = template.querySelector<HTMLButtonElement>('.release-lease')!;
+
+    const takeText = clientsConfigured ? 'Take Lease' : 'Start';
+    const releaseText = clientsConfigured ? 'Release Lease' : 'Shutdown';
+    takeBtn.textContent = takeText;
+    takeBtn.ariaLabel = takeText;
+    releaseBtn.textContent = releaseText;
+    releaseBtn.ariaLabel = releaseText;
+    takeBtn.addEventListener('click', () => updateLease(hostName, 'take'));
+    releaseBtn.addEventListener('click', () => updateLease(hostName, 'release'));
+
+    return template;
 };
 
-const createClientRow = (clientId: string, leases: string[]) => {
-    const hasLeases = leases.length > 0;
-    return `
-    <tr data-client-id="${clientId}" class="table-row" role="row">
-        <th class="table-cell" scope="row">${clientId}</th>
-        <td class="table-cell" aria-label="Leases">${leases.join(', ') || 'None'}</td>
-        <td class="table-cell" aria-label="Actions">
-            <div class="actions-cell">
-                <button 
-                    class="btn btn-red" 
-                    onclick="resetClientLeases('${clientId}')"
-                    type="button"
-                    aria-label="Reset leases for ${clientId}"
-                    ${!hasLeases ? 'disabled' : ''}
-                >
-                    Reset Leases
-                </button>
-            </div>
-        </td>
-    </tr>
-    `;
+const createClientRow = (clientId: string, leases: string[]): HTMLTableRowElement => {
+    const template = (
+        document.getElementById('client-row-template') as HTMLTemplateElement
+    ).content.firstElementChild!.cloneNode(true) as HTMLTableRowElement;
+    template.dataset['clientId'] = clientId;
+
+    template.querySelector('th')!
+        .textContent = clientId;
+
+    template.querySelector<HTMLElement>('.leases')!
+        .textContent = leases.join(', ') || 'None';
+
+    const resetBtn = template.querySelector<HTMLButtonElement>('.reset-client')!;
+    const resetText = 'Reset Leases';
+    resetBtn.textContent = resetText;
+    resetBtn.ariaLabel = resetText;
+    if (leases.length === 0) resetBtn.disabled = true;
+    resetBtn.addEventListener('click', () => resetClientLeases(clientId));
+
+    return template;
 };
 
 // ==========================
@@ -241,14 +245,7 @@ const updateNodeAttrs = () => {
 };
 
 const updateHostsTableHeader = () => {
-    const thead = document.querySelector('#host-table-body')?.parentElement?.querySelector('thead tr');
-    if (!thead) return;
-    thead.innerHTML = `
-        <th class="table-header">Host</th>
-        <th class="table-header">Status</th>
-        ${hasClientsConfigured() ? '<th class="table-header">Leases</th>' : ''}
-        <th class="table-header">Actions</th>
-    `;
+    document.getElementById("host-table-leases-header")!.hidden = !hasClientsConfigured();
 }
 
 /**
@@ -256,16 +253,14 @@ const updateHostsTableHeader = () => {
  * Active hosts are sorted alphabetically and displayed before inactive hosts.
  */
 const updateHostsTable = () => {
-    const hostTableBody = document.getElementById('host-table-body');
+    const hostTableBody = document.getElementById('host-table-body') as HTMLTableSectionElement;
     const hostList = sortActiveFirst(
         persistedHostsList,
         host => !!persistedStatusMap[host],
         host => host
     );
-    if (hostTableBody) {
-        hostTableBody.innerHTML = hostList.map(createHostRow).join('');
-        updateHostsTableHeader();
-    }
+    hostTableBody.replaceChildren(...hostList.map(createHostRow));
+    updateHostsTableHeader();
 }
 
 /**
@@ -301,12 +296,8 @@ const updateClientsTable = () => {
         ([clientId, _]) => clientId
     );
 
-    const clientTableBody = document.getElementById('client-table-body');
-    if (clientTableBody) {
-        clientTableBody.innerHTML = sortedClients
-            .map(([clientId, leases]) => createClientRow(clientId, leases))
-            .join('');
-    }
+    const clientTableBody = document.getElementById('client-table-body') as HTMLTableSectionElement;
+    clientTableBody.replaceChildren(...sortedClients.map(([clientId, leases]) => createClientRow(clientId, leases)));
 };
 
 // ==========================

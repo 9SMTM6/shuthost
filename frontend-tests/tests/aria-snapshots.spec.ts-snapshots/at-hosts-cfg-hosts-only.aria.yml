@@ -9,17 +9,17 @@
         - table:
           - rowgroup:
             - row "Host Status Actions":
-              - cell "Host"
-              - cell "Status"
-              - cell "Actions"
+              - columnheader "Host"
+              - columnheader "Status"
+              - columnheader "Actions"
           - rowgroup:
             - row "host1 Status Actions":
               - rowheader "host1"
               - cell "Status": offline
               - cell "Actions":
-                - button "Start host1"
+                - button "Start"
             - row "host2 Status Actions":
               - rowheader "host2"
               - cell "Status": offline
               - cell "Actions":
-                - button "Start host2"
+                - button "Start"

@@ -17,9 +17,9 @@
               - rowheader "client1"
               - cell "Leases"
               - cell "Actions":
-                - button "Reset leases for client1" [disabled]
+                - button "Reset Leases" [disabled]
             - row "client2 Leases Actions":
               - rowheader "client2"
               - cell "Leases"
               - cell "Actions":
-                - button "Reset leases for client2" [disabled]
+                - button "Reset Leases" [disabled]
