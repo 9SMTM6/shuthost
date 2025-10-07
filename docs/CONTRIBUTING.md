@@ -18,14 +18,28 @@ Quick checklist:
   - `cd frontend-tests`
   - `npm ci`
   - `npm run install-chromium`
- - Install Git LFS and fetch visual-regression assets (if you only run ARIA snapshot tests, this is not needed):
+ - Install Git LFS and fetch visual-regression assets (if you only run ARIA snapshot tests or the accessibility tests this is not needed):
    - Install Git LFS for your OS (see https://git-lfs.com/)
    - `git lfs install`
    - `git lfs pull`
 
 Running tests:
 - From `frontend-tests/` run:
-  - `npm test`
+  - `npx playwright test`
+
+Accessibility tests & updating snapshots
+
+- Accessibility checks (ARIA) are included in the Playwright test suite using `@axe-core/playwright` and are run as part of the normal test run.
+
+- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend-tests/` you can:
+  - Update all snapshots:
+    - `npx playwright test --update-snapshots`
+  - Update snapshots for a single test file (faster and safer when only one test changed):
+    - `npx playwright test tests/aria-snapshots.spec.ts -u`
+
+- Notes when updating snapshots:
+  - Review snapshot diffs carefully before committing. Accessibility snapshots and visual snapshots can change for legitimate reasons (UI refactors, updated wording) but should not be blindly accepted.
+  - When updating snapshots for a change that affects many tests, consider updating and running a small subset first to validate the new baseline before updating everything.
 
 Notes and tips:
 - Tests run fully parallel by default. Each worker uses a per-worker port computed as `8081 + workerIndex` via the environment variables `TEST_PARALLEL_INDEX` or `TEST_WORKER_INDEX`. You can force a single-worker run by exporting `TEST_WORKER_INDEX=0` before starting tests.
