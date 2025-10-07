@@ -12,6 +12,8 @@
 [![Live demo: PWA controlling NAS (2x speed)](docs/shuthost_live_demo_2x.webp)](./docs/shuthost_live_demo_2x.webp)
 > played at 2x speed, using the WebUI installed as PWA
 
+> Note: the short demo clip shown above is slightly out of date with respect to theming and layout. Check the live demo or screenshots below for the current UI.
+
 ## 🌐 Live Demo
 
 You can try a static demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
@@ -39,7 +41,8 @@ This demo runs entirely in your browser and does not control any real hosts. It 
 ## 📋 Table of Contents
 
 - [💿 Installation](#-installation)
-- [📋 Requirements](#-requirements)
+- [📷 UI screenshots](#-ui-screenshots)
+- [�📋 Requirements](#-requirements)
 - [🔒 Security](#-security)
 - [🏗️ Architecture](#️-architecture)
 - [📖 API Documentation](#-api-documentation)
@@ -120,7 +123,20 @@ Agent / Client installation
 
 ---
 
-## 📋 Requirements
+## 📷 UI screenshots
+
+<table>
+  <tr>
+    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-Desktop-Dark-linux.png" alt="Hosts — desktop dark" width="540"></td>
+    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-Mobile-Dark-linux.png" alt="Hosts — mobile dark" width="220"></td>
+  </tr>
+  <tr>
+    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Desktop-Dark-linux.png" alt="Hosts expanded — desktop dark" width="540"></td>
+    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Dark-linux.png" alt="Hosts expanded — mobile dark" width="220"></td>
+  </tr>
+</table>
+
+## �📋 Requirements
 
 ### 🤖 Agent Requirements
 For the requirements for the agent, see [Requirements to install the agent](coordinator/assets/agent_install_requirements_gotchas.md).
