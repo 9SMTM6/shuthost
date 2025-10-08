@@ -1,4 +1,4 @@
-# <img src="coordinator/assets/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
+# <img src="frontend/assets/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
@@ -127,19 +127,19 @@ Agent / Client installation
 
 <table>
   <tr>
-    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-Desktop-Dark-linux.png" alt="Hosts — desktop dark" width="540"></td>
-    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-Mobile-Dark-linux.png" alt="Hosts — mobile dark" width="220"></td>
+    <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-Desktop-Dark-linux.png" alt="Hosts — desktop dark" width="540"></td>
+    <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-Mobile-Dark-linux.png" alt="Hosts — mobile dark" width="220"></td>
   </tr>
   <tr>
-    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Desktop-Light-linux.png" alt="Hosts expanded — desktop light" width="540"></td>
-    <td><img src="frontend-tests/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Dark-linux.png" alt="Hosts expanded — mobile dark" width="220"></td>
+    <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Desktop-Light-linux.png" alt="Hosts expanded — desktop light" width="540"></td>
+    <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Dark-linux.png" alt="Hosts expanded — mobile dark" width="220"></td>
   </tr>
 </table>
 
 ## �📋 Requirements
 
 ### 🤖 Agent Requirements
-For the requirements for the agent, see [Requirements to install the agent](coordinator/assets/agent_install_requirements_gotchas.md).
+For the requirements for the agent, see [Requirements to install the agent](frontend/assets/agent_install_requirements_gotchas.md).
 
 ### 🖥️ Coordinator Requirements
 

@@ -12,6 +12,13 @@ use axum::{
 };
 use std::sync::OnceLock;
 
+#[macro_export]
+macro_rules! include_asset {
+    ($asset_path:expr) => {
+        include_str!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/", $asset_path))
+    }
+}
+
 /// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.
 pub fn asset_routes() -> Router<AppState> {
     Router::new()
@@ -29,7 +36,7 @@ pub fn asset_routes() -> Router<AppState> {
 macro_rules! static_svg_download_handler {
     (fn $name:ident, file=$file:expr) => {
         async fn $name() -> impl IntoResponse {
-            const SVG: &[u8] = include_bytes!($file);
+            const SVG: &str = include_asset!($file);
             Response::builder()
                 .header("Content-Type", "image/svg+xml")
                 .header("Content-Length", SVG.len().to_string())
@@ -57,12 +64,12 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
             ..
         }
     ) {
-        include_str!("../assets/partials/logout_form.tmpl.html")
+        include_asset!("partials/logout_form.tmpl.html")
     } else {
         ""
     };
     let maybe_demo_disclaimer = if matches!(*mode, UiMode::Demo) {
-        include_str!("../assets/partials/demo_disclaimer.tmpl.html")
+        include_asset!("partials/demo_disclaimer.tmpl.html")
     } else {
         ""
     };
@@ -71,31 +78,31 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
         UiMode::Demo => "/this/is/a/demo.toml".to_string(),
     };
 
-    let header_tpl = include_str!("../assets/partials/header.tmpl.html");
-    let footer_tpl = include_str!("../assets/partials/footer.tmpl.html");
+    let header_tpl = include_asset!("partials/header.tmpl.html");
+    let footer_tpl = include_asset!("partials/footer.tmpl.html");
 
-    include_str!("../assets/index.tmpl.html")
+    include_asset!("/index.tmpl.html")
         .replace(
             "{ html_head }",
-            include_str!("../assets/partials/html_head.tmlp.html"),
+            include_asset!("partials/html_head.tmlp.html"),
         )
         .replace("{ title }", "ShutHost Coordinator")
         .replace("{ coordinator_config }", &config_path)
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace(
             "{ architecture_documentation }",
-            include_str!("../assets/partials/architecture.tmpl.html"),
+            include_asset!("partials/architecture.tmpl.html"),
         )
         .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
         .replace(
             "{ client_install_requirements_gotchas }",
-            include_str!("../assets/client_install_requirements_gotchas.md"),
+            include_asset!("client_install_requirements_gotchas.md"),
         )
         .replace(
             "{ agent_install_requirements_gotchas }",
-            include_str!("../assets/agent_install_requirements_gotchas.md"),
+            include_asset!("agent_install_requirements_gotchas.md"),
         )
-        .replace("{ js }", include_str!("../assets/app.js"))
+        .replace("{ js }", include_asset!("app.js"))
         .replace("{ header }", header_tpl)
         .replace("{ footer }", footer_tpl)
         .replace("{ version }", env!("CARGO_PKG_VERSION"))
@@ -127,7 +134,7 @@ pub async fn serve_ui(
                     exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
                 } => "",
                 &A::Disabled | &A::External { .. } => {
-                    include_str!("../assets/partials/maybe_external_auth_config.tmpl.html")
+                    include_asset!("partials/maybe_external_auth_config.tmpl.html")
                 }
             };
 
@@ -152,7 +159,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 
     let manifest = MANIFEST
         .get_or_init(|| {
-            include_str!("../assets/manifest.tmpl.json")
+            include_asset!("manifest.tmpl.json")
                 .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         })
         .clone();
@@ -167,10 +174,10 @@ pub async fn serve_manifest() -> impl IntoResponse {
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
-        .body(include_str!("../assets/styles_output.css").into_response())
+        .body(include_asset!("styles_output.css").into_response())
         .unwrap()
 }
 
-static_svg_download_handler!(fn serve_favicon, file = "../assets/favicon.svg");
-static_svg_download_handler!(fn serve_architecture_simplified, file = "../assets/architecture_simplified.svg");
-static_svg_download_handler!(fn serve_architecture_complete, file = "../assets/architecture.svg");
+static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
+static_svg_download_handler!(fn serve_architecture_simplified, file = "architecture_simplified.svg");
+static_svg_download_handler!(fn serve_architecture_complete, file = "architecture.svg");

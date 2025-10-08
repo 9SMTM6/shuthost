@@ -12,7 +12,7 @@ use tokio::net::TcpListener;
 use tokio::sync::{broadcast, watch};
 use tracing::info;
 
-use crate::assets::{UiMode, asset_routes, render_ui_html};
+use crate::http::assets::{UiMode, asset_routes, render_ui_html};
 use crate::config::ControllerConfig;
 use crate::http::AppState;
 use crate::routes::{LeaseMap, get_download_router};

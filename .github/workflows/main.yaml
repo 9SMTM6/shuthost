@@ -523,12 +523,12 @@ jobs:
 
       - name: Install Node deps
         run: |
-          cd frontend-tests
+          cd frontend/tests
           npm ci
 
       - name: Install Playwright Chromium and system deps
         run: |
-          cd frontend-tests
+          cd frontend/tests
           npm run install-chromium
           # install system dependencies for Playwright
           npx playwright install-deps || true
@@ -573,7 +573,7 @@ jobs:
         env:
           CI: true
         run: |
-          cd frontend-tests
+          cd frontend/tests
           npx playwright test
 
       - name: Upload Playwright report + test-results (zip via Actions)
@@ -582,8 +582,8 @@ jobs:
         with:
           name: playwright-artifacts-${{ github.run_id }}
           path: |
-            frontend-tests/playwright-report
-            frontend-tests/test-results
+            frontend/tests/playwright-report
+            frontend/tests/test-results
           compression-level: 9
 
   container-release:

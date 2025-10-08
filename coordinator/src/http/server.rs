@@ -25,6 +25,7 @@ use tracing::{info, warn};
 
 use crate::auth::{AuthRuntime, public_routes, require_auth};
 use crate::config::TlsConfig;
+use crate::http::assets::serve_ui;
 use crate::{
     config::{ControllerConfig, load_coordinator_config},
     routes::{LeaseMap, api_routes},
@@ -154,7 +155,7 @@ pub async fn start(
     // Private app routes protected by auth middleware
     let private = Router::new()
         .nest("/api", api_routes())
-        .route("/", get(crate::assets::serve_ui))
+        .route("/", get(serve_ui))
         .route("/ws", any(ws_handler))
         .route_layer(axum::middleware::from_fn_with_state(
             crate::auth::AuthLayerState {

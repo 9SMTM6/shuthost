@@ -6,8 +6,8 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The MSRV is generally set to the latest stable `rustc` as of the most recent commit.
 
 ## Frontend Dependencies
-- The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../coordinator/assets/package.json)).
-- `npm` is invoked from [`coordinator/build.rs`](../coordinator/build.rs) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
+- The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../frontend/assets/package.json)).
+- `npm` is invoked from the workspace build script (or from `frontend/assets`) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
 
 
 ## Host Agent Artifacts
@@ -31,11 +31,11 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 
 ## Playwright frontend tests
 
-The repository includes ARIA snapshot and visual regression tests based on Playwright under `frontend-tests/`. They run a local instance of the Rust backend and use Playwright's Chromium to exercise the Web UI and collect snapshots.
+The repository includes ARIA snapshot and visual regression tests based on Playwright under `frontend/tests/`. They run a local instance of the Rust backend and use Playwright's Chromium to exercise the Web UI and collect snapshots.
 
 Quick checklist:
 - Install Node dependencies and Playwright (from the repository root):
-  - `cd frontend-tests`
+  - `cd frontend/tests`
   - `npm ci`
   - `npm run install-chromium`
  - Install Git LFS and fetch visual-regression assets (if you only run ARIA snapshot tests or the accessibility tests this is not needed):
@@ -44,14 +44,14 @@ Quick checklist:
    - `git lfs pull`
 
 Running tests:
-- From `frontend-tests/` run:
+- From `frontend/tests/` run:
   - `npx playwright test`
 
 ### Accessibility tests & updating snapshots
 
 - Accessibility checks are included in the Playwright test suite using `@axe-core/playwright` and are run as part of the normal test run.
 
-- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend-tests/` you can:
+- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend/tests/` you can:
   - Update all snapshots:
     - `npx playwright test --update-snapshots`
   - Update snapshots for a single test file (faster and safer when only one test changed):

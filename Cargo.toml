@@ -15,6 +15,18 @@ keywords = ["wol", "wake-on-lan", "pwa", "progressive-web-app", "oidc", "openid-
 # this ain't no crate
 categories = []
 
+[package]
+name = "shuthost"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+repository.workspace = true
+license.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
 [workspace.dependencies]
 hmac = "0.12.1"
 sha2 = "0.10.8"
@@ -79,14 +91,6 @@ unreadable_literal = "warn"
 # unwrap_used = "warn"
 # "warn_on_ci"
 used_underscore_binding = "warn"
-
-[package]
-name = "integration-tests"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-description.workspace = true
-repository.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true

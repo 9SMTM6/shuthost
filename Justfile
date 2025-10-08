@@ -45,16 +45,16 @@ build_coordinator_on_mac:
 build_all: build_all_host_agents_on_mac build_coordinator_on_mac
 
 build_graphs:
-    dot coordinator/assets/architecture.dot -Tsvg -ocoordinator/assets/architecture.svg
-    dot coordinator/assets/architecture_simplified.dot -Tsvg -ocoordinator/assets/architecture_simplified.svg
+    dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/architecture.svg
+    dot frontend/assets/architecture_simplified.dot -Tsvg -ofrontend/assets/architecture_simplified.svg
 
 clean:
     cargo clean && cargo fetch
-    cd coordinator/assets && rm -rf node_modules && npm ci
+    cd frontend/assets && rm -rf node_modules && npm ci
 
 update_dependencies:
     cargo update
-    cd coordinator/assets && npm update
+    cd frontend/assets && npm update
 
 test_all:
     cargo test --no-default-features --workspace --all-targets

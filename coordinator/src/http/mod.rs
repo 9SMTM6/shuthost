@@ -4,5 +4,6 @@
 
 pub mod polling;
 pub mod server;
+pub mod assets;
 
 pub use server::*;

@@ -2,7 +2,6 @@
 //!
 //! Provides commands to install the service or launch the control web service.
 
-mod assets;
 mod auth;
 mod cli;
 mod config;
