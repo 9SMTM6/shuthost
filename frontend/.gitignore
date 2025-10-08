@@ -1,5 +1,5 @@
 node_modules
 assets/app.js
-assets/styles_output.css
+assets/styles.css
 playwright-report
 test-results
