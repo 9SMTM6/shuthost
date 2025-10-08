@@ -27,6 +27,11 @@ readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[dev-dependencies]
+tokio.workspace = true
+reqwest = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
+serde_json = "1.0"
+
 [workspace.dependencies]
 hmac = "0.12.1"
 sha2 = "0.10.8"
@@ -91,8 +96,3 @@ unreadable_literal = "warn"
 # unwrap_used = "warn"
 # "warn_on_ci"
 used_underscore_binding = "warn"
-
-[dev-dependencies]
-tokio.workspace = true
-reqwest = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
-serde_json = "1.0"

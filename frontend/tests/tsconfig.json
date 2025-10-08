@@ -5,6 +5,7 @@
     "**/*.tsx",
   ],
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"],
   }
 }
