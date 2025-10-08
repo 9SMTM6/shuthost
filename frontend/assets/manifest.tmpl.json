@@ -19,12 +19,12 @@
     {
       "name": "Hosts",
       "description": "Open the Hosts view to see and manage registered hosts",
-      "url": "#hosts"
+      "url": "/#hosts"
     },
     {
       "name": "Clients",
       "description": "Open the Clients view to see and manage registered clients",
-      "url": "#clients"
+      "url": "/#clients"
     }
   ]
 }
