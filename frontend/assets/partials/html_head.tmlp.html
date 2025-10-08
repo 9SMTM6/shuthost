@@ -3,7 +3,13 @@
     <title>{ title }</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{ description }">
-    <meta name="theme-color" content="#4CAF50">
+    <!-- Theme-color for light and dark modes. Browsers that support media on meta
+        tags will pick the appropriate color. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b6b3a">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2ec164">
+    <!-- Background color meta (some browsers / PWAs respect this) -->
+    <meta name="background-color" media="(prefers-color-scheme: light)" content="#0f1720">
+    <meta name="background-color" media="(prefers-color-scheme: dark)" content="#0b0f12">
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./styles.css">

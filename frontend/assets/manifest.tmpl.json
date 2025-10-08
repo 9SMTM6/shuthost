@@ -1,16 +1,30 @@
 {
   "name": "Shuthost Coordinator",
   "short_name": "shuthost",
-  "start_url": "/index.html",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4CAF50",
+  "background_color": "#0f1720",
+  "theme_color": "#0b6b3a",
   "description": "{ description }",
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "monochrome maskable" 
+    }
+  ]
+  ,
+  "shortcuts": [
+    {
+      "name": "Hosts",
+      "description": "Open the Hosts view to see and manage registered hosts",
+      "url": "#hosts"
+    },
+    {
+      "name": "Clients",
+      "description": "Open the Clients view to see and manage registered clients",
+      "url": "#clients"
     }
   ]
 }
