@@ -1,0 +1,5 @@
+node_modules
+assets/app.js
+assets/styles_output.css
+playwright-report
+test-results

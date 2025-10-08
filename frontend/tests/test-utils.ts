@@ -1,12 +1,12 @@
 import { Page } from '@playwright/test';
 
 export const configs = {
-  "hosts-only": './configs/hosts-only.toml',
-  "hosts-and-clients": './configs/hosts-and-clients.toml',
-  "nada": './configs/nada.toml',
-  "auth-none": './configs/auth-none.toml',
-  "auth-token": './configs/auth-token.toml',
-  "auth-oidc": './configs/auth-oidc.toml',
+  "hosts-only": './tests/configs/hosts-only.toml',
+  "hosts-and-clients": './tests/configs/hosts-and-clients.toml',
+  "nada": './tests/configs/nada.toml',
+  "auth-none": './tests/configs/auth-none.toml',
+  "auth-token": './tests/configs/auth-token.toml',
+  "auth-oidc": './tests/configs/auth-oidc.toml',
 }
 
 // Utilities to build, start, wait for, and stop the Rust backend used by Playwright tests.
@@ -43,7 +43,7 @@ export async function startBackend(configPath: string, useTls = false) {
   const backendBin = '../target/release/shuthost_coordinator';
   // Determine per-worker port to allow parallel test workers.
   // fall back to 0 for single-worker runs.
-  const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+  const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
   const port = 8081 + parallelIndex;
   const proc = spawn(
     backendBin,

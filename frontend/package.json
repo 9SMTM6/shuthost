@@ -1,0 +1,20 @@
+{
+    "name": "shuthost-frontend",
+    "private": true,
+    "version": "1.0.0",
+    "scripts": {
+        "build": "tsc && @tailwindcss/cli -i ./assets/styles.css -o ./assets/styles_output.css",
+        "test": "playwright test",
+        "install-chromium": "playwright install chromium"
+    },
+    "dependencies": {
+        "@tailwindcss/cli": "^4.1.8",
+        "tailwindcss": "^4.1.8",
+        "typescript": "^5.8.3"
+    },
+    "devDependencies": {
+        "@axe-core/playwright": "^4.10.2",
+        "@playwright/test": "^1.43.0",
+        "@types/node": "^24.7.0"
+    }
+}

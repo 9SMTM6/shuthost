@@ -35,7 +35,7 @@ The repository includes ARIA snapshot and visual regression tests based on Playw
 
 Quick checklist:
 - Install Node dependencies and Playwright (from the repository root):
-  - `cd frontend/tests`
+  - `cd frontend`
   - `npm ci`
   - `npm run install-chromium`
  - Install Git LFS and fetch visual-regression assets (if you only run ARIA snapshot tests or the accessibility tests this is not needed):
@@ -44,14 +44,15 @@ Quick checklist:
    - `git lfs pull`
 
 Running tests:
-- From `frontend/tests/` run:
+- From the `frontend/` folder run:
   - `npx playwright test`
+  - or `npm run test`
 
 ### Accessibility tests & updating snapshots
 
 - Accessibility checks are included in the Playwright test suite using `@axe-core/playwright` and are run as part of the normal test run.
 
-- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend/tests/` you can:
+-- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend/` you can:
   - Update all snapshots:
     - `npx playwright test --update-snapshots`
   - Update snapshots for a single test file (faster and safer when only one test changed):

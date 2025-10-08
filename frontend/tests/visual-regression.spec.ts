@@ -49,7 +49,7 @@ test.describe('token login', () => {
 
     test('login page', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
         const port = 8081 + parallelIndex;
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');
@@ -58,7 +58,7 @@ test.describe('token login', () => {
 
     test('login page - session expired', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
         const port = 8081 + parallelIndex;
         await page.goto(`https://127.0.0.1:${port}/login?error=session_expired`);
         await page.waitForSelector('.alert-warning', { state: 'visible' });
@@ -81,7 +81,7 @@ test.describe('OIDC login', () => {
 
     test('login page', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
         const port = 8081 + parallelIndex;
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');
@@ -90,7 +90,7 @@ test.describe('OIDC login', () => {
 
     test('login page - session expired', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
         const port = 8081 + parallelIndex;
         await page.goto(`https://127.0.0.1:${port}/login?error=session_expired`);
         await page.waitForSelector('.alert-warning', { state: 'visible' });

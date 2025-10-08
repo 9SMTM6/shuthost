@@ -50,11 +50,11 @@ build_graphs:
 
 clean:
     cargo clean && cargo fetch
-    cd frontend/assets && rm -rf node_modules && npm ci
+    cd frontend && rm -rf node_modules && npm ci
 
 update_dependencies:
     cargo update
-    cd frontend/assets && npm update
+    cd frontend && npm update
 
 test_all:
     cargo test --no-default-features --workspace --all-targets
