@@ -174,7 +174,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
-        .body(include_asset!("styles_output.css").into_response())
+        .body(include_asset!("styles.css").into_response())
         .unwrap()
 }
 

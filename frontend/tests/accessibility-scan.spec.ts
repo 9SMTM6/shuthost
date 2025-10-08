@@ -25,7 +25,7 @@ test.describe('main page(s)', () => {
         expect(accessibilityScanResults.violations).toEqual([]);
     });
 
-    test('docs page should not have any automatically detectable accessibility issues', async ({ page }, testInfo) => {
+    test('docs page should not have any automatically detectable accessibility issues', async ({ page }) => {
         await page.goto('#architecture');
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();

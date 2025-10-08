@@ -16,7 +16,7 @@ fn main() {
         exit(1);
     }
 
-    let status = Command::new("npm").arg("ci").current_dir(&assets_dir).status();
+    let status = Command::new("npm").args(["ci", "--omit=dev"]).current_dir(&assets_dir).status();
     match status {
         Ok(s) if s.success() => {}
         Ok(_) => { eprintln!("npm ci failed."); exit(1); }

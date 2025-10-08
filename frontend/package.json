@@ -3,8 +3,8 @@
     "private": true,
     "version": "1.0.0",
     "scripts": {
-        "build": "tsc && @tailwindcss/cli -i ./assets/styles.css -o ./assets/styles_output.css",
-        "test": "playwright test",
+        "build": "cd assets && tsc && npx @tailwindcss/cli -i ./styles.tailwind.css -o ./styles.css",
+        "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium"
     },
     "dependencies": {

@@ -1,0 +1,384 @@
+@import "tailwindcss";
+
+/* Prefer deterministic fonts: Inter for UI sans-serif and Cascadia Code for
+   monospace. These variables override the Tailwind-generated defaults and
+   ensure the app uses the desired families when available. Avoid serif
+   fonts by keeping sans-family fallbacks only. */
+:root {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: 'Cascadia Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+body {
+    display: grid;
+    grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    grid-template-rows: auto 1fr auto;
+    min-height: 100svh;
+}
+
+header {
+    grid-area: header;
+}
+
+.main {
+    grid-area: main;
+}
+
+footer {
+    grid-area: footer;
+}
+
+.collapsible-icon {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    display: inline-block;
+}
+
+@layer components {
+    .html-body {
+        @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen;
+    }
+
+    .section-container {
+        @apply bg-white dark:bg-[#1e1e1e] shadow-md rounded-lg overflow-hidden;
+    }
+
+    .section-title {
+        @apply text-lg sm:text-xl font-semibold text-black dark:text-[#cccccc] mb-3 sm:mb-4;
+    }
+
+    .code-container {
+        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative;
+    }
+
+    .copy-button {
+        /* vertically center the button inside the code container so it doesn't overlap wrapped text */
+        @apply absolute right-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .code-block {
+        /* add extra right padding so the copy button doesn't overlap wrapped content */
+        @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-20;
+    }
+
+    .description-text {
+        @apply mt-2 text-[#616161] dark:text-[#9d9d9d] text-sm sm:text-base;
+    }
+
+    .btn {
+        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer disabled:cursor-not-allowed disabled:bg-[#e5e5e5] dark:disabled:bg-[#2d2d30] disabled:text-[#616161] dark:disabled:text-[#858585];
+    }
+
+    .btn-green {
+        @apply bg-[#007a4d] hover:bg-[#006f3f] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
+    }
+
+    .btn-red {
+        @apply bg-[#e04b4b] hover:bg-[#c13a3a] dark:bg-[#d36f78] dark:hover:bg-[#b85a62] text-white dark:text-black;
+    }
+
+    /* Architecture documentation styles */
+    .architecture-section {
+        @apply mt-6;
+    }
+
+    .architecture-title {
+        @apply text-lg font-semibold text-black dark:text-[#cccccc] mb-3;
+    }
+
+    .architecture-diagram-container {
+        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] flex justify-center;
+    }
+
+    .architecture-diagram {
+        @apply h-auto bg-white rounded max-w-full;
+        width: auto;
+        max-height: 500px;
+    }
+
+    .architecture-content {
+        @apply mt-4 space-y-3;
+    }
+
+    .architecture-when-to-use {
+        @apply text-sm text-[#616161] dark:text-[#9d9d9d];
+    }
+
+    .architecture-separator {
+        @apply mt-8;
+    }
+
+    .architecture-key-points {
+        @apply mt-6;
+    }
+
+    /* New mobile optimizations */
+    .table-wrapper {
+        @apply w-full;
+        /* Remove overflow and padding/margin adjustments */
+    }
+
+    table {
+        @apply border-collapse;
+    }
+
+    .table-header {
+        @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
+    }
+
+    .table-row {
+        @apply hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
+    }
+
+    .table-row th[scope="row"] {
+        @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
+        font-weight: 500;
+        /* Slightly bolder than td, but not as bold as header */
+    }
+
+    /* Update table cell styling */
+    .table-cell {
+        @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
+    }
+
+    /* Update actions cell styling */
+    .actions-cell {
+        @apply py-1.5 flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center;
+    }
+
+    /* Add these new styles */
+    .client-table {
+        @apply mt-4;
+    }
+
+    .empty-state {
+        @apply text-[#616161] dark:text-[#9d9d9d] text-sm text-center py-4;
+    }
+
+    /* Update tab styles */
+    .tab {
+        @apply px-4 py-4 text-sm font-medium text-[#616161] hover:text-black dark:text-[#a0a0a0] dark:hover:text-[#e0e0e0] border-b-2 border-transparent hover:border-[#e5e5e5] dark:hover:border-[#3e3e42] transition-colors focus:outline-none focus:text-black dark:focus:text-[#e0e0e0] focus:border-[#e5e5e5] dark:focus:border-[#3e3e42] cursor-pointer;
+    }
+
+    .tab.active {
+        @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#3794ff] dark:border-[#0078d4] dark:hover:text-[#6fb6ff] dark:hover:border-[#006cbe];
+    }
+
+    /* Remove .tabs-container since we moved tabs to header */
+    .tab-content {
+        @apply hidden;
+    }
+
+    .tab-content.active {
+        @apply block;
+    }
+
+    .collapsible-header {
+        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
+    }
+
+    .collapsible-content {
+        @apply px-4 py-2 border-t border-[#e5e5e5] dark:border-[#3e3e42];
+    }
+
+    .collapsible-icon::before {
+        @apply absolute origin-center;
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transition: transform 0.2s;
+        left: 6px;
+        top: 4px;
+        border-color: currentColor;
+        color: inherit;
+    }
+
+    details .collapsible-icon::before {
+        transform: rotate(45deg);
+    }
+
+    /* Stronger selector to guarantee the rotated state when details is open. */
+    details[open] .collapsible-icon::before {
+        transform: rotate(-135deg);
+    }
+
+    .collapsible-icon {
+        @apply w-4 h-4 transition-transform dark:text-[#cccccc];
+    }
+
+
+    /* Hide the native details marker and ensure summary visuals match header */
+    summary.collapsible-header {
+        @apply flex items-center justify-between cursor-pointer;
+    }
+
+    summary.collapsible-header::marker {
+        @apply content-none;
+    }
+
+    /* Alert styles */
+    .alert {
+        @apply rounded-lg p-3 my-3;
+    }
+
+    .alert-warning {
+        @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
+    }
+
+    .alert-info {
+        @apply bg-[#d8f3ff] border-l-4 border-[#64b5f6] text-[#005fb8] dark:bg-[rgba(0,120,212,0.10)] dark:border-[#0078d4] dark:text-[#4fc3f7];
+    }
+
+    .alert-error {
+        @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#8b0000] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
+    }
+
+    .alert-title {
+        @apply font-semibold mb-1;
+    }
+
+    .alert ul {
+        @apply my-2 pl-5;
+    }
+
+    .alert li {
+        @apply mb-1;
+    }
+
+    /* Hamburger menu styles */
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+    .hamburger:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .hamburger-line {
+        width: 20px;
+        height: 2px;
+        background-color: currentColor;
+        margin: 2px 0;
+        transition: transform 0.3s, opacity 0.3s;
+    }
+
+    /* Hide hamburger on login page but keep space */
+    .login-page .hamburger {
+        visibility: hidden;
+    }
+
+    .login-page .mobile-menu-backdrop {
+        display: none;
+    }
+
+    /* Hide nav-tabs and logout on login page but keep space */
+    .login-page .nav-tabs {
+        visibility: hidden;
+    }
+
+    .login-page .logout {
+        visibility: hidden;
+    }
+
+    /* Mobile menu styles */
+    .nav-tabs {
+        display: flex;
+        transition: left 0.3s ease;
+    }
+
+    /* Mobile: Position as side menu */
+    @media (max-width: 767px) {
+        .nav-tabs {
+            position: fixed;
+            top: 3.5rem;
+            /* Below header (h-14 = 3.5rem) */
+            left: -100%;
+            width: 250px;
+            height: calc(100vh - 3.5rem);
+            flex-direction: column;
+            @apply bg-white dark:bg-[#1e1e1e] shadow-lg;
+            z-index: 1000;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .nav-tabs .tab {
+            width: 100%;
+            text-align: left;
+            @apply px-4 py-3 text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
+            border: none;
+            background: none;
+        }
+
+        .nav-tabs .tab.active {
+            @apply bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe];
+        }
+
+        /* Show menu when checkbox is checked */
+        #mobile-menu-toggle:checked~header .nav-tabs {
+            left: 0;
+        }
+
+        /* Animate hamburger to X */
+        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+        }
+
+        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(2) {
+            opacity: 0;
+        }
+
+        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+        }
+
+        /* Backdrop for tinting main page */
+        .mobile-menu-backdrop {
+            display: none;
+            position: fixed;
+            top: 3.5rem;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - 3.5rem);
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #mobile-menu-toggle:checked~.mobile-menu-backdrop {
+            display: block;
+        }
+    }
+
+    /* Desktop: Keep nav inline */
+    @media (min-width: 768px) {
+        .nav-tabs {
+            position: static;
+            width: auto;
+            height: auto;
+            flex-direction: row;
+            background: none;
+            box-shadow: none;
+            padding: 0;
+            gap: 0;
+        }
+
+        .nav-tabs .tab {
+            width: auto;
+            text-align: center;
+            padding: 1rem;
+        }
+    }
+}

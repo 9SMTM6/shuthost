@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { startBackend, stopBackend, configs, expand_and_sanitize_host_install } from './test-utils';
 
 let backendProcess: any | undefined;
@@ -94,7 +94,7 @@ test.describe('token login', () => {
   });
 
   test('ARIA snapshot for login page (token)', async ({ page }) => {
-    const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+    const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
     const port = 8081 + parallelIndex;
     await page.goto(`https://127.0.0.1:${port}/login`);
     await page.waitForLoadState('networkidle');
@@ -113,7 +113,7 @@ test.describe('OIDC login', () => {
   });
 
   test('ARIA snapshot for login page (OIDC)', async ({ page }) => {
-    const parallelIndex = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? '0');
+    const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
     const port = 8081 + parallelIndex;
     await page.goto(`https://127.0.0.1:${port}/login`);
     await page.waitForLoadState('networkidle');
