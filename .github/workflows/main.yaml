@@ -96,6 +96,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_coordinator
+          additional-flags: -p shuthost
 
       - name: Upload coordinator binary
         uses: actions/upload-artifact@v4
@@ -567,7 +568,7 @@ jobs:
       - uses: ./.github/actions/rust-build
         with:
           bin-name: shuthost_coordinator
-          additional-flags: --no-default-features
+          additional-flags: --no-default-features -p shuthost
 
       - name: Run Playwright tests
         env:

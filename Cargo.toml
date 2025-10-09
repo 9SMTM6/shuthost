@@ -1,6 +1,6 @@
 [workspace]
-members = ["host_agent", "coordinator", "common"]
-default-members = ["coordinator", "host_agent"]
+members = ["host_agent"]
+default-members = ["host_agent"]
 resolver = "3"
 
 [workspace.package]
@@ -27,6 +27,19 @@ readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[dependencies]
+tokio.workspace = true
+eyre.workspace = true
+coordinator.workspace = true
+
+[features]
+default_features = [
+    "include_macos_agents",
+    "include_linux_agents",
+]
+include_macos_agents = []
+include_linux_agents = []
+
 [dev-dependencies]
 tokio.workspace = true
 reqwest = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
@@ -41,7 +54,9 @@ reqwest = { version = "0.12", default-features = false }
 clap = { version = "4.5.37", features = ["derive"] }
 global_service_install = {path = "./global_service_install"}
 shuthost_common = {path = "./common"}
+coordinator = { path = "./coordinator" }
 tokio = { version = "1.44.2", features = ["full"] }
+eyre = "0.6.12"
 
 [workspace.lints.rust]
 unsafe-op-in-unsafe-fn = "warn"

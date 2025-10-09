@@ -1,16 +1,18 @@
-//! Coordinator CLI entrypoint for the `shuthost_coordinator` binary.
+//! Fake library entry for the `coordinator` crate.
 //!
+//! Exposes `inner_main` so a workspace-level shim binary can call into the coordinator logic.
+//! 
 //! Provides commands to install the service or launch the control web service.
 
-mod auth;
-mod cli;
-mod config;
-mod demo;
-mod http;
-mod install;
-mod routes;
-mod websocket;
-mod wol;
+pub mod auth;
+pub mod cli;
+pub mod config;
+pub mod demo;
+pub mod http;
+pub mod install;
+pub mod routes;
+pub mod websocket;
+pub mod wol;
 
 use std::fs;
 
@@ -23,9 +25,10 @@ use install::install_coordinator;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-/// Application entrypoint: parses CLI and dispatches install or server startup.
-#[tokio::main]
-async fn main() -> Result<()> {
+/// The coordinator's main function; can be called from a shim binary.
+/// 
+/// Parses CLI and dispatches install or server startup.
+pub async fn inner_main() -> Result<()> {
     let invocation = Cli::parse();
 
     match invocation.command {

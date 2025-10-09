@@ -28,7 +28,7 @@ jobs:
       - uses: ./.github/actions/rust-build
         with:
           bin-name: shuthost_coordinator
-          additional-flags: --no-default-features
+          additional-flags: --no-default-features -p shuthost
 
       - name: Build and snapshot demo
         run: ./scripts/build-gh-pages.sh

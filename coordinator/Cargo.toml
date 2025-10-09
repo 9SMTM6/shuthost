@@ -1,5 +1,5 @@
 [package]
-name = "shuthost_coordinator"
+name = "coordinator"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -34,7 +34,7 @@ openidconnect = { version = "4.x", default-features = false, features = [
     "reqwest",
     "rustls-tls",
 ] }
-eyre = "0.6.12"
+eyre.workspace = true
 base64 = "0.22.1"
 reqwest = { workspace = true, features = [
     "rustls-tls",
