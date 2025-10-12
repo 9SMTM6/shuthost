@@ -1,5 +1,5 @@
 [workspace]
-members = ["host_agent"]
+members = []
 default-members = ["host_agent"]
 resolver = "3"
 
@@ -31,6 +31,7 @@ categories.workspace = true
 tokio.workspace = true
 eyre.workspace = true
 coordinator.workspace = true
+host_agent.workspace = true
 
 [features]
 default_features = [
@@ -55,6 +56,7 @@ clap = { version = "4.5.37", features = ["derive"] }
 global_service_install = {path = "./global_service_install"}
 shuthost_common = {path = "./common"}
 coordinator = { path = "./coordinator", default-features = true }
+host_agent = { path = "./host_agent" }
 tokio = { version = "1.44.2", features = ["full"] }
 eyre = "0.6.12"
 

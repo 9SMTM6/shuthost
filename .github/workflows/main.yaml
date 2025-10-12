@@ -42,6 +42,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_host_agent
+          additional-flags: -p shuthost
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

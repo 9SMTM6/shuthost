@@ -1,5 +1,5 @@
 [package]
-name = "shuthost_host_agent"
+name = "host_agent"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
