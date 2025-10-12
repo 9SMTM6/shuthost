@@ -37,8 +37,8 @@ default_features = [
     "include_macos_agents",
     "include_linux_agents",
 ]
-include_macos_agents = []
-include_linux_agents = []
+include_macos_agents = ["coordinator/include_macos_agents"]
+include_linux_agents = ["coordinator/include_linux_agents"]
 
 [dev-dependencies]
 tokio.workspace = true
@@ -54,7 +54,7 @@ reqwest = { version = "0.12", default-features = false }
 clap = { version = "4.5.37", features = ["derive"] }
 global_service_install = {path = "./global_service_install"}
 shuthost_common = {path = "./common"}
-coordinator = { path = "./coordinator" }
+coordinator = { path = "./coordinator", default-features = true }
 tokio = { version = "1.44.2", features = ["full"] }
 eyre = "0.6.12"
 
