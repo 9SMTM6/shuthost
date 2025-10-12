@@ -4,8 +4,8 @@
 
 mod commands;
 mod install;
-mod server;
-mod validation;
+pub mod server;
+pub mod validation;
 
 use clap::{Parser, Subcommand};
 use install::DEFAULT_PORT;

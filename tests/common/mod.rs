@@ -1,5 +1,4 @@
 use std::process::{Child, Command};
-use std::sync::Once;
 use std::time::{Duration, Instant};
 
 pub fn get_free_port() -> u16 {
@@ -20,29 +19,8 @@ impl Drop for KillOnDrop {
     }
 }
 
-fn get_coordinator_bin() -> String {
-    // Ensure build of all relevant binaries happened, then return the coordinator path.
-    ensure_built();
-
-    std::env::current_dir()
-        .unwrap()
-        .join("target/debug/shuthost_coordinator")
-        .to_string_lossy()
-        .into_owned()
-}
-
-/// Ensure the workspace binaries are built once per process. This builds all
-/// binaries (no --bin) with the same flags used by tests to avoid concurrent
-/// cargo builds from multiple helpers.
-pub fn ensure_built() {
-    static BUILD_ONCE_ALL: Once = Once::new();
-    BUILD_ONCE_ALL.call_once(|| {
-        let status = std::process::Command::new("cargo")
-            .args(["build", "--no-default-features"])
-            .status()
-            .expect("failed to run cargo build for tests");
-        assert!(status.success(), "cargo build failed");
-    });
+fn get_coordinator_bin() -> &'static str {
+    env!("CARGO_BIN_EXE_shuthost_coordinator")
 }
 
 /// Spawn the coordinator service from a given config string.

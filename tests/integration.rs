@@ -9,18 +9,11 @@ use std::os::unix::process::ExitStatusExt;
 use std::process::{Child, Command};
 
 use common::{
-    KillOnDrop, ensure_built, get_free_port, spawn_coordinator_with_config, wait_for_listening,
+    KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening,
 };
 
-fn get_agent_bin() -> String {
-    // Ensure all binaries are built once per process.
-    ensure_built();
-
-    std::env::current_dir()
-        .unwrap()
-        .join("target/debug/shuthost_host_agent")
-        .to_string_lossy()
-        .into_owned()
+fn get_agent_bin() -> &'static str {
+    env!("CARGO_BIN_EXE_shuthost_host_agent")
 }
 
 /// Run the host agent binary and return its Output (useful for `--help` checks).
