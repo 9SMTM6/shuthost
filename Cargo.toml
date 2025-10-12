@@ -34,12 +34,9 @@ coordinator.workspace = true
 host_agent.workspace = true
 
 [features]
-default_features = [
-    "include_macos_agents",
-    "include_linux_agents",
-]
-include_macos_agents = ["coordinator/include_macos_agents"]
-include_linux_agents = ["coordinator/include_linux_agents"]
+# these implicitly exist because of the [coordinator package](./coordinator/Cargo.toml)
+# "coordinator/include_macos_agents" = []
+# "coordinator/include_linux_agents" = []
 
 [dev-dependencies]
 tokio.workspace = true
