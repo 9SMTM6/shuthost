@@ -1,0 +1,1 @@
+../../src/bin/shuthost_coordinator.rs
