@@ -1,7 +1,7 @@
 //! Fake library entry for the `coordinator` crate.
 //!
 //! Exposes `inner_main` so a workspace-level shim binary can call into the coordinator logic.
-//! 
+//!
 //! Provides commands to install the service or launch the control web service.
 
 pub mod auth;
@@ -26,7 +26,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 /// The coordinator's main function; can be called from a shim binary.
-/// 
+///
 /// Parses CLI and dispatches install or server startup.
 pub async fn inner_main() -> Result<()> {
     let invocation = Cli::parse();

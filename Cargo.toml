@@ -55,7 +55,7 @@ reqwest = { version = "0.12", default-features = false }
 clap = { version = "4.5.37", features = ["derive"] }
 global_service_install = {path = "./global_service_install"}
 shuthost_common = {path = "./common"}
-coordinator = { path = "./coordinator", default-features = true }
+coordinator = { path = "./coordinator", default-features = false }
 host_agent = { path = "./host_agent" }
 tokio = { version = "1.44.2", features = ["full"] }
 eyre = "0.6.12"

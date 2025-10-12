@@ -15,8 +15,12 @@ use std::sync::OnceLock;
 #[macro_export]
 macro_rules! include_asset {
     ($asset_path:expr) => {
-        include_str!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/", $asset_path))
-    }
+        include_str!(concat!(
+            env!("WORKSPACE_ROOT"),
+            "frontend/assets/",
+            $asset_path
+        ))
+    };
 }
 
 /// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.

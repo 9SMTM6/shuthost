@@ -8,9 +8,7 @@ use reqwest::Client;
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Child, Command};
 
-use common::{
-    KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening,
-};
+use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 fn get_agent_bin() -> &'static str {
     env!("CARGO_BIN_EXE_shuthost_host_agent")
