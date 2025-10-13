@@ -1,6 +1,6 @@
-use std::{path::PathBuf, process, fs};
-use eyre::{bail, eyre, ContextCompat, Ok, WrapErr};
+use eyre::{ContextCompat, Ok, WrapErr, bail, eyre};
 use resvg::usvg;
+use std::{fs, path::PathBuf, process};
 use tiny_skia::Pixmap;
 
 const RERUN_IF: &'static str = "cargo::rerun-if-changed=frontend/assets";
@@ -20,7 +20,9 @@ fn main() -> eyre::Result<()> {
 
 fn set_workspace_root() -> eyre::Result<()> {
     let workspace_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let workspace_dir = workspace_dir.parent().wrap_err("expected absolute path in CARGO_MANIFEST_DIR")?;
+    let workspace_dir = workspace_dir
+        .parent()
+        .wrap_err("expected absolute path in CARGO_MANIFEST_DIR")?;
     println!(
         "cargo:rustc-env=WORKSPACE_ROOT={}/",
         workspace_dir.display()
@@ -40,12 +42,18 @@ fn run_npm_build() -> eyre::Result<()> {
         .arg("build")
         .current_dir(FRONTEND_DIR)
         .status()
-        .map(|it| if it.success() {Ok(())} else {Err(eyre!("npm run build failed with {it}"))})
+        .map(|it| {
+            if it.success() {
+                Ok(())
+            } else {
+                Err(eyre!("npm run build failed with {it}"))
+            }
+        })
         .wrap_err("Failed to npm run build")?
 }
 
 fn setup_npm() -> eyre::Result<()> {
-        // Check npm
+    // Check npm
     if process::Command::new("npm")
         .arg("--version")
         .output()
@@ -58,7 +66,13 @@ fn setup_npm() -> eyre::Result<()> {
         .arg("ci")
         .current_dir(FRONTEND_DIR)
         .status()
-        .map(|it| if it.success() {Ok(())} else {Err(eyre!("npm ci failed with {it}"))})
+        .map(|it| {
+            if it.success() {
+                Ok(())
+            } else {
+                Err(eyre!("npm ci failed with {it}"))
+            }
+        })
         .wrap_err("Failed to npm ci")?
 }
 
@@ -73,7 +87,8 @@ fn generate_png_icons() -> eyre::Result<()> {
 
     let mut opt = usvg::Options::default();
     opt.resources_dir = Some(PathBuf::from("frontend/assets/"));
-    let rtree = usvg::Tree::from_str(std::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
+    let rtree =
+        usvg::Tree::from_str(std::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 
     // sizes to emit: favicons, apple-touch, and PWA sizes
     let sizes: &[u32] = &[32, 48, 64, 128, 180, 192, 512];
@@ -84,11 +99,7 @@ fn generate_png_icons() -> eyre::Result<()> {
 
         // Render the SVG into the pixmap using resvg's render
         let fit_to = tiny_skia::Transform::from_scale(size as f32, size as f32);
-        resvg::render(
-            &rtree,
-            fit_to,
-            &mut pixmap.as_mut(),
-        );
+        resvg::render(&rtree, fit_to, &mut pixmap.as_mut());
         let out_png = out_dir.join(format!("icon-{}.png", size));
         pixmap
             .save_png(out_png.as_path())
