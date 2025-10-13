@@ -60,7 +60,7 @@ test_all:
     cargo test --no-default-features --workspace --all-targets
 
 ci_cargo_deny:
-    cargo +stable --locked deny check --hide-inclusion-graph --graph duplicates_tree
+    cargo +stable --locked deny check
 
 alias deny := ci_cargo_deny
 
