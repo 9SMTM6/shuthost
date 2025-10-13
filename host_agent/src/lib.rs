@@ -12,11 +12,12 @@ use install::DEFAULT_PORT;
 use install::InstallArgs;
 use install::install_host_agent;
 use server::ServiceArgs;
+use shuthost_common::shuthost_bin_name;
 use std::env;
 
 /// Top-level CLI parser for host_agent.
 #[derive(Debug, Parser)]
-#[command(name = env!("CARGO_PKG_NAME"))]
+#[command(name = shuthost_bin_name!())]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(author = env!("CARGO_PKG_AUTHORS"))]
 #[command(about = env!("CARGO_PKG_DESCRIPTION"))]

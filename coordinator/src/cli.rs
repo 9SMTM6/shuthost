@@ -4,13 +4,14 @@
 //! used by the main coordinator binary.
 
 use clap::{Parser, Subcommand};
+use shuthost_common::shuthost_bin_name;
 use std::env;
 
 use crate::install::InstallArgs;
 
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
-#[command(name = env!("CARGO_PKG_NAME"))]
+#[command(name = shuthost_bin_name!())]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = env!("CARGO_PKG_DESCRIPTION"))]
 pub struct Cli {

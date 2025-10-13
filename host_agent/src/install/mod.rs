@@ -3,7 +3,7 @@
 //! Handles subcommand parsing, agent installation across init systems, network interface discovery, and Wake-on-LAN testing.
 
 use clap::Parser;
-use shuthost_common::generate_secret;
+use shuthost_common::{generate_secret, shuthost_bin_name};
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
@@ -73,7 +73,7 @@ impl std::fmt::Display for InitSystem {
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
-    let name = env!("CARGO_PKG_NAME");
+    let name = shuthost_bin_name!();
     let bind_known_vals = |arg: &str| {
         arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{ port }", &arguments.port.to_string())
