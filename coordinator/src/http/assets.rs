@@ -29,6 +29,13 @@ pub fn asset_routes() -> Router<AppState> {
         .route("/manifest.json", get(serve_manifest))
         .route("/styles.css", get(serve_styles))
         .route("/favicon.svg", get(serve_favicon))
+        .route("/icons/icon-32.png", get(serve_icon_32))
+        .route("/icons/icon-48.png", get(serve_icon_48))
+        .route("/icons/icon-64.png", get(serve_icon_64))
+        .route("/icons/icon-128.png", get(serve_icon_128))
+        .route("/icons/icon-180.png", get(serve_icon_180))
+        .route("/icons/icon-192.png", get(serve_icon_192))
+        .route("/icons/icon-512.png", get(serve_icon_512))
         .route(
             "/architecture_simplified.svg",
             get(serve_architecture_simplified),
@@ -45,6 +52,20 @@ macro_rules! static_svg_download_handler {
                 .header("Content-Type", "image/svg+xml")
                 .header("Content-Length", SVG.len().to_string())
                 .body(SVG.into_response())
+                .unwrap()
+        }
+    };
+}
+
+/// Macro to define a static png download handler.
+macro_rules! static_png_download_handler {
+    (fn $name:ident, file=$file:expr) => {
+        async fn $name() -> impl IntoResponse {
+            const DATA: &[u8] = include_asset!($file);
+            Response::builder()
+                .header("Content-Type", "image/png")
+                .header("Content-Length", DATA.len().to_string())
+                .body(DATA.into_response())
                 .unwrap()
         }
     };
@@ -185,3 +206,12 @@ pub async fn serve_styles() -> impl IntoResponse {
 static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
 static_svg_download_handler!(fn serve_architecture_simplified, file = "architecture_simplified.svg");
 static_svg_download_handler!(fn serve_architecture_complete, file = "architecture.svg");
+
+// Binary icon handlers (generated in build.rs into frontend/assets/icons)
+static_png_download_handler!(fn serve_icon_32, file = "icons/icon-32.png");
+static_png_download_handler!(fn serve_icon_48, file = "icons/icon-48.png");
+static_png_download_handler!(fn serve_icon_64, file = "icons/icon-64.png");
+static_png_download_handler!(fn serve_icon_128, file = "icons/icon-128.png");
+static_png_download_handler!(fn serve_icon_180, file = "icons/icon-180.png");
+static_png_download_handler!(fn serve_icon_192, file = "icons/icon-192.png");
+static_png_download_handler!(fn serve_icon_512, file = "icons/icon-512.png");
