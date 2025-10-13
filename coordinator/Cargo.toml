@@ -10,32 +10,35 @@ readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+# If you add features, add them as features to the test in CI and Justfile.
+# We can't use --all-features in there, as that requires all agents to have been built.
+[features]
+default = [
+    "include_linux_agents",
+    "include_macos_agents",
+]
+include_linux_agents = []
+include_macos_agents = []
+
 [dependencies]
-hmac.workspace = true
-sha2.workspace = true
-rand.workspace = true
-hex.workspace = true
-shuthost_common.workspace = true
-tokio.workspace = true
-clap = { workspace = true, features = ["env"] }
-toml = "0.9.x"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-regex = "1.11.1"
 axum = { version = "0.8.3", features = ["macros", "ws"] }
-notify = "8.0.0"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
-futures = "0.3.31"
-serde_plain = "1.0.2"
 axum-extra = { version = "0.10.0", features = ["cookie", "cookie-signed"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+base64 = "0.22.1"
+clap = { workspace = true, features = ["env"] }
 cookie = "0.18"
+eyre.workspace = true
+futures = "0.3.31"
+hex.workspace = true
+hmac.workspace = true
+notify = "8.0.0"
 openidconnect = { version = "4.x", default-features = false, features = [
     "reqwest",
     "rustls-tls",
 ] }
-eyre.workspace = true
-base64 = "0.22.1"
+rand.workspace = true
+rcgen = "0.14.x"
+regex = "1.11.1"
 reqwest = { workspace = true, features = [
     "rustls-tls",
     "http2",
@@ -43,21 +46,26 @@ reqwest = { workspace = true, features = [
     "brotli",
     "zstd",
 ] }
-axum-server = { version = "0.7", features = ["tls-rustls"] }
 rustls = "0.23.x"
-rcgen = "0.14.x"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+serde_plain = "1.0.2"
+sha2.workspace = true
+shuthost_common.workspace = true
+tokio.workspace = true
+toml = "0.9.x"
 tower = "0.5"
-tower-http = { version = "0.6", features = ["compression-br", "compression-zstd", "trace", "request-id", "sensitive-headers", "timeout", "util"] }
-
-# If you add features, add them as features to the test in CI and Justfile.
-# We can't use --all-features in there, as that requires all agents to have been built.
-[features]
-default = [
-    "include_macos_agents",
-    "include_linux_agents",
-]
-include_macos_agents = []
-include_linux_agents = []
+tower-http = { version = "0.6", features = [
+    "compression-br",
+    "compression-zstd",
+    "request-id",
+    "sensitive-headers",
+    "timeout",
+    "trace",
+    "util",
+] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
 
 [lints]
 workspace = true

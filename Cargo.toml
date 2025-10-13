@@ -27,43 +27,44 @@ readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
-[dependencies]
-tokio.workspace = true
-eyre.workspace = true
-coordinator.workspace = true
-host_agent.workspace = true
-
 [features]
 # these implicitly exist because of the [coordinator package](./coordinator/Cargo.toml)
 # "coordinator/include_macos_agents" = []
 # "coordinator/include_linux_agents" = []
 
-[dev-dependencies]
+[dependencies]
+coordinator.workspace = true
+eyre.workspace = true
+host_agent.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
 reqwest = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
 serde_json = "1.0"
+tokio.workspace = true
 
 [workspace.dependencies]
-hmac = "0.12.1"
-sha2 = "0.10.8"
-rand = "0.9.x"
-hex = "0.4.3"
-reqwest = { version = "0.12", default-features = false }
 clap = { version = "4.5.37", features = ["derive"] }
-global_service_install = {path = "./global_service_install"}
-shuthost_common = {path = "./common"}
 coordinator = { path = "./coordinator", default-features = false }
-host_agent = { path = "./host_agent" }
-tokio = { version = "1.44.2", features = ["full"] }
 eyre = "0.6.12"
+global_service_install = {path = "./global_service_install"}
+hex = "0.4.3"
+hmac = "0.12.1"
+host_agent = { path = "./host_agent" }
+libc = "0.2.x"
+rand = "0.9.x"
+reqwest = { version = "0.12", default-features = false }
+sha2 = "0.10.8"
+shuthost_common = {path = "./common"}
+tokio = { version = "1.44.2", features = ["full"] }
 
 [workspace.lints.rust]
-unsafe-op-in-unsafe-fn = "warn"
-let_underscore_drop = "deny"
-rust_2024_compatibility = { level = "warn", priority = -1 }
-rust_2018_idioms = { level = "warn", priority = -1 }
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable, rust_analyzer)'] }
 edition_2024_expr_fragment_specifier = "allow"
+let_underscore_drop = "deny"
+rust_2018_idioms = { level = "warn", priority = -1 }
+rust_2024_compatibility = { level = "warn", priority = -1 }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable, rust_analyzer)'] }
+unsafe-op-in-unsafe-fn = "warn"
 # unstable
 # must_not_suspend = "deny"
 
@@ -75,12 +76,10 @@ all = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
 allow_attributes_without_reason = "warn"
 branches_sharing_code = "warn"
-# this seems to have false positives
-cargo_common_metadata = "allow"
+cargo_common_metadata = "allow" # this seems to have false positives
 checked_conversions = "warn"
 cognitive_complexity = "warn"
-dbg_macro = "warn"
-# "warn_on_ci"
+dbg_macro = "warn" # "warn_on_ci"
 expl_impl_clone_on_copy = "deny"
 float_cmp = "warn"
 fn_params_excessive_bools = "warn"
@@ -90,8 +89,7 @@ missing_const_for_fn = "warn"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 module_name_repetitions = "warn"
-# handled with cargo-deny
-multiple_crate_versions = "allow"
+multiple_crate_versions = "allow" # handled with cargo-deny
 needless_borrowed_reference = "allow"
 needless_pass_by_value = "warn"
 no_effect_underscore_binding = "warn"
@@ -102,11 +100,9 @@ semicolon_if_nothing_returned = "warn"
 separated_literal_suffix = "warn"
 shadow_unrelated = "warn"
 struct_excessive_bools = "warn"
-# todo = "warn"
-# "warn_on_ci"
+# todo = "warn" # "warn_on_ci"
 undocumented_unsafe_blocks = "warn"
 unnested_or_patterns = "warn"
 unreadable_literal = "warn"
-# unwrap_used = "warn"
-# "warn_on_ci"
+# unwrap_used = "warn" # "warn_on_ci"
 used_underscore_binding = "warn"
