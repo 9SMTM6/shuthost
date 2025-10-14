@@ -10,7 +10,7 @@ allow-git = [
 
 [advisories]
 ignore = [
-    { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security alreada failed." },
+    { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security already failed." },
 ]
 
 [bans]
