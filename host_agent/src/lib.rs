@@ -1,4 +1,4 @@
-//! Fake library entry for the `coordinator` crate.
+//! Fake library entry for the `host_agent` crate.
 //!
 //! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
 
