@@ -57,10 +57,10 @@ update_dependencies:
     cd frontend && npm update
 
 test_all:
-    cargo test --no-default-features --workspace --all-targets
+    cargo test --no-default-features --workspace
 
 ci_cargo_deny:
-    cargo +stable --locked deny check --hide-inclusion-graph --graph duplicates_tree
+    cargo +stable --locked deny check --hide-inclusion-graph
 
 alias deny := ci_cargo_deny
 

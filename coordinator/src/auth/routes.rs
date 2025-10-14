@@ -12,15 +12,20 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::{auth::cookies::{
-    get_oidc_session_from_cookie, get_token_session_from_cookie, COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION
-}, http::assets::asset_routes, include_asset};
 use crate::auth::token::LoginQuery;
 use crate::auth::{
     AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
     LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
 };
 use crate::http::AppState;
+use crate::{
+    auth::cookies::{
+        COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION, get_oidc_session_from_cookie,
+        get_token_session_from_cookie,
+    },
+    http::assets::asset_routes,
+    include_utf8_asset,
+};
 
 pub const EXPECTED_EXCEPTIONS_VERSION: u32 = 1;
 
@@ -72,40 +77,40 @@ pub async fn login_get(
 
     let maybe_error = match error.as_deref() {
         Some(v) if v == LOGIN_ERROR_INSECURE => {
-            include_asset!("partials/login_error_insecure.tmpl.html")
+            include_utf8_asset!("partials/login_error_insecure.tmpl.html")
         }
         Some(v) if v == LOGIN_ERROR_TOKEN => {
-            include_asset!("partials/login_error_token.tmpl.html")
+            include_utf8_asset!("partials/login_error_token.tmpl.html")
         }
         Some(v) if v == LOGIN_ERROR_UNKNOWN => {
-            include_asset!("partials/login_error_unknown.tmpl.html")
+            include_utf8_asset!("partials/login_error_unknown.tmpl.html")
         }
         Some(v) if v == LOGIN_ERROR_OIDC => {
-            include_asset!("partials/login_error_oidc.tmpl.html")
+            include_utf8_asset!("partials/login_error_oidc.tmpl.html")
         }
         Some(v) if v == LOGIN_ERROR_SESSION_EXPIRED => {
-            include_asset!("partials/login_error_session_expired.tmpl.html")
+            include_utf8_asset!("partials/login_error_session_expired.tmpl.html")
         }
-        Some(_) => include_asset!("partials/login_error_unknown.tmpl.html"),
+        Some(_) => include_utf8_asset!("partials/login_error_unknown.tmpl.html"),
         None => "",
     };
 
     let login_form = match auth.mode {
-        A::Token { .. } => include_asset!("partials/token_login.tmpl.html"),
-        A::Oidc { .. } => include_asset!("partials/oidc_login.tmpl.html"),
+        A::Token { .. } => include_utf8_asset!("partials/token_login.tmpl.html"),
+        A::Oidc { .. } => include_utf8_asset!("partials/oidc_login.tmpl.html"),
         _ => "",
     };
 
-    let header_tpl = include_asset!("partials/header.tmpl.html");
-    let footer = include_asset!("partials/footer.tmpl.html");
+    let header_tpl = include_utf8_asset!("partials/header.tmpl.html");
+    let footer = include_utf8_asset!("partials/footer.tmpl.html");
     let header = header_tpl
         .replace("{ maybe_tabs }", "")
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "");
-    let html = include_asset!("login.tmpl.html")
+    let html = include_utf8_asset!("login.tmpl.html")
         .replace(
             "{ html_head }",
-            include_asset!("partials/html_head.tmlp.html"),
+            include_utf8_asset!("partials/html_head.tmlp.html"),
         )
         .replace("{ title }", "Login • ShutHost")
         .replace("{ maybe_error }", maybe_error)

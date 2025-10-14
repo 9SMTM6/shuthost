@@ -13,10 +13,14 @@ use axum::{
 use std::sync::OnceLock;
 
 #[macro_export]
-macro_rules! include_asset {
+macro_rules! include_utf8_asset {
     ($asset_path:expr) => {
-        include_str!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/", $asset_path))
-    }
+        include_str!(concat!(
+            env!("WORKSPACE_ROOT"),
+            "frontend/assets/",
+            $asset_path
+        ))
+    };
 }
 
 /// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.
@@ -25,6 +29,13 @@ pub fn asset_routes() -> Router<AppState> {
         .route("/manifest.json", get(serve_manifest))
         .route("/styles.css", get(serve_styles))
         .route("/favicon.svg", get(serve_favicon))
+        .route("/icons/icon-32.png", get(serve_icon_32))
+        .route("/icons/icon-48.png", get(serve_icon_48))
+        .route("/icons/icon-64.png", get(serve_icon_64))
+        .route("/icons/icon-128.png", get(serve_icon_128))
+        .route("/icons/icon-180.png", get(serve_icon_180))
+        .route("/icons/icon-192.png", get(serve_icon_192))
+        .route("/icons/icon-512.png", get(serve_icon_512))
         .route(
             "/architecture_simplified.svg",
             get(serve_architecture_simplified),
@@ -36,11 +47,26 @@ pub fn asset_routes() -> Router<AppState> {
 macro_rules! static_svg_download_handler {
     (fn $name:ident, file=$file:expr) => {
         async fn $name() -> impl IntoResponse {
-            const SVG: &str = include_asset!($file);
+            const SVG: &'static str = include_utf8_asset!($file);
             Response::builder()
                 .header("Content-Type", "image/svg+xml")
                 .header("Content-Length", SVG.len().to_string())
                 .body(SVG.into_response())
+                .unwrap()
+        }
+    };
+}
+
+/// Macro to define a static png download handler.
+macro_rules! static_png_download_handler {
+    (fn $name:ident, file=$file:expr) => {
+        async fn $name() -> impl IntoResponse {
+            const DATA: &[u8] =
+                include_bytes!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/", $file));
+            Response::builder()
+                .header("Content-Type", "image/png")
+                .header("Content-Length", DATA.len().to_string())
+                .body(DATA.into_response())
                 .unwrap()
         }
     };
@@ -64,12 +90,12 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
             ..
         }
     ) {
-        include_asset!("partials/logout_form.tmpl.html")
+        include_utf8_asset!("partials/logout_form.tmpl.html")
     } else {
         ""
     };
     let maybe_demo_disclaimer = if matches!(*mode, UiMode::Demo) {
-        include_asset!("partials/demo_disclaimer.tmpl.html")
+        include_utf8_asset!("partials/demo_disclaimer.tmpl.html")
     } else {
         ""
     };
@@ -78,31 +104,31 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
         UiMode::Demo => "/this/is/a/demo.toml".to_string(),
     };
 
-    let header_tpl = include_asset!("partials/header.tmpl.html");
-    let footer_tpl = include_asset!("partials/footer.tmpl.html");
+    let header_tpl = include_utf8_asset!("partials/header.tmpl.html");
+    let footer_tpl = include_utf8_asset!("partials/footer.tmpl.html");
 
-    include_asset!("/index.tmpl.html")
+    include_utf8_asset!("/index.tmpl.html")
         .replace(
             "{ html_head }",
-            include_asset!("partials/html_head.tmlp.html"),
+            include_utf8_asset!("partials/html_head.tmlp.html"),
         )
         .replace("{ title }", "ShutHost Coordinator")
         .replace("{ coordinator_config }", &config_path)
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace(
             "{ architecture_documentation }",
-            include_asset!("partials/architecture.tmpl.html"),
+            include_utf8_asset!("partials/architecture.tmpl.html"),
         )
         .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
         .replace(
             "{ client_install_requirements_gotchas }",
-            include_asset!("client_install_requirements_gotchas.md"),
+            include_utf8_asset!("client_install_requirements_gotchas.md"),
         )
         .replace(
             "{ agent_install_requirements_gotchas }",
-            include_asset!("agent_install_requirements_gotchas.md"),
+            include_utf8_asset!("agent_install_requirements_gotchas.md"),
         )
-        .replace("{ js }", include_asset!("app.js"))
+        .replace("{ js }", include_utf8_asset!("app.js"))
         .replace("{ header }", header_tpl)
         .replace("{ footer }", footer_tpl)
         .replace("{ version }", env!("CARGO_PKG_VERSION"))
@@ -134,7 +160,7 @@ pub async fn serve_ui(
                     exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
                 } => "",
                 &A::Disabled | &A::External { .. } => {
-                    include_asset!("partials/maybe_external_auth_config.tmpl.html")
+                    include_utf8_asset!("partials/maybe_external_auth_config.tmpl.html")
                 }
             };
 
@@ -159,7 +185,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 
     let manifest = MANIFEST
         .get_or_init(|| {
-            include_asset!("manifest.tmpl.json")
+            include_utf8_asset!("manifest.tmpl.json")
                 .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         })
         .clone();
@@ -174,10 +200,19 @@ pub async fn serve_manifest() -> impl IntoResponse {
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
-        .body(include_asset!("styles.css").into_response())
+        .body(include_utf8_asset!("styles.css").into_response())
         .unwrap()
 }
 
 static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
 static_svg_download_handler!(fn serve_architecture_simplified, file = "architecture_simplified.svg");
 static_svg_download_handler!(fn serve_architecture_complete, file = "architecture.svg");
+
+// Binary icon handlers (generated in build.rs into frontend/assets/icons)
+static_png_download_handler!(fn serve_icon_32, file = "icons/icon-32.png");
+static_png_download_handler!(fn serve_icon_48, file = "icons/icon-48.png");
+static_png_download_handler!(fn serve_icon_64, file = "icons/icon-64.png");
+static_png_download_handler!(fn serve_icon_128, file = "icons/icon-128.png");
+static_png_download_handler!(fn serve_icon_180, file = "icons/icon-180.png");
+static_png_download_handler!(fn serve_icon_192, file = "icons/icon-192.png");
+static_png_download_handler!(fn serve_icon_512, file = "icons/icon-512.png");

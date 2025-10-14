@@ -5,7 +5,7 @@
 set -e
 
 # Build and run demo service
-cargo build --release --no-default-features
+cargo build --release --no-default-features --bin shuthost_coordinator
 ./target/release/shuthost_coordinator demo-service --port 8090 &
 DEMO_PID=$!
 

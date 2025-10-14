@@ -9,10 +9,24 @@ allow-git = [
 ]
 
 [advisories]
+ignore = [
+    { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security already failed." },
+]
 
 [bans]
 # Is a duplicate of rustc::multiple_crate_versions
 multiple-versions = "warn"
 
 [licenses]
-allow = ["Apache-2.0", "MIT"]
+allow = [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MIT",
+    "OpenSSL",
+    "Unicode-3.0",
+    "Zlib",
+]
