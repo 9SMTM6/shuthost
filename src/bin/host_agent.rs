@@ -2,5 +2,5 @@
 
 fn main() {
     // Delegate to library entrypoint
-    host_agent::inner_main()
+    shuthost_host_agent::inner_main()
 }

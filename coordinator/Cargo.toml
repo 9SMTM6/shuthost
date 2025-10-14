@@ -1,5 +1,5 @@
 [package]
-name = "coordinator"
+name = "shuthost_coordinator"
 version.workspace = true
 authors.workspace = true
 description.workspace = true

@@ -13,10 +13,3 @@ pub use secrets::*;
 pub use service_install::*;
 pub use signing::*;
 pub use validation::*;
-
-#[macro_export]
-macro_rules! shuthost_bin_name {
-    () => {
-        concat!("shuthost_", env!("CARGO_PKG_NAME"))
-    };
-}

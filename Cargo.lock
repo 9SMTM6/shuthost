@@ -570,42 +570,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "coordinator"
-version = "1.2.4"
-dependencies = [
- "axum",
- "axum-extra",
- "axum-server",
- "base64 0.22.1",
- "clap",
- "cookie",
- "eyre",
- "futures",
- "hex",
- "hmac",
- "notify",
- "openidconnect",
- "rand 0.9.2",
- "rcgen",
- "regex",
- "reqwest",
- "resvg",
- "rustls",
- "serde",
- "serde_json",
- "serde_plain",
- "sha2",
- "shuthost_common",
- "tiny-skia",
- "tokio",
- "toml",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1218,18 +1182,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest",
-]
-
-[[package]]
-name = "host_agent"
-version = "1.2.4"
-dependencies = [
- "clap",
- "hex",
- "hmac",
- "rand 0.9.2",
- "sha2",
- "shuthost_common",
 ]
 
 [[package]]
@@ -2783,11 +2735,11 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 name = "shuthost"
 version = "1.2.4"
 dependencies = [
- "coordinator",
  "eyre",
- "host_agent",
  "reqwest",
  "serde_json",
+ "shuthost_coordinator",
+ "shuthost_host_agent",
  "tokio",
 ]
 
@@ -2800,6 +2752,54 @@ dependencies = [
  "libc",
  "rand 0.9.2",
  "sha2",
+]
+
+[[package]]
+name = "shuthost_coordinator"
+version = "1.2.4"
+dependencies = [
+ "axum",
+ "axum-extra",
+ "axum-server",
+ "base64 0.22.1",
+ "clap",
+ "cookie",
+ "eyre",
+ "futures",
+ "hex",
+ "hmac",
+ "notify",
+ "openidconnect",
+ "rand 0.9.2",
+ "rcgen",
+ "regex",
+ "reqwest",
+ "resvg",
+ "rustls",
+ "serde",
+ "serde_json",
+ "serde_plain",
+ "sha2",
+ "shuthost_common",
+ "tiny-skia",
+ "tokio",
+ "toml",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "shuthost_host_agent"
+version = "1.2.4"
+dependencies = [
+ "clap",
+ "hex",
+ "hmac",
+ "rand 0.9.2",
+ "sha2",
+ "shuthost_common",
 ]
 
 [[package]]

@@ -4,7 +4,6 @@
 
 use clap::Parser;
 use eyre::WrapErr;
-use shuthost_common::shuthost_bin_name;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 use std::{
@@ -51,7 +50,7 @@ pub struct InstallArgs {
 ///
 /// Returns `Err` if any filesystem, templating, or service management step fails.
 pub fn install_coordinator(args: InstallArgs) -> eyre::Result<()> {
-    let name = shuthost_bin_name!();
+    let name = env!("CARGO_PKG_NAME");
     let user = args.user;
 
     args.bind

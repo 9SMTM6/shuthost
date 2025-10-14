@@ -1,6 +1,5 @@
 [workspace]
-members = []
-default-members = ["host_agent"]
+default-members = ["coordinator", "host_agent"]
 resolver = "3"
 
 [workspace.package]
@@ -33,9 +32,9 @@ categories.workspace = true
 # "coordinator/include_linux_agents" = []
 
 [dependencies]
-coordinator.workspace = true
+shuthost_coordinator.workspace = true
 eyre.workspace = true
-host_agent.workspace = true
+shuthost_host_agent.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
@@ -45,12 +44,12 @@ tokio.workspace = true
 
 [workspace.dependencies]
 clap = { version = "4.5.37", features = ["derive"] }
-coordinator = { path = "./coordinator", default-features = false }
+shuthost_coordinator = { path = "./coordinator", default-features = false }
 eyre = "0.6.12"
 global_service_install = {path = "./global_service_install"}
 hex = "0.4.3"
 hmac = "0.12.1"
-host_agent = { path = "./host_agent" }
+shuthost_host_agent = { path = "./host_agent" }
 libc = "0.2.x"
 rand = "0.9.x"
 reqwest = { version = "0.12", default-features = false }

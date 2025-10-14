@@ -11,7 +11,7 @@ use std::process::{Child, Command};
 use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 fn get_agent_bin() -> &'static str {
-    env!("CARGO_BIN_EXE_shuthost_host_agent")
+    env!("CARGO_BIN_EXE_host_agent")
 }
 
 /// Run the host agent binary and return its Output (useful for `--help` checks).

@@ -20,7 +20,7 @@ impl Drop for KillOnDrop {
 }
 
 fn get_coordinator_bin() -> &'static str {
-    env!("CARGO_BIN_EXE_shuthost_coordinator")
+    env!("CARGO_BIN_EXE_coordinator")
 }
 
 /// Spawn the coordinator service from a given config string.
