@@ -138,7 +138,7 @@ pub struct AuthConfig {
 /// # Examples
 ///
 /// ```
-/// use coordinator::config::ControllerConfig;
+/// use shuthost_coordinator::config::ControllerConfig;
 /// let config = ControllerConfig::default();
 /// assert!(config.hosts.is_empty());
 /// assert!(config.clients.is_empty());

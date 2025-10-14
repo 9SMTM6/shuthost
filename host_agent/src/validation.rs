@@ -22,9 +22,9 @@ use shuthost_common::validate_hmac_message;
 /// # Examples
 ///
 /// ```
-/// use host_agent::validation::validate_request;
+/// use shuthost_host_agent::validation::validate_request;
 /// use shuthost_common::create_signed_message;
-/// use host_agent::server::ServiceArgs;
+/// use shuthost_host_agent::server::ServiceArgs;
 ///
 /// let secret = "secret";
 /// let args = ServiceArgs { port: 0, shutdown_command: "cmd".to_string(), shared_secret: secret.to_string() };
