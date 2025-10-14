@@ -15,7 +15,7 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: macos-latest
     outputs:
       artifact-path: gh-pages
@@ -38,9 +38,5 @@ jobs:
         with:
           path: ./gh-pages
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
