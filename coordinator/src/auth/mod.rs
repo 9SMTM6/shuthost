@@ -10,13 +10,16 @@ mod oidc;
 mod routes;
 mod token;
 
+use std::sync::Arc;
+
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
-use std::sync::Arc;
 use tracing::info;
 
-use crate::config::{AuthConfig, AuthMode, ControllerConfig};
-use crate::http::AppState;
+use crate::{
+    config::{AuthConfig, AuthMode, ControllerConfig},
+    http::AppState,
+};
 
 pub use cookies::{COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE};
 pub use middleware::{request_is_secure, require_auth};

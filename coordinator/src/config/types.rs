@@ -3,8 +3,9 @@
 //! This module contains all the data structures used for configuration,
 //! including host, client, server, TLS, and authentication settings.
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 
 /// Represents a configured host entry with network and security parameters.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]

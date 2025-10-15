@@ -1,3 +1,8 @@
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
+
 use axum::{
     extract::{
         State,
@@ -6,10 +11,6 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
 use tokio::sync::{Mutex, broadcast};
 use tracing::{info, warn};
 

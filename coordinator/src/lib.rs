@@ -17,13 +17,14 @@ pub mod wol;
 use std::fs;
 
 use clap::Parser;
-use cli::{Cli, Command};
-use demo::run_demo_service;
 use eyre::{Result, WrapErr};
-use http::start;
-use install::install_coordinator;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+
+use cli::{Cli, Command};
+use demo::run_demo_service;
+use http::start;
+use install::install_coordinator;
 
 /// The coordinator's main function; can be called from a shim binary.
 ///

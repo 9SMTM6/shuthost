@@ -1,17 +1,21 @@
 //! Background polling tasks for the coordinator.
 
-use std::path::Path;
-use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::net::TcpStream;
-use tokio::sync::{broadcast, watch};
-use tokio::time::timeout;
+use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
+
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpStream,
+    sync::{broadcast, watch},
+    time::{Instant, MissedTickBehavior, interval, timeout},
+};
 use tracing::{debug, info, warn};
 
-use crate::config::{ControllerConfig, watch_config_file};
-use crate::websocket::WsMessage;
 use shuthost_common::create_signed_message;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::time::{Instant, MissedTickBehavior, interval};
+
+use crate::{
+    config::{ControllerConfig, watch_config_file},
+    websocket::WsMessage,
+};
 
 /// Poll a single host for its online status.
 pub async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &str) -> bool {

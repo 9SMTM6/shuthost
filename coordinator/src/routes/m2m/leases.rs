@@ -1,11 +1,12 @@
 //! Lease management types and utilities.
 
-use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::{self, Display},
     sync::Arc,
 };
+
+use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast};
 use tracing::warn;
 

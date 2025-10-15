@@ -7,12 +7,12 @@ mod install;
 pub mod server;
 pub mod validation;
 
-use clap::{Parser, Subcommand};
-use install::DEFAULT_PORT;
-use install::InstallArgs;
-use install::install_host_agent;
-use server::ServiceArgs;
 use std::env;
+
+use clap::{Parser, Subcommand};
+
+use install::{DEFAULT_PORT, InstallArgs, install_host_agent};
+use server::ServiceArgs;
 
 /// Top-level CLI parser for host_agent.
 #[derive(Debug, Parser)]

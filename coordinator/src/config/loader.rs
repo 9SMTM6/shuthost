@@ -5,8 +5,9 @@
 
 use std::path::Path;
 
-use crate::config::ControllerConfig;
 use eyre::WrapErr;
+
+use crate::config::ControllerConfig;
 
 /// Reads and parses the coordinator config from a TOML file.
 ///

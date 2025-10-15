@@ -3,8 +3,9 @@
 //! This module contains the CLI argument parsing structures and enums
 //! used by the main coordinator binary.
 
-use clap::{Parser, Subcommand};
 use std::env;
+
+use clap::{Parser, Subcommand};
 
 use crate::install::InstallArgs;
 

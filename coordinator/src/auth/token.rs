@@ -1,15 +1,18 @@
-use axum::extract::State;
 use axum::{
     Form,
+    extract::State,
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::SignedCookieJar;
 use serde::Deserialize;
 
-use crate::auth::cookies::create_token_session_cookie;
-use crate::auth::routes::TokenSessionClaims;
-use crate::auth::{AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN};
-use crate::http::AppState;
+use crate::{
+    auth::{
+        AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN,
+        cookies::create_token_session_cookie, routes::TokenSessionClaims,
+    },
+    http::AppState,
+};
 
 #[derive(Deserialize)]
 pub(super) struct LoginForm {

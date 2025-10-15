@@ -2,10 +2,6 @@
 //!
 //! Supports systemd, OpenRC, and launchd based on target OS.
 
-use clap::Parser;
-use eyre::WrapErr;
-#[cfg(target_os = "linux")]
-use shuthost_common::{is_openrc, is_systemd};
 use std::{
     fs::File,
     io::Write,
@@ -13,6 +9,12 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+
+use clap::Parser;
+use eyre::WrapErr;
+
+#[cfg(target_os = "linux")]
+use shuthost_common::{is_openrc, is_systemd};
 
 use crate::config::{AuthConfig, AuthMode, ControllerConfig, ServerConfig};
 

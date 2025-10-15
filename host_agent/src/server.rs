@@ -1,13 +1,16 @@
 //! Server module: listens for TCP connections to process commands and optionally perform shutdown.
 
-use std::env;
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::{
+    env,
+    io::{Read, Write},
+    net::{TcpListener, TcpStream},
+};
 
-use crate::commands::execute_shutdown;
-use crate::install::get_default_shutdown_command;
-use crate::validation::validate_request;
 use clap::Parser;
+
+use crate::{
+    commands::execute_shutdown, install::get_default_shutdown_command, validation::validate_request,
+};
 
 /// Configuration options for running the host_agent service.
 #[derive(Debug, Parser, Clone)]

@@ -1,27 +1,31 @@
-use crate::auth::cookies::{create_oidc_session_cookie, get_oidc_session_from_cookie};
-use crate::auth::{
-    COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
-    LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use axum::{
+    extract::State,
+    http::HeaderMap,
+    response::{IntoResponse, Redirect, Response},
 };
-use crate::http::AppState;
-use axum::extract::State;
-use axum::http::HeaderMap;
-use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
-use cookie::SameSite;
-use cookie::time::Duration as CookieDuration;
+use cookie::{SameSite, time::Duration as CookieDuration};
 use eyre::{Result, eyre};
-use openidconnect::core::{
-    CoreAuthenticationFlow, CoreClient, CoreIdToken, CoreProviderMetadata, CoreTokenResponse,
-};
 use openidconnect::{
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
+    EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
+    core::{
+        CoreAuthenticationFlow, CoreClient, CoreIdToken, CoreProviderMetadata, CoreTokenResponse,
+    },
 };
-use openidconnect::{EndpointMaybeSet, EndpointNotSet, EndpointSet};
 use reqwest::redirect::Policy;
 use serde::Deserialize;
-use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::{
+    auth::{
+        COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+        LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
+        cookies::{create_oidc_session_cookie, get_oidc_session_from_cookie},
+    },
+    http::AppState,
+};
 
 // Fixed redirect path used by the application for OIDC callbacks
 const OIDC_CALLBACK_PATH: &str = "/oidc/callback";

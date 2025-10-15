@@ -3,8 +3,7 @@
 //! This module provides functions for monitoring configuration files
 //! for changes and automatically reloading them.
 
-use std::path::Path;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use eyre::{Result, WrapErr};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};

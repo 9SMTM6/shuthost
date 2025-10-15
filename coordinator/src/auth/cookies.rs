@@ -5,8 +5,7 @@ use axum_extra::extract::{
     cookie::{Cookie, Key},
 };
 use base64::Engine;
-use cookie::SameSite;
-use cookie::time::Duration as CookieDuration;
+use cookie::{SameSite, time::Duration as CookieDuration};
 use rand::{Rng as _, distr::Alphanumeric};
 
 use crate::auth::{OIDCSessionClaims, routes::TokenSessionClaims};

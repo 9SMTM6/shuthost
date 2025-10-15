@@ -1,19 +1,23 @@
 //! Host control logic for wake-on-LAN and shutdown operations.
 
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
-use tokio::time::timeout;
-use tracing::{debug, error, info, warn};
 
+use tokio::{
+    io::{AsyncReadExt as _, AsyncWriteExt as _},
+    net::TcpStream,
+    time::timeout,
+};
+use tracing::{debug, error, info, warn};
 use axum::http::StatusCode;
+
 use shuthost_common::create_signed_message;
 
-use crate::config::Host;
-use crate::http::AppState;
-use crate::http::polling::poll_until_host_state;
-use crate::routes::m2m::leases::LeaseSource;
-use crate::wol::send_magic_packet;
+use crate::{
+    config::Host,
+    http::{AppState, polling::poll_until_host_state},
+    routes::m2m::leases::LeaseSource,
+    wol::send_magic_packet,
+};
 
 /// Timeout for TCP operations
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);

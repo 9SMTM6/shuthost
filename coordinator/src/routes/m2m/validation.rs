@@ -4,8 +4,7 @@ use axum::http::StatusCode;
 use shuthost_common::validate_hmac_message;
 use tracing::{info, warn};
 
-use crate::http::AppState;
-use crate::routes::api::LeaseAction;
+use crate::{http::AppState, routes::api::LeaseAction};
 
 /// Validates M2M lease action request headers and returns (client_id, LeaseAction)
 pub fn validate_m2m_request(

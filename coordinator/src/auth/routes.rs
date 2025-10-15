@@ -1,5 +1,7 @@
 //! Authentication route handlers.
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use axum::{
     Router,
     extract::State,
@@ -10,20 +12,18 @@ use axum::{
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::auth::token::LoginQuery;
-use crate::auth::{
-    AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
-    LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
-};
-use crate::http::AppState;
 use crate::{
-    auth::cookies::{
-        COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION, get_oidc_session_from_cookie,
-        get_token_session_from_cookie,
+    auth::{
+        AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
+        LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
+        cookies::{
+            COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION, get_oidc_session_from_cookie,
+            get_token_session_from_cookie,
+        },
+        token::LoginQuery,
     },
-    http::assets::asset_routes,
+    http::{AppState, assets::asset_routes},
     include_utf8_asset,
 };
 

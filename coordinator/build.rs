@@ -1,6 +1,7 @@
+use std::{fs, path::PathBuf, process};
+
 use eyre::{ContextCompat, Ok, WrapErr, bail, eyre};
 use resvg::usvg;
-use std::{fs, path::PathBuf, process};
 use tiny_skia::Pixmap;
 
 const RERUN_IF: &'static str = "cargo::rerun-if-changed=frontend/assets";

@@ -2,38 +2,37 @@
 //!
 //! Defines routes, state management, configuration watching, and server startup.
 
-use axum::body::Body;
-use axum::http::HeaderValue;
-use axum::http::Request;
-use axum::http::header::HeaderName;
-use axum::http::header::{AUTHORIZATION, COOKIE};
-use axum::middleware::Next;
-use axum::response::Response;
-use axum::routing::{self, any};
-use axum::{Router, response::Redirect, routing::get};
+use std::{collections::HashMap, net::IpAddr, path::Path, sync::Arc, time::Duration};
+
+use axum::{
+    Router,
+    body::Body,
+    http::{
+        HeaderValue, Request,
+        header::{AUTHORIZATION, COOKIE, HeaderName},
+    },
+    middleware::Next,
+    response::{Redirect, Response},
+    routing::{self, any, get},
+};
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
+use clap::Parser;
 use eyre::WrapErr;
-use std::path::Path;
-use std::time::Duration;
-use std::{net::IpAddr, sync::Arc};
-use tokio::fs;
+use tokio::{
+    fs,
+    sync::{broadcast, watch},
+};
 use tower::ServiceBuilder;
-use tower_http::ServiceBuilderExt as _;
-use tower_http::request_id::MakeRequestUuid;
-use tower_http::timeout::TimeoutLayer;
+use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::TimeoutLayer};
 use tracing::{info, warn};
 
-use crate::auth::{AuthRuntime, public_routes, require_auth};
-use crate::config::TlsConfig;
-use crate::http::assets::serve_ui;
 use crate::{
-    config::{ControllerConfig, load_coordinator_config},
+    auth::{AuthRuntime, public_routes, require_auth},
+    config::{ControllerConfig, TlsConfig, load_coordinator_config},
+    http::assets::serve_ui,
     routes::{LeaseMap, api_routes},
     websocket::{WsMessage, ws_handler},
 };
-use clap::Parser;
-use std::collections::HashMap;
-use tokio::sync::{broadcast, watch};
 
 /// Command-line arguments for the HTTP service subcommand.
 #[derive(Debug, Parser)]

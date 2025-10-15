@@ -9,11 +9,13 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 
-use crate::auth::cookies::{
-    COOKIE_RETURN_TO, create_return_to_cookie, get_oidc_session_from_cookie,
-    get_token_session_from_cookie,
+use crate::auth::{
+    AuthLayerState, AuthResolved,
+    cookies::{
+        COOKIE_RETURN_TO, create_return_to_cookie, get_oidc_session_from_cookie,
+        get_token_session_from_cookie,
+    },
 };
-use crate::auth::{AuthLayerState, AuthResolved};
 
 /// Middleware that enforces authentication depending on configured mode.
 pub async fn require_auth(

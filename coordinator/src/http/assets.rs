@@ -2,15 +2,19 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
-use crate::auth::{AuthResolved, EXPECTED_EXCEPTIONS_VERSION};
-use crate::http::AppState;
+use std::sync::OnceLock;
+
 use axum::{
     Router,
     extract::State,
     response::{IntoResponse, Response},
     routing::get,
 };
-use std::sync::OnceLock;
+
+use crate::{
+    auth::{AuthResolved, EXPECTED_EXCEPTIONS_VERSION},
+    http::AppState,
+};
 
 #[macro_export]
 macro_rules! include_utf8_asset {
