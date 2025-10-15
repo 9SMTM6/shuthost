@@ -15,9 +15,9 @@ use crate::config::ControllerConfig;
 ///
 /// * `path` - File path to the TOML configuration file.
 ///
-/// # Returns
+/// # Errors
 ///
-/// A `ControllerConfig` on success, or an error.
+/// Returns an error if the config file cannot be read or parsed.
 pub async fn load_coordinator_config<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
     let content = tokio::fs::read_to_string(path)
         .await

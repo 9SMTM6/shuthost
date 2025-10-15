@@ -10,7 +10,7 @@ use axum::{
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 
 use crate::auth::{
-    AuthLayerState, AuthResolved,
+    LayerState, Resolved,
     cookies::{
         COOKIE_RETURN_TO, create_return_to_cookie, get_oidc_session_from_cookie,
         get_token_session_from_cookie,
@@ -18,8 +18,8 @@ use crate::auth::{
 };
 
 /// Middleware that enforces authentication depending on configured mode.
-pub async fn require_auth(
-    State(AuthLayerState { auth }): State<AuthLayerState>,
+pub async fn require(
+    State(LayerState { auth }): State<LayerState>,
     req: Request<Body>,
     next: Next,
 ) -> Response {
@@ -30,12 +30,12 @@ pub async fn require_auth(
         // outside the app; do not enforce internal auth here and let
         // requests through. The UI will show a prominent notice when
         // external auth is not acknowledged or has mismatched version.
-        AuthResolved::Disabled | AuthResolved::External { .. } => next.run(req).await,
-        AuthResolved::Token { ref token } => {
+        Resolved::Disabled | Resolved::External { .. } => next.run(req).await,
+        Resolved::Token { ref token } => {
             // Token auth uses a signed cookie with claims (iat, exp, token_hash)
             if let Some(claims) = get_token_session_from_cookie(&signed) {
                 if claims.is_expired() {
-                    tracing::info!("require_auth: token session expired, redirecting to login");
+                    tracing::info!("require: token session expired, redirecting to login");
                     return Redirect::to("/login?error=session_expired").into_response();
                 }
                 if claims.matches_token(token) {
@@ -45,24 +45,24 @@ pub async fn require_auth(
             if wants_html(headers) {
                 // remember path for redirect-after-login
                 let return_to = req.uri().to_string();
-                tracing::info!(return_to = %return_to, "require_auth: no valid token, redirecting to /login and setting return_to cookie");
+                tracing::info!(return_to = %return_to, "require: no valid token, redirecting to /login and setting return_to cookie");
                 let jar = signed.add(create_return_to_cookie(return_to));
                 (jar, Redirect::temporary("/login")).into_response()
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
         }
-        AuthResolved::Oidc { .. } => {
+        Resolved::Oidc { .. } => {
             // Check signed session cookie via headers
             if let Some(sess) = get_oidc_session_from_cookie(&signed)
                 && !sess.is_expired()
             {
                 return next.run(req).await;
             }
-            tracing::info!("require_auth: no valid session cookie, initiating OIDC login flow");
+            tracing::info!("require: no valid session cookie, initiating OIDC login flow");
             if wants_html(headers) {
                 let return_to = req.uri().to_string();
-                tracing::info!(return_to = %return_to, "require_auth: setting return_to cookie and redirecting to /oidc/login");
+                tracing::info!(return_to = %return_to, "require: setting return_to cookie and redirecting to /oidc/login");
                 let jar = signed.add(
                     Cookie::build((COOKIE_RETURN_TO, return_to))
                         .path("/")

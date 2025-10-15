@@ -21,7 +21,7 @@ use crate::routes::api::LeaseAction;
 pub use host_control::handle_host_state;
 pub use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
-pub fn m2m_routes() -> axum::Router<AppState> {
+pub fn m2m_router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/lease/{hostname}/{action}", post(handle_m2m_lease_action))
         .route("/test_wol", post(test_wol))

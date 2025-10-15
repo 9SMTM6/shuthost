@@ -47,6 +47,10 @@ pub async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &s
 }
 
 /// Poll a host until its state matches desired_state or timeout is reached. Updates global state.
+///
+/// # Errors
+///
+/// Returns an error if the polling times out or if there are issues with the host configuration.
 pub async fn poll_until_host_state(
     host_name: &str,
     desired_state: bool,

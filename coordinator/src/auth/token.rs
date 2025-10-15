@@ -8,7 +8,7 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN,
+        Resolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN,
         cookies::create_token_session_cookie, routes::TokenSessionClaims,
     },
     http::AppState,
@@ -40,7 +40,7 @@ pub async fn login_post(
         return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
     }
     match &auth.mode {
-        &AuthResolved::Token {
+        &Resolved::Token {
             token: ref expected,
             ..
         } if &token == expected => {

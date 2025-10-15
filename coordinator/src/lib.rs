@@ -24,17 +24,25 @@ use tracing_subscriber::EnvFilter;
 use cli::{Cli, Command};
 use demo::run_demo_service;
 use http::start;
-use install::install_coordinator;
+use install::setup;
 
 /// The coordinator's main function; can be called from a shim binary.
 ///
 /// Parses CLI and dispatches install or server startup.
+///
+/// # Errors
+///
+/// Returns an error if installation fails or if the server fails to start.
+///
+/// # Panics
+///
+/// Panics if the AWS LC crypto provider cannot be installed.
 pub async fn inner_main() -> Result<()> {
     let invocation = Cli::parse();
 
     match invocation.command {
         Command::Install(args) => {
-            install_coordinator(args)?;
+            setup(args)?;
             Ok(())
         }
         Command::ControlService(args) => {

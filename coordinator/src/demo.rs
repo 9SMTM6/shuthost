@@ -25,6 +25,10 @@ use crate::{
 };
 
 /// Run the demo service on the specified port and bind address.
+///
+/// # Panics
+///
+/// Panics if the TCP listener cannot be bound to the specified address.
 pub async fn run_demo_service(port: u16, bind: &str) {
     let addr = format!("{}:{}", bind, port);
     info!("Starting demo service on http://{}", addr);
@@ -50,7 +54,7 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         hoststatus_tx,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseMap::default(),
-        auth: std::sync::Arc::new(crate::auth::AuthRuntime::from_config(
+        auth: std::sync::Arc::new(crate::auth::Runtime::from_config(
             &ControllerConfig::default(),
         )),
         tls_enabled: false,

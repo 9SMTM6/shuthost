@@ -70,6 +70,10 @@ async fn process_config_change(
 ///
 /// * `path` - Path to the config file to watch.
 /// * `tx` - Watch channel sender to broadcast new config instances.
+///
+/// # Panics
+///
+/// Panics if the file watcher cannot be created.
 pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 

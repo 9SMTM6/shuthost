@@ -28,7 +28,7 @@ const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.sh"
 
 /// Arguments for the `install` subcommand of the coordinator.
 #[derive(Debug, Parser)]
-pub struct InstallArgs {
+pub struct Args {
     /// Username to own the generated config file (from $SUDO_USER).
     #[arg(env = "SUDO_USER")]
     user: String,
@@ -51,7 +51,11 @@ pub struct InstallArgs {
 /// # Errors
 ///
 /// Returns `Err` if any filesystem, templating, or service management step fails.
-pub fn install_coordinator(args: InstallArgs) -> eyre::Result<()> {
+///
+/// # Panics
+///
+/// Panics if the TOML serialization of the configuration fails.
+pub fn setup(args: Args) -> eyre::Result<()> {
     let name = env!("CARGO_PKG_NAME");
     let user = args.user;
 

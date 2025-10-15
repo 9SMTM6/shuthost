@@ -14,7 +14,7 @@ use crate::{
 
 pub use super::m2m::{LeaseMap, LeaseSource};
 
-pub fn api_routes() -> Router<AppState> {
+pub fn api_router() -> Router<AppState> {
     Router::new()
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route(

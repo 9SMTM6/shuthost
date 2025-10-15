@@ -22,7 +22,7 @@ use crate::{
 };
 
 pub use cookies::{COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE};
-pub use middleware::{request_is_secure, require_auth};
+pub use middleware::{request_is_secure, require};
 pub use routes::{EXPECTED_EXCEPTIONS_VERSION, OIDCSessionClaims, public_routes};
 
 // Centralized login error keys used as query values on /login?error=<key>
@@ -33,13 +33,13 @@ pub const LOGIN_ERROR_OIDC: &str = "oidc";
 pub const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";
 
 #[derive(Clone)]
-pub struct AuthRuntime {
-    pub mode: AuthResolved,
+pub struct Runtime {
+    pub mode: Resolved,
     pub cookie_key: Key,
 }
 
 #[derive(Clone, Debug)]
-pub enum AuthResolved {
+pub enum Resolved {
     Disabled,
     Token {
         token: String,
@@ -56,7 +56,7 @@ pub enum AuthResolved {
     },
 }
 
-impl AuthRuntime {
+impl Runtime {
     pub fn from_config(cfg: &ControllerConfig) -> Self {
         let (mode, cookie_key) = match cfg.server.auth {
             AuthConfig {
@@ -64,7 +64,7 @@ impl AuthRuntime {
                 ref cookie_secret,
                 ..
             } => (
-                AuthResolved::Disabled,
+                Resolved::Disabled,
                 cookies::key_from_secret(cookie_secret.as_deref()),
             ),
             AuthConfig {
@@ -86,7 +86,7 @@ impl AuthRuntime {
                 };
 
                 (
-                    AuthResolved::Token { token },
+                    Resolved::Token { token },
                     cookies::key_from_secret(cookie_secret.as_deref()),
                 )
             }
@@ -102,7 +102,7 @@ impl AuthRuntime {
             } => {
                 info!("Auth mode: oidc, issuer={}", issuer);
                 (
-                    AuthResolved::Oidc {
+                    Resolved::Oidc {
                         issuer: issuer.clone(),
                         client_id: client_id.clone(),
                         client_secret: client_secret.clone(),
@@ -117,7 +117,7 @@ impl AuthRuntime {
             } => {
                 info!("Auth mode: external (reverse proxy)");
                 (
-                    AuthResolved::External { exceptions_version },
+                    Resolved::External { exceptions_version },
                     cookies::key_from_secret(cookie_secret.as_deref()),
                 )
             }
@@ -127,11 +127,11 @@ impl AuthRuntime {
 }
 
 #[derive(Clone)]
-pub struct AuthLayerState {
-    pub auth: Arc<AuthRuntime>,
+pub struct LayerState {
+    pub auth: Arc<Runtime>,
 }
 
-impl FromRef<AppState> for AuthLayerState {
+impl FromRef<AppState> for LayerState {
     fn from_ref(state: &AppState) -> Self {
         Self {
             auth: state.auth.clone(),

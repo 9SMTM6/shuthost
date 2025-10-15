@@ -126,7 +126,7 @@ pub async fn oidc_login(
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let crate::auth::AuthResolved::Oidc {
+    let crate::auth::Resolved::Oidc {
         ref issuer,
         ref client_id,
         ref client_secret,
@@ -401,7 +401,7 @@ pub async fn oidc_callback(
         error_description,
     }): axum::extract::Query<OidcCallbackQueryParams>,
 ) -> impl IntoResponse {
-    let crate::auth::AuthResolved::Oidc {
+    let crate::auth::Resolved::Oidc {
         ref issuer,
         ref client_id,
         ref client_secret,

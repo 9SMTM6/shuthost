@@ -1,5 +1,8 @@
 use std::net::UdpSocket;
 
+/// # Errors
+///
+/// Returns an error if the MAC address is invalid or if the UDP socket cannot be bound or sent.
 pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> Result<(), String> {
     let mac_bytes = parse_mac(mac_address)?;
     let mut packet = [0xFFu8; 102];
@@ -39,6 +42,9 @@ fn parse_mac(mac: &str) -> Result<[u8; 6], String> {
     Ok(mac_bytes)
 }
 
+/// # Errors
+///
+/// Returns an error if the socket cannot be bound or configured.
 pub fn test_wol_reachability(target_port: u16) -> Result<bool, String> {
     let socket = UdpSocket::bind("0.0.0.0:0").map_err(|e| format!("Failed to bind socket: {e}"))?;
     socket

@@ -29,6 +29,10 @@ pub struct ServiceArgs {
 }
 
 /// Starts the TCP listener and handles incoming client connections in sequence.
+///
+/// # Panics
+///
+/// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set.
 pub fn start_host_agent(mut config: ServiceArgs) {
     config.shared_secret = env::var("SHUTHOST_SHARED_SECRET")
         .expect("SHUTHOST_SHARED_SECRET environment variable must be set");

@@ -27,10 +27,10 @@ use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::T
 use tracing::{info, warn};
 
 use crate::{
-    auth::{AuthRuntime, public_routes, require_auth},
+    auth::{Runtime, public_routes, require},
     config::{ControllerConfig, TlsConfig, load_coordinator_config},
     http::assets::serve_ui,
-    routes::{LeaseMap, api_routes},
+    routes::{LeaseMap, api_router},
     websocket::{WsMessage, ws_handler},
 };
 
@@ -67,7 +67,7 @@ pub struct AppState {
     pub leases: LeaseMap,
 
     /// Authentication runtime (mode and secrets)
-    pub auth: std::sync::Arc<AuthRuntime>,
+    pub auth: std::sync::Arc<Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
 }
@@ -83,6 +83,14 @@ pub struct AppState {
 /// # Returns
 ///
 /// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
+///
+/// # Errors
+///
+/// Returns an error if the configuration cannot be loaded, TLS setup fails, or the server cannot bind.
+///
+/// # Panics
+///
+/// Panics if the certificate path cannot be converted to a string.
 pub async fn start(
     config_path: &std::path::Path,
     port_override: Option<u16>,
@@ -116,7 +124,7 @@ pub async fn start(
         config_path,
     );
 
-    let auth_runtime = std::sync::Arc::new(AuthRuntime::from_config(&initial_config));
+    let auth_runtime = std::sync::Arc::new(Runtime::from_config(&initial_config));
 
     // Startup-time warning: if TLS is not enabled but authentication is active,
     // browsers will ignore cookies marked Secure. Warn operators so they can
@@ -128,7 +136,7 @@ pub async fn start(
     };
     if tls_opt.is_none() {
         match &auth_runtime.mode {
-            &crate::auth::AuthResolved::Disabled => {}
+            &crate::auth::Resolved::Disabled => {}
             _ => {
                 warn!(
                     "TLS appears disabled but authentication is enabled. Authentication cookies are set with Secure=true and will not be sent by browsers over plain HTTP. Enable TLS or run behind an HTTPS reverse proxy (ensure it sets X-Forwarded-Proto: https)."
@@ -153,14 +161,14 @@ pub async fn start(
 
     // Private app routes protected by auth middleware
     let private = Router::new()
-        .nest("/api", api_routes())
+        .nest("/api", api_router())
         .route("/", get(serve_ui))
         .route("/ws", any(ws_handler))
         .route_layer(axum::middleware::from_fn_with_state(
-            crate::auth::AuthLayerState {
+            crate::auth::LayerState {
                 auth: auth_runtime.clone(),
             },
-            require_auth,
+            require,
         ));
 
     // TODO: figure out rate limiting

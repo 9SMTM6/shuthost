@@ -7,7 +7,7 @@ use std::env;
 
 use clap::{Parser, Subcommand};
 
-use crate::install::InstallArgs;
+use crate::install::Args;
 
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
@@ -26,7 +26,7 @@ pub enum Command {
     ControlService(ServiceArgs),
 
     /// Install the coordinator service to start on boot.
-    Install(InstallArgs),
+    Install(Args),
 
     /// Serve only static assets for demo mode (no backend, no state).
     DemoService {

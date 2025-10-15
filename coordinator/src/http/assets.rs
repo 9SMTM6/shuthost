@@ -12,7 +12,7 @@ use axum::{
 };
 
 use crate::{
-    auth::{AuthResolved, EXPECTED_EXCEPTIONS_VERSION},
+    auth::{Resolved, EXPECTED_EXCEPTIONS_VERSION},
     http::AppState,
 };
 
@@ -141,6 +141,10 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
 }
 
 /// Serves the main HTML template, injecting dynamic content.
+///
+/// # Panics
+///
+/// Panics if the response builder fails to build the response.
 pub async fn serve_ui(
     State(AppState {
         config_path, auth, ..
@@ -149,14 +153,14 @@ pub async fn serve_ui(
     static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
     let show_logout = !matches!(
         auth.mode,
-        AuthResolved::Disabled | AuthResolved::External { .. }
+        Resolved::Disabled | Resolved::External { .. }
     );
     let html = HTML_TEMPLATE
         .get_or_init(|| {
             // Determine whether to include the external auth config warning. If Auth is
             // Disabled we must show it. If Auth::External is configured but its
             // exceptions_version doesn't match the current expected version, show it.
-            type A = AuthResolved;
+            type A = Resolved;
             let maybe_external_auth_config = match &auth.mode {
                 &A::Token { .. }
                 | &A::Oidc { .. }
@@ -184,6 +188,10 @@ pub async fn serve_ui(
 }
 
 /// Serves the manifest.json file for web app metadata.
+///
+/// # Panics
+///
+/// Panics if the response builder fails to build the response.
 pub async fn serve_manifest() -> impl IntoResponse {
     static MANIFEST: OnceLock<String> = OnceLock::new();
 
@@ -201,6 +209,10 @@ pub async fn serve_manifest() -> impl IntoResponse {
 }
 
 /// Serves the compiled stylesheet for the UI.
+///
+/// # Panics
+///
+/// Panics if the response builder fails to build the response.
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")

@@ -15,7 +15,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     auth::{
-        AuthResolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
+        Resolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
         LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
         cookies::{
             COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION, get_oidc_session_from_cookie,
@@ -31,7 +31,7 @@ pub const EXPECTED_EXCEPTIONS_VERSION: u32 = 1;
 
 /// Public routes that don't require authentication.
 pub fn public_routes() -> Router<AppState> {
-    use crate::routes::{get_download_router, m2m_routes};
+    use crate::routes::{get_download_router, m2m_router};
 
     Router::new()
         // Auth endpoints
@@ -46,7 +46,7 @@ pub fn public_routes() -> Router<AppState> {
         .merge(asset_routes())
         // Bypass routes
         .nest("/download", get_download_router())
-        .nest("/api/m2m", m2m_routes())
+        .nest("/api/m2m", m2m_router())
 }
 
 /// Handle GET requests to the login page.
@@ -56,7 +56,7 @@ pub async fn login_get(
     axum::extract::Query(LoginQuery { error }): axum::extract::Query<LoginQuery>,
 ) -> impl IntoResponse {
     // Check if already authenticated
-    type A = AuthResolved;
+    type A = Resolved;
 
     let signed = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
     let is_authenticated = match auth.mode {
