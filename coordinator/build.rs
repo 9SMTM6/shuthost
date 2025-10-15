@@ -47,7 +47,7 @@ fn run_npm_build() -> eyre::Result<()> {
             if it.success() {
                 Ok(())
             } else {
-                Err(eyre!("npm run build failed with {it}"))
+                bail!("npm run build failed with {it}")
             }
         })
         .wrap_err("Failed to npm run build")?
@@ -71,7 +71,7 @@ fn setup_npm() -> eyre::Result<()> {
             if it.success() {
                 Ok(())
             } else {
-                Err(eyre!("npm ci failed with {it}"))
+                bail!("npm ci failed with {it}")
             }
         })
         .wrap_err("Failed to npm ci")?
@@ -94,16 +94,17 @@ fn generate_png_icons() -> eyre::Result<()> {
         usvg::Tree::from_str(std::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 
     // sizes to emit: favicons, apple-touch, and PWA sizes
-    let sizes: &[u32] = &[32, 48, 64, 128, 180, 192, 512];
+    let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
+    let scaling_sizes = sizes.map(|it| it as f32 / 400.0);
 
-    for &size in sizes {
+    for (&size, scaling) in sizes.iter().zip(scaling_sizes) {
         let mut pixmap = Pixmap::new(size, size)
-            .ok_or_else(|| eyre::eyre!("failed to allocate pixmap {}x{}", size, size))?;
+            .ok_or_else(|| eyre!("failed to allocate pixmap {size}x{size}"))?;
 
         // Render the SVG into the pixmap using resvg's render
-        let fit_to = tiny_skia::Transform::from_scale(size as f32, size as f32);
+        let fit_to = tiny_skia::Transform::from_scale(scaling, scaling);
         resvg::render(&rtree, fit_to, &mut pixmap.as_mut());
-        let out_png = out_dir.join(format!("icon-{}.png", size));
+        let out_png = out_dir.join(format!("icon-{size}.png"));
         pixmap
             .save_png(out_png.as_path())
             .wrap_err(format!("saving {}", out_png.display()))?;

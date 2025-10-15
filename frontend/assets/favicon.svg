@@ -1,13 +1,11 @@
 <svg height="400" viewBox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <style type="text/css"><![CDATA[
-            /* Expose two CSS variables that a page can override when the SVG is inlined. 
-            Each class has a sensible fallback. */
-            .fill-fg { fill: var(--shuthost-icon-fg, rgba(89, 89, 89, 1)); }
-            .fill-bg { fill: var(--shuthost-icon-bg, rgba(0,0,0,0)); }
-            <!-- @media (prefers-color-scheme: dark) {
-                .fill-fg { fill: var(--shuthost-icon-fg, #c1c1c1ff); }
-                .fill-bg { fill: var(--shuthost-icon-bg, rgba(0,0,0,0)); } -->
+            .fill-fg { fill: rgba(89, 89, 89, 1); }
+            .fill-bg { fill: rgba(0,0,0,0); }
+            @media (prefers-color-scheme: dark) {
+                .fill-fg { fill: #c0c0c0ff; }
+                .fill-bg { fill: rgba(0,0,0,0); }
             }
         ]]></style>
     </defs>
