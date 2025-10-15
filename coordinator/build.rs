@@ -4,9 +4,9 @@ use eyre::{ContextCompat, Ok, WrapErr, bail, eyre};
 use resvg::usvg;
 use tiny_skia::Pixmap;
 
-const RERUN_IF: &'static str = "cargo::rerun-if-changed=frontend/assets";
+const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 
-const FRONTEND_DIR: &'static str = "frontend";
+const FRONTEND_DIR: &str = "frontend";
 
 fn main() -> eyre::Result<()> {
     set_workspace_root()?;
@@ -86,8 +86,10 @@ fn generate_png_icons() -> eyre::Result<()> {
 
     let svg_data = include_bytes!("frontend/assets/favicon.svg");
 
-    let mut opt = usvg::Options::default();
-    opt.resources_dir = Some(PathBuf::from("frontend/assets/"));
+    let opt = usvg::Options{
+        resources_dir: Some(PathBuf::from("frontend/assets/")),
+        ..Default::default()
+    };
     let rtree =
         usvg::Tree::from_str(std::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 

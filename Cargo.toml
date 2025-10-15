@@ -73,6 +73,7 @@ unsafe-op-in-unsafe-fn = "warn"
 all = { level = "warn", priority = -1 }
 # nursery = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
+allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 branches_sharing_code = "warn"
 cargo_common_metadata = "allow" # this seems to have false positives
@@ -93,6 +94,7 @@ needless_borrowed_reference = "allow"
 needless_pass_by_value = "warn"
 no_effect_underscore_binding = "warn"
 pattern_type_mismatch = "warn"
+redundant_type_annotations = "warn"
 rc_buffer = "warn"
 redundant_else = "warn"
 semicolon_if_nothing_returned = "warn"
