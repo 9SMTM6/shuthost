@@ -57,7 +57,7 @@ update_dependencies:
     cd frontend && npm update
 
 test_all:
-    cargo test --no-default-features --workspace
+    cargo test --workspace
 
 ci_cargo_deny:
     cargo +stable --locked deny check --hide-inclusion-graph

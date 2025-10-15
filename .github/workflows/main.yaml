@@ -96,6 +96,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_coordinator
+          additional-flags: --features include_linux_agents,include_macos_agents
 
       - name: Upload coordinator binary
         uses: actions/upload-artifact@v4
@@ -112,7 +113,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run tests
-        run: cargo test --no-default-features --workspace
+        run: cargo test --workspace
 
   test-service-installation:
     name: Test Service Installation & Startup
@@ -561,7 +562,6 @@ jobs:
       - uses: ./.github/actions/rust-build
         with:
           bin-name: shuthost_coordinator
-          additional-flags: --no-default-features
 
       - name: Run Playwright tests
         env:

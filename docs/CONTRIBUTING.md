@@ -12,9 +12,10 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 
 ## Host Agent Artifacts
 - Host agent binaries (the binaries that are run on every host to be controlled) and other artifacts are included in the build using `include_bytes!` (for portability of the controller binary), so they must be present in the expected locations (e.g. the Cargo target directory for host agents).
-- Building macOS agents on Linux is not supported. To avoid build failures:
-  - You can comment out the default features `include_macos_agents` and `include_linux_agents` in your local [`coordinator/Cargo.toml`](../coordinator/Cargo.toml). Do not commit these changes ;-P.
-  - Alternatively, for supported agents, use cross-compilation toolchains as described in the [`Justfile`](../Justfile) - similar to Gnu Make - to build the required agents in release mode.
+- By default, the include_macos_agents and include_linux_agents features are disabled to avoid build failures.
+- To include agent binaries in the coordinator (required for downloading them, e.g. for manual tests), enable the features via command line: `--features include_linux_agents,include_macos_agents`.
+- Building macOS agents on Linux is not supported. 
+- To build the supported agents use cross-compilation toolchains as described in the [`Justfile`](../Justfile) - similar to Gnu Make - to build the required agents in release mode.
 
 ## Shell Scripts & Portability
 - To support many platforms, shell scripts should **not** use bashisms.
@@ -54,7 +55,7 @@ Running tests:
 
 -- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend/` you can:
   - Update all snapshots:
-    - `npx playwright test --update-snapshots`
+    - `npx playwright test --update-snapshots all`
   - Update snapshots for a single test file (faster and safer when only one test changed):
     - `npx playwright test tests/aria-snapshots.spec.ts -u`
 

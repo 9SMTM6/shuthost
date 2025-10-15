@@ -13,10 +13,9 @@ categories.workspace = true
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
-default = [
-    "include_linux_agents",
-    "include_macos_agents",
-]
+default = ["compression-br", "compression-zstd"]
+compression-br = ["tower-http/compression-br", "reqwest/brotli"]
+compression-zstd = ["tower-http/compression-zstd", "reqwest/zstd"]
 include_linux_agents = []
 include_macos_agents = []
 
@@ -39,13 +38,7 @@ openidconnect = { version = "4.x", default-features = false, features = [
 rand.workspace = true
 rcgen = "0.14.x"
 regex = "1.11.1"
-reqwest = { workspace = true, features = [
-    "rustls-tls",
-    "http2",
-    "charset",
-    "brotli",
-    "zstd",
-] }
+reqwest = { workspace = true, features = ["rustls-tls", "http2", "charset"] }
 rustls = "0.23.x"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
@@ -56,8 +49,6 @@ tokio.workspace = true
 toml = "0.9.x"
 tower = "0.5"
 tower-http = { version = "0.6", features = [
-    "compression-br",
-    "compression-zstd",
     "request-id",
     "sensitive-headers",
     "timeout",

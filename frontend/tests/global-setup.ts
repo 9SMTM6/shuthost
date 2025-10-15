@@ -6,7 +6,7 @@ export default async function globalSetup() {
         return;
     }
 
-    const flags = "--release --no-default-features"
+    const flags = "--release"
 
     console.log(`Global setup: building coordinator (${flags})`);
     execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit' });
