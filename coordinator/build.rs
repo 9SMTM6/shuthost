@@ -86,7 +86,7 @@ fn generate_png_icons() -> eyre::Result<()> {
 
     let svg_data = include_bytes!("frontend/assets/favicon.svg");
 
-    let opt = usvg::Options{
+    let opt = usvg::Options {
         resources_dir: Some(PathBuf::from("frontend/assets/")),
         ..Default::default()
     };

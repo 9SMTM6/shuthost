@@ -2,13 +2,13 @@
 
 use std::time::Duration;
 
+use axum::http::StatusCode;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
     time::timeout,
 };
 use tracing::{debug, error, info, warn};
-use axum::http::StatusCode;
 
 use shuthost_common::create_signed_message;
 

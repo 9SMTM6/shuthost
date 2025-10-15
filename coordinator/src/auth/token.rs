@@ -8,8 +8,8 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        Resolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN,
-        cookies::create_token_session_cookie, routes::TokenSessionClaims,
+        LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved, cookies::create_token_session_cookie,
+        routes::TokenSessionClaims,
     },
     http::AppState,
 };

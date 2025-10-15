@@ -544,7 +544,6 @@ jobs:
               ;;
             macOS)
               # Homebrew cask fonts; fail if they can't be installed.
-              brew tap homebrew/cask-fonts
               brew install --cask font-inter font-cascadia-code
               ;;
             *)

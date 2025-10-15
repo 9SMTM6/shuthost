@@ -15,8 +15,8 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     auth::{
-        Resolved, LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED,
-        LOGIN_ERROR_TOKEN, LOGIN_ERROR_UNKNOWN,
+        LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, LOGIN_ERROR_TOKEN,
+        LOGIN_ERROR_UNKNOWN, Resolved,
         cookies::{
             COOKIE_OIDC_SESSION, COOKIE_TOKEN_SESSION, get_oidc_session_from_cookie,
             get_token_session_from_cookie,
