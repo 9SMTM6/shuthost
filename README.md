@@ -5,22 +5,23 @@
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/main.yaml?label=build%20%26%20test)](https://github.com/9SMTM6/shuthost/actions/workflows/main.yaml)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/qa.yml?label=QA)](https://github.com/9SMTM6/shuthost/actions/workflows/qa.yaml)
 
-> A neat helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
+A neat helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
-⚠️ **Note**: LARGE parts of this project were LLM generated. I checked over all of them before committing, but it is what it is.
+> Note: LARGE parts of this project were LLM generated. None were blindly committed, but it is what it is.
 
-[![Live demo: PWA controlling NAS (2x speed)](docs/shuthost_live_demo_2x.webp)](./docs/shuthost_live_demo_2x.webp)
+[![Live demo: PWA controlling NAS aka old PC (2x speed)](docs/shuthost_live_demo_2x.webp)](./docs/shuthost_live_demo_2x.webp)
 > played at 2x speed, using the WebUI installed as PWA
 
-> Note: the short demo clip shown above is slightly out of date with respect to theming and layout. Check the live demo or screenshots below for the current UI.
+⚠️ **Note**: the short demo clip shown above is slightly out of date with respect to theming and layout. Check the [live demo](https://9SMTM6.github.io/shuthost/) or [screenshots below](#-ui-screenshots) for the current UI.
 
 ## 🌐 Live Demo
 
-You can try a static demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
+You can try a demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
 
 - [Live Demo](https://9SMTM6.github.io/shuthost/)
 
 This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and features without installing anything.
+Note that the theme (light/dark) is selected based on your system preference.
 
 ---
 
@@ -28,8 +29,9 @@ This demo runs entirely in your browser and does not control any real hosts. It 
 
 - Manage standby state of Unix hosts with Wake-On-Lan (WOL) and lightweight agents
 - Web-based GUI for easy management 
+  - Light/Dark theme are selected based on system preference (with CSS media queries)
   - installable as [PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Installing#installing_and_uninstalling_pwas)
-  - this allows behavior similar to an native app on e.g. Android
+    - this allows behavior similar to an native app on e.g. Android
 - API for machine-to-machine control (e.g. backups)
 - Should support extension (e.g. Home Assistant)
 - Docker and simple binary deployment options (Docker has some strict requirements though)
@@ -124,6 +126,9 @@ Agent / Client installation
 ---
 
 ## 📷 UI screenshots
+
+More screenshots can be found in the [frontend/tests/visual-regression.spec.ts-snapshots](frontend/tests/visual-regression.spec.ts-snapshots) and the [frontend/tests/mobile-visual-regression.spec.ts-snapshots](frontend/tests/mobile-visual-regression.spec.ts-snapshots) folders.
+These are generated or validated automatically as part of the test suite, and thus are guaranteed to be up-to-date (if the tests pass).
 
 <table>
   <tr>
