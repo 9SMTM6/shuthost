@@ -64,11 +64,73 @@ ci_cargo_deny:
 
 alias deny := ci_cargo_deny
 
-ci_semver_updates:
-    cargo +stable --locked generate-lockfile
-
-semver_updates:
-    cargo +stable generate-lockfile
-
 ci_typo:
     typos
+
+release TYPE:
+    #!/usr/bin/env bash
+    set -e
+    git fetch
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [ "$CURRENT_BRANCH" != "main" ]; then
+        echo "Not on main branch. Aborting."
+        exit 1
+    fi
+    if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+        echo "Local main is not up to date with origin/main. Aborting."
+        exit 1
+    fi
+    echo "Starting {{TYPE}} release process..."
+    just update_dependencies
+    cargo fmt
+    CURRENT_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+    case {{TYPE}} in
+        patch)
+            NEW_PATCH=$((PATCH + 1))
+            NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+            ;;
+        minor)
+            NEW_MINOR=$((MINOR + 1))
+            NEW_VERSION="$MAJOR.$NEW_MINOR.0"
+            ;;
+        major)
+            NEW_MAJOR=$((MAJOR + 1))
+            NEW_VERSION="$NEW_MAJOR.0.0"
+            ;;
+        *)
+            echo "Invalid type: {{TYPE}}. Use patch, minor, or major."
+            exit 1
+            ;;
+    esac
+    echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
+    sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
+    cd frontend
+    npx playwright test --update-snapshots all
+    cd ..
+    git add .
+    while true; do
+        read -p "Please check the new snapshots and any other changes. Continue with commit? (y/N/s for shell) " -n 1 -r REPLY
+        echo
+        case $REPLY in
+            [Yy])
+                break
+                ;;
+            [Nn])
+                echo "Release aborted."
+                exit 1
+                ;;
+            [Ss])
+                echo "Dropping into subshell ($SHELL). Type 'exit' to return."
+                $SHELL || true
+                ;;
+            *)
+                echo "Invalid input. Please enter y, n, or s."
+                ;;
+        esac
+    done
+
+    git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m"- Updated Playwright snapshots"
+    git tag "$NEW_VERSION"
+    git push origin refs/heads/main --tags
+    echo "{{TYPE}} release $NEW_VERSION completed successfully!"
