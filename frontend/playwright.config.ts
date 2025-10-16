@@ -10,6 +10,13 @@ export default defineConfig({
             maxDiffPixelRatio: 0.03,
             // have nice hi-res screenshots that can double as images in Docs.
             scale: 'device',
+            // Strip the platform from the file name,
+            // so that we don't need to execute on every platform after changes.
+            // 
+            // This might cause issues, if so we'll have to revert.
+            pathTemplate: "{snapshotDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}",
+            // Default: 
+            // pathTemplate: "{snapshotDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}",
         }
     },
     fullyParallel: true,
