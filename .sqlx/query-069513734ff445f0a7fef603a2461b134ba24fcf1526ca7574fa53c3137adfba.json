@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT hostname, lease_source_type, lease_source_value FROM leases",
+  "describe": {
+    "columns": [
+      {
+        "name": "hostname",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "lease_source_type",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "lease_source_value",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "069513734ff445f0a7fef603a2461b134ba24fcf1526ca7574fa53c3137adfba"
+}

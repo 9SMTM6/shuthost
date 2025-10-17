@@ -7,6 +7,7 @@
 pub mod auth;
 pub mod cli;
 pub mod config;
+pub mod db;
 // Doesn't make sense to include in the coverage:
 // Including a run of scripts/build-gh-pages.sh, which this is for,
 // would artificially inflate coverage of endpoints that should be tested in actual use

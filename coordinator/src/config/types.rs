@@ -43,6 +43,10 @@ pub struct ServerConfig {
     /// Authentication configuration (defaults to no auth when omitted)
     #[serde(default)]
     pub auth: AuthConfig,
+    /// Path to the SQLite database file. Relative paths are resolved relative to the config file.
+    /// Note: WAL mode is enabled, so .db-wal and .db-shm files will be created alongside the main database file.
+    #[serde(default = "default_db_path")]
+    pub db_path: String,
 }
 
 /// TLS configuration for the HTTP server.
@@ -95,6 +99,10 @@ const fn do_persist_self_signed() -> bool {
 
 const fn do_tls_enable() -> bool {
     true
+}
+
+fn default_db_path() -> String {
+    "./shuthost.db".to_string()
 }
 
 /// Supported authentication modes for the Web UI

@@ -29,6 +29,7 @@ use tracing::{info, warn};
 use crate::{
     auth::{self, public_routes},
     config::{ControllerConfig, TlsConfig, load_coordinator_config},
+    db::{self, DbPool},
     http::{assets::serve_ui, polling},
     routes::{LeaseMap, api_router},
     websocket::{WsMessage, ws_handler},
@@ -70,6 +71,9 @@ pub struct AppState {
     pub auth: std::sync::Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
+
+    /// Database connection pool for persistent storage.
+    pub db_pool: DbPool,
 }
 
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
@@ -115,6 +119,25 @@ pub async fn start(
 
     let (ws_tx, _) = broadcast::channel(32);
 
+    // Initialize database
+    let db_path_str = initial_config.server.db_path.as_str();
+    let db_path = if std::path::Path::new(db_path_str).is_absolute() {
+        std::path::PathBuf::from(db_path_str)
+    } else {
+        config_path
+            .parent()
+            .map(|d| d.join(db_path_str))
+            .unwrap_or_else(|| std::path::PathBuf::from(db_path_str))
+    };
+    let db_pool = db::init_db(&db_path).await?;
+    info!("Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)", db_path.display());
+
+    let leases = LeaseMap::default();
+
+    // Load existing leases from database
+    db::load_leases(&db_pool, &leases).await?;
+    info!("Loaded leases from database");
+
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
@@ -145,9 +168,10 @@ pub async fn start(
         hoststatus_tx,
         ws_tx,
         config_path: config_path.to_path_buf(),
-        leases: LeaseMap::default(),
+        leases,
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
+        db_pool,
     };
 
     // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth

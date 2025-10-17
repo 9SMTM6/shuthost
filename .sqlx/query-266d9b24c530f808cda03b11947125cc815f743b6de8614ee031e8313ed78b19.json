@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO web_interface_leases (hostname) VALUES (?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "266d9b24c530f808cda03b11947125cc815f743b6de8614ee031e8313ed78b19"
+}
