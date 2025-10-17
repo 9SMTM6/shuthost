@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM web_interface_leases WHERE hostname = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "45bcae793758fe16d75c3109fd64630c59734a1cec09b5988598c40927fee9c4"
+}

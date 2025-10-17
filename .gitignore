@@ -8,3 +8,8 @@ tarpaulin-report.html
 tarpaulin-report.json
 
 gh-pages
+
+# SQLite database files
+*.db
+*.db-wal
+*.db-shm

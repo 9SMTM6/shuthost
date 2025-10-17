@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM client_leases WHERE hostname = ? AND client_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "0b6a3668e3447f96f8cf393e1178488c2eb2480dd823ea6d1b584349533ac113"
+}

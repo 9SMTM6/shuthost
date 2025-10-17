@@ -47,14 +47,23 @@ async fn handle_web_lease_action(
 ) -> impl IntoResponse {
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.clone()).or_default();
+    let lease_source = LeaseSource::WebInterface;
     match action {
         LeaseAction::Take => {
-            lease_set.insert(LeaseSource::WebInterface);
+            lease_set.insert(lease_source.clone());
             info!("Web interface took lease on '{}'", hostname);
+            // Persist to database
+            if let Err(e) = crate::db::add_lease(&state.db_pool, &hostname, &lease_source).await {
+                tracing::error!("Failed to persist lease change: {}", e);
+            }
         }
         LeaseAction::Release => {
-            lease_set.remove(&LeaseSource::WebInterface);
+            lease_set.remove(&lease_source);
             info!("Web interface released lease on '{}'", hostname);
+            // Persist to database
+            if let Err(e) = crate::db::remove_lease(&state.db_pool, &hostname, &lease_source).await {
+                tracing::error!("Failed to persist lease change: {}", e);
+            }
         }
     }
 
@@ -87,12 +96,17 @@ async fn handle_reset_client_leases(
 ) -> impl IntoResponse {
     let mut leases = state.leases.lock().await;
 
-    // Remove all leases associated with the client
+    // Remove all leases associated with the client from memory
     for lease_set in leases.values_mut() {
         lease_set.retain(|lease| match lease {
             &LeaseSource::Client(ref id) => id != &client_id,
             _ => true,
         });
+    }
+
+    // Remove all leases associated with the client from database
+    if let Err(e) = crate::db::remove_client_leases(&state.db_pool, &client_id).await {
+        tracing::error!("Failed to remove client leases from database: {}", e);
     }
 
     // Broadcast updated lease information to WebSocket clients
