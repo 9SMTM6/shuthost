@@ -206,3 +206,69 @@ async fn test_shutdown_command_execution() {
     );
     let _ = std::fs::remove_file(shutdown_file); // Clean up after test
 }
+
+#[tokio::test]
+async fn test_lease_persistence_across_restarts() {
+    let coord_port = get_free_port();
+    let db_path = std::env::temp_dir().join(format!("shuthost_test_{}.db", coord_port));
+
+    // Ensure clean start
+    let _ = std::fs::remove_file(&db_path);
+
+    let config = format!(
+        r#"
+        [server]
+        port = {coord_port}
+        bind = "127.0.0.1"
+        db_path = "{}"
+
+        [hosts]
+
+        [clients]
+    "#,
+        db_path.to_string_lossy()
+    );
+
+    // Start coordinator with database
+    let coordinator_child = spawn_coordinator_with_config(
+        coord_port,
+        &config,
+    );
+    let _coordinator_guard = KillOnDrop(coordinator_child);
+    wait_for_listening(coord_port, 5).await;
+
+    let client = Client::new();
+
+    // Take a lease via API
+    let lease_url = format!("http://127.0.0.1:{coord_port}/api/lease/testhost/take");
+    let resp = client
+        .post(&lease_url)
+        .send()
+        .await
+        .expect("failed to take lease");
+    assert!(resp.status().is_success());
+
+    // Kill coordinator
+    drop(_coordinator_guard);
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+    // Start coordinator again with same db
+    let coordinator_child2 = spawn_coordinator_with_config(
+        coord_port,
+        &config,
+    );
+    let _coordinator_guard2 = KillOnDrop(coordinator_child2);
+    wait_for_listening(coord_port, 5).await;
+
+    // Verify lease still exists after restart by trying to release it
+    let release_url = format!("http://127.0.0.1:{coord_port}/api/lease/testhost/release");
+    let resp = client
+        .post(&release_url)
+        .send()
+        .await
+        .expect("failed to release lease");
+    assert!(resp.status().is_success(), "Lease should exist and be releasable after restart");
+
+    // Clean up
+    let _ = std::fs::remove_file(&db_path);
+}

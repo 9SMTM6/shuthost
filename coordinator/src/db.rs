@@ -150,3 +150,120 @@ pub async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre::Resul
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::Row;
+    use std::collections::HashMap;
+    use std::collections::HashSet;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    async fn setup_test_db() -> eyre::Result<DbPool> {
+        init_db(std::path::Path::new(":memory:")).await
+    }
+
+    #[tokio::test]
+    async fn test_init_db_creates_database() {
+        let pool = setup_test_db().await.unwrap();
+        
+        // Verify we can query the database
+        let result = sqlx::query("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+        
+        // Should have our tables and view
+        let names: HashSet<_> = result.into_iter().map(|r| r.get::<String, _>(0)).collect();
+        assert!(names.contains("web_interface_leases"));
+        assert!(names.contains("client_leases"));
+        assert!(names.contains("leases"));
+    }
+
+    #[tokio::test]
+    async fn test_add_and_load_leases() {
+        let pool = setup_test_db().await.unwrap();
+        let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
+
+        // Initially empty
+        load_leases(&pool, &leases).await.unwrap();
+        assert!(leases.lock().await.is_empty());
+
+        // Add web interface lease
+        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
+        
+        // Add client lease
+        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string())).await.unwrap();
+        add_lease(&pool, "host2", &LeaseSource::Client("client1".to_string())).await.unwrap();
+
+        // Load and verify
+        load_leases(&pool, &leases).await.unwrap();
+        let leases_guard = leases.lock().await;
+        
+        assert_eq!(leases_guard.len(), 2);
+        assert!(leases_guard["host1"].contains(&LeaseSource::WebInterface));
+        assert!(leases_guard["host1"].contains(&LeaseSource::Client("client1".to_string())));
+        assert!(leases_guard["host2"].contains(&LeaseSource::Client("client1".to_string())));
+    }
+
+    #[tokio::test]
+    async fn test_remove_lease() {
+        let pool = setup_test_db().await.unwrap();
+        let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
+
+        // Add leases
+        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
+        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string())).await.unwrap();
+
+        // Remove web interface lease
+        remove_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
+        
+        // Load and verify
+        load_leases(&pool, &leases).await.unwrap();
+        let leases_guard = leases.lock().await;
+        
+        assert_eq!(leases_guard.len(), 1);
+        assert!(leases_guard["host1"].contains(&LeaseSource::Client("client1".to_string())));
+        assert!(!leases_guard["host1"].contains(&LeaseSource::WebInterface));
+    }
+
+    #[tokio::test]
+    async fn test_remove_client_leases() {
+        let pool = setup_test_db().await.unwrap();
+        let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
+
+        // Add client leases
+        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string())).await.unwrap();
+        add_lease(&pool, "host2", &LeaseSource::Client("client1".to_string())).await.unwrap();
+        add_lease(&pool, "host3", &LeaseSource::Client("client2".to_string())).await.unwrap();
+
+        // Remove all for client1
+        remove_client_leases(&pool, "client1").await.unwrap();
+        
+        // Load and verify
+        load_leases(&pool, &leases).await.unwrap();
+        let leases_guard = leases.lock().await;
+        
+        assert_eq!(leases_guard.len(), 1);
+        assert!(leases_guard["host3"].contains(&LeaseSource::Client("client2".to_string())));
+    }
+
+    #[tokio::test]
+    async fn test_duplicate_leases_ignored() {
+        let pool = setup_test_db().await.unwrap();
+        let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
+
+        // Add same lease twice
+        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
+        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
+        
+        // Load and verify only one
+        load_leases(&pool, &leases).await.unwrap();
+        let leases_guard = leases.lock().await;
+        
+        assert_eq!(leases_guard.len(), 1);
+        assert_eq!(leases_guard["host1"].len(), 1);
+        assert!(leases_guard["host1"].contains(&LeaseSource::WebInterface));
+    }
+}
