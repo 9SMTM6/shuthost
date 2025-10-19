@@ -37,3 +37,31 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo +stable clippy --workspace -- -D warnings
+
+  coverage:
+    name: Coverage report (tarpaulin)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install cargo-tarpaulin
+        run: cargo binstall cargo-tarpaulin
+
+      - name: Run tarpaulin and capture output
+        run: |
+          cargo tarpaulin --workspace --out Json --out Html 
+
+      - name: Upload coverage artifacts (JSON + HTML)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            ./tarpaulin-report.html
+            ./tarpaulin-report.json
+

@@ -59,6 +59,9 @@ update_dependencies:
 test_all:
     cargo test --workspace
 
+coverage:
+    cargo tarpaulin --workspace --out Html --out Json --out Stdout
+
 ci_cargo_deny:
     cargo +stable --locked deny check --hide-inclusion-graph
 
