@@ -28,7 +28,7 @@ use tracing::{info, warn};
 
 use crate::{
     auth::{self, public_routes},
-    config::{ControllerConfig, TlsConfig, load_coordinator_config},
+    config::{ControllerConfig, DbConfig, TlsConfig, load_coordinator_config},
     db::{self, DbPool},
     http::{assets::serve_ui, polling},
     routes::{LeaseMap, api_router},
@@ -73,7 +73,7 @@ pub struct AppState {
     pub tls_enabled: bool,
 
     /// Database connection pool for persistent storage.
-    pub db_pool: DbPool,
+    pub db_pool: Option<DbPool>,
 }
 
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
@@ -119,24 +119,38 @@ pub async fn start(
 
     let (ws_tx, _) = broadcast::channel(32);
 
-    // Initialize database
-    let db_path_str = initial_config.server.db_path.as_str();
-    let db_path = if std::path::Path::new(db_path_str).is_absolute() {
-        std::path::PathBuf::from(db_path_str)
-    } else {
-        config_path
-            .parent()
-            .map(|d| d.join(db_path_str))
-            .unwrap_or_else(|| std::path::PathBuf::from(db_path_str))
+    // Initialize database. If a persistent DB is configured and enabled, open it
+    // relative to the config file when appropriate. Otherwise DB persistence is
+    // disabled and `db_pool` will be None.
+    let db_pool = match initial_config.db {
+        Some(DbConfig {enable: true, ref path}) => {
+            let db_path = if std::path::Path::new(path).is_absolute() {
+                std::path::PathBuf::from(path)
+            } else {
+                config_path
+                    .parent()
+                    .map(|d| d.join(path))
+                    .unwrap_or_else(|| std::path::PathBuf::from(path))
+            };
+            let pool = db::init_db(&db_path).await?;
+            info!("Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)", db_path.display());
+            Some(pool)
+        },
+        _ => {
+            info!("DB persistence disabled");
+            None
+        }
     };
-    let db_pool = db::init_db(&db_path).await?;
-    info!("Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)", db_path.display());
 
     let leases = LeaseMap::default();
 
-    // Load existing leases from database
-    db::load_leases(&db_pool, &leases).await?;
-    info!("Loaded leases from database");
+    // Load existing leases from database when persistence is enabled
+    if let Some(ref pool) = db_pool {
+        db::load_leases(pool, &leases).await?;
+        info!("Loaded leases from database");
+    } else {
+        info!("Skipping lease load: DB persistence disabled");
+    }
 
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);

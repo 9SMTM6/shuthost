@@ -47,9 +47,6 @@ pub async fn run_demo_service(port: u16, bind: &str) {
 
     let (hoststatus_tx, hoststatus_rx) = watch::channel(Arc::new(HashMap::new()));
 
-    // Initialize in-memory database for demo
-    let db_pool = crate::db::init_db(std::path::Path::new(":memory:")).await.expect("Failed to initialize demo database");
-
     let app_state = AppState {
         config_path: std::path::PathBuf::from("demo"),
         config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
@@ -59,7 +56,7 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         leases: LeaseMap::default(),
         auth: std::sync::Arc::new(crate::auth::Runtime::from_config(&AuthConfig::default())),
         tls_enabled: false,
-        db_pool,
+        db_pool: None,
     };
 
     let app = Router::new()

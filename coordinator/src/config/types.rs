@@ -43,10 +43,6 @@ pub struct ServerConfig {
     /// Authentication configuration (defaults to no auth when omitted)
     #[serde(default)]
     pub auth: AuthConfig,
-    /// Path to the SQLite database file. Relative paths are resolved relative to the config file.
-    /// Note: WAL mode is enabled, so .db-wal and .db-shm files will be created alongside the main database file.
-    #[serde(default = "default_db_path")]
-    pub db_path: String,
 }
 
 /// TLS configuration for the HTTP server.
@@ -84,6 +80,27 @@ impl Default for TlsConfig {
     }
 }
 
+/// Configuration for an optional local SQLite database.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct DbConfig {
+    /// Path to the SQLite database file. Relative paths are resolved relative to the config file.
+    #[serde(default = "default_db_path")]
+    pub path: String,
+    /// Whether the local DB is enabled. When false the coordinator will act as if
+    /// no DB is configured even if this table exists in the config file.
+    #[serde(default = "do_db_enable")]
+    pub enable: bool,
+}
+
+impl Default for DbConfig {
+    fn default() -> Self {
+        Self {
+            path: default_db_path(),
+            enable: do_db_enable(),
+        }
+    }
+}
+
 fn relative_cert_path() -> String {
     // Relative default path next to config file (must not be empty)
     "./tls_cert.pem".to_string()
@@ -103,6 +120,10 @@ const fn do_tls_enable() -> bool {
 
 fn default_db_path() -> String {
     "./shuthost.db".to_string()
+}
+
+const fn do_db_enable() -> bool {
+    true
 }
 
 /// Supported authentication modes for the Web UI
@@ -163,4 +184,7 @@ pub struct ControllerConfig {
     pub hosts: HashMap<String, Host>,
     /// Map of client identifiers to client configurations.
     pub clients: HashMap<String, Client>,
+    /// Optional top-level database configuration. When omitted DB persistence is disabled.
+    #[serde(default)]
+    pub db: Option<DbConfig>,
 }
