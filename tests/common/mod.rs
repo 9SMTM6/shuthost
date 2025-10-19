@@ -1,4 +1,4 @@
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
 pub fn get_free_port() -> u16 {
@@ -34,6 +34,7 @@ pub fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> Child {
     // Prefer built binary when running under `cargo test`.
     Command::new(bin)
         .args(["control-service", "--config", tmp.to_str().unwrap()])
+        .stdout(Stdio::null())
         .spawn()
         .expect("failed to start coordinator")
 }

@@ -6,7 +6,7 @@ mod common;
 use reqwest::Client;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
-use std::process::{Child, Command};
+use std::process::{Child, Command, Stdio};
 
 use common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
@@ -20,6 +20,7 @@ pub fn run_host_agent_output(args: &[&str]) -> std::process::Output {
     let bin = get_agent_bin();
     Command::new(bin)
         .args(args)
+        .stdout(Stdio::null())
         .output()
         .expect("failed to run host_agent")
 }
@@ -31,7 +32,10 @@ pub fn spawn_host_agent_with_env_args(envs: &[(&str, &str)], args: &[&str]) -> C
     for (k, v) in envs {
         cmd.env(k, v);
     }
-    cmd.args(args).spawn().expect("failed to start host_agent")
+    cmd.args(args)
+        .stdout(Stdio::null())
+        .spawn()
+        .expect("failed to start host_agent")
 }
 
 /// Convenience wrapper when no extra env vars are required.
