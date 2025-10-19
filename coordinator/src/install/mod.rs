@@ -119,6 +119,7 @@ pub fn setup(args: Args) -> eyre::Result<()> {
                         },
                         ..Default::default()
                     },
+                    db: Some(Default::default()),
                     ..Default::default()
                 })
                 .unwrap()
