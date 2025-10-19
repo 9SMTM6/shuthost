@@ -41,21 +41,18 @@ jobs:
   coverage:
     name: Coverage report (tarpaulin)
     runs-on: ubuntu-latest
+
+    container:
+      image: xd009642/tarpaulin
+      options: --security-opt seccomp=unconfined
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Install cargo-tarpaulin
-        run: cargo binstall cargo-tarpaulin
-
       - name: Run tarpaulin and capture output
         run: |
-          cargo tarpaulin --workspace --out Json --out Html 
+          cargo tarpaulin --workspace --verbose --out Json --out Html --out Stdout
 
       - name: Upload coverage artifacts (JSON + HTML)
         uses: actions/upload-artifact@v4
