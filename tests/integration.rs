@@ -230,10 +230,7 @@ async fn test_lease_persistence_across_restarts() {
     );
 
     // Start coordinator with database
-    let coordinator_child = spawn_coordinator_with_config(
-        coord_port,
-        &config,
-    );
+    let coordinator_child = spawn_coordinator_with_config(coord_port, &config);
     let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
@@ -253,10 +250,7 @@ async fn test_lease_persistence_across_restarts() {
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
     // Start coordinator again with same db
-    let coordinator_child2 = spawn_coordinator_with_config(
-        coord_port,
-        &config,
-    );
+    let coordinator_child2 = spawn_coordinator_with_config(coord_port, &config);
     let _coordinator_guard2 = KillOnDrop(coordinator_child2);
     wait_for_listening(coord_port, 5).await;
 
@@ -267,7 +261,10 @@ async fn test_lease_persistence_across_restarts() {
         .send()
         .await
         .expect("failed to release lease");
-    assert!(resp.status().is_success(), "Lease should exist and be releasable after restart");
+    assert!(
+        resp.status().is_success(),
+        "Lease should exist and be releasable after restart"
+    );
 
     // Clean up
     let _ = std::fs::remove_file(&db_path);
