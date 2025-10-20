@@ -20,7 +20,7 @@ use tracing::{info, warn};
 
 use crate::{
     config::{AuthConfig, AuthMode},
-    db::{delete_kv, get_kv, store_kv, DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET},
+    db::{DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET, delete_kv, get_kv, store_kv},
     http::AppState,
 };
 
@@ -73,13 +73,18 @@ impl Runtime {
         let cookie_key = if let Some(cookie_secret) = &cfg.cookie_secret {
             // Configured cookie secret - remove any stored value to avoid confusion
             if let Some(pool) = db_pool {
-                info!("Configured cookie_secret present in config; removing any stored cookie_secret from DB to avoid confusion");
+                info!(
+                    "Configured cookie_secret present in config; removing any stored cookie_secret from DB to avoid confusion"
+                );
                 delete_kv(pool, KV_COOKIE_SECRET).await?;
             }
 
             // Try to decode the configured secret
-            let bytes = base64_gp_STANDARD.decode(cookie_secret).wrap_err("Invalid cookie_secret in config")?;
-            Key::try_from(bytes.as_slice()).wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
+            let bytes = base64_gp_STANDARD
+                .decode(cookie_secret)
+                .wrap_err("Invalid cookie_secret in config")?;
+            Key::try_from(bytes.as_slice())
+                .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
         } else {
             // No configured secret - try database, then generate
             if let Some(pool) = db_pool {
@@ -89,13 +94,17 @@ impl Runtime {
                         Ok(bytes) => match Key::try_from(bytes.as_slice()) {
                             Ok(key) => key,
                             Err(_) => {
-                                warn!("Found corrupted cookie key in DB (wrong length); removing and regenerating");
+                                warn!(
+                                    "Found corrupted cookie key in DB (wrong length); removing and regenerating"
+                                );
                                 delete_kv(pool, KV_COOKIE_SECRET).await?;
                                 gen_and_store_key(pool).await?
                             }
                         },
                         Err(_) => {
-                            warn!("Found corrupted cookie key in DB (invalid base64); removing and regenerating");
+                            warn!(
+                                "Found corrupted cookie key in DB (invalid base64); removing and regenerating"
+                            );
                             delete_kv(pool, KV_COOKIE_SECRET).await?;
                             gen_and_store_key(pool).await?
                         }
@@ -109,7 +118,7 @@ impl Runtime {
                 Key::generate()
             }
         };
-        
+
         let mode = match cfg.mode {
             AuthMode::None => Resolved::Disabled,
             AuthMode::Token { ref token } => {
@@ -186,12 +195,11 @@ impl FromRef<AppState> for Key {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db;
     use crate::config::AuthConfig;
+    use crate::db;
     use std::path::Path;
 
     async fn setup_db() -> eyre::Result<DbPool> {
@@ -204,13 +212,21 @@ mod tests {
 
         // store values in DB
         db::store_kv(&pool, KV_AUTH_TOKEN, "from_db").await.unwrap();
-        db::store_kv(&pool, KV_COOKIE_SECRET, &base64_gp_STANDARD.encode(Key::generate().master())).await.unwrap();
+        db::store_kv(
+            &pool,
+            KV_COOKIE_SECRET,
+            &base64_gp_STANDARD.encode(Key::generate().master()),
+        )
+        .await
+        .unwrap();
 
         let cfg_token = "configured_token";
 
         // Provide configured values -> they should cause DB entries to be removed
         let cfg = AuthConfig {
-            mode: AuthMode::Token { token: Some(cfg_token.to_string()) },
+            mode: AuthMode::Token {
+                token: Some(cfg_token.to_string()),
+            },
             cookie_secret: Some(base64_gp_STANDARD.encode(Key::generate().master())),
         };
 

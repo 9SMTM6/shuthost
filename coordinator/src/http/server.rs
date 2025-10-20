@@ -123,7 +123,10 @@ pub async fn start(
     // relative to the config file when appropriate. Otherwise DB persistence is
     // disabled and `db_pool` will be None.
     let db_pool = match initial_config.db {
-        Some(DbConfig {enable: true, ref path}) => {
+        Some(DbConfig {
+            enable: true,
+            ref path,
+        }) => {
             let db_path = if std::path::Path::new(path).is_absolute() {
                 std::path::PathBuf::from(path)
             } else {
@@ -133,9 +136,12 @@ pub async fn start(
                     .unwrap_or_else(|| std::path::PathBuf::from(path))
             };
             let pool = db::init_db(&db_path).await?;
-            info!("Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)", db_path.display());
+            info!(
+                "Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)",
+                db_path.display()
+            );
             Some(pool)
-        },
+        }
         _ => {
             info!("DB persistence disabled");
             None
@@ -155,7 +161,9 @@ pub async fn start(
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
-    let auth_runtime = std::sync::Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
+    let auth_runtime = std::sync::Arc::new(
+        auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?,
+    );
 
     // Startup-time warning: if TLS is not enabled but authentication is active,
     // browsers will ignore cookies marked Secure. Warn operators so they can

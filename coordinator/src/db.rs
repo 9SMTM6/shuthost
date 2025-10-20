@@ -61,9 +61,10 @@ pub async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Result<()> {
     leases_guard.clear();
 
     // Load all lease records
-    let lease_records = sqlx::query!("SELECT hostname, lease_source_type, lease_source_value FROM leases")
-        .fetch_all(pool)
-        .await?;
+    let lease_records =
+        sqlx::query!("SELECT hostname, lease_source_type, lease_source_value FROM leases")
+            .fetch_all(pool)
+            .await?;
 
     for row in lease_records {
         let hostname: String = row.hostname;
@@ -104,14 +105,21 @@ pub async fn add_lease(
 ) -> eyre::Result<()> {
     match lease_source {
         LeaseSource::WebInterface => {
-            sqlx::query!("INSERT OR IGNORE INTO web_interface_leases (hostname) VALUES (?)", hostname)
-                .execute(pool)
-                .await?;
+            sqlx::query!(
+                "INSERT OR IGNORE INTO web_interface_leases (hostname) VALUES (?)",
+                hostname
+            )
+            .execute(pool)
+            .await?;
         }
         LeaseSource::Client(client_id) => {
-            sqlx::query!("INSERT OR IGNORE INTO client_leases (hostname, client_id) VALUES (?, ?)", hostname, client_id)
-                .execute(pool)
-                .await?;
+            sqlx::query!(
+                "INSERT OR IGNORE INTO client_leases (hostname, client_id) VALUES (?, ?)",
+                hostname,
+                client_id
+            )
+            .execute(pool)
+            .await?;
         }
     }
     Ok(())
@@ -124,14 +132,21 @@ pub async fn remove_lease(
 ) -> eyre::Result<()> {
     match lease_source {
         LeaseSource::WebInterface => {
-            sqlx::query!("DELETE FROM web_interface_leases WHERE hostname = ?", hostname)
-                .execute(pool)
-                .await?;
+            sqlx::query!(
+                "DELETE FROM web_interface_leases WHERE hostname = ?",
+                hostname
+            )
+            .execute(pool)
+            .await?;
         }
         LeaseSource::Client(client_id) => {
-            sqlx::query!("DELETE FROM client_leases WHERE hostname = ? AND client_id = ?", hostname, client_id)
-                .execute(pool)
-                .await?;
+            sqlx::query!(
+                "DELETE FROM client_leases WHERE hostname = ? AND client_id = ?",
+                hostname,
+                client_id
+            )
+            .execute(pool)
+            .await?;
         }
     }
     Ok(())
@@ -167,9 +182,13 @@ pub async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre::Resul
 ///
 /// Returns an error if the database operation fails.
 pub async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Result<()> {
-    sqlx::query!("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)", key, value)
-        .execute(pool)
-        .await?;
+    sqlx::query!(
+        "INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)",
+        key,
+        value
+    )
+    .execute(pool)
+    .await?;
 
     Ok(())
 }
@@ -230,13 +249,13 @@ mod tests {
     #[tokio::test]
     async fn test_init_db_creates_database() {
         let pool = setup_test_db().await.unwrap();
-        
+
         // Verify we can query the database
         let result = sqlx::query("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")
             .fetch_all(&pool)
             .await
             .unwrap();
-        
+
         // Should have our tables and view
         let names: HashSet<_> = result.into_iter().map(|r| r.get::<String, _>(0)).collect();
         assert!(names.contains("web_interface_leases"));
@@ -254,16 +273,22 @@ mod tests {
         assert!(leases.lock().await.is_empty());
 
         // Add web interface lease
-        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
-        
+        add_lease(&pool, "host1", &LeaseSource::WebInterface)
+            .await
+            .unwrap();
+
         // Add client lease
-        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string())).await.unwrap();
-        add_lease(&pool, "host2", &LeaseSource::Client("client1".to_string())).await.unwrap();
+        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string()))
+            .await
+            .unwrap();
+        add_lease(&pool, "host2", &LeaseSource::Client("client1".to_string()))
+            .await
+            .unwrap();
 
         // Load and verify
         load_leases(&pool, &leases).await.unwrap();
         let leases_guard = leases.lock().await;
-        
+
         assert_eq!(leases_guard.len(), 2);
         assert!(leases_guard["host1"].contains(&LeaseSource::WebInterface));
         assert!(leases_guard["host1"].contains(&LeaseSource::Client("client1".to_string())));
@@ -276,16 +301,22 @@ mod tests {
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
         // Add leases
-        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
-        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string())).await.unwrap();
+        add_lease(&pool, "host1", &LeaseSource::WebInterface)
+            .await
+            .unwrap();
+        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string()))
+            .await
+            .unwrap();
 
         // Remove web interface lease
-        remove_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
-        
+        remove_lease(&pool, "host1", &LeaseSource::WebInterface)
+            .await
+            .unwrap();
+
         // Load and verify
         load_leases(&pool, &leases).await.unwrap();
         let leases_guard = leases.lock().await;
-        
+
         assert_eq!(leases_guard.len(), 1);
         assert!(leases_guard["host1"].contains(&LeaseSource::Client("client1".to_string())));
         assert!(!leases_guard["host1"].contains(&LeaseSource::WebInterface));
@@ -297,17 +328,23 @@ mod tests {
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
         // Add client leases
-        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string())).await.unwrap();
-        add_lease(&pool, "host2", &LeaseSource::Client("client1".to_string())).await.unwrap();
-        add_lease(&pool, "host3", &LeaseSource::Client("client2".to_string())).await.unwrap();
+        add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string()))
+            .await
+            .unwrap();
+        add_lease(&pool, "host2", &LeaseSource::Client("client1".to_string()))
+            .await
+            .unwrap();
+        add_lease(&pool, "host3", &LeaseSource::Client("client2".to_string()))
+            .await
+            .unwrap();
 
         // Remove all for client1
         remove_client_leases(&pool, "client1").await.unwrap();
-        
+
         // Load and verify
         load_leases(&pool, &leases).await.unwrap();
         let leases_guard = leases.lock().await;
-        
+
         assert_eq!(leases_guard.len(), 1);
         assert!(leases_guard["host3"].contains(&LeaseSource::Client("client2".to_string())));
     }
@@ -318,13 +355,17 @@ mod tests {
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
         // Add same lease twice
-        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
-        add_lease(&pool, "host1", &LeaseSource::WebInterface).await.unwrap();
-        
+        add_lease(&pool, "host1", &LeaseSource::WebInterface)
+            .await
+            .unwrap();
+        add_lease(&pool, "host1", &LeaseSource::WebInterface)
+            .await
+            .unwrap();
+
         // Load and verify only one
         load_leases(&pool, &leases).await.unwrap();
         let leases_guard = leases.lock().await;
-        
+
         assert_eq!(leases_guard.len(), 1);
         assert_eq!(leases_guard["host1"].len(), 1);
         assert!(leases_guard["host1"].contains(&LeaseSource::WebInterface));
@@ -336,7 +377,7 @@ mod tests {
 
         // Store a value
         store_kv(&pool, "test_key", "test_value").await.unwrap();
-        
+
         // Retrieve it
         let value = get_kv(&pool, "test_key").await.unwrap();
         assert_eq!(value, Some("test_value".to_string()));
