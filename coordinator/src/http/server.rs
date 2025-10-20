@@ -155,7 +155,7 @@ pub async fn start(
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
-    let auth_runtime = std::sync::Arc::new(auth::Runtime::from_config(&initial_config.server.auth));
+    let auth_runtime = std::sync::Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
 
     // Startup-time warning: if TLS is not enabled but authentication is active,
     // browsers will ignore cookies marked Secure. Warn operators so they can
