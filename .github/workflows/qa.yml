@@ -50,6 +50,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install npm
+        # Use the container's system repositories to install npm so build.rs can invoke it
+        run: |
+          apt-get update
+          apt-get install -y npm
+
       - name: Run tarpaulin and capture output
         run: |
           cargo tarpaulin --workspace --verbose --out Json --out Html --out Stdout
