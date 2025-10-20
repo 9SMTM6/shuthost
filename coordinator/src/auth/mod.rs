@@ -20,7 +20,7 @@ use tracing::info;
 
 use crate::{
     config::{AuthConfig, AuthMode},
-    db::{delete_kv, get_kv, store_kv, DbPool},
+    db::{delete_kv, get_kv, store_kv, DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET},
     http::AppState,
 };
 
@@ -61,51 +61,47 @@ pub enum Resolved {
 
 impl Runtime {
     pub async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
+        // small helpers to avoid repetition
+        async fn gen_and_store_key(pool: &DbPool) -> eyre::Result<Key> {
+            let generated = Key::generate();
+            let encoded = base64_gp_STANDARD.encode(generated.master());
+            store_kv(pool, KV_COOKIE_SECRET, &encoded).await?;
+            Ok(generated)
+        }
+
         // Handle cookie key: configured takes precedence, stored is fallback
         let cookie_key = if let Some(cookie_secret) = &cfg.cookie_secret {
             // Configured cookie secret - remove any stored value to avoid confusion
             if let Some(pool) = db_pool {
-                delete_kv(pool, "cookie_secret").await?;
+                delete_kv(pool, KV_COOKIE_SECRET).await?;
             }
-            
+
             // Try to decode the configured secret
-            base64_gp_STANDARD.decode(cookie_secret)
-                .wrap_err("Invalid cookie_secret in config")?
-                .as_slice()
-                .try_into()
-                .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
+            let bytes = base64_gp_STANDARD.decode(cookie_secret).wrap_err("Invalid cookie_secret in config")?;
+            Key::try_from(bytes.as_slice()).wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
         } else {
             // No configured secret - try database, then generate
             if let Some(pool) = db_pool {
-                if let Some(stored_secret) = get_kv(pool, "cookie_secret").await? {
+                if let Some(stored_secret) = get_kv(pool, KV_COOKIE_SECRET).await? {
                     // Try to decode stored secret
                     match base64_gp_STANDARD.decode(&stored_secret) {
                         Ok(bytes) => match Key::try_from(bytes.as_slice()) {
                             Ok(key) => key,
                             Err(_) => {
                                 // Invalid stored key - remove it and generate new one
-                                delete_kv(pool, "cookie_secret").await?;
-                                let generated = Key::generate();
-                                let encoded = base64_gp_STANDARD.encode(generated.master());
-                                store_kv(pool, "cookie_secret", &encoded).await?;
-                                generated
+                                delete_kv(pool, KV_COOKIE_SECRET).await?;
+                                gen_and_store_key(pool).await?
                             }
                         },
                         Err(_) => {
                             // Invalid base64 in stored value - remove it and generate new one
-                            delete_kv(pool, "cookie_secret").await?;
-                            let generated = Key::generate();
-                            let encoded = base64_gp_STANDARD.encode(generated.master());
-                            store_kv(pool, "cookie_secret", &encoded).await?;
-                            generated
+                            delete_kv(pool, KV_COOKIE_SECRET).await?;
+                            gen_and_store_key(pool).await?
                         }
                     }
                 } else {
                     // No stored value - generate and store
-                    let generated = Key::generate();
-                    let encoded = base64_gp_STANDARD.encode(generated.master());
-                    store_kv(pool, "cookie_secret", &encoded).await?;
-                    generated
+                    gen_and_store_key(pool).await?
                 }
             } else {
                 // No database - generate without storing
@@ -119,21 +115,22 @@ impl Runtime {
                 let token = if let Some(cfg_token) = token.clone() {
                     // Configured token - remove any stored value to avoid confusion
                     if let Some(pool) = db_pool {
-                        delete_kv(pool, "auth_token").await?;
+                        delete_kv(pool, KV_AUTH_TOKEN).await?;
                     }
                     info!("Auth mode: token (configured)");
                     cfg_token
                 } else {
                     // No configured token - try database, then generate
                     if let Some(pool) = db_pool {
-                        if let Some(stored_token) = get_kv(pool, "auth_token").await? {
+                        if let Some(stored_token) = get_kv(pool, KV_AUTH_TOKEN).await? {
                             info!("Auth mode: token (from database)");
+                            info!("Token: {}", stored_token);
                             stored_token
                         } else {
                             let generated = cookies::generate_token();
+                            store_kv(pool, KV_AUTH_TOKEN, &generated).await?;
                             info!("Auth mode: token (auto generated, stored in db)");
                             info!("Token: {}", generated);
-                            store_kv(pool, "auth_token", &generated).await?;
                             generated
                         }
                     } else {
