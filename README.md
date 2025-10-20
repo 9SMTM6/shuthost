@@ -83,6 +83,7 @@ Docker (Linux only)
   ```bash
   docker run --rm --network host \
     -v ./coordinator_config.toml:/config/coordinator_config.toml:ro \
+    -v ./data/:/data/ \
     ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
   ```
 - docker-compose example:
@@ -95,6 +96,7 @@ Docker (Linux only)
       restart: unless-stopped
       volumes:
         - ./coordinator_config/:/config/:ro
+        - ./data/:/data/        # persist DB and generated certs here, optional
       # no ports, since network_mode: host
   ```
 -  Both with config file
@@ -103,10 +105,19 @@ Docker (Linux only)
   # ensure only you can read this file with `chmod 600 $(whoami) ./coordinator_config/coordinator_config.toml`
   [server]
   port = 8080 # change accordingly
-  bind = "127.0.0.1" # forward to this with your local reverse proxy with TLS.
+  bind = "127.0.0.1" # forward to this with your local reverse proxy.
 
   [server.auth.token]
-  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation on each start
+  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation on each start without DB persistence
+
+  [db]
+  path = "/data/shuthost.db"
+
+  # Use this to enable TLS directly on the coordinator (either with provided certs or using the automatically generated self-signed certs)
+  # [server.tls]
+  # cert_path = "/data/cert.pem"
+  # key_path = "/data/key.pem"
+  # persist_self_signed = true
 
   [hosts]
 
