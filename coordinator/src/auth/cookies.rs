@@ -1,10 +1,6 @@
 //! Cookie handling utilities for authentication.
 
-use axum_extra::extract::{
-    SignedCookieJar,
-    cookie::{Cookie, Key},
-};
-use base64::Engine;
+use axum_extra::extract::{SignedCookieJar, cookie::Cookie};
 use cookie::{SameSite, time::Duration as CookieDuration};
 use rand::{Rng as _, distr::Alphanumeric};
 
@@ -17,15 +13,6 @@ pub const COOKIE_STATE: &str = "shuthost_oidc_state";
 pub const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 pub const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 pub const COOKIE_RETURN_TO: &str = "shuthost_return_to";
-
-/// Generate a cookie key from an optional base64-encoded secret string.
-/// Falls back to generating a random key if the secret is invalid or missing.
-pub fn key_from_secret(secret: Option<&str>) -> Key {
-    secret
-        .and_then(|s| base64::engine::general_purpose::STANDARD.decode(s).ok())
-        .and_then(|bytes| Key::try_from(&bytes[..]).ok())
-        .unwrap_or_else(Key::generate)
-}
 
 /// Generate a random alphanumeric token of 48 characters.
 pub fn generate_token() -> String {

@@ -27,7 +27,7 @@ use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::T
 use tracing::{info, warn};
 
 use crate::{
-    auth::{Runtime, public_routes, require},
+    auth::{self, public_routes},
     config::{ControllerConfig, TlsConfig, load_coordinator_config},
     http::assets::serve_ui,
     routes::{LeaseMap, api_router},
@@ -67,7 +67,7 @@ pub struct AppState {
     pub leases: LeaseMap,
 
     /// Authentication runtime (mode and secrets)
-    pub auth: std::sync::Arc<Runtime>,
+    pub auth: std::sync::Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
 }
@@ -124,7 +124,7 @@ pub async fn start(
         config_path,
     );
 
-    let auth_runtime = std::sync::Arc::new(Runtime::from_config(&initial_config));
+    let auth_runtime = std::sync::Arc::new(auth::Runtime::from_config(&initial_config.server.auth));
 
     // Startup-time warning: if TLS is not enabled but authentication is active,
     // browsers will ignore cookies marked Secure. Warn operators so they can
@@ -168,7 +168,7 @@ pub async fn start(
             crate::auth::LayerState {
                 auth: auth_runtime.clone(),
             },
-            require,
+            auth::require,
         ));
 
     // TODO: figure out rate limiting

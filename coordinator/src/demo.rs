@@ -16,7 +16,7 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    config::ControllerConfig,
+    config::{AuthConfig, ControllerConfig},
     http::{
         AppState,
         assets::{UiMode, asset_routes, render_ui_html},
@@ -54,9 +54,7 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         hoststatus_tx,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseMap::default(),
-        auth: std::sync::Arc::new(crate::auth::Runtime::from_config(
-            &ControllerConfig::default(),
-        )),
+        auth: std::sync::Arc::new(crate::auth::Runtime::from_config(&AuthConfig::default())),
         tls_enabled: false,
     };
 

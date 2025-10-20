@@ -14,10 +14,11 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
+use base64::Engine;
 use tracing::info;
 
 use crate::{
-    config::{AuthConfig, AuthMode, ControllerConfig},
+    config::{AuthConfig, AuthMode},
     http::AppState,
 };
 
@@ -57,21 +58,18 @@ pub enum Resolved {
 }
 
 impl Runtime {
-    pub fn from_config(cfg: &ControllerConfig) -> Self {
-        let (mode, cookie_key) = match cfg.server.auth {
-            AuthConfig {
-                mode: AuthMode::None,
-                ref cookie_secret,
-                ..
-            } => (
-                Resolved::Disabled,
-                cookies::key_from_secret(cookie_secret.as_deref()),
-            ),
-            AuthConfig {
-                mode: AuthMode::Token { ref token },
-                ref cookie_secret,
-                ..
-            } => {
+    pub fn from_config(cfg: &AuthConfig) -> Self {
+        // Generate a cookie key from an optional base64-encoded secret string.
+        // Falls back to generating a random key if the secret is invalid or missing.
+        let cookie_key = cfg
+            .cookie_secret
+            .as_deref()
+            .and_then(|s| base64::engine::general_purpose::STANDARD.decode(s).ok())
+            .and_then(|bytes| Key::try_from(&bytes[..]).ok())
+            .unwrap_or_else(Key::generate);
+        let mode = match cfg.mode {
+            AuthMode::None => Resolved::Disabled,
+            AuthMode::Token { ref token } => {
                 // If a token was configured in the TOML config, don't log its value
                 // (it is already present in the config file). Only log the token
                 // value when we auto-generate one on startup so operators can copy it.
@@ -85,41 +83,25 @@ impl Runtime {
                     generated
                 };
 
-                (
-                    Resolved::Token { token },
-                    cookies::key_from_secret(cookie_secret.as_deref()),
-                )
+                Resolved::Token { token }
             }
-            AuthConfig {
-                mode:
-                    AuthMode::Oidc {
-                        ref issuer,
-                        ref client_id,
-                        ref client_secret,
-                        ref scopes,
-                    },
-                ref cookie_secret,
+            AuthMode::Oidc {
+                ref issuer,
+                ref client_id,
+                ref client_secret,
+                ref scopes,
             } => {
                 info!("Auth mode: oidc, issuer={}", issuer);
-                (
-                    Resolved::Oidc {
-                        issuer: issuer.clone(),
-                        client_id: client_id.clone(),
-                        client_secret: client_secret.clone(),
-                        scopes: scopes.clone(),
-                    },
-                    cookies::key_from_secret(cookie_secret.as_deref()),
-                )
+                Resolved::Oidc {
+                    issuer: issuer.clone(),
+                    client_id: client_id.clone(),
+                    client_secret: client_secret.clone(),
+                    scopes: scopes.clone(),
+                }
             }
-            AuthConfig {
-                mode: AuthMode::External { exceptions_version },
-                ref cookie_secret,
-            } => {
+            AuthMode::External { exceptions_version } => {
                 info!("Auth mode: external (reverse proxy)");
-                (
-                    Resolved::External { exceptions_version },
-                    cookies::key_from_secret(cookie_secret.as_deref()),
-                )
+                Resolved::External { exceptions_version }
             }
         };
         Self { mode, cookie_key }
