@@ -16,7 +16,7 @@ use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
 use base64::{Engine, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{
     config::{AuthConfig, AuthMode},
@@ -73,6 +73,7 @@ impl Runtime {
         let cookie_key = if let Some(cookie_secret) = &cfg.cookie_secret {
             // Configured cookie secret - remove any stored value to avoid confusion
             if let Some(pool) = db_pool {
+                info!("Configured cookie_secret present in config; removing any stored cookie_secret from DB to avoid confusion");
                 delete_kv(pool, KV_COOKIE_SECRET).await?;
             }
 
@@ -88,13 +89,13 @@ impl Runtime {
                         Ok(bytes) => match Key::try_from(bytes.as_slice()) {
                             Ok(key) => key,
                             Err(_) => {
-                                // Invalid stored key - remove it and generate new one
+                                warn!("Found corrupted cookie key in DB (wrong length); removing and regenerating");
                                 delete_kv(pool, KV_COOKIE_SECRET).await?;
                                 gen_and_store_key(pool).await?
                             }
                         },
                         Err(_) => {
-                            // Invalid base64 in stored value - remove it and generate new one
+                            warn!("Found corrupted cookie key in DB (invalid base64); removing and regenerating");
                             delete_kv(pool, KV_COOKIE_SECRET).await?;
                             gen_and_store_key(pool).await?
                         }
@@ -182,5 +183,61 @@ impl FromRef<AppState> for LayerState {
 impl FromRef<AppState> for Key {
     fn from_ref(state: &AppState) -> Self {
         state.auth.cookie_key.clone()
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db;
+    use crate::config::AuthConfig;
+    use std::path::Path;
+
+    async fn setup_db() -> eyre::Result<DbPool> {
+        db::init_db(Path::new(":memory:")).await
+    }
+
+    #[tokio::test]
+    async fn test_removes_db_values_when_configured() {
+        let pool = setup_db().await.unwrap();
+
+        // store values in DB
+        db::store_kv(&pool, KV_AUTH_TOKEN, "from_db").await.unwrap();
+        db::store_kv(&pool, KV_COOKIE_SECRET, &base64_gp_STANDARD.encode(Key::generate().master())).await.unwrap();
+
+        let cfg_token = "configured_token";
+
+        // Provide configured values -> they should cause DB entries to be removed
+        let cfg = AuthConfig {
+            mode: AuthMode::Token { token: Some(cfg_token.to_string()) },
+            cookie_secret: Some(base64_gp_STANDARD.encode(Key::generate().master())),
+        };
+
+        let runtime = Runtime::from_config(&cfg, Some(&pool)).await.unwrap();
+
+        // DB entries should be removed
+        assert!(db::get_kv(&pool, KV_AUTH_TOKEN).await.unwrap().is_none());
+        assert!(db::get_kv(&pool, KV_COOKIE_SECRET).await.unwrap().is_none());
+
+        // runtime should use configured token
+        match runtime.mode {
+            Resolved::Token { token } => assert_eq!(token, cfg_token),
+            _ => panic!("expected token mode"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_invalid_configured_cookie_secret_fails() {
+        let pool = setup_db().await.unwrap();
+
+        // invalid base64 value in config
+        let cfg = AuthConfig {
+            mode: AuthMode::None,
+            cookie_secret: Some("not-base64!!".to_string()),
+        };
+
+        let res = Runtime::from_config(&cfg, Some(&pool)).await;
+        assert!(res.is_err());
     }
 }
