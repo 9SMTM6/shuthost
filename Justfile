@@ -56,6 +56,9 @@ update_dependencies:
     cargo update
     cd frontend && npm update
 
+update_sqlx_cache:
+    DATABASE_URL="sqlite:./shuthost.db" cargo sqlx prepare --workspace
+
 test_all:
     cargo test --workspace
 

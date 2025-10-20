@@ -14,11 +14,13 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
-use base64::Engine;
+use base64::{Engine, engine::general_purpose::STANDARD as base64_gp_STANDARD};
+use eyre::Context;
 use tracing::info;
 
 use crate::{
     config::{AuthConfig, AuthMode},
+    db::{delete_kv, get_kv, store_kv, DbPool},
     http::AppState,
 };
 
@@ -58,29 +60,88 @@ pub enum Resolved {
 }
 
 impl Runtime {
-    pub fn from_config(cfg: &AuthConfig) -> Self {
-        // Generate a cookie key from an optional base64-encoded secret string.
-        // Falls back to generating a random key if the secret is invalid or missing.
-        let cookie_key = cfg
-            .cookie_secret
-            .as_deref()
-            .and_then(|s| base64::engine::general_purpose::STANDARD.decode(s).ok())
-            .and_then(|bytes| Key::try_from(&bytes[..]).ok())
-            .unwrap_or_else(Key::generate);
+    pub async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
+        // Handle cookie key: configured takes precedence, stored is fallback
+        let cookie_key = if let Some(cookie_secret) = &cfg.cookie_secret {
+            // Configured cookie secret - remove any stored value to avoid confusion
+            if let Some(pool) = db_pool {
+                delete_kv(pool, "cookie_secret").await?;
+            }
+            
+            // Try to decode the configured secret
+            base64_gp_STANDARD.decode(cookie_secret)
+                .wrap_err("Invalid cookie_secret in config")?
+                .as_slice()
+                .try_into()
+                .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
+        } else {
+            // No configured secret - try database, then generate
+            if let Some(pool) = db_pool {
+                if let Some(stored_secret) = get_kv(pool, "cookie_secret").await? {
+                    // Try to decode stored secret
+                    match base64_gp_STANDARD.decode(&stored_secret) {
+                        Ok(bytes) => match Key::try_from(bytes.as_slice()) {
+                            Ok(key) => key,
+                            Err(_) => {
+                                // Invalid stored key - remove it and generate new one
+                                delete_kv(pool, "cookie_secret").await?;
+                                let generated = Key::generate();
+                                let encoded = base64_gp_STANDARD.encode(generated.master());
+                                store_kv(pool, "cookie_secret", &encoded).await?;
+                                generated
+                            }
+                        },
+                        Err(_) => {
+                            // Invalid base64 in stored value - remove it and generate new one
+                            delete_kv(pool, "cookie_secret").await?;
+                            let generated = Key::generate();
+                            let encoded = base64_gp_STANDARD.encode(generated.master());
+                            store_kv(pool, "cookie_secret", &encoded).await?;
+                            generated
+                        }
+                    }
+                } else {
+                    // No stored value - generate and store
+                    let generated = Key::generate();
+                    let encoded = base64_gp_STANDARD.encode(generated.master());
+                    store_kv(pool, "cookie_secret", &encoded).await?;
+                    generated
+                }
+            } else {
+                // No database - generate without storing
+                Key::generate()
+            }
+        };
+        
         let mode = match cfg.mode {
             AuthMode::None => Resolved::Disabled,
             AuthMode::Token { ref token } => {
-                // If a token was configured in the TOML config, don't log its value
-                // (it is already present in the config file). Only log the token
-                // value when we auto-generate one on startup so operators can copy it.
                 let token = if let Some(cfg_token) = token.clone() {
+                    // Configured token - remove any stored value to avoid confusion
+                    if let Some(pool) = db_pool {
+                        delete_kv(pool, "auth_token").await?;
+                    }
                     info!("Auth mode: token (configured)");
                     cfg_token
                 } else {
-                    let generated = cookies::generate_token();
-                    info!("Auth mode: token");
-                    info!("Token: {}", generated);
-                    generated
+                    // No configured token - try database, then generate
+                    if let Some(pool) = db_pool {
+                        if let Some(stored_token) = get_kv(pool, "auth_token").await? {
+                            info!("Auth mode: token (from database)");
+                            stored_token
+                        } else {
+                            let generated = cookies::generate_token();
+                            info!("Auth mode: token (auto generated, stored in db)");
+                            info!("Token: {}", generated);
+                            store_kv(pool, "auth_token", &generated).await?;
+                            generated
+                        }
+                    } else {
+                        let generated = cookies::generate_token();
+                        info!("Auth mode: token (auto generated, not stored for lack of a db)");
+                        info!("Token: {}", generated);
+                        generated
+                    }
                 };
 
                 Resolved::Token { token }
@@ -104,7 +165,7 @@ impl Runtime {
                 Resolved::External { exceptions_version }
             }
         };
-        Self { mode, cookie_key }
+        Ok(Self { mode, cookie_key })
     }
 }
 

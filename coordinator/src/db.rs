@@ -151,6 +151,65 @@ pub async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre::Resul
     Ok(())
 }
 
+/// Stores a key-value pair in the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `key` - The key to store.
+/// * `value` - The value to store.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+pub async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Result<()> {
+    sqlx::query!("INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)", key, value)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Retrieves a value from the key-value store.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `key` - The key to retrieve.
+///
+/// # Returns
+///
+/// The value associated with the key, or None if not found.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+pub async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<String>> {
+    let result = sqlx::query!("SELECT value FROM kv_store WHERE key = ?", key)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(result.map(|r| r.value))
+}
+
+/// Removes a key-value pair from the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `key` - The key to remove.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+pub async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
+    sqlx::query!("DELETE FROM kv_store WHERE key = ?", key)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -265,5 +324,31 @@ mod tests {
         assert_eq!(leases_guard.len(), 1);
         assert_eq!(leases_guard["host1"].len(), 1);
         assert!(leases_guard["host1"].contains(&LeaseSource::WebInterface));
+    }
+
+    #[tokio::test]
+    async fn test_store_and_get_kv() {
+        let pool = setup_test_db().await.unwrap();
+
+        // Store a value
+        store_kv(&pool, "test_key", "test_value").await.unwrap();
+        
+        // Retrieve it
+        let value = get_kv(&pool, "test_key").await.unwrap();
+        assert_eq!(value, Some("test_value".to_string()));
+
+        // Try to get non-existent key
+        let missing = get_kv(&pool, "missing_key").await.unwrap();
+        assert_eq!(missing, None);
+
+        // Update existing key
+        store_kv(&pool, "test_key", "updated_value").await.unwrap();
+        let updated = get_kv(&pool, "test_key").await.unwrap();
+        assert_eq!(updated, Some("updated_value".to_string()));
+
+        // Delete the key
+        delete_kv(&pool, "test_key").await.unwrap();
+        let deleted = get_kv(&pool, "test_key").await.unwrap();
+        assert_eq!(deleted, None);
     }
 }
