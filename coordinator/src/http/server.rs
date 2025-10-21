@@ -29,7 +29,7 @@ use tracing::{info, warn};
 use crate::{
     auth::{self, public_routes},
     config::{ControllerConfig, TlsConfig, load_coordinator_config},
-    http::assets::serve_ui,
+    http::{assets::serve_ui, polling},
     routes::{LeaseMap, api_router},
     websocket::{WsMessage, ws_handler},
 };
@@ -116,13 +116,7 @@ pub async fn start(
     let (ws_tx, _) = broadcast::channel(32);
 
     // Start background tasks
-    crate::http::polling::start_background_tasks(
-        &config_rx,
-        &hoststatus_tx,
-        &ws_tx,
-        &config_tx,
-        config_path,
-    );
+    polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
     let auth_runtime = std::sync::Arc::new(auth::Runtime::from_config(&initial_config.server.auth));
 

@@ -14,6 +14,27 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast};
 use tracing::{info, warn};
+use tungstenite::Error as TungError;
+
+/// Walk the error source chain and return true if any source is a
+/// `tungstenite::Error::AlreadyClosed`.
+fn is_tungstenite_already_closed(err: &axum::Error) -> bool {
+    let mut current: &(dyn std::error::Error + 'static) = err;
+    loop {
+        // Try downcasting the current error trait object to a concrete tungstenite::Error
+        if let Some(t) = current.downcast_ref::<TungError>() {
+            if matches!(t, TungError::AlreadyClosed) {
+                return true;
+            }
+        }
+
+        match current.source() {
+            Some(src) => current = src,
+            None => break,
+        }
+    }
+    false
+}
 
 use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
 
@@ -56,7 +77,7 @@ pub async fn ws_handler(
     // Log incoming headers so we can verify whether the Upgrade/Connection
     // and other WebSocket-related headers reach the backend (useful when
     // Traefik or another proxy is in front).
-    tracing::info!(?headers, "Incoming WebSocket upgrade headers");
+    info!(?headers, "Incoming WebSocket upgrade headers");
 
     let current_state = hoststatus_rx.borrow().clone();
     let current_config = config_rx.borrow().clone();
@@ -64,17 +85,26 @@ pub async fn ws_handler(
 
     // Log that we're returning an on_upgrade responder; the actual upgrade
     // happens asynchronously when the client completes the handshake.
-    tracing::info!("Registering WebSocket upgrade handler");
+    info!("Registering WebSocket upgrade handler");
 
-    ws.on_upgrade(move |socket| {
-        tracing::info!("WebSocket upgrade completed; starting event loop");
+    ws.on_upgrade(async move |mut socket| {
+        info!("WebSocket upgrade completed; starting event loop");
+        match send_startup_msg(
+                    &mut socket, 
+                    current_state,
+                    current_config,
+                    current_leases,
+                ).await {
+            Ok(()) => {},
+            Err(e) => {
+                warn!("Failed to send initial state: {}", e);
+                return;
+            },
+        };
         start_webui_ws_loop(
             socket,
             ws_tx.subscribe(),
-            current_state,
-            current_config,
-            current_leases,
-        )
+        ).await;
     })
 }
 
@@ -92,59 +122,57 @@ async fn send_ws_message(socket: &mut WebSocket, msg: &WsMessage) -> Result<(), 
 async fn start_webui_ws_loop(
     mut socket: WebSocket,
     mut rx: broadcast::Receiver<WsMessage>,
-    current_state: Arc<HashMap<String, bool>>,
-    config: Arc<ControllerConfig>,
-    current_leases: Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>,
 ) {
-    tokio::spawn(async move {
-        // Send initial combined state
-        let hosts = config.hosts.keys().cloned().collect();
-        let clients = config.clients.keys().cloned().collect();
-        let leases_map = {
-            current_leases
-                .lock()
-                .await
-                .iter()
-                .map(|(host, sources)| (host.clone(), sources.iter().cloned().collect()))
-                .collect::<HashMap<_, _>>()
-        };
-        let initial_msg = WsMessage::Initial {
-            hosts,
-            clients,
-            status: current_state.as_ref().clone(),
-            leases: leases_map.clone(), // Pass the lease data
-        };
-
-        if let Err(e) = send_ws_message(&mut socket, &initial_msg).await {
-            warn!("Failed to send initial state: {}", e);
-            return;
-        }
-
-        // Handle broadcast messages
-        loop {
-            tokio::select! {
-                // Receive messages from the broadcast channel
-                msg = rx.recv() => {
-                    match msg {
-                        Ok(msg) => {
-                            if let Err(e) = send_ws_message(&mut socket, &msg).await {
+    // Handle broadcast messages
+    loop {
+        tokio::select! {
+            // Receive messages from the broadcast channel
+            msg = rx.recv() => {
+                match msg {
+                    Ok(msg) => {
+                        if let Err(e) = send_ws_message(&mut socket, &msg).await {
+                            let closed = is_tungstenite_already_closed(&e);
+                            if closed {
+                                info!("WebSocket connection closed by peer");
+                            } else {
                                 warn!("Failed to send message, closing connection: {}", e);
-                                break;
                             }
-                        }
-                        Err(_) => {
-                            warn!("Broadcast channel closed, stopping WebSocket handler");
                             break;
                         }
                     }
-                }
-                // TODO: isnt properly working.
-                // Detect when the WebSocket is closed
-                None = socket.recv() => {
-                    info!("WebSocket connection closed");
-                    break;
+                    Err(_) => {
+                        warn!("Broadcast channel closed, stopping WebSocket handler");
+                        break;
+                    }
                 }
             }
+            // Detect when the WebSocket is closed
+            // Note that this doesn't seem to be catching all (or even any) closed connections.
+            None = socket.recv() => {
+                info!("WebSocket connection closed");
+                break;
+            }
         }
-    });
+    }
+}
+
+async fn send_startup_msg(socket: &mut WebSocket, current_state: Arc<HashMap<String, bool>>, config: Arc<ControllerConfig>, current_leases: Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>) -> Result<(), axum::Error> {
+    let hosts = config.hosts.keys().cloned().collect();
+    let clients = config.clients.keys().cloned().collect();
+    let leases_map = {
+        current_leases
+            .lock()
+            .await
+            .iter()
+            .map(|(host, sources)| (host.clone(), sources.iter().cloned().collect()))
+            .collect::<HashMap<_, _>>()
+    };
+    let initial_msg = WsMessage::Initial {
+        hosts,
+        clients,
+        status: current_state.as_ref().clone(),
+        leases: leases_map, // Pass the lease data
+    };
+
+    send_ws_message(socket, &initial_msg).await
 }
