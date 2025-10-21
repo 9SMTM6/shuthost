@@ -4,6 +4,7 @@
 
 mod common;
 mod host_agent;
+mod leases;
 mod login_error_redirects;
 mod token_login;
 mod websocket;
@@ -14,7 +15,7 @@ use std::os::unix::process::ExitStatusExt;
 
 use common::{
     KillOnDrop, get_free_port, spawn_coordinator_with_config, spawn_host_agent_with_env_args,
-    wait_for_listening,
+    wait_for_agent_ready, wait_for_listening,
 };
 
 #[tokio::test]
@@ -82,16 +83,23 @@ async fn test_coordinator_and_agent_online_status() {
         ["service", "--port", &agent_port.to_string()].as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);
-    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    
+    // Wait for agent to be ready
+    wait_for_agent_ready(agent_port, shared_secret, 5).await;
 
     let client = Client::new();
     let url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
-    let resp = client
-        .get(&url)
-        .send()
-        .await
-        .expect("failed to query hosts_status");
-    assert!(resp.status().is_success());
-    let json: serde_json::Value = resp.json().await.expect("invalid json");
-    assert_eq!(json["testhost"], true, "Host should be online");
+    let mut online = false;
+    for _ in 0..10 {
+        let resp = client.get(&url).send().await;
+        if let Ok(resp) = resp
+            && let Ok(json) = resp.json::<serde_json::Value>().await
+            && json["testhost"] == true
+        {
+            online = true;
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    }
+    assert!(online, "Host should be online");
 }

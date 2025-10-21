@@ -2,7 +2,7 @@
 
 use crate::common::{
     KillOnDrop, get_agent_bin, get_free_port, spawn_coordinator_with_config,
-    spawn_host_agent_with_env_args, wait_for_listening,
+    spawn_host_agent_with_env_args, wait_for_agent_ready, wait_for_listening,
 };
 
 #[test]
@@ -60,7 +60,9 @@ async fn test_shutdown_command_execution() {
         .as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);
-    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    
+    // Wait for agent to be ready
+    wait_for_agent_ready(agent_port, shared_secret, 5).await;
 
     let client = reqwest::Client::new();
     let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
