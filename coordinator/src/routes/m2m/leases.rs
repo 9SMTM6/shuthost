@@ -8,7 +8,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast};
-use tracing::warn;
+use tracing::debug;
 
 use crate::websocket::WsMessage;
 
@@ -44,7 +44,7 @@ pub async fn broadcast_lease_update(
         host: host.to_string(),
         leases: leases.clone(),
     };
-    if let Err(e) = ws_tx.send(msg) {
-        warn!("Failed to broadcast lease update for '{}': {}", host, e);
+    if ws_tx.send(msg).is_err() {
+        debug!("No Websocket Subscribers");
     }
 }
