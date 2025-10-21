@@ -114,7 +114,16 @@ pub fn start_background_tasks(
         });
     }
 
-    // Start WebSocket host status broadcaster
+    // Start config file watcher
+    {
+        let path = config_path.to_path_buf();
+        let config_tx = config_tx.clone();
+        tokio::spawn(async move {
+            watch_config_file(path, config_tx).await;
+        });
+    }
+
+    // Forwards host status updates to the websocket client loops
     {
         let ws_tx = ws_tx.clone();
         let mut hoststatus_rx = hoststatus_tx.subscribe();
@@ -122,13 +131,13 @@ pub fn start_background_tasks(
             while hoststatus_rx.changed().await.is_ok() {
                 let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
                 if ws_tx.send(msg).is_err() {
-                    warn!("Failed to send WebSocket message");
+                    debug!("No Websocket Subscribers");
                 }
             }
         });
     }
 
-    // Start WebSocket config change broadcaster
+    // Forwards config changes to the websocket client loops
     {
         let ws_tx = ws_tx.clone();
         let mut config_rx = config_rx.clone();
@@ -139,18 +148,9 @@ pub fn start_background_tasks(
                 let clients = config.clients.keys().cloned().collect::<Vec<_>>();
                 let msg = WsMessage::ConfigChanged { hosts, clients };
                 if ws_tx.send(msg).is_err() {
-                    warn!("Failed to send WebSocket message");
+                    debug!("No Websocket Subscribers");
                 }
             }
-        });
-    }
-
-    // Start config file watcher
-    {
-        let path = config_path.to_path_buf();
-        let config_tx = config_tx.clone();
-        tokio::spawn(async move {
-            watch_config_file(path, config_tx).await;
         });
     }
 }
