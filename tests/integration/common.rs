@@ -4,14 +4,13 @@
 //! such as spawning processes, managing ports, and waiting for services to be ready.
 
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::{Duration, Instant};
 
+static NEXT_PORT: AtomicU16 = AtomicU16::new(10000);
+
 pub fn get_free_port() -> u16 {
-    std::net::TcpListener::bind("127.0.0.1:0")
-        .expect("failed to bind to address")
-        .local_addr()
-        .unwrap()
-        .port()
+    NEXT_PORT.fetch_add(1, Ordering::SeqCst)
 }
 
 /// Guard that kills and waits on a child process when dropped.
