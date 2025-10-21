@@ -43,7 +43,7 @@
     const validTabs = new Set(tabs.map(t => t.dataset["tabContent"]));
 
     const activateTab = (tabId, updateHash) => {
-        if (!validTabs.has(tabId)) return;
+        if (!validTabs.has(tabId)) return activateTab('hosts', updateHash);
         tabs.forEach(t => {
             t.classList.remove('active');
             t.setAttribute('aria-selected', 'false');
@@ -79,10 +79,8 @@
 
     const hashNavigate = () => {
         const hash = location.hash.replace('#', '');
-        if (hash && validTabs.has(hash)) {
-            activateTab(hash, false);
-            closeMobileMenu();
-        }
+        activateTab(hash, false);
+        closeMobileMenu();
     };
 
     window.addEventListener('hashchange', hashNavigate);
@@ -94,7 +92,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         if (location.hash) {
-            hashNavigate();
+            activateTab("hosts");
+            closeMobileMenu();
         }
     });
 </script>

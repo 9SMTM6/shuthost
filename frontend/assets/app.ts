@@ -99,7 +99,6 @@ const handleMessage = (message: WsMessage) => {
             const { host, leases } = message.payload;
             persistedLeaseMap[host] = leases;
             updateClientsTable();
-            console.log(`Updated leases for ${host}:`, persistedLeaseMap[host]);
             break;
     }
     updateNodeAttrs();
