@@ -37,13 +37,12 @@ impl Display for LeaseSource {
 /// Broadcast a lease update to WebSocket clients.
 pub async fn broadcast_lease_update(
     host: &str,
-    lease_set: &HashSet<LeaseSource>,
+    leases: &HashSet<LeaseSource>,
     ws_tx: &broadcast::Sender<WsMessage>,
 ) {
-    let lease_sources: Vec<_> = lease_set.iter().cloned().collect();
     let msg = WsMessage::LeaseUpdate {
         host: host.to_string(),
-        leases: lease_sources,
+        leases: leases.clone(),
     };
     if let Err(e) = ws_tx.send(msg) {
         warn!("Failed to broadcast lease update for '{}': {}", host, e);

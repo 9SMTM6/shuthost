@@ -58,7 +58,7 @@ pub enum WsMessage {
     /// Gets sent on Lease status updates
     LeaseUpdate {
         host: String,
-        leases: Vec<LeaseSource>,
+        leases: HashSet<LeaseSource>,
     },
 }
 
