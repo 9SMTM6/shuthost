@@ -14,7 +14,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast, watch};
 use tracing::{info, warn};
-use tungstenite::Error as TungError;
+use tungstenite::Error as TungstError;
 
 /// Walk the error source chain and return true if any source is a
 /// `tungstenite::Error::AlreadyClosed`.
@@ -22,7 +22,7 @@ fn is_tungstenite_already_closed(err: &axum::Error) -> bool {
     let mut current: &(dyn std::error::Error + 'static) = err;
     loop {
         // Try downcasting the current error trait object to a concrete tungstenite::Error
-        if matches!(current.downcast_ref::<TungError>(), Some(TungError::AlreadyClosed)) {
+        if matches!(current.downcast_ref::<TungstError>(), Some(TungstError::AlreadyClosed)) {
             return true;
         }
 
