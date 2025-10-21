@@ -14,6 +14,9 @@ pub mod routes;
 pub mod websocket;
 pub mod wol;
 
+// for use in integration tests
+pub use websocket::WsMessage;
+
 use std::fs;
 
 use clap::Parser;

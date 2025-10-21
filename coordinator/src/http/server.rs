@@ -281,8 +281,8 @@ pub async fn start(
 /// it avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
 /// since these might block some embedings etc.
 ///
-/// It also allows inlined scripts (!) and doesn't require-trusted-types-for,
-/// since these have limited compatibility and/or require a bundler for effective application management
+/// It also allows inlined scripts (!)
+/// since that has limited compatibility and/or require a bundler for effective application management
 ///
 /// These would help against clickjacking etc.
 async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -> Response {

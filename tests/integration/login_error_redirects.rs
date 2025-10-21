@@ -1,12 +1,8 @@
-mod common;
-
 use std::process::Child;
 
 use reqwest::Client;
 
-use common::{KillOnDrop, get_free_port, wait_for_listening};
-
-use crate::common::spawn_coordinator_with_config;
+use crate::common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 /// Convenience: spawn a coordinator configured to use token auth.
 pub fn spawn_coordinator_with_token(port: u16, token: &str) -> Child {
