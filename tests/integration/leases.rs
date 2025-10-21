@@ -88,7 +88,7 @@ async fn test_m2m_lease_take_and_release() {
         agent_guard
     };
 
-    // ensure lease request finished sucessfully
+    // ensure lease request finished successfully
     take_lease_req.await.unwrap();
 
     // Release the lease
@@ -123,7 +123,7 @@ async fn test_m2m_lease_take_and_release() {
     // Simulate shutdown by killing the agent
     drop(agent_guard);
 
-    // ensure lease request finished sucessfully
+    // ensure lease request finished successfully
     release_lease_req.await.unwrap();
 }
 

@@ -111,3 +111,4 @@ unnested_or_patterns = "warn"
 unreadable_literal = "warn"
 # unwrap_used = "warn" # "warn_on_ci"
 used_underscore_binding = "warn"
+wildcard_dependencies = "allow" # It should be fine with how I use them...

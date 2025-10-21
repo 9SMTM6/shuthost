@@ -1,5 +1,5 @@
 //! Uses the single integration test approach.
-//! 
+//!
 //! This improves parallelism when running the tests, and reduces the number of binaries that have to be built (and linked)
 
 mod common;
@@ -83,7 +83,7 @@ async fn test_coordinator_and_agent_online_status() {
         ["service", "--port", &agent_port.to_string()].as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);
-    
+
     // Wait for agent to be ready
     wait_for_agent_ready(agent_port, shared_secret, 5).await;
 

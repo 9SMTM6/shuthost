@@ -60,7 +60,7 @@ async fn test_shutdown_command_execution() {
         .as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);
-    
+
     // Wait for agent to be ready
     wait_for_agent_ready(agent_port, shared_secret, 5).await;
 
@@ -94,6 +94,10 @@ async fn test_shutdown_command_execution() {
         "Shutdown file should exist after shutdown command"
     );
     let contents = std::fs::read_to_string(&shutdown_file).unwrap_or_default();
-    assert_eq!(contents.trim(), "SHUTDOWN", "Shutdown file should contain 'SHUTDOWN'");
+    assert_eq!(
+        contents.trim(),
+        "SHUTDOWN",
+        "Shutdown file should contain 'SHUTDOWN'"
+    );
     let _ = std::fs::remove_file(shutdown_file); // Clean up after test
 }

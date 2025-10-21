@@ -144,7 +144,14 @@ async fn test_websocket_host_status_changes() {
     // Start the host agent
     let agent = spawn_host_agent_with_env_args(
         [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
-        ["service", "--port", &agent_port.to_string(), "--shutdown-command", ""].as_slice(),
+        [
+            "service",
+            "--port",
+            &agent_port.to_string(),
+            "--shutdown-command",
+            "",
+        ]
+        .as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);
 

@@ -84,17 +84,18 @@ pub async fn wait_for_listening(port: u16, timeout_secs: u64) {
 pub async fn wait_for_agent_ready(port: u16, shared_secret: &str, timeout_secs: u64) {
     let start = Instant::now();
     let addr = format!("127.0.0.1:{}", port);
-    
+
     while start.elapsed() < Duration::from_secs(timeout_secs) {
         match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
             Ok(Ok(mut stream)) => {
                 // Send a proper status request like the coordinator does
-                let signed_message = shuthost_common::create_signed_message("status", shared_secret);
+                let signed_message =
+                    shuthost_common::create_signed_message("status", shared_secret);
                 if stream.write_all(signed_message.as_bytes()).await.is_err() {
                     tokio::time::sleep(Duration::from_millis(100)).await;
                     continue;
                 }
-                
+
                 let mut buf = vec![0u8; 256];
                 match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
                     Ok(Ok(n)) if n > 0 => {
