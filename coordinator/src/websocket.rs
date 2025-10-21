@@ -12,7 +12,7 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Mutex, broadcast};
+use tokio::sync::{Mutex, broadcast, watch};
 use tracing::{info, warn};
 use tungstenite::Error as TungError;
 
@@ -53,7 +53,7 @@ pub enum WsMessage {
         hosts: Vec<String>,
         clients: Vec<String>,
         status: HashMap<String, bool>,
-        leases: HashMap<String, Vec<LeaseSource>>,
+        leases: HashMap<String, HashSet<LeaseSource>>,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate {
@@ -79,8 +79,11 @@ pub async fn ws_handler(
     // Traefik or another proxy is in front).
     info!(?headers, "Incoming WebSocket upgrade headers");
 
-    let current_state = hoststatus_rx.borrow().clone();
-    let current_config = config_rx.borrow().clone();
+    // Defer reading current state until inside the startup sender so we get the
+    // freshest values at the moment of sending. Clone the receivers/leases to
+    // move into the upgrade task.
+    let hoststatus_rx = hoststatus_rx.clone();
+    let config_rx = config_rx.clone();
     let current_leases = leases.clone();
 
     // Log that we're returning an on_upgrade responder; the actual upgrade
@@ -89,22 +92,14 @@ pub async fn ws_handler(
 
     ws.on_upgrade(async move |mut socket| {
         info!("WebSocket upgrade completed; starting event loop");
-        match send_startup_msg(
-                    &mut socket, 
-                    current_state,
-                    current_config,
-                    current_leases,
-                ).await {
-            Ok(()) => {},
+        match send_startup_msg(&mut socket, hoststatus_rx, config_rx, current_leases).await {
+            Ok(()) => {}
             Err(e) => {
                 warn!("Failed to send initial state: {}", e);
                 return;
-            },
+            }
         };
-        start_webui_ws_loop(
-            socket,
-            ws_tx.subscribe(),
-        ).await;
+        start_webui_ws_loop(socket, ws_tx.subscribe()).await;
     })
 }
 
@@ -119,10 +114,7 @@ async fn send_ws_message(socket: &mut WebSocket, msg: &WsMessage) -> Result<(), 
 }
 
 /// We start one event loop per client
-async fn start_webui_ws_loop(
-    mut socket: WebSocket,
-    mut rx: broadcast::Receiver<WsMessage>,
-) {
+async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<WsMessage>) {
     // Handle broadcast messages
     loop {
         tokio::select! {
@@ -156,22 +148,24 @@ async fn start_webui_ws_loop(
     }
 }
 
-async fn send_startup_msg(socket: &mut WebSocket, current_state: Arc<HashMap<String, bool>>, config: Arc<ControllerConfig>, current_leases: Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>) -> Result<(), axum::Error> {
+async fn send_startup_msg(
+    socket: &mut WebSocket,
+    hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+    config_rx: watch::Receiver<Arc<ControllerConfig>>,
+    current_leases: Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>,
+) -> Result<(), axum::Error> {
+    // Read freshest values from the receivers just before sending.
+    let current_state = hoststatus_rx.borrow().clone();
+    let config = config_rx.borrow().clone();
+
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
-    let leases_map = {
-        current_leases
-            .lock()
-            .await
-            .iter()
-            .map(|(host, sources)| (host.clone(), sources.iter().cloned().collect()))
-            .collect::<HashMap<_, _>>()
-    };
+    let leases = { current_leases.lock().await.clone() };
     let initial_msg = WsMessage::Initial {
         hosts,
         clients,
         status: current_state.as_ref().clone(),
-        leases: leases_map, // Pass the lease data
+        leases,
     };
 
     send_ws_message(socket, &initial_msg).await
