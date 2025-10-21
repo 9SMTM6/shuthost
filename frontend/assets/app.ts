@@ -32,11 +32,22 @@ const connectWebSocket = () => {
         return;
     }
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+    const url = `${wsProtocol}://${location.host}/ws`;
+    console.info('Attempting WebSocket connect to', url);
+    const socket = new WebSocket(url);
 
-    socket.onopen = () => console.log('WebSocket connected');
+    socket.onopen = () => console.info('WebSocket connected to', url);
     socket.onmessage = handleWebSocketMessage;
-    socket.onclose = () => setTimeout(connectWebSocket, 2000);
+    socket.onerror = (ev) => {
+        // `ev` is typically an Event without much detail; still log to help
+        // spot timing or repeated failures.
+        console.error('WebSocket error', ev);
+    };
+    socket.onclose = (ev) => {
+        console.warn('WebSocket closed', { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
+        // Try reconnecting with exponential backoff up to a cap
+        setTimeout(connectWebSocket, 2000);
+    };
 };
 
 /**

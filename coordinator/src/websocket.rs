@@ -8,6 +8,7 @@ use axum::{
         State,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
+    http::HeaderMap,
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
@@ -43,6 +44,7 @@ pub enum WsMessage {
 /// Gets called for every new web client and spins up an event loop
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
+    headers: HeaderMap,
     State(AppState {
         ws_tx,
         hoststatus_rx,
@@ -51,10 +53,21 @@ pub async fn ws_handler(
         ..
     }): State<AppState>,
 ) -> impl IntoResponse {
+    // Log incoming headers so we can verify whether the Upgrade/Connection
+    // and other WebSocket-related headers reach the backend (useful when
+    // Traefik or another proxy is in front).
+    tracing::info!(?headers, "Incoming WebSocket upgrade headers");
+
     let current_state = hoststatus_rx.borrow().clone();
     let current_config = config_rx.borrow().clone();
     let current_leases = leases.clone();
+
+    // Log that we're returning an on_upgrade responder; the actual upgrade
+    // happens asynchronously when the client completes the handshake.
+    tracing::info!("Registering WebSocket upgrade handler");
+
     ws.on_upgrade(move |socket| {
+        tracing::info!("WebSocket upgrade completed; starting event loop");
         start_webui_ws_loop(
             socket,
             ws_tx.subscribe(),
