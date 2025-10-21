@@ -22,6 +22,9 @@ let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 let persistedClientList: string[] = [];
 
+// Global WebSocket reference for bfcache handling
+let currentSocket: WebSocket | null = null;
+
 /**
  * Establish and maintain a WebSocket connection to the backend API.
  * Reconnects automatically on close (with a small delay).
@@ -31,10 +34,23 @@ const connectWebSocket = () => {
         DemoMode.init();
         return;
     }
+
+    // If already connected, no need to reconnect
+    if (currentSocket && currentSocket.readyState === WebSocket.OPEN) {
+        console.info('WebSocket already connected');
+        return;
+    }
+
+    // Close any existing connection
+    if (currentSocket) {
+        currentSocket.close();
+    }
+
     const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
     const url = `${wsProtocol}://${location.host}/ws`;
     console.info('Attempting WebSocket connect to', url);
     const socket = new WebSocket(url);
+    currentSocket = socket;
 
     socket.onopen = () => console.info('WebSocket connected to', url);
     socket.onmessage = handleWebSocketMessage;
@@ -45,6 +61,7 @@ const connectWebSocket = () => {
     };
     socket.onclose = (ev) => {
         console.warn('WebSocket closed', { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
+        currentSocket = null;
         // Try reconnecting with exponential backoff up to a cap
         setTimeout(connectWebSocket, 2000);
     };
@@ -393,6 +410,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setupInstallerCommands();
     if (DemoMode.isActive) {
         console.info('Demo mode enabled: UI is using simulated data.');
+    }
+});
+
+// Handle Back-Forward Cache restoration
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        console.info('Page restored from bfcache, reconnecting WebSocket');
+        connectWebSocket();
+    }
+});
+
+// Close WebSocket when page is hidden and will be cached
+window.addEventListener('pagehide', (event) => {
+    if (event.persisted && currentSocket) {
+        console.info('Page being cached, closing WebSocket');
+        currentSocket.close();
+        currentSocket = null;
     }
 });
 
