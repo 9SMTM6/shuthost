@@ -14,17 +14,16 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast, watch};
 use tracing::{info, warn};
-use tungstenite::Error as TungstError;
+use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
-/// Walk the error source chain and return true if any source is a
-/// `tungstenite::Error::AlreadyClosed`.
-fn is_tungstenite_already_closed(err: &axum::Error) -> bool {
+/// Walk the error source chain and return true if any source is an error about the websocket being closed.
+fn is_websocket_closed(err: &axum::Error) -> bool {
     let mut current: &(dyn std::error::Error + 'static) = err;
     loop {
         // Try downcasting the current error trait object to a concrete tungstenite::Error
         if matches!(
-            current.downcast_ref::<TungstError>(),
-            Some(TungstError::AlreadyClosed)
+            current.downcast_ref::<TError>(),
+            Some(TError::AlreadyClosed | TError::Protocol(TPError::SendAfterClosing))
         ) {
             return true;
         }
@@ -124,9 +123,9 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                 match msg {
                     Ok(msg) => {
                         if let Err(e) = send_ws_message(&mut socket, &msg).await {
-                            let closed = is_tungstenite_already_closed(&e);
+                            let closed = is_websocket_closed(&e);
                             if closed {
-                                info!("WebSocket connection closed by peer");
+                                info!("WebSocket connection closed");
                             } else {
                                 warn!("Failed to send message, closing connection: {}", e);
                             }
