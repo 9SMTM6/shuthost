@@ -2683,6 +2683,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "shuthost_common",
  "shuthost_coordinator",
  "shuthost_host_agent",
  "tokio",

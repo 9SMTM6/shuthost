@@ -20,7 +20,7 @@ use common::{
 #[tokio::test]
 async fn test_coordinator_config_loads() {
     let port = get_free_port();
-    let mut child = spawn_coordinator_with_config(
+    let child = spawn_coordinator_with_config(
         port,
         &format!(
             r#"
@@ -34,9 +34,10 @@ async fn test_coordinator_config_loads() {
         "#
         ),
     );
+    let mut drop_guard = KillOnDrop(child);
     wait_for_listening(port, 2).await;
-    let _ = child.kill();
-    let status = child.wait().expect("failed to wait on child");
+    let _ = drop_guard.0.kill();
+    let status = drop_guard.0.wait().expect("failed to wait on child");
     #[cfg(unix)]
     assert!(
         status.success() || status.code() == Some(0) || status.signal() == Some(9),
@@ -53,6 +54,7 @@ async fn test_coordinator_config_loads() {
 async fn test_coordinator_and_agent_online_status() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
+    let shared_secret = "testsecret";
 
     let coordinator_child = spawn_coordinator_with_config(
         coord_port,
@@ -66,7 +68,7 @@ async fn test_coordinator_and_agent_online_status() {
         ip = "127.0.0.1"
         mac = "00:11:22:33:44:55"
         port = {agent_port}
-        shared_secret = "testsecret"
+        shared_secret = "{shared_secret}"
 
         [clients]
     "#
@@ -76,7 +78,7 @@ async fn test_coordinator_and_agent_online_status() {
     wait_for_listening(coord_port, 5).await;
 
     let agent = spawn_host_agent_with_env_args(
-        [("SHUTHOST_SHARED_SECRET", "testsecret")].as_slice(),
+        [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
         ["service", "--port", &agent_port.to_string()].as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);

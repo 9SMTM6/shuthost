@@ -22,6 +22,7 @@ async fn test_shutdown_command_execution() {
     let shutdown_file = std::env::temp_dir().join("shuthost_shutdown_test");
     let coord_port = get_free_port();
     let agent_port = get_free_port();
+    let shared_secret = "testsecret";
 
     let coordinator_child = spawn_coordinator_with_config(
         coord_port,
@@ -35,7 +36,7 @@ async fn test_shutdown_command_execution() {
         ip = "127.0.0.1"
         mac = "00:11:22:33:44:55"
         port = {agent_port}
-        shared_secret = "testsecret"
+        shared_secret = "{shared_secret}"
 
         [clients]
     "#
@@ -45,7 +46,7 @@ async fn test_shutdown_command_execution() {
     wait_for_listening(coord_port, 5).await;
 
     let agent = spawn_host_agent_with_env_args(
-        [("SHUTHOST_SHARED_SECRET", "testsecret")].as_slice(),
+        [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
         [
             "service",
             "--port",

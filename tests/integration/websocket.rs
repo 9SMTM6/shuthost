@@ -14,6 +14,7 @@ use crate::common::{
 #[tokio::test]
 async fn test_websocket_config_updates() {
     let port = get_free_port();
+    let shared_secret = "secret";
     let config_path = std::env::temp_dir().join(format!("ws_test_config_{}.toml", port));
     let initial_config = format!(
         r#"
@@ -62,7 +63,7 @@ async fn test_websocket_config_updates() {
         ip = "192.168.1.1"
         mac = "00:11:22:33:44:55"
         port = 8080
-        shared_secret = "secret"
+        shared_secret = "{shared_secret}"
 
         [clients]
     "#,
@@ -99,6 +100,7 @@ async fn test_websocket_config_updates() {
 async fn test_websocket_host_status_changes() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
+    let shared_secret = "testsecret";
 
     let coordinator_child = spawn_coordinator_with_config(
         coord_port,
@@ -112,7 +114,7 @@ async fn test_websocket_host_status_changes() {
         ip = "127.0.0.1"
         mac = "00:11:22:33:44:55"
         port = {agent_port}
-        shared_secret = "testsecret"
+        shared_secret = "{shared_secret}"
 
         [clients]
     "#
@@ -141,7 +143,7 @@ async fn test_websocket_host_status_changes() {
 
     // Start the host agent
     let agent = spawn_host_agent_with_env_args(
-        [("SHUTHOST_SHARED_SECRET", "testsecret")].as_slice(),
+        [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
         ["service", "--port", &agent_port.to_string(), "--shutdown-command", ""].as_slice(),
     );
     let _agent_guard = KillOnDrop(agent);

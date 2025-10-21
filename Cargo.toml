@@ -44,6 +44,7 @@ tokio.workspace = true
 tokio-tungstenite = "*"
 futures-util = "0.3"
 serde = { version = "1.0", features = ["derive"] }
+shuthost_common = { workspace = true }
 
 [workspace.dependencies]
 clap = { version = "4.5.37", features = ["derive"] }
