@@ -86,13 +86,11 @@ async fn test_shutdown_command_execution() {
     assert!(resp.status().is_success());
 
     tokio::time::sleep(std::time::Duration::from_secs(4)).await;
-    if shutdown_file.exists() {
-        let contents = std::fs::read_to_string(&shutdown_file).unwrap_or_default();
-        println!("Shutdown file contents: {contents}");
-    }
     assert!(
         shutdown_file.exists(),
         "Shutdown file should exist after shutdown command"
     );
+    let contents = std::fs::read_to_string(&shutdown_file).unwrap_or_default();
+    assert_eq!(contents.trim(), "SHUTDOWN", "Shutdown file should contain 'SHUTDOWN'");
     let _ = std::fs::remove_file(shutdown_file); // Clean up after test
 }
