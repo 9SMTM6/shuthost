@@ -88,7 +88,7 @@ async fn test_shutdown_command_execution() {
         .expect("failed to send shutdown lease");
     assert!(resp.status().is_success());
 
-    tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
     assert!(
         shutdown_file.exists(),
         "Shutdown file should exist after shutdown command"
