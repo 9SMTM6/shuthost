@@ -22,7 +22,10 @@ fn is_tungstenite_already_closed(err: &axum::Error) -> bool {
     let mut current: &(dyn std::error::Error + 'static) = err;
     loop {
         // Try downcasting the current error trait object to a concrete tungstenite::Error
-        if matches!(current.downcast_ref::<TungstError>(), Some(TungstError::AlreadyClosed)) {
+        if matches!(
+            current.downcast_ref::<TungstError>(),
+            Some(TungstError::AlreadyClosed)
+        ) {
             return true;
         }
 
