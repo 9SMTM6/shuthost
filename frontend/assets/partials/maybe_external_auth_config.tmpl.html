@@ -79,7 +79,7 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
          * Populate dynamic configuration snippets based on current origin.
          * This keeps embedded strings in the UI in sync with where the page is served from.
          */
-        function setupExclusionConfigs() {
+        const setupExclusionConfigs = () => {
             const baseUrl = window.location.origin;
 
             // Configuration examples with replaced domain/backend

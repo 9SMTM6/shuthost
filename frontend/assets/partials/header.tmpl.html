@@ -25,8 +25,8 @@
                         aria-controls="architecture-tab" tabindex="0">Docs</button>
                     <button class="tab active" data-tab-content="hosts" role="tab" aria-selected="true"
                         aria-controls="hosts-tab" tabindex="0">Hosts</button>
-                    <button class="tab" data-tab-content="clients" role="tab" aria-selected="false" aria-controls="clients-tab"
-                        tabindex="0">Clients</button>
+                    <button class="tab" data-tab-content="clients" role="tab" aria-selected="false"
+                        aria-controls="clients-tab" tabindex="0">Clients</button>
                 </nav>
                 { maybe_logout }
             </div>
@@ -42,7 +42,7 @@
     const tabs = Array.from(document.querySelectorAll('.tab'));
     const validTabs = new Set(tabs.map(t => t.dataset["tabContent"]));
 
-    const activateTab = (tabId, updateHash) => {
+    const activateTab = (tabId, updateHash = false) => {
         if (!validTabs.has(tabId)) return activateTab('hosts', updateHash);
         tabs.forEach(t => {
             t.classList.remove('active');
@@ -79,7 +79,7 @@
 
     const hashNavigate = () => {
         const hash = location.hash.replace('#', '');
-        activateTab(hash, false);
+        activateTab(hash);
         closeMobileMenu();
     };
 
