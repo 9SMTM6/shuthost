@@ -14,7 +14,7 @@ use crate::{
 
 /// Configuration options for running the host_agent service.
 #[derive(Debug, Parser, Clone)]
-pub struct ServiceArgs {
+pub struct ServiceOptions {
     /// TCP port to listen on for incoming HMAC-signed commands.
     #[arg(long = "port", default_value_t = 9090)]
     pub port: u16,
@@ -24,18 +24,21 @@ pub struct ServiceArgs {
     pub shutdown_command: String,
 
     /// Shared secret for validating incoming HMAC-signed requests.
+    /// Usually set from environment variables, after parsing.
     #[clap(skip)]
-    pub shared_secret: String,
+    pub shared_secret: Option<String>,
 }
 
 /// Starts the TCP listener and handles incoming client connections in sequence.
 ///
 /// # Panics
 ///
-/// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set.
-pub fn start_host_agent(mut config: ServiceArgs) {
-    config.shared_secret = env::var("SHUTHOST_SHARED_SECRET")
-        .expect("SHUTHOST_SHARED_SECRET environment variable must be set");
+/// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set (and the value wasn't smuggled into ServiceArgs).
+pub fn start_host_agent(mut config: ServiceOptions) {
+    config.shared_secret.get_or_insert_with(|| {
+        env::var("SHUTHOST_SHARED_SECRET")
+            .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected")
+    });
     let addr = format!("0.0.0.0:{}", config.port);
     let listener = TcpListener::bind(&addr).expect("Failed to bind port");
     println!("Listening on {addr}");
@@ -53,7 +56,7 @@ pub fn start_host_agent(mut config: ServiceArgs) {
 }
 
 /// Handles a client connection: reads data, invokes handler, writes response, and triggers shutdown if needed.
-fn handle_client(mut stream: TcpStream, config: &ServiceArgs) {
+fn handle_client(mut stream: TcpStream, config: &ServiceOptions) {
     let mut buffer = [0u8; 1024];
     let peer_addr = stream
         .peer_addr()

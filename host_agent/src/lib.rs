@@ -12,7 +12,7 @@ use std::env;
 use clap::{Parser, Subcommand};
 
 use install::{DEFAULT_PORT, InstallArgs, install_host_agent};
-use server::ServiceArgs;
+use server::ServiceOptions;
 
 /// Top-level CLI parser for host_agent.
 #[derive(Debug, Parser)]
@@ -29,7 +29,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Start the host_agent as a background service.
-    Service(ServiceArgs),
+    Service(ServiceOptions),
 
     /// Install the host_agent on the system.
     Install(InstallArgs),
@@ -42,9 +42,8 @@ pub enum Command {
     },
 }
 
-pub fn inner_main() {
-    let invocation = Cli::parse();
-
+// TODO: make cancelable
+pub fn inner_main(invocation: Cli) {
     match invocation.command {
         Command::Install(args) => match install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),

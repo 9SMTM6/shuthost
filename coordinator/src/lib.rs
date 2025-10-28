@@ -19,7 +19,6 @@ pub use websocket::WsMessage;
 
 use std::fs;
 
-use clap::Parser;
 use eyre::{Result, WrapErr};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -40,9 +39,7 @@ use install::setup;
 /// # Panics
 ///
 /// Panics if the AWS LC crypto provider cannot be installed.
-pub async fn inner_main() -> Result<()> {
-    let invocation = Cli::parse();
-
+pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
         Command::Install(args) => {
             setup(args)?;

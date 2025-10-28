@@ -3,7 +3,7 @@
 //! This module provides functions for parsing and validating
 //! incoming HMAC-signed requests from the coordinator.
 
-use crate::server::ServiceArgs;
+use crate::server::ServiceOptions;
 use shuthost_common::validate_hmac_message;
 
 /// Parses incoming bytes, validates HMAC-signed commands, and returns a response with a flag indicating shutdown.
@@ -33,7 +33,7 @@ use shuthost_common::validate_hmac_message;
 /// assert_eq!(resp, "OK: status");
 /// assert!(!shutdown);
 /// ```
-pub fn validate_request(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (String, bool) {
+pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -> (String, bool) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {
@@ -42,7 +42,10 @@ pub fn validate_request(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (
         }
     };
 
-    match validate_hmac_message(data_str, &config.shared_secret) {
+    match validate_hmac_message(
+        data_str,
+        &config.shared_secret.as_ref().expect("Should be set by now"),
+    ) {
         shuthost_common::HmacValidationResult::Valid(command) => {
             // Proceed with valid command
             match command.as_str() {
@@ -78,13 +81,13 @@ pub fn validate_request(data: &[u8], config: &ServiceArgs, peer_addr: &str) -> (
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::server::ServiceArgs;
+    use crate::server::ServiceOptions;
 
-    fn make_args(secret: &str) -> ServiceArgs {
-        ServiceArgs {
+    fn make_args(secret: &str) -> ServiceOptions {
+        ServiceOptions {
             port: 0,
             shutdown_command: "shutdown_cmd".to_string(),
-            shared_secret: secret.to_string(),
+            shared_secret: Some(secret.to_string()),
         }
     }
 

@@ -27,7 +27,7 @@ base64 = "0.22.1"
 clap = { workspace = true, features = ["env"] }
 cookie = "0.18"
 eyre.workspace = true
-futures = "0.3.31"
+futures.workspace = true
 hex.workspace = true
 hmac.workspace = true
 notify = "8.0.0"
