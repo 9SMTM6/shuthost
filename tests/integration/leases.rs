@@ -6,8 +6,8 @@ use reqwest::Client;
 use shuthost_common::create_signed_message;
 
 use crate::common::{
-    KillOnDrop, get_free_port, spawn_coordinator_with_config, spawn_host_agent_with_env_args,
-    wait_for_agent_ready, wait_for_listening,
+    get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
+    wait_for_listening,
 };
 
 #[tokio::test]
@@ -21,7 +21,7 @@ async fn test_m2m_lease_take_and_release() {
     let agent_id = "testhost";
     let agent_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -40,7 +40,6 @@ async fn test_m2m_lease_take_and_release() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
     // Take a lease via M2M endpoint
@@ -70,22 +69,11 @@ async fn test_m2m_lease_take_and_release() {
 
     // simulate the WOL request by starting the agent
     let agent_guard = {
-        let agent = spawn_host_agent_with_env_args(
-            [("SHUTHOST_SHARED_SECRET", agent_secret)].as_slice(),
-            [
-                "service",
-                "--port",
-                &agent_port.to_string(),
-                "--shutdown-command",
-                "",
-            ]
-            .as_slice(),
-        );
-        let agent_guard = KillOnDrop(agent);
+        let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, agent_secret, 5).await;
-        agent_guard
+        agent
     };
 
     // ensure lease request finished successfully
@@ -138,7 +126,7 @@ async fn test_m2m_lease_async_take_and_release() {
     let agent_id = "testhost";
     let agent_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -157,7 +145,6 @@ async fn test_m2m_lease_async_take_and_release() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
     // Take a lease via M2M endpoint
@@ -186,22 +173,11 @@ async fn test_m2m_lease_async_take_and_release() {
 
     // Bring host online by starting the agent, to blockade the release request
     let _agent_guard = {
-        let agent = spawn_host_agent_with_env_args(
-            [("SHUTHOST_SHARED_SECRET", agent_secret)].as_slice(),
-            [
-                "service",
-                "--port",
-                &agent_port.to_string(),
-                "--shutdown-command",
-                "",
-            ]
-            .as_slice(),
-        );
-        let agent_guard = KillOnDrop(agent);
+        let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, agent_secret, 5).await;
-        agent_guard
+        agent
     };
 
     // Release the lease
@@ -238,7 +214,7 @@ async fn test_api_reset_client_leases() {
     let agent_secret = "testsecret";
     let agent_id = "testhost";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -257,7 +233,6 @@ async fn test_api_reset_client_leases() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
     let client = Client::new();
@@ -279,22 +254,11 @@ async fn test_api_reset_client_leases() {
 
     // simulate the online host
     let agent_guard = {
-        let agent = spawn_host_agent_with_env_args(
-            [("SHUTHOST_SHARED_SECRET", agent_secret)].as_slice(),
-            [
-                "service",
-                "--port",
-                &agent_port.to_string(),
-                "--shutdown-command",
-                "",
-            ]
-            .as_slice(),
-        );
-        let agent_guard = KillOnDrop(agent);
+        let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, agent_secret, 5).await;
-        agent_guard
+        agent
     };
 
     // Reset all leases for this client - spawn background task
@@ -340,7 +304,7 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
     let agent_id = "testhost";
     let agent_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -359,7 +323,6 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
     // Take a lease synchronously (host remains offline)
@@ -400,7 +363,7 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
     let agent_id = "testhost";
     let agent_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -419,27 +382,15 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
     // Start the agent first (host is online)
     let _agent_guard = {
-        let agent = spawn_host_agent_with_env_args(
-            [("SHUTHOST_SHARED_SECRET", agent_secret)].as_slice(),
-            [
-                "service",
-                "--port",
-                &agent_port.to_string(),
-                "--shutdown-command",
-                "",
-            ]
-            .as_slice(),
-        );
-        let agent_guard = KillOnDrop(agent);
+        let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, agent_secret, 5).await;
-        agent_guard
+        agent
     };
 
     let client = reqwest::Client::new();

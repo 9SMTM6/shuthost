@@ -29,8 +29,8 @@ pub enum Action {
 ///
 /// A tuple `(response, action)`, where `response` is sent back to the client, and
 /// `action` indicates what the agent should do next.
-/// 
-/// /// # Examples
+///
+/// # Examples
 ///
 /// ```
 /// use shuthost_host_agent::validation::validate_request;
@@ -45,12 +45,7 @@ pub enum Action {
 /// assert_eq!(resp, "OK: status");
 /// assert_eq!(action, Action::None);
 /// ```
-
-pub fn validate_request(
-    data: &[u8],
-    config: &ServiceOptions,
-    peer_addr: &str,
-) -> (String, Action) {
+pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -> (String, Action) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {
@@ -61,7 +56,7 @@ pub fn validate_request(
 
     match validate_hmac_message(
         data_str,
-        &config.shared_secret.as_ref().expect("Should be set by now"),
+        config.shared_secret.as_ref().expect("Should be set by now"),
     ) {
         shuthost_common::HmacValidationResult::Valid(command) => {
             // Proceed with valid command

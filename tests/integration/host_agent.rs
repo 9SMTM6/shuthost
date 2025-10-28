@@ -1,8 +1,8 @@
 //! Integration tests for host_agent functionality
 
 use crate::common::{
-    KillOnDrop, get_agent_bin, get_free_port, spawn_coordinator_with_config,
-    spawn_host_agent_with_env_args, wait_for_agent_ready, wait_for_listening,
+    get_agent_bin, get_free_port, spawn_coordinator_with_config, spawn_host_agent,
+    wait_for_agent_ready, wait_for_listening,
 };
 
 #[test]
@@ -24,7 +24,7 @@ async fn test_shutdown_command_execution() {
     let agent_port = get_free_port();
     let shared_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -42,24 +42,13 @@ async fn test_shutdown_command_execution() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
-    let agent = spawn_host_agent_with_env_args(
-        [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
-        [
-            "service",
-            "--port",
-            &agent_port.to_string(),
-            "--shutdown-command",
-            &format!(
-                "echo SHUTDOWN > {shutdown_file}",
-                shutdown_file = shutdown_file.to_string_lossy()
-            ),
-        ]
-        .as_slice(),
+    let _agent = spawn_host_agent(
+        shared_secret,
+        agent_port,
+        &format!("echo SHUTDOWN > {}", shutdown_file.to_string_lossy()),
     );
-    let _agent_guard = KillOnDrop(agent);
 
     // Wait for agent to be ready
     wait_for_agent_ready(agent_port, shared_secret, 5).await;

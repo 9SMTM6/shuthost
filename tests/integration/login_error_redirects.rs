@@ -1,11 +1,9 @@
-use std::process::Child;
-
 use reqwest::Client;
 
 use crate::common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 /// Convenience: spawn a coordinator configured to use token auth.
-pub fn spawn_coordinator_with_token(port: u16, token: &str) -> Child {
+pub fn spawn_coordinator_with_token(port: u16, token: &str) -> KillOnDrop {
     let config = format!(
         r#"
     [server]
@@ -29,8 +27,7 @@ pub fn spawn_coordinator_with_token(port: u16, token: &str) -> Child {
 async fn insecure_post_redirects_with_insecure_error() {
     let port = get_free_port();
     let token = "correct-token";
-    let child = spawn_coordinator_with_token(port, token);
-    let _guard = KillOnDrop(child);
+    let _child = spawn_coordinator_with_token(port, token);
     wait_for_listening(port, 10).await;
 
     let client = Client::builder()
@@ -64,8 +61,7 @@ async fn insecure_post_redirects_with_insecure_error() {
 async fn invalid_token_redirects_with_token_error() {
     let port = get_free_port();
     let token = "correct-token";
-    let child = spawn_coordinator_with_token(port, token);
-    let _guard = KillOnDrop(child);
+    let _child = spawn_coordinator_with_token(port, token);
     wait_for_listening(port, 10).await;
 
     let client = Client::builder()

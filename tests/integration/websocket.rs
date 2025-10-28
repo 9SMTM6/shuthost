@@ -7,8 +7,8 @@ use shuthost_coordinator::WsMessage;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::common::{
-    KillOnDrop, get_free_port, spawn_coordinator_with_config, spawn_coordinator_with_config_file,
-    spawn_host_agent_with_env_args, wait_for_listening,
+    get_free_port, spawn_coordinator_with_config, spawn_coordinator_with_config_file,
+    spawn_host_agent_default, wait_for_listening,
 };
 
 #[tokio::test]
@@ -30,8 +30,7 @@ async fn test_websocket_config_updates() {
     );
     std::fs::write(&config_path, &initial_config).expect("failed to write config");
 
-    let child = spawn_coordinator_with_config_file(&config_path);
-    let _guard = KillOnDrop(child);
+    let _child = spawn_coordinator_with_config_file(&config_path);
     wait_for_listening(port, 5).await;
 
     // Connect websocket client
@@ -102,7 +101,7 @@ async fn test_websocket_host_status_changes() {
     let agent_port = get_free_port();
     let shared_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -120,7 +119,6 @@ async fn test_websocket_host_status_changes() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
     // Connect websocket client
@@ -142,18 +140,7 @@ async fn test_websocket_host_status_changes() {
     }
 
     // Start the host agent
-    let agent = spawn_host_agent_with_env_args(
-        [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
-        [
-            "service",
-            "--port",
-            &agent_port.to_string(),
-            "--shutdown-command",
-            "",
-        ]
-        .as_slice(),
-    );
-    let _agent_guard = KillOnDrop(agent);
+    let agent = spawn_host_agent_default(shared_secret, agent_port);
 
     // Wait for host to come online
     let mut online_received = false;
@@ -180,7 +167,7 @@ async fn test_websocket_host_status_changes() {
     assert!(online_received, "Host should have come online");
 
     // Now kill the agent
-    drop(_agent_guard); // This kills the agent
+    drop(agent); // This kills the agent
 
     // Wait for host to go offline
     let mut offline_received = false;

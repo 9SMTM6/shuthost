@@ -10,18 +10,16 @@ mod token_login;
 mod websocket;
 
 use reqwest::Client;
-#[cfg(unix)]
-use std::os::unix::process::ExitStatusExt;
 
 use common::{
-    KillOnDrop, get_free_port, spawn_coordinator_with_config, spawn_host_agent_with_env_args,
-    wait_for_agent_ready, wait_for_listening,
+    get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
+    wait_for_listening,
 };
 
 #[tokio::test]
 async fn test_coordinator_config_loads() {
     let port = get_free_port();
-    let child = spawn_coordinator_with_config(
+    let _child = spawn_coordinator_with_config(
         port,
         &format!(
             r#"
@@ -35,20 +33,7 @@ async fn test_coordinator_config_loads() {
         "#
         ),
     );
-    let mut drop_guard = KillOnDrop(child);
     wait_for_listening(port, 2).await;
-    let _ = drop_guard.0.kill();
-    let status = drop_guard.0.wait().expect("failed to wait on child");
-    #[cfg(unix)]
-    assert!(
-        status.success() || status.code() == Some(0) || status.signal() == Some(9),
-        "Process did not start or exit as expected"
-    );
-    #[cfg(not(unix))]
-    assert!(
-        status.success() || status.code() == Some(0),
-        "Process did not start or exit as expected"
-    );
 }
 
 #[tokio::test]
@@ -57,7 +42,7 @@ async fn test_coordinator_and_agent_online_status() {
     let agent_port = get_free_port();
     let shared_secret = "testsecret";
 
-    let coordinator_child = spawn_coordinator_with_config(
+    let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
         &format!(
             r#"
@@ -75,14 +60,9 @@ async fn test_coordinator_and_agent_online_status() {
     "#
         ),
     );
-    let _coordinator_guard = KillOnDrop(coordinator_child);
     wait_for_listening(coord_port, 5).await;
 
-    let agent = spawn_host_agent_with_env_args(
-        [("SHUTHOST_SHARED_SECRET", shared_secret)].as_slice(),
-        ["service", "--port", &agent_port.to_string()].as_slice(),
-    );
-    let _agent_guard = KillOnDrop(agent);
+    let _agent = spawn_host_agent_default(shared_secret, agent_port);
 
     // Wait for agent to be ready
     wait_for_agent_ready(agent_port, shared_secret, 5).await;

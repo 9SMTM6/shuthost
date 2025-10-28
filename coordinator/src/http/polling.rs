@@ -8,7 +8,7 @@ use tokio::{
     sync::{broadcast, watch},
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use shuthost_common::create_signed_message;
 
@@ -77,11 +77,9 @@ pub async fn poll_until_host_state(
         let mut status_map = hoststatus_tx.borrow().as_ref().clone();
         if status_map.get(host_name) != Some(&is_online) {
             status_map.insert(host_name.to_string(), is_online);
-            match hoststatus_tx.send(Arc::new(status_map)) {
-                Ok(_) => {}
-                Err(e) => {
-                    warn!("Failed to send host status update: {}", e);
-                }
+            if hoststatus_tx.send(Arc::new(status_map)).is_err() {
+                debug!("Host status receiver dropped, stopping polling");
+                return Err("Coordinator shutting down".to_string());
             }
         }
         if is_online == desired_state {
@@ -188,7 +186,10 @@ async fn poll_host_statuses(
         };
         if is_new {
             info!("Host status changed: {:?}", status_map);
-            hoststatus_tx.send(Arc::new(status_map)).unwrap();
+            if hoststatus_tx.send(Arc::new(status_map)).is_err() {
+                debug!("Host status receiver dropped, stopping polling");
+                break;
+            }
         } else {
             debug!("No change in host status");
         }

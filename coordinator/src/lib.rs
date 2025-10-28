@@ -18,6 +18,7 @@ pub mod wol;
 pub use websocket::WsMessage;
 
 use std::fs;
+use std::sync::Once;
 
 use eyre::{Result, WrapErr};
 use tracing::info;
@@ -27,6 +28,9 @@ use cli::{Cli, Command};
 use demo::run_demo_service;
 use http::start;
 use install::setup;
+
+static INIT_TRACING: Once = Once::new();
+static INIT_RUSTLS: Once = Once::new();
 
 /// The coordinator's main function; can be called from a shim binary.
 ///
@@ -46,19 +50,29 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             Ok(())
         }
         Command::ControlService(args) => {
-            tracing_subscriber::fmt()
-                .with_env_filter(
-                    EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-                )
-                .pretty()
-                .init(); // Initialize logging
-
-            rustls::crypto::aws_lc_rs::default_provider()
-                .install_default()
-                .unwrap();
-
             let config_path = fs::canonicalize(&args.config)
                 .wrap_err(format!("Config file not found at: {}", args.config))?;
+
+            INIT_TRACING.call_once(|| {
+                let default_level = if std::env::var("SHUTHOST_INTEGRATION_TEST").is_ok() {
+                    "error"
+                } else {
+                    "info"
+                };
+                tracing_subscriber::fmt()
+                    .with_env_filter(
+                        EnvFilter::try_from_default_env()
+                            .unwrap_or_else(|_| EnvFilter::new(default_level)),
+                    )
+                    .pretty()
+                    .init(); // Initialize logging
+            });
+
+            INIT_RUSTLS.call_once(|| {
+                rustls::crypto::aws_lc_rs::default_provider()
+                    .install_default()
+                    .unwrap();
+            });
 
             info!("Using config path: {}", config_path.display());
 

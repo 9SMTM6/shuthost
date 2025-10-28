@@ -1,6 +1,6 @@
 use reqwest::Client;
 
-use crate::common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
+use crate::common::{get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 #[tokio::test]
 async fn token_login_flow() {
@@ -22,8 +22,7 @@ async fn token_login_flow() {
     [clients]
         "#
     );
-    let child = spawn_coordinator_with_config(port, &config);
-    let _guard = KillOnDrop(child);
+    let _child = spawn_coordinator_with_config(port, &config);
     wait_for_listening(port, 20).await;
 
     let client = Client::builder()

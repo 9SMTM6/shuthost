@@ -101,6 +101,7 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
             && let Err(e) = process_config_change(&path, &tx, &rx).await
         {
             error!("Failed to process config change: {}", e);
+            break;
         }
     }
 }

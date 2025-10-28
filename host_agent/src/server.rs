@@ -9,7 +9,9 @@ use std::{
 use clap::Parser;
 
 use crate::{
-    commands::execute_shutdown, install::get_default_shutdown_command, validation::{validate_request, Action},
+    commands::execute_shutdown,
+    install::get_default_shutdown_command,
+    validation::{Action, validate_request},
 };
 
 /// Configuration options for running the host_agent service.
