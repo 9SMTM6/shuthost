@@ -9,7 +9,7 @@ use std::{
 use clap::Parser;
 
 use crate::{
-    commands::execute_shutdown, install::get_default_shutdown_command, validation::validate_request,
+    commands::execute_shutdown, install::get_default_shutdown_command, validation::{validate_request, Action},
 };
 
 /// Configuration options for running the host_agent service.
@@ -46,7 +46,17 @@ pub fn start_host_agent(mut config: ServiceOptions) {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                handle_client(stream, &config);
+                let action = handle_client(stream, &config);
+                match action {
+                    Action::Shutdown => {
+                        execute_shutdown(&config).unwrap();
+                    }
+                    Action::Abort => {
+                        println!("Abort requested. Stopping host_agent service.");
+                        break;
+                    }
+                    Action::None => {}
+                }
             }
             Err(e) => {
                 eprintln!("Connection failed: {e}");
@@ -56,7 +66,8 @@ pub fn start_host_agent(mut config: ServiceOptions) {
 }
 
 /// Handles a client connection: reads data, invokes handler, writes response, and triggers shutdown if needed.
-fn handle_client(mut stream: TcpStream, config: &ServiceOptions) {
+/// Returns the action to take after handling the request.
+fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Action {
     let mut buffer = [0u8; 1024];
     let peer_addr = stream
         .peer_addr()
@@ -67,16 +78,15 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) {
             let Some(data) = buffer.get(..size) else {
                 unreachable!("Read data size should always be valid, as its >= buffer size");
             };
-            let (response, should_shutdown) = validate_request(data, config, &peer_addr);
+            let (response, action) = validate_request(data, config, &peer_addr);
             if let Err(e) = stream.write_all(response.as_bytes()) {
                 eprintln!("Failed to write response to stream ({peer_addr}): {e}");
             }
-            if should_shutdown {
-                execute_shutdown(config).unwrap();
-            }
+            action
         }
         Err(e) => {
             eprintln!("Failed to read from stream ({peer_addr}): {e}");
+            Action::None
         }
     }
 }

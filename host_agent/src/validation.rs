@@ -6,7 +6,18 @@
 use crate::server::ServiceOptions;
 use shuthost_common::validate_hmac_message;
 
-/// Parses incoming bytes, validates HMAC-signed commands, and returns a response with a flag indicating shutdown.
+/// Possible actions the agent can take after validating a request.
+#[derive(Debug, PartialEq)]
+pub enum Action {
+    /// No special action; just respond.
+    None,
+    /// Shut down the host machine.
+    Shutdown,
+    /// Abort (stop) the host agent service.
+    Abort,
+}
+
+/// Parses incoming bytes, validates HMAC-signed commands, and returns a response with the action to take.
 ///
 /// # Arguments
 ///
@@ -16,29 +27,35 @@ use shuthost_common::validate_hmac_message;
 ///
 /// # Returns
 ///
-/// A tuple `(response, should_shutdown)`, where `response` is sent back to the client, and
-/// `should_shutdown` indicates if the agent should execute a shutdown.
-///
-/// # Examples
+/// A tuple `(response, action)`, where `response` is sent back to the client, and
+/// `action` indicates what the agent should do next.
+/// 
+/// /// # Examples
 ///
 /// ```
 /// use shuthost_host_agent::validation::validate_request;
 /// use shuthost_common::create_signed_message;
-/// use shuthost_host_agent::server::ServiceArgs;
+/// use shuthost_host_agent::server::ServiceOptions;
+/// use shuthost_host_agent::validation::Action;
 ///
 /// let secret = "secret";
-/// let args = ServiceArgs { port: 0, shutdown_command: "cmd".to_string(), shared_secret: secret.to_string() };
+/// let args = ServiceOptions { port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.to_string()) };
 /// let signed = create_signed_message("status", secret);
-/// let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
+/// let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
 /// assert_eq!(resp, "OK: status");
-/// assert!(!shutdown);
+/// assert_eq!(action, Action::None);
 /// ```
-pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -> (String, bool) {
+
+pub fn validate_request(
+    data: &[u8],
+    config: &ServiceOptions,
+    peer_addr: &str,
+) -> (String, Action) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,
         Err(_) => {
             eprintln!("Invalid UTF-8 in request from {peer_addr}: {data:?}");
-            return ("ERROR: Invalid UTF-8".to_string(), false);
+            return ("ERROR: Invalid UTF-8".to_string(), Action::None);
         }
     };
 
@@ -49,31 +66,32 @@ pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -
         shuthost_common::HmacValidationResult::Valid(command) => {
             // Proceed with valid command
             match command.as_str() {
-                "status" => ("OK: status".to_string(), false),
+                "status" => ("OK: status".to_string(), Action::None),
                 "shutdown" => (
                     format!(
                         "Now executing command: {}. Hopefully goodbye.",
                         config.shutdown_command
                     ),
-                    true,
+                    Action::Shutdown,
                 ),
+                "abort" => ("OK: aborting service".to_string(), Action::Abort),
                 _ => {
                     eprintln!("Invalid command from {peer_addr}: {command}");
-                    ("ERROR: Invalid command".to_string(), false)
+                    ("ERROR: Invalid command".to_string(), Action::None)
                 }
             }
         }
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
             eprintln!("Timestamp out of range from {peer_addr}");
-            ("ERROR: Timestamp out of range".to_string(), false)
+            ("ERROR: Timestamp out of range".to_string(), Action::None)
         }
         shuthost_common::HmacValidationResult::InvalidHmac => {
             eprintln!("Invalid HMAC signature from {peer_addr}");
-            ("ERROR: Invalid HMAC signature".to_string(), false)
+            ("ERROR: Invalid HMAC signature".to_string(), Action::None)
         }
         shuthost_common::HmacValidationResult::MalformedMessage => {
             eprintln!("Invalid request format from {peer_addr}");
-            ("ERROR: Invalid request format".to_string(), false)
+            ("ERROR: Invalid request format".to_string(), Action::None)
         }
     }
 }
@@ -95,9 +113,9 @@ mod tests {
     fn test_handle_invalid_utf8() {
         let args = make_args("s");
         let data = [0xff, 0xfe, 0xfd];
-        let (resp, shutdown) = validate_request(&data, &args, "peer");
+        let (resp, action) = validate_request(&data, &args, "peer");
         assert_eq!(resp, "ERROR: Invalid UTF-8");
-        assert!(!shutdown);
+        assert_eq!(action, Action::None);
     }
 
     #[test]
@@ -106,9 +124,9 @@ mod tests {
         let args = make_args(secret);
         // create valid status command
         let signed = shuthost_common::create_signed_message("status", secret);
-        let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
+        let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "OK: status");
-        assert!(!shutdown);
+        assert_eq!(action, Action::None);
     }
 
     #[test]
@@ -116,9 +134,19 @@ mod tests {
         let secret = "sec";
         let args = make_args(secret);
         let signed = shuthost_common::create_signed_message("shutdown", secret);
-        let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
+        let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert!(resp.contains("shutdown_cmd"));
-        assert!(shutdown);
+        assert_eq!(action, Action::Shutdown);
+    }
+
+    #[test]
+    fn test_handle_abort() {
+        let secret = "sec";
+        let args = make_args(secret);
+        let signed = shuthost_common::create_signed_message("abort", secret);
+        let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
+        assert_eq!(resp, "OK: aborting service");
+        assert_eq!(action, Action::Abort);
     }
 
     #[test]
@@ -126,9 +154,9 @@ mod tests {
         let secret = "s";
         let args = make_args(secret);
         let data = "0|cmd|signature".to_string();
-        let (resp, shutdown) = validate_request(data.as_bytes(), &args, "peer");
+        let (resp, action) = validate_request(data.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Timestamp out of range");
-        assert!(!shutdown);
+        assert_eq!(action, Action::None);
     }
 
     #[test]
@@ -136,9 +164,9 @@ mod tests {
         let secret = "s";
         let args = make_args(secret);
         let signed = shuthost_common::create_signed_message("cmd", secret) + "x";
-        let (resp, shutdown) = validate_request(signed.as_bytes(), &args, "peer");
+        let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Invalid HMAC signature");
-        assert!(!shutdown);
+        assert_eq!(action, Action::None);
     }
 
     #[test]
@@ -146,8 +174,8 @@ mod tests {
         let secret = "s";
         let args = make_args(secret);
         let data = "no separators";
-        let (resp, shutdown) = validate_request(data.as_bytes(), &args, "peer");
+        let (resp, action) = validate_request(data.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Invalid request format");
-        assert!(!shutdown);
+        assert_eq!(action, Action::None);
     }
 }
