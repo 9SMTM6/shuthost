@@ -321,7 +321,7 @@ This documentation is intended to help with third-party integrations, including 
 | Issue | Description | Impact | Solution |
 |-------|-------------|--------|----------|
 | �🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium | [APP-SIDE] Regularly "syncing" states, either with explicit config on the host or coordinator-wide |
-| 💾 **State Loss** | The coordinator loses state on restart (including updates) | Low (currently only acts on state changes) | [APP-SIDE] Considering state persistence with e.g. sqlite or explicit syncing |
+| 💾 **State Loss** | The coordinator loses state on restart only when no database is configured or persisted between runs | Low (fix available) | Configure the `[db]` section and persist the database file (e.g. keep the SQLite file or mount the volume in Docker) |
 | 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A | N/A |
 | 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | Ensure proper Docker network configuration |
 | 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Low | Manually override the network interface in the configuration |
