@@ -116,7 +116,7 @@ jobs:
           sudo fc-cache -f -v
 
       - name: Set coverage environment
-        run: cargo llvm-cov show-env --export-prefix >> $GITHUB_ENV
+        run: cargo llvm-cov show-env >> $GITHUB_ENV
 
       - name: Clean coverage artifacts
         run: cargo llvm-cov clean --workspace
