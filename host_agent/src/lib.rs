@@ -42,7 +42,6 @@ pub enum Command {
     },
 }
 
-// TODO: make cancelable
 pub fn inner_main(invocation: Cli) {
     match invocation.command {
         Command::Install(args) => match install_host_agent(&args) {

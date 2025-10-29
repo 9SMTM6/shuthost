@@ -38,18 +38,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +stable clippy --workspace -- -D warnings
 
-  # Issues: Doesn't track coverage from external processes in integration tests.
-  # This is the only way my integration tests use the coordinator and agent, and thus integratio ntest coverage is pretty much not tracked
-  # Meanwhile a lot of functions can only really be excercised in integration tests (if that suffices for them at all, e.g. install routines need different systems)
-
-  # Potential fix: running coordinator and agent as library (inner_main).
-  # But this requires modifications:
-  #   * take arguments as method params instead of parsing in inner_main
-  #   * spawn them with tokio::spawn, use the JoinHandle to kill.
-  #     * this needs further changes to work properly in the coordinator: 
-  #       * It spawns a bunch of its own tasks with tokio::spawn, thus they don't get properly cleaned up.
-  #       * I may be able to get it working without that, but I kind of don't want to.
-  # and thats just the issues I'm aware of.
   coverage:
     name: Coverage report (tarpaulin)
     runs-on: ubuntu-latest
