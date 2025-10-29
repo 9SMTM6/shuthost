@@ -38,7 +38,7 @@ async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
             "broadcast": broadcast
         }))
         .into_response()),
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e).into_response()),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()),
     }
 }
 
