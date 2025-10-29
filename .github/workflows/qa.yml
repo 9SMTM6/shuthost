@@ -66,9 +66,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y npm
 
-      - name: Install Playwright Chromium and system deps
+      - name: Install node deps, Playwright Chromium and system deps
         run: |
           cd frontend
+          npm ci
           npm run install-chromium
           # install system dependencies for Playwright
           npx playwright install-deps || true
@@ -106,7 +107,7 @@ jobs:
         run: cargo build --workspace
 
       - name: Run Playwright tests
-        run: cd frontend && npm ci && npx playwright test
+        run: cd frontend && npx playwright test
 
       - name: Run Rust tests
         run: cargo test --workspace
