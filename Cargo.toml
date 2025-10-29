@@ -68,7 +68,9 @@ edition_2024_expr_fragment_specifier = "allow"
 let_underscore_drop = "deny"
 rust_2018_idioms = { level = "warn", priority = -1 }
 rust_2024_compatibility = { level = "warn", priority = -1 }
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable, rust_analyzer)'] }
+# TODO: introduce coverage exclusions for some areas, test cargo-llvm-cov with its https://github.com/taiki-e/cargo-llvm-cov?tab=readme-ov-file#get-coverage-of-external-tests for playwright
+# then consider https://github.com/taiki-e/cargo-llvm-cov?tab=readme-ov-file#display-coverage-in-vs-code
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable, rust_analyzer, coverage, coverage_nightly)'] }
 unsafe-op-in-unsafe-fn = "warn"
 # unstable
 # must_not_suspend = "deny"
