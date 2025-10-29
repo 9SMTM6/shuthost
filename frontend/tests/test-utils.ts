@@ -48,7 +48,7 @@ export async function startBackend(configPath: string, useTls = false) {
   const proc = spawn(
     backendBin,
     ['control-service', '--config', configPath, '--port', String(port)],
-    { stdio: 'inherit' }
+    { stdio: 'inherit', env: { RUST_LOG: "error", ...process.env } }
   );
   await waitForServerReady(port, useTls, 30000);
   return proc;

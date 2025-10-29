@@ -70,6 +70,12 @@ alias deny := ci_cargo_deny
 ci_typo:
     typos
 
+playwright flags="":
+    cd frontend && npx tsc --noEmit && npx playwright test {{flags}}
+
+playwright_serve:
+    cd frontend && npx playwright serve
+
 release TYPE:
     #!/usr/bin/env bash
     set -e
