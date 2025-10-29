@@ -91,9 +91,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (location.hash) {
-            activateTab("hosts");
-            closeMobileMenu();
-        }
+        hashNavigate();
     });
 </script>

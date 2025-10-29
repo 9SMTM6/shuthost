@@ -40,7 +40,7 @@ test.describe('architecture tab', () => {
 
   test('ARIA snapshot for architecture tab', async ({ page }) => {
     await page.goto('#architecture');
-    await page.waitForSelector('#architecture-tab', { state: 'attached' });
+    await page.waitForSelector('#architecture-tab', { state: 'visible' });
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `at_architecture.aria.yml` });
   });
 

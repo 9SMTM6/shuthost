@@ -16,7 +16,7 @@ test.describe('main page(s)', () => {
     test('hosts', async ({ page }) => {
         await page.goto('#hosts');
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('#main-content', { state: 'attached' });
+        await page.waitForSelector('#hosts-tab', { state: 'visible' });
         await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`);
     });
 
@@ -30,7 +30,7 @@ test.describe('main page(s)', () => {
     test('clients', async ({ page }) => {
         await page.goto('#clients');
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('#main-content', { state: 'attached' });
+        await page.waitForSelector('#clients-tab', { state: 'visible' });
         await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`);
     });
 });
