@@ -121,7 +121,10 @@ fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'sta
     let host_config = get_host_config(host_name, state)?;
 
     if host_config.mac.eq_ignore_ascii_case("disablewol") {
-        info!("WOL disabled for host '{}' (MAC set to 'disableWOL')", host_name);
+        info!(
+            "WOL disabled for host '{}' (MAC set to 'disableWOL')",
+            host_name
+        );
         return Ok(());
     }
 

@@ -30,6 +30,11 @@ pub enum Action {
 /// A tuple `(response, action)`, where `response` is sent back to the client, and
 /// `action` indicates what the agent should do next.
 ///
+/// # Panics
+///
+/// Panics if `config.shared_secret` is `None`. The shared secret should be set during
+/// service initialization.
+///
 /// # Examples
 ///
 /// ```

@@ -17,9 +17,9 @@ pub fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::Result<
         packet[(i + 1) * 6..(i + 2) * 6].copy_from_slice(&mac_bytes);
     }
 
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .wrap_err("Failed to bind UDP socket")?;
-    socket.set_broadcast(true)
+    let socket = UdpSocket::bind("0.0.0.0:0").wrap_err("Failed to bind UDP socket")?;
+    socket
+        .set_broadcast(true)
         .wrap_err("Failed to set broadcast on socket")?;
 
     socket
@@ -34,8 +34,11 @@ fn parse_mac(mac: &str) -> eyre::Result<[u8; 6]> {
     let mut parts = mac.split(':');
 
     for mac_byte in &mut mac_bytes {
-        let part = parts.next().ok_or_else(|| eyre::eyre!("Invalid MAC address format: not enough parts"))?;
-        *mac_byte = u8::from_str_radix(part, 16).map_err(|_| eyre::eyre!("Invalid MAC byte: {}", part))?;
+        let part = parts
+            .next()
+            .ok_or_else(|| eyre::eyre!("Invalid MAC address format: not enough parts"))?;
+        *mac_byte =
+            u8::from_str_radix(part, 16).map_err(|_| eyre::eyre!("Invalid MAC byte: {}", part))?;
     }
 
     // Ensure there are no extra parts
@@ -50,8 +53,7 @@ fn parse_mac(mac: &str) -> eyre::Result<[u8; 6]> {
 ///
 /// Returns an error if the socket cannot be bound or configured.
 pub fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .wrap_err("Failed to bind socket")?;
+    let socket = UdpSocket::bind("0.0.0.0:0").wrap_err("Failed to bind socket")?;
     socket
         .set_read_timeout(Some(std::time::Duration::from_secs(1)))
         .wrap_err("Failed to set timeout")?;
@@ -64,7 +66,9 @@ pub fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
     let test_message = b"SHUTHOST_WOL_TEST_BROADCAST";
     socket
         .send_to(test_message, format!("255.255.255.255:{target_port}"))
-        .wrap_err(format!("Failed to send broadcast test to 255.255.255.255:{target_port}"))?;
+        .wrap_err(format!(
+            "Failed to send broadcast test to 255.255.255.255:{target_port}"
+        ))?;
 
     let mut buf = [0u8; 32];
     let broadcast_works = socket.recv(&mut buf).is_ok();
