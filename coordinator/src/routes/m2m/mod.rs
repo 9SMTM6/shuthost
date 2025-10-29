@@ -45,8 +45,12 @@ async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
 
 #[cfg(coverage)]
 async fn test_wol() -> impl IntoResponse {
-    (StatusCode::INTERNAL_SERVER_ERROR, "Unimplemented in coverage").into_response()
-} 
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Unimplemented in coverage",
+    )
+        .into_response()
+}
 
 #[derive(serde::Deserialize)]
 pub struct LeaseActionQuery {

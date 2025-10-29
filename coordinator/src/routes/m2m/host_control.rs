@@ -12,14 +12,13 @@ use tracing::{debug, error, info, warn};
 
 use shuthost_common::create_signed_message;
 
+#[cfg(not(coverage))]
+use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
     http::{AppState, polling::poll_until_host_state},
     routes::m2m::leases::LeaseSource,
 };
-#[cfg(not(coverage))]
-use crate::wol::send_magic_packet;
-
 
 /// Timeout for TCP operations
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
