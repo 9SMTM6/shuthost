@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [push]
 
 # These tests are considered irrelevant for a proper deployment, but sure are nice to have correct most of the time.
 name: QualityAssurance
