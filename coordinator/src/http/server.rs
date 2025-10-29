@@ -19,9 +19,8 @@ use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use clap::Parser;
 use eyre::WrapErr;
 use tokio::{
-    fs,
+    fs, signal,
     sync::{broadcast, watch},
-    signal,
 };
 use tower::ServiceBuilder;
 use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::TimeoutLayer};
