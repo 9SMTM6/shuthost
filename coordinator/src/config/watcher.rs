@@ -51,6 +51,7 @@ async fn process_config_change(
             server: prev.server.clone(),
             hosts: new_config.hosts,
             clients: new_config.clients,
+            db: prev.db.clone(),
         };
         tx.send(Arc::new(effective))
             .wrap_err("Failed to send updated config through watch channel")?;

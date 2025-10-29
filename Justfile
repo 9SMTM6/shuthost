@@ -56,6 +56,16 @@ update_dependencies:
     cargo update
     cd frontend && npm update
 
+export DATABASE_URL := "sqlite:./shuthost.db"
+
+create_db:
+    cargo sqlx database drop
+    cargo sqlx database create
+    cargo sqlx migrate run --source coordinator/migrations
+
+update_sqlx_cache:
+    cargo sqlx prepare --workspace
+
 test_all:
     cargo test --workspace
 

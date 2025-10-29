@@ -7,3 +7,8 @@ tls_key.pem
 coverage/
 
 gh-pages
+
+# SQLite database files
+*.db
+*.db-wal
+*.db-shm

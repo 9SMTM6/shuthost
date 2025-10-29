@@ -54,8 +54,13 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         hoststatus_tx,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseMap::default(),
-        auth: std::sync::Arc::new(crate::auth::Runtime::from_config(&AuthConfig::default())),
+        auth: std::sync::Arc::new(
+            crate::auth::Runtime::from_config(&AuthConfig::default(), None)
+                .await
+                .unwrap(),
+        ),
         tls_enabled: false,
+        db_pool: None,
     };
 
     let app = Router::new()

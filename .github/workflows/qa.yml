@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [push]
 
 # These tests are considered irrelevant for a proper deployment, but sure are nice to have correct most of the time.
 name: QualityAssurance
@@ -37,6 +37,21 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo +stable clippy --workspace -- -D warnings
+
+  sqlx-offline-cache:
+    name: sqlx offline cache check with prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Install sqlx-cli (sqlite support)
+        run: |
+          cargo install sqlx-cli --no-default-features --features sqlite --locked
+      - name: Run sqlx prepare --check
+        run: |
+          cargo sqlx prepare --check --workspace
 
   coverage:
     name: Coverage report (llvm-cov)

@@ -28,7 +28,8 @@ use tracing::{info, warn};
 
 use crate::{
     auth::{self, public_routes},
-    config::{ControllerConfig, TlsConfig, load_coordinator_config},
+    config::{ControllerConfig, DbConfig, TlsConfig, load_coordinator_config},
+    db::{self, DbPool},
     http::{assets::serve_ui, polling},
     routes::{LeaseMap, api_router},
     websocket::{WsMessage, ws_handler},
@@ -70,6 +71,9 @@ pub struct AppState {
     pub auth: std::sync::Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
+
+    /// Database connection pool for persistent storage.
+    pub db_pool: Option<DbPool>,
 }
 
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
@@ -115,10 +119,51 @@ pub async fn start(
 
     let (ws_tx, _) = broadcast::channel(32);
 
+    // Initialize database. If a persistent DB is configured and enabled, open it
+    // relative to the config file when appropriate. Otherwise DB persistence is
+    // disabled and `db_pool` will be None.
+    let db_pool = match initial_config.db {
+        Some(DbConfig {
+            enable: true,
+            ref path,
+        }) => {
+            let db_path = if std::path::Path::new(path).is_absolute() {
+                std::path::PathBuf::from(path)
+            } else {
+                config_path
+                    .parent()
+                    .map(|d| d.join(path))
+                    .unwrap_or_else(|| std::path::PathBuf::from(path))
+            };
+            let pool = db::init_db(&db_path).await?;
+            info!(
+                "Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)",
+                db_path.display()
+            );
+            Some(pool)
+        }
+        _ => {
+            info!("DB persistence disabled");
+            None
+        }
+    };
+
+    let leases = LeaseMap::default();
+
+    // Load existing leases from database when persistence is enabled
+    if let Some(ref pool) = db_pool {
+        db::load_leases(pool, &leases).await?;
+        info!("Loaded leases from database");
+    } else {
+        info!("Skipping lease load: DB persistence disabled");
+    }
+
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
-    let auth_runtime = std::sync::Arc::new(auth::Runtime::from_config(&initial_config.server.auth));
+    let auth_runtime = std::sync::Arc::new(
+        auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?,
+    );
 
     // Startup-time warning: if TLS is not enabled but authentication is active,
     // browsers will ignore cookies marked Secure. Warn operators so they can
@@ -145,9 +190,10 @@ pub async fn start(
         hoststatus_tx,
         ws_tx,
         config_path: config_path.to_path_buf(),
-        leases: LeaseMap::default(),
+        leases,
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
+        db_pool,
     };
 
     // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
