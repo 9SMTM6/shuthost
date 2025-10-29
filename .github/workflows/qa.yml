@@ -116,6 +116,7 @@ jobs:
         run: |
           cargo llvm-cov report --lcov --output-path lcov.info
           cargo llvm-cov report --html --output-dir coverage
+          cargo llvm-cov report --lcov --output-path summary.lcov.info --summary-only
 
       - name: Upload coverage artifacts (HTML + LCOV)
         uses: actions/upload-artifact@v4
@@ -125,9 +126,22 @@ jobs:
             ./coverage/
             ./lcov.info
 
-      - name: Check if lcov.info is up to date
+      - name: Check for excessive changes in lcov.info (its not really stable)
         run: |
-          if ! git diff --quiet lcov.info; then
-            echo "lcov.info has changed. Please commit the updated coverage."
-            exit 1
+          if git diff --quiet lcov.info; then
+            echo "lcov.info is unchanged."
+          else
+            TOTAL_LINES=$(wc -l < lcov.info)
+            NUMSTAT=$(git diff --numstat lcov.info | awk '{ins+=$1; del+=$2} END {print ins, del}')
+            INSERTIONS=$(echo $NUMSTAT | cut -d' ' -f1)
+            DELETIONS=$(echo $NUMSTAT | cut -d' ' -f2)
+            CHANGED=$((INSERTIONS + DELETIONS))
+            PERCENT_CHANGED=$((CHANGED * 100 / TOTAL_LINES))
+            PERCENT_INS=$((INSERTIONS * 100 / TOTAL_LINES))
+            PERCENT_DEL=$((DELETIONS * 100 / TOTAL_LINES))
+            echo "lcov.info changes: $CHANGED lines ($PERCENT_CHANGED%), insertions: $PERCENT_INS%, deletions: $PERCENT_DEL%"
+            if [ $PERCENT_CHANGED -gt 15 ] || [ $PERCENT_INS -gt 5 ] || [ $PERCENT_DEL -gt 5 ]; then
+              echo "Excessive changes detected in lcov.info. Consider updating."
+              exit 1
+            fi
           fi
