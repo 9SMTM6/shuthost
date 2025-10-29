@@ -53,20 +53,20 @@ async fn handle_web_lease_action(
             lease_set.insert(lease_source.clone());
             info!("Web interface took lease on '{}'", hostname);
             // Persist to database when enabled
-            if let Some(ref pool) = state.db_pool {
-                if let Err(e) = crate::db::add_lease(pool, &hostname, &lease_source).await {
-                    tracing::error!("Failed to persist lease change: {}", e);
-                }
+            if let Some(ref pool) = state.db_pool
+                && let Err(e) = crate::db::add_lease(pool, &hostname, &lease_source).await
+            {
+                tracing::error!("Failed to persist lease change: {}", e);
             }
         }
         LeaseAction::Release => {
             lease_set.remove(&lease_source);
             info!("Web interface released lease on '{}'", hostname);
             // Persist to database when enabled
-            if let Some(ref pool) = state.db_pool {
-                if let Err(e) = crate::db::remove_lease(pool, &hostname, &lease_source).await {
-                    tracing::error!("Failed to persist lease change: {}", e);
-                }
+            if let Some(ref pool) = state.db_pool
+                && let Err(e) = crate::db::remove_lease(pool, &hostname, &lease_source).await
+            {
+                tracing::error!("Failed to persist lease change: {}", e);
             }
         }
     }
@@ -109,10 +109,10 @@ async fn handle_reset_client_leases(
     }
 
     // Remove all leases associated with the client from database when enabled
-    if let Some(ref pool) = state.db_pool {
-        if let Err(e) = crate::db::remove_client_leases(pool, &client_id).await {
-            tracing::error!("Failed to remove client leases from database: {}", e);
-        }
+    if let Some(ref pool) = state.db_pool
+        && let Err(e) = crate::db::remove_client_leases(pool, &client_id).await
+    {
+        tracing::error!("Failed to remove client leases from database: {}", e);
     }
 
     // Broadcast updated lease information to WebSocket clients

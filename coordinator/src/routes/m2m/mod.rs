@@ -102,10 +102,10 @@ async fn handle_m2m_lease_action(
             leases::broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
             info!("Client '{}' took lease on '{}'", lease_source, host);
             // Persist to database when enabled
-            if let Some(ref pool) = state.db_pool {
-                if let Err(e) = crate::db::add_lease(pool, &host, &lease_source).await {
-                    tracing::error!("Failed to persist lease change: {}", e);
-                }
+            if let Some(ref pool) = state.db_pool
+                && let Err(e) = crate::db::add_lease(pool, &host, &lease_source).await
+            {
+                tracing::error!("Failed to persist lease change: {}", e);
             }
 
             if is_async {
@@ -129,10 +129,10 @@ async fn handle_m2m_lease_action(
             leases::broadcast_lease_update(&host, lease_set, &state.ws_tx).await;
             info!("Client '{}' released lease on '{}'", lease_source, host);
             // Persist to database when enabled
-            if let Some(ref pool) = state.db_pool {
-                if let Err(e) = crate::db::remove_lease(pool, &host, &lease_source).await {
-                    tracing::error!("Failed to persist lease change: {}", e);
-                }
+            if let Some(ref pool) = state.db_pool
+                && let Err(e) = crate::db::remove_lease(pool, &host, &lease_source).await
+            {
+                tracing::error!("Failed to persist lease change: {}", e);
             }
 
             if is_async {
