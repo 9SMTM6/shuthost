@@ -4,7 +4,6 @@ tls_cert.pem
 tls_key.pem
 .DS_Store
 .vscode
-tarpaulin-report.html
-tarpaulin-report.json
+coverage/
 
 gh-pages

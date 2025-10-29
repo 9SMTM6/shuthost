@@ -40,7 +40,7 @@ export async function waitForServerReady(port: number, useTls = false, timeout =
 export async function startBackend(configPath: string, useTls = false) {
   // Spawn the control-service with provided config. Build is performed in globalSetup.
   const { spawn } = await import('node:child_process');
-  const backendBin = '../target/release/shuthost_coordinator';
+  const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
   // Determine per-worker port to allow parallel test workers.
   // fall back to 0 for single-worker runs.
   const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
@@ -54,12 +54,30 @@ export async function startBackend(configPath: string, useTls = false) {
   return proc;
 }
 
-export function stopBackend(proc: any) {
+export async function stopBackend(proc: any) {
+  if (!proc) return;
+
+  // Try a graceful shutdown first
   try {
-    if (proc) proc.kill();
-  } catch (e) {
-    // ignore
+    // Send SIGTERM instead of SIGKILL
+    proc.kill('SIGTERM');
+  } catch (_) {
+    return;
   }
+
+  // Wait a bit for the process to exit and flush coverage data
+  await new Promise<void>(resolve => {
+    const timeout = setTimeout(() => {
+      // If it’s still hanging, force kill it
+      try { proc.kill('SIGKILL'); } catch {}
+      resolve();
+    }, 3000);
+
+    proc.on('exit', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
 }
 
 export const expand_and_sanitize_host_install = async (page: Page) => {

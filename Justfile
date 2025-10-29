@@ -60,7 +60,17 @@ test_all:
     cargo test --workspace
 
 coverage:
-    cargo tarpaulin --workspace --out Html --out Json --out Stdout
+    #!/usr/bin/env sh
+    set -e
+    export COVERAGE=1
+    export SKIP_BUILD=1
+    source <(cargo llvm-cov show-env --export-prefix)
+    cargo llvm-cov clean --workspace
+    cargo build --workspace
+    cd frontend && npx playwright test && cd ..
+    cargo test --workspace
+    cargo llvm-cov report --lcov --output-path lcov.info
+    cargo llvm-cov report --html --output-dir coverage
 
 ci_cargo_deny:
     cargo +stable --locked deny check --hide-inclusion-graph
@@ -73,8 +83,8 @@ ci_typo:
 playwright flags="":
     cd frontend && npx tsc --noEmit && npx playwright test {{flags}}
 
-playwright_serve:
-    cd frontend && npx playwright serve
+playwright_report:
+    cd frontend && npx playwright show-report
 
 release TYPE:
     #!/usr/bin/env bash

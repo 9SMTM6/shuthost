@@ -39,32 +39,66 @@ jobs:
       - run: cargo +stable clippy --workspace -- -D warnings
 
   coverage:
-    name: Coverage report (tarpaulin)
+    name: Coverage report (llvm-cov)
     runs-on: ubuntu-latest
 
-    container:
-      image: xd009642/tarpaulin
-      options: --security-opt seccomp=unconfined
+    env:
+      COVERAGE: 1
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Install npm
-        # Use the container's system repositories to install npm so build.rs can invoke it
         run: |
-          apt-get update
-          apt-get install -y npm
+          sudo apt-get update
+          sudo apt-get install -y npm
 
-      - name: Run tarpaulin and capture output
+      - name: Set coverage environment
+        run: cargo llvm-cov show-env --export-prefix >> $GITHUB_ENV
+
+      - name: Clean coverage artifacts
+        run: cargo llvm-cov clean --workspace
+
+      - name: Run Rust tests for coverage
+        run: cargo llvm-cov --no-report --workspace
+
+      - name: Build with instrumentation
+        run: cargo build --workspace
+
+      - name: Run Playwright tests
+        run: cd frontend && npm ci && npx playwright test
+
+      - name: Run Rust tests
+        run: cargo test --workspace
+
+      - name: Generate coverage reports
         run: |
-          cargo tarpaulin --workspace --verbose --out Json --out Html --out Stdout
+          cargo llvm-cov report --lcov --output-path lcov.info
+          cargo llvm-cov report --html --output-dir coverage
 
-      - name: Upload coverage artifacts (JSON + HTML)
+      - name: Upload coverage artifacts (HTML + LCOV)
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: |
-            ./tarpaulin-report.html
-            ./tarpaulin-report.json
+            ./coverage/
+            ./lcov.info
 
+      - name: Check if lcov.info is up to date
+        run: |
+          if ! git diff --quiet lcov.info; then
+            echo "lcov.info has changed. Please commit the updated coverage."
+            exit 1
+          fi

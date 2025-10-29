@@ -6,8 +6,8 @@ export default async function globalSetup() {
         return;
     }
 
-    const flags = "--release"
+    const flags = process.env['COVERAGE'] ? "" : "--release"
 
     console.log(`Global setup: building coordinator (${flags})`);
-    execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit' });
+    execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env: process.env });
 }

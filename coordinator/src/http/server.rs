@@ -21,6 +21,7 @@ use eyre::WrapErr;
 use tokio::{
     fs,
     sync::{broadcast, watch},
+    signal,
 };
 use tower::ServiceBuilder;
 use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::TimeoutLayer};
@@ -261,14 +262,26 @@ pub async fn start(
                     "TLS configuration error: neither provided certs nor self-signed allowed"
                 );
             };
-            axum_server::bind_rustls(addr, rustls_cfg)
-                .serve(app.into_make_service())
-                .await?;
+            let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app.into_make_service());
+            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+            tokio::select! {
+                res = server => res?,
+                _ = sigterm.recv() => {
+                    info!("Received SIGTERM, shutting down");
+                }
+            }
         }
         _ => {
             info!("Listening on http://{}", addr);
             let listener = tokio::net::TcpListener::bind(addr).await?;
-            axum::serve(listener, app.into_make_service()).await?;
+            let server = axum::serve(listener, app.into_make_service());
+            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+            tokio::select! {
+                res = server => res?,
+                _ = sigterm.recv() => {
+                    info!("Received SIGTERM, shutting down");
+                }
+            }
         }
     };
 
