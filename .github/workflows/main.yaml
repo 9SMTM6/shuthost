@@ -608,27 +608,21 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull image by SHA
-        run: |
-          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Tag image with branch/tag name
+      - name: Retag multi-arch image with branch/tag name
         run: |
-          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+          docker buildx imagetools create \
+            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }} \
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
 
-      - name: Tag image as latest (if tag)
+      - name: Retag multi-arch image as latest (if tag)
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          docker tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
-
-      - name: Push branch/tag image
-        run: |
-          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
-
-      - name: Push latest image (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          docker push ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest
+          docker buildx imagetools create \
+            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest \
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
 
   release:
     name: Upload Release Binaries
