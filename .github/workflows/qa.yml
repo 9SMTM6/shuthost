@@ -47,8 +47,11 @@ jobs:
       SKIP_BUILD: 1
 
     steps:
-      - name: Checkout code
+      - name: Checkout code (with LFS because pngs for visual regression are saved there)
         uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
