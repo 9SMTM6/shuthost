@@ -322,6 +322,9 @@ This documentation is intended to help with third-party integrations, including 
 
 ## 🚀 Potential Features
 
+### 🎯 Core Features
+- 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
+
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
   - ⚠️ Requires using more advanced cross compilation

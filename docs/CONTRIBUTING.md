@@ -30,6 +30,11 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - Please try to address all lint warnings and errors before submitting a pull request (if it's difficult its okay to ask for help in a PR).
 - Run `cargo clippy --workspace` to check for lint issues (including warnings, which will fail the pipeline).
 
+## Running Tests
+
+- All tests (Rust unit tests, integration tests, and doctests) can be run with `cargo test --workspace`.
+- To run a specific test, pass the test name as an argument, e.g., `cargo test --workspace test_m2m_lease_async_take_and_release`.
+
 ## Playwright frontend tests
 
 The repository includes ARIA snapshot and visual regression tests based on Playwright under `frontend/tests/`. They run a local instance of the Rust backend and use Playwright's Chromium to exercise the Web UI and collect snapshots.

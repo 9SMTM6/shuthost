@@ -31,7 +31,7 @@ async fn test_m2m_lease_take_and_release() {
 
         [hosts."{agent_id}"]
         ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
+        mac = "disableWOL"
         port = {agent_port}
         shared_secret = "{agent_secret}"
 
@@ -136,7 +136,7 @@ async fn test_m2m_lease_async_take_and_release() {
 
         [hosts."{agent_id}"]
         ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
+        mac = "disableWOL"
         port = {agent_port}
         shared_secret = "{agent_secret}"
 
@@ -224,7 +224,7 @@ async fn test_api_reset_client_leases() {
 
         [hosts."{agent_id}"]
         ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
+        mac = "disableWOL"
         port = {agent_port}
         shared_secret = "{agent_secret}"
 
@@ -314,7 +314,7 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
 
         [hosts."{agent_id}"]
         ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
+        mac = "disableWOL"
         port = {agent_port}
         shared_secret = "{agent_secret}"
 
@@ -373,7 +373,7 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
 
         [hosts."{agent_id}"]
         ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
+        mac = "disableWOL"
         port = {agent_port}
         shared_secret = "{agent_secret}"
 

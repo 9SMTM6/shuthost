@@ -12,7 +12,10 @@ use serde::{Deserialize, Serialize};
 pub struct Host {
     /// IP address of the host agent.
     pub ip: String,
-    /// MAC address of the host agent's network interface.
+    /// MAC address of the host agent's network interface, required for WOL.
+    /// There is an undocumented feature where setting this to disableWOL disables waking per WOL.
+    /// In the future we may offer alternative wake options, then this will be documented,
+    /// as of now this is primarily for tests
     pub mac: String,
     /// TCP port the host agent listens on.
     pub port: u16,
