@@ -10,7 +10,6 @@ use clap::Parser;
 
 use crate::{
     commands::execute_shutdown,
-    install::get_default_shutdown_command,
     validation::{Action, validate_request},
 };
 
@@ -91,4 +90,17 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Action {
             Action::None
         }
     }
+}
+
+/// Returns the default shutdown command for this OS and init system.
+pub fn get_default_shutdown_command() -> String {
+    #[cfg(target_os = "linux")]
+    return if shuthost_common::is_systemd() {
+        "systemctl poweroff"
+    } else {
+        "poweroff"
+    }
+    .to_string();
+    #[cfg(target_os = "macos")]
+    return "shutdown -h now".to_string();
 }

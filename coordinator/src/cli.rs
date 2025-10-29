@@ -7,6 +7,7 @@ use std::env;
 
 use clap::{Parser, Subcommand};
 
+#[cfg(not(coverage))]
 use crate::install::Args;
 
 /// Top-level command-line interface definition.
@@ -25,9 +26,11 @@ pub enum Command {
     /// Launch the control web service (WebUI) for managing hosts.
     ControlService(ServiceArgs),
 
+    #[cfg(not(coverage))]
     /// Install the coordinator service to start on boot.
     Install(Args),
 
+    #[cfg(not(coverage))]
     /// Serve only static assets for demo mode (no backend, no state).
     DemoService {
         #[arg(long, default_value = "8080")]

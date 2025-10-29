@@ -16,8 +16,10 @@ use crate::{
     config::Host,
     http::{AppState, polling::poll_until_host_state},
     routes::m2m::leases::LeaseSource,
-    wol::send_magic_packet,
 };
+#[cfg(not(coverage))]
+use crate::wol::send_magic_packet;
+
 
 /// Timeout for TCP operations
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
@@ -132,6 +134,7 @@ fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'sta
         "Sending WoL packet to '{}' (MAC: {})",
         host_name, host_config.mac
     );
+    #[cfg(not(coverage))]
     send_magic_packet(&host_config.mac, "255.255.255.255").map_err(|e| {
         error!("Failed to send WoL packet to '{}': {}", host_name, e);
         (

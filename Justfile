@@ -68,9 +68,9 @@ coverage:
     cargo llvm-cov clean --workspace
     cargo build --workspace
     cd frontend && npx playwright test && cd ..
-    cargo test --workspace
-    cargo llvm-cov report --lcov --output-path lcov.info
-    cargo llvm-cov report --html --output-dir coverage
+    cargo test --workspace --all-targets
+    cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
+    cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
 
 ci_cargo_deny:
     cargo +stable --locked deny check --hide-inclusion-graph

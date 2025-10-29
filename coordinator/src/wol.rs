@@ -2,6 +2,7 @@ use std::net::UdpSocket;
 
 use eyre::Context;
 
+#[cfg(not(coverage))]
 /// # Errors
 ///
 /// Returns an error if the MAC address is invalid or if the UDP socket cannot be bound or sent.
@@ -49,6 +50,7 @@ fn parse_mac(mac: &str) -> eyre::Result<[u8; 6]> {
     Ok(mac_bytes)
 }
 
+#[cfg(not(coverage))]
 /// # Errors
 ///
 /// Returns an error if the socket cannot be bound or configured.

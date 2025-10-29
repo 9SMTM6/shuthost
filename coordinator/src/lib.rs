@@ -7,8 +7,15 @@
 pub mod auth;
 pub mod cli;
 pub mod config;
+// Doesn't make sense to include in the coverage:
+// Including a run of scripts/build-gh-pages.sh, which this is for, 
+// would artificially inflate coverage of endpoints that should be tested in actual use
+#[cfg(not(coverage))]
 pub mod demo;
 pub mod http;
+// Installation can't meaningfully be tested even in integration tests
+// Its only exercised in CI
+#[cfg(not(coverage))]
 pub mod install;
 pub mod routes;
 pub mod websocket;
@@ -25,8 +32,10 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 use cli::{Cli, Command};
+#[cfg(not(coverage))]
 use demo::run_demo_service;
 use http::start;
+#[cfg(not(coverage))]
 use install::setup;
 
 static INIT_TRACING: Once = Once::new();
@@ -45,6 +54,7 @@ static INIT_RUSTLS: Once = Once::new();
 /// Panics if the AWS LC crypto provider cannot be installed.
 pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
+        #[cfg(not(coverage))]
         Command::Install(args) => {
             setup(args)?;
             Ok(())
@@ -80,6 +90,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             start(&config_path, args.port, args.bind.as_deref()).await?;
             Ok(())
         }
+        #[cfg(not(coverage))]
         Command::DemoService { port, bind } => {
             run_demo_service(port, &bind).await;
             Ok(())

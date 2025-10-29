@@ -9,6 +9,8 @@ use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
 use std::process::Command;
 
+use crate::server::get_default_shutdown_command;
+
 /// Default UDP port on which the host_agent listens for commands.
 pub const DEFAULT_PORT: u16 = 5757;
 
@@ -181,19 +183,6 @@ fn get_inferred_init_system() -> InitSystem {
     {
         InitSystem::Launchd
     }
-}
-
-/// Returns the default shutdown command for this OS and init system.
-pub fn get_default_shutdown_command() -> String {
-    #[cfg(target_os = "linux")]
-    return if is_systemd() {
-        "systemctl poweroff"
-    } else {
-        "poweroff"
-    }
-    .to_string();
-    #[cfg(target_os = "macos")]
-    return "shutdown -h now".to_string();
 }
 
 /// Attempts to determine the default network interface by parsing system routing information.

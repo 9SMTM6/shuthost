@@ -32,6 +32,7 @@ pub struct WolTestQuery {
     port: u16,
 }
 
+#[cfg(not(coverage))]
 async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
     match crate::wol::test_wol_reachability(params.port) {
         Ok(broadcast) => Ok(Json(json!({
@@ -41,6 +42,11 @@ async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()),
     }
 }
+
+#[cfg(coverage)]
+async fn test_wol() -> impl IntoResponse {
+    (StatusCode::INTERNAL_SERVER_ERROR, "Unimplemented in coverage").into_response()
+} 
 
 #[derive(serde::Deserialize)]
 pub struct LeaseActionQuery {
