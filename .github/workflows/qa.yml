@@ -55,7 +55,7 @@ jobs:
 
   coverage:
     name: Coverage report (llvm-cov)
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
@@ -72,8 +72,8 @@ jobs:
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
           set -eux
-          sudo apt-get update
-          sudo apt-get install -y fonts-inter fonts-cascadia-code
+          # Homebrew cask fonts; fail if they can't be installed.
+          brew install --cask font-inter font-cascadia-code
           # Verify via fc-list; if fc-list isn't present this will fail which
           # is desired so the CI run fails when fonts are not available.
           fc-list | grep -i inter >/dev/null 2>&1 || { echo "Inter font not found on macOS after install" >&2; exit 1; }
