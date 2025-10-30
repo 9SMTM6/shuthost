@@ -95,23 +95,16 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Set coverage environment
-        shell: bash
-        run: |
-          # source exported env into this shell (shell will strip quotes)
-          source <(cargo llvm-cov show-env --export-prefix)
-
-          # persist variables
-          echo "RUSTFLAGS=${RUSTFLAGS:-}" >> $GITHUB_ENV
-          echo "CARGO_LLVM_COV_SHOW_ENV=${CARGO_LLVM_COV_SHOW_ENV:-}" >> $GITHUB_ENV
-          echo "CARGO_LLVM_COV_TARGET_DIR=${CARGO_LLVM_COV_TARGET_DIR:-}" >> $GITHUB_ENV
-          echo "CARGO_LLVM_COV_BUILD_DIR=${CARGO_LLVM_COV_BUILD_DIR:-}" >> $GITHUB_ENV
-
       - name: Clean coverage artifacts
-        run: cargo llvm-cov clean --workspace
+        run: |
+          # since I cant seem properly to get this into $GITHUB_ENV, I just set it wherever its needed.
+          source <(cargo llvm-cov show-env --export-prefix)
+          cargo llvm-cov clean --workspace
 
       - name: Build with instrumentation
-        run: cargo build --workspace
+        run: |
+          source <(cargo llvm-cov show-env --export-prefix)
+          cargo build --workspace
 
       - name: Run Playwright tests
         env:
@@ -119,14 +112,18 @@ jobs:
           COVERAGE: 1
           SKIP_BUILD: 1
         run: |
+          source <(cargo llvm-cov show-env --export-prefix)
           cd frontend
           npx playwright test
 
       - name: Run Rust tests
-        run: cargo test --workspace
+        run: |
+          source <(cargo llvm-cov show-env --export-prefix)
+          cargo test --workspace
 
       - name: Generate coverage reports
         run: |
+          source <(cargo llvm-cov show-env --export-prefix)
           cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
           cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
 
