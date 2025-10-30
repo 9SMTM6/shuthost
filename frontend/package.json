@@ -5,7 +5,8 @@
     "scripts": {
         "build": "cd assets && tsc && npx @tailwindcss/cli -i ./styles.tailwind.css -o ./styles.css",
         "test": "tsc --noEmit && playwright test",
-        "install-chromium": "playwright install chromium"
+        "install-chromium": "playwright install chromium",
+        "install-chromium-ci": "playwright install chromium --with-deps"
     },
     "dependencies": {
         "@tailwindcss/cli": "^4.1.8",

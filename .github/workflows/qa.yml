@@ -57,10 +57,6 @@ jobs:
     name: Coverage report (llvm-cov)
     runs-on: ubuntu-latest
 
-    env:
-      COVERAGE: 1
-      SKIP_BUILD: 1
-
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
         uses: actions/checkout@v4
@@ -68,52 +64,36 @@ jobs:
           lfs: true
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          toolchain: stable
-          components: llvm-tools-preview
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Install npm
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y npm
-
-      - name: Install node deps, Playwright Chromium and system deps
-        run: |
-          cd frontend
-          npm ci
-          npm run install-chromium
-          # install system dependencies for Playwright
-          npx playwright install-deps || true
+          node-version: 'latest'
 
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
           set -eux
-          case "${{ runner.os }}" in
-            Linux)
-              # Install via apt; fail if unavailable.
-              sudo apt-get update
-              sudo apt-get install -y fonts-inter fonts-cascadia-code
-              ;;
-            macOS)
-              # Homebrew cask fonts; fail if they can't be installed.
-              brew install --cask font-inter font-cascadia-code
-              ;;
-            *)
-              echo "Unsupported runner OS: ${{ runner.os }} — aborting" >&2; exit 1;
-              ;;
-          esac
+          sudo apt-get update
+          sudo apt-get install -y fonts-inter fonts-cascadia-code
           # Verify via fc-list; if fc-list isn't present this will fail which
           # is desired so the CI run fails when fonts are not available.
           fc-list | grep -i inter >/dev/null 2>&1 || { echo "Inter font not found on macOS after install" >&2; exit 1; }
           fc-list | grep -i cascadia >/dev/null 2>&1 || { echo "Cascadia Code not found on macOS after install" >&2; exit 1; }
           sudo fc-cache -f -v
+
+      - name: Install node deps, Playwright Chromium and system deps
+        run: |
+          cd frontend
+          npm ci
+          npm run install-chromium-ci
+
+      - name: Ensure latest stable rustc
+        shell: bash
+        run: rustup update stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Set coverage environment
         run: cargo llvm-cov show-env >> $GITHUB_ENV
@@ -125,7 +105,13 @@ jobs:
         run: cargo build --workspace
 
       - name: Run Playwright tests
-        run: cd frontend && npx playwright test
+        env:
+          CI: true
+          COVERAGE: 1
+          SKIP_BUILD: 1
+        run: |
+          cd frontend
+          npx playwright test
 
       - name: Run Rust tests
         run: cargo test --workspace
