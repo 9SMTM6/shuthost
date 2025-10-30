@@ -96,7 +96,16 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Set coverage environment
-        run: cargo llvm-cov show-env >> $GITHUB_ENV
+        shell: bash
+        run: |
+          # source exported env into this shell (shell will strip quotes)
+          source <(cargo llvm-cov show-env --export-prefix)
+
+          # persist variables
+          echo "RUSTFLAGS=${RUSTFLAGS:-}" >> $GITHUB_ENV
+          echo "CARGO_LLVM_COV_SHOW_ENV=${CARGO_LLVM_COV_SHOW_ENV:-}" >> $GITHUB_ENV
+          echo "CARGO_LLVM_COV_TARGET_DIR=${CARGO_LLVM_COV_TARGET_DIR:-}" >> $GITHUB_ENV
+          echo "CARGO_LLVM_COV_BUILD_DIR=${CARGO_LLVM_COV_BUILD_DIR:-}" >> $GITHUB_ENV
 
       - name: Clean coverage artifacts
         run: cargo llvm-cov clean --workspace
