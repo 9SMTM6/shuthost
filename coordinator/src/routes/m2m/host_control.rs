@@ -109,7 +109,7 @@ pub fn get_host_config(
             Ok(host.clone())
         }
         None => {
-            error!("No configuration found for host '{}'", host_name);
+            warn!("No configuration found for host '{}'", host_name);
             Err((StatusCode::NOT_FOUND, "Unknown host"))
         }
     }
