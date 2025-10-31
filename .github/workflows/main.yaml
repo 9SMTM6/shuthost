@@ -67,6 +67,9 @@ jobs:
             runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
+          # Note: Windows coordinator binary is for testing client scripts only, not for production use
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -279,10 +282,9 @@ jobs:
             shell: docker exec run_container sh -c
             coordinator_bin: coordinator-x86_64-unknown-linux-gnu
           - runner: windows-latest
-            platform: windows-docker
-            docker_image: ubuntu:latest
+            platform: windows
             shell: powershell -Command
-            coordinator_bin: coordinator-x86_64-unknown-linux-gnu
+            coordinator_bin: coordinator-x86_64-pc-windows-msvc
     steps:
       
       - name: Download coordinator binary
@@ -299,15 +301,26 @@ jobs:
             curl -fsSL http://localhost:8080/login && break || sleep 1
           done
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
-        if: ${{ matrix.platform != 'windows-docker' }}
+        if: ${{ matrix.platform != 'windows' }}
 
-      - name: Start controller service in Docker (Windows)
-        if: ${{ matrix.platform == 'windows-docker' }}
+      - name: Start controller service (Windows)
+        if: ${{ matrix.platform == 'windows' }}
         run: |
-          docker run -d --name coordinator_container -p 8080:8080 ${{ matrix.docker_image }} /bin/bash -c "apt-get update -y && apt-get install -y curl"
-          docker cp ./shuthost_coordinator coordinator_container:/
-          docker exec coordinator_container chmod +x /shuthost_coordinator
-          docker exec -d coordinator_container /shuthost_coordinator run --port 8080 --bind 0.0.0.0
+          # Create a minimal config file for testing
+          @"
+          [server]
+          port = 8080
+          bind = "127.0.0.1"
+
+          [hosts]
+          testhost = { ip = "127.0.0.1", mac = "00:00:00:00:00:00", port = 9000, shared_secret = "testsecret" }
+
+          [clients]
+          testclient = { shared_secret = "testclientsecret" }
+          "@ | Out-File -FilePath shuthost_coordinator.toml -Encoding UTF8
+
+          # Start the coordinator service
+          ./shuthost_coordinator.exe control-service --config shuthost_coordinator.toml &
           # Wait for coordinator to be ready (timeout 30s)
           for ($i = 1; $i -le 30; $i++) {
             try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null; break } catch { Start-Sleep 1 }
@@ -363,7 +376,7 @@ jobs:
           echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
 
       - name: Install and run client (Windows)
-        if: ${{ matrix.platform == 'windows-docker' }}
+        if: ${{ matrix.platform == 'windows' }}
         run: |
           # Run installer and capture output
           $CLIENT_INSTALL_OUT = & powershell -Command "Invoke-WebRequest -Uri 'http://localhost:8080/download/client_installer.ps1' -OutFile 'installer.ps1' -UseBasicParsing; & powershell -ExecutionPolicy Bypass -File .\\installer.ps1 'http://localhost:8080' 2>&1" 2>&1
@@ -680,6 +693,10 @@ jobs:
           mkdir -p release-assets/flat
           for dir in release-assets/coordinator-*; do
             target=$(basename "$dir" | sed 's/^coordinator-//')
+            # Skip Windows coordinator binary as it's only for testing client scripts
+            if [[ "$target" == x86_64-pc-windows-msvc ]]; then
+              continue
+            fi
             if [ -f "$dir/shuthost_coordinator" ]; then
               cp "$dir/shuthost_coordinator" "release-assets/flat/shuthost_coordinator-$target"
             fi
