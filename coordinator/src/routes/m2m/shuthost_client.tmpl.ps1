@@ -67,6 +67,9 @@ if ($Async) {
     $coordinatorUrl += "?async=true"
 }
 
+# Output request details (equivalent to bash set -v/-x)
+Write-Host "Invoke-WebRequest -Uri $coordinatorUrl -Method POST -Headers @{ 'X-Client-ID' = '$CLIENT_ID'; 'X-Request' = '$xRequest' } -UseBasicParsing"
+
 # Make the request
 try {
     $response = Invoke-WebRequest -Uri $coordinatorUrl -Method POST -Headers @{

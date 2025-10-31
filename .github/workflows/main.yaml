@@ -278,6 +278,11 @@ jobs:
             docker_image: alpine:latest
             shell: docker exec run_container sh -c
             coordinator_bin: coordinator-x86_64-unknown-linux-gnu
+          - runner: windows-latest
+            platform: windows-docker
+            docker_image: ubuntu:latest
+            shell: powershell -Command
+            coordinator_bin: coordinator-x86_64-unknown-linux-gnu
     steps:
       
       - name: Download coordinator binary
@@ -294,6 +299,20 @@ jobs:
             curl -fsSL http://localhost:8080/login && break || sleep 1
           done
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
+        if: ${{ matrix.platform != 'windows-docker' }}
+
+      - name: Start controller service in Docker (Windows)
+        if: ${{ matrix.platform == 'windows-docker' }}
+        run: |
+          docker run -d --name coordinator_container -p 8080:8080 ${{ matrix.docker_image }} /bin/bash -c "apt-get update -y && apt-get install -y curl"
+          docker cp ./shuthost_coordinator coordinator_container:/
+          docker exec coordinator_container chmod +x /shuthost_coordinator
+          docker exec -d coordinator_container /shuthost_coordinator run --port 8080 --bind 0.0.0.0
+          # Wait for coordinator to be ready (timeout 30s)
+          for ($i = 1; $i -le 30; $i++) {
+            try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null; break } catch { Start-Sleep 1 }
+          }
+          try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null } catch { Write-Error "Coordinator service is not running"; exit 1 }
 
       - name: Prepare macOS
         if: ${{ matrix.platform == 'macos' }}
@@ -314,6 +333,7 @@ jobs:
           ${{ matrix.shell }} "apk add --no-cache curl openssl busybox-extras"
 
       - name: Install and run client
+        if: ${{ matrix.platform != 'windows-docker' }}
         run: |
           # Run installer and capture output
           CLIENT_INSTALL_OUT=$(${{ matrix.shell }} "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080" 2>&1 || true)
@@ -341,6 +361,38 @@ jobs:
 
           # Check for the curl request: look for 'curl' plus both header names anywhere in the output
           echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
+
+      - name: Install and run client (Windows)
+        if: ${{ matrix.platform == 'windows-docker' }}
+        run: |
+          # Run installer and capture output
+          $CLIENT_INSTALL_OUT = & powershell -Command "Invoke-WebRequest -Uri 'http://localhost:8080/download/client_installer.ps1' -OutFile 'installer.ps1' -UseBasicParsing; & powershell -ExecutionPolicy Bypass -File .\\installer.ps1 'http://localhost:8080' 2>&1" 2>&1
+          Write-Host "--- installer output start ---"
+          Write-Host $CLIENT_INSTALL_OUT
+          $CLIENT_PATH = [regex]::Match($CLIENT_INSTALL_OUT, '([A-Za-z]:\\[^ ]*shuthost_client_[^ ]*\.ps1)').Groups[1].Value
+          Write-Host "Detected client path: $CLIENT_PATH"
+          if (-not $CLIENT_PATH) {
+            Write-Error "Client path not found in installer output"; exit 1
+          }
+
+          # Wait for the client script to appear (timeout 20s)
+          for ($i = 1; $i -le 20; $i++) {
+            if (Test-Path $CLIENT_PATH) { break }
+            Start-Sleep 1
+          }
+
+          # Run the client and capture output.
+          # We expect this to fail, since the client never was registered.
+          # We only want to test for the request sent off to the coordinator in this test
+          $OUTPUT = & powershell -Command "& '$CLIENT_PATH' take testhost http://localhost:8080 2>&1" 2>&1
+          Write-Host "--- client output start ---"
+          Write-Host $OUTPUT
+          Write-Host "--- client output end ---"
+
+          # Check for the request: look for both header names anywhere in the output
+          if ($OUTPUT -notmatch "X-Client-ID" -or $OUTPUT -notmatch "X-Request") {
+            Write-Error "Client request format not found!"; exit 1
+          }
 
   container-build:
     name: Build & Push Alpine Containers (SHA only)
