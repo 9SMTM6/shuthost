@@ -1,7 +1,9 @@
 use std::{fs, path::PathBuf, process};
 
 use eyre::{ContextCompat, Ok, WrapErr, bail, eyre};
+use regex::Regex;
 use resvg::usvg;
+use sha2::{Digest, Sha256};
 use tiny_skia::Pixmap;
 
 const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
@@ -16,7 +18,10 @@ fn main() -> eyre::Result<()> {
     run_npm_build()?;
 
     // Generate PNG icons from SVG (placed into frontend/assets/icons).
-    generate_png_icons()
+    generate_png_icons()?;
+
+    // Generate hashes for all inline scripts in templates.
+    generate_inline_script_hashes()
 }
 
 fn set_workspace_root() -> eyre::Result<()> {
@@ -110,5 +115,29 @@ fn generate_png_icons() -> eyre::Result<()> {
             .wrap_err(format!("saving {}", out_png.display()))?;
     }
 
+    Ok(())
+}
+
+/// note that this will silently ignore any non module code!
+fn generate_inline_script_hashes() -> eyre::Result<()> {
+    let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;
+    let mut hashes = std::collections::HashSet::new();
+
+    for file in fs::read_dir("frontend/assets/partials")? {
+        let file = file?;
+        let content = fs::read_to_string(&file.path()).wrap_err(format!("reading {}", file.path().display()))?;
+        for cap in script_regex.captures_iter(&content) {
+            if let Some(script_content) = cap.get(1) {
+                let hash = Sha256::digest(script_content.as_str().as_bytes());
+                let hash_hex = format!("sha256-{:x}", hash);
+                hashes.insert(hash_hex);
+            }
+        }
+    }
+
+    let mut hash_list: Vec<_> = hashes.into_iter().collect();
+    hash_list.sort();
+    let hashes_str = hash_list.join(" ");
+    println!("cargo:rustc-env=INLINE_SCRIPT_HASHES={}", hashes_str);
     Ok(())
 }

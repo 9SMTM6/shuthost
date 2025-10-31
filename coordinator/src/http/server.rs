@@ -338,22 +338,20 @@ pub async fn start(
 /// This is less strict than possible.
 /// it avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
 /// since these might block some embedings etc.
-///
-/// It also allows inlined scripts (!)
-/// since that has limited compatibility and/or require a bundler for effective application management
-///
-/// These would help against clickjacking etc.
 async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
     let mut response = next.run(req).await;
     response.headers_mut().insert(
         HeaderName::from_static("cross-origin-opener-policy"),
         HeaderValue::from_static("same-origin"),
     );
+
     response.headers_mut().insert(
         HeaderName::from_static("content-security-policy"),
-        HeaderValue::from_static(
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self'; object-src 'none'; base-uri 'self'; require-trusted-types-for 'script';"
-        ),
+        HeaderValue::from_static(concat!(
+            "default-src 'self'; script-src 'self' ",
+            env!("INLINE_SCRIPT_HASHES"),
+            "; style-src 'self'; object-src 'none'; base-uri 'self'; require-trusted-types-for 'script';"
+        )),
     );
     response
 }
