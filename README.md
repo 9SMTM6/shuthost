@@ -79,13 +79,6 @@ Binary (recommended)
     - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
 
 Docker (Linux only)
-- Run with the host network so broadcasts and LAN reachability work:
-  ```bash
-  docker run --rm --network host \
-    -v ./coordinator_config.toml:/config/coordinator_config.toml:ro \
-    -v ./data/:/data/ \
-    ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
-  ```
 - docker-compose example:
   ```yaml
   version: "3.8"
@@ -99,6 +92,13 @@ Docker (Linux only)
         - ./data/:/data/        # persist DB and generated certs here, optional
       # no ports, since network_mode: host
   ```
+- CLI example:
+  ```bash
+  docker run --rm --network host \
+    -v ./coordinator_config.toml:/config/coordinator_config.toml:ro \
+    -v ./data/:/data/ \
+    ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
+  ```
 -  Both with config file
   ```toml
   # coordinator_config.toml
@@ -108,7 +108,7 @@ Docker (Linux only)
   bind = "127.0.0.1" # forward to this with your local reverse proxy.
 
   [server.auth.token]
-  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation on each start without DB persistence
+  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation
 
   [db]
   path = "/data/shuthost.db"
@@ -126,9 +126,6 @@ Docker (Linux only)
 - Notes:
   - `--network host` is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
 
-Quick links & notes
-- Release: https://github.com/9SMTM6/shuthost/releases/latest
-- Homebrew / distro packages: Might be provided if there is community interest and/or support — please file an issue or react to the appropriate.
 
 Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
