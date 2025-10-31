@@ -21,11 +21,11 @@ fn main() -> eyre::Result<()> {
     // Generate PNG icons from SVG (placed into frontend/assets/icons).
     generate_png_icons()?;
 
-    // Generate hashes for all inline scripts in templates.
-    generate_inline_script_hashes()?;
+    // Process HTML templates.
+    process_templates()?;
 
-    // Process HTML templates at build time.
-    process_templates()
+    // Generate hashes for all inline scripts in templates.
+    generate_inline_script_hashes()
 }
 
 fn set_workspace_root() -> eyre::Result<()> {
@@ -129,14 +129,13 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
     let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;
     let mut hashes = std::collections::HashSet::new();
 
-    for file in fs::read_dir("frontend/assets/partials")? {
-        let file = file?;
-        let content = fs::read_to_string(&file.path()).wrap_err(format!("reading {}", file.path().display()))?;
+    let served_html_files = ["frontend/assets/generated/index.html", "frontend/assets/generated/login.html"];
+    for file_path in served_html_files {
+        let content = fs::read_to_string(file_path)?;
         for cap in script_regex.captures_iter(&content) {
             if let Some(script_content) = cap.get(1) {
                 let hash = Sha256::digest(script_content.as_str().as_bytes());
                 let hash_b64 = general_purpose::STANDARD.encode(hash);
-                // include the single quotes required by CSP
                 let hash_tok = format!("'sha256-{}'", hash_b64);
                 hashes.insert(hash_tok);
             }
