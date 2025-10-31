@@ -5,6 +5,7 @@ use regex::Regex;
 use resvg::usvg;
 use sha2::{Digest, Sha256};
 use tiny_skia::Pixmap;
+use base64::{engine::general_purpose, Engine as _};
 
 const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 
@@ -129,8 +130,10 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
         for cap in script_regex.captures_iter(&content) {
             if let Some(script_content) = cap.get(1) {
                 let hash = Sha256::digest(script_content.as_str().as_bytes());
-                let hash_hex = format!("sha256-{:x}", hash);
-                hashes.insert(hash_hex);
+                let hash_b64 = general_purpose::STANDARD.encode(hash);
+                // include the single quotes required by CSP
+                let hash_tok = format!("'sha256-{}'", hash_b64);
+                hashes.insert(hash_tok);
             }
         }
     }
