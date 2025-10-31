@@ -1,6 +1,5 @@
 node_modules
-assets/app.js
-assets/styles.css
-assets/icons
+assets/generated/*
+!assets/generated/architecture*.svg
 playwright-report
 test-results

@@ -45,8 +45,8 @@ build_coordinator_on_mac:
 build_all: build_all_host_agents_on_mac build_coordinator_on_mac
 
 build_graphs:
-    dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/architecture.svg
-    dot frontend/assets/architecture_simplified.dot -Tsvg -ofrontend/assets/architecture_simplified.svg
+    dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/generated/architecture.svg
+    dot frontend/assets/architecture_simplified.dot -Tsvg -ofrontend/assets/generated/architecture_simplified.svg
 
 clean:
     cargo clean && cargo fetch

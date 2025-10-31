@@ -22,7 +22,10 @@ fn main() -> eyre::Result<()> {
     generate_png_icons()?;
 
     // Generate hashes for all inline scripts in templates.
-    generate_inline_script_hashes()
+    generate_inline_script_hashes()?;
+
+    // Process HTML templates at build time.
+    process_templates()
 }
 
 fn set_workspace_root() -> eyre::Result<()> {
@@ -43,6 +46,8 @@ fn run_npm_build() -> eyre::Result<()> {
     println!("{RERUN_IF}/index.tmpl.html");
     println!("{RERUN_IF}/login.tmpl.html");
     println!("{RERUN_IF}/partials");
+    println!("{RERUN_IF}/client_install_requirements_gotchas.md");
+    println!("{RERUN_IF}/agent_install_requirements_gotchas.md");
 
     process::Command::new("npm")
         .arg("run")
@@ -85,7 +90,7 @@ fn setup_npm() -> eyre::Result<()> {
 
 fn generate_png_icons() -> eyre::Result<()> {
     println!("{RERUN_IF}/favicon.svg");
-    let out_dir = PathBuf::from("frontend/assets/icons");
+    let out_dir = PathBuf::from("frontend/assets/generated/icons");
     if !out_dir.exists() {
         fs::create_dir_all(&out_dir).wrap_err_with(|| format!("creating {}", out_dir.display()))?;
     }
@@ -142,5 +147,46 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
     hash_list.sort();
     let hashes_str = hash_list.join(" ");
     println!("cargo:rustc-env=INLINE_SCRIPT_HASHES={}", hashes_str);
+    Ok(())
+}
+
+fn process_templates() -> eyre::Result<()> {
+    let generated_dir = PathBuf::from("frontend/assets/generated");
+    fs::create_dir_all(&generated_dir)?;
+
+    // Read generated app.js
+    let app_js = fs::read_to_string("frontend/assets/generated/app.js")?;
+
+    // Process index.tmpl.html
+    let content = include_str!("frontend/assets/index.tmpl.html")
+        .replace("{ html_head }", include_str!("frontend/assets/partials/html_head.tmpl.html"))
+        .replace("{ title }", "ShutHost Coordinator")
+        .replace("{ architecture_documentation }", include_str!("frontend/assets/partials/architecture.html"))
+        .replace("{ client_install_requirements_gotchas }", include_str!("frontend/assets/client_install_requirements_gotchas.md"))
+        .replace("{ agent_install_requirements_gotchas }", include_str!("frontend/assets/agent_install_requirements_gotchas.md"))
+        .replace("{ header }", include_str!("frontend/assets/partials/header.tmpl.html"))
+        .replace("{ footer }", include_str!("frontend/assets/partials/footer.tmpl.html"))
+        .replace("{ js }", &app_js)
+        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+    fs::write(generated_dir.join("index.html"), content)?;
+
+    // Process login.tmpl.html
+    let login_content = include_str!("frontend/assets/login.tmpl.html")
+        .replace("{ html_head }", include_str!("frontend/assets/partials/html_head.tmpl.html"))
+        .replace("{ title }", "Login • ShutHost")
+        .replace("{ header }", include_str!("frontend/assets/partials/header.tmpl.html"))
+        .replace("{ footer }", include_str!("frontend/assets/partials/footer.tmpl.html"))
+        .replace("{ maybe_logout }", "")
+        .replace("{ maybe_demo_disclaimer }", "")
+        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+    fs::write(generated_dir.join("login.html"), login_content)?;
+
+    // Process manifest.tmpl.json
+    let manifest_content = include_str!("frontend/assets/manifest.tmpl.json")
+        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
+    fs::write(generated_dir.join("manifest.json"), manifest_content)?;
+
     Ok(())
 }
