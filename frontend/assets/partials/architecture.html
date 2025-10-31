@@ -65,6 +65,39 @@
             </div>
         </section>
         <section class="architecture-key-points" aria-labelledby="architecture-key-points-title">
+            <aside class="alert alert-info" role="note" aria-label="Platform Support">
+                <h4 id="platform-support-title" class="alert-title">🖥️ Platform Support</h4>
+                <table class="platform-support-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Linux</th>
+                            <th>macOS</th>
+                            <th>Windows</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Coordinator</td>
+                            <td>✅ Binary<br>✅ Docker</td>
+                            <td>✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking)</td>
+                            <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
+                        </tr>
+                        <tr>
+                            <td>Host Agent</td>
+                            <td>✅ Binary<br>✅ Docker</td>
+                            <td>✅ Binary<br>❌ Docker</td>
+                            <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
+                        </tr>
+                        <tr>
+                            <td>Client</td>
+                            <td>✅ Shell<br>✅ Docker (Shell)</td>
+                            <td>✅ Shell<br>✅ Docker (Shell)</td>
+                            <td>✅ PowerShell<br>✅ Docker (PowerShell)<br>✅ WSL (Shell)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </aside>
             <aside class="alert alert-info" role="note" aria-label="Key Points">
                 <h4 id="architecture-key-points-title" class="alert-title">💡 Key Points</h4>
                 <ul class="text-sm">
