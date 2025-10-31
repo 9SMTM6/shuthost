@@ -77,47 +77,33 @@ pub async fn login_get(
 
     let maybe_error = match error.as_deref() {
         Some(v) if v == LOGIN_ERROR_INSECURE => {
-            include_utf8_asset!("partials/login_error_insecure.tmpl.html")
+            include_utf8_asset!("partials/login_error_insecure.html")
         }
         Some(v) if v == LOGIN_ERROR_TOKEN => {
-            include_utf8_asset!("partials/login_error_token.tmpl.html")
+            include_utf8_asset!("partials/login_error_token.html")
         }
         Some(v) if v == LOGIN_ERROR_UNKNOWN => {
-            include_utf8_asset!("partials/login_error_unknown.tmpl.html")
+            include_utf8_asset!("partials/login_error_unknown.html")
         }
         Some(v) if v == LOGIN_ERROR_OIDC => {
-            include_utf8_asset!("partials/login_error_oidc.tmpl.html")
+            include_utf8_asset!("partials/login_error_oidc.html")
         }
         Some(v) if v == LOGIN_ERROR_SESSION_EXPIRED => {
-            include_utf8_asset!("partials/login_error_session_expired.tmpl.html")
+            include_utf8_asset!("partials/login_error_session_expired.html")
         }
-        Some(_) => include_utf8_asset!("partials/login_error_unknown.tmpl.html"),
+        Some(_) => include_utf8_asset!("partials/login_error_unknown.html"),
         None => "",
     };
 
     let login_form = match auth.mode {
-        A::Token { .. } => include_utf8_asset!("partials/token_login.tmpl.html"),
-        A::Oidc { .. } => include_utf8_asset!("partials/oidc_login.tmpl.html"),
+        A::Token { .. } => include_utf8_asset!("partials/token_login.html"),
+        A::Oidc { .. } => include_utf8_asset!("partials/oidc_login.html"),
         _ => "",
     };
 
-    let header_tpl = include_utf8_asset!("partials/header.tmpl.html");
-    let footer = include_utf8_asset!("partials/footer.tmpl.html");
-    let header = header_tpl
-        .replace("{ maybe_tabs }", "")
-        .replace("{ maybe_logout }", "")
-        .replace("{ maybe_demo_disclaimer }", "");
-    let html = include_utf8_asset!("login.tmpl.html")
-        .replace(
-            "{ html_head }",
-            include_utf8_asset!("partials/html_head.tmlp.html"),
-        )
-        .replace("{ title }", "Login • ShutHost")
+    let html = include_utf8_asset!("generated/login.html")
         .replace("{ maybe_error }", maybe_error)
-        .replace("{ header }", &header)
-        .replace("{ footer }", footer)
-        .replace("{ login_form }", login_form)
-        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+        .replace("{ login_form }", login_form);
     axum::response::Response::builder()
         .header("Content-Type", "text/html")
         .body(axum::body::Body::from(html))

@@ -2,8 +2,6 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
-use std::sync::OnceLock;
-
 use axum::{
     Router,
     extract::State,
@@ -66,7 +64,7 @@ macro_rules! static_png_download_handler {
     (fn $name:ident, file=$file:expr) => {
         async fn $name() -> impl IntoResponse {
             const DATA: &[u8] =
-                include_bytes!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/", $file));
+                include_bytes!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/generated/icons/", $file));
             Response::builder()
                 .header("Content-Type", "image/png")
                 .header("Content-Length", DATA.len().to_string())
@@ -94,12 +92,12 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
             ..
         }
     ) {
-        include_utf8_asset!("partials/logout_form.tmpl.html")
+        include_utf8_asset!("partials/logout_form.html")
     } else {
         ""
     };
     let maybe_demo_disclaimer = if matches!(*mode, UiMode::Demo) {
-        include_utf8_asset!("partials/demo_disclaimer.tmpl.html")
+        include_utf8_asset!("partials/demo_disclaimer.html")
     } else {
         ""
     };
@@ -108,36 +106,11 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
         UiMode::Demo => "/this/is/a/demo.toml".to_string(),
     };
 
-    let header_tpl = include_utf8_asset!("partials/header.tmpl.html");
-    let footer_tpl = include_utf8_asset!("partials/footer.tmpl.html");
-
-    include_utf8_asset!("/index.tmpl.html")
-        .replace(
-            "{ html_head }",
-            include_utf8_asset!("partials/html_head.tmlp.html"),
-        )
-        .replace("{ title }", "ShutHost Coordinator")
+    include_utf8_asset!("generated/index.html")
         .replace("{ coordinator_config }", &config_path)
-        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-        .replace(
-            "{ architecture_documentation }",
-            include_utf8_asset!("partials/architecture.tmpl.html"),
-        )
         .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
-        .replace(
-            "{ client_install_requirements_gotchas }",
-            include_utf8_asset!("client_install_requirements_gotchas.md"),
-        )
-        .replace(
-            "{ agent_install_requirements_gotchas }",
-            include_utf8_asset!("agent_install_requirements_gotchas.md"),
-        )
-        .replace("{ js }", include_utf8_asset!("app.js"))
-        .replace("{ header }", header_tpl)
-        .replace("{ footer }", footer_tpl)
-        .replace("{ version }", env!("CARGO_PKG_VERSION"))
-        .replace("{ maybe_logout }", maybe_logout)
-        .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
+        .replace("{ maybe_logout }", &maybe_logout)
+        .replace("{ maybe_demo_disclaimer }", &maybe_demo_disclaimer)
 }
 
 /// Serves the main HTML template, injecting dynamic content.
@@ -150,25 +123,25 @@ pub async fn serve_ui(
         config_path, auth, ..
     }): State<AppState>,
 ) -> impl IntoResponse {
-    static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
     let show_logout = !matches!(auth.mode, Resolved::Disabled | Resolved::External { .. });
-    let html = HTML_TEMPLATE
-        .get_or_init(|| {
-            // Determine whether to include the external auth config warning. If Auth is
-            // Disabled we must show it. If Auth::External is configured but its
-            // exceptions_version doesn't match the current expected version, show it.
-            type A = Resolved;
-            let maybe_external_auth_config = match &auth.mode {
-                &A::Token { .. }
-                | &A::Oidc { .. }
-                | &A::External {
-                    exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
-                } => "",
-                &A::Disabled | &A::External { .. } => {
-                    include_utf8_asset!("partials/external_auth_config.tmpl.html")
-                }
-            };
+    // Determine whether to include the external auth config warning. If Auth is
+    // Disabled we must show it. If Auth::External is configured but its
+    // exceptions_version doesn't match the current expected version, show it.
+    type A = Resolved;
+    let maybe_external_auth_config = match &auth.mode {
+        &A::Token { .. }
+        | &A::Oidc { .. }
+        | &A::External {
+            exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
+        } => "",
+        &A::Disabled | &A::External { .. } => {
+            include_utf8_asset!("partials/external_auth_config.tmpl.html")
+        }
+    };
 
+    Response::builder()
+        .header("Content-Type", "text/html")
+        .body(
             render_ui_html(
                 &UiMode::Normal {
                     config_path: &config_path,
@@ -176,11 +149,8 @@ pub async fn serve_ui(
                 },
                 maybe_external_auth_config,
             )
-        })
-        .clone();
-    Response::builder()
-        .header("Content-Type", "text/html")
-        .body(html.into_response())
+            .into_response(),
+        )
         .unwrap()
 }
 
@@ -190,18 +160,9 @@ pub async fn serve_ui(
 ///
 /// Panics if the response builder fails to build the response.
 pub async fn serve_manifest() -> impl IntoResponse {
-    static MANIFEST: OnceLock<String> = OnceLock::new();
-
-    let manifest = MANIFEST
-        .get_or_init(|| {
-            include_utf8_asset!("manifest.tmpl.json")
-                .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-        })
-        .clone();
-
     Response::builder()
         .header("Content-Type", "application/json")
-        .body(manifest.into_response())
+        .body(include_utf8_asset!("generated/manifest.json").into_response())
         .unwrap()
 }
 
@@ -213,19 +174,19 @@ pub async fn serve_manifest() -> impl IntoResponse {
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
-        .body(include_utf8_asset!("styles.css").into_response())
+        .body(include_utf8_asset!("generated/styles.css").into_response())
         .unwrap()
 }
 
 static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
-static_svg_download_handler!(fn serve_architecture_simplified, file = "architecture_simplified.svg");
-static_svg_download_handler!(fn serve_architecture_complete, file = "architecture.svg");
+static_svg_download_handler!(fn serve_architecture_simplified, file = "generated/architecture_simplified.svg");
+static_svg_download_handler!(fn serve_architecture_complete, file = "generated/architecture.svg");
 
-// Binary icon handlers (generated in build.rs into frontend/assets/icons)
-static_png_download_handler!(fn serve_icon_32, file = "icons/icon-32.png");
-static_png_download_handler!(fn serve_icon_48, file = "icons/icon-48.png");
-static_png_download_handler!(fn serve_icon_64, file = "icons/icon-64.png");
-static_png_download_handler!(fn serve_icon_128, file = "icons/icon-128.png");
-static_png_download_handler!(fn serve_icon_180, file = "icons/icon-180.png");
-static_png_download_handler!(fn serve_icon_192, file = "icons/icon-192.png");
-static_png_download_handler!(fn serve_icon_512, file = "icons/icon-512.png");
+// Binary icon handlers (generated in build.rs into frontend/assets/generated/icons)
+static_png_download_handler!(fn serve_icon_32, file = "icon-32.png");
+static_png_download_handler!(fn serve_icon_48, file = "icon-48.png");
+static_png_download_handler!(fn serve_icon_64, file = "icon-64.png");
+static_png_download_handler!(fn serve_icon_128, file = "icon-128.png");
+static_png_download_handler!(fn serve_icon_180, file = "icon-180.png");
+static_png_download_handler!(fn serve_icon_192, file = "icon-192.png");
+static_png_download_handler!(fn serve_icon_512, file = "icon-512.png");
