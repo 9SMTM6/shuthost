@@ -63,8 +63,11 @@ macro_rules! static_svg_download_handler {
 macro_rules! static_png_download_handler {
     (fn $name:ident, file=$file:expr) => {
         async fn $name() -> impl IntoResponse {
-            const DATA: &[u8] =
-                include_bytes!(concat!(env!("WORKSPACE_ROOT"), "frontend/assets/generated/icons/", $file));
+            const DATA: &[u8] = include_bytes!(concat!(
+                env!("WORKSPACE_ROOT"),
+                "frontend/assets/generated/icons/",
+                $file
+            ));
             Response::builder()
                 .header("Content-Type", "image/png")
                 .header("Content-Length", DATA.len().to_string())
@@ -109,8 +112,8 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
     include_utf8_asset!("generated/index.html")
         .replace("{ coordinator_config }", &config_path)
         .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
-        .replace("{ maybe_logout }", &maybe_logout)
-        .replace("{ maybe_demo_disclaimer }", &maybe_demo_disclaimer)
+        .replace("{ maybe_logout }", maybe_logout)
+        .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
 }
 
 /// Serves the main HTML template, injecting dynamic content.

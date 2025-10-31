@@ -1,3 +1,9 @@
+#![cfg_attr(
+    coverage,
+    expect(unused_imports, reason = "For some reason clippy sets coverage cfg?"),
+    expect(dead_code, reason = "For some reason clippy sets coverage cfg?")
+)]
+
 use std::net::UdpSocket;
 
 use eyre::Context;

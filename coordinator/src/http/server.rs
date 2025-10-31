@@ -135,7 +135,7 @@ pub async fn start(
                     .map(|d| d.join(path))
                     .unwrap_or_else(|| std::path::PathBuf::from(path))
             };
-            let pool = db::init_db(&db_path).await?;
+            let pool = db::init(&db_path).await?;
             info!(
                 "Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)",
                 db_path.display()
