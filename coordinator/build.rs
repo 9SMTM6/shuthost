@@ -12,6 +12,9 @@ const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 const FRONTEND_DIR: &str = "frontend";
 
 fn main() -> eyre::Result<()> {
+    #[cfg(target_os = "windows")]
+    println!("cargo::warning=Windows builds are currently only supported for internal testing purposes and should not be used in production.");
+
     set_workspace_root()?;
 
     setup_npm()?;
@@ -33,10 +36,14 @@ fn set_workspace_root() -> eyre::Result<()> {
     let workspace_dir = workspace_dir
         .parent()
         .wrap_err("expected absolute path in CARGO_MANIFEST_DIR")?;
-    println!(
-        "cargo:rustc-env=WORKSPACE_ROOT={}/",
-        workspace_dir.display()
-    );
+    let mut path_str = workspace_dir.to_string_lossy().to_string();
+    if cfg!(target_os = "windows") {
+        path_str = path_str.replace('/', "\\");
+        path_str.push('\\');
+    } else {
+        path_str.push('/');
+    }
+    println!("cargo::rustc-env=WORKSPACE_ROOT={}", path_str);
     Ok(())
 }
 
@@ -148,7 +155,7 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
     let mut hash_list: Vec<_> = hashes.into_iter().collect();
     hash_list.sort();
     let hashes_str = hash_list.join(" ");
-    println!("cargo:rustc-env=INLINE_SCRIPT_HASHES={}", hashes_str);
+    println!("cargo::rustc-env=INLINE_SCRIPT_HASHES={}", hashes_str);
     Ok(())
 }
 
