@@ -3,7 +3,7 @@
 //! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
 
 mod commands;
-#[cfg(not(coverage))]
+#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
 mod install;
 pub mod server;
 pub mod validation;
@@ -12,8 +12,8 @@ use std::env;
 
 use clap::{Parser, Subcommand};
 
-#[cfg(not(coverage))]
-use install::{DEFAULT_PORT, InstallArgs, install_host_agent};
+#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+use install::{InstallArgs, install_host_agent};
 use server::ServiceOptions;
 
 /// Top-level CLI parser for host_agent.
@@ -27,13 +27,16 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Default UDP port on which the host_agent listens for commands.
+pub const DEFAULT_PORT: u16 = 5757;
+
 /// Subcommands available for host_agent execution.
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Start the host_agent as a background service.
     Service(ServiceOptions),
 
-    #[cfg(not(coverage))]
+    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Install the host_agent on the system.
     Install(InstallArgs),
 
@@ -48,7 +51,7 @@ pub enum Command {
 
 pub fn inner_main(invocation: Cli) {
     match invocation.command {
-        #[cfg(not(coverage))]
+        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
         Command::Install(args) => match install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),

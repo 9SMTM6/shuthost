@@ -16,7 +16,7 @@ pub mod demo;
 pub mod http;
 // Installation can't meaningfully be tested even in integration tests
 // Its only exercised in CI
-#[cfg(not(coverage))]
+#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
 pub mod install;
 pub mod routes;
 pub mod websocket;
@@ -55,7 +55,7 @@ static INIT_RUSTLS: Once = Once::new();
 /// Panics if the AWS LC crypto provider cannot be installed.
 pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
-        #[cfg(not(coverage))]
+        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
         Command::Install(args) => {
             setup(args)?;
             Ok(())
