@@ -101,7 +101,7 @@ jobs:
           foreach ($dir in Get-ChildItem -Directory ./rehydrate/host_agent-*) {
             $target = $dir.Name -replace '^host_agent-', ''
             New-Item -ItemType Directory -Force -Path "target/$target/release" | Out-Null
-            Copy-Item "$dir/shuthost_host_agent.exe" "target/$target/release/"
+            Copy-Item "$dir/shuthost_host_agent" "target/$target/release/"
           }
 
       - uses: ./.github/actions/rust-build
