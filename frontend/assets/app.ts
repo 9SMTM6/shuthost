@@ -389,14 +389,16 @@ const setupInstallerCommands = () => {
 
     // Install commands
     const hostInstallCommand = document.getElementById('host-install-command');
-    const clientInstallCommand = document.getElementById('client-install-command');
+    const clientInstallCommandSh = document.getElementById('client-install-command-sh');
+    const clientInstallCommandPs1 = document.getElementById('client-install-command-ps1');
 
-    if (!hostInstallCommand || !clientInstallCommand) {
+    if (!hostInstallCommand || !clientInstallCommandSh || !clientInstallCommandPs1) {
         throw new Error('Missing required install command elements');
     }
 
     hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
-    clientInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
+    clientInstallCommandSh.textContent = `curl -sSL ${baseUrl}/download/client_installer.sh | sh`;
+    clientInstallCommandPs1.textContent = `Invoke-WebRequest -Uri '${baseUrl}/download/client_installer.ps1' -OutFile 'client_installer.ps1'; .\\client_installer.ps1`;
 }
 
 // ==========================

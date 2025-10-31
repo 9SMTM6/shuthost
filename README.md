@@ -164,7 +164,15 @@ Assuming that the coordinator-host is on the same network as the hosts, with WOL
 
 > ⚠️ **Important**: This does not work with the default network mode that docker uses on Windows and MacOS. It will also not work on WSL. On these Hosts, you will have to run the coordinator as a binary, or install a Linux VM with bridged networking to run docker.
 
-❌ **Windows is currently not supported**, even with the binary and/or WSL. You need a VM or a dedicated Linux machine.
+❌ **Windows is currently not supported for coordinators or host agents**, even with the binary and/or WSL. You need a VM or a dedicated Linux machine for those components. However, **Windows clients are supported** via PowerShell scripts.
+
+### Platform Support Matrix
+
+| Component     | Linux                          | macOS                          | Windows                                      |
+|---------------|--------------------------------|--------------------------------|----------------------------------------------|
+| Coordinator   | ✅ Binary<br>✅ Docker         | ✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking) | ❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking) |
+| Host Agent    | ✅ Binary<br>✅ Docker         | ✅ Binary<br>❌ Docker         | ❌ Binary<br>❌ Docker<br>❌ WSL              |
+| Client        | ✅ Shell<br>✅ Docker   | ✅ Shell<br>✅ Docker  | ✅ PowerShell<br>✅ Docker<br>✅ WSL (Shell)  |
 
 ### 🌐 WebUI Network Configuration
 

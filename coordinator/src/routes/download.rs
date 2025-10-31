@@ -85,7 +85,9 @@ host_agent_handler!(
 
 static_text_download_handler!(fn download_host_agent_installer, file = "host_agent_installer.sh");
 static_text_download_handler!(fn download_client_installer, file = "client_installer.sh");
+static_text_download_handler!(fn download_client_installer_ps1, file = "client_installer.ps1");
 static_text_download_handler!(fn download_client_script, file = "m2m/shuthost_client.tmpl.sh");
+static_text_download_handler!(fn download_client_script_ps1, file = "m2m/shuthost_client.tmpl.ps1");
 
 pub fn get_download_router() -> Router<AppState> {
     Router::new()
@@ -94,7 +96,9 @@ pub fn get_download_router() -> Router<AppState> {
             get(download_host_agent_installer),
         )
         .route("/client_installer.sh", get(download_client_installer))
-        .route("/shuthost_client", get(download_client_script))
+        .route("/client_installer.ps1", get(download_client_installer_ps1))
+        .route("/shuthost_client.sh", get(download_client_script))
+        .route("/shuthost_client.ps1", get(download_client_script_ps1))
         .route("/host_agent/macos/aarch64", get(host_agent_macos_aarch64))
         .route("/host_agent/macos/x86_64", get(host_agent_macos_x86_64))
         .route("/host_agent/linux/x86_64", get(host_agent_linux_x86_64))
