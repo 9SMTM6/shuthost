@@ -15,16 +15,6 @@ param(
 $CLIENT_ID = "{client_id}"
 $SECRET = "{shared_secret}"
 
-# If RemoteUrl is still the placeholder, try to detect it dynamically
-if ($RemoteUrl -eq "{embedded_remote_url}") {
-    if ($env:SHUTHOST_BASE_URL) {
-        $RemoteUrl = $env:SHUTHOST_BASE_URL
-    } else {
-        Write-Warning "RemoteUrl not provided and SHUTHOST_BASE_URL not set. Using http://localhost:8080 as fallback."
-        $RemoteUrl = "http://localhost:8080"
-    }
-}
-
 function Show-Help {
     $helpText = @"
 Usage: $($MyInvocation.MyCommand.Name) <take|release> <host> [remote_url] [-Async]
