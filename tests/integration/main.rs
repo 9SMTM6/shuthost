@@ -90,7 +90,7 @@ async fn test_lease_persistence_across_restarts() {
     let db_path = std::env::temp_dir().join(format!("shuthost_test_{}.db", coord_port));
 
     // Ensure clean start
-    let _ = std::fs::remove_file(&db_path);
+    drop(std::fs::remove_file(&db_path));
 
     let config = format!(
         r#"
@@ -142,5 +142,5 @@ async fn test_lease_persistence_across_restarts() {
     );
 
     // Clean up
-    let _ = std::fs::remove_file(&db_path);
+    drop(std::fs::remove_file(&db_path));
 }
