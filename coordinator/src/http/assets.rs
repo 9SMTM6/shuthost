@@ -165,7 +165,7 @@ pub async fn serve_ui(
                     exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
                 } => "",
                 &A::Disabled | &A::External { .. } => {
-                    include_utf8_asset!("partials/maybe_external_auth_config.tmpl.html")
+                    include_utf8_asset!("partials/external_auth_config.tmpl.html")
                 }
             };
 
