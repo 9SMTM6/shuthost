@@ -13,13 +13,13 @@
               - columnheader "Leases"
               - columnheader "Actions"
           - rowgroup:
-            - row "client1 Leases Actions":
-              - rowheader "client1"
+            - row "denna Leases Actions":
+              - rowheader "denna"
               - cell "Leases"
               - cell "Actions":
                 - button "Reset Leases" [disabled]
-            - row "client2 Leases Actions":
-              - rowheader "client2"
+            - row "felurian Leases Actions":
+              - rowheader "felurian"
               - cell "Leases"
               - cell "Actions":
                 - button "Reset Leases" [disabled]
