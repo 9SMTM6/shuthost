@@ -9,10 +9,8 @@ use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
 use std::process::Command;
 
+use crate::DEFAULT_PORT;
 use crate::server::get_default_shutdown_command;
-
-/// Default UDP port on which the host_agent listens for commands.
-pub const DEFAULT_PORT: u16 = 5757;
 
 /// Template string for adding an agent entry in coordinator configuration.
 const CONFIG_ENTRY: &str =

@@ -7,7 +7,7 @@ use std::env;
 
 use clap::{Parser, Subcommand};
 
-#[cfg(not(coverage))]
+#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
 use crate::install::Args;
 
 /// Top-level command-line interface definition.
@@ -26,7 +26,7 @@ pub enum Command {
     /// Launch the control web service (WebUI) for managing hosts.
     ControlService(ServiceArgs),
 
-    #[cfg(not(coverage))]
+    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Install the coordinator service to start on boot.
     Install(Args),
 
