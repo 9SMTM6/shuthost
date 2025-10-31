@@ -14,14 +14,14 @@
               - columnheader "Leases"
               - columnheader "Actions"
           - rowgroup:
-            - row "host1 Status Leases Actions":
-              - rowheader "host1"
+            - row "archive Status Leases Actions":
+              - rowheader "archive"
               - cell "Status": offline
               - cell "Leases"
               - cell "Actions":
                 - button "Take Lease"
-            - row "host2 Status Leases Actions":
-              - rowheader "host2"
+            - row "tarbean Status Leases Actions":
+              - rowheader "tarbean"
               - cell "Status": offline
               - cell "Leases"
               - cell "Actions":

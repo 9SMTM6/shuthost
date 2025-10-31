@@ -13,13 +13,13 @@
               - columnheader "Status"
               - columnheader "Actions"
           - rowgroup:
-            - row "host1 Status Actions":
-              - rowheader "host1"
+            - row "archive Status Actions":
+              - rowheader "archive"
               - cell "Status": offline
               - cell "Actions":
                 - button "Start"
-            - row "host2 Status Actions":
-              - rowheader "host2"
+            - row "tarbean Status Actions":
+              - rowheader "tarbean"
               - cell "Status": offline
               - cell "Actions":
                 - button "Start"
