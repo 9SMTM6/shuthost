@@ -39,7 +39,7 @@ echo "$REMOTE_URL"
 echo "$CLIENT_ID"
 
 
-curl --compressed -L --fail-with-body "${REMOTE_URL}/download/shuthost_client" -o "/tmp/$CLIENT_SCRIPT_NAME.tmpl"
+curl --compressed -L --fail-with-body "${REMOTE_URL}/download/shuthost_client.sh" -o "/tmp/$CLIENT_SCRIPT_NAME.tmpl"
 
 # Generate a random shared secret using openssl
 SHARED_SECRET=$(openssl rand -hex 16)

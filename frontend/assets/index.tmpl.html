@@ -84,11 +84,20 @@
                         </summary>
                         <div id="client-install-content" class="collapsible-content" role="group"
                             aria-labelledby="client-install-title">
-                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                        <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
+                        
+                        <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
                         <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#client-install-command" type="button"
+                            <button class="copy-button" data-copy-target="#client-install-command-sh" type="button"
                                 aria-label="Copy install command">Copy</button>
-                            <code id="client-install-command" class="code-block">Loading...</code>
+                            <code id="client-install-command-sh" class="code-block">curl -sSL {base_url}/download/client_installer.sh | sh</code>
+                        </div>
+                        
+                        <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
+                        <div class="code-container py-2">
+                            <button class="copy-button" data-copy-target="#client-install-command-ps1" type="button"
+                                aria-label="Copy install command">Copy</button>
+                            <code id="client-install-command-ps1" class="code-block">Invoke-WebRequest -Uri '{base_url}/download/client_installer.ps1' -OutFile 'client_installer.ps1'; .\client_installer.ps1</code>
                         </div>
                         <p class="description-text text-xs">Optionally, you can specify a custom client ID as the second
                             argument. Add the output to the clients section of your config on the Coordinator Host:</p>
