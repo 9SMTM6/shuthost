@@ -83,7 +83,8 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Rehydrate target directory structure
+      - name: Rehydrate target directory structure (Unix)
+        if: ${{ matrix.target != 'x86_64-pc-windows-msvc' }}
         run: |
           mkdir -p target
           for dir in ./rehydrate/host_agent-*; do
@@ -92,6 +93,16 @@ jobs:
             cp "$dir/shuthost_host_agent" "target/$target/release/"
             chmod +x "target/$target/release/shuthost_host_agent"
           done
+
+      - name: Rehydrate target directory structure (Windows)
+        if: ${{ matrix.target == 'x86_64-pc-windows-msvc' }}
+        run: |
+          New-Item -ItemType Directory -Force -Path target | Out-Null
+          foreach ($dir in Get-ChildItem -Directory ./rehydrate/host_agent-*) {
+            $target = $dir.Name -replace '^host_agent-', ''
+            New-Item -ItemType Directory -Force -Path "target/$target/release" | Out-Null
+            Copy-Item "$dir/shuthost_host_agent.exe" "target/$target/release/"
+          }
 
       - uses: ./.github/actions/rust-build
         with:
@@ -103,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coordinator-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_coordinator
+          path: target/${{ matrix.target }}/release/shuthost_coordinator${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
 
   test:
     name: Run Tests
@@ -346,7 +357,7 @@ jobs:
           ${{ matrix.shell }} "apk add --no-cache curl openssl busybox-extras"
 
       - name: Install and run client
-        if: ${{ matrix.platform != 'windows-docker' }}
+        if: ${{ matrix.platform != 'windows' }}
         run: |
           # Run installer and capture output
           CLIENT_INSTALL_OUT=$(${{ matrix.shell }} "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080" 2>&1 || true)
