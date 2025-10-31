@@ -1,11 +1,11 @@
 use std::{fs, path::PathBuf, process};
 
+use base64::{Engine as _, engine::general_purpose};
 use eyre::{ContextCompat, Ok, WrapErr, bail, eyre};
 use regex::Regex;
 use resvg::usvg;
 use sha2::{Digest, Sha256};
 use tiny_skia::Pixmap;
-use base64::{engine::general_purpose, Engine as _};
 
 const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 
@@ -129,7 +129,10 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
     let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;
     let mut hashes = std::collections::HashSet::new();
 
-    let served_html_files = ["frontend/assets/generated/index.html", "frontend/assets/generated/login.html"];
+    let served_html_files = [
+        "frontend/assets/generated/index.html",
+        "frontend/assets/generated/login.html",
+    ];
     for file_path in served_html_files {
         let content = fs::read_to_string(file_path)?;
         for cap in script_regex.captures_iter(&content) {
@@ -158,13 +161,31 @@ fn process_templates() -> eyre::Result<()> {
 
     // Process index.tmpl.html
     let content = include_str!("frontend/assets/index.tmpl.html")
-        .replace("{ html_head }", include_str!("frontend/assets/partials/html_head.tmpl.html"))
+        .replace(
+            "{ html_head }",
+            include_str!("frontend/assets/partials/html_head.tmpl.html"),
+        )
         .replace("{ title }", "ShutHost Coordinator")
-        .replace("{ architecture_documentation }", include_str!("frontend/assets/partials/architecture.html"))
-        .replace("{ client_install_requirements_gotchas }", include_str!("frontend/assets/client_install_requirements_gotchas.md"))
-        .replace("{ agent_install_requirements_gotchas }", include_str!("frontend/assets/agent_install_requirements_gotchas.md"))
-        .replace("{ header }", include_str!("frontend/assets/partials/header.tmpl.html"))
-        .replace("{ footer }", include_str!("frontend/assets/partials/footer.tmpl.html"))
+        .replace(
+            "{ architecture_documentation }",
+            include_str!("frontend/assets/partials/architecture.html"),
+        )
+        .replace(
+            "{ client_install_requirements_gotchas }",
+            include_str!("frontend/assets/client_install_requirements_gotchas.md"),
+        )
+        .replace(
+            "{ agent_install_requirements_gotchas }",
+            include_str!("frontend/assets/agent_install_requirements_gotchas.md"),
+        )
+        .replace(
+            "{ header }",
+            include_str!("frontend/assets/partials/header.tmpl.html"),
+        )
+        .replace(
+            "{ footer }",
+            include_str!("frontend/assets/partials/footer.tmpl.html"),
+        )
         .replace("{ js }", &app_js)
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
@@ -172,10 +193,19 @@ fn process_templates() -> eyre::Result<()> {
 
     // Process login.tmpl.html
     let login_content = include_str!("frontend/assets/login.tmpl.html")
-        .replace("{ html_head }", include_str!("frontend/assets/partials/html_head.tmpl.html"))
+        .replace(
+            "{ html_head }",
+            include_str!("frontend/assets/partials/html_head.tmpl.html"),
+        )
         .replace("{ title }", "Login • ShutHost")
-        .replace("{ header }", include_str!("frontend/assets/partials/header.tmpl.html"))
-        .replace("{ footer }", include_str!("frontend/assets/partials/footer.tmpl.html"))
+        .replace(
+            "{ header }",
+            include_str!("frontend/assets/partials/header.tmpl.html"),
+        )
+        .replace(
+            "{ footer }",
+            include_str!("frontend/assets/partials/footer.tmpl.html"),
+        )
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "")
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))

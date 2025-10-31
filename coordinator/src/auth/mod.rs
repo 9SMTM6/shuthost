@@ -60,6 +60,15 @@ pub enum Resolved {
 }
 
 impl Runtime {
+    /// Creates a new `Runtime` instance from the provided configuration.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The configured `cookie_secret` is not valid base64
+    /// - The configured `cookie_secret` does not decode to exactly 32 bytes
+    /// - Database operations fail when storing, retrieving, or deleting cookie secrets or auth tokens
+    /// - A stored cookie secret in the database is corrupted (invalid base64 or wrong length)
     pub async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
         // small helpers to avoid repetition
         async fn gen_and_store_key(pool: &DbPool) -> eyre::Result<Key> {
@@ -70,7 +79,7 @@ impl Runtime {
         }
 
         // Handle cookie key: configured takes precedence, stored is fallback
-        let cookie_key = if let Some(cookie_secret) = &cfg.cookie_secret {
+        let cookie_key = if let Some(ref cookie_secret) = cfg.cookie_secret {
             // Configured cookie secret - remove any stored value to avoid confusion
             if let Some(pool) = db_pool {
                 info!(
@@ -203,7 +212,7 @@ mod tests {
     use std::path::Path;
 
     async fn setup_db() -> eyre::Result<DbPool> {
-        db::init_db(Path::new(":memory:")).await
+        db::init(Path::new(":memory:")).await
     }
 
     #[tokio::test]

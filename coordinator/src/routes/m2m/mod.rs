@@ -1,4 +1,9 @@
 //! Machine-to-machine API endpoints for lease management and host control.
+#![cfg_attr(
+    coverage,
+    expect(unused_imports, reason = "For some reason clippy sets coverage cfg?"),
+    expect(dead_code, reason = "For some reason clippy sets coverage cfg?")
+)]
 
 mod host_control;
 mod leases;
