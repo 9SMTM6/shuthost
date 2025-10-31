@@ -4,7 +4,7 @@ param(
     [string]$Action,
 
     [Parameter(Mandatory=$true, Position=1)]
-    [string]$Host,
+    [string]$TargetHost,
 
     [Parameter(Position=2)]
     [string]$RemoteUrl = "{embedded_remote_url}",
@@ -72,7 +72,7 @@ $signature = [BitConverter]::ToString($signatureBytes).Replace('-', '').ToLower(
 $xRequest = "$timestamp|$Action|$signature"
 
 # Build coordinator URL with optional async parameter
-$coordinatorUrl = "$RemoteUrl/api/m2m/lease/$Host/$Action"
+$coordinatorUrl = "$RemoteUrl/api/m2m/lease/$TargetHost/$Action"
 if ($Async) {
     $coordinatorUrl += "?async=true"
 }

@@ -86,3 +86,9 @@ Write-Host "`"$ClientId`" = { shared_secret = `"$sharedSecret`" }"
 Write-Host ""
 Write-Host "Afterwards you can use the client script with the following command:"
 Write-Host "$finalPath <take|release> <host> [remote_url] [-Async]"
+
+# Clean up installer
+$installerPath = $MyInvocation.MyCommand.Path
+if (Test-Path $installerPath) {
+    Remove-Item $installerPath -Force
+}
