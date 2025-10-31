@@ -2,6 +2,13 @@
 //!
 //! This module provides shared functions and types used across multiple integration test modules,
 //! such as spawning processes, managing ports, and waiting for services to be ready.
+#![cfg_attr(
+    coverage,
+    expect(
+        unreachable_patterns,
+        reason = "For some reason clippy sets coverage cfg?"
+    )
+)]
 
 use clap::Parser;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
@@ -43,10 +50,10 @@ impl Drop for KillOnDrop {
                 // Send abort command to the agent
                 if let Ok(mut stream) = std::net::TcpStream::connect(("127.0.0.1", *port)) {
                     let signed_message = shuthost_common::create_signed_message("abort", secret);
-                    let _ = stream.write_all(signed_message.as_bytes());
+                    drop(stream.write_all(signed_message.as_bytes()));
                 }
                 if let Some(handle) = thread.take() {
-                    let _ = handle.join();
+                    drop(handle.join());
                 }
             }
         }

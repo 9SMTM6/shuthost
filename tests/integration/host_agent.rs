@@ -88,5 +88,5 @@ async fn test_shutdown_command_execution() {
         "SHUTDOWN",
         "Shutdown file should contain 'SHUTDOWN'"
     );
-    let _ = std::fs::remove_file(shutdown_file); // Clean up after test
+    drop(std::fs::remove_file(shutdown_file)); // Clean up after test
 }

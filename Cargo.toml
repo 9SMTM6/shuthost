@@ -48,6 +48,9 @@ futures.workspace = true
 serde = { version = "1.0", features = ["derive"] }
 shuthost_common = { workspace = true }
 
+[lints]
+workspace = true
+
 [workspace.dependencies]
 base64 = "0.22.1"
 clap = { version = "4.5.37", features = ["derive"] }
