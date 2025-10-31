@@ -1,4 +1,48 @@
 <section id="architecture-tab" class="tab-content">
+    <section class="section-container mt-0 mb-4" aria-labelledby="platform-support-title">
+        <h2 id="platform-support-title" class="section-title px-4 pt-4">🖥️ Platform Support</h2>
+        <div class="px-4 pb-4">
+            <div class="overflow-x-auto">
+                <table class="platform-support-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Linux</th>
+                                <th>macOS</th>
+                                <th>Windows</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Web GUI</td>
+                                <td>✅ (any modern browser)</td>
+                                <td>✅ (any modern browser)</td>
+                                <td>✅ (any modern browser)</td>
+                            </tr>
+                            <tr>
+                                <td>Coordinator</td>
+                                <td>✅ Binary<br>✅ Docker</td>
+                                <td>✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking)</td>
+                                <td>❌ Binary<br>❌ Docker<br>❌ WSL</td>
+                            </tr>
+                            <tr>
+                                <td>Host Agent</td>
+                                <td>✅ Binary<br>✅ Docker</td>
+                                <td>✅ Binary<br>❌ Docker</td>
+                                <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
+                            </tr>
+                            <tr>
+                                <td>Client</td>
+                                <td>✅ Shell<br>✅ Docker</td>
+                                <td>✅ Shell<br>✅ Docker</td>
+                                <td>✅ PowerShell<br>✅ Docker<br>✅ WSL (Shell)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
     <article class="section-container mt-0">
         <header>
             <h2 class="section-title px-4 pt-4">Architecture Documentation</h2>
@@ -65,45 +109,6 @@
             </div>
         </section>
         <section class="architecture-key-points" aria-labelledby="architecture-key-points-title">
-            <aside class="alert alert-info" role="note" aria-label="Platform Support">
-                <h4 id="platform-support-title" class="alert-title">🖥️ Platform Support</h4>
-                <table class="platform-support-table">
-                    <thead>
-                        <tr>
-                            <th>Component</th>
-                            <th>Linux</th>
-                            <th>macOS</th>
-                            <th>Windows</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Web GUI</td>
-                            <td>✅ (any modern browser)</td>
-                            <td>✅ (any modern browser)</td>
-                            <td>✅ (any modern browser)</td>
-                        </tr>
-                        <tr>
-                            <td>Coordinator</td>
-                            <td>✅ Binary<br>✅ Docker</td>
-                            <td>✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking)</td>
-                            <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
-                        </tr>
-                        <tr>
-                            <td>Host Agent</td>
-                            <td>✅ Binary<br>✅ Docker</td>
-                            <td>✅ Binary<br>❌ Docker</td>
-                            <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
-                        </tr>
-                        <tr>
-                            <td>Client</td>
-                            <td>✅ Shell<br>✅ Docker (Shell)</td>
-                            <td>✅ Shell<br>✅ Docker (Shell)</td>
-                            <td>✅ PowerShell<br>✅ Docker (PowerShell)<br>✅ WSL (Shell)</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </aside>
             <aside class="alert alert-info" role="note" aria-label="Key Points">
                 <h4 id="architecture-key-points-title" class="alert-title">💡 Key Points</h4>
                 <ul class="text-sm">

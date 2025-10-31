@@ -224,6 +224,56 @@ footer {
         @apply content-none;
     }
 
+    /* Platform support table */
+    .platform-support-table {
+        @apply w-full text-sm;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .platform-support-table thead {
+        @apply bg-[#f3f3f3] dark:bg-[#252526];
+    }
+
+    .platform-support-table th {
+        @apply px-4 py-3 text-left font-semibold text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42];
+    }
+
+    .platform-support-table td {
+        @apply px-4 py-3 text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42] align-top;
+    }
+
+    .platform-support-table tbody tr:hover {
+        @apply bg-[#f9f9f9] dark:bg-[#1e1e1e];
+    }
+
+    /* Rounded corners for table */
+    .platform-support-table thead tr:first-child th:first-child {
+        border-top-left-radius: 0.5rem;
+    }
+
+    .platform-support-table thead tr:first-child th:last-child {
+        border-top-right-radius: 0.5rem;
+    }
+
+    .platform-support-table tbody tr:last-child td:first-child {
+        border-bottom-left-radius: 0.5rem;
+    }
+
+    .platform-support-table tbody tr:last-child td:last-child {
+        border-bottom-right-radius: 0.5rem;
+    }
+
+    /* Remove double borders */
+    .platform-support-table th + th,
+    .platform-support-table td + td {
+        border-left: none;
+    }
+
+    .platform-support-table tbody tr + tr td {
+        border-top: none;
+    }
+
     /* Alert styles */
     .alert {
         @apply rounded-lg p-3 my-3;
