@@ -85,6 +85,9 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                     .unwrap();
             });
 
+            #[cfg(target_os = "windows")]
+            tracing::warn!("Windows builds are currently only supported for internal testing purposes and should not be used in production.");
+
             info!("Using config path: {}", config_path.display());
 
             // Pass through optional port/bind overrides from CLI
