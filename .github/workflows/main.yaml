@@ -104,12 +104,6 @@ jobs:
             Copy-Item "$dir/shuthost_host_agent" "target/$target/release/"
           }
 
-      # .github/workflows/main.yaml — add before cargo build
-      - name: Setup Node.js (ensures npm is present)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'     # choose the version you need
-
       - uses: ./.github/actions/rust-build
         with:
           target: ${{ matrix.target }}
