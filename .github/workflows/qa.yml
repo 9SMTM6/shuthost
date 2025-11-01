@@ -64,11 +64,6 @@ jobs:
           lfs: true
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
           set -eux

@@ -15,13 +15,19 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Setup Node.js
+      if: ${{ runner.os == 'Windows' }}
+      uses: actions/setup-node@v6
+      with:
+        node-version: 'latest'
+
     - name: Ensure latest stable rustc
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: rustup update stable
 
     - name: Install Rust target
       if: ${{ inputs.target != '' }}
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: rustup target add ${{ inputs.target }}
 
     - name: Install dependencies for MUSL targets
@@ -31,12 +37,19 @@ runs:
         sudo apt-get update
         sudo apt-get install -y musl-tools
 
-    - name: Build binary
-      shell: bash
+    - name: Debug npm
+      if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
       run: |
-        set -euo pipefail
-        if [ -n """${{ inputs.target }}""" ]; then
-          cargo build --release --bin "${{ inputs.bin-name }}" --target "${{ inputs.target }}" ${{ inputs.additional-flags }}
-        else
-          cargo build --release --bin "${{ inputs.bin-name }}" ${{ inputs.additional-flags }}
-        fi
+        echo "PATH: $env:PATH"
+        npm --version
+
+    - name: Build binary with target
+      if: ${{ inputs.target != '' }}
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      run: cargo build --release --bin "${{ inputs.bin-name }}" --target "${{ inputs.target }}" ${{ inputs.additional-flags }}
+
+    - name: Build binary without target
+      if: ${{ inputs.target == '' }}
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      run: cargo build --release --bin "${{ inputs.bin-name }}" ${{ inputs.additional-flags }}
