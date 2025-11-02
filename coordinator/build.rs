@@ -12,8 +12,30 @@ const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 const FRONTEND_DIR: &str = "frontend";
 
 fn main() -> eyre::Result<()> {
+    let mut build_warnings = Vec::<&'static str>::new();
+
     #[cfg(target_os = "windows")]
-    println!("cargo::warning=Windows builds are currently only supported for internal testing purposes and should not be used in production.");
+    {
+        let warning = "Windows builds are currently only supported for internal testing purposes and should not be used in production.";
+        build_warnings.push(warning);
+        println!("cargo::warning={warning}");
+    }
+
+    #[cfg(not(feature="include_linux_agents"))]
+    {
+        let warning = "No linux agents embedded. Trying to install any linux agents from the coordinator will result in errors";
+        build_warnings.push(warning);
+        println!("cargo::warning={warning}");
+    }
+
+    #[cfg(not(feature="include_macos_agents"))]
+    {
+        let warning = "No MacOS agents embedded. Trying to install any MacOS agents from the coordinator will result in errors";
+        build_warnings.push(warning);
+        println!("cargo::warning={warning}");
+    }
+
+    println!("cargo::rustc-env=BUILD_WARNINGS={build_warnings}", build_warnings=build_warnings.join(";"));
 
     set_workspace_root()?;
 
