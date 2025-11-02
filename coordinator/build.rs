@@ -21,21 +21,24 @@ fn main() -> eyre::Result<()> {
         println!("cargo::warning={warning}");
     }
 
-    #[cfg(not(feature="include_linux_agents"))]
+    #[cfg(not(feature = "include_linux_agents"))]
     {
         let warning = "No linux agents embedded. Trying to install any linux agents from the coordinator will result in errors";
         build_warnings.push(warning);
         println!("cargo::warning={warning}");
     }
 
-    #[cfg(not(feature="include_macos_agents"))]
+    #[cfg(not(feature = "include_macos_agents"))]
     {
         let warning = "No MacOS agents embedded. Trying to install any MacOS agents from the coordinator will result in errors";
         build_warnings.push(warning);
         println!("cargo::warning={warning}");
     }
 
-    println!("cargo::rustc-env=BUILD_WARNINGS={build_warnings}", build_warnings=build_warnings.join(";"));
+    println!(
+        "cargo::rustc-env=BUILD_WARNINGS={build_warnings}",
+        build_warnings = build_warnings.join(";")
+    );
 
     set_workspace_root()?;
 
