@@ -29,7 +29,7 @@ use std::fs;
 use std::sync::Once;
 
 use eyre::{Result, WrapErr};
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 use cli::{Cli, Command};
@@ -85,8 +85,9 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                     .unwrap();
             });
 
-            #[cfg(target_os = "windows")]
-            tracing::warn!("Windows builds are currently only supported for internal testing purposes and should not be used in production.");
+            for warning in env!("BUILD_WARNINGS").split(";") {
+                warn!(warning);
+            }
 
             info!("Using config path: {}", config_path.display());
 
