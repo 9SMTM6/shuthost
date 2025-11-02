@@ -217,8 +217,17 @@ pub async fn start(
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
         // must be after request-id
-        .trace_for_http()
-        .compression()
+        .trace_for_http();
+
+    #[cfg(any(
+        feature = "compression-br",
+        feature = "compression-deflate",
+        feature = "compression-gzip",
+        feature = "compression-zstd",
+    ))]
+    let middleware_stack = middleware_stack.compression();
+
+    let middleware_stack = middleware_stack
         .layer(TimeoutLayer::new(Duration::from_secs(30)))
         .layer(axum::middleware::from_fn(secure_headers_middleware));
 

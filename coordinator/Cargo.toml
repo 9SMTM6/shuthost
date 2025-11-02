@@ -15,6 +15,8 @@ categories.workspace = true
 [features]
 default = ["compression-br", "compression-zstd"]
 compression-br = ["tower-http/compression-br", "reqwest/brotli"]
+compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
+compression-gzip = ["tower-http/compression-gzip", "reqwest/gzip"]
 compression-zstd = ["tower-http/compression-zstd", "reqwest/zstd"]
 include_linux_agents = []
 include_macos_agents = []
