@@ -35,24 +35,24 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'Desktop Light',
-            testIgnore: ["mobile-navigation.spec.*"],
-            use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
-        },
-        {
             name: 'Desktop Dark',
-            testIgnore: ["aria-snapshots.spec.*", "mobile-navigation.spec.*"],
+            testIgnore: ["mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
         },
         {
-            name: 'Mobile Light',
-            testIgnore: ["aria-snapshots.spec.*"],
-            use: { ...devices['Pixel 7'], colorScheme: 'light' },
+            name: 'Desktop Light',
+            testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "mobile-navigation.spec.*"],
+            use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
         },
         {
             name: 'Mobile Dark',
-            testIgnore: ["aria-snapshots.spec.*"],
+            testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'dark' },
+        },
+        {
+            name: 'Mobile Light',
+            testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*"],
+            use: { ...devices['Pixel 7'], colorScheme: 'light' },
         },
     ],
 });
