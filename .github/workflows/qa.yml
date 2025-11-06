@@ -95,35 +95,18 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Clean coverage artifacts
-        run: |
-          # since I cant seem properly to get this into $GITHUB_ENV, I just set it wherever its needed.
-          source <(cargo llvm-cov show-env --export-prefix)
-          cargo llvm-cov clean --workspace
-
-      - name: Build with instrumentation
-        run: |
-          source <(cargo llvm-cov show-env --export-prefix)
-          cargo build --workspace
-
-      - name: Run Playwright tests
+      # running these in an individual step didn't work.
+      - name: Generate coverage reports based on playwright and Rust tests 
         env:
           CI: true
           COVERAGE: 1
           SKIP_BUILD: 1
         run: |
           source <(cargo llvm-cov show-env --export-prefix)
-          cd frontend
-          npx playwright test
-
-      - name: Run Rust tests
-        run: |
-          source <(cargo llvm-cov show-env --export-prefix)
+          cargo llvm-cov clean --workspace
+          cargo build --workspace
+          cd frontend && npx playwright test && cd ..
           cargo test --workspace
-
-      - name: Generate coverage reports
-        run: |
-          source <(cargo llvm-cov show-env --export-prefix)
           cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
           cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
 
