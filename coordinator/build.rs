@@ -12,7 +12,10 @@ const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 const FRONTEND_DIR: &str = "frontend";
 
 fn main() -> eyre::Result<()> {
-    #[allow(unused_mut, reason = "This will receive false positives when no build warning is emitted.")]
+    #[allow(
+        unused_mut,
+        reason = "This will receive false positives when no build warning is emitted."
+    )]
     let mut build_warnings = Vec::<&'static str>::new();
 
     #[cfg(target_os = "windows")]
