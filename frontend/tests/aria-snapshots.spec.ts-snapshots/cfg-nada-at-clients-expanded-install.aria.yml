@@ -5,7 +5,11 @@
         - group "Install Client":
           - heading "Install Client" [level=2]
           - group "Install Client":
-            - paragraph: "Run the following command in your terminal:"
+            - paragraph: "Run one of the following commands in your terminal:"
+            - paragraph: "For Linux/macOS:"
+            - button "Copy install command"
+            - code: <<INSTALL_COMMAND_REDACTED>>
+            - paragraph: "For Windows (PowerShell):"
             - button "Copy install command"
             - code: <<INSTALL_COMMAND_REDACTED>>
             - paragraph: "Optionally, you can specify a custom client ID as the second argument. Add the output to the clients section of your config on the Coordinator Host:"

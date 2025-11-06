@@ -70,8 +70,10 @@ test.describe('expanded install panels', () => {
     await page.waitForSelector('#client-install-content', { state: 'visible' });
     // Sanitize dynamic install command and config path for stable snapshots
     await page.evaluate(() => {
-      const cmd = document.querySelector('#client-install-command');
-      if (cmd) cmd.textContent = '<<INSTALL_COMMAND_REDACTED>>';
+      const cmdSh = document.querySelector('#client-install-command-sh');
+      if (cmdSh) cmdSh.textContent = '<<INSTALL_COMMAND_REDACTED>>';
+      const cmdPs1 = document.querySelector('#client-install-command-ps1');
+      if (cmdPs1) cmdPs1.textContent = '<<INSTALL_COMMAND_REDACTED>>';
       document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
     });
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_clients-expanded_install.aria.yml` });
