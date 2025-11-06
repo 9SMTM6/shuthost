@@ -172,7 +172,7 @@ Assuming that the coordinator-host is on the same network as the hosts, with WOL
 |---------------|--------------------------------|--------------------------------|----------------------------------------------|
 | Web GUI       | ✅ (any modern browser)       | ✅ (any modern browser)       | ✅ (any modern browser)                       |
 | Coordinator   | ✅ Binary<br>✅ Docker         | ✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking) | ❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking) |
-| Host Agent    | ✅ Binary<br>✅ Docker         | ✅ Binary<br>❌ Docker         | ❌ Binary<br>❌ Docker<br>❌ WSL              |
+| Host Agent | ✅ Binary         | ✅ Binary         | ❌ Binary              |
 | Client        | ✅ Shell<br>✅ Docker   | ✅ Shell<br>✅ Docker  | ✅ PowerShell<br>✅ Docker<br>✅ WSL (Shell)  |
 
 ### 🌐 WebUI Network Configuration
