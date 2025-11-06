@@ -55,7 +55,7 @@ jobs:
 
   coverage:
     name: Coverage report (llvm-cov)
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
