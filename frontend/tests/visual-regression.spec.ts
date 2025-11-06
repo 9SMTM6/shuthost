@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, expand_and_sanitize_host_install } from './test-utils';
+import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
 
 test.describe('main page(s)', () => {
     let backendProcess: any | undefined;
@@ -49,8 +49,7 @@ test.describe('token login', () => {
 
     test('login page', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
-        const port = 8081 + parallelIndex;
+        const port = getTestPort();
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');
         await expect(page.locator('body')).toHaveScreenshot(`login_token_auth.png`);
@@ -58,8 +57,7 @@ test.describe('token login', () => {
 
     test('login page - session expired', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
-        const port = 8081 + parallelIndex;
+        const port = getTestPort();
         await page.goto(`https://127.0.0.1:${port}/login?error=session_expired`);
         await page.waitForSelector('.alert-warning', { state: 'visible' });
         await page.waitForLoadState('networkidle');
@@ -81,8 +79,7 @@ test.describe('OIDC login', () => {
 
     test('login page', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
-        const port = 8081 + parallelIndex;
+        const port = getTestPort();
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');
         await expect(page.locator('body')).toHaveScreenshot(`login_oidc_auth.png`);
@@ -90,8 +87,7 @@ test.describe('OIDC login', () => {
 
     test('login page - session expired', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
-        const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
-        const port = 8081 + parallelIndex;
+        const port = getTestPort();
         await page.goto(`https://127.0.0.1:${port}/login?error=session_expired`);
         await page.waitForSelector('.alert-warning', { state: 'visible' });
         await page.waitForLoadState('networkidle');

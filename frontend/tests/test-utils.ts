@@ -9,6 +9,12 @@ export const configs = {
   "auth-oidc": './tests/configs/auth-oidc.toml',
 }
 
+// Get the test port for parallel workers to avoid conflicts.
+export function getTestPort(): number {
+  const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
+  return 8081 + parallelIndex;
+}
+
 // Utilities to build, start, wait for, and stop the Rust backend used by Playwright tests.
 export async function waitForServerReady(port: number, useTls = false, timeout = 30000) {
   const start = Date.now();
@@ -43,8 +49,7 @@ export async function startBackend(configPath: string, useTls = false) {
   const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
   // Determine per-worker port to allow parallel test workers.
   // fall back to 0 for single-worker runs.
-  const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
-  const port = 8081 + parallelIndex;
+  const port = getTestPort();
   const proc = spawn(
     backendBin,
     ['control-service', '--config', configPath, '--port', String(port)],
