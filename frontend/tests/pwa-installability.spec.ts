@@ -1,8 +1,9 @@
 // filepath: frontend/tests/pwa-installability.spec.ts
 import { test, expect } from '@playwright/test';
 import { configs, startBackend, stopBackend } from './test-utils';
+import { ChildProcess } from 'child_process';
 
-let backendProcess: any | undefined;
+let backendProcess: ChildProcess | undefined;
 
 test.beforeAll(async () => {
     backendProcess = await startBackend(configs["hosts-and-clients"]);

@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
+import { ChildProcess } from 'node:child_process';
 
-let backendProcess: any | undefined;
+let backendProcess: ChildProcess | undefined;
 
 const hostsConfigs = ['hosts-only', 'hosts-and-clients'] as const;
 for (const name of hostsConfigs) {

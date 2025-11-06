@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright'; // 1
 import { startBackend, stopBackend, configs, expand_and_sanitize_host_install } from './test-utils';
+import { ChildProcess } from 'node:child_process';
 
-let backendProcess: any | undefined;
+let backendProcess: ChildProcess | undefined;
 
 test.beforeAll(async () => {
     backendProcess = await startBackend(configs["hosts-and-clients"]);

@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { ChildProcess } from 'node:child_process';
 
 export const configs = {
   "hosts-only": './tests/configs/hosts-only.toml',
@@ -28,7 +29,7 @@ export async function waitForServerReady(port: number, useTls = false, timeout =
           path: '/', 
           method: 'GET',
           rejectUnauthorized: false // Allow self-signed certificates in tests
-        }, (res: any) => {
+        }, (res) => {
           res.resume();
           resolve();
         });
@@ -59,7 +60,7 @@ export async function startBackend(configPath: string, useTls = false) {
   return proc;
 }
 
-export async function stopBackend(proc: any) {
+export async function stopBackend(proc?: ChildProcess) {
   if (!proc) return;
 
   // Try a graceful shutdown first

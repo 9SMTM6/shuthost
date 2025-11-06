@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
+import { ChildProcess } from 'node:child_process';
 
 test.describe('main page(s)', () => {
-    let backendProcess: any | undefined;
+    let backendProcess: ChildProcess | undefined;
 
     test.beforeAll(async () => {
         backendProcess = await startBackend(configs["hosts-and-clients"]);
@@ -36,7 +37,7 @@ test.describe('main page(s)', () => {
 });
 
 test.describe('token login', () => {
-    let backendProcess: any | undefined;
+    let backendProcess: ChildProcess | undefined;
 
     test.beforeAll(async () => {
         backendProcess = await startBackend(configs["auth-token"], true);
@@ -66,7 +67,7 @@ test.describe('token login', () => {
 });
 
 test.describe('OIDC login', () => {
-    let backendProcess: any | undefined;
+    let backendProcess: ChildProcess | undefined;
 
     test.beforeAll(async () => {
         backendProcess = await startBackend(configs["auth-oidc"], true);

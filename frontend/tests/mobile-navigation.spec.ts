@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { startBackend, stopBackend, configs } from './test-utils';
+import { ChildProcess } from 'node:child_process';
 
-let backendProcess: any | undefined;
+let backendProcess: ChildProcess | undefined;
 
 // This test is mobile-specific. Desktop projects should ignore this file via Playwright config.
 test.describe('mobile navigation', () => {
