@@ -26,7 +26,7 @@ export default defineConfig({
     reporter: [[process.env['CI'] ? 'github' : 'list'], ['html']],
     use: {
         // Compute a per-worker baseURL so multiple workers can run parallel backends.
-        baseURL: `http://127.0.0.1:${8083 + Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0')}`,
+        baseURL: `http://127.0.0.1:${8081 + Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0')}`,
         trace: 'on',
         ignoreHTTPSErrors: true,
         // Explicitly use Playwright's Chromium browser so projects don't try to use a system Chrome
