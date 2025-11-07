@@ -245,6 +245,17 @@ pub async fn start(
         .layer(middleware_stack);
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
+    let shutdown_signal = async {
+        #[cfg(unix)]
+        {
+            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+            drop(sigterm.recv().await);
+        }
+        #[cfg(not(unix))]
+        {
+            drop(signal::ctrl_c().await);
+        }
+    };
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
         Some(tls_cfg) => {
@@ -317,11 +328,10 @@ pub async fn start(
                 );
             };
             let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app.into_make_service());
-            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
             tokio::select! {
                 res = server => res?,
-                _ = sigterm.recv() => {
-                    info!("Received SIGTERM, shutting down");
+                _ = shutdown_signal => {
+                    info!("Received shutdown, shutting down");
                 }
             }
         }
@@ -329,11 +339,10 @@ pub async fn start(
             info!("Listening on http://{}", addr);
             let listener = tokio::net::TcpListener::bind(addr).await?;
             let server = axum::serve(listener, app.into_make_service());
-            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
             tokio::select! {
                 res = server => res?,
-                _ = sigterm.recv() => {
-                    info!("Received SIGTERM, shutting down");
+                _ = shutdown_signal => {
+                    info!("Received shutdown, shutting down");
                 }
             }
         }
