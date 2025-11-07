@@ -103,4 +103,6 @@ pub fn get_default_shutdown_command() -> String {
     .to_string();
     #[cfg(target_os = "macos")]
     return "shutdown -h now".to_string();
+    #[cfg(target_os = "windows")]
+    return "shutdown /s /t 0".to_string();
 }

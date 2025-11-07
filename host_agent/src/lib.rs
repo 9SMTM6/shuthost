@@ -40,7 +40,7 @@ pub enum Command {
     /// Install the host_agent on the system.
     Install(InstallArgs),
 
-    #[cfg(not(coverage))]
+    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
         /// UDP port to listen on for WOL test packets.
@@ -59,7 +59,7 @@ pub fn inner_main(invocation: Cli) {
         Command::Service(args) => {
             server::start_host_agent(args);
         }
-        #[cfg(not(coverage))]
+        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
             Err(e) => eprintln!("Error during WoL test: {e}"),
