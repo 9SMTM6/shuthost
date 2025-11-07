@@ -9,7 +9,12 @@ use tiny_skia::Pixmap;
 
 const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 
-const FRONTEND_DIR: &str = "frontend";
+const FRONTEND_DIR: &str = "../frontend";
+
+#[cfg(not(target_os = "windows"))]
+const NPM_BIN: &str = "npm";
+#[cfg(target_os = "windows")]
+const NPM_BIN: &str = "npm.cmd";
 
 fn main() -> eyre::Result<()> {
     #[allow(
@@ -85,7 +90,7 @@ fn run_npm_build() -> eyre::Result<()> {
     println!("{RERUN_IF}/client_install_requirements_gotchas.md");
     println!("{RERUN_IF}/agent_install_requirements_gotchas.md");
 
-    process::Command::new("npm")
+    process::Command::new(NPM_BIN)
         .arg("run")
         .arg("build")
         .current_dir(FRONTEND_DIR)
@@ -102,15 +107,12 @@ fn run_npm_build() -> eyre::Result<()> {
 
 fn setup_npm() -> eyre::Result<()> {
     // Check npm
-    if process::Command::new("npm")
+    process::Command::new(NPM_BIN)
         .arg("--version")
         .output()
-        .is_err()
-    {
-        bail!("npm is not installed. Please install node/npm.");
-    }
+        .wrap_err("Ensure node/npm is installed")?;
 
-    process::Command::new("npm")
+    process::Command::new(NPM_BIN)
         .arg("ci")
         .current_dir(FRONTEND_DIR)
         .status()
@@ -126,15 +128,15 @@ fn setup_npm() -> eyre::Result<()> {
 
 fn generate_png_icons() -> eyre::Result<()> {
     println!("{RERUN_IF}/favicon.svg");
-    let out_dir = PathBuf::from("frontend/assets/generated/icons");
+    let out_dir = PathBuf::from("../frontend/assets/generated/icons");
     if !out_dir.exists() {
         fs::create_dir_all(&out_dir).wrap_err_with(|| format!("creating {}", out_dir.display()))?;
     }
 
-    let svg_data = include_bytes!("frontend/assets/favicon.svg");
+    let svg_data = include_bytes!("../frontend/assets/favicon.svg");
 
     let opt = usvg::Options {
-        resources_dir: Some(PathBuf::from("frontend/assets/")),
+        resources_dir: Some(PathBuf::from("../frontend/assets/")),
         ..Default::default()
     };
     let rtree =
@@ -166,8 +168,8 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
     let mut hashes = std::collections::HashSet::new();
 
     let served_html_files = [
-        "frontend/assets/generated/index.html",
-        "frontend/assets/generated/login.html",
+        "../frontend/assets/generated/index.html",
+        "../frontend/assets/generated/login.html",
     ];
     for file_path in served_html_files {
         let content = fs::read_to_string(file_path)?;
@@ -189,38 +191,38 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
 }
 
 fn process_templates() -> eyre::Result<()> {
-    let generated_dir = PathBuf::from("frontend/assets/generated");
+    let generated_dir = PathBuf::from("../frontend/assets/generated");
     fs::create_dir_all(&generated_dir)?;
 
     // Read generated app.js
-    let app_js = fs::read_to_string("frontend/assets/generated/app.js")?;
+    let app_js = fs::read_to_string("../frontend/assets/generated/app.js")?;
 
     // Process index.tmpl.html
-    let content = include_str!("frontend/assets/index.tmpl.html")
+    let content = include_str!("../frontend/assets/index.tmpl.html")
         .replace(
             "{ html_head }",
-            include_str!("frontend/assets/partials/html_head.tmpl.html"),
+            include_str!("../frontend/assets/partials/html_head.tmpl.html"),
         )
         .replace("{ title }", "ShutHost Coordinator")
         .replace(
             "{ architecture_documentation }",
-            include_str!("frontend/assets/partials/architecture.html"),
+            include_str!("../frontend/assets/partials/architecture.html"),
         )
         .replace(
             "{ client_install_requirements_gotchas }",
-            include_str!("frontend/assets/client_install_requirements_gotchas.md"),
+            include_str!("../frontend/assets/client_install_requirements_gotchas.md"),
         )
         .replace(
             "{ agent_install_requirements_gotchas }",
-            include_str!("frontend/assets/agent_install_requirements_gotchas.md"),
+            include_str!("../frontend/assets/agent_install_requirements_gotchas.md"),
         )
         .replace(
             "{ header }",
-            include_str!("frontend/assets/partials/header.tmpl.html"),
+            include_str!("../frontend/assets/partials/header.tmpl.html"),
         )
         .replace(
             "{ footer }",
-            include_str!("frontend/assets/partials/footer.tmpl.html"),
+            include_str!("../frontend/assets/partials/footer.tmpl.html"),
         )
         .replace("{ js }", &app_js)
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
@@ -228,19 +230,19 @@ fn process_templates() -> eyre::Result<()> {
     fs::write(generated_dir.join("index.html"), content)?;
 
     // Process login.tmpl.html
-    let login_content = include_str!("frontend/assets/login.tmpl.html")
+    let login_content = include_str!("../frontend/assets/login.tmpl.html")
         .replace(
             "{ html_head }",
-            include_str!("frontend/assets/partials/html_head.tmpl.html"),
+            include_str!("../frontend/assets/partials/html_head.tmpl.html"),
         )
         .replace("{ title }", "Login • ShutHost")
         .replace(
             "{ header }",
-            include_str!("frontend/assets/partials/header.tmpl.html"),
+            include_str!("../frontend/assets/partials/header.tmpl.html"),
         )
         .replace(
             "{ footer }",
-            include_str!("frontend/assets/partials/footer.tmpl.html"),
+            include_str!("../frontend/assets/partials/footer.tmpl.html"),
         )
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "")
@@ -249,7 +251,7 @@ fn process_templates() -> eyre::Result<()> {
     fs::write(generated_dir.join("login.html"), login_content)?;
 
     // Process manifest.tmpl.json
-    let manifest_content = include_str!("frontend/assets/manifest.tmpl.json")
+    let manifest_content = include_str!("../frontend/assets/manifest.tmpl.json")
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
     fs::write(generated_dir.join("manifest.json"), manifest_content)?;
 
