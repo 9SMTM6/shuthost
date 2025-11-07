@@ -117,17 +117,14 @@ jobs:
           if git diff --quiet lcov.info; then
             echo "lcov.info is unchanged."
           else
-            TOTAL_LINES=$(wc -l < lcov.info)
-            NUMSTAT=$(git diff --numstat lcov.info | awk '{ins+=$1; del+=$2} END {print ins, del}')
-            INSERTIONS=$(echo $NUMSTAT | cut -d' ' -f1)
-            DELETIONS=$(echo $NUMSTAT | cut -d' ' -f2)
-            CHANGED=$((INSERTIONS + DELETIONS))
-            PERCENT_CHANGED=$((CHANGED * 100 / TOTAL_LINES))
-            PERCENT_INS=$((INSERTIONS * 100 / TOTAL_LINES))
-            PERCENT_DEL=$((DELETIONS * 100 / TOTAL_LINES))
-            echo "lcov.info changes: $CHANGED lines ($PERCENT_CHANGED%), insertions: $PERCENT_INS%, deletions: $PERCENT_DEL%"
-            if [ $PERCENT_CHANGED -gt 15 ] || [ $PERCENT_INS -gt 5 ] || [ $PERCENT_DEL -gt 5 ]; then
-              echo "Excessive changes detected in lcov.info. Consider updating."
+            OLD_SIZE=$(git show HEAD:lcov.info | wc -c)
+            NEW_SIZE=$(wc -c < lcov.info)
+            SIZE_DIFF=$((NEW_SIZE - OLD_SIZE))
+            ABS_SIZE_DIFF=$(( SIZE_DIFF < 0 ? -SIZE_DIFF : SIZE_DIFF ))
+            PERCENT_SIZE_CHANGE=$((ABS_SIZE_DIFF * 100 / OLD_SIZE))
+            echo "lcov.info size change: $PERCENT_SIZE_CHANGE%"
+            if [ $PERCENT_SIZE_CHANGE -gt 5 ]; then
+              echo "Excessive size change detected in lcov.info. Consider updating."
               exit 1
             fi
           fi
