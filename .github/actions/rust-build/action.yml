@@ -15,12 +15,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Node.js
-      if: ${{ runner.os == 'Windows' }}
-      uses: actions/setup-node@v6
-      with:
-        node-version: 'latest'
-
     - name: Ensure latest stable rustc
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: rustup update stable
