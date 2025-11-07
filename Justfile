@@ -74,7 +74,7 @@ coverage:
     set -e
     export COVERAGE=1
     export SKIP_BUILD=1
-    source <(cargo llvm-cov show-env --export-prefix)
+    eval "$(cargo llvm-cov show-env --export-prefix)"
     cargo llvm-cov clean --workspace
     cargo build --workspace
     cd frontend && npx playwright test && cd ..

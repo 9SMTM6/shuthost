@@ -515,11 +515,6 @@ jobs:
           lfs: true
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
           set -eux
@@ -527,8 +522,8 @@ jobs:
           brew install --cask font-inter font-cascadia-code
           # Verify via fc-list; if fc-list isn't present this will fail which
           # is desired so the CI run fails when fonts are not available.
-          fc-list | grep -i inter >/dev/null 2>&1 || { echo "Inter font not found on macOS after install" >&2; exit 1; }
-          fc-list | grep -i cascadia >/dev/null 2>&1 || { echo "Cascadia Code not found on macOS after install" >&2; exit 1; }
+          fc-list | grep -i inter >/dev/null 2>&1 || { echo "Inter font not found after install" >&2; exit 1; }
+          fc-list | grep -i cascadia >/dev/null 2>&1 || { echo "Cascadia Code not found after install" >&2; exit 1; }
           sudo fc-cache -f -v
 
       - name: Install node deps, Playwright Chromium and system deps
