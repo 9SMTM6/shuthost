@@ -249,7 +249,7 @@ pub async fn start(
         #[cfg(unix)]
         {
             let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
-            drop(sigterm.recv().await);
+            let _ = sigterm.recv().await;
         }
         #[cfg(not(unix))]
         {
