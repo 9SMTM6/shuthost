@@ -355,6 +355,10 @@ jobs:
             fi
             echo "$clientConfigLine" | sudo tee -a "$config_path"
             echo "Added client to config: $clientConfigLine"
+            echo "Config file contents:"
+            sudo cat "$config_path"
+            # Wait for config reload
+            sleep 5
           else
             echo "Could not parse client config line from installer output"; exit 1
           fi
@@ -417,6 +421,10 @@ jobs:
           if ($clientConfigLine) {
             Add-Content -Path shuthost_coordinator.toml -Value $clientConfigLine
             Write-Host "Added client to config: $clientConfigLine"
+            Write-Host "Config file contents:"
+            Get-Content shuthost_coordinator.toml
+            # Wait for config reload
+            Start-Sleep 5
           } else {
             Write-Error "Could not parse client config line from installer output"; exit 1
           }
