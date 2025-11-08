@@ -1,26 +1,26 @@
 {
   "name": "Shuthost Coordinator",
   "short_name": "shuthost",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0f1720",
   "theme_color": "#0b6b3a",
   "description": "{ description }",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "./favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "./icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "./icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
