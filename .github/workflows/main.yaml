@@ -346,8 +346,7 @@ jobs:
           fi
 
           # Parse the client config line from installer output and add to config
-          addLineMatch=$(echo "$CLIENT_INSTALL_OUT" | grep -o 'Add the following line to your coordinator config:.*')
-          clientConfigLine=$(echo "$addLineMatch" | sed 's/Add the following line to your coordinator config:\s*//')
+          clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
             if [ "$RUNNER_OS" = "macOS" ]; then
               config_path="/Users/$(whoami)/.config/shuthost_coordinator.toml"
@@ -388,6 +387,11 @@ jobs:
           [server]
           port = 8080
           bind = "127.0.0.1"
+
+          [hosts]
+
+          [clients]
+
           "@ | Out-File -FilePath shuthost_coordinator.toml -Encoding UTF8
 
           # Start the coordinator service
@@ -409,9 +413,8 @@ jobs:
           }
 
           # Parse the client config line from installer output and add to config
-          $addLineMatch = $CLIENT_INSTALL_OUT | Select-String -Pattern 'Add the following line to your coordinator config:\s*(.+)'
-          if ($addLineMatch) {
-            $clientConfigLine = $addLineMatch.Matches.Groups[1].Value
+          $clientConfigLine = $CLIENT_INSTALL_OUT -split "`n" | Where-Object { $_ -match '^".*" = \{ shared_secret = ".*" \}$' } | Select-Object -First 1
+          if ($clientConfigLine) {
             Add-Content -Path shuthost_coordinator.toml -Value $clientConfigLine
             Write-Host "Added client to config: $clientConfigLine"
           } else {
