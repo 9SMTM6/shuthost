@@ -353,9 +353,16 @@ jobs:
             else
               config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
             fi
-            echo "$clientConfigLine" | sudo tee -a "$config_path"
+            echo "Config file before modification:"
+            sudo cat "$config_path"
+            # Add the host if not present
+            if ! sudo grep -q 'testhost' "$config_path"; then
+              sudo sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
+            fi
+            # Add the client under [clients]
+            sudo sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
             echo "Added client to config: $clientConfigLine"
-            echo "Config file contents:"
+            echo "Config file after modification:"
             sudo cat "$config_path"
             # Wait for config reload
             sleep 5
@@ -372,7 +379,7 @@ jobs:
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
           # We want to test that the request is sent correctly and succeeds
-          OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost 2>&1 || true")
+          OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost --async 2>&1 || true")
           echo "--- client output start ---"
           echo "$OUTPUT"
           echo "--- client output end ---"
@@ -393,6 +400,7 @@ jobs:
           bind = "127.0.0.1"
 
           [hosts]
+          testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }
 
           [clients]
 
@@ -419,9 +427,14 @@ jobs:
           # Parse the client config line from installer output and add to config
           $clientConfigLine = $CLIENT_INSTALL_OUT -split "`n" | Where-Object { $_ -match '^".*" = \{ shared_secret = ".*" \}$' } | Select-Object -First 1
           if ($clientConfigLine) {
-            Add-Content -Path shuthost_coordinator.toml -Value $clientConfigLine
+            Write-Host "Config file before modification:"
+            Get-Content shuthost_coordinator.toml
+            # Add the client under [clients]
+            $content = Get-Content shuthost_coordinator.toml
+            $newContent = $content -replace '(\[clients\])', "`$1`n$clientConfigLine"
+            $newContent | Set-Content shuthost_coordinator.toml
             Write-Host "Added client to config: $clientConfigLine"
-            Write-Host "Config file contents:"
+            Write-Host "Config file after modification:"
             Get-Content shuthost_coordinator.toml
             # Wait for config reload
             Start-Sleep 5
@@ -432,7 +445,7 @@ jobs:
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
           # We want to test that the request is sent correctly and succeeds
-          $OUTPUT = & powershell -Command "& '$CLIENT_PATH' take testhost 2>&1" 2>&1
+          $OUTPUT = & powershell -Command "& '$CLIENT_PATH' take testhost -Async 2>&1" 2>&1
           Write-Host "--- client output start ---"
           Write-Host $OUTPUT
           Write-Host "--- client output end ---"
