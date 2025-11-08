@@ -24,7 +24,7 @@ const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh")
 
 /// Arguments for the `install` subcommand of host_agent.
 #[derive(Debug, Parser)]
-pub struct InstallArgs {
+pub struct Args {
     #[arg(long = "port", default_value_t = DEFAULT_PORT)]
     pub port: u16,
 
@@ -72,7 +72,7 @@ impl std::fmt::Display for InitSystem {
 /// Performs host_agent installation based on provided arguments.
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
-pub fn install_host_agent(arguments: &InstallArgs) -> Result<(), String> {
+pub fn install_host_agent(arguments: &Args) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
         arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))

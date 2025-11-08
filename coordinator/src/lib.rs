@@ -36,8 +36,6 @@ use cli::{Cli, Command};
 #[cfg(not(coverage))]
 use demo::run_demo_service;
 use http::start;
-#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-use install::setup;
 
 static INIT_TRACING: Once = Once::new();
 static INIT_RUSTLS: Once = Once::new();
@@ -57,7 +55,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
         #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
         Command::Install(args) => {
-            setup(args)?;
+            install::setup(args)?;
             Ok(())
         }
         Command::ControlService(args) => {

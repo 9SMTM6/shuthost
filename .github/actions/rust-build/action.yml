@@ -31,13 +31,6 @@ runs:
         sudo apt-get update
         sudo apt-get install -y musl-tools
 
-    - name: Debug npm
-      if: ${{ runner.os == 'Windows' }}
-      shell: pwsh
-      run: |
-        echo "PATH: $env:PATH"
-        npm --version
-
     - name: Build binary with target
       if: ${{ inputs.target != '' }}
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
