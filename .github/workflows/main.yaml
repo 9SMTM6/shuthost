@@ -345,6 +345,21 @@ jobs:
             echo "Client path not found in installer output"; exit 1
           fi
 
+          # Parse the client config line from installer output and add to config
+          addLineMatch=$(echo "$CLIENT_INSTALL_OUT" | grep -o 'Add the following line to your coordinator config:.*')
+          clientConfigLine=$(echo "$addLineMatch" | sed 's/Add the following line to your coordinator config:\s*//')
+          if [ -n "$clientConfigLine" ]; then
+            if [ "$RUNNER_OS" = "macOS" ]; then
+              config_path="/Users/$(whoami)/.config/shuthost_coordinator.toml"
+            else
+              config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
+            fi
+            echo "$clientConfigLine" | sudo tee -a "$config_path"
+            echo "Added client to config: $clientConfigLine"
+          else
+            echo "Could not parse client config line from installer output"; exit 1
+          fi
+
           # Wait for the client binary to appear/be executable (timeout 20s)
           for i in $(seq 1 20); do
             # execute the test inside the same environment/shell used to run the installer
@@ -352,8 +367,8 @@ jobs:
           done
 
           # Run the client and capture output.
-          # We expect this to fail, since the client never was registered.
-          # We only want to test for the request sent off to the coordinator in this test
+          # The client is now registered, so the request should succeed.
+          # We want to test that the request is sent correctly and succeeds
           OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost 2>&1 || true")
           echo "--- client output start ---"
           echo "$OUTPUT"
@@ -361,6 +376,9 @@ jobs:
 
           # Check for the curl request: look for 'curl' plus both header names anywhere in the output
           echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
+
+          # Ensure the request succeeded (no error messages)
+          echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
 
       - name: Windows - Start service in background && Install and run client
         if: ${{ matrix.platform == 'windows' }}
@@ -370,12 +388,6 @@ jobs:
           [server]
           port = 8080
           bind = "127.0.0.1"
-
-          [hosts]
-          testhost = { ip = "127.0.0.1", mac = "00:00:00:00:00:00", port = 9000, shared_secret = "testsecret" }
-
-          [clients]
-          testclient = { shared_secret = "testclientsecret" }
           "@ | Out-File -FilePath shuthost_coordinator.toml -Encoding UTF8
 
           # Start the coordinator service
@@ -396,9 +408,19 @@ jobs:
             Write-Error "Client path not found in installer output"; exit 1
           }
 
+          # Parse the client config line from installer output and add to config
+          $addLineMatch = $CLIENT_INSTALL_OUT | Select-String -Pattern 'Add the following line to your coordinator config:\s*(.+)'
+          if ($addLineMatch) {
+            $clientConfigLine = $addLineMatch.Matches.Groups[1].Value
+            Add-Content -Path shuthost_coordinator.toml -Value $clientConfigLine
+            Write-Host "Added client to config: $clientConfigLine"
+          } else {
+            Write-Error "Could not parse client config line from installer output"; exit 1
+          }
+
           # Run the client and capture output.
-          # We expect this to fail, since the client never was registered.
-          # We only want to test for the request sent off to the coordinator in this test
+          # The client is now registered, so the request should succeed.
+          # We want to test that the request is sent correctly and succeeds
           $OUTPUT = & powershell -Command "& '$CLIENT_PATH' take testhost 2>&1" 2>&1
           Write-Host "--- client output start ---"
           Write-Host $OUTPUT
@@ -407,6 +429,11 @@ jobs:
           # Check for the request: look for both header names anywhere in the output
           if ($OUTPUT -notmatch "X-Client-ID" -or $OUTPUT -notmatch "X-Request") {
             Write-Error "Client request format not found!"; exit 1
+          }
+
+          # Ensure the request succeeded (no error messages)
+          if ($OUTPUT -match "failed|error") {
+            Write-Error "Client request failed!"; exit 1
           }
 
   container-build:
