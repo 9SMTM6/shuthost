@@ -314,30 +314,6 @@ jobs:
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
         if: ${{ matrix.platform != 'windows' }}
 
-      - name: Start controller service (Windows)
-        if: ${{ matrix.platform == 'windows' }}
-        run: |
-          # Create a minimal config file for testing
-          @"
-          [server]
-          port = 8080
-          bind = "127.0.0.1"
-
-          [hosts]
-          testhost = { ip = "127.0.0.1", mac = "00:00:00:00:00:00", port = 9000, shared_secret = "testsecret" }
-
-          [clients]
-          testclient = { shared_secret = "testclientsecret" }
-          "@ | Out-File -FilePath shuthost_coordinator.toml -Encoding UTF8
-
-          # Start the coordinator service
-          ./shuthost_coordinator.exe control-service --config shuthost_coordinator.toml &
-          # Wait for coordinator to be ready (timeout 30s)
-          for ($i = 1; $i -le 30; $i++) {
-            try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null; break } catch { Start-Sleep 1 }
-          }
-          try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null } catch { Write-Error "Coordinator service is not running"; exit 1 }
-
       - name: Prepare macOS
         if: ${{ matrix.platform == 'macos' }}
         run: |
@@ -386,9 +362,30 @@ jobs:
           # Check for the curl request: look for 'curl' plus both header names anywhere in the output
           echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
 
-      - name: Install and run client (Windows)
+      - name: Windows - Start service in background && Install and run client
         if: ${{ matrix.platform == 'windows' }}
         run: |
+          # Create a minimal config file for testing
+          @"
+          [server]
+          port = 8080
+          bind = "127.0.0.1"
+
+          [hosts]
+          testhost = { ip = "127.0.0.1", mac = "00:00:00:00:00:00", port = 9000, shared_secret = "testsecret" }
+
+          [clients]
+          testclient = { shared_secret = "testclientsecret" }
+          "@ | Out-File -FilePath shuthost_coordinator.toml -Encoding UTF8
+
+          # Start the coordinator service
+          ./shuthost_coordinator.exe control-service --config shuthost_coordinator.toml &
+          # Wait for coordinator to be ready (timeout 30s)
+          for ($i = 1; $i -le 30; $i++) {
+            try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null; break } catch { Start-Sleep 1 }
+          }
+          try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null } catch { Write-Error "Coordinator service is not running"; exit 1 }
+
           # Run installer and capture output
           $CLIENT_INSTALL_OUT = & powershell -Command "Invoke-WebRequest -Uri 'http://localhost:8080/download/client_installer.ps1' -UseBasicParsing -OutFile 'client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 http://localhost:8080 2>&1" 2>&1
           Write-Host "--- installer output start ---"
