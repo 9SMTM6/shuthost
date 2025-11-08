@@ -378,7 +378,7 @@ jobs:
           # Run the client and capture output.
           # We expect this to fail, since the client never was registered.
           # We only want to test for the request sent off to the coordinator in this test
-          OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost http://localhost:8080 2>&1 || true")
+          OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost 2>&1 || true")
           echo "--- client output start ---"
           echo "$OUTPUT"
           echo "--- client output end ---"
@@ -390,7 +390,7 @@ jobs:
         if: ${{ matrix.platform == 'windows' }}
         run: |
           # Run installer and capture output
-          $CLIENT_INSTALL_OUT = & powershell -Command "Invoke-WebRequest -Uri 'http://localhost:8080/download/client_installer.ps1' -OutFile 'installer.ps1' -UseBasicParsing; & powershell -ExecutionPolicy Bypass -File .\\installer.ps1 'http://localhost:8080' 2>&1" 2>&1
+          $CLIENT_INSTALL_OUT = & powershell -Command "Invoke-WebRequest -Uri 'http://localhost:8080/download/client_installer.ps1' -UseBasicParsing -OutFile 'client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 http://localhost:8080 2>&1" 2>&1
           Write-Host "--- installer output start ---"
           Write-Host $CLIENT_INSTALL_OUT
           $CLIENT_PATH = [regex]::Match($CLIENT_INSTALL_OUT, '([A-Za-z]:\\[^ ]*shuthost_client_[^ ]*\.ps1)').Groups[1].Value
@@ -399,16 +399,10 @@ jobs:
             Write-Error "Client path not found in installer output"; exit 1
           }
 
-          # Wait for the client script to appear (timeout 20s)
-          for ($i = 1; $i -le 20; $i++) {
-            if (Test-Path $CLIENT_PATH) { break }
-            Start-Sleep 1
-          }
-
           # Run the client and capture output.
           # We expect this to fail, since the client never was registered.
           # We only want to test for the request sent off to the coordinator in this test
-          $OUTPUT = & powershell -Command "& '$CLIENT_PATH' take testhost http://localhost:8080 2>&1" 2>&1
+          $OUTPUT = & powershell -Command "& '$CLIENT_PATH' take testhost 2>&1" 2>&1
           Write-Host "--- client output start ---"
           Write-Host $OUTPUT
           Write-Host "--- client output end ---"
