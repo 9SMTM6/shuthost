@@ -34,6 +34,13 @@ test.describe('main page(s)', () => {
         await page.waitForSelector('#clients-tab', { state: 'visible' });
         await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`);
     });
+
+    test('platform support', async ({ page }) => {
+        await page.goto('#architecture');
+        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('#platform-support-title', { state: 'visible' });
+        await expect(page.locator('section[aria-labelledby="platform-support-title"]')).toHaveScreenshot(`platform_support.png`);
+    });
 });
 
 test.describe('token login', () => {

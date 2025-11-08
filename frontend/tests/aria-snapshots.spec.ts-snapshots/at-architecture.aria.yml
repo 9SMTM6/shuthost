@@ -1,5 +1,35 @@
 - main:
   - region:
+    - region "🖥️ Platform Support":
+      - heading "🖥️ Platform Support" [level=2]
+      - table:
+        - rowgroup:
+          - row "Component Linux macOS Windows":
+            - cell "Component"
+            - cell "Linux"
+            - cell "macOS"
+            - cell "Windows"
+        - rowgroup:
+          - row "Web GUI ✅ (any modern browser) ✅ (any modern browser) ✅ (any modern browser)":
+            - cell "Web GUI"
+            - cell "✅ (any modern browser)"
+            - cell "✅ (any modern browser)"
+            - cell "✅ (any modern browser)"
+          - row "Coordinator ✅ Binary ✅ Docker ✅ Binary ❌ Docker ✅ Linux VM (bridged networking) ❌ Binary ❌ Docker ❌ WSL":
+            - cell "Coordinator"
+            - cell "✅ Binary ✅ Docker"
+            - cell "✅ Binary ❌ Docker ✅ Linux VM (bridged networking)"
+            - cell "❌ Binary ❌ Docker ❌ WSL"
+          - row "Host Agent ✅ Binary ✅ Binary ❌ Binary ❌ WSL":
+            - cell "Host Agent"
+            - cell "✅ Binary"
+            - cell "✅ Binary"
+            - cell "❌ Binary ❌ WSL"
+          - row "Client ✅ Shell ✅ Docker ✅ Shell ✅ Docker ✅ PowerShell ✅ Docker ✅ WSL (Shell)":
+            - cell "Client"
+            - cell "✅ Shell ✅ Docker"
+            - cell "✅ Shell ✅ Docker"
+            - cell "✅ PowerShell ✅ Docker ✅ WSL (Shell)"
     - article:
       - heading "Architecture Documentation" [level=2]
       - paragraph: "ShutHost provides two different architectural views depending on your use case:"
