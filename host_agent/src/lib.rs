@@ -12,8 +12,6 @@ use std::env;
 
 use clap::{Parser, Subcommand};
 
-#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-use install::{InstallArgs, install_host_agent};
 use server::ServiceOptions;
 
 /// Top-level CLI parser for host_agent.
@@ -38,7 +36,7 @@ pub enum Command {
 
     #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Install the host_agent on the system.
-    Install(InstallArgs),
+    Install(install::Args),
 
     #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Test Wake-on-LAN packet reachability on a given port.
@@ -52,7 +50,7 @@ pub enum Command {
 pub fn inner_main(invocation: Cli) {
     match invocation.command {
         #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-        Command::Install(args) => match install_host_agent(&args) {
+        Command::Install(args) => match install::install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),
         },

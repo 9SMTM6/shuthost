@@ -7,9 +7,6 @@ use std::env;
 
 use clap::{Parser, Subcommand};
 
-#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-use crate::install::Args;
-
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
@@ -28,7 +25,7 @@ pub enum Command {
 
     #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Install the coordinator service to start on boot.
-    Install(Args),
+    Install(crate::install::Args),
 
     #[cfg(not(coverage))]
     /// Serve only static assets for demo mode (no backend, no state).

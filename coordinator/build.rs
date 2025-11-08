@@ -7,6 +7,12 @@ use resvg::usvg;
 use sha2::{Digest, Sha256};
 use tiny_skia::Pixmap;
 
+macro_rules! include_frontend_asset {
+    ($path:expr) => {
+        include_str!(concat!("../frontend/assets/", $path))
+    };
+}
+
 const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 
 const FRONTEND_DIR: &str = "../frontend";
@@ -198,31 +204,31 @@ fn process_templates() -> eyre::Result<()> {
     let app_js = fs::read_to_string("../frontend/assets/generated/app.js")?;
 
     // Process index.tmpl.html
-    let content = include_str!("../frontend/assets/index.tmpl.html")
+    let content = include_frontend_asset!("index.tmpl.html")
         .replace(
             "{ html_head }",
-            include_str!("../frontend/assets/partials/html_head.tmpl.html"),
+            include_frontend_asset!("partials/html_head.tmpl.html"),
         )
         .replace("{ title }", "ShutHost Coordinator")
         .replace(
             "{ architecture_documentation }",
-            include_str!("../frontend/assets/partials/architecture.html"),
+            include_frontend_asset!("partials/architecture.html"),
         )
         .replace(
             "{ client_install_requirements_gotchas }",
-            include_str!("../frontend/assets/client_install_requirements_gotchas.md"),
+            include_frontend_asset!("client_install_requirements_gotchas.md"),
         )
         .replace(
             "{ agent_install_requirements_gotchas }",
-            include_str!("../frontend/assets/agent_install_requirements_gotchas.md"),
+            include_frontend_asset!("agent_install_requirements_gotchas.md"),
         )
         .replace(
             "{ header }",
-            include_str!("../frontend/assets/partials/header.tmpl.html"),
+            include_frontend_asset!("partials/header.tmpl.html"),
         )
         .replace(
             "{ footer }",
-            include_str!("../frontend/assets/partials/footer.tmpl.html"),
+            include_frontend_asset!("partials/footer.tmpl.html"),
         )
         .replace("{ js }", &app_js)
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
@@ -230,19 +236,19 @@ fn process_templates() -> eyre::Result<()> {
     fs::write(generated_dir.join("index.html"), content)?;
 
     // Process login.tmpl.html
-    let login_content = include_str!("../frontend/assets/login.tmpl.html")
+    let login_content = include_frontend_asset!("login.tmpl.html")
         .replace(
             "{ html_head }",
-            include_str!("../frontend/assets/partials/html_head.tmpl.html"),
+            include_frontend_asset!("partials/html_head.tmpl.html"),
         )
         .replace("{ title }", "Login • ShutHost")
         .replace(
             "{ header }",
-            include_str!("../frontend/assets/partials/header.tmpl.html"),
+            include_frontend_asset!("partials/header.tmpl.html"),
         )
         .replace(
             "{ footer }",
-            include_str!("../frontend/assets/partials/footer.tmpl.html"),
+            include_frontend_asset!("partials/footer.tmpl.html"),
         )
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "")
@@ -251,7 +257,7 @@ fn process_templates() -> eyre::Result<()> {
     fs::write(generated_dir.join("login.html"), login_content)?;
 
     // Process manifest.tmpl.json
-    let manifest_content = include_str!("../frontend/assets/manifest.tmpl.json")
+    let manifest_content = include_frontend_asset!("manifest.tmpl.json")
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
     fs::write(generated_dir.join("manifest.json"), manifest_content)?;
 
