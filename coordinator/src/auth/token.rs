@@ -8,14 +8,14 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved, cookies::create_token_session_cookie,
-        routes::TokenSessionClaims,
+        LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved, cookies::TokenSessionClaims,
+        cookies::create_token_session_cookie,
     },
     http::AppState,
 };
 
 #[derive(Deserialize)]
-pub(super) struct LoginForm {
+pub struct LoginForm {
     token: String,
 }
 
@@ -24,6 +24,7 @@ pub struct LoginQuery {
     pub error: Option<String>,
 }
 
+#[axum::debug_handler]
 pub async fn login_post(
     State(AppState {
         auth, tls_enabled, ..

@@ -9,12 +9,12 @@ use tracing::info;
 
 use crate::{
     http::AppState,
-    routes::m2m::{broadcast_lease_update, handle_host_state},
+    http::m2m::{broadcast_lease_update, handle_host_state},
 };
 
 pub use super::m2m::{LeaseMap, LeaseSource};
 
-pub fn api_router() -> Router<AppState> {
+pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route(
@@ -134,6 +134,7 @@ async fn handle_reset_client_leases(
 }
 
 /// Returns the online status of all hosts as a JSON object.
+#[axum::debug_handler]
 async fn get_hosts_status(State(state): State<AppState>) -> impl IntoResponse {
     let hoststatus = state.hoststatus_rx.borrow().clone();
     axum::Json((*hoststatus).clone())

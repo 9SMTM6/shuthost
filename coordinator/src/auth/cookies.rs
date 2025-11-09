@@ -3,8 +3,9 @@
 use axum_extra::extract::{SignedCookieJar, cookie::Cookie};
 use cookie::{SameSite, time::Duration as CookieDuration};
 use rand::{Rng as _, distr::Alphanumeric};
-
-use crate::auth::{OIDCSessionClaims, routes::TokenSessionClaims};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Cookie name constants for authentication
 pub const COOKIE_OIDC_SESSION: &str = "shuthost_oidc_session";
@@ -13,6 +14,86 @@ pub const COOKIE_STATE: &str = "shuthost_oidc_state";
 pub const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 pub const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
 pub const COOKIE_RETURN_TO: &str = "shuthost_return_to";
+
+/// Session claims for token authentication.
+#[derive(Serialize, Deserialize)]
+pub struct TokenSessionClaims {
+    pub iat: u64,           // issued at
+    pub exp: u64,           // expiry
+    pub token_hash: String, // hash of the token
+}
+
+impl TokenSessionClaims {
+    pub fn new(token: &str) -> Self {
+        let now = now_ts();
+        let exp_duration: i64 = 60 * 60 * 8; // 8 hours expiry
+        Self {
+            iat: now,
+            exp: now + exp_duration as u64,
+            token_hash: {
+                let mut hasher = Sha256::new();
+                hasher.update(token.as_bytes());
+                format!("{:x}", hasher.finalize())
+            },
+        }
+    }
+
+    /// Check if the session has expired.
+    pub fn is_expired(&self) -> bool {
+        now_ts() >= self.exp
+    }
+    /// Check if the token matches (by hash).
+    pub fn matches_token(&self, token: &str) -> bool {
+        let mut hasher = Sha256::new();
+        hasher.update(token.as_bytes());
+        let hash = format!("{:x}", hasher.finalize());
+        self.token_hash == hash
+    }
+}
+
+/// Session claims for OIDC authentication.
+/// Contains some claims from the [OIDC Id Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken)
+#[derive(Serialize, Deserialize)]
+pub struct OIDCSessionClaims {
+    /// The sub claim, a unique user identifier
+    pub sub: String,
+    /// The expiry as provided by the IdP, after which shuthost should reject the session. Unix second timestamp
+    pub exp: u64,
+}
+
+impl OIDCSessionClaims {
+    /// Check if the session has expired.
+    pub fn is_expired(&self) -> bool {
+        now_ts() >= self.exp
+    }
+}
+
+/// Get the current timestamp in seconds since UNIX epoch.
+pub fn now_ts() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
+
+/// Invalidate session cookies for logout.
+pub fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
+    // Log what cookies we saw when logout was invoked so we can ensure the path is hit
+    let had_session_oidc = jar.get(COOKIE_OIDC_SESSION).is_some();
+    let had_session_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
+    tracing::info!(
+        had_session_oidc,
+        had_session_token,
+        "logout: received request"
+    );
+
+    let jar = jar
+        .remove(Cookie::build(COOKIE_TOKEN_SESSION).path("/").build())
+        .remove(Cookie::build(COOKIE_OIDC_SESSION).path("/").build());
+
+    tracing::info!("logout: removed session cookies");
+    jar
+}
 
 /// Generate a random alphanumeric token of 48 characters.
 pub fn generate_token() -> String {
@@ -68,14 +149,12 @@ pub fn create_oidc_session_cookie(
     .build()
 }
 
-pub fn get_oidc_session_from_cookie(signed: &SignedCookieJar) -> Option<OIDCSessionClaims> {
-    signed
-        .get(COOKIE_OIDC_SESSION)
+pub fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDCSessionClaims> {
+    jar.get(COOKIE_OIDC_SESSION)
         .and_then(|session| serde_json::from_str::<OIDCSessionClaims>(session.value()).ok())
 }
 
-pub fn get_token_session_from_cookie(signed: &SignedCookieJar) -> Option<TokenSessionClaims> {
-    signed
-        .get(COOKIE_TOKEN_SESSION)
+pub fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<TokenSessionClaims> {
+    jar.get(COOKIE_TOKEN_SESSION)
         .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
 }

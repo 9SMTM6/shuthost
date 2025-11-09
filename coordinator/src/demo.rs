@@ -19,9 +19,10 @@ use crate::{
     config::{AuthConfig, ControllerConfig},
     http::{
         AppState,
-        assets::{UiMode, asset_routes, render_ui_html},
+        assets::{UiMode, render_ui_html},
+        download,
+        m2m::{self, LeaseMap},
     },
-    routes::{LeaseMap, get_download_router},
 };
 
 /// Run the demo service on the specified port and bind address.
@@ -65,8 +66,8 @@ pub async fn run_demo_service(port: u16, bind: &str) {
 
     let app = Router::new()
         .route("/", axum::routing::get(serve_demo_ui))
-        .merge(asset_routes())
-        .nest("/download", get_download_router())
+        .merge(m2m::routes())
+        .nest("/download", download::routes())
         .with_state(app_state);
 
     let listener = TcpListener::bind(&addr)

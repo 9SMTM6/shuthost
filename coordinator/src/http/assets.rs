@@ -10,8 +10,8 @@ use axum::{
 };
 
 use crate::{
-    auth::{EXPECTED_EXCEPTIONS_VERSION, Resolved},
-    http::AppState,
+    auth::Resolved,
+    http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
 };
 
 #[macro_export]
@@ -26,7 +26,7 @@ macro_rules! include_utf8_asset {
 }
 
 /// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.
-pub fn asset_routes() -> Router<AppState> {
+pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/manifest.json", get(serve_manifest))
         .route("/styles.css", get(serve_styles))
@@ -48,6 +48,7 @@ pub fn asset_routes() -> Router<AppState> {
 /// Macro to define a static SVG download handler using include_bytes!
 macro_rules! static_svg_download_handler {
     (fn $name:ident, file=$file:expr) => {
+        #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             const SVG: &'static str = include_utf8_asset!($file);
             Response::builder()
@@ -62,6 +63,7 @@ macro_rules! static_svg_download_handler {
 /// Macro to define a static png download handler.
 macro_rules! static_png_download_handler {
     (fn $name:ident, file=$file:expr) => {
+        #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             const DATA: &[u8] = include_bytes!(concat!(
                 env!("WORKSPACE_ROOT"),
@@ -121,6 +123,7 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
 /// # Panics
 ///
 /// Panics if the response builder fails to build the response.
+#[axum::debug_handler]
 pub async fn serve_ui(
     State(AppState {
         config_path, auth, ..
@@ -135,7 +138,7 @@ pub async fn serve_ui(
         &A::Token { .. }
         | &A::Oidc { .. }
         | &A::External {
-            exceptions_version: EXPECTED_EXCEPTIONS_VERSION,
+            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
         } => "",
         &A::Disabled | &A::External { .. } => {
             include_utf8_asset!("partials/external_auth_config.tmpl.html")
@@ -162,6 +165,7 @@ pub async fn serve_ui(
 /// # Panics
 ///
 /// Panics if the response builder fails to build the response.
+#[axum::debug_handler]
 pub async fn serve_manifest() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
@@ -174,6 +178,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 /// # Panics
 ///
 /// Panics if the response builder fails to build the response.
+#[axum::debug_handler]
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")

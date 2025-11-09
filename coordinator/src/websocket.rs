@@ -36,7 +36,10 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
     false
 }
 
-use crate::{config::ControllerConfig, http::AppState, routes::LeaseSource};
+use crate::{
+    config::ControllerConfig,
+    http::{AppState, m2m::LeaseSource},
+};
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]
@@ -63,6 +66,7 @@ pub enum WsMessage {
 }
 
 /// Gets called for every new web client and spins up an event loop
+#[axum::debug_handler]
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     headers: HeaderMap,

@@ -27,13 +27,60 @@ use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::T
 use tracing::{info, warn};
 
 use crate::{
-    auth::{self, public_routes},
+    auth::{self},
     config::{ControllerConfig, DbConfig, TlsConfig, load_coordinator_config},
     db::{self, DbPool},
-    http::{assets::serve_ui, polling},
-    routes::{LeaseMap, api_router},
+    http::{
+        api,
+        assets::{self, serve_ui},
+        download, login,
+        m2m::{self, LeaseMap},
+        polling,
+    },
     websocket::{WsMessage, ws_handler},
 };
+
+/// Version number for validating external authentication exceptions.
+///
+/// This constant ensures compatibility with external authentication systems by checking
+/// the exceptions version against expected values. It is used in authentication resolution
+/// logic to validate external auth modes.
+///
+/// It is interdependent with the [`create_app_router`] function in this module, as the public routes
+/// defined there include authentication endpoints (e.g., login, logout, OIDC callbacks) whose behavior and
+/// accessibility may depend on this version when handling external authentication modes.
+/// When routes get added to public routes, this needs to be bumped.
+pub const EXPECTED_AUTH_EXCEPTIONS_VERSION: u32 = 1;
+
+/// Creates the main application router by merging public and private routes.
+///
+/// Public routes include authentication endpoints (login, logout, OIDC), static assets,
+/// downloads, and M2M APIs that are accessible without authentication.
+/// Private routes include the main UI, API endpoints, and WebSocket handler, protected by auth middleware.
+///
+/// When routes get added to public routes, [`EXPECTED_AUTH_EXCEPTIONS_VERSION`] needs to be bumped.
+fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
+    let public = Router::new()
+        .merge(login::routes())
+        // PWA & static assets bundled via asset_routes
+        .merge(assets::routes())
+        // Bypass routes
+        .nest("/download", download::routes())
+        .nest("/api/m2m", m2m::routes());
+
+    let private = Router::new()
+        .nest("/api", api::routes())
+        .route("/", get(serve_ui))
+        .route("/ws", any(ws_handler))
+        .route_layer(axum::middleware::from_fn_with_state(
+            auth::LayerState {
+                auth: auth_runtime.clone(),
+            },
+            auth::require,
+        ));
+
+    public.merge(private)
+}
 
 /// Command-line arguments for the HTTP service subcommand.
 #[derive(Debug, Parser)]
@@ -196,21 +243,6 @@ pub async fn start(
         db_pool,
     };
 
-    // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
-    let public = public_routes();
-
-    // Private app routes protected by auth middleware
-    let private = Router::new()
-        .nest("/api", api_router())
-        .route("/", get(serve_ui))
-        .route("/ws", any(ws_handler))
-        .route_layer(axum::middleware::from_fn_with_state(
-            crate::auth::LayerState {
-                auth: auth_runtime.clone(),
-            },
-            auth::require,
-        ));
-
     // TODO: figure out rate limiting
     let middleware_stack = ServiceBuilder::new()
         .sensitive_headers([AUTHORIZATION, COOKIE])
@@ -231,8 +263,9 @@ pub async fn start(
         .layer(TimeoutLayer::new(Duration::from_secs(30)))
         .layer(axum::middleware::from_fn(secure_headers_middleware));
 
-    let app = public
-        .merge(private)
+    // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
+    // Private app routes protected by auth middleware
+    let app = create_app_router(&auth_runtime)
         .with_state(app_state)
         .fallback(routing::any(|req: Request<Body>| async move {
             tracing::warn!(

@@ -10,6 +10,7 @@ use crate::http::AppState;
 /// Macro to define a download handler function for a static plain text document
 macro_rules! static_text_download_handler {
     (fn $name:ident, file=$file:expr) => {
+        #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             const DOC: &[u8] = include_bytes!($file);
             Response::builder()
@@ -25,6 +26,7 @@ macro_rules! static_text_download_handler {
 // Generate all agent binary handlers
 macro_rules! host_agent_handler {
     (fn $name:ident, target=$host_agent_target:expr) => {
+        #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             const AGENT_BINARY: &'static [u8] = include_bytes!(concat!(
                 "../../../target/",
@@ -43,6 +45,7 @@ macro_rules! host_agent_handler {
         #[cfg(feature = $feature)]
         host_agent_handler!(fn $name, target=$host_agent_target);
         #[cfg(not(feature = $feature))]
+        #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             Response::builder()
                 .status(StatusCode::NOT_FOUND)
@@ -83,13 +86,13 @@ host_agent_handler!(
     feature = "include_linux_agents"
 );
 
-static_text_download_handler!(fn download_host_agent_installer, file = "host_agent_installer.sh");
-static_text_download_handler!(fn download_client_installer, file = "client_installer.sh");
-static_text_download_handler!(fn download_client_installer_ps1, file = "client_installer.ps1");
+static_text_download_handler!(fn download_host_agent_installer, file = "m2m/host_agent_installer.sh");
+static_text_download_handler!(fn download_client_installer, file = "m2m/client_installer.sh");
+static_text_download_handler!(fn download_client_installer_ps1, file = "m2m/client_installer.ps1");
 static_text_download_handler!(fn download_client_script, file = "m2m/shuthost_client.tmpl.sh");
 static_text_download_handler!(fn download_client_script_ps1, file = "m2m/shuthost_client.tmpl.ps1");
 
-pub fn get_download_router() -> Router<AppState> {
+pub fn routes() -> Router<AppState> {
     Router::new()
         .route(
             "/host_agent_installer.sh",
