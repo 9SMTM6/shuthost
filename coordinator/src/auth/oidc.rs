@@ -63,7 +63,7 @@ type OidcClientReady = CoreClient<
     EndpointMaybeSet, // HasUserInfoUrl (from discovery, optional)
 >;
 
-async fn build_oidc_client(
+async fn build_client(
     issuer: &str,
     client_id: &str,
     client_secret: &str,
@@ -119,7 +119,8 @@ async fn build_oidc_client(
 }
 
 /// Initiate OIDC login.
-pub async fn oidc_login(
+#[axum::debug_handler]
+pub async fn login(
     State(AppState {
         auth, tls_enabled, ..
     }): State<AppState>,
@@ -158,8 +159,7 @@ pub async fn oidc_login(
         return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
             .into_response();
     }
-    let (client, _http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await
-    {
+    let (client, _http) = match build_client(issuer, client_id, client_secret, &headers).await {
         Ok(ok) => ok,
         Err(sc) => return sc.into_response(),
     };
@@ -217,7 +217,7 @@ pub async fn oidc_login(
 
 #[derive(Deserialize)]
 /// Query parameters for OIDC callback deserialization.
-pub(super) struct OidcCallbackQueryParams {
+pub struct OidcCallbackQueryParams {
     code: Option<String>,
     state: Option<String>,
     error: Option<String>,
@@ -370,7 +370,7 @@ fn verify_id_token_and_build_session(
 async fn process_token_and_build_session(
     client: &OidcClientReady,
     http: &reqwest::Client,
-    signed: &SignedCookieJar,
+    jar: &SignedCookieJar,
     code: Option<String>,
 ) -> Result<OIDCSessionClaims, OidcFlowError> {
     let code = extract_authorization_code(code)?;
@@ -378,19 +378,20 @@ async fn process_token_and_build_session(
         code_len = code.len(),
         "Authorization code received (length)"
     );
-    let pkce_verifier = pkce_from_cookie(signed);
+    let pkce_verifier = pkce_from_cookie(jar);
     tracing::debug!(
         pkce_present = pkce_verifier.is_some(),
         "PKCE verifier present in cookie"
     );
     let token_response = exchange_code_for_token(client, http, code, pkce_verifier).await?;
     let id_token = id_token_from_response(&token_response)?;
-    let nonce_cookie = nonce_from_cookie(signed);
+    let nonce_cookie = nonce_from_cookie(jar);
     verify_id_token_and_build_session(client, &id_token, nonce_cookie.as_ref())
 }
 
 /// OIDC callback handler
-pub async fn oidc_callback(
+#[axum::debug_handler]
+pub async fn callback(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
@@ -419,7 +420,7 @@ pub async fn oidc_callback(
         return resp;
     }
 
-    let (client, http) = match build_oidc_client(issuer, client_id, client_secret, &headers).await {
+    let (client, http) = match build_client(issuer, client_id, client_secret, &headers).await {
         Ok(ok) => ok,
         Err(sc) => return sc.into_response(),
     };

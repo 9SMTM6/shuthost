@@ -18,7 +18,6 @@ pub mod http;
 // Its only exercised in CI
 #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
 pub mod install;
-pub mod routes;
 pub mod websocket;
 pub mod wol;
 

@@ -4,11 +4,10 @@
 //! - OIDC mode: standard authorization code flow with PKCE. Maintains a signed
 //!   session cookie once the user is authenticated.
 
-mod cookies;
-mod middleware;
-mod oidc;
-mod routes;
-mod token;
+pub mod cookies;
+pub mod middleware;
+pub mod oidc;
+pub mod token;
 
 use std::sync::Arc;
 
@@ -25,8 +24,8 @@ use crate::{
 };
 
 pub use cookies::{COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE};
+pub use cookies::{OIDCSessionClaims, TokenSessionClaims};
 pub use middleware::{request_is_secure, require};
-pub use routes::{EXPECTED_EXCEPTIONS_VERSION, OIDCSessionClaims, public_routes};
 
 // Centralized login error keys used as query values on /login?error=<key>
 pub const LOGIN_ERROR_INSECURE: &str = "insecure";

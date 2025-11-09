@@ -20,13 +20,13 @@ use serde_json::json;
 use tracing::info;
 
 use crate::http::AppState;
-use crate::routes::api::LeaseAction;
+use crate::http::api::LeaseAction;
 
 // Re-export public API
 pub use host_control::handle_host_state;
 pub use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
-pub fn m2m_router() -> axum::Router<AppState> {
+pub fn routes() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/lease/{hostname}/{action}", post(handle_m2m_lease_action))
         .route("/test_wol", post(test_wol))
@@ -38,6 +38,7 @@ pub struct WolTestQuery {
 }
 
 #[cfg(not(coverage))]
+#[axum::debug_handler]
 async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
     match crate::wol::test_wol_reachability(params.port) {
         Ok(broadcast) => Ok(Json(json!({
@@ -49,6 +50,7 @@ async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
 }
 
 #[cfg(coverage)]
+#[axum::debug_handler]
 async fn test_wol() -> impl IntoResponse {
     (
         StatusCode::INTERNAL_SERVER_ERROR,

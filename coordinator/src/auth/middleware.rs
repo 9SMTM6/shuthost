@@ -24,7 +24,7 @@ pub async fn require(
     next: Next,
 ) -> Response {
     let headers = req.headers();
-    let signed = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
+    let jar = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
     match auth.mode {
         // External auth (reverse proxy or external provider) is handled
         // outside the app; do not enforce internal auth here and let
@@ -33,7 +33,7 @@ pub async fn require(
         Resolved::Disabled | Resolved::External { .. } => next.run(req).await,
         Resolved::Token { ref token } => {
             // Token auth uses a signed cookie with claims (iat, exp, token_hash)
-            if let Some(claims) = get_token_session_from_cookie(&signed) {
+            if let Some(claims) = get_token_session_from_cookie(&jar) {
                 if claims.is_expired() {
                     tracing::info!("require: token session expired, redirecting to login");
                     return Redirect::to("/login?error=session_expired").into_response();
@@ -46,7 +46,7 @@ pub async fn require(
                 // remember path for redirect-after-login
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require: no valid token, redirecting to /login and setting return_to cookie");
-                let jar = signed.add(create_return_to_cookie(return_to));
+                let jar = jar.add(create_return_to_cookie(return_to));
                 (jar, Redirect::temporary("/login")).into_response()
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
@@ -54,7 +54,7 @@ pub async fn require(
         }
         Resolved::Oidc { .. } => {
             // Check signed session cookie via headers
-            if let Some(sess) = get_oidc_session_from_cookie(&signed)
+            if let Some(sess) = get_oidc_session_from_cookie(&jar)
                 && !sess.is_expired()
             {
                 return next.run(req).await;
@@ -63,7 +63,7 @@ pub async fn require(
             if wants_html(headers) {
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require: setting return_to cookie and redirecting to /oidc/login");
-                let jar = signed.add(
+                let jar = jar.add(
                     Cookie::build((COOKIE_RETURN_TO, return_to))
                         .path("/")
                         .build(),

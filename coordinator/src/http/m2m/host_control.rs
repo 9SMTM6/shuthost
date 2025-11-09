@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use axum::http::StatusCode;
+use eyre::{Result, WrapErr};
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
@@ -16,8 +17,8 @@ use shuthost_common::create_signed_message;
 use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
+    http::m2m::leases::LeaseSource,
     http::{AppState, polling::poll_until_host_state},
-    routes::m2m::leases::LeaseSource,
 };
 
 /// Timeout for TCP operations
@@ -151,36 +152,38 @@ async fn execute_tcp_shutdown_request(
     stream: &mut TcpStream,
     request: &[u8],
     response_buf: &mut [u8],
-) -> Result<usize, String> {
+) -> Result<usize> {
     timeout(REQUEST_TIMEOUT, stream.writable())
         .await
-        .map_err(|e| format!("Stream not writable (timeout): {e}"))?
-        .map_err(|e| format!("Stream not writable: {e}"))?;
+        .wrap_err("Timeout waiting for stream to be writable")?
+        .wrap_err("Stream not writable")?;
 
     debug!("Sending shutdown message...");
     timeout(REQUEST_TIMEOUT, stream.write_all(request))
         .await
-        .map_err(|e| format!("Write failed (timeout): {e}"))?
-        .map_err(|e| format!("Write failed: {e}"))?;
+        .wrap_err("Timeout writing request to stream")?
+        .wrap_err("Failed to write request to stream")?;
 
     timeout(REQUEST_TIMEOUT, stream.read(response_buf))
         .await
-        .map_err(|e| format!("Read timed out: {e}"))?
-        .map_err(|e| format!("Read failed: {e}"))
+        .wrap_err("Timeout reading response from stream")?
+        .wrap_err("Failed to read response from stream")
 }
 
 /// Send a shutdown command to a host via TCP.
-pub async fn send_shutdown(ip: &str, port: u16, message: &str) -> Result<String, String> {
+pub async fn send_shutdown(ip: &str, port: u16, secret: &str) -> Result<String> {
     let addr = format!("{ip}:{port}");
     debug!("Connecting to {}", addr);
 
     let mut stream = timeout(REQUEST_TIMEOUT, TcpStream::connect(&addr))
         .await
-        .map_err(|e| format!("Connection to {addr} timed out: {e}"))?
-        .map_err(|e| format!("TCP connect error to {addr}: {e}"))?;
+        .wrap_err(format!("Connection to {addr} timed out"))?
+        .wrap_err(format!("TCP connect error to {addr}"))?;
+
+    let signed_message = create_signed_message("shutdown", secret);
 
     let mut buf = vec![0; 1024];
-    let n = execute_tcp_shutdown_request(&mut stream, message.as_bytes(), &mut buf).await?;
+    let n = execute_tcp_shutdown_request(&mut stream, signed_message.as_bytes(), &mut buf).await?;
 
     let Some(data) = buf.get(..n) else {
         unreachable!("Read data size should always be valid, as its >= buffer size");
@@ -213,16 +216,19 @@ async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, 
         "Sending shutdown command to '{}' ({}:{})",
         host, host_config.ip, host_config.port
     );
-    let signed_message = create_signed_message("shutdown", &host_config.shared_secret);
-    send_shutdown(&host_config.ip, host_config.port, &signed_message)
-        .await
-        .map_err(|e| {
-            error!("Failed to send shutdown command to '{}': {}", host, e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to send shutdown command",
-            )
-        })?;
+    send_shutdown(
+        &host_config.ip,
+        host_config.port,
+        &host_config.shared_secret,
+    )
+    .await
+    .map_err(|e| {
+        error!("Failed to send shutdown command to '{}': {}", host, e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to send shutdown command",
+        )
+    })?;
 
     info!("Successfully sent shutdown command to '{}'", host);
     Ok(())

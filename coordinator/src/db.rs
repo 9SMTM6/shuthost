@@ -6,7 +6,7 @@ use std::path::Path;
 
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
 
-use crate::routes::{LeaseMap, LeaseSource};
+use crate::http::m2m::{LeaseMap, LeaseSource};
 
 /// Database connection pool type alias.
 #[expect(
