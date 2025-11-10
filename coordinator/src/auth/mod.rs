@@ -58,6 +58,48 @@ pub enum Resolved {
     },
 }
 
+async fn get_or_generate_cookie_key(db_pool: Option<&DbPool>) -> eyre::Result<Key> {
+    // small helpers to avoid repetition
+    async fn gen_and_store_key(pool: &DbPool) -> eyre::Result<Key> {
+        let generated = Key::generate();
+        let encoded = base64_gp_STANDARD.encode(generated.master());
+        store_kv(pool, KV_COOKIE_SECRET, &encoded).await?;
+        Ok(generated)
+    }
+
+    // No configured secret - try database, then generate
+    Ok(if let Some(pool) = db_pool {
+        if let Some(stored_secret) = get_kv(pool, KV_COOKIE_SECRET).await? {
+            // Try to decode stored secret
+            match base64_gp_STANDARD.decode(&stored_secret) {
+                Ok(bytes) => match Key::try_from(bytes.as_slice()) {
+                    Ok(key) => key,
+                    Err(_) => {
+                        warn!(
+                            "Found corrupted cookie key in DB (wrong length); removing and regenerating"
+                        );
+                        delete_kv(pool, KV_COOKIE_SECRET).await?;
+                        gen_and_store_key(pool).await?
+                    }
+                },
+                Err(_) => {
+                    warn!(
+                        "Found corrupted cookie key in DB (invalid base64); removing and regenerating"
+                    );
+                    delete_kv(pool, KV_COOKIE_SECRET).await?;
+                    gen_and_store_key(pool).await?
+                }
+            }
+        } else {
+            // No stored value - generate and store
+            gen_and_store_key(pool).await?
+        }
+    } else {
+        // No database - generate without storing
+        Key::generate()
+    })
+}
+
 impl Runtime {
     /// Creates a new `Runtime` instance from the provided configuration.
     ///
@@ -69,15 +111,6 @@ impl Runtime {
     /// - Database operations fail when storing, retrieving, or deleting cookie secrets or auth tokens
     /// - A stored cookie secret in the database is corrupted (invalid base64 or wrong length)
     pub async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
-        // small helpers to avoid repetition
-        async fn gen_and_store_key(pool: &DbPool) -> eyre::Result<Key> {
-            let generated = Key::generate();
-            let encoded = base64_gp_STANDARD.encode(generated.master());
-            store_kv(pool, KV_COOKIE_SECRET, &encoded).await?;
-            Ok(generated)
-        }
-
-        // Handle cookie key: configured takes precedence, stored is fallback
         let cookie_key = if let Some(ref cookie_secret) = cfg.cookie_secret {
             // Configured cookie secret - remove any stored value to avoid confusion
             if let Some(pool) = db_pool {
@@ -94,37 +127,7 @@ impl Runtime {
             Key::try_from(bytes.as_slice())
                 .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
         } else {
-            // No configured secret - try database, then generate
-            if let Some(pool) = db_pool {
-                if let Some(stored_secret) = get_kv(pool, KV_COOKIE_SECRET).await? {
-                    // Try to decode stored secret
-                    match base64_gp_STANDARD.decode(&stored_secret) {
-                        Ok(bytes) => match Key::try_from(bytes.as_slice()) {
-                            Ok(key) => key,
-                            Err(_) => {
-                                warn!(
-                                    "Found corrupted cookie key in DB (wrong length); removing and regenerating"
-                                );
-                                delete_kv(pool, KV_COOKIE_SECRET).await?;
-                                gen_and_store_key(pool).await?
-                            }
-                        },
-                        Err(_) => {
-                            warn!(
-                                "Found corrupted cookie key in DB (invalid base64); removing and regenerating"
-                            );
-                            delete_kv(pool, KV_COOKIE_SECRET).await?;
-                            gen_and_store_key(pool).await?
-                        }
-                    }
-                } else {
-                    // No stored value - generate and store
-                    gen_and_store_key(pool).await?
-                }
-            } else {
-                // No database - generate without storing
-                Key::generate()
-            }
+            get_or_generate_cookie_key(db_pool).await?
         };
 
         let mode = match cfg.mode {
