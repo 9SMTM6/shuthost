@@ -123,6 +123,120 @@ pub struct AppState {
     pub db_pool: Option<DbPool>,
 }
 
+/// Initialize database pool based on configuration.
+async fn initialize_database(
+    initial_config: &ControllerConfig,
+    config_path: &std::path::Path,
+) -> eyre::Result<Option<DbPool>> {
+    // Initialize database. If a persistent DB is configured and enabled, open it
+    // relative to the config file when appropriate. Otherwise DB persistence is
+    // disabled and `db_pool` will be None.
+    Ok(match initial_config.db {
+        Some(DbConfig {
+            enable: true,
+            ref path,
+        }) => {
+            let db_path = if std::path::Path::new(path).is_absolute() {
+                std::path::PathBuf::from(path)
+            } else {
+                config_path
+                    .parent()
+                    .map(|d| d.join(path))
+                    .unwrap_or_else(|| std::path::PathBuf::from(path))
+            };
+            let pool = db::init(&db_path).await?;
+            info!(
+                "Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)",
+                db_path.display()
+            );
+            Some(pool)
+        }
+        _ => {
+            info!("DB persistence disabled");
+            None
+        }
+    })
+}
+
+/// Setup TLS configuration for HTTPS server.
+async fn setup_tls_config(
+    tls_cfg: &TlsConfig,
+    config_path: &std::path::Path,
+    listen_ip: IpAddr,
+    addr: std::net::SocketAddr,
+) -> eyre::Result<AxumRustlsConfig> {
+    // Helper: resolve a configured path relative to the config file unless it's absolute
+    let resolve_path = |p: &str| {
+        let path = std::path::Path::new(p);
+        if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            config_path
+                .parent()
+                .map(|d| d.join(path))
+                .unwrap_or_else(|| std::path::PathBuf::from(path))
+        }
+    };
+
+    // Use provided certs when both files exist. Otherwise, if persist_self_signed is true
+    // (default), generate and persist self-signed cert/key next to the config file.
+    let cert_path_cfg = tls_cfg.cert_path.as_str();
+    let key_path_cfg = tls_cfg.key_path.as_str();
+
+    let cert_path = resolve_path(cert_path_cfg);
+    let key_path = resolve_path(key_path_cfg);
+
+    let cert_exists = cert_path.exists();
+    let key_exists = key_path.exists();
+
+    let rustls_cfg = if cert_exists && key_exists {
+        let rustls_cfg = AxumRustlsConfig::from_pem_file(
+            cert_path.to_str().unwrap(),
+            key_path.to_str().unwrap(),
+        )
+        .await?;
+        info!("Listening on https://{} (provided certs)", addr);
+        rustls_cfg
+    } else if tls_cfg.persist_self_signed {
+        // If cert files already exist partially, refuse to do anything.
+        if cert_exists ^ key_exists {
+            eyre::bail!("TLS configuration error: partial cert/key files exist");
+        }
+
+        // Generate self-signed cert using listen host as CN/SAN
+        let hostnames = vec![listen_ip.to_string()];
+        let rcgen::CertifiedKey { cert, signing_key } =
+            rcgen::generate_simple_self_signed(hostnames)
+                .wrap_err("Failed to generate self-signed certificate")?;
+        let cert_pem = cert.pem();
+        let key_pem = signing_key.serialize_pem();
+
+        // Ensure parent dir exists (typically same dir as config)
+        let cfg_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
+        fs::create_dir_all(cfg_dir).await?;
+
+        // Write cert/key files
+        tokio::try_join!(
+            fs::write(&cert_path, cert_pem.as_bytes()),
+            fs::write(&key_path, key_pem.as_bytes())
+        )?;
+
+        let rustls_cfg =
+            AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
+        info!(
+            "Listening on https://{} (self-signed, persisted at {:?})",
+            addr, cfg_dir
+        );
+        rustls_cfg
+    } else {
+        eyre::bail!(
+            "TLS configuration error: neither provided certs nor self-signed allowed"
+        );
+    };
+
+    Ok(rustls_cfg)
+}
+
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
 ///
 /// # Arguments
@@ -166,34 +280,7 @@ pub async fn start(
 
     let (ws_tx, _) = broadcast::channel(32);
 
-    // Initialize database. If a persistent DB is configured and enabled, open it
-    // relative to the config file when appropriate. Otherwise DB persistence is
-    // disabled and `db_pool` will be None.
-    let db_pool = match initial_config.db {
-        Some(DbConfig {
-            enable: true,
-            ref path,
-        }) => {
-            let db_path = if std::path::Path::new(path).is_absolute() {
-                std::path::PathBuf::from(path)
-            } else {
-                config_path
-                    .parent()
-                    .map(|d| d.join(path))
-                    .unwrap_or_else(|| std::path::PathBuf::from(path))
-            };
-            let pool = db::init(&db_path).await?;
-            info!(
-                "Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)",
-                db_path.display()
-            );
-            Some(pool)
-        }
-        _ => {
-            info!("DB persistence disabled");
-            None
-        }
-    };
+    let db_pool = initialize_database(&initial_config, config_path).await?;
 
     let leases = LeaseMap::default();
 
@@ -292,74 +379,7 @@ pub async fn start(
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
         Some(tls_cfg) => {
-            // Helper: resolve a configured path relative to the config file unless it's absolute
-            let resolve_path = |p: &str| {
-                let path = std::path::Path::new(p);
-                if path.is_absolute() {
-                    path.to_path_buf()
-                } else {
-                    config_path
-                        .parent()
-                        .map(|d| d.join(path))
-                        .unwrap_or_else(|| std::path::PathBuf::from(path))
-                }
-            };
-
-            // Use provided certs when both files exist. Otherwise, if persist_self_signed is true
-            // (default), generate and persist self-signed cert/key next to the config file.
-            let cert_path_cfg = tls_cfg.cert_path.as_str();
-            let key_path_cfg = tls_cfg.key_path.as_str();
-
-            let cert_path = resolve_path(cert_path_cfg);
-            let key_path = resolve_path(key_path_cfg);
-
-            let cert_exists = cert_path.exists();
-            let key_exists = key_path.exists();
-
-            let rustls_cfg = if cert_exists && key_exists {
-                let rustls_cfg = AxumRustlsConfig::from_pem_file(
-                    cert_path.to_str().unwrap(),
-                    key_path.to_str().unwrap(),
-                )
-                .await?;
-                info!("Listening on https://{} (provided certs)", addr);
-                rustls_cfg
-            } else if tls_cfg.persist_self_signed {
-                // If cert files already exist partially, refuse to do anything.
-                if cert_exists ^ key_exists {
-                    eyre::bail!("TLS configuration error: partial cert/key files exist");
-                }
-
-                // Generate self-signed cert using listen host as CN/SAN
-                let hostnames = vec![listen_ip.to_string()];
-                let rcgen::CertifiedKey { cert, signing_key } =
-                    rcgen::generate_simple_self_signed(hostnames)
-                        .wrap_err("Failed to generate self-signed certificate")?;
-                let cert_pem = cert.pem();
-                let key_pem = signing_key.serialize_pem();
-
-                // Ensure parent dir exists (typically same dir as config)
-                let cfg_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
-                fs::create_dir_all(cfg_dir).await?;
-
-                // Write cert/key files
-                tokio::try_join!(
-                    fs::write(&cert_path, cert_pem.as_bytes()),
-                    fs::write(&key_path, key_pem.as_bytes())
-                )?;
-
-                let rustls_cfg =
-                    AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
-                info!(
-                    "Listening on https://{} (self-signed, persisted at {:?})",
-                    addr, cfg_dir
-                );
-                rustls_cfg
-            } else {
-                eyre::bail!(
-                    "TLS configuration error: neither provided certs nor self-signed allowed"
-                );
-            };
+            let rustls_cfg = setup_tls_config(tls_cfg, config_path, listen_ip, addr).await?;
             let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app.into_make_service());
             tokio::select! {
                 res = server => res?,
