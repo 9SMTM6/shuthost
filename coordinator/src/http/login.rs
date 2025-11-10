@@ -48,11 +48,7 @@ pub async fn login_get(
         A::Oidc { .. } => {
             get_oidc_session_from_cookie(&jar).is_some_and(|session| !session.is_expired())
         }
-        A::Disabled
-        | A::External {
-            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
-        } => true,
-        _ => false,
+        A::Disabled | A::External { .. } => true,
     };
     if is_authenticated {
         return Redirect::to("/").into_response();
@@ -78,6 +74,17 @@ pub async fn login_get(
         None => "",
     };
 
+    let maybe_auth_warning = match &auth.mode {
+        &A::Token { .. }
+        | &A::Oidc { .. }
+        | &A::External {
+            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
+        } => "",
+        &A::Disabled | &A::External { .. } => {
+            include_utf8_asset!("partials/external_auth_config.tmpl.html")
+        }
+    };
+
     let login_form = match auth.mode {
         A::Token { .. } => include_utf8_asset!("partials/token_login.html"),
         A::Oidc { .. } => include_utf8_asset!("partials/oidc_login.html"),
@@ -86,6 +93,7 @@ pub async fn login_get(
 
     let html = include_utf8_asset!("generated/login.html")
         .replace("{ maybe_error }", maybe_error)
+        .replace("{ maybe_auth_warning }", maybe_auth_warning)
         .replace("{ login_form }", login_form);
     axum::response::Response::builder()
         .header("Content-Type", "text/html")

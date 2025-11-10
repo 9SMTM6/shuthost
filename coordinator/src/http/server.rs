@@ -229,9 +229,7 @@ async fn setup_tls_config(
         );
         rustls_cfg
     } else {
-        eyre::bail!(
-            "TLS configuration error: neither provided certs nor self-signed allowed"
-        );
+        eyre::bail!("TLS configuration error: neither provided certs nor self-signed allowed");
     };
 
     Ok(rustls_cfg)
@@ -316,6 +314,19 @@ pub async fn start(
                 );
             }
         }
+    }
+
+    // Startup-time warning: if external auth is configured but exceptions version is outdated,
+    // the login page will show a security warning. Warn operators to update the config.
+    match &auth_runtime.mode {
+        &crate::auth::Resolved::External { exceptions_version }
+            if exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION =>
+        {
+            warn!(
+                "External authentication is configured with an outdated exceptions version ({exceptions_version}, current {EXPECTED_AUTH_EXCEPTIONS_VERSION}). The login page will display how to configure the correct exceptions.",
+            );
+        }
+        _ => {}
     }
 
     let app_state = AppState {

@@ -9,10 +9,7 @@ use axum::{
     routing::get,
 };
 
-use crate::{
-    auth::Resolved,
-    http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
-};
+use crate::{auth::Resolved, http::AppState};
 
 #[macro_export]
 macro_rules! include_utf8_asset {
@@ -89,7 +86,7 @@ pub enum UiMode<'a> {
 }
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
-pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> String {
+pub fn render_ui_html(mode: &UiMode<'_>) -> String {
     let maybe_logout = if matches!(
         *mode,
         UiMode::Normal {
@@ -113,7 +110,6 @@ pub fn render_ui_html(mode: &UiMode<'_>, maybe_external_auth_config: &str) -> St
 
     include_utf8_asset!("generated/index.html")
         .replace("{ coordinator_config }", &config_path)
-        .replace("{ maybe_external_auth_config }", maybe_external_auth_config)
         .replace("{ maybe_logout }", maybe_logout)
         .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
 }
@@ -130,31 +126,14 @@ pub async fn serve_ui(
     }): State<AppState>,
 ) -> impl IntoResponse {
     let show_logout = !matches!(auth.mode, Resolved::Disabled | Resolved::External { .. });
-    // Determine whether to include the external auth config warning. If Auth is
-    // Disabled we must show it. If Auth::External is configured but its
-    // exceptions_version doesn't match the current expected version, show it.
-    type A = Resolved;
-    let maybe_external_auth_config = match &auth.mode {
-        &A::Token { .. }
-        | &A::Oidc { .. }
-        | &A::External {
-            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
-        } => "",
-        &A::Disabled | &A::External { .. } => {
-            include_utf8_asset!("partials/external_auth_config.tmpl.html")
-        }
-    };
 
     Response::builder()
         .header("Content-Type", "text/html")
         .body(
-            render_ui_html(
-                &UiMode::Normal {
-                    config_path: &config_path,
-                    show_logout,
-                },
-                maybe_external_auth_config,
-            )
+            render_ui_html(&UiMode::Normal {
+                config_path: &config_path,
+                show_logout,
+            })
             .into_response(),
         )
         .unwrap()

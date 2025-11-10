@@ -68,10 +68,11 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
                 <code id="traefik-config" class="code-block">Loading...</code>
             </div>
 
-            <p class="text-xs mt-2"><em>Replace backend references with your actual configuration
-                    values. After configuring your proxy rules, set
-                    <code>auth = {{ type = "external", exceptions_version = 1 }}</code>
-                    (or the matching version) in the coordinator config to acknowledge the exceptions.</em></p>
+                <p class="text-xs mt-2"><em>Replace backend references with your actual configuration
+                        values. After configuring your proxy rules, set
+                        <code>auth = {{ type = "external", exceptions_version = 1 }}</code>
+                        in the coordinator config to acknowledge the exceptions. If this doesn't help, please raise an
+                        issue</em></p>
         </div>
     </div>
     <script type="module">
