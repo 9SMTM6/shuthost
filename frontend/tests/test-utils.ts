@@ -24,10 +24,10 @@ export async function waitForServerReady(port: number, useTls = false, timeout =
   while (Date.now() - start < timeout) {
     try {
       await new Promise<void>((resolve, reject) => {
-        const req = protocol.request({ 
-          hostname: "127.0.0.1", 
-          port, 
-          path: '/', 
+        const req = protocol.request({
+          hostname: "127.0.0.1",
+          port,
+          path: '/',
           method: 'GET',
           rejectUnauthorized: false // Allow self-signed certificates in tests
         }, (res) => {
@@ -76,7 +76,7 @@ export async function stopBackend(proc?: ChildProcess) {
   await new Promise<void>(resolve => {
     const timeout = setTimeout(() => {
       // If it’s still hanging, force kill it
-      try { proc.kill('SIGKILL'); } catch {}
+      try { proc.kill('SIGKILL'); } catch { }
       resolve();
     }, 3000);
 
@@ -84,6 +84,29 @@ export async function stopBackend(proc?: ChildProcess) {
       clearTimeout(timeout);
       resolve();
     });
+  });
+}
+
+/** Replaces environment-dependent values like URLs and config paths with placeholders for generic snapshots */
+export const sanitizeEnvironmentDependents = async (page: Page) => {
+  await page.evaluate(() => {
+    // Replace base URLs and domains in all text content
+    const fullUrlRegex = /https?:\/\/127\.0\.0\.1:\d+/g;
+    const domainRegex = /127\.0\.0\.1:\d+/g;
+    [
+      '#authelia-config',
+      '#traefik-config',
+      '#host-install-command',
+      '#client-install-command-sh',
+      '#client-install-command-ps1',
+    ].forEach(selector => {
+      const el = document.querySelector(selector);
+      if (el?.textContent) {
+        el.textContent = el.textContent.replaceAll(fullUrlRegex, '<protocol://base_url>').replaceAll(domainRegex, '<base_url>');
+      }
+    });
+    // Replace config locations
+    document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<coordinator_config_location>'; });
   });
 }
 
@@ -95,9 +118,5 @@ export const expand_and_sanitize_host_install = async (page: Page) => {
   await page.click('#host-install-header');
   await page.waitForSelector('#host-install-content', { state: 'visible' });
   // Sanitize dynamic install command and config path for stable snapshots
-  await page.evaluate(() => {
-    const cmd = document.querySelector('#host-install-command');
-    if (cmd) cmd.textContent = '<<INSTALL_COMMAND_REDACTED>>';
-    document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
-  });
+  await sanitizeEnvironmentDependents(page);
 }

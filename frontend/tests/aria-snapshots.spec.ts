@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
+import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort, sanitizeEnvironmentDependents } from './test-utils';
 import { ChildProcess } from 'node:child_process';
 
 let backendProcess: ChildProcess | undefined;
@@ -69,13 +69,7 @@ test.describe('expanded install panels', () => {
     await page.click('#client-install-header');
     await page.waitForSelector('#client-install-content', { state: 'visible' });
     // Sanitize dynamic install command and config path for stable snapshots
-    await page.evaluate(() => {
-      const cmdSh = document.querySelector('#client-install-command-sh');
-      if (cmdSh) cmdSh.textContent = '<<INSTALL_COMMAND_REDACTED>>';
-      const cmdPs1 = document.querySelector('#client-install-command-ps1');
-      if (cmdPs1) cmdPs1.textContent = '<<INSTALL_COMMAND_REDACTED>>';
-      document.querySelectorAll('#config-location').forEach(el => { el.textContent = '<<COORDINATOR_CONFIG>>'; });
-    });
+    await sanitizeEnvironmentDependents(page);
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_nada-at_clients-expanded_install.aria.yml` });
   });
 
@@ -141,12 +135,7 @@ test.describe('no-auth landing page', () => {
     await page.click('#security-config-header');
     await page.waitForSelector('#security-config-content', { state: 'visible' });
     // Sanitize dynamic config examples for stable snapshots
-    await page.evaluate(() => {
-      const authelia = document.getElementById('authelia-config');
-      if (authelia) authelia.textContent = '<<AUTHELIA_CONFIG_REDACTED>>';
-      const traefik = document.getElementById('traefik-config');
-      if (traefik) traefik.textContent = '<<TRAEFIK_CONFIG_REDACTED>>';
-    });
+    await sanitizeEnvironmentDependents(page);
     await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: 'cfg_no-auth-root-expanded-security.aria.yml' });
   });
 
@@ -172,12 +161,7 @@ test.describe('auth-outdated-exceptions landing page', () => {
     await page.click('#security-config-header');
     await page.waitForSelector('#security-config-content', { state: 'visible' });
     // Sanitize dynamic config examples for stable snapshots
-    await page.evaluate(() => {
-      const authelia = document.getElementById('authelia-config');
-      if (authelia) authelia.textContent = '<<AUTHELIA_CONFIG_REDACTED>>';
-      const traefik = document.getElementById('traefik-config');
-      if (traefik) traefik.textContent = '<<TRAEFIK_CONFIG_REDACTED>>';
-    });
+    await sanitizeEnvironmentDependents(page);
     // Second snapshot: expanded security config
     await expect(page.locator('#security-config-content')).toMatchAriaSnapshot({ name: 'cfg_auth-outdated-exceptions-expanded-security.aria.yml' });
   });
