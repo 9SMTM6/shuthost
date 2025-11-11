@@ -58,7 +58,7 @@ set +v
 
 # Print the configuration line for the coordinator
 echo "Installation complete!"
-echo "Add the following line to your coordinator config:"
+echo "Add the following line to your coordinator config under [clients]:"
 echo ""
 echo "\"$CLIENT_ID\" = { shared_secret = \"$SHARED_SECRET\" }"
 echo ""
