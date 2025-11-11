@@ -9,7 +9,10 @@ use axum::{
     routing::get,
 };
 
-use crate::{auth::Resolved, http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION}};
+use crate::{
+    auth::Resolved,
+    http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
+};
 
 #[macro_export]
 macro_rules! include_utf8_asset {
@@ -105,7 +108,9 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
         ""
     };
     let maybe_auth_warning = match *mode {
-        UiMode::Normal { maybe_auth_warning, .. } => maybe_auth_warning,
+        UiMode::Normal {
+            maybe_auth_warning, ..
+        } => maybe_auth_warning,
         UiMode::Demo => "",
     };
     let config_path = match *mode {
