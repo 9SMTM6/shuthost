@@ -7,10 +7,10 @@
           - group "Install Host Agent":
             - paragraph: "Run the following command in your terminal:"
             - button "Copy install command"
-            - code: <<INSTALL_COMMAND_REDACTED>>
+            - code: /curl -fsSL <protocol:\/\/base_url>\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s <protocol:\/\/base_url> --port \d+/
             - paragraph: "Adjust options as needed. Add the output to the hosts section of your config on the Coordinator Host:"
             - button "Copy config location"
-            - code: <<COORDINATOR_CONFIG>>
+            - code: <coordinator_config_location>
             - note "Agent Installation Requirements":
               - heading "⚠️ Agent Installation Requirements" [level=3]
               - list:
