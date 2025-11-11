@@ -1,0 +1,31 @@
+- region "🔒 Required Security Exceptions":
+  - paragraph: "For the web app and installation scripts to work properly, these endpoints must be reachable without authentication. If your reverse proxy enforces authentication (Authelia, NPM with auth, etc.), create bypass rules for:"
+  - list:
+    - listitem:
+      - code: /download/*
+      - text: "- Installation script and binary downloads"
+    - listitem:
+      - code: /api/m2m/*
+      - text: "- Machine-to-machine API communication used by agents/clients"
+    - listitem:
+      - code: /manifest.json
+      - text: "- PWA manifest required for webpage installability"
+    - listitem:
+      - code: /favicon.svg
+      - text: "- Favicon required for browser installability"
+  - paragraph:
+    - emphasis: These exceptions let installer scripts and the web UI fetch resources and allow agent clients to call machine-to-machine APIs without user login. The manifest and favicon entries are necessary for correct browser/PWA behaviour.
+  - paragraph: "Authelia:"
+  - button "Copy Authelia config"
+  - code: <<AUTHELIA_CONFIG_REDACTED>>
+  - paragraph: "Nginx Proxy Manager with Authentication:"
+  - button "Copy Nginx config"
+  - code: "# In your proxy host's advanced configuration location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ { auth_basic off; proxy_pass http://your-shuthost-backend; }"
+  - paragraph: "Traefik with ForwardAuth:"
+  - button "Copy Traefik config"
+  - code: <<TRAEFIK_CONFIG_REDACTED>>
+  - paragraph:
+    - emphasis:
+      - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set
+      - code: "auth = {{ type = \"external\", exceptions_version = 1 }}"
+      - text: in the coordinator config to acknowledge the exceptions. If this doesn't help, please raise an issue

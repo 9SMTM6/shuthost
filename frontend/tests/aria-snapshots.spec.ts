@@ -155,3 +155,35 @@ test.describe('no-auth landing page', () => {
     backendProcess = undefined;
   });
 });
+
+// Snapshot the root page with the 'auth-outdated-exceptions' config
+test.describe('auth-outdated-exceptions landing page', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs['auth-outdated-exceptions']);
+  });
+
+  test('ARIA snapshot of security config (auth-outdated-exceptions)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#main-content', { state: 'attached' });
+    // First snapshot: unexpanded security config
+    await expect(page.locator('#main-content')).toMatchAriaSnapshot({ name: `cfg_auth-outdated-exceptions-root.aria.yml` });
+
+    // Expand the security config section
+    await page.click('#security-config-header');
+    await page.waitForSelector('#security-config-content', { state: 'visible' });
+    // Sanitize dynamic config examples for stable snapshots
+    await page.evaluate(() => {
+      const authelia = document.getElementById('authelia-config');
+      if (authelia) authelia.textContent = '<<AUTHELIA_CONFIG_REDACTED>>';
+      const traefik = document.getElementById('traefik-config');
+      if (traefik) traefik.textContent = '<<TRAEFIK_CONFIG_REDACTED>>';
+    });
+    // Second snapshot: expanded security config
+    await expect(page.locator('#security-config-content')).toMatchAriaSnapshot({ name: 'cfg_auth-outdated-exceptions-expanded-security.aria.yml' });
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+});

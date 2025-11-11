@@ -44,7 +44,7 @@
             - emphasis:
               - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set
               - code: "auth = {{ type = \"external\", exceptions_version = 1 }}"
-              - text: (or the matching version) in the coordinator config to acknowledge the exceptions.
+              - text: in the coordinator config to acknowledge the exceptions. If this doesn't help, please raise an issue
     - tabpanel:
       - region "Install Host Agent":
         - group "Install Host Agent":

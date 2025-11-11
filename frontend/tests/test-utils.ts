@@ -8,6 +8,7 @@ export const configs = {
   "auth-none": './tests/configs/auth-none.toml',
   "auth-token": './tests/configs/auth-token.toml',
   "auth-oidc": './tests/configs/auth-oidc.toml',
+  "auth-outdated-exceptions": './tests/configs/auth-outdated-exceptions.toml',
 }
 
 // Get the test port for parallel workers to avoid conflicts.
