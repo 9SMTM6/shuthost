@@ -99,8 +99,7 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
     let rx = tx.subscribe();
 
     while let Some(event) = raw_rx.recv().await {
-        if (matches!(event.kind, EventKind::Modify(_))
-            || matches!(event.kind, EventKind::Create(_)))
+        if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_))
             && event.paths.contains(&path)
             && let Err(e) = process_config_change(&path, &tx, &rx).await
         {
