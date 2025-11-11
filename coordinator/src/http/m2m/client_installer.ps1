@@ -80,7 +80,7 @@ Remove-Item $tempTemplatePath -Force
 
 # Print the configuration line for the coordinator
 Write-Host "Installation complete!"
-Write-Host "Add the following line to your coordinator config:"
+Write-Host "Add the following line to your coordinator config under [clients]:"
 Write-Host ""
 Write-Host "`"$ClientId`" = { shared_secret = `"$sharedSecret`" }"
 Write-Host ""
