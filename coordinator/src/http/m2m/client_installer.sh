@@ -25,7 +25,7 @@ ADJECTIVES="red blue swift calm bold wise kind brave"
 NOUNS="fox bird wolf bear lion deer hawk eagle"
 
 # Generate a random client ID using word lists
-CLIENT_ID="${2:-$(echo "$ADJECTIVES" | tr ' ' '\n' | sort -R | head -n1)_$(echo $NOUNS | tr ' ' '\n' | sort -R | head -n1)}"
+CLIENT_ID="${2:-$(echo "$ADJECTIVES" | tr ' ' '\n' | awk 'BEGIN{srand()}{print rand() "\t" $0}' | sort -n | cut -f2- | head -n1)_$(echo $NOUNS | tr ' ' '\n' | awk 'BEGIN{srand()}{print rand() "\t" $0}' | sort -n | cut -f2- | head -n1)}"
 
 CLIENT_SCRIPT_NAME="shuthost_client_${CLIENT_ID}"
 
