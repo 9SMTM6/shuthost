@@ -270,38 +270,16 @@ jobs:
           # Check for a fitting process in the process list
           sudo pgrep -af '/tmp/selfbin' || sudo ps aux | grep '/tmp/selfbin'
 
-  test-client-scripts:
-    name: Test Client Scripts (install and client) on Multiple Platforms
-    runs-on: ${{ matrix.runner }}
+  test-client-scripts-macos:
+    name: Test Client Scripts on macOS
+    runs-on: macos-latest
     needs: [build-coordinators]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-latest
-            platform: macos
-            shell: zsh -c
-            coordinator_bin: coordinator-aarch64-apple-darwin
-          - runner: ubuntu-latest
-            platform: ubuntu-docker
-            docker_image: ubuntu:latest
-            shell: docker exec run_container bash -c
-            coordinator_bin: coordinator-x86_64-unknown-linux-gnu
-          - runner: ubuntu-latest
-            platform: alpine-docker
-            docker_image: alpine:latest
-            shell: docker exec run_container sh -c
-            coordinator_bin: coordinator-x86_64-unknown-linux-gnu
-          - runner: windows-latest
-            platform: windows
-            shell: powershell -Command
-            coordinator_bin: coordinator-x86_64-pc-windows-msvc
     steps:
       
       - name: Download coordinator binary
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.coordinator_bin }}
+          name: coordinator-aarch64-apple-darwin
 
       - name: Start controller service (background)
         run: |
@@ -312,31 +290,15 @@ jobs:
             curl -fsSL http://localhost:8080/login && break || sleep 1
           done
           curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
-        if: ${{ matrix.platform != 'windows' }}
 
-      - name: Prepare macOS
-        if: ${{ matrix.platform == 'macos' }}
+      - name: Prepare
         run: |
           brew install curl openssl || true
 
-      - name: Prepare ubuntu-docker
-        if: ${{ matrix.platform == 'ubuntu-docker' }}
-        run: |
-          docker run -itd --network=host --name=run_container ${{ matrix.docker_image }}
-          ${{ matrix.shell }} "apt-get update; apt-get install -y curl openssl bsdmainutils"
-
-      - name: Prepare alpine-docker
-        if: ${{ matrix.platform == 'alpine-docker' }}
-        run: |
-          docker run -itd --network=host --name=run_container ${{ matrix.docker_image }}
-          ${{ matrix.shell }} "apk update"
-          ${{ matrix.shell }} "apk add --no-cache curl openssl busybox-extras"
-
       - name: Install and run client
-        if: ${{ matrix.platform != 'windows' }}
         run: |
           # Run installer and capture output
-          CLIENT_INSTALL_OUT=$(${{ matrix.shell }} "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080" 2>&1 || true)
+          CLIENT_INSTALL_OUT=$(curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080 2>&1 || true)
           echo "--- installer output start ---"
           echo "$CLIENT_INSTALL_OUT"
           CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
@@ -348,27 +310,15 @@ jobs:
           # Parse the client config line from installer output and add to config
           clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
-            if [ "$RUNNER_OS" = "macOS" ]; then
-              config_path="/Users/$(whoami)/.config/shuthost_coordinator.toml"
-            else
-              config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
-            fi
+            config_path="/Users/$(whoami)/.config/shuthost_coordinator.toml"
             echo "Config file before modification:"
             sudo cat "$config_path"
             # Add the host if not present
             if ! sudo grep -q 'testhost' "$config_path"; then
-              if [ "$RUNNER_OS" = "macOS" ]; then
-                sudo sed -i '' '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
-              else
-                sudo sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
-              fi
+              sudo sed -i '' -e '/^\[hosts\]$/a\' -e 'testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
             fi
             # Add the client under [clients]
-            if [ "$RUNNER_OS" = "macOS" ]; then
-              sudo sed -i '' '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
-            else
-              sudo sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
-            fi
+            sudo sed -i '' -e '/^\[clients\]$/a\' -e "$clientConfigLine" "$config_path"
             echo "Added client to config: $clientConfigLine"
             echo "Config file after modification:"
             sudo cat "$config_path"
@@ -380,14 +330,13 @@ jobs:
 
           # Wait for the client binary to appear/be executable (timeout 20s)
           for i in $(seq 1 20); do
-            # execute the test inside the same environment/shell used to run the installer
-            ${{ matrix.shell }} "test -x $CLIENT_PATH" && break || sleep 1
+            test -x $CLIENT_PATH && break || sleep 1
           done
 
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
           # We want to test that the request is sent correctly and succeeds
-          OUTPUT=$(${{ matrix.shell }} "$CLIENT_PATH take testhost --async 2>&1 || true")
+          OUTPUT=$($CLIENT_PATH take testhost --async 2>&1 || true)
           echo "--- client output start ---"
           echo "$OUTPUT"
           echo "--- client output end ---"
@@ -398,8 +347,170 @@ jobs:
           # Ensure the request succeeded (no error messages)
           echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
 
+  test-client-scripts-ubuntu:
+    name: Test Client Scripts on Ubuntu
+    runs-on: ubuntu-latest
+    needs: [build-coordinators]
+    steps:
+      
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v4
+        with:
+          name: coordinator-x86_64-unknown-linux-gnu
+
+      - name: Start controller service (background)
+        run: |
+          chmod +x shuthost_coordinator
+          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+          curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
+
+      - name: Install and run client
+        run: |
+          # Run installer and capture output
+          CLIENT_INSTALL_OUT=$(curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080 2>&1 || true)
+          echo "--- installer output start ---"
+          echo "$CLIENT_INSTALL_OUT"
+          CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
+          echo "Detected client path: $CLIENT_PATH"
+          if [ -z "$CLIENT_PATH" ]; then
+            echo "Client path not found in installer output"; exit 1
+          fi
+
+          # Parse the client config line from installer output and add to config
+          clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
+          if [ -n "$clientConfigLine" ]; then
+            config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
+            echo "Config file before modification:"
+            sudo cat "$config_path"
+            # Add the host if not present
+            if ! sudo grep -q 'testhost' "$config_path"; then
+              sudo sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
+            fi
+            # Add the client under [clients]
+            sudo sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
+            echo "Added client to config: $clientConfigLine"
+            echo "Config file after modification:"
+            sudo cat "$config_path"
+            # Wait for config reload
+            sleep 5
+          else
+            echo "Could not parse client config line from installer output"; exit 1
+          fi
+
+          # Wait for the client binary to appear/be executable (timeout 20s)
+          for i in $(seq 1 20); do
+            test -x $CLIENT_PATH && break || sleep 1
+          done
+
+          # Run the client and capture output.
+          # The client is now registered, so the request should succeed.
+          # We want to test that the request is sent correctly and succeeds
+          OUTPUT=$($CLIENT_PATH take testhost --async 2>&1 || true)
+          echo "--- client output start ---"
+          echo "$OUTPUT"
+          echo "--- client output end ---"
+
+          # Check for the curl request: look for 'curl' plus both header names anywhere in the output
+          echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
+
+          # Ensure the request succeeded (no error messages)
+          echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
+
+  test-client-scripts-alpine:
+    name: Test Client Scripts on Alpine (Docker)
+    runs-on: ubuntu-latest
+    needs: [build-coordinators]
+    steps:
+      
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v4
+        with:
+          name: coordinator-x86_64-unknown-linux-gnu
+
+      - name: Prepare
+        run: |
+          docker run -itd --network=host --name=run_container alpine:latest
+          docker exec run_container sh -c "apk update"
+          docker exec run_container sh -c "apk add --no-cache curl openssl busybox-extras"
+
+      - name: Start controller service (background)
+        run: |
+          chmod +x shuthost_coordinator
+          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+          curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
+
+      - name: Install and run client
+        run: |
+          # Run installer and capture output
+          CLIENT_INSTALL_OUT=$(docker exec run_container sh -c "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080" 2>&1 || true)
+          echo "--- installer output start ---"
+          echo "$CLIENT_INSTALL_OUT"
+          CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
+          echo "Detected client path: $CLIENT_PATH"
+          if [ -z "$CLIENT_PATH" ]; then
+            echo "Client path not found in installer output"; exit 1
+          fi
+
+          # Parse the client config line from installer output and add to config
+          clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
+          if [ -n "$clientConfigLine" ]; then
+            config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
+            echo "Config file before modification:"
+            sudo cat "$config_path"
+            # Add the host if not present
+            if ! sudo grep -q 'testhost' "$config_path"; then
+              sudo sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
+            fi
+            # Add the client under [clients]
+            sudo sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
+            echo "Added client to config: $clientConfigLine"
+            echo "Config file after modification:"
+            sudo cat "$config_path"
+            # Wait for config reload
+            sleep 5
+          else
+            echo "Could not parse client config line from installer output"; exit 1
+          fi
+
+          # Wait for the client binary to appear/be executable (timeout 20s)
+          for i in $(seq 1 20); do
+            docker exec run_container sh -c "test -x $CLIENT_PATH" && break || sleep 1
+          done
+
+          # Run the client and capture output.
+          # The client is now registered, so the request should succeed.
+          # We want to test that the request is sent correctly and succeeds
+          OUTPUT=$(docker exec run_container sh -c "$CLIENT_PATH take testhost --async" 2>&1 || true)
+          echo "--- client output start ---"
+          echo "$OUTPUT"
+          echo "--- client output end ---"
+
+          # Check for the curl request: look for 'curl' plus both header names anywhere in the output
+          echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
+
+          # Ensure the request succeeded (no error messages)
+          echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
+
+  test-client-scripts-windows:
+    name: Test Client Scripts on Windows
+    runs-on: windows-latest
+    needs: [build-coordinators]
+    steps:
+      
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v4
+        with:
+          name: coordinator-x86_64-pc-windows-msvc
+
       - name: Windows - Start service in background && Install and run client
-        if: ${{ matrix.platform == 'windows' }}
         run: |
           # Create a minimal config file for testing
           @"
@@ -687,7 +798,10 @@ jobs:
       - container-merge
       - container-test
       - test-service-installation
-      - test-client-scripts
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      - test-client-scripts-alpine
+      - test-client-scripts-windows
       - test
       - test-compatibility
       - playwright-tests
@@ -729,7 +843,10 @@ jobs:
     name: Upload Release Binaries
     needs:
       - test-service-installation
-      - test-client-scripts
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      - test-client-scripts-alpine
+      - test-client-scripts-windows
       - test
       - test-compatibility
       - playwright-tests
