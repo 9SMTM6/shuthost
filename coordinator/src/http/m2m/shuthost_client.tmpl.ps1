@@ -68,8 +68,8 @@ if ($Async) {
 }
 
 # Output request details (equivalent to bash set -v/-x)
-Write-Host "curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $X_REQUEST`""
+Write-Host "curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
 
 # Make the request
-& curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $X_REQUEST"
+& curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
 if ($LASTEXITCODE -ne 0) { exit 1 }
