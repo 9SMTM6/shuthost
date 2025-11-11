@@ -9,7 +9,7 @@ use axum::{
     routing::get,
 };
 
-use crate::{auth::Resolved, http::AppState};
+use crate::{auth::Resolved, http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION}};
 
 #[macro_export]
 macro_rules! include_utf8_asset {
@@ -81,6 +81,7 @@ pub enum UiMode<'a> {
     Normal {
         config_path: &'a std::path::Path,
         show_logout: bool,
+        maybe_auth_warning: &'a str,
     },
     Demo,
 }
@@ -103,6 +104,10 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
     } else {
         ""
     };
+    let maybe_auth_warning = match *mode {
+        UiMode::Normal { maybe_auth_warning, .. } => maybe_auth_warning,
+        UiMode::Demo => "",
+    };
     let config_path = match *mode {
         UiMode::Normal { config_path, .. } => config_path.to_string_lossy().to_string(),
         UiMode::Demo => "/this/is/a/demo.toml".to_string(),
@@ -110,6 +115,7 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
 
     include_utf8_asset!("generated/index.html")
         .replace("{ coordinator_config }", &config_path)
+        .replace("{ maybe_auth_warning }", maybe_auth_warning)
         .replace("{ maybe_logout }", maybe_logout)
         .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
 }
@@ -125,7 +131,23 @@ pub async fn serve_ui(
         config_path, auth, ..
     }): State<AppState>,
 ) -> impl IntoResponse {
-    let show_logout = !matches!(auth.mode, Resolved::Disabled | Resolved::External { .. });
+    type A = Resolved;
+
+    let show_logout = !matches!(auth.mode, A::Disabled | A::External { .. });
+
+    // Determine whether to include the external auth config warning. If Auth is
+    // Disabled we must show it. If Auth::External is configured but its
+    // exceptions_version doesn't match the current expected version, show it.
+    let maybe_auth_warning = match &auth.mode {
+        &A::Token { .. }
+        | &A::Oidc { .. }
+        | &A::External {
+            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
+        } => "",
+        &A::Disabled | &A::External { .. } => {
+            include_utf8_asset!("partials/external_auth_config.tmpl.html")
+        }
+    };
 
     Response::builder()
         .header("Content-Type", "text/html")
@@ -133,6 +155,7 @@ pub async fn serve_ui(
             render_ui_html(&UiMode::Normal {
                 config_path: &config_path,
                 show_logout,
+                maybe_auth_warning,
             })
             .into_response(),
         )
