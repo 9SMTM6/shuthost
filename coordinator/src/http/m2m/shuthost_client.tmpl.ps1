@@ -68,17 +68,8 @@ if ($Async) {
 }
 
 # Output request details (equivalent to bash set -v/-x)
-Write-Host "Invoke-WebRequest -Uri $coordinatorUrl -Method POST -Headers @{ 'X-Client-ID' = '$CLIENT_ID'; 'X-Request' = '$xRequest' } -UseBasicParsing"
+Write-Host "curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $X_REQUEST`""
 
 # Make the request
-try {
-    $response = Invoke-WebRequest -Uri $coordinatorUrl -Method POST -Headers @{
-        "X-Client-ID" = $CLIENT_ID
-        "X-Request" = $xRequest
-    } -UseBasicParsing
-
-    Write-Host $response.Content
-} catch {
-    Write-Error "Request failed: $($_.Exception.Message)"
-    exit 1
-}
+& curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $X_REQUEST"
+if ($LASTEXITCODE -ne 0) { exit 1 }

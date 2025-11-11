@@ -51,12 +51,7 @@ Write-Verbose "Client ID: $ClientId"
 $templateUrl = "$remoteUrl/download/shuthost_client.ps1"
 $tempTemplatePath = "$env:TEMP\$clientScriptName.tmpl"
 
-try {
-    Invoke-WebRequest -Uri $templateUrl -OutFile $tempTemplatePath -UseBasicParsing
-} catch {
-    Write-Error "Failed to download template: $($_.Exception.Message)"
-    exit 1
-}
+& curl.exe --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
 
 # Generate a random shared secret
 $secretBytes = New-Object byte[] 16
