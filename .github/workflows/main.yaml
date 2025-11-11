@@ -323,7 +323,7 @@ jobs:
             echo "Config file after modification:"
             sudo cat "$config_path"
             # Wait for config reload
-            sleep 15
+            sleep 5
           else
             echo "Could not parse client config line from installer output"; exit 1
           fi
@@ -396,7 +396,7 @@ jobs:
             echo "Config file after modification:"
             sudo cat "$config_path"
             # Wait for config reload
-            sleep 15
+            sleep 5
           else
             echo "Could not parse client config line from installer output"; exit 1
           fi
@@ -475,7 +475,7 @@ jobs:
             echo "Config file after modification:"
             sudo cat "$config_path"
             # Wait for config reload
-            sleep 15
+            sleep 5
           else
             echo "Could not parse client config line from installer output"; exit 1
           fi
@@ -556,7 +556,7 @@ jobs:
             Write-Host "Config file after modification:"
             Get-Content shuthost_coordinator.toml
             # Wait for config reload
-            Start-Sleep 15
+            Start-Sleep 5
           } else {
             Write-Error "Could not parse client config line from installer output"; exit 1
           }
