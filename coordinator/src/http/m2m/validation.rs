@@ -11,7 +11,7 @@ pub fn validate_m2m_request(
     headers: &axum::http::HeaderMap,
     state: &AppState,
     expected_action: &LeaseAction,
-) -> Result<(String, LeaseAction), (StatusCode, &'static str)> {
+) -> Result<String, (StatusCode, &'static str)> {
     let client_id = headers
         .get("X-Client-ID")
         .and_then(|v| v.to_str().ok())
@@ -63,5 +63,5 @@ pub fn validate_m2m_request(
         return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
     }
 
-    Ok((client_id.to_string(), command_action))
+    Ok(client_id.to_string())
 }
