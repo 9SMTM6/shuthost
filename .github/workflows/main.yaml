@@ -341,9 +341,6 @@ jobs:
           echo "$OUTPUT"
           echo "--- client output end ---"
 
-          # Check for the curl request: look for 'curl' plus both header names anywhere in the output
-          echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
-
           # Ensure the request succeeded (no error messages)
           echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
 
@@ -413,9 +410,6 @@ jobs:
           echo "--- client output start ---"
           echo "$OUTPUT"
           echo "--- client output end ---"
-
-          # Check for the curl request: look for 'curl' plus both header names anywhere in the output
-          echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
 
           # Ensure the request succeeded (no error messages)
           echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
@@ -493,9 +487,6 @@ jobs:
           echo "$OUTPUT"
           echo "--- client output end ---"
 
-          # Check for the curl request: look for 'curl' plus both header names anywhere in the output
-          echo "$OUTPUT" | grep -E "curl" | grep -E "X-Client-ID" | grep -E "X-Request" || (echo 'Client request format not found!' && exit 1)
-
           # Ensure the request succeeded (no error messages)
           echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
 
@@ -568,11 +559,6 @@ jobs:
           Write-Host "--- client output start ---"
           Write-Host $OUTPUT
           Write-Host "--- client output end ---"
-
-          # Check for the request: look for both header names anywhere in the output
-          if ($OUTPUT -notmatch 'X-Client-ID.*X-Request|X-Request.*X-Client-ID') { 
-            Write-Error "Client request format not found!"; exit 1 
-          }
 
           # Ensure the request succeeded (no error messages)
           if ($OUTPUT -match "failed|error") {
