@@ -18,7 +18,7 @@ use crate::config::ControllerConfig;
 /// # Errors
 ///
 /// Returns an error if the config file cannot be read or parsed.
-pub async fn load_coordinator_config<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
+pub async fn load<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
     let content = tokio::fs::read_to_string(path)
         .await
         .wrap_err("Failed to read config file")?;
@@ -49,7 +49,7 @@ mod tests {
         "#;
         let tmp = std::env::temp_dir().join("test_config.toml");
         std::fs::write(&tmp, toml_str).unwrap();
-        let cfg = load_coordinator_config(&tmp).await.unwrap();
+        let cfg = load(&tmp).await.unwrap();
         assert_eq!(cfg.server.port, 9090);
         assert_eq!(cfg.server.bind, "0.0.0.0");
         let host = cfg.hosts.get("foo").unwrap();
@@ -64,7 +64,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_coordinator_config_missing_file() {
         let tmp = std::env::temp_dir().join("does_not_exist.toml");
-        let res = load_coordinator_config(&tmp).await;
+        let res = load(&tmp).await;
         assert!(res.is_err(), "Expected error for missing file");
     }
 
@@ -72,7 +72,7 @@ mod tests {
     async fn test_load_coordinator_config_invalid_toml() {
         let tmp = std::env::temp_dir().join("invalid.toml");
         std::fs::write(&tmp, "not valid toml").unwrap();
-        let res = load_coordinator_config(&tmp).await;
+        let res = load(&tmp).await;
         assert!(res.is_err(), "Expected error for invalid TOML");
     }
 
@@ -89,7 +89,7 @@ mod tests {
         "#;
         let tmp = std::env::temp_dir().join("test_config_no_tls.toml");
         std::fs::write(&tmp, toml_str).unwrap();
-        let cfg = load_coordinator_config(&tmp).await.unwrap();
+        let cfg = load(&tmp).await.unwrap();
         assert!(
             cfg.server.tls.is_none(),
             "Expected tls to be None when omitted"
@@ -111,7 +111,7 @@ mod tests {
         "#;
         let tmp = std::env::temp_dir().join("test_config_tls_defaults.toml");
         std::fs::write(&tmp, toml_str).unwrap();
-        let cfg = load_coordinator_config(&tmp).await.unwrap();
+        let cfg = load(&tmp).await.unwrap();
         let tls = cfg
             .server
             .tls

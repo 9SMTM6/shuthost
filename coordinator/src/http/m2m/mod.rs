@@ -91,11 +91,10 @@ async fn handle_m2m_lease_action(
     State(state): State<AppState>,
     Query(q): Query<LeaseActionQuery>,
 ) -> impl IntoResponse {
-    let client_id =
-        match validation::validate_m2m_request(&headers, &state, &action) {
-            Ok(res) => res,
-            Err((sc, err)) => return Err((sc, err.to_owned())),
-        };
+    let client_id = match validation::validate_m2m_request(&headers, &state, &action) {
+        Ok(res) => res,
+        Err((sc, err)) => return Err((sc, err.to_owned())),
+    };
 
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(host.clone()).or_default();

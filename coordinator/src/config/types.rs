@@ -176,7 +176,7 @@ pub struct AuthConfig {
 /// assert!(config.hosts.is_empty());
 /// assert!(config.clients.is_empty());
 /// ```
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
 pub struct ControllerConfig {
     /// HTTP server binding configuration.
     pub server: ServerConfig,

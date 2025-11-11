@@ -28,7 +28,7 @@ use tracing::{info, warn};
 
 use crate::{
     auth::{self},
-    config::{ControllerConfig, DbConfig, TlsConfig, load_coordinator_config},
+    config::{ControllerConfig, DbConfig, TlsConfig, load},
     db::{self, DbPool},
     http::{
         api,
@@ -261,7 +261,7 @@ pub async fn start(
 ) -> eyre::Result<()> {
     info!("Starting HTTP server...");
 
-    let initial_config = Arc::new(load_coordinator_config(config_path).await?);
+    let initial_config = Arc::new(load(config_path).await?);
 
     // Apply optional overrides from CLI/tests
     let listen_port = port_override.unwrap_or(initial_config.server.port);
