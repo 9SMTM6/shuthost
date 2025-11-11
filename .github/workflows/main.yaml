@@ -315,10 +315,10 @@ jobs:
             sudo cat "$config_path"
             # Add the host if not present
             if ! sudo grep -q 'testhost' "$config_path"; then
-              sudo sed -i '' -e '/^\[hosts\]$/a\' -e 'testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
+              sudo sed -i '' '/^\[hosts\]$/a\'$'\n''testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
             fi
             # Add the client under [clients]
-            sudo sed -i '' -e '/^\[clients\]$/a\' -e "$clientConfigLine" "$config_path"
+            sudo sed -i '' '/^\[clients\]$/a\'$'\n'"$clientConfigLine" "$config_path"
             echo "Added client to config: $clientConfigLine"
             echo "Config file after modification:"
             sudo cat "$config_path"
@@ -570,8 +570,8 @@ jobs:
           Write-Host "--- client output end ---"
 
           # Check for the request: look for both header names anywhere in the output
-          if ($OUTPUT -notmatch "X-Client-ID" -or $OUTPUT -notmatch "X-Request") {
-            Write-Error "Client request format not found!"; exit 1
+          if ($OUTPUT -notmatch 'X-Client-ID.*X-Request|X-Request.*X-Client-ID') { 
+            Write-Error "Client request format not found!"; exit 1 
           }
 
           # Ensure the request succeeded (no error messages)
