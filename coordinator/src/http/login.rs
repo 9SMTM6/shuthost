@@ -18,7 +18,7 @@ use crate::{
         oidc,
         token::{self, LoginQuery},
     },
-    http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
+    http::AppState,
     include_utf8_asset,
 };
 
@@ -74,17 +74,6 @@ pub async fn login_get(
         None => "",
     };
 
-    let maybe_auth_warning = match &auth.mode {
-        &A::Token { .. }
-        | &A::Oidc { .. }
-        | &A::External {
-            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
-        } => "",
-        &A::Disabled | &A::External { .. } => {
-            include_utf8_asset!("partials/external_auth_config.tmpl.html")
-        }
-    };
-
     let login_form = match auth.mode {
         A::Token { .. } => include_utf8_asset!("partials/token_login.html"),
         A::Oidc { .. } => include_utf8_asset!("partials/oidc_login.html"),
@@ -93,7 +82,6 @@ pub async fn login_get(
 
     let html = include_utf8_asset!("generated/login.html")
         .replace("{ maybe_error }", maybe_error)
-        .replace("{ maybe_auth_warning }", maybe_auth_warning)
         .replace("{ login_form }", login_form);
     axum::response::Response::builder()
         .header("Content-Type", "text/html")
