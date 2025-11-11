@@ -342,7 +342,10 @@ jobs:
           echo "--- client output end ---"
 
           # Ensure the request succeeded (no error messages)
-          echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
+          if echo "$OUTPUT" | grep -iq "error\|failed"; then
+            echo 'Client request failed!';
+            exit 1
+          fi
 
   test-client-scripts-ubuntu:
     name: Test Client Scripts on Ubuntu
@@ -412,7 +415,10 @@ jobs:
           echo "--- client output end ---"
 
           # Ensure the request succeeded (no error messages)
-          echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
+          if echo "$OUTPUT" | grep -iq "error\|failed"; then
+            echo 'Client request failed!';
+            exit 1
+          fi
 
   test-client-scripts-alpine:
     name: Test Client Scripts on Alpine (Docker)
@@ -488,7 +494,10 @@ jobs:
           echo "--- client output end ---"
 
           # Ensure the request succeeded (no error messages)
-          echo "$OUTPUT" | grep -i "error\|failed" && (echo 'Client request failed!' && exit 1)
+          if echo "$OUTPUT" | grep -iq "error\|failed"; then
+            echo 'Client request failed!';
+            exit 1
+          fi
 
   test-client-scripts-windows:
     name: Test Client Scripts on Windows
