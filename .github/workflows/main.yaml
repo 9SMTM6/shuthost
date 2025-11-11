@@ -48,7 +48,7 @@ jobs:
           path: target/${{ matrix.target }}/release/shuthost_host_agent
 
   build-coordinators:
-    name: Build Controller for ${{ matrix.target }}
+    name: Build Coordinator for ${{ matrix.target }}
     needs: build-host_agents
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -685,8 +685,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - rustc_target: x86_64-apple-darwin
-            runner: macos-13
           - rustc_target: x86_64-apple-darwin
             runner: macos-14
           - rustc_target: aarch64-apple-darwin
