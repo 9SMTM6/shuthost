@@ -47,7 +47,7 @@ if ($PSBoundParameters.ContainsKey('Help') -or $args -contains '-h' -or $args -c
 ################## Boring setup complete ------------- Interesting stuff is starting here
 
 # Get current timestamp (UTC)
-$timestamp = [long]((Get-Date).ToUniversalTime() - (Get-Date "1970-01-01")).TotalSeconds
+$timestamp = [long][Math]::Floor((Get-Date).ToUniversalTime().Subtract([DateTime]::new(1970,1,1,0,0,0,[DateTimeKind]::Utc)).TotalSeconds)
 
 # Build the message
 $message = "$timestamp|$Action"
