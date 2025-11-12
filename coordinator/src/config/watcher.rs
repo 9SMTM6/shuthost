@@ -92,7 +92,7 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
         .parent()
         .expect("Config file must have a parent directory");
     watcher
-        .watch(&dir, RecursiveMode::NonRecursive)
+        .watch(dir, RecursiveMode::NonRecursive)
         .expect("Failed to watch config directory");
 
     // Receiver used to read the current effective config for change comparisons
@@ -114,25 +114,22 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
                 if let (Ok(canonical_event), Ok(canonical_config)) = (
                     std::fs::canonicalize(event_path),
                     std::fs::canonicalize(&path),
-                ) {
-                    if canonical_event == canonical_config {
-                        return true;
-                    }
+                ) && canonical_event == canonical_config
+                {
+                    return true;
                 }
                 // Fallback to filename match (handles atomic writes where temp files are involved)
-                if let Some(event_filename) = event_path.file_name() {
-                    if event_filename == config_filename {
-                        return true;
-                    }
+                if let Some(event_filename) = event_path.file_name()
+                    && event_filename == config_filename
+                {
+                    return true;
                 }
                 false
             });
 
-            if matches_config {
-                if let Err(e) = process_config_change(&path, &tx, &rx).await {
-                    error!("Failed to process config change: {}", e);
-                    break;
-                }
+            if matches_config && let Err(e) = process_config_change(&path, &tx, &rx).await {
+                error!("Failed to process config change: {}", e);
+                break;
             }
         }
     }

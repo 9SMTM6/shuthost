@@ -24,6 +24,10 @@ const NPM_BIN: &str = "npm.cmd";
 
 fn main() -> eyre::Result<()> {
     #[allow(
+        clippy::allow_attributes,
+        reason = "This seems cleanest way to do this."
+    )]
+    #[allow(
         unused_mut,
         reason = "This will receive false positives when no build warning is emitted."
     )]

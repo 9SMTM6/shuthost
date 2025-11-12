@@ -13,7 +13,7 @@ use axum::{
     },
     middleware::Next,
     response::{Redirect, Response},
-    routing::{self, any, get},
+    routing::{self, IntoMakeService, any, get},
 };
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use clap::Parser;
@@ -27,7 +27,7 @@ use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::T
 use tracing::{info, warn};
 
 use crate::{
-    auth::{self},
+    auth,
     config::{ControllerConfig, DbConfig, TlsConfig, load},
     db::{self, DbPool},
     http::{
@@ -235,6 +235,90 @@ async fn setup_tls_config(
     Ok(rustls_cfg)
 }
 
+fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
+    // TODO: figure out rate limiting
+    let middleware_stack = ServiceBuilder::new()
+        .sensitive_headers([AUTHORIZATION, COOKIE])
+        .set_x_request_id(MakeRequestUuid)
+        .propagate_x_request_id()
+        // must be after request-id
+        .trace_for_http();
+
+    #[cfg(any(
+        feature = "compression-br",
+        feature = "compression-deflate",
+        feature = "compression-gzip",
+        feature = "compression-zstd",
+    ))]
+    let middleware_stack = middleware_stack.compression();
+
+    let middleware_stack = middleware_stack
+        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        .layer(axum::middleware::from_fn(secure_headers_middleware));
+
+    // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
+    // Private app routes protected by auth middleware
+    let app = create_app_router(&app_state.auth)
+        .with_state(app_state)
+        .fallback(routing::any(|req: Request<Body>| async move {
+            tracing::warn!(
+                method = %req.method(),
+                uri = %req.uri(),
+                "Unhandled request"
+            );
+            Redirect::permanent("/")
+        }))
+        .layer(middleware_stack);
+
+    app.into_make_service()
+}
+
+/// Emit startup warnings based on configuration and runtime state.
+fn emit_startup_warnings(app_state: &AppState) {
+    // Check config file permissions on Unix systems
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = std::fs::metadata(&app_state.config_path) {
+            let mode = metadata.permissions().mode();
+            if mode & 0o077 != 0 {
+                warn!(
+                    "Config file permissions are too permissive (current: {mode:#o}). Run 'chmod 600 {}' to restrict access to owner only.",
+                    app_state.config_path.display()
+                );
+            }
+        }
+    }
+
+    // Startup-time warning: if TLS is not enabled but authentication is active,
+    // browsers will ignore cookies marked Secure. Warn operators so they can
+    // enable TLS or place the app behind an HTTPS reverse proxy that sets
+    // X-Forwarded-Proto: https.
+    if !app_state.tls_enabled {
+        match &app_state.auth.mode {
+            &auth::Resolved::Disabled => {}
+            _ => {
+                warn!(
+                    "TLS appears disabled but authentication is enabled. Authentication cookies are set with Secure=true and will not be sent by browsers over plain HTTP. Enable TLS or run behind an HTTPS reverse proxy (ensure it sets X-Forwarded-Proto: https)."
+                );
+            }
+        }
+    }
+
+    // Startup-time warning: if external auth is configured but exceptions version is outdated,
+    // the main page will show a security warning. Warn operators to update the config.
+    match &app_state.auth.mode {
+        &auth::Resolved::External { exceptions_version }
+            if exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION =>
+        {
+            warn!(
+                "External authentication is configured with an outdated exceptions version ({exceptions_version}, current {EXPECTED_AUTH_EXCEPTIONS_VERSION}). The main page will display how to configure the correct exceptions.",
+            );
+        }
+        _ => {}
+    }
+}
+
 /// Starts the Axum-based HTTP server for the coordinator UI and API.
 ///
 /// # Arguments
@@ -263,29 +347,17 @@ pub async fn start(
 
     let initial_config = Arc::new(load(config_path).await?);
 
-    // Check config file permissions on Unix systems
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if let Ok(metadata) = std::fs::metadata(config_path) {
-            let mode = metadata.permissions().mode();
-            if mode & 0o077 != 0 {
-                warn!("Config file permissions are too permissive (current: {mode:#o}). Run 'chmod 600 {}' to restrict access to owner only.", config_path.display());
-            }
-        }
-    }
-
     // Apply optional overrides from CLI/tests
     let listen_port = port_override.unwrap_or(initial_config.server.port);
     let bind_str = bind_override
         .map(|s| s.to_string())
         .unwrap_or_else(|| initial_config.server.bind.clone());
 
-    let listen_ip: IpAddr = bind_str.parse()?;
+    let listen_ip = bind_str.parse()?;
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
-    let initial_status: Arc<HashMap<String, bool>> = Arc::new(HashMap::new());
+    let initial_status = Arc::new(HashMap::<String, bool>::new());
     let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
 
     let (ws_tx, _) = broadcast::channel(32);
@@ -317,29 +389,6 @@ pub async fn start(
         Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg),
         _ => None,
     };
-    if tls_opt.is_none() {
-        match &auth_runtime.mode {
-            &crate::auth::Resolved::Disabled => {}
-            _ => {
-                warn!(
-                    "TLS appears disabled but authentication is enabled. Authentication cookies are set with Secure=true and will not be sent by browsers over plain HTTP. Enable TLS or run behind an HTTPS reverse proxy (ensure it sets X-Forwarded-Proto: https)."
-                );
-            }
-        }
-    }
-
-    // Startup-time warning: if external auth is configured but exceptions version is outdated,
-    // the login page will show a security warning. Warn operators to update the config.
-    match &auth_runtime.mode {
-        &crate::auth::Resolved::External { exceptions_version }
-            if exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION =>
-        {
-            warn!(
-                "External authentication is configured with an outdated exceptions version ({exceptions_version}, current {EXPECTED_AUTH_EXCEPTIONS_VERSION}). The login page will display how to configure the correct exceptions.",
-            );
-        }
-        _ => {}
-    }
 
     let app_state = AppState {
         config_rx,
@@ -353,39 +402,9 @@ pub async fn start(
         db_pool,
     };
 
-    // TODO: figure out rate limiting
-    let middleware_stack = ServiceBuilder::new()
-        .sensitive_headers([AUTHORIZATION, COOKIE])
-        .set_x_request_id(MakeRequestUuid)
-        .propagate_x_request_id()
-        // must be after request-id
-        .trace_for_http();
+    emit_startup_warnings(&app_state);
 
-    #[cfg(any(
-        feature = "compression-br",
-        feature = "compression-deflate",
-        feature = "compression-gzip",
-        feature = "compression-zstd",
-    ))]
-    let middleware_stack = middleware_stack.compression();
-
-    let middleware_stack = middleware_stack
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
-        .layer(axum::middleware::from_fn(secure_headers_middleware));
-
-    // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
-    // Private app routes protected by auth middleware
-    let app = create_app_router(&auth_runtime)
-        .with_state(app_state)
-        .fallback(routing::any(|req: Request<Body>| async move {
-            tracing::warn!(
-                method = %req.method(),
-                uri = %req.uri(),
-                "Unhandled request"
-            );
-            Redirect::permanent("/")
-        }))
-        .layer(middleware_stack);
+    let app = create_app(app_state);
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
     let shutdown_signal = async {
@@ -403,7 +422,7 @@ pub async fn start(
     match tls_opt {
         Some(tls_cfg) => {
             let rustls_cfg = setup_tls_config(tls_cfg, config_path, listen_ip, addr).await?;
-            let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app.into_make_service());
+            let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app);
             tokio::select! {
                 res = server => res?,
                 _ = shutdown_signal => {
@@ -414,7 +433,7 @@ pub async fn start(
         _ => {
             info!("Listening on http://{}", addr);
             let listener = tokio::net::TcpListener::bind(addr).await?;
-            let server = axum::serve(listener, app.into_make_service());
+            let server = axum::serve(listener, app);
             tokio::select! {
                 res = server => res?,
                 _ = shutdown_signal => {
