@@ -23,7 +23,7 @@ include_macos_agents = []
 
 [dependencies]
 axum = { version = "0.8.3", features = ["macros", "ws"] }
-axum-extra = { version = "0.12.x", features = ["cookie", "cookie-signed"] }
+axum-extra = { version = "0.12", features = ["cookie", "cookie-signed"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 base64.workspace = true
 clap = { workspace = true, features = ["env"] }
