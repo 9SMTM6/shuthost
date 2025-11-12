@@ -118,7 +118,7 @@ jobs:
           if git diff --quiet lcov.info; then
             echo "lcov.info is unchanged."
           else
-            OLD_SIZE=$(git show HEAD:lcov.info | wc -c)
+            OLD_SIZE=$(git show HEAD:lcov.info | grep '^size ' | cut -d' ' -f2)
             NEW_SIZE=$(wc -c < lcov.info)
             SIZE_DIFF=$((NEW_SIZE - OLD_SIZE))
             ABS_SIZE_DIFF=$(( SIZE_DIFF < 0 ? -SIZE_DIFF : SIZE_DIFF ))
