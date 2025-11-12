@@ -52,6 +52,7 @@ Note that the theme (light/dark) is selected based on your system preference.
 
 - [📚 Examples](docs/examples/)
 - [📋 Requirements](docs/requirements.md)
+- [🖥️ Platform Support](frontend/assets/partials/platform_support.md)
 - [� WebUI Network Configuration](docs/examples/webui-network-config.md)
 - [�🏗️ Architecture](https://9smtm6.github.io/shuthost/#architecture)
 - [📖 API Documentation](docs/API.md)

@@ -220,6 +220,10 @@ fn process_templates() -> eyre::Result<()> {
             include_frontend_asset!("partials/architecture.html"),
         )
         .replace(
+            "{ platform_support }",
+            include_frontend_asset!("partials/platform_support.md"),
+        )
+        .replace(
             "{ client_install_requirements_gotchas }",
             include_frontend_asset!("client_install_requirements_gotchas.md"),
         )
