@@ -44,16 +44,17 @@ Note that the theme (light/dark) is selected based on your system preference.
 
 - [💿 Installation](#-installation)
 - [📷 UI screenshots](#-ui-screenshots)
-- [�📋 Requirements](#-requirements)
 - [🔒 Security](#-security)
-- [📖 API Documentation](#-api-documentation)
 - [⚠️ Known Issues](#️-known-issues)
 - [🚀 Potential Features](#-potential-features)
 
 ## 📚 Documentation
 
 - [📚 Examples](docs/examples/)
-- [🏗️ Architecture](https://9smtm6.github.io/shuthost/#architecture)
+- [📋 Requirements](docs/requirements.md)
+- [� WebUI Network Configuration](docs/examples/webui-network-config.md)
+- [�🏗️ Architecture](https://9smtm6.github.io/shuthost/#architecture)
+- [📖 API Documentation](docs/API.md)
 
 ---
 
@@ -131,7 +132,7 @@ Docker (Linux only)
   - `--network host` is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
 
 
-Agent / Client installation
+### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
 - To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
 
@@ -152,51 +153,6 @@ These are generated or validated automatically as part of the test suite, and th
     <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Dark.png" alt="Hosts expanded — mobile dark" width="220"></td>
   </tr>
 </table>
-
-## �📋 Requirements
-
-### 🤖 Agent Requirements
-For the requirements for the agent, see [Requirements to install the agent](frontend/assets/agent_install_requirements_gotchas.md).
-
-### 🖥️ Coordinator Requirements
-
-The coordinator must be run on a system that can reach the hosts you want to manage.
-
-Assuming that the coordinator-host is on the same network as the hosts, with WOL broadcasts allowed, this requires additionally:
-- 🔧 Running the coordinator as a **binary** on the coordinator-host, or
-- 🐳 Running it in a **docker container** with the host network mode enabled
-
-> ⚠️ **Important**: This does not work with the default network mode that docker uses on Windows and MacOS. It will also not work on WSL. On these Hosts, you will have to run the coordinator as a binary, or install a Linux VM with bridged networking to run docker.
-
-❌ **Windows is currently not supported for coordinators or host agents**, even with the binary and/or WSL. You need a VM or a dedicated Linux machine for those components. However, **Windows clients are supported** via PowerShell scripts.
-
-### Platform Support Matrix
-
-| Component     | Linux                          | macOS                          | Windows                                      |
-|---------------|--------------------------------|--------------------------------|----------------------------------------------|
-| Web GUI       | ✅ (any modern browser)       | ✅ (any modern browser)       | ✅ (any modern browser)                       |
-| Coordinator   | ✅ Binary<br>✅ Docker         | ✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking) | ❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking) |
-| Host Agent | ✅ Binary         | ✅ Binary         | ❌ Binary              |
-| Client        | ✅ Shell<br>✅ Docker   | ✅ Shell<br>✅ Docker  | ✅ PowerShell<br>✅ Docker<br>✅ WSL (Shell)  |
-
-### 🌐 WebUI Network Configuration
-
-The coordinator binary exposes its server on `127.0.0.1` only by default - so on localhost, ipv4, without remote access. This is for security reasons.
-
-#### 🐳 Docker Access
-To access the WebUI served by the binary from Docker containers (e.g. NGINX), use the address:
-```
-http://host.containers.internal:<port>
-```
-
-Container solutions other than Docker (e.g. Podman) might require additional configuration.
-On Podman, add the following to the container that wants to access the coordinator:
-```yaml
-extra_hosts:
-  - "host.docker.internal:host-gateway"
-```
-
-Alternatively, you can set the address the coordinator binds to in the configuration file.
 
 ---
 
@@ -282,19 +238,6 @@ The WebUI will show you the required exceptions, alongside convenience configs f
 - 🌐 **NGINX Proxy Manager** 
 - 🚦 **Generic forward-auth in traefik**
 
-
-## 🏗️ Architecture
-
-📖 See [Architecture Documentation](https://9smtm6.github.io/shuthost/#architecture)
-
-## 📖 API Documentation
-
-📚 See [API Documentation](docs/API.md) for details on:
-- **Coordinator M2M API**: Machine-to-machine lease management and control
-- **Agent Protocol**: Host management commands and status checking
-
-This documentation is intended to help with third-party integrations, including custom scripts and systems like Home Assistant.
-
 ---
 
 ## ⚠️ Known Issues
@@ -303,8 +246,7 @@ This documentation is intended to help with third-party integrations, including 
 |-------|-------------|--------|----------|
 | �🔄 **Missed Shutdown** | If the host misses the initial shutdown, a "full cycle" is required to send it again (release lease, take lease) | Medium | [APP-SIDE] Regularly "syncing" states, either with explicit config on the host or coordinator-wide |
 | 💾 **State Loss** | The coordinator loses state on restart only when no database is configured or persisted between runs | Low (fix available) | Configure the `[db]` section and persist the database file (e.g. keep the SQLite file or mount the volume in Docker) |
-| 🪟 **Windows Support** | Windows agent support currently not planned, due to large differences in the way services are implemented | N/A | N/A |
-| 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | Ensure proper Docker network configuration |
+| 🌐 **Docker Connectivity** | Accessing the coordinator from Docker requires proper configuration | Medium | See [WebUI Network Configuration](docs/examples/webui-network-config.md) |
 | 🌐 **Default Network Interface Selection** | The agent installation chooses the default network interface to determine the IP, MAC, etc. for the config, which may not always be correct | Low | Manually override the network interface in the configuration |
 | 🐧 **glibc Version Errors** | On certain distributions (e.g., Ubuntu 22.04), the coordinator binary may fail due to incompatible glibc versions | Low | Use the **musl binary** or the **container** for the coordinator. For the agent the install script will recommend the correct override to get the musl binary if the original binary fails |
 | 🔏 **Self-signed Certs & Install Scripts** | The client and agent install scripts may fail if you use self-signed certs without proxying these elsewhere | Medium | proxy self-signed certs through a trusted endpoint or provide accepted certs from letsencrypt |
