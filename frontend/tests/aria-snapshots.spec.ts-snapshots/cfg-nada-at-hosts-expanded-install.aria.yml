@@ -33,7 +33,7 @@
               - list:
                 - listitem:
                   - strong: "No Windows Support:"
-                  - text: Only Unix distributions are supported.
+                  - text: Only Unix distributions are supported for the agent.
                 - listitem:
                   - strong: "No BSD Support:"
                   - text: BSD-based systems are not currently supported.
