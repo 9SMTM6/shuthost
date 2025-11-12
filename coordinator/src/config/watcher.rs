@@ -3,7 +3,7 @@
 //! This module provides functions for monitoring configuration files
 //! for changes and automatically reloading them.
 
-use std::{path::Path, sync::Arc};
+use std::{fs, path::Path, sync::Arc};
 
 use eyre::{Result, WrapErr};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
@@ -76,6 +76,10 @@ async fn process_config_change(
 pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 
+    // Cache a canonical version of the watched file path so we can compare notify events
+    // reliably on platforms (like Windows) that may normalize paths differently.
+    let canonical_path = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+
     let mut watcher = RecommendedWatcher::new(
         move |res| {
             if let Ok(event) = res
@@ -100,11 +104,25 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
 
     while let Some(event) = raw_rx.recv().await {
         if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_))
-            && event.paths.contains(&path)
+            && event
+                .paths
+                .iter()
+                .any(|changed_path| path_matches(changed_path, &path, &canonical_path))
             && let Err(e) = process_config_change(&path, &tx, &rx).await
         {
             error!("Failed to process config change: {}", e);
             break;
         }
+    }
+}
+
+fn path_matches(event_path: &Path, watched_path: &Path, canonical_watched_path: &Path) -> bool {
+    if event_path == watched_path {
+        return true;
+    }
+
+    match fs::canonicalize(event_path) {
+        Ok(canonical_event_path) => canonical_event_path == canonical_watched_path,
+        Err(_) => false,
     }
 }
