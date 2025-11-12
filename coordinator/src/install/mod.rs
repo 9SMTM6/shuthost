@@ -127,6 +127,16 @@ pub fn setup(args: Args) -> eyre::Result<()> {
             )
             .wrap_err("Failed to write config file")?;
 
+        let status = Command::new("chmod")
+            .arg("600")
+            .arg(&config_location)
+            .status()
+            .wrap_err("Failed to run chmod")?;
+
+        if !status.success() {
+            eyre::bail!("Failed to chmod file: {status}");
+        }
+
         println!("Created config file at {config_location:?}");
 
         let status = Command::new("chown")
