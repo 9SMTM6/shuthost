@@ -327,33 +327,11 @@ fn emit_startup_warnings(app_state: &AppState) {
 /// * `port_override` - Optional port to override the config value.
 /// * `bind_override` - Optional bind address to override the config value.
 ///
-/// # Returns
-///
-/// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
-///
-/// # Errors
-///
-/// Returns an error if the configuration cannot be loaded, TLS setup fails, or the server cannot bind.
-///
-/// # Panics
-///
-/// Panics if the certificate path cannot be converted to a string.
-pub async fn start(
+/// Initialize the application state and background services.
+async fn initialize_state(
     config_path: &std::path::Path,
-    port_override: Option<u16>,
-    bind_override: Option<&str>,
-) -> eyre::Result<()> {
-    info!("Starting HTTP server...");
-
+) -> eyre::Result<(AppState, Option<TlsConfig>)> {
     let initial_config = Arc::new(load(config_path).await?);
-
-    // Apply optional overrides from CLI/tests
-    let listen_port = port_override.unwrap_or(initial_config.server.port);
-    let bind_str = bind_override
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| initial_config.server.bind.clone());
-
-    let listen_ip = bind_str.parse()?;
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
@@ -386,7 +364,7 @@ pub async fn start(
     // enable TLS or place the app behind an HTTPS reverse proxy that sets
     // X-Forwarded-Proto: https.
     let tls_opt = match initial_config.server.tls {
-        Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg),
+        Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg.clone()),
         _ => None,
     };
 
@@ -404,6 +382,17 @@ pub async fn start(
 
     emit_startup_warnings(&app_state);
 
+    Ok((app_state, tls_opt))
+}
+
+/// Start the HTTP server with optional TLS.
+async fn start_server(
+    app_state: AppState,
+    listen_ip: std::net::IpAddr,
+    listen_port: u16,
+    tls_opt: Option<&TlsConfig>,
+    config_path: &std::path::Path,
+) -> eyre::Result<()> {
     let app = create_app(app_state);
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
@@ -418,6 +407,7 @@ pub async fn start(
             drop(signal::ctrl_c().await);
         }
     };
+
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
         Some(tls_cfg) => {
@@ -444,6 +434,44 @@ pub async fn start(
     };
 
     Ok(())
+}
+
+/// # Returns
+///
+/// `Ok(())` when the server runs until termination, or an error if binding or setup fails.
+///
+/// # Errors
+///
+/// Returns an error if the configuration cannot be loaded, TLS setup fails, or the server cannot bind.
+///
+/// # Panics
+///
+/// Panics if the certificate path cannot be converted to a string.
+pub async fn start(
+    config_path: &std::path::Path,
+    port_override: Option<u16>,
+    bind_override: Option<&str>,
+) -> eyre::Result<()> {
+    info!("Starting HTTP server...");
+
+    let (app_state, tls_opt) = initialize_state(config_path).await?;
+
+    // Apply optional overrides from CLI/tests
+    let listen_port = port_override.unwrap_or(app_state.config_rx.borrow().server.port);
+    let bind_str = bind_override
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| app_state.config_rx.borrow().server.bind.clone());
+
+    let listen_ip = bind_str.parse()?;
+
+    start_server(
+        app_state,
+        listen_ip,
+        listen_port,
+        tls_opt.as_ref(),
+        config_path,
+    )
+    .await
 }
 
 /// Middleware to set security headers on all responses

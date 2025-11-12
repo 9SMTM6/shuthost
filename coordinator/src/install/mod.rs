@@ -139,6 +139,7 @@ pub fn setup(args: Args) -> eyre::Result<()> {
 
         println!("Created config file at {config_location:?}");
 
+        #[expect(clippy::shadow_unrelated, reason = "name 'status' is clearer here")]
         let status = Command::new("chown")
             .arg(format!("{user}:")) // ":" = default group
             .arg(&config_location)

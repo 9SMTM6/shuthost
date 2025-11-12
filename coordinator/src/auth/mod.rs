@@ -111,79 +111,102 @@ impl Runtime {
     /// - Database operations fail when storing, retrieving, or deleting cookie secrets or auth tokens
     /// - A stored cookie secret in the database is corrupted (invalid base64 or wrong length)
     pub async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
-        let cookie_key = if let Some(ref cookie_secret) = cfg.cookie_secret {
-            // Configured cookie secret - remove any stored value to avoid confusion
-            if let Some(pool) = db_pool {
-                info!(
-                    "Configured cookie_secret present in config; removing any stored cookie_secret from DB to avoid confusion"
-                );
-                delete_kv(pool, KV_COOKIE_SECRET).await?;
-            }
+        let cookie_key = setup_cookie_key(&cfg.cookie_secret, db_pool).await?;
+        let mode = resolve_auth_mode(&cfg.mode, db_pool).await?;
 
-            // Try to decode the configured secret
-            let bytes = base64_gp_STANDARD
-                .decode(cookie_secret)
-                .wrap_err("Invalid cookie_secret in config")?;
-            Key::try_from(bytes.as_slice())
-                .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")?
-        } else {
-            get_or_generate_cookie_key(db_pool).await?
-        };
-
-        let mode = match cfg.mode {
-            AuthMode::None => Resolved::Disabled,
-            AuthMode::Token { ref token } => {
-                let token = if let Some(cfg_token) = token.clone() {
-                    // Configured token - remove any stored value to avoid confusion
-                    if let Some(pool) = db_pool {
-                        delete_kv(pool, KV_AUTH_TOKEN).await?;
-                    }
-                    info!("Auth mode: token (configured)");
-                    cfg_token
-                } else {
-                    // No configured token - try database, then generate
-                    if let Some(pool) = db_pool {
-                        if let Some(stored_token) = get_kv(pool, KV_AUTH_TOKEN).await? {
-                            info!("Auth mode: token (from database)");
-                            info!("Token: {}", stored_token);
-                            stored_token
-                        } else {
-                            let generated = cookies::generate_token();
-                            store_kv(pool, KV_AUTH_TOKEN, &generated).await?;
-                            info!("Auth mode: token (auto generated, stored in db)");
-                            info!("Token: {}", generated);
-                            generated
-                        }
-                    } else {
-                        let generated = cookies::generate_token();
-                        info!("Auth mode: token (auto generated, not stored for lack of a db)");
-                        info!("Token: {}", generated);
-                        generated
-                    }
-                };
-
-                Resolved::Token { token }
-            }
-            AuthMode::Oidc {
-                ref issuer,
-                ref client_id,
-                ref client_secret,
-                ref scopes,
-            } => {
-                info!("Auth mode: oidc, issuer={}", issuer);
-                Resolved::Oidc {
-                    issuer: issuer.clone(),
-                    client_id: client_id.clone(),
-                    client_secret: client_secret.clone(),
-                    scopes: scopes.clone(),
-                }
-            }
-            AuthMode::External { exceptions_version } => {
-                info!("Auth mode: external (reverse proxy)");
-                Resolved::External { exceptions_version }
-            }
-        };
         Ok(Self { mode, cookie_key })
+    }
+}
+
+/// Set up the cookie key from config or database.
+async fn setup_cookie_key(
+    cookie_secret: &Option<String>,
+    db_pool: Option<&DbPool>,
+) -> eyre::Result<Key> {
+    if let &Some(ref cookie_secret_val) = cookie_secret {
+        // Configured cookie secret - remove any stored value to avoid confusion
+        if let Some(pool) = db_pool {
+            info!(
+                "Configured cookie_secret present in config; removing any stored cookie_secret from DB to avoid confusion"
+            );
+            delete_kv(pool, KV_COOKIE_SECRET).await?;
+        }
+
+        // Try to decode the configured secret
+        let bytes = base64_gp_STANDARD
+            .decode(cookie_secret_val)
+            .wrap_err("Invalid cookie_secret in config")?;
+        Key::try_from(bytes.as_slice())
+            .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")
+    } else {
+        get_or_generate_cookie_key(db_pool).await
+    }
+}
+
+/// Resolve the authentication mode from configuration.
+async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::Result<Resolved> {
+    match *mode {
+        AuthMode::None => Ok(Resolved::Disabled),
+        AuthMode::Token { ref token } => resolve_token_auth(token, db_pool).await,
+        AuthMode::Oidc {
+            ref issuer,
+            ref client_id,
+            ref client_secret,
+            ref scopes,
+        } => {
+            info!("Auth mode: oidc, issuer={}", issuer);
+            Ok(Resolved::Oidc {
+                issuer: issuer.to_string(),
+                client_id: client_id.to_string(),
+                client_secret: client_secret.to_string(),
+                scopes: scopes.to_vec(),
+            })
+        }
+        AuthMode::External { exceptions_version } => {
+            info!("Auth mode: external (reverse proxy)");
+            Ok(Resolved::External { exceptions_version })
+        }
+    }
+}
+
+/// Resolve token authentication mode.
+async fn resolve_token_auth(
+    config_token: &Option<String>,
+    db_pool: Option<&DbPool>,
+) -> eyre::Result<Resolved> {
+    let token = if let Some(cfg_token) = config_token.clone() {
+        // Configured token - remove any stored value to avoid confusion
+        if let Some(pool) = db_pool {
+            delete_kv(pool, KV_AUTH_TOKEN).await?;
+        }
+        info!("Auth mode: token (configured)");
+        cfg_token
+    } else {
+        resolve_auto_token(db_pool).await?
+    };
+
+    Ok(Resolved::Token { token })
+}
+
+/// Resolve token when not configured (try DB, then generate).
+async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<String> {
+    if let Some(pool) = db_pool {
+        if let Some(stored_token) = get_kv(pool, KV_AUTH_TOKEN).await? {
+            info!("Auth mode: token (from database)");
+            info!("Token: {}", stored_token);
+            Ok(stored_token)
+        } else {
+            let generated = cookies::generate_token();
+            store_kv(pool, KV_AUTH_TOKEN, &generated).await?;
+            info!("Auth mode: token (auto generated, stored in db)");
+            info!("Token: {}", generated);
+            Ok(generated)
+        }
+    } else {
+        let generated = cookies::generate_token();
+        info!("Auth mode: token (auto generated, not stored for lack of a db)");
+        info!("Token: {}", generated);
+        Ok(generated)
     }
 }
 

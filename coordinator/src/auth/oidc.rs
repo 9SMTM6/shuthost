@@ -217,7 +217,7 @@ pub async fn login(
 
 #[derive(Deserialize)]
 /// Query parameters for OIDC callback deserialization.
-pub struct OidcCallbackQueryParams {
+pub struct CallbackQueryParams {
     code: Option<String>,
     state: Option<String>,
     error: Option<String>,
@@ -225,7 +225,7 @@ pub struct OidcCallbackQueryParams {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum OidcFlowError {
+enum LoginFlowError {
     /// Redirect to login with a generic OIDC error message
     LoginRedirect,
     /// Return a StatusCode (expected to be in the 4XX range)
@@ -305,12 +305,12 @@ fn handle_provider_error(
     None
 }
 
-fn extract_authorization_code(code: Option<String>) -> Result<String, OidcFlowError> {
+fn extract_authorization_code(code: Option<String>) -> Result<String, LoginFlowError> {
     match code {
         Some(c) => Ok(c),
         None => {
             tracing::warn!("OIDC callback missing code");
-            Err(OidcFlowError::LoginRedirect)
+            Err(LoginFlowError::LoginRedirect)
         }
     }
 }
@@ -320,7 +320,7 @@ async fn exchange_code_for_token(
     http: &reqwest::Client,
     code: String,
     pkce_verifier: Option<PkceCodeVerifier>,
-) -> Result<CoreTokenResponse, OidcFlowError> {
+) -> Result<CoreTokenResponse, LoginFlowError> {
     let mut req = client.exchange_code(AuthorizationCode::new(code));
     if let Some(v) = pkce_verifier {
         req = req.set_pkce_verifier(v);
@@ -329,19 +329,19 @@ async fn exchange_code_for_token(
         Ok(r) => Ok(r),
         Err(e) => {
             tracing::error!("Token exchange failed: {:#?}", e);
-            Err(OidcFlowError::Status(axum::http::StatusCode::BAD_GATEWAY))
+            Err(LoginFlowError::Status(axum::http::StatusCode::BAD_GATEWAY))
         }
     }
 }
 
 fn id_token_from_response(
     token_response: &CoreTokenResponse,
-) -> Result<CoreIdToken, OidcFlowError> {
+) -> Result<CoreIdToken, LoginFlowError> {
     match token_response.extra_fields().id_token() {
         Some(id) => Ok(id.clone()),
         None => {
             tracing::warn!("No id_token in response; refusing login");
-            Err(OidcFlowError::Status(axum::http::StatusCode::BAD_REQUEST))
+            Err(LoginFlowError::Status(axum::http::StatusCode::BAD_REQUEST))
         }
     }
 }
@@ -350,7 +350,7 @@ fn verify_id_token_and_build_session(
     client: &OidcClientReady,
     id_token: &CoreIdToken,
     nonce_cookie: Option<&Nonce>,
-) -> Result<OIDCSessionClaims, OidcFlowError> {
+) -> Result<OIDCSessionClaims, LoginFlowError> {
     let claims = match id_token.claims(
         &client.id_token_verifier(),
         nonce_cookie.unwrap_or(&Nonce::new(String::new())),
@@ -358,7 +358,7 @@ fn verify_id_token_and_build_session(
         Ok(c) => c,
         Err(e) => {
             tracing::error!("Invalid id token: {}", e);
-            return Err(OidcFlowError::Status(axum::http::StatusCode::UNAUTHORIZED));
+            return Err(LoginFlowError::Status(axum::http::StatusCode::UNAUTHORIZED));
         }
     };
     let sub = claims.subject().to_string();
@@ -372,7 +372,7 @@ async fn process_token_and_build_session(
     http: &reqwest::Client,
     jar: &SignedCookieJar,
     code: Option<String>,
-) -> Result<OIDCSessionClaims, OidcFlowError> {
+) -> Result<OIDCSessionClaims, LoginFlowError> {
     let code = extract_authorization_code(code)?;
     tracing::debug!(
         code_len = code.len(),
@@ -395,12 +395,12 @@ pub async fn callback(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
-    axum::extract::Query(OidcCallbackQueryParams {
+    axum::extract::Query(CallbackQueryParams {
         code,
         state,
         error,
         error_description,
-    }): axum::extract::Query<OidcCallbackQueryParams>,
+    }): axum::extract::Query<CallbackQueryParams>,
 ) -> impl IntoResponse {
     let crate::auth::Resolved::Oidc {
         ref issuer,
@@ -438,8 +438,8 @@ pub async fn callback(
             }
             s
         }
-        Err(OidcFlowError::LoginRedirect) => return login_error_response(),
-        Err(OidcFlowError::Status(sc)) => return sc.into_response(),
+        Err(LoginFlowError::LoginRedirect) => return login_error_response(),
+        Err(LoginFlowError::Status(sc)) => return sc.into_response(),
     };
 
     finalize_session_and_redirect(jar, &session)
