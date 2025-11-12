@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
+import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort, waitForServerReady } from './test-utils';
 import { ChildProcess } from 'node:child_process';
 
 test.describe('main page(s)', () => {
@@ -102,3 +102,32 @@ test.describe('OIDC login', () => {
         await expect(page.locator('#main-content')).toHaveScreenshot(`login_oidc_session_expired.png`);
     });
 });
+
+if (!process.env['COVERAGE']) {
+    test.describe('demo mode', () => {
+        let backendProcess: ChildProcess | undefined;
+
+        test.beforeAll(async () => {
+            const { spawn } = await import('node:child_process');
+            const backendBin = '../target/release/shuthost_coordinator';
+            const port = getTestPort();
+            backendProcess = spawn(
+                backendBin,
+                ['demo-service', '--port', String(port)],
+                { stdio: 'inherit', env: { RUST_LOG: "error", ...process.env } }
+            );
+            await waitForServerReady(port, false, 30000);
+        });
+
+        test.afterAll(async () => {
+            stopBackend(backendProcess);
+            backendProcess = undefined;
+        });
+
+        test('main page', async ({ page }) => {
+            await page.goto(`/`);
+            await page.waitForLoadState('networkidle');
+            await expect(page.locator('body')).toHaveScreenshot(`demo_main_page.png`);
+        });
+    });
+}

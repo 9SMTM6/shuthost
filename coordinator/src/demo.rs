@@ -8,7 +8,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use axum::{Router, extract::State, http::Response, response::IntoResponse};
+use axum::{Router, extract::State, http::Response, response::IntoResponse, routing};
 use tokio::{
     net::TcpListener,
     sync::{broadcast, watch},
@@ -16,12 +16,13 @@ use tokio::{
 use tracing::info;
 
 use crate::{
+    auth,
     config::{AuthConfig, ControllerConfig},
     http::{
         AppState,
-        assets::{UiMode, render_ui_html},
+        assets::{self, UiMode, render_ui_html},
         download,
-        m2m::{self, LeaseMap},
+        m2m::LeaseMap,
     },
 };
 
@@ -55,8 +56,8 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         hoststatus_tx,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseMap::default(),
-        auth: std::sync::Arc::new(
-            crate::auth::Runtime::from_config(&AuthConfig::default(), None)
+        auth: Arc::new(
+            auth::Runtime::from_config(&AuthConfig::default(), None)
                 .await
                 .unwrap(),
         ),
@@ -65,8 +66,8 @@ pub async fn run_demo_service(port: u16, bind: &str) {
     };
 
     let app = Router::new()
-        .route("/", axum::routing::get(serve_demo_ui))
-        .merge(m2m::routes())
+        .route("/", routing::get(serve_demo_ui))
+        .merge(assets::routes())
         .nest("/download", download::routes())
         .with_state(app_state);
 
