@@ -25,6 +25,13 @@ use crate::{
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Handle host state changes based on lease status.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Waking up the host fails (e.g., network issues, invalid configuration)
+/// - Shutting down the host fails (e.g., network issues, invalid configuration)
+/// - The host fails to reach the desired state within the timeout period (60 seconds)
 pub async fn handle_host_state(
     host: &str,
     lease_set: &std::collections::HashSet<LeaseSource>,

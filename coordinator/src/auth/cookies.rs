@@ -69,6 +69,10 @@ impl OIDCSessionClaims {
 }
 
 /// Get the current timestamp in seconds since UNIX epoch.
+///
+/// # Panics
+///
+/// Panics if the system time is set to before the UNIX epoch (January 1, 1970).
 pub fn now_ts() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -116,6 +120,10 @@ pub fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
 }
 
 /// Create a token cookie for authentication.
+///
+/// # Panics
+///
+/// Panics if the token data cannot be serialized to JSON.
 pub fn create_token_session_cookie(
     token_data: &TokenSessionClaims,
     session_max_age: CookieDuration,
@@ -133,6 +141,10 @@ pub fn create_token_session_cookie(
 }
 
 /// Create a session cookie for OIDC authentication.
+///
+/// # Panics
+///
+/// Panics if the session data cannot be serialized to JSON.
 pub fn create_oidc_session_cookie(
     session_data: &OIDCSessionClaims,
     session_max_age: CookieDuration,

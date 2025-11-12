@@ -32,6 +32,10 @@ pub fn routes() -> Router<AppState> {
 }
 
 /// Handle GET requests to the login page.
+///
+/// # Panics
+///
+/// Panics if the HTTP response cannot be built.
 #[axum::debug_handler]
 pub async fn login_get(
     State(AppState { auth, .. }): State<AppState>,
