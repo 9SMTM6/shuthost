@@ -111,9 +111,10 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
                     return true;
                 }
                 // Try canonicalized comparison (handles path format differences)
-                if let (Ok(canonical_event), Ok(canonical_config)) = 
-                    (std::fs::canonicalize(event_path), std::fs::canonicalize(&path))
-                {
+                if let (Ok(canonical_event), Ok(canonical_config)) = (
+                    std::fs::canonicalize(event_path),
+                    std::fs::canonicalize(&path),
+                ) {
                     if canonical_event == canonical_config {
                         return true;
                     }
