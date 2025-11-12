@@ -263,6 +263,18 @@ pub async fn start(
 
     let initial_config = Arc::new(load(config_path).await?);
 
+    // Check config file permissions on Unix systems
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = std::fs::metadata(config_path) {
+            let mode = metadata.permissions().mode();
+            if mode & 0o077 != 0 {
+                warn!("Config file permissions are too permissive (current: {mode:#o}). Run 'chmod 600 {}' to restrict access to owner only.", config_path.display());
+            }
+        }
+    }
+
     // Apply optional overrides from CLI/tests
     let listen_port = port_override.unwrap_or(initial_config.server.port);
     let bind_str = bind_override
