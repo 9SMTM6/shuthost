@@ -32,6 +32,8 @@ eyre.workspace = true
 futures.workspace = true
 hex.workspace = true
 hmac.workspace = true
+# Hotfix for https://github.com/programatik29/axum-server/issues/170, afterwards this can be removed as direct dep
+hyper = "1.7.x"
 notify = "8.0.0"
 openidconnect = { version = "4.x", default-features = false, features = [
     "reqwest",
