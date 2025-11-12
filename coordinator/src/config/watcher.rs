@@ -98,37 +98,36 @@ pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<C
     // Receiver used to read the current effective config for change comparisons
     let rx = tx.subscribe();
 
-    // Precompute identifiers for robust path matching across platforms (esp. Windows)
-    let target_filename = path.file_name().map(|s| s.to_owned());
-    let canonical_target = std::fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+    // Get the filename to match against, as a fallback for path comparison issues
+    let config_filename = path.file_name().expect("Config file must have a filename");
 
     while let Some(event) = raw_rx.recv().await {
-        // Only react to relevant event kinds in the watched directory
         if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_)) {
-            // Some platforms may report paths with different casing or with/without prefixes.
-            // Compare using canonical paths when possible, otherwise fall back to filename match.
-            let is_config_event = event.paths.iter().any(|p| {
-                if let Ok(cp) = std::fs::canonicalize(p) {
-                    cp == canonical_target
-                } else {
-                    match (p.file_name(), target_filename.as_deref()) {
-                        (Some(a), Some(b)) => {
-                            // Try exact match first
-                            if a == b {
-                                true
-                            } else if let (Some(astr), Some(bstr)) = (a.to_str(), b.to_str()) {
-                                // As a last resort, compare case-insensitively for Windows
-                                astr.eq_ignore_ascii_case(bstr)
-                            } else {
-                                false
-                            }
-                        }
-                        _ => false,
+            // Check if any of the event paths match our config file
+            // We check both exact path match and filename match (for atomic writes)
+            let matches_config = event.paths.iter().any(|event_path| {
+                // Try exact match first
+                if event_path == &path {
+                    return true;
+                }
+                // Try canonicalized comparison (handles path format differences)
+                if let (Ok(canonical_event), Ok(canonical_config)) = 
+                    (std::fs::canonicalize(event_path), std::fs::canonicalize(&path))
+                {
+                    if canonical_event == canonical_config {
+                        return true;
                     }
                 }
+                // Fallback to filename match (handles atomic writes where temp files are involved)
+                if let Some(event_filename) = event_path.file_name() {
+                    if event_filename == config_filename {
+                        return true;
+                    }
+                }
+                false
             });
 
-            if is_config_event {
+            if matches_config {
                 if let Err(e) = process_config_change(&path, &tx, &rx).await {
                     error!("Failed to process config change: {}", e);
                     break;
