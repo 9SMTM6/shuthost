@@ -135,3 +135,11 @@ Please be respectful and constructive in all interactions.
 
 ---
 If you have any questions, feel free to open an issue.
+
+## Windows Compatibility Notes
+
+Due to platform differences, there are several known limitations when developing on Windows:
+
+- **Frontend Build Issues**: Symlinks are not properly supported on Windows, which means `build.rs` does not pick up changes in frontend code automatically. Developers on Windows may need to manually trigger rebuilds or use alternative approaches for frontend development.
+- **Service Installation**: Windows services work differently from Unix-like systems, and support for installing the agent or coordinator as services is not implemented. This is acceptable for the coordinator but breaks the core functionality of the agent, which relies on running as a service.
+- **Coordinator File Watching**: File watching for changes in the config file does not work reliably on Windows. Despite attempts to implement it, the coordinator will not automatically pick up new hosts or clients without a manual restart.
