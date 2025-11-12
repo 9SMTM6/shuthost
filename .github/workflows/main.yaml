@@ -555,8 +555,10 @@ jobs:
             Write-Host "Added client to config: $clientConfigLine"
             Write-Host "Config file after modification:"
             Get-Content shuthost_coordinator.toml
-            # Wait for config reload
-            Start-Sleep 5
+            # Restart coordinator to reload config, since the file watcher doesnt work on windows
+            Stop-Process -Name shuthost_coordinator -Force -ErrorAction SilentlyContinue
+            ./shuthost_coordinator.exe control-service --config shuthost_coordinator.toml &
+            Start-Sleep 1
           } else {
             Write-Error "Could not parse client config line from installer output"; exit 1
           }
