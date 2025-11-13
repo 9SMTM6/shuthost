@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort, waitForServerReady } from './test-utils';
+import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
 import { ChildProcess } from 'node:child_process';
 
 test.describe('main page(s)', () => {
@@ -107,15 +107,7 @@ test.describe('demo mode', () => {
     let backendProcess: ChildProcess | undefined;
 
     test.beforeAll(async () => {
-        const { spawn } = await import('node:child_process');
-        const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
-        const port = getTestPort();
-        backendProcess = spawn(
-            backendBin,
-            ['demo-service', '--port', String(port)],
-            { stdio: 'inherit', env: { RUST_LOG: "error", ...process.env } }
-        );
-        await waitForServerReady(port, false, 30000);
+        backendProcess = await startBackend(undefined, false, 'demo-service');
     });
 
     test.afterAll(async () => {

@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { ChildProcess } from 'node:child_process';
+import { spawn, ChildProcess } from 'node:child_process';
 
 export const configs = {
   "hosts-only": './tests/configs/hosts-only.toml',
@@ -45,16 +45,19 @@ export async function waitForServerReady(port: number, useTls = false, timeout =
   throw new Error(`Timed out waiting for server at 127.0.0.1:${port}`);
 }
 
-export async function startBackend(configPath: string, useTls = false) {
-  // Spawn the control-service with provided config. Build is performed in globalSetup.
-  const { spawn } = await import('node:child_process');
+export async function startBackend(configPath?: string, useTls = false, command = 'control-service') {
+  // Spawn the backend with provided config (if any). Build is performed in globalSetup.
   const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
   // Determine per-worker port to allow parallel test workers.
   // fall back to 0 for single-worker runs.
   const port = getTestPort();
+  const args = [command, '--port', String(port)];
+  if (configPath) {
+    args.push(`--config=${configPath}`);
+  }
   const proc = spawn(
     backendBin,
-    ['control-service', '--config', configPath, '--port', String(port)],
+    args,
     { stdio: 'inherit', env: { RUST_LOG: "error", ...process.env } }
   );
   await waitForServerReady(port, useTls, 30000);
