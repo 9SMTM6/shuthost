@@ -155,7 +155,9 @@ release TYPE:
     esac
     echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
     sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
-    just playwright --update-snapshots=all
+    cd frontend
+    npx playwright test --update-snapshots all
+    cd ..
     git add .
     while true; do
         read -p "Please check the new snapshots and any other changes. Continue with commit? (y/N/s for shell) " -n 1 -r REPLY

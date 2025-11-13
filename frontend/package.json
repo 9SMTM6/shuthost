@@ -11,7 +11,9 @@
     "dependencies": {
         "@tailwindcss/cli": "^4.1.8",
         "tailwindcss": "^4.1.8",
-        "typescript": "^5.8.3",
+        "typescript": "^5.8.3"
+    },
+    "devDependencies": {
         "@axe-core/playwright": "^4.10.2",
         "@playwright/test": "^1.43.0",
         "@types/node": "^24.7.0"
