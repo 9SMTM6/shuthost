@@ -16,7 +16,7 @@ fi
 if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
   echo "Warning: $INSTALL_DIR is not in your PATH."
   echo "You may need to add it to your PATH to use the installed script easily."
-  echo "For example, add the following line to your shell configuration file:"
+  echo "To do so, add the following line to your shell configuration file:"
   echo "export PATH=\$PATH:$INSTALL_DIR"
 fi
 

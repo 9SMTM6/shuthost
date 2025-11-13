@@ -23,7 +23,7 @@
                         <td>Coordinator</td>
                         <td>✅ Binary<br>✅ Docker</td>
                         <td>✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking)</td>
-                        <td>❌ Binary<br>❌ Docker<br>❌ WSL</td>
+                        <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
                     </tr>
                     <tr>
                         <td>Host Agent</td>

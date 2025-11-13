@@ -24,7 +24,7 @@ $fullPath = "$userPath;$machinePath"
 if ($fullPath -notlike "*$installDir*") {
     Write-Host "Warning: $installDir is not in your PATH."
     Write-Host "You may need to add it to your PATH to use the installed script easily."
-    Write-Host "For example, add the following to your PATH environment variable:"
+    Write-Host "To do so, add the following to your PATH environment variable:"
     Write-Host "$installDir"
 }
 
