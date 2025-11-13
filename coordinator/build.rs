@@ -15,6 +15,11 @@ macro_rules! include_frontend_asset {
 
 const RERUN_IF: &str = "cargo::rerun-if-changed=frontend/assets";
 
+// Note:
+// 1. cargo::rerun-if-changed= only works if its in a project subdirectory, so use the symlinked frontend directory (./frontend/assets) for that
+// 2. But to not break the build on windows (needed for client testing) please only use non-symlinked paths to assets (../frontend/assets).
+// 3. This means the frontend isn't correctly rebuilt on Windows, but that's a documented issue.
+
 const FRONTEND_DIR: &str = "../frontend";
 
 #[cfg(not(target_os = "windows"))]

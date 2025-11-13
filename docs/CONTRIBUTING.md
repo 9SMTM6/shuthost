@@ -6,16 +6,16 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The MSRV is generally set to the latest stable `rustc` as of the most recent commit.
 
 ## Frontend Dependencies
-- The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../frontend/assets/package.json)).
-- `npm` is invoked from the workspace build script (or from `frontend/assets`) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
+- The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../frontend/package.json)).
+- `npm` is invoked from the workspace build script (or from `frontend`) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
 
 
 ## Host Agent Artifacts
 - Host agent binaries (the binaries that are run on every host to be controlled) and other artifacts are included in the build using `include_bytes!` (for portability of the controller binary), so they must be present in the expected locations (e.g. the Cargo target directory for host agents).
 - By default, the include_macos_agents and include_linux_agents features are disabled to avoid build failures.
 - To include agent binaries in the coordinator (required for downloading them, e.g. for manual tests), enable the features via command line: `--features include_linux_agents,include_macos_agents`.
-- Building macOS agents on Linux is not supported. 
-- To build the supported agents use cross-compilation toolchains as described in the [`Justfile`](../Justfile) - similar to Gnu Make - to build the required agents in release mode.
+- Building macOS agents on Linux is not supported.
+- To build the supported agents use cross-compilation toolchains as described in the [`Justfile`](../Justfile) - this uses syntax similar to Gnu Make - to build the required agents in release mode.
 
 ## Shell Scripts & Portability
 - To support many platforms, shell scripts should **not** use bashisms.
@@ -101,6 +101,12 @@ Installation examples:
 - This project uses [`cargo-deny`](https://github.com/EmbarkStudios/cargo-deny) for dependency and license checks.
 - It also uses [`typos-cli`](https://docs.rs/crate/typos-cli/latest) to catch spelling mistakes in code and documentation.
 - Applying a `cargo fmt` before submitting a PR is appreciated.
+
+### Coverage Collection
+
+The project uses a complex coverage collection process (defined in the [`Justfile`](../Justfile)) that combines Rust code coverage from both Rust tests (including integration tests) and frontend Playwright tests. This ensures comprehensive coverage, particularly for websocket codepaths that are exercised by the frontend tests, providing a more realistic assessment of code coverage than Rust tests alone would be able to provide.
+
+If setting up coverage collection locally fails, that's acceptable - in the worst case, the `lcov.info` file can be obtained from CI test runs, as they upload this file as an artifact.
 
 ## CI Pipeline Notes
 - Occasionally, the pipeline may fail in Ubuntu container-based workflows when installing dependencies. If this happens, try re-running the affected job. The cause is unclear.
