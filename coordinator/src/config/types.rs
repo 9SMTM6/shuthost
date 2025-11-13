@@ -140,6 +140,7 @@ pub enum AuthMode {
     /// OpenID Connect login via authorization code flow
     Oidc {
         issuer: String,
+        #[serde(default = "default_oidc_client_id")]
         client_id: String,
         client_secret: String,
         #[serde(default = "default_oidc_scopes")]
@@ -156,6 +157,10 @@ pub enum AuthMode {
 // Defaults for OIDC fields used by serde(default = ...)
 fn default_oidc_scopes() -> Vec<String> {
     vec!["openid".to_string(), "profile".to_string()]
+}
+
+fn default_oidc_client_id() -> String {
+    "shuthost".to_string()
 }
 
 /// Authentication configuration wrapper
