@@ -121,8 +121,8 @@ release TYPE:
         echo "Not on main branch. Aborting."
         exit 1
     fi
-    if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
-        echo "Local main is not up to date with origin/main. Aborting."
+    if [ "$(git rev-list --count HEAD..origin/main)" -gt 0 ]; then
+        echo "Remote main has commits that are not in local main. Please pull first. Aborting."
         exit 1
     fi
     echo "Starting {{TYPE}} release process..."
@@ -155,7 +155,7 @@ release TYPE:
     esac
     echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
     sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
-    just playwright --update-snapshots all
+    just playwright --update-snapshots=all
     git add .
     while true; do
         read -p "Please check the new snapshots and any other changes. Continue with commit? (y/N/s for shell) " -n 1 -r REPLY
@@ -181,11 +181,11 @@ release TYPE:
     echo "Enter changes not tracked in a PR for this release (end with Ctrl+D for none):"
     MANUAL_CHANGES=$(cat)
 
-    if [ -n "$MANUAL_CHANGES" ]; then
-        git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m "- Updated Playwright snapshots" -m "" -m "## Changes not tracked in a PR:" -m "$MANUAL_CHANGES"
-    else
-        git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m"- Updated Playwright snapshots"
+    if [ -z "$MANUAL_CHANGES" ]; then
+        MANUAL_CHANGES="(None)"
     fi
+
+    git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m "- Updated Playwright snapshots" -m "- Updated config patches" -m "- Updated sqlx cache (if required)" -m "- Updated coverage report" -m "" -m "## Changes not tracked in a PR:" -m "$MANUAL_CHANGES"
     git tag "$NEW_VERSION"
     git push origin refs/heads/main --tags
     echo "{{TYPE}} release $NEW_VERSION completed successfully!"
