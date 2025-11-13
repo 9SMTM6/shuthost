@@ -77,7 +77,7 @@ coverage:
     eval "$(cargo llvm-cov show-env --export-prefix)"
     cargo llvm-cov clean --workspace
     cargo build --workspace
-    cd frontend && npx playwright test && cd ..
+    cd frontend && npm run test && cd ..
     cargo test --workspace --all-targets
     cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
     cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
@@ -107,7 +107,7 @@ ci_typo:
     typos
 
 playwright flags="":
-    cd frontend && npx tsc --noEmit && npx playwright test {{flags}}
+    cd frontend && npm ci && npx tsc --noEmit && npx playwright test {{flags}}
 
 playwright_report:
     cd frontend && npx playwright show-report
