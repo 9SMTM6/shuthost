@@ -16,8 +16,6 @@ use eyre::WrapErr;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 
-use crate::config::{AuthConfig, AuthMode, ControllerConfig, ServerConfig};
-
 #[cfg(target_os = "linux")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.ini");
 #[cfg(target_os = "macos")]
@@ -107,24 +105,11 @@ pub fn setup(args: Args) -> eyre::Result<()> {
 
         let mut config_file =
             File::create(&config_location).wrap_err("Failed to create config file")?;
+        let config_content = include_str!("../../../docs/examples/example_config.toml")
+            .replace("port = 8080", &format!("port = {}", args.port))
+            .replace("bind = \"127.0.0.1\"", &format!("bind = \"{}\"", args.bind));
         config_file
-            .write_all(
-                toml::to_string(&ControllerConfig {
-                    server: ServerConfig {
-                        port: args.port,
-                        bind: args.bind,
-                        auth: AuthConfig {
-                            mode: AuthMode::Token { token: None },
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                    db: Some(Default::default()),
-                    ..Default::default()
-                })
-                .unwrap()
-                .as_bytes(),
-            )
+            .write_all(config_content.as_bytes())
             .wrap_err("Failed to write config file")?;
 
         let status = Command::new("chmod")

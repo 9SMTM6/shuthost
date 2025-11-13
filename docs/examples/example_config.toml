@@ -1,7 +1,7 @@
 # ShutHost Coordinator Configuration Example
 #
 # This file demonstrates all possible configuration options for the ShutHost coordinator.
-# This configuration will be used by the installer (TODO).
+# This configuration will be used by the installer.
 # Additional options are shown as commented examples. Uncomment and modify as needed.
 #
 # The configuration is in TOML format. Lines starting with '#' are comments and are ignored.
