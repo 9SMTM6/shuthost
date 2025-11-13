@@ -1,7 +1,7 @@
---- example_config.toml	2025-11-13 16:49:11.162976073 +0100
-+++ example_config_oidc.toml	2025-11-13 17:19:30.706982956 +0100
-@@ -58,36 +58,36 @@
- # The default if none is configured is no authentication (mode = "none")!
+--- example_config.toml	2025-11-13 18:13:40.851350352 +0100
++++ example_config_oidc.toml	2025-11-13 18:51:40.348078043 +0100
+@@ -62,37 +62,37 @@
+ # The default if none is configured is no authentication!
  # Only one authentication mode can be active at a time.
  
 -# TOKEN-BASED AUTHENTICATION
@@ -19,6 +19,7 @@
 -
 -# # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
 -# # OIDC authentication using authorization code flow with PKCE.
+-# # See https://github.com/9SMTM6/shuthost/blob/main/docs/examples/oidc-kanidm.md for an example setup with Kanidm.
 -# # This allows integration with identity providers like Keycloak, Auth0, Google, etc.
 -# # Requires TLS to be enabled (either here or via reverse proxy).
 -# [server.auth.oidc]
@@ -43,6 +44,7 @@
  
 +# ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
 +# OIDC authentication using authorization code flow with PKCE.
++# See https://github.com/9SMTM6/shuthost/blob/main/docs/examples/oidc-kanidm.md for an example setup with Kanidm.
 +# This allows integration with identity providers like Keycloak, Auth0, Google, etc.
 +# Requires TLS to be enabled (either here or via reverse proxy).
 +[server.auth.oidc]

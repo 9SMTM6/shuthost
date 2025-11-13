@@ -195,12 +195,12 @@ mod tests {
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_external.toml");
-        assert!(matches!(
+        assert_eq!(
             cfg.server.auth.mode,
-            crate::config::AuthMode::External {
+            AuthMode::External {
                 exceptions_version: 0
             }
-        ));
+        );
     }
 
     #[tokio::test]
@@ -216,13 +216,14 @@ mod tests {
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_oidc.toml");
-        assert!(
-            matches!(cfg.server.auth.mode, crate::config::AuthMode::Oidc { issuer, client_id, client_secret, scopes } if
-                issuer == "https://your-oidc-provider.com/realms/your-realm" &&
-                client_id == "shuthost" &&
-                client_secret == "your-client-secret" &&
-                scopes == vec!["openid".to_string(), "profile".to_string()]
-            )
+        assert_eq!(
+            cfg.server.auth.mode,
+            AuthMode::Oidc {
+                issuer: "https://your-oidc-provider.com/realms/your-realm".to_string(),
+                client_id: "shuthost".to_string(),
+                client_secret: "your-client-secret".to_string(),
+                scopes: vec!["openid".to_string(), "profile".to_string()]
+            }
         );
     }
 }

@@ -1,7 +1,7 @@
---- example_config.toml	2025-11-13 16:49:11.162976073 +0100
-+++ example_config_external.toml	2025-11-13 17:19:42.985195752 +0100
-@@ -58,18 +58,18 @@
- # The default if none is configured is no authentication (mode = "none")!
+--- example_config.toml	2025-11-13 18:13:40.851350352 +0100
++++ example_config_external.toml	2025-11-13 18:51:30.485058013 +0100
+@@ -62,18 +62,18 @@
+ # The default if none is configured is no authentication!
  # Only one authentication mode can be active at a time.
  
 -# TOKEN-BASED AUTHENTICATION
@@ -31,7 +31,7 @@
  
  # # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
  # # OIDC authentication using authorization code flow with PKCE.
-@@ -88,13 +88,13 @@
+@@ -93,13 +93,13 @@
  # # Generate a secure key with: openssl rand -base64 32
  # # cookie_secret = "base64-encoded-32-byte-key-here"
  
@@ -48,7 +48,7 @@
 +# You must configure your proxy to protect all routes except the listed exceptions.
 +# The exceptions_version tracks which set of exceptions you've configured.
 +[server.auth.external]
-+exceptions_version = 0
++exceptions_version = 1
  
  # =============================================================================
  # DATABASE CONFIGURATION
