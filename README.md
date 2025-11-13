@@ -142,7 +142,7 @@ Docker (Linux only)
 
 ## 📷 UI screenshots
 
-More screenshots can be found in the [frontend/tests/visual-regression.spec.ts-snapshots](frontend/tests/visual-regression.spec.ts-snapshots) and the [frontend/tests/mobile-visual-regression.spec.ts-snapshots](frontend/tests/mobile-visual-regression.spec.ts-snapshots) folders.
+More screenshots can be found in the [frontend/tests/visual-regression.spec.ts-snapshots](frontend/tests/visual-regression.spec.ts-snapshots) and the [frontend/tests/mobile-navigation.spec.ts-snapshots](frontend/tests/mobile-navigation.spec.ts-snapshots) folders.
 These are generated or validated automatically as part of the test suite, and thus are guaranteed to be up-to-date (if the tests pass).
 
 <table>
