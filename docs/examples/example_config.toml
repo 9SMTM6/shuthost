@@ -99,7 +99,7 @@ bind = "127.0.0.1"
 # # You must configure your proxy to protect all routes except the listed exceptions.
 # # The exceptions_version tracks which set of exceptions you've configured.
 # [server.auth.external]
-# exceptions_version = 1
+# exceptions_version = 0
 
 # =============================================================================
 # DATABASE CONFIGURATION
