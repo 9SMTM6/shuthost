@@ -27,7 +27,6 @@ pub enum Command {
     /// Install the coordinator service to start on boot.
     Install(crate::install::Args),
 
-    #[cfg(not(coverage))]
     /// Serve only static assets for demo mode (no backend, no state).
     DemoService {
         #[arg(long, default_value = "8080")]

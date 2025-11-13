@@ -11,7 +11,6 @@ pub mod db;
 // Doesn't make sense to include in the coverage:
 // Including a run of scripts/build-gh-pages.sh, which this is for,
 // would artificially inflate coverage of endpoints that should be tested in actual use
-#[cfg(not(coverage))]
 pub mod demo;
 pub mod http;
 // Installation can't meaningfully be tested even in integration tests
@@ -32,7 +31,6 @@ use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 use cli::{Cli, Command};
-#[cfg(not(coverage))]
 use demo::run_demo_service;
 use http::start;
 
@@ -92,7 +90,6 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             start(&config_path, args.port, args.bind.as_deref()).await?;
             Ok(())
         }
-        #[cfg(not(coverage))]
         Command::DemoService { port, bind } => {
             run_demo_service(port, &bind).await;
             Ok(())
