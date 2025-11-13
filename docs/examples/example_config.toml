@@ -4,6 +4,10 @@
 # This configuration will be used by the installer.
 # Additional options are shown as commented examples. Uncomment and modify as needed.
 #
+# Ensure only you can read this file with `chmod 600 $(whoami) <config location>`
+# Note: If you installed the coordinator using the binary installer (not Docker), it will automatically set the correct permissions on this file.
+# The configuration contains shared secrets for the clients and the hosts, which allow anyone on your LAN or even the Internet to issue shutdown commands.
+#
 # The configuration is in TOML format. Lines starting with '#' are comments and are ignored.
 #
 # =============================================================================
@@ -55,7 +59,7 @@ bind = "127.0.0.1"
 # AUTHENTICATION CONFIGURATION
 # =============================================================================
 # The [server.auth] table configures authentication for the WebUI.
-# The default if none is configured is no authentication (mode = "none")!
+# The default if none is configured is no authentication!
 # Only one authentication mode can be active at a time.
 
 # TOKEN-BASED AUTHENTICATION
@@ -73,6 +77,7 @@ bind = "127.0.0.1"
 
 # # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
 # # OIDC authentication using authorization code flow with PKCE.
+# # See https://github.com/9SMTM6/shuthost/blob/main/docs/examples/oidc-kanidm.md for an example setup with Kanidm.
 # # This allows integration with identity providers like Keycloak, Auth0, Google, etc.
 # # Requires TLS to be enabled (either here or via reverse proxy).
 # [server.auth.oidc]

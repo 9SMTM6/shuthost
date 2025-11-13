@@ -107,30 +107,7 @@ Docker (Linux only)
     -v ./data/:/data/ \
     ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
   ```
--  Both with config file
-  ```toml
-  # coordinator_config.toml
-  # ensure only you can read this file with `chmod 600 $(whoami) ./coordinator_config/coordinator_config.toml`
-  [server]
-  port = 8080 # change accordingly
-  bind = "127.0.0.1" # forward to this with your local reverse proxy.
-
-  [server.auth.token]
-  # token = "change-me" # uncomment and change to a secure token to avoid auto-generation
-
-  [db]
-  path = "/data/shuthost.db"
-
-  # Use this to enable TLS directly on the coordinator (either with provided certs or using the automatically generated self-signed certs)
-  # [server.tls]
-  # cert_path = "/data/cert.pem"
-  # key_path = "/data/key.pem"
-  # persist_self_signed = true
-
-  [hosts]
-
-  [clients]
-  ```
+-  Both with a config file (see [example_config.toml](docs/examples/example_config.toml), ensure restrictive permissions with `chmod 600 $(whoami) <config location>`)
 - Notes:
   - `--network host` is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
 
@@ -167,38 +144,7 @@ These are generated or validated automatically as part of the test suite, and th
 #### Built-in Authentication (optional)
 ShutHost can also enforce simple auth on its own, either with a static token or with OIDC login. If you enable this, you don't need external auth.
 
-In your `shuthost_coordinator.toml` add under `[server]`:
-
-```toml
-[server]
-port = 8080
-bind = "127.0.0.1"
-
-# Choose one auth mode:
-
-[server.auth.token]
-# Token mode: provide a token or omit to auto-generate on startup (printed in logs, but that will be lost on restart)
-# token = "your-secret-token"
-
-# OIDC mode (authorization code flow with PKCE)
-# [server.auth.oidc]
-# issuer = "https://issuer.example.com/realms/foo"
-# client_id = "shuthost"
-# client_secret = "supersecret"
-# # optional, defaults to ["openid","profile"]
-# scopes = ["openid","profile"]
-
-# External auth mode (reverse proxy or external authentication provider)
-# [server.auth.external]
-# exceptions_version = 1  # Version of exceptions acknowledged by operator
-
-# Optional: base64-encoded cookie signing key (32 bytes). If omitted, a random key is generated
-# cookie_secret = "base64-encoded-32-bytes=="
-```
-
-Note that auth modes are mutually exclusive, and both require TLS on the browser end, so need either configured TLS or a reverse proxy that provides TLS.
-
-If proxy unencrypted traffic with an external proxy, this will not be detected, and poses a security risk, as well as a potential source for issues. Such a setup is neither recommended nor supported.
+See the generated config file (a current version is also at [example_config.toml](docs/examples/example_config.toml)) for details.
 
 See [OIDC Authentication with Kanidm](docs/examples/oidc-kanidm.md) for an example setup of OIDC with Kanidm.
 
@@ -211,18 +157,9 @@ Public endpoints (bypass):
 All other routes should be protected by your external auth.
 
 #### TLS configuration
-If you want the coordinator to serve HTTPS directly, add a `[server.tls]` table. Paths are interpreted relative to the config file when not absolute. Example:
+See the generated config file (a current version is also at [example_config.toml](docs/examples/example_config.toml)) for details on how to enable TLS in the built-in server.
 
-```toml
-[server.tls]
-# cert_path = "./tls_cert.pem"    # path to certificate PEM (default: ./tls_cert.pem)
-# key_path = "./tls_key.pem"     # path to private key PEM (default: ./tls_key.pem)
-# persist_self_signed = true       # if true (default) generate and persist a self-signed cert when none provided
-```
-
-Behavior:
-- If both `cert_path` and `key_path` point to existing files, the coordinator will use them for TLS.
-- If the files they point to are absent and `persist_self_signed` is true (the default), the coordinator will generate a self-signed cert/key and write them to the provided locations for reuse across restarts.
+If you proxy unencrypted traffic with an external proxy (so the unencrypted traffic can be intercepted), this will not be detected, and poses a security risk, as well as a potential source for issues. Such a setup is neither recommended nor supported.
 
 ### 🛡️ Agent Security
 - ✅ Host agents are secured with **HMAC signatures** and **timestamps** against replay attacks
