@@ -15,11 +15,11 @@
             - cell "✅ (any modern browser)"
             - cell "✅ (any modern browser)"
             - cell "✅ (any modern browser)"
-          - row "Coordinator ✅ Binary ✅ Docker ✅ Binary ❌ Docker ✅ Linux VM (bridged networking) ❌ Binary ❌ Docker ❌ WSL":
+          - row "Coordinator ✅ Binary ✅ Docker ✅ Binary ❌ Docker ✅ Linux VM (bridged networking) ❌ Binary ❌ Docker ❌ WSL ✅ Linux VM (bridged networking)":
             - cell "Coordinator"
             - cell "✅ Binary ✅ Docker"
             - cell "✅ Binary ❌ Docker ✅ Linux VM (bridged networking)"
-            - cell "❌ Binary ❌ Docker ❌ WSL"
+            - cell "❌ Binary ❌ Docker ❌ WSL ✅ Linux VM (bridged networking)"
           - row "Host Agent ✅ Binary ✅ Binary ❌ Binary ❌ WSL":
             - cell "Host Agent"
             - cell "✅ Binary"
