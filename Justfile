@@ -128,6 +128,11 @@ release TYPE:
     echo "Starting {{TYPE}} release process..."
     just update_dependencies
     cargo fmt
+    just update_test_config_diffs
+    just patch_test_configs
+    just ci_cargo_deny
+    just update_sqlx_cache
+    just coverage
     CURRENT_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
     case {{TYPE}} in
@@ -150,9 +155,7 @@ release TYPE:
     esac
     echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
     sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
-    cd frontend
-    npx playwright test --update-snapshots all
-    cd ..
+    just playwright --update-snapshots all
     git add .
     while true; do
         read -p "Please check the new snapshots and any other changes. Continue with commit? (y/N/s for shell) " -n 1 -r REPLY
@@ -175,11 +178,11 @@ release TYPE:
         esac
     done
 
-    echo "Enter manual changes for this release (end with Ctrl+D for none):"
+    echo "Enter changes not tracked in a PR for this release (end with Ctrl+D for none):"
     MANUAL_CHANGES=$(cat)
 
     if [ -n "$MANUAL_CHANGES" ]; then
-        git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m "- Updated Playwright snapshots" -m "" -m "## Manual Changes" -m "$MANUAL_CHANGES"
+        git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m "- Updated Playwright snapshots" -m "" -m "## Changes not tracked in a PR:" -m "$MANUAL_CHANGES"
     else
         git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m"- Updated Playwright snapshots"
     fi
