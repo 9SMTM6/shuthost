@@ -133,7 +133,9 @@ pub enum AuthMode {
     /// No authentication, everything is public
     #[default]
     None,
-    /// Simple bearer token based auth. If token is not provided, a random token will be generated and logged on startup.
+    /// Simple token based auth. If token is not provided, a random token will be generated and logged on startup.
+    /// The token persists across restarts when a database is configured, otherwise it's regenerated each startup.
+    /// For security, the token is only logged during initial generation, not when loaded from database.
     Token { token: Option<String> },
     /// OpenID Connect login via authorization code flow
     Oidc {
@@ -161,7 +163,7 @@ fn default_oidc_scopes() -> Vec<String> {
 pub struct AuthConfig {
     #[serde(flatten)]
     pub mode: AuthMode,
-    /// Optional base64-encoded cookie key (32 bytes). If omitted, a random key is generated.
+    /// Optional base64-encoded cookie key (32 bytes). If omitted, a random key is generated and persisted to database if available.
     #[serde(default)]
     pub cookie_secret: Option<String>,
 }

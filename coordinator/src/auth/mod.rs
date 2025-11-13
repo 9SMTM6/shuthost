@@ -193,7 +193,6 @@ async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<String> {
     if let Some(pool) = db_pool {
         if let Some(stored_token) = get_kv(pool, KV_AUTH_TOKEN).await? {
             info!("Auth mode: token (from database)");
-            info!("Token: {}", stored_token);
             Ok(stored_token)
         } else {
             let generated = cookies::generate_token();
