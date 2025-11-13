@@ -175,7 +175,14 @@ release TYPE:
         esac
     done
 
-    git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m"- Updated Playwright snapshots"
+    echo "Enter manual changes for this release (end with Ctrl+D for none):"
+    MANUAL_CHANGES=$(cat)
+
+    if [ -n "$MANUAL_CHANGES" ]; then
+        git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m "- Updated Playwright snapshots" -m "" -m "## Manual Changes" -m "$MANUAL_CHANGES"
+    else
+        git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m"- Updated Playwright snapshots"
+    fi
     git tag "$NEW_VERSION"
     git push origin refs/heads/main --tags
     echo "{{TYPE}} release $NEW_VERSION completed successfully!"
