@@ -124,6 +124,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Run tests
         run: cargo test --workspace
 
@@ -899,7 +901,9 @@ jobs:
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
           generate_release_notes: true
           body: |
+            ## Changes without a PR:
             ${{ env.manual_changes }}
+
             📦 **Container Image** available at:
 
             ```

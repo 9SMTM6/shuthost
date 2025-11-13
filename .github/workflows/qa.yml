@@ -64,6 +64,8 @@ jobs:
           lfs: true
           fetch-depth: 0
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
           set -eux
