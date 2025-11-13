@@ -29,6 +29,10 @@ pub async fn load<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::process::Command;
+    use crate::config::AuthMode;
+
     use super::*;
 
     #[tokio::test]
@@ -146,5 +150,49 @@ mod tests {
         assert_eq!(tls.cert_path, "certs/mycert.pem");
         assert_eq!(tls.key_path, "certs/mykey.pem");
         assert!(!tls.persist_self_signed);
+    }
+
+    #[tokio::test]
+    async fn test_load_example_config() {
+        let temp_file = std::env::temp_dir().join("test_example_config.toml");
+        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
+        let cfg = load(&temp_file).await.expect("Failed to load example_config.toml");
+        assert_eq!(cfg.server.port, 8080);
+        assert_eq!(cfg.server.bind, "127.0.0.1");
+        assert_eq!(cfg.db, Some(Default::default()));
+        assert!(matches!(cfg.server.auth.mode, AuthMode::Token { .. }));
+    }
+
+    #[tokio::test]
+    async fn test_load_example_config_with_client_and_host() {
+        let temp_file = std::env::temp_dir().join("test_example_config_with_client_and_host.toml");
+        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
+        Command::new("patch").arg("-i").arg("../docs/examples/example_config_with_client_and_host.toml.patch").arg(&temp_file).status().unwrap();
+        let cfg = load(&temp_file).await.expect("Failed to load example_config_with_client_and_host.toml");
+        assert!(cfg.hosts.contains_key("my-host-name"));
+        assert!(cfg.clients.contains_key("my-client-name"));
+    }
+
+    #[tokio::test]
+    async fn test_load_example_config_external() {
+        let temp_file = std::env::temp_dir().join("test_example_config_external.toml");
+        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
+        Command::new("patch").arg("-i").arg("../docs/examples/example_config_external.toml.patch").arg(&temp_file).status().unwrap();
+        let cfg = load(&temp_file).await.expect("Failed to load example_config_external.toml");
+        assert!(matches!(cfg.server.auth.mode, crate::config::AuthMode::External { exceptions_version: 0 }));
+    }
+
+    #[tokio::test]
+    async fn test_load_example_config_oidc() {
+        let temp_file = std::env::temp_dir().join("test_example_config_oidc.toml");
+        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
+        Command::new("patch").arg("-i").arg("../docs/examples/example_config_oidc.toml.patch").arg(&temp_file).status().unwrap();
+        let cfg = load(&temp_file).await.expect("Failed to load example_config_oidc.toml");
+        assert!(matches!(cfg.server.auth.mode, crate::config::AuthMode::Oidc { issuer, client_id, client_secret, scopes } if 
+            issuer == "https://your-oidc-provider.com/realms/your-realm" &&
+            client_id == "shuthost" &&
+            client_secret == "your-client-secret" &&
+            scopes == vec!["openid".to_string(), "profile".to_string()]
+        ));
     }
 }

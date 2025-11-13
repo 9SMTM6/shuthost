@@ -1,5 +1,5 @@
---- example_config.toml	2025-11-13 16:12:53.738372877 +0100
-+++ example_config_external.toml	2025-11-13 16:33:03.521095369 +0100
+--- example_config.toml	2025-11-13 16:49:11.162976073 +0100
++++ example_config_external.toml	2025-11-13 17:19:42.985195752 +0100
 @@ -58,18 +58,18 @@
  # The default if none is configured is no authentication (mode = "none")!
  # Only one authentication mode can be active at a time.
@@ -41,7 +41,7 @@
 -# # You must configure your proxy to protect all routes except the listed exceptions.
 -# # The exceptions_version tracks which set of exceptions you've configured.
 -# [server.auth.external]
--# exceptions_version = 0
+-# exceptions_version = 1
 +# EXTERNAL AUTHENTICATION
 +# Use when authentication is handled by a reverse proxy or external provider.
 +# The coordinator will trust the proxy to authenticate requests.
