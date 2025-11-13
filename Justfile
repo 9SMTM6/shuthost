@@ -85,6 +85,22 @@ coverage:
 ci_cargo_deny:
     cargo +stable --locked deny check --hide-inclusion-graph
 
+update_test_config_diffs:
+    #!/usr/bin/env sh
+    set -e
+    cd docs/examples/
+    diff -u example_config.toml example_config_with_client_and_host.toml > example_config_with_client_and_host.toml.patch || true
+    diff -u example_config.toml example_config_oidc.toml > example_config_oidc.toml.patch || true
+    diff -u example_config.toml example_config_external.toml > example_config_external.toml.patch || true
+
+patch_test_configs:
+    #!/usr/bin/env sh
+    set -e
+    cd docs/examples/
+    patch example_config.toml -o example_config_with_client_and_host.toml < example_config_with_client_and_host.toml.patch 
+    patch example_config.toml -o example_config_oidc.toml < example_config_oidc.toml.patch
+    patch example_config.toml -o example_config_external.toml < example_config_external.toml.patch
+
 alias deny := ci_cargo_deny
 
 ci_typo:

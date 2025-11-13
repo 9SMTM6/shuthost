@@ -1,0 +1,63 @@
+--- example_config.toml	2025-11-13 16:12:53.738372877 +0100
++++ example_config_oidc.toml	2025-11-13 16:32:27.916252260 +0100
+@@ -58,36 +58,36 @@
+ # The default if none is configured is no authentication (mode = "none")!
+ # Only one authentication mode can be active at a time.
+ 
+-# TOKEN-BASED AUTHENTICATION
+-# Simple token authentication.
+-# If token is omitted or set to null, a random token will be generated and logged on startup.
+-# The token persists across restarts when a database is configured, otherwise it's regenerated each startup.
+-# For security, the token is only logged during initial generation, not when loaded from database.
+-[server.auth.token]
+-# token = "your-secure-token-here"  # Uncomment and set to avoid auto-generation
+-# COOKIE SECRET (optional, applies to all auth modes except "external")
+-# A base64-encoded 32-byte key used for signing session cookies.
+-# If omitted, a random key is generated on startup and persisted to database if available.
+-# Generate a secure key with: openssl rand -base64 32
+-# cookie_secret = "base64-encoded-32-byte-key-here"
+-
+-# # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
+-# # OIDC authentication using authorization code flow with PKCE.
+-# # This allows integration with identity providers like Keycloak, Auth0, Google, etc.
+-# # Requires TLS to be enabled (either here or via reverse proxy).
+-# [server.auth.oidc]
+-# issuer = "https://your-oidc-provider.com/realms/your-realm"
+-# # Default: "shuthost"
+-# # client_id = "shuthost"
+-# client_secret = "your-client-secret"
+-# # Default: ["openid", "profile"]
+-# # scopes = ["openid", "profile"]
++# # TOKEN-BASED AUTHENTICATION
++# # Simple token authentication.
++# # If token is omitted or set to null, a random token will be generated and logged on startup.
++# # The token persists across restarts when a database is configured, otherwise it's regenerated each startup.
++# # For security, the token is only logged during initial generation, not when loaded from database.
++# [server.auth.token]
++# # token = "your-secure-token-here"  # Uncomment and set to avoid auto-generation
+ # # COOKIE SECRET (optional, applies to all auth modes except "external")
+ # # A base64-encoded 32-byte key used for signing session cookies.
+ # # If omitted, a random key is generated on startup and persisted to database if available.
+ # # Generate a secure key with: openssl rand -base64 32
+ # # cookie_secret = "base64-encoded-32-byte-key-here"
+ 
++# ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
++# OIDC authentication using authorization code flow with PKCE.
++# This allows integration with identity providers like Keycloak, Auth0, Google, etc.
++# Requires TLS to be enabled (either here or via reverse proxy).
++[server.auth.oidc]
++issuer = "https://your-oidc-provider.com/realms/your-realm"
++# Default: "shuthost"
++# client_id = "shuthost"
++client_secret = "your-client-secret"
++# Default: ["openid", "profile"]
++# scopes = ["openid", "profile"]
++# COOKIE SECRET (optional, applies to all auth modes except "external")
++# A base64-encoded 32-byte key used for signing session cookies.
++# If omitted, a random key is generated on startup and persisted to database if available.
++# Generate a secure key with: openssl rand -base64 32
++# cookie_secret = "base64-encoded-32-byte-key-here"
++
+ # # EXTERNAL AUTHENTICATION
+ # # Use when authentication is handled by a reverse proxy or external provider.
+ # # The coordinator will trust the proxy to authenticate requests.

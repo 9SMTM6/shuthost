@@ -1,0 +1,57 @@
+--- example_config.toml	2025-11-13 16:12:53.738372877 +0100
++++ example_config_with_client_and_host.toml	2025-11-13 16:36:30.733416243 +0100
+@@ -123,22 +123,22 @@
+ # The host agent installer will print the exact configuration line you need to add here.
+ # Simply copy and paste it into this file.
+ [hosts]
+-# [hosts.my-host-name] 
+-#     # IP address of the host where the agent is running.
+-#     # This should be reachable from the coordinator.
+-#     ip = "192.168.1.100"
+-#     # MAC address of the network interface used for Wake-on-LAN.
+-#     # Required for waking the host. The installer uses "ip link show" or "ifconfig" on the host to find it.
+-#     mac = "AA:BB:CC:DD:EE:FF"
+-#     # TCP port the host agent listens on.
+-#     # This must match the port configured in the host agent's config.
+-#     # Default agent port is 5757, but can be changed.
+-#     port = 5757
+-#     # Shared secret for HMAC authentication between coordinator and agent.
+-#     # This must match the secret in the host agent's config.
+-#     # The installer generates one of these.
+-#     # Could be generated yourself with e.g., openssl rand -hex 32.
+-#     shared_secret = "your-generated-secret"
++[hosts.my-host-name] 
++    # IP address of the host where the agent is running.
++    # This should be reachable from the coordinator.
++    ip = "192.168.1.100"
++    # MAC address of the network interface used for Wake-on-LAN.
++    # Required for waking the host. The installer uses "ip link show" or "ifconfig" on the host to find it.
++    mac = "AA:BB:CC:DD:EE:FF"
++    # TCP port the host agent listens on.
++    # This must match the port configured in the host agent's config.
++    # Default agent port is 5757, but can be changed.
++    port = 5757
++    # Shared secret for HMAC authentication between coordinator and agent.
++    # This must match the secret in the host agent's config.
++    # The installer generates one of these.
++    # Could be generated yourself with e.g., openssl rand -hex 32.
++    shared_secret = "your-generated-secret"
+ 
+ # =============================================================================
+ # CLIENT CONFIGURATION
+@@ -149,9 +149,9 @@
+ # The client installer will print the exact configuration line you need to add here.
+ # Simply copy and paste it into this file.
+ [clients]
+-# [clients."my-client-name"]
+-#     # Shared secret for HMAC authentication between coordinator and agent.
+-#     # This must match the secret in the host agent's config.
+-#     # The installer generates one of these.
+-#     # Could be generated yourself with e.g., openssl rand -hex 32.
+-#     shared_secret = "your-generated-secret"
++[clients."my-client-name"]
++    # Shared secret for HMAC authentication between coordinator and agent.
++    # This must match the secret in the host agent's config.
++    # The installer generates one of these.
++    # Could be generated yourself with e.g., openssl rand -hex 32.
++    shared_secret = "your-generated-secret"
