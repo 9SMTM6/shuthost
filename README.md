@@ -69,20 +69,16 @@ Binary (recommended)
   - https://github.com/9SMTM6/shuthost/releases/latest
   - Example (adjust filename for the asset you downloaded):
     ```bash
-    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/download/latest/shuthost_coordinator-x86_64-unknown-linux-gnu"
+    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/download/latest/shuthost_coordinator-x86_64-unknown-linux-musl"
     chmod +x shuthost_coordinator
     ```
 - Install as a system service (binary supports systemd/openrc/launchd)
-  - Install command (runs the chosen platform service installer, creates config with correct permissions and enables start-on-boot):
+  - Install command (installs binary, creates a config with restrictive permissions and enables start-on-boot):
     ```bash
-    # Linux (recommended run with sudo)
     sudo ./shuthost_coordinator install <optional user>
-
-    # macOS (user is required on macOS)
-    sudo ./shuthost_coordinator install your-username
     ```
   - Notes:
-    - On Linux the installer infers the target user from SUDO_USER if you run under sudo.
+    - The installer infers the target user from SUDO_USER if you run under sudo, otherwise the user is required to be specified.
     - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
 
 Docker (Linux only)
