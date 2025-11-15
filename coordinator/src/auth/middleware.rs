@@ -48,7 +48,7 @@ pub async fn require(
             }
             if wants_html(headers) {
                 // remember path for redirect-after-login
-                return redirect_with_return_to(jar, &req, Redirect::temporary("/login"));
+                redirect_with_return_to(jar, &req, Redirect::temporary("/login"))
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
@@ -69,7 +69,7 @@ pub async fn require(
             }
             tracing::info!("require: no valid session cookie, redirecting to /login");
             if wants_html(headers) {
-                return redirect_with_return_to(jar, &req, Redirect::temporary("/login"));
+                redirect_with_return_to(jar, &req, Redirect::temporary("/login"))
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
