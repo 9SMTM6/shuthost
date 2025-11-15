@@ -6,7 +6,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
-use cookie::{SameSite, time::Duration as CookieDuration};
+use cookie::{time::Duration as CookieDuration};
 use eyre::{Result, eyre};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
@@ -22,7 +22,8 @@ use crate::{
     auth::{
         COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
         LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
-        cookies::{create_oidc_session_cookie, get_oidc_session_from_cookie},
+        login_error_redirect,
+        cookies::{create_oidc_session_cookie, create_protected_cookie, get_oidc_session_from_cookie},
     },
     http::AppState,
 };
@@ -140,7 +141,7 @@ pub async fn login(
     // rely on Secure cookies for the OIDC state/nonce/pkce exchange.
     if !crate::auth::request_is_secure(&headers, tls_enabled) {
         tracing::warn!("oidc_login: insecure connection detected; refusing to set OIDC cookies");
-        return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_INSECURE)).into_response();
+        return login_error_redirect(LOGIN_ERROR_INSECURE).into_response();
     }
     // If already logged in, redirect to return_to or home
     let had_session = jar.get(COOKIE_OIDC_SESSION).is_some();
@@ -156,7 +157,7 @@ pub async fn login(
             return (jar, Redirect::to(&return_to)).into_response();
         }
         // Session expired, redirect with specific error
-        return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
+        return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED)
             .into_response();
     }
     let (client, _http) = match build_client(issuer, client_id, client_secret, &headers).await {
@@ -183,33 +184,9 @@ pub async fn login(
     // Short-lived cookies for OIDC state to mitigate replay attacks
     let short_exp = CookieDuration::minutes(10);
     let signed = jar
-        .add(
-            Cookie::build((COOKIE_STATE, csrf_token.secret().clone()))
-                .http_only(true)
-                .secure(true)
-                .same_site(SameSite::Strict)
-                .max_age(short_exp)
-                .path("/")
-                .build(),
-        )
-        .add(
-            Cookie::build((COOKIE_NONCE, nonce.secret().clone()))
-                .http_only(true)
-                .secure(true)
-                .same_site(SameSite::Strict)
-                .max_age(short_exp)
-                .path("/")
-                .build(),
-        )
-        .add(
-            Cookie::build((COOKIE_PKCE, verifier.secret().clone()))
-                .http_only(true)
-                .secure(true)
-                .same_site(SameSite::Strict)
-                .max_age(short_exp)
-                .path("/")
-                .build(),
-        );
+        .add(create_protected_cookie(COOKIE_STATE, csrf_token.secret().clone(), short_exp))
+        .add(create_protected_cookie(COOKIE_NONCE, nonce.secret().clone(), short_exp))
+        .add(create_protected_cookie(COOKIE_PKCE, verifier.secret().clone(), short_exp));
 
     tracing::info!(auth_url = %auth_url, "oidc_login: redirecting to provider authorization endpoint");
     (signed, Redirect::to(auth_url.as_str())).into_response()
@@ -233,7 +210,7 @@ enum LoginFlowError {
 }
 
 fn login_error_response() -> Response {
-    Redirect::to(&format!("/login?error={}", LOGIN_ERROR_OIDC)).into_response()
+    login_error_redirect(LOGIN_ERROR_OIDC).into_response()
 }
 
 fn clear_oidc_ephemeral_cookies(jar: SignedCookieJar) -> SignedCookieJar {
@@ -433,7 +410,7 @@ pub async fn callback(
     let session = match process_token_and_build_session(&client, &http, &jar, code).await {
         Ok(s) => {
             if s.is_expired() {
-                return Redirect::to(&format!("/login?error={}", LOGIN_ERROR_SESSION_EXPIRED))
+                return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED)
                     .into_response();
             }
             s

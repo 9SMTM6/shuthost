@@ -7,14 +7,12 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
+use axum_extra::extract::cookie::SignedCookieJar;
 
 use crate::auth::{
-    LayerState, Resolved,
-    cookies::{
-        COOKIE_RETURN_TO, create_return_to_cookie, get_oidc_session_from_cookie,
-        get_token_session_from_cookie,
-    },
+    LOGIN_ERROR_SESSION_EXPIRED, LayerState, Resolved, login_error_redirect, cookies::{
+        create_return_to_cookie, get_oidc_session_from_cookie, get_token_session_from_cookie,
+    }
 };
 
 /// Middleware that enforces authentication depending on configured mode.
@@ -36,7 +34,7 @@ pub async fn require(
             if let Some(claims) = get_token_session_from_cookie(&jar) {
                 if claims.is_expired() {
                     tracing::info!("require: token session expired, redirecting to login");
-                    return Redirect::to("/login?error=session_expired").into_response();
+                    return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED).into_response();
                 }
                 if claims.matches_token(token) {
                     return next.run(req).await;
@@ -63,11 +61,7 @@ pub async fn require(
             if wants_html(headers) {
                 let return_to = req.uri().to_string();
                 tracing::info!(return_to = %return_to, "require: setting return_to cookie and redirecting to /oidc/login");
-                let jar = jar.add(
-                    Cookie::build((COOKIE_RETURN_TO, return_to))
-                        .path("/")
-                        .build(),
-                );
+                let jar = jar.add(create_return_to_cookie(return_to));
                 (jar, Redirect::temporary("/oidc/login")).into_response()
             } else {
                 StatusCode::UNAUTHORIZED.into_response()

@@ -108,15 +108,20 @@ pub fn generate_token() -> String {
         .collect()
 }
 
-/// Create a return-to cookie for redirect-after-login functionality.
-pub fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
-    Cookie::build((COOKIE_RETURN_TO, return_to))
+/// Create a protected cookie with standard security properties.
+pub fn create_protected_cookie(name: &'static str, value: String, max_age: CookieDuration) -> Cookie<'static> {
+    Cookie::build((name, value))
         .http_only(true)
         .secure(true)
         .same_site(SameSite::Strict)
-        .max_age(CookieDuration::minutes(10))
+        .max_age(max_age)
         .path("/")
         .build()
+}
+
+/// Create a return-to cookie for redirect-after-login functionality.
+pub fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
+    create_protected_cookie(COOKIE_RETURN_TO, return_to, CookieDuration::minutes(10))
 }
 
 /// Create a token cookie for authentication.
@@ -128,16 +133,11 @@ pub fn create_token_session_cookie(
     token_data: &TokenSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
-    Cookie::build((
+    create_protected_cookie(
         COOKIE_TOKEN_SESSION,
-        serde_json::to_string(&token_data).unwrap(),
-    ))
-    .http_only(true)
-    .secure(true)
-    .same_site(SameSite::Strict)
-    .max_age(session_max_age)
-    .path("/")
-    .build()
+        serde_json::to_string(token_data).unwrap(),
+        session_max_age,
+    )
 }
 
 /// Create a session cookie for OIDC authentication.
@@ -149,16 +149,11 @@ pub fn create_oidc_session_cookie(
     session_data: &OIDCSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
-    Cookie::build((
+    create_protected_cookie(
         COOKIE_OIDC_SESSION,
         serde_json::to_string(session_data).unwrap(),
-    ))
-    .http_only(true)
-    .secure(true)
-    .same_site(SameSite::Strict)
-    .max_age(session_max_age)
-    .path("/")
-    .build()
+        session_max_age,
+    )
 }
 
 pub fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDCSessionClaims> {

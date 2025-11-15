@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use axum_extra::extract::cookie::Key;
+use axum::response::Redirect;
 use base64::{Engine, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context;
 use tracing::{info, warn};
@@ -33,6 +34,11 @@ pub const LOGIN_ERROR_UNKNOWN: &str = "unknown";
 pub const LOGIN_ERROR_TOKEN: &str = "token";
 pub const LOGIN_ERROR_OIDC: &str = "oidc";
 pub const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";
+
+// Helper function for login error redirects
+pub fn login_error_redirect(error: &str) -> Redirect {
+    Redirect::to(&format!("/login?error={}", error))
+}
 
 #[derive(Clone)]
 pub struct Runtime {
