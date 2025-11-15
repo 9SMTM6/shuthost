@@ -9,3 +9,4 @@ This directory contains examples and guides for using ShutHost in various scenar
 - [Automated Backup with Kopia and ShutHost on Linux (systemd)](./automated-backup-systemd.md)
 - [Automated Backup with Kopia and ShutHost on macOS](./automated-backup-macos.md)
 - [WebUI Network Configuration](./webui-network-config.md)
+- [Docker Compose Example](./docker-compose.yml)

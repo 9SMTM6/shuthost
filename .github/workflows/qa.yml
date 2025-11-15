@@ -131,3 +131,18 @@ jobs:
               exit 1
             fi
           fi
+
+  docker-examples:
+    name: Test Docker examples (compose and CLI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test docker-compose config validation
+        working-directory: docs/examples
+        run: |
+          docker compose config
+          docker compose pull

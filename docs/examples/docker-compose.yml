@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  shuthost:
+    image: ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
+    network_mode: "host"      # required for WOL
+    restart: unless-stopped
+    volumes:
+      - ./coordinator_config/:/config/:ro
+      - ./data/:/data/        # persist DB and generated certs here, optional
+    # no ports, since network_mode: host. The web UI will be available on host's port 8080 by default

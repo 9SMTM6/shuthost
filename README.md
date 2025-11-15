@@ -82,30 +82,26 @@ Binary (recommended)
     - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
 
 Docker (Linux only)
-- docker-compose example:
-  ```yaml
-  version: "3.8"
-  services:
-    shuthost:
-      image: ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
-      network_mode: "host"      # required for WOL
-      restart: unless-stopped
-      volumes:
-        - ./coordinator_config/:/config/:ro
-        - ./data/:/data/        # persist DB and generated certs here, optional
-      # no ports, since network_mode: host
-  ```
-- CLI example:
+-  Download the [example_config.toml](docs/examples/example_config.toml) and [docker-compose.yml](docs/examples/docker-compose.yml) from Github and run the service:
   ```bash
-  docker run --rm --network host \
-    -v ./coordinator_config.toml:/config/coordinator_config.toml:ro \
-    -v ./data/:/data/ \
-    ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
-  ```
--  Both with a config file (see [example_config.toml](docs/examples/example_config.toml), ensure restrictive permissions with `chmod 600 $(whoami) <config location>`)
-- Notes:
-  - `--network host` is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary there or run on a Linux VM with bridged networking.
+  # Create config directory and download the example config from GitHub
+  mkdir -p coordinator_config data
+  curl -L -o coordinator_config/coordinator_config.toml \
+    https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/example_config.toml
+  
+  # Set restrictive permissions (readable/writable by owner only)
+  chmod 600 coordinator_config/coordinator_config.toml
+  # Download the docker-compose file
+  curl -L -o docker-compose.yml \
+    https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yml
+  
+  # Run the service in the background
+  docker-compose up -d shuthost
 
+  # Access the WebUI at http://localhost:8080
+  ```
+- Notes:
+  - Uses `network_mode: host` to reach the hosts with the Wake-on-LAN packet. This setting is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary on Mac or run on a Linux VM with bridged networking on Mac or Windows.
 
 ### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
