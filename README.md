@@ -69,7 +69,7 @@ Binary (recommended)
   - https://github.com/9SMTM6/shuthost/releases/latest
   - Example (adjust filename for the asset you downloaded):
     ```bash
-    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/download/latest/shuthost_coordinator-x86_64-unknown-linux-musl"
+    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-unknown-linux-musl"
     chmod +x shuthost_coordinator
     ```
 - Install as a system service (binary supports systemd/openrc/launchd)
