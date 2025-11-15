@@ -36,7 +36,11 @@ pub async fn require(
             if let Some(claims) = get_token_session_from_cookie(&jar) {
                 if claims.is_expired() {
                     tracing::info!("require: token session expired, redirecting to login");
-                    return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED).into_response();
+                    return redirect_with_return_to(
+                        jar,
+                        &req,
+                        login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED),
+                    );
                 }
                 if claims.matches_token(token) {
                     return next.run(req).await;
