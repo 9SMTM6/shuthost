@@ -10,9 +10,11 @@ use axum::{
 use axum_extra::extract::cookie::SignedCookieJar;
 
 use crate::auth::{
-    LOGIN_ERROR_SESSION_EXPIRED, LayerState, Resolved, login_error_redirect, cookies::{
+    LOGIN_ERROR_SESSION_EXPIRED, LayerState, Resolved,
+    cookies::{
         create_return_to_cookie, get_oidc_session_from_cookie, get_token_session_from_cookie,
-    }
+    },
+    login_error_redirect,
 };
 
 /// Middleware that enforces authentication depending on configured mode.
@@ -42,32 +44,45 @@ pub async fn require(
             }
             if wants_html(headers) {
                 // remember path for redirect-after-login
-                let return_to = req.uri().to_string();
-                tracing::info!(return_to = %return_to, "require: no valid token, redirecting to /login and setting return_to cookie");
-                let jar = jar.add(create_return_to_cookie(return_to));
-                (jar, Redirect::temporary("/login")).into_response()
+                return redirect_with_return_to(jar, &req, Redirect::temporary("/login"));
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
         }
         Resolved::Oidc { .. } => {
             // Check signed session cookie via headers
-            if let Some(sess) = get_oidc_session_from_cookie(&jar)
-                && !sess.is_expired()
-            {
-                return next.run(req).await;
+            if let Some(sess) = get_oidc_session_from_cookie(&jar) {
+                return if sess.is_expired() {
+                    tracing::info!("require: OIDC session expired, redirecting to login");
+                    redirect_with_return_to(
+                        jar,
+                        &req,
+                        login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED),
+                    )
+                } else {
+                    next.run(req).await
+                };
             }
-            tracing::info!("require: no valid session cookie, initiating OIDC login flow");
+            tracing::info!("require: no valid session cookie, redirecting to /login");
             if wants_html(headers) {
-                let return_to = req.uri().to_string();
-                tracing::info!(return_to = %return_to, "require: setting return_to cookie and redirecting to /oidc/login");
-                let jar = jar.add(create_return_to_cookie(return_to));
-                (jar, Redirect::temporary("/oidc/login")).into_response()
+                return redirect_with_return_to(jar, &req, Redirect::temporary("/login"));
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
         }
     }
+}
+
+/// Helper function to redirect with return_to cookie set.
+fn redirect_with_return_to(
+    jar: SignedCookieJar,
+    req: &Request<Body>,
+    redirect: Redirect,
+) -> Response {
+    let return_to = req.uri().to_string();
+    tracing::info!(return_to = %return_to, "setting return_to cookie");
+    let jar = jar.add(create_return_to_cookie(return_to));
+    (jar, redirect).into_response()
 }
 
 /// Check if the request wants HTML content based on Accept header.

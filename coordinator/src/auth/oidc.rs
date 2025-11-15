@@ -146,19 +146,14 @@ pub async fn login(
     // If already logged in, redirect to return_to or home
     let had_session = jar.get(COOKIE_OIDC_SESSION).is_some();
     tracing::debug!(had_session, "oidc_login: called");
-    if let Some(sess) = get_oidc_session_from_cookie(&jar) {
-        if !sess.is_expired() {
-            let return_to = jar
-                .get(COOKIE_RETURN_TO)
-                .map(|c| c.value().to_string())
-                .unwrap_or_else(|| "/".to_string());
-            let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
-            tracing::info!(return_to = %return_to, "oidc_login: existing valid session, redirecting to return_to");
-            return (jar, Redirect::to(&return_to)).into_response();
-        }
-        // Session expired, redirect with specific error
-        return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED)
-            .into_response();
+    if had_session {
+        let return_to = jar
+            .get(COOKIE_RETURN_TO)
+            .map(|c| c.value().to_string())
+            .unwrap_or_else(|| "/".to_string());
+        let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+        tracing::info!(return_to = %return_to, "oidc_login: existing session, redirecting to return_to");
+        return (jar, Redirect::to(&return_to)).into_response();
     }
     let (client, _http) = match build_client(issuer, client_id, client_secret, &headers).await {
         Ok(ok) => ok,
