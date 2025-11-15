@@ -85,7 +85,7 @@ Binary (recommended)
     # Make the binary executable
     chmod +x shuthost_coordinator
     # Run the installer (installs binary, creates a config with restrictive permissions and enables start-on-boot)
-    sudo ./shuthost_coordinator install <optional user>
+    sudo ./shuthost_coordinator install #<optional user>
     # Remove the binary (it'll have been copied to the appropriate location by the installer)
     rm shuthost_coordinator
     # Access the WebUI at http://localhost:8080
@@ -140,7 +140,7 @@ These are generated or validated automatically as part of the test suite, and th
 
 ---
 
-## 🚀 Potential Features
+## 🚀 Potential Future Features
 
 ### 🎯 Core Features
 - 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
