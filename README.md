@@ -65,17 +65,30 @@ Extended documentation, examples, and additional resources to help you get the m
 Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
 
 Binary (recommended)
-- Download the latest release from:
-  - https://github.com/9SMTM6/shuthost/releases/latest
-  - Example (adjust filename for the asset you downloaded):
+- Download the latest release from: https://github.com/9SMTM6/shuthost/releases/latest
     ```bash
+    uname -m
+    # Possible outputs: x86_64 => Intel/AMD, aarch64 => ARM
+    # Linux on Intel/AMD
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-unknown-linux-musl"
-    chmod +x shuthost_coordinator
+    # There are also gnu binaries available, but the musl variants have wider compatibility for users that dont know which version they have.
+    # Linux on ARM
+    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-unknown-linux-musl"
+    # macOS on Apple Silicon
+    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-apple-darwin"
+    # macOS on Intel
+    curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-apple-darwin"
     ```
 - Install as a system service (binary supports systemd/openrc/launchd)
   - Install command (installs binary, creates a config with restrictive permissions and enables start-on-boot):
     ```bash
+    # Make the binary executable
+    chmod +x shuthost_coordinator
+    # Run the installer (installs binary, creates a config with restrictive permissions and enables start-on-boot)
     sudo ./shuthost_coordinator install <optional user>
+    # Remove the binary (it'll have been copied to the appropriate location by the installer)
+    rm shuthost_coordinator
+    # Access the WebUI at http://localhost:8080
     ```
   - Notes:
     - The installer infers the target user from SUDO_USER if you run under sudo, otherwise the user is required to be specified.
@@ -83,23 +96,23 @@ Binary (recommended)
 
 Docker (Linux only)
 -  Download the [example_config.toml](docs/examples/example_config.toml) and [docker-compose.yml](docs/examples/docker-compose.yml) from Github and run the service:
-  ```bash
-  # Create config directory and download the example config from GitHub
-  mkdir -p coordinator_config data
-  curl -L -o coordinator_config/coordinator_config.toml \
-    https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/example_config.toml
-  
-  # Set restrictive permissions (readable/writable by owner only)
-  chmod 600 coordinator_config/coordinator_config.toml
-  # Download the docker-compose file
-  curl -L -o docker-compose.yml \
-    https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yml
-  
-  # Run the service in the background
-  docker-compose up -d shuthost
+    ```bash
+    # Create config directory and download the example config from GitHub
+    mkdir -p coordinator_config data
+    curl -L -o coordinator_config/coordinator_config.toml \
+      https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/example_config.toml
 
-  # Access the WebUI at http://localhost:8080
-  ```
+    # Set restrictive permissions (readable/writable by owner only)
+    chmod 600 coordinator_config/coordinator_config.toml
+    # Download the docker-compose file
+    curl -L -o docker-compose.yml \
+      https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yml
+
+    # Run the service in the background
+    docker-compose up -d shuthost
+
+    # Access the WebUI at http://localhost:8080
+    ```
 - Notes:
   - Uses `network_mode: host` to reach the hosts with the Wake-on-LAN packet. This setting is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary on Mac or run on a Linux VM with bridged networking on Mac or Windows.
 
