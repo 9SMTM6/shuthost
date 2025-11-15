@@ -3,12 +3,12 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::cookie::SignedCookieJar;
+use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use serde::Deserialize;
 
 use crate::{
     auth::{
-        LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved, login_error_redirect, cookies::TokenSessionClaims,
+        COOKIE_RETURN_TO, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved, login_error_redirect, cookies::TokenSessionClaims,
         cookies::create_token_session_cookie,
     },
     http::AppState,
@@ -51,7 +51,12 @@ pub async fn login_post(
                 cookie::time::Duration::seconds((claims.exp - claims.iat) as i64),
             );
             let jar = jar.add(cookie);
-            (jar, Redirect::to("/")).into_response()
+            let return_to = jar
+                .get(COOKIE_RETURN_TO)
+                .map(|c| c.value().to_string())
+                .unwrap_or_else(|| "/".to_string());
+            let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+            (jar, Redirect::to(&return_to)).into_response()
         }
         // Wrong token: redirect back to login with an error flag
         _ => login_error_redirect(LOGIN_ERROR_TOKEN).into_response(),
