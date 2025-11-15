@@ -109,7 +109,11 @@ pub fn generate_token() -> String {
 }
 
 /// Create a protected cookie with standard security properties.
-pub fn create_protected_cookie(name: &'static str, value: String, max_age: CookieDuration) -> Cookie<'static> {
+pub fn create_protected_cookie(
+    name: &'static str,
+    value: String,
+    max_age: CookieDuration,
+) -> Cookie<'static> {
     Cookie::build((name, value))
         .http_only(true)
         .secure(true)

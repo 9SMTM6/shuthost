@@ -12,8 +12,8 @@ pub mod token;
 use std::sync::Arc;
 
 use axum::extract::FromRef;
-use axum_extra::extract::cookie::Key;
 use axum::response::Redirect;
+use axum_extra::extract::cookie::Key;
 use base64::{Engine, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context;
 use tracing::{info, warn};

@@ -8,8 +8,9 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        COOKIE_RETURN_TO, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved, login_error_redirect, cookies::TokenSessionClaims,
-        cookies::create_token_session_cookie,
+        COOKIE_RETURN_TO, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved,
+        cookies::{TokenSessionClaims, create_token_session_cookie},
+        login_error_redirect, request_is_secure,
     },
     http::AppState,
 };
@@ -34,7 +35,7 @@ pub async fn login_post(
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
     // If the connection doesn't look secure, surface an error instead of setting Secure cookies
-    if !crate::auth::request_is_secure(&headers, tls_enabled) {
+    if !request_is_secure(&headers, tls_enabled) {
         tracing::warn!(
             "login_post: insecure connection detected; refusing to set Secure auth cookie"
         );

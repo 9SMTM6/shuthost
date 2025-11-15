@@ -6,7 +6,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
-use cookie::{time::Duration as CookieDuration};
+use cookie::time::Duration as CookieDuration;
 use eyre::{Result, eyre};
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
@@ -20,10 +20,10 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+        self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
         LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
-        login_error_redirect,
-        cookies::{create_oidc_session_cookie, create_protected_cookie, get_oidc_session_from_cookie},
+        cookies::{create_oidc_session_cookie, create_protected_cookie},
+        login_error_redirect, request_is_secure,
     },
     http::AppState,
 };
@@ -128,7 +128,7 @@ pub async fn login(
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let crate::auth::Resolved::Oidc {
+    let auth::Resolved::Oidc {
         ref issuer,
         ref client_id,
         ref client_secret,
@@ -139,7 +139,7 @@ pub async fn login(
     };
     // Refuse to start OIDC flow if request doesn't appear secure, because we
     // rely on Secure cookies for the OIDC state/nonce/pkce exchange.
-    if !crate::auth::request_is_secure(&headers, tls_enabled) {
+    if !request_is_secure(&headers, tls_enabled) {
         tracing::warn!("oidc_login: insecure connection detected; refusing to set OIDC cookies");
         return login_error_redirect(LOGIN_ERROR_INSECURE).into_response();
     }
@@ -184,9 +184,21 @@ pub async fn login(
     // Short-lived cookies for OIDC state to mitigate replay attacks
     let short_exp = CookieDuration::minutes(10);
     let signed = jar
-        .add(create_protected_cookie(COOKIE_STATE, csrf_token.secret().clone(), short_exp))
-        .add(create_protected_cookie(COOKIE_NONCE, nonce.secret().clone(), short_exp))
-        .add(create_protected_cookie(COOKIE_PKCE, verifier.secret().clone(), short_exp));
+        .add(create_protected_cookie(
+            COOKIE_STATE,
+            csrf_token.secret().clone(),
+            short_exp,
+        ))
+        .add(create_protected_cookie(
+            COOKIE_NONCE,
+            nonce.secret().clone(),
+            short_exp,
+        ))
+        .add(create_protected_cookie(
+            COOKIE_PKCE,
+            verifier.secret().clone(),
+            short_exp,
+        ));
 
     tracing::info!(auth_url = %auth_url, "oidc_login: redirecting to provider authorization endpoint");
     (signed, Redirect::to(auth_url.as_str())).into_response()
@@ -410,8 +422,7 @@ pub async fn callback(
     let session = match process_token_and_build_session(&client, &http, &jar, code).await {
         Ok(s) => {
             if s.is_expired() {
-                return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED)
-                    .into_response();
+                return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED).into_response();
             }
             s
         }
