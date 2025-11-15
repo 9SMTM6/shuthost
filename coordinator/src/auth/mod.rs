@@ -1,6 +1,6 @@
 //! Authentication for the coordinator: optional Token or OIDC based login.
 //!
-//! - Token mode: static bearer token, generated if not provided. Expects a cookie set via the built-in /login form.
+//! - Token mode: static token, generated if not provided. No bearer Token, token is only exchanged for a session cookie.
 //! - OIDC mode: standard authorization code flow with PKCE. Maintains a signed
 //!   session cookie once the user is authenticated.
 
