@@ -54,7 +54,7 @@ Extended documentation, examples, and additional resources to help you get the m
 - [🛜 WebUI Network Configuration](docs/examples/webui-network-config.md)
 - [⚙️ Full Configuration Example](docs/examples/example_config.toml)
 - [🏗️ Architecture](https://9smtm6.github.io/shuthost/#architecture)
-- [🚀 Potential Features](#-potential-features)
+- [🚀 Potential Future Features](#-potential-future-features)
 - [📖 API Documentation](docs/API.md)
 - [🤝 Contributing](docs/CONTRIBUTING.md)
 
