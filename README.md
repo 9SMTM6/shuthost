@@ -64,7 +64,7 @@ Extended documentation, examples, and additional resources to help you get the m
 
 Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
 
-Binary (recommended)
+#### Binary (recommended)
 - Download the latest release from: https://github.com/9SMTM6/shuthost/releases/latest
     ```bash
     uname -m
@@ -78,6 +78,8 @@ Binary (recommended)
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-apple-darwin"
     # macOS on Intel
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-apple-darwin"
+    # Optionally verify the checksum
+    shasum -a 256 shuthost_coordinator
     ```
 - Install as a system service (binary supports systemd/openrc/launchd)
   - Install command (installs binary, creates a config with restrictive permissions and enables start-on-boot):
@@ -94,7 +96,7 @@ Binary (recommended)
     - The installer infers the target user from SUDO_USER if you run under sudo, otherwise the user is required to be specified.
     - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
 
-Docker (Linux only)
+#### Docker (Linux only)
 -  Download the [example_config.toml](docs/examples/example_config.toml) and [docker-compose.yml](docs/examples/docker-compose.yml) from Github and run the service:
     ```bash
     # Create config directory and download the example config from GitHub
