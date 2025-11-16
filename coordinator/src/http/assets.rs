@@ -5,7 +5,7 @@
 use axum::{
     Router,
     extract::State,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
 };
 
@@ -35,6 +35,12 @@ pub fn routes() -> Router<AppState> {
         .route(
             concat!("/styles.", env!("ASSET_HASH_STYLES_CSS"), ".css"),
             get(serve_styles),
+        )
+        .route(
+            "/favicon.svg",
+            get(async || {
+                Redirect::to(concat!("/favicon.", env!("ASSET_HASH_FAVICON_SVG"), ".svg"))
+            }),
         )
         .route(
             concat!("/favicon.", env!("ASSET_HASH_FAVICON_SVG"), ".svg"),
