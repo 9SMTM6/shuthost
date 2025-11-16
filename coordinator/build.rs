@@ -387,6 +387,10 @@ fn process_templates() -> eyre::Result<()> {
         )
         .replace("{ maybe_logout }", "")
         .replace("{ maybe_demo_disclaimer }", "")
+        .replace(
+            "{ favicon_src }",
+            &format!("./favicon.{}.svg", favicon_short_hash),
+        )
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("login.html"), login_content)?;
