@@ -68,16 +68,26 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 - Download the latest release from: https://github.com/9SMTM6/shuthost/releases/latest
     ```bash
     uname -m
-    # Possible outputs: x86_64 => Intel/AMD, aarch64 => ARM
+    # Possible outputs: x86_64 => Intel/AMD, aarch64 => ARM/Apple Silicon
+    ```
+    ```bash
     # Linux on Intel/AMD
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-unknown-linux-musl"
-    # There are also gnu binaries available, but the musl variants have wider compatibility for users that dont know which version they have.
+    # There are also gnu binaries available, but the musl variants have wider compatibility for users that dont know which version of libc they have.
+    ```
+    ```bash
     # Linux on ARM
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-unknown-linux-musl"
+    ```
+    ```bash
     # macOS on Apple Silicon
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-apple-darwin"
+    ```
+    ```bash
     # macOS on Intel
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-apple-darwin"
+    ```
+    ```bash
     # Optionally verify the checksum
     shasum -a 256 shuthost_coordinator
     ```
