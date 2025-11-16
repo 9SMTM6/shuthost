@@ -223,7 +223,8 @@ fn process_templates() -> eyre::Result<()> {
     let generated_dir = PathBuf::from("../frontend/assets/generated");
     fs::create_dir_all(&generated_dir)?;
 
-    let styles_css = include_frontend_asset!("generated/styles.css");
+    let styles_css = fs::read_to_string("../frontend/assets/generated/styles.css")
+        .wrap_err("Failed to read generated styles.css")?;
     let styles_short_hash = short_hash(styles_css.as_bytes());
     let styles_integrity = format!(
         "sha256-{}",
@@ -241,11 +242,14 @@ fn process_templates() -> eyre::Result<()> {
         icon_hashes.insert(size, short_hash);
     }
 
-    let arch_simplified_short_hash =
-        short_hash(include_frontend_asset!("generated/architecture_simplified.svg").as_bytes());
+    let arch_simplified_svg =
+        fs::read_to_string("../frontend/assets/generated/architecture_simplified.svg")
+            .wrap_err("Failed to read generated architecture_simplified.svg")?;
+    let arch_simplified_short_hash = short_hash(arch_simplified_svg.as_bytes());
 
-    let arch_complete_short_hash =
-        short_hash(include_frontend_asset!("generated/architecture.svg").as_bytes());
+    let arch_complete_svg = fs::read_to_string("../frontend/assets/generated/architecture.svg")
+        .wrap_err("Failed to read generated architecture.svg")?;
+    let arch_complete_short_hash = short_hash(arch_complete_svg.as_bytes());
 
     println!(
         "cargo::rustc-env=ASSET_HASH_STYLES_CSS={}",
@@ -368,7 +372,11 @@ fn process_templates() -> eyre::Result<()> {
             "{ architecture_src }",
             &format!("./architecture.{}.svg", arch_complete_short_hash),
         )
-        .replace("{ js }", include_frontend_asset!("generated/app.js"))
+        .replace(
+            "{ js }",
+            &fs::read_to_string("../frontend/assets/generated/app.js")
+                .wrap_err("Failed to read generated app.js")?,
+        )
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("index.html"), content)?;
