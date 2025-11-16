@@ -8,19 +8,19 @@
   "description": "{ description }",
   "icons": [
     {
-      "src": "./favicon.svg",
+      "src": "{ favicon_src }",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-192.png",
+      "src": "{ icon_192_src }",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "{ icon_512_src }",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

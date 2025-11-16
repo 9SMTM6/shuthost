@@ -1,4 +1,5 @@
-use std::{fs, path::PathBuf, process};
+#![expect(clippy::indexing_slicing, reason = "This is fine at build time")]
+use std::{collections::HashMap, fs, path::PathBuf, process};
 
 use base64::{Engine as _, engine::general_purpose};
 use eyre::{ContextCompat, Ok, WrapErr, bail, eyre};
@@ -27,7 +28,7 @@ const NPM_BIN: &str = "npm";
 #[cfg(target_os = "windows")]
 const NPM_BIN: &str = "npm.cmd";
 
-fn main() -> eyre::Result<()> {
+fn emit_build_warnings() {
     #[allow(
         clippy::allow_attributes,
         reason = "This seems cleanest way to do this."
@@ -63,7 +64,9 @@ fn main() -> eyre::Result<()> {
         "cargo::rustc-env=BUILD_WARNINGS={build_warnings}",
         build_warnings = build_warnings.join(";")
     );
+}
 
+fn main() -> eyre::Result<()> {
     set_workspace_root()?;
 
     setup_npm()?;
@@ -77,7 +80,11 @@ fn main() -> eyre::Result<()> {
     process_templates()?;
 
     // Generate hashes for all inline scripts in templates.
-    generate_inline_script_hashes()
+    generate_inline_script_hashes()?;
+
+    emit_build_warnings();
+
+    Ok(())
 }
 
 fn set_workspace_root() -> eyre::Result<()> {
@@ -207,18 +214,120 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
 }
 
 fn process_templates() -> eyre::Result<()> {
+    fn short_hash(content: &[u8]) -> String {
+        let hash = Sha256::digest(content);
+        let hash_hex = hex::encode(hash);
+        hash_hex[..8].to_string()
+    }
+
     let generated_dir = PathBuf::from("../frontend/assets/generated");
     fs::create_dir_all(&generated_dir)?;
 
-    // Read generated app.js
-    let app_js = fs::read_to_string("../frontend/assets/generated/app.js")?;
+    let styles_css = include_frontend_asset!("generated/styles.css");
+    let styles_short_hash = short_hash(styles_css.as_bytes());
+    let styles_integrity = format!(
+        "sha256-{}",
+        general_purpose::STANDARD.encode(Sha256::digest(styles_css.as_bytes()))
+    );
+
+    let favicon_short_hash = short_hash(include_frontend_asset!("favicon.svg").as_bytes());
+
+    let sizes = [32, 48, 64, 128, 180, 192, 512];
+    let mut icon_hashes = HashMap::new();
+    for &size in &sizes {
+        let png_path = format!("../frontend/assets/generated/icons/icon-{size}.png");
+        let png = fs::read(&png_path)?;
+        let short_hash = short_hash(&png);
+        icon_hashes.insert(size, short_hash);
+    }
+
+    let arch_simplified_short_hash =
+        short_hash(include_frontend_asset!("generated/architecture_simplified.svg").as_bytes());
+
+    let arch_complete_short_hash =
+        short_hash(include_frontend_asset!("generated/architecture.svg").as_bytes());
+
+    println!(
+        "cargo::rustc-env=ASSET_HASH_STYLES_CSS={}",
+        styles_short_hash
+    );
+    println!(
+        "cargo::rustc-env=ASSET_HASH_FAVICON_SVG={}",
+        favicon_short_hash
+    );
+    for &size in &sizes {
+        let hash = &icon_hashes[&size];
+        println!("cargo::rustc-env=ASSET_HASH_ICON_{}_PNG={}", size, hash);
+    }
+    println!(
+        "cargo::rustc-env=ASSET_HASH_ARCHITECTURE_SIMPLIFIED_SVG={}",
+        arch_simplified_short_hash
+    );
+    println!(
+        "cargo::rustc-env=ASSET_HASH_ARCHITECTURE_SVG={}",
+        arch_complete_short_hash
+    );
+
+    // Process manifest.tmpl.json
+    let manifest_content = include_frontend_asset!("manifest.tmpl.json")
+        .replace(
+            "{ icon_192_src }",
+            &format!("./icons/icon-192.{}.png", icon_hashes[&192]),
+        )
+        .replace(
+            "{ icon_512_src }",
+            &format!("./icons/icon-512.{}.png", icon_hashes[&512]),
+        )
+        .replace(
+            "{ favicon_src }",
+            &format!("./favicon.{}.svg", favicon_short_hash),
+        )
+        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
+    let manifest_short_hash = short_hash(manifest_content.as_bytes());
+    println!(
+        "cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={}",
+        manifest_short_hash
+    );
+
+    let html_head_template = include_frontend_asset!("partials/html_head.tmpl.html");
+    let html_head = html_head_template
+        .replace(
+            "{ manifest_href }",
+            &format!("./manifest.{}.json", manifest_short_hash),
+        )
+        .replace(
+            "{ favicon_href }",
+            &format!("./favicon.{}.svg", favicon_short_hash),
+        )
+        .replace(
+            "{ styles_href }",
+            &format!("./styles.{}.css", styles_short_hash),
+        )
+        .replace("{ styles_integrity }", &styles_integrity)
+        .replace(
+            "{ icon_32_href }",
+            &format!("./icons/icon-32.{}.png", icon_hashes[&32]),
+        )
+        .replace(
+            "{ icon_48_href }",
+            &format!("./icons/icon-48.{}.png", icon_hashes[&48]),
+        )
+        .replace(
+            "{ icon_64_href }",
+            &format!("./icons/icon-64.{}.png", icon_hashes[&64]),
+        )
+        .replace(
+            "{ icon_128_href }",
+            &format!("./icons/icon-128.{}.png", icon_hashes[&128]),
+        )
+        .replace(
+            "{ icon_180_href }",
+            &format!("./icons/icon-180.{}.png", icon_hashes[&180]),
+        );
 
     // Process index.tmpl.html
     let content = include_frontend_asset!("index.tmpl.html")
-        .replace(
-            "{ html_head }",
-            include_frontend_asset!("partials/html_head.tmpl.html"),
-        )
+        .replace("{ html_head }", &html_head)
         .replace("{ title }", "ShutHost Coordinator")
         .replace(
             "{ architecture_documentation }",
@@ -244,17 +353,29 @@ fn process_templates() -> eyre::Result<()> {
             "{ footer }",
             include_frontend_asset!("partials/footer.tmpl.html"),
         )
-        .replace("{ js }", &app_js)
+        .replace(
+            "{ favicon_src }",
+            &format!("./favicon.{}.svg", favicon_short_hash),
+        )
+        .replace(
+            "{ architecture_simplified_src }",
+            &format!(
+                "./architecture_simplified.{}.svg",
+                arch_simplified_short_hash
+            ),
+        )
+        .replace(
+            "{ architecture_src }",
+            &format!("./architecture.{}.svg", arch_complete_short_hash),
+        )
+        .replace("{ js }", include_frontend_asset!("generated/app.js"))
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("index.html"), content)?;
 
     // Process login.tmpl.html
     let login_content = include_frontend_asset!("login.tmpl.html")
-        .replace(
-            "{ html_head }",
-            include_frontend_asset!("partials/html_head.tmpl.html"),
-        )
+        .replace("{ html_head }", &html_head)
         .replace("{ title }", "Login • ShutHost")
         .replace(
             "{ header }",
@@ -269,11 +390,6 @@ fn process_templates() -> eyre::Result<()> {
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("login.html"), login_content)?;
-
-    // Process manifest.tmpl.json
-    let manifest_content = include_frontend_asset!("manifest.tmpl.json")
-        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
-    fs::write(generated_dir.join("manifest.json"), manifest_content)?;
 
     Ok(())
 }

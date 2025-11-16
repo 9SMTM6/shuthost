@@ -24,22 +24,22 @@
               - code: /api/m2m/*
               - text: "- Machine-to-machine API communication used by agents/clients"
             - listitem:
-              - code: /manifest.json
+              - code: /manifest.*.json
               - text: "- PWA manifest required for webpage installability"
             - listitem:
-              - code: /favicon.svg
+              - code: /favicon.*.svg
               - text: "- Favicon required for browser installability"
           - paragraph:
             - emphasis: These exceptions let installer scripts and the web UI fetch resources and allow agent clients to call machine-to-machine APIs without user login. The manifest and favicon entries are necessary for correct browser/PWA behaviour.
           - paragraph: "Authelia:"
           - button "Copy Authelia config"
-          - code: "- domain: <base_url> policy: bypass resources: - '^/download/(.*)' - '^/api/m2m/(.*)$' - '^/manifest.json$' - '^/favicon.svg$'"
+          - code: "- domain: <base_url> policy: bypass resources: - '^/download/(.*)' - '^/api/m2m/(.*)$' - '/manifest..*.json$' - '/favicon..*.svg$'"
           - paragraph: "Nginx Proxy Manager with Authentication:"
           - button "Copy Nginx config"
-          - code: "# In your proxy host's advanced configuration location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ { auth_basic off; proxy_pass http://your-shuthost-backend; }"
+          - code: "# In your proxy host's advanced configuration location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ { auth_basic off; proxy_pass http://your-shuthost-backend; }"
           - paragraph: "Traefik with ForwardAuth:"
           - button "Copy Traefik config"
-          - code: "/# Add to your service labels - \"traefik\\.http\\.routers\\.shuthost-bypass\\.rule=Host\\(`<base_url>`\\) && \\(PathPrefix\\(`\\/download`\\) \\|\\| PathPrefix\\(`\\/api\\/m2m`\\) \\|\\| Path\\(`\\/manifest\\.json`\\) \\|\\| Path\\(`\\/favicon\\.svg`\\)\\)\" - \"traefik\\.http\\.routers\\.shuthost-bypass\\.priority=\\d+\" # Remove auth middleware for bypass routes/"
+          - code: "/# Add to your service labels - \"traefik\\.http\\.routers\\.shuthost-bypass\\.rule=Host\\(`<base_url>`\\) && \\(PathPrefix\\(`\\/download`\\) \\|\\| PathPrefix\\(`\\/api\\/m2m`\\) \\|\\| PathRegexp\\(`\\/manifest\\\\\\.\\.\\*\\\\\\.json`\\) \\|\\| PathRegexp\\(`\\/favicon\\\\\\.\\.\\*\\\\\\.svg`\\)\\)\" - \"traefik\\.http\\.routers\\.shuthost-bypass\\.priority=\\d+\" # Remove auth middleware for bypass routes/"
           - paragraph:
             - emphasis:
               - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set

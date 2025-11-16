@@ -28,21 +28,62 @@ macro_rules! include_utf8_asset {
 /// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/manifest.json", get(serve_manifest))
-        .route("/styles.css", get(serve_styles))
-        .route("/favicon.svg", get(serve_favicon))
-        .route("/icons/icon-32.png", get(serve_icon_32))
-        .route("/icons/icon-48.png", get(serve_icon_48))
-        .route("/icons/icon-64.png", get(serve_icon_64))
-        .route("/icons/icon-128.png", get(serve_icon_128))
-        .route("/icons/icon-180.png", get(serve_icon_180))
-        .route("/icons/icon-192.png", get(serve_icon_192))
-        .route("/icons/icon-512.png", get(serve_icon_512))
         .route(
-            "/architecture_simplified.svg",
+            concat!("/manifest.", env!("ASSET_HASH_MANIFEST_JSON"), ".json"),
+            get(serve_manifest),
+        )
+        .route(
+            concat!("/styles.", env!("ASSET_HASH_STYLES_CSS"), ".css"),
+            get(serve_styles),
+        )
+        .route(
+            concat!("/favicon.", env!("ASSET_HASH_FAVICON_SVG"), ".svg"),
+            get(serve_favicon),
+        )
+        .route(
+            concat!("/icons/icon-32.", env!("ASSET_HASH_ICON_32_PNG"), ".png"),
+            get(serve_icon_32),
+        )
+        .route(
+            concat!("/icons/icon-48.", env!("ASSET_HASH_ICON_48_PNG"), ".png"),
+            get(serve_icon_48),
+        )
+        .route(
+            concat!("/icons/icon-64.", env!("ASSET_HASH_ICON_64_PNG"), ".png"),
+            get(serve_icon_64),
+        )
+        .route(
+            concat!("/icons/icon-128.", env!("ASSET_HASH_ICON_128_PNG"), ".png"),
+            get(serve_icon_128),
+        )
+        .route(
+            concat!("/icons/icon-180.", env!("ASSET_HASH_ICON_180_PNG"), ".png"),
+            get(serve_icon_180),
+        )
+        .route(
+            concat!("/icons/icon-192.", env!("ASSET_HASH_ICON_192_PNG"), ".png"),
+            get(serve_icon_192),
+        )
+        .route(
+            concat!("/icons/icon-512.", env!("ASSET_HASH_ICON_512_PNG"), ".png"),
+            get(serve_icon_512),
+        )
+        .route(
+            concat!(
+                "/architecture_simplified.",
+                env!("ASSET_HASH_ARCHITECTURE_SIMPLIFIED_SVG"),
+                ".svg"
+            ),
             get(serve_architecture_simplified),
         )
-        .route("/architecture.svg", get(serve_architecture_complete))
+        .route(
+            concat!(
+                "/architecture.",
+                env!("ASSET_HASH_ARCHITECTURE_SVG"),
+                ".svg"
+            ),
+            get(serve_architecture_complete),
+        )
 }
 
 /// Macro to define a static SVG download handler using include_bytes!
@@ -53,6 +94,7 @@ macro_rules! static_svg_download_handler {
             const SVG: &'static str = include_utf8_asset!($file);
             Response::builder()
                 .header("Content-Type", "image/svg+xml")
+                .header("Cache-Control", "public, max-age=31536000, immutable")
                 .header("Content-Length", SVG.len().to_string())
                 .body(SVG.into_response())
                 .unwrap()
@@ -72,6 +114,7 @@ macro_rules! static_png_download_handler {
             ));
             Response::builder()
                 .header("Content-Type", "image/png")
+                .header("Cache-Control", "public, max-age=31536000, immutable")
                 .header("Content-Length", DATA.len().to_string())
                 .body(DATA.into_response())
                 .unwrap()
@@ -176,6 +219,7 @@ pub async fn serve_ui(
 pub async fn serve_manifest() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
+        .header("Cache-Control", "public, max-age=31536000, immutable")
         .body(include_utf8_asset!("generated/manifest.json").into_response())
         .unwrap()
 }
@@ -189,6 +233,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 pub async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
+        .header("Cache-Control", "public, max-age=31536000, immutable")
         .body(include_utf8_asset!("generated/styles.css").into_response())
         .unwrap()
 }

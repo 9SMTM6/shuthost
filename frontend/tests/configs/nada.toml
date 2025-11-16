@@ -3,7 +3,7 @@ port = 8081
 bind = "127.0.0.1"
 
 [server.auth.external]
-exceptions_version = 1
+exceptions_version = 2
 
 [hosts]
 

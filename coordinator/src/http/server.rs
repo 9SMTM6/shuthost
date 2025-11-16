@@ -50,7 +50,7 @@ use crate::{
 /// defined there include authentication endpoints (e.g., login, logout, OIDC callbacks) whose behavior and
 /// accessibility may depend on this version when handling external authentication modes.
 /// When routes get added to public routes, this needs to be bumped.
-pub const EXPECTED_AUTH_EXCEPTIONS_VERSION: u32 = 1;
+pub const EXPECTED_AUTH_EXCEPTIONS_VERSION: u32 = 2;
 
 /// Creates the main application router by merging public and private routes.
 ///

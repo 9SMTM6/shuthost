@@ -33,8 +33,8 @@
             <ul>
                 <li><code>/download/*</code> - Installation script and binary downloads</li>
                 <li><code>/api/m2m/*</code> - Machine-to-machine API communication used by agents/clients</li>
-                <li><code>/manifest.json</code> - PWA manifest required for webpage installability</li>
-                <li><code>/favicon.svg</code> - Favicon required for browser installability</li>
+                <li><code>/manifest.*.json</code> - PWA manifest required for webpage installability</li>
+                <li><code>/favicon.*.svg</code> - Favicon required for browser installability</li>
             </ul>
             <p class="text-xs mt-2"><em>These exceptions let installer scripts and the web UI fetch resources and allow
                     agent clients to call machine-to-machine APIs without user login. The manifest and favicon
@@ -55,7 +55,7 @@
                 <button class="copy-button" data-copy-target="#nginx-config" type="button"
                     aria-label="Copy Nginx config">Copy</button>
                 <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
-location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
+location ~ ^/(download|api/m2m|manifest\..*\.json|favicon\..*\.svg)$ {
     auth_basic off;
     proxy_pass http://your-shuthost-backend;
 }</code>
@@ -95,13 +95,13 @@ location ~ ^/(download|api/m2m|manifest.json|favicon.svg)$ {
     resources:
         - '^/download/(.*)'
         - '^/api/m2m/(.*)$'
-        - '^/manifest.json$'
-        - '^/favicon.svg$'`;
+        - '/manifest\..*\.json$'
+        - '/favicon\..*\.svg$'`;
             }
 
             if (traefikConfig) {
                 traefikConfig.textContent = `# Add to your service labels
-- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || Path(\`/manifest.json\`) || Path(\`/favicon.svg\`))"
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || PathRegexp(\`/manifest\\..*\\.json\`) || PathRegexp(\`/favicon\\..*\\.svg\`))"
 - "traefik.http.routers.shuthost-bypass.priority=100"
 # Remove auth middleware for bypass routes`;
             }
