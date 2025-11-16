@@ -108,6 +108,7 @@ fn run_npm_build() -> eyre::Result<()> {
     println!("{RERUN_IF}/app.ts");
     println!("{RERUN_IF}/index.tmpl.html");
     println!("{RERUN_IF}/login.tmpl.html");
+    println!("{RERUN_IF}/manifest.tmpl.json");
     println!("{RERUN_IF}/partials");
     println!("{RERUN_IF}/client_install_requirements_gotchas.md");
     println!("{RERUN_IF}/agent_install_requirements_gotchas.md");
@@ -288,6 +289,7 @@ fn process_templates() -> eyre::Result<()> {
         )
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
     let manifest_short_hash = short_hash(manifest_content.as_bytes());
+    fs::write(generated_dir.join("manifest.json"), &manifest_content)?;
     println!(
         "cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={}",
         manifest_short_hash
