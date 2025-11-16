@@ -58,6 +58,10 @@ The service runs the backup script. It waits for network connectivity before sta
 #!/bin/sh
 set -ex
 
+# Configuration variables
+SHUTHOST_CLIENT="~/.local/bin/shuthost_client_<unique_ident>"
+BACKUP_HOST="<kopia backup host>"
+
 # Function to send notification
 notify_fail() {
     notify-send "Backup Failed" "$1" -u critical
@@ -83,11 +87,11 @@ fi
 
 # Run backup commands, exit on failure
 {
-    ~/.local/bin/shuthost_client_<unique_ident> take <kopia backup host>
+    $SHUTHOST_CLIENT take $BACKUP_HOST
     printf "\n"
     kopia snapshot create --all
     printf "\n"
-    ~/.local/bin/shuthost_client_<unique_ident> release <kopia backup host>
+    $SHUTHOST_CLIENT release $BACKUP_HOST
 } || {
     notify_fail "Backup command failed"
     exit 1
@@ -98,8 +102,7 @@ notify_success "Backup completed successfully"
 ```
 
 **Notes:**
-- Replace `shuthost_client_<unique_ident>` with your actual ShutHost client binary name
-- Replace `<kopia backup host>` with the name of your backup host in ShutHost
+- Set the `SHUTHOST_CLIENT` and `BACKUP_HOST` variables at the top of the script to match your setup
 - The script uses `set -ex` for strict error handling - any command failure will stop execution
 - Network connectivity is verified before proceeding
 - Desktop notifications provide feedback on backup status

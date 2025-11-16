@@ -65,6 +65,11 @@ This launch agent triggers the backup script daily at 2:00 PM. The `RunAtLoad` k
 
 set -ex
 
+# Configuration variables
+SHUTHOST_CLIENT="~/.local/bin/shuthost_client_<unique_ident>"
+BACKUP_HOST="<kopia backup host>"
+KOPIA_PATH="/opt/homebrew/bin/kopia"
+
 # Function to send notification
 notify_fail() {
     osascript -e "display notification \"$1\" with title \"Backup Failed\" sound name \"Basso\""
@@ -77,11 +82,11 @@ notify_success() {
 
 # Run backup commands, exit on failure
 {
-    ~/.local/bin/shuthost_client_<unique_ident> take <kopia backup host>
+    $SHUTHOST_CLIENT take $BACKUP_HOST
     printf "\n"
-    /opt/homebrew/bin/kopia snapshot create --all
+    $KOPIA_PATH snapshot create --all
     printf "\n"
-    ~/.local/bin/shuthost_client_<unique_ident> release <kopia backup host>
+    $SHUTHOST_CLIENT release $BACKUP_HOST
 } || {
     notify_fail "Backup command failed"
     exit 1
@@ -94,8 +99,7 @@ notify_success "Backup completed successfully"
 **Notes:**
 - Replace `<your_reverse_domain>` with your reverse domain notation (e.g., `me.yourname` or `com.example`)
 - Replace `<your_username>` with your macOS username
-- Replace `shuthost_client_<unique_ident>` with your actual ShutHost client binary name
-- Replace `<kopia backup host>` with the name of your backup host in ShutHost
+- Set the `SHUTHOST_CLIENT`, `BACKUP_HOST`, and `KOPIA_PATH` variables at the top of the script to match your setup
 - The script uses `set -ex` for strict error handling - any command failure will stop execution
 - Desktop notifications provide feedback on backup status using `osascript`
 - **Note:** The addition of notifications is untested
