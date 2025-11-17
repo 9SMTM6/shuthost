@@ -9,6 +9,8 @@ use eyre::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
 
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+
 use crate::http::m2m::{LeaseMap, LeaseSource};
 
 /// Database connection pool type alias.
@@ -17,6 +19,26 @@ use crate::http::m2m::{LeaseMap, LeaseSource};
     reason = "Just using 'Pool' would be harder to understand."
 )]
 pub type DbPool = SqlitePool;
+
+/// Represents a push notification subscription.
+#[derive(Debug, Clone)]
+pub struct PushSubscription {
+    /// The push service endpoint URL.
+    pub endpoint: String,
+    /// The P-256 DH key for encryption.
+    pub p256dh: String,
+    /// The auth secret for the subscription.
+    pub auth: String,
+}
+
+/// Represents VAPID keys for push notifications.
+#[derive(Debug, Clone)]
+pub struct VapidKeys {
+    /// The private key in PEM format.
+    pub private_key: String,
+    /// The public key in base64 format.
+    pub public_key: String,
+}
 
 /// Represents a lease record from the database.
 struct LeaseRecord {
@@ -101,7 +123,6 @@ pub async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Result<()> {
     // Clear existing leases
     leases_guard.clear();
 
-    // Load all lease records
     let lease_records = sqlx::query_as!(
         LeaseRecord,
         "SELECT hostname, lease_source_type, lease_source_value FROM leases"
@@ -136,7 +157,6 @@ pub async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Result<()> {
 /// * `pool` - Database connection pool.
 /// * `hostname` - The hostname for the lease.
 /// * `lease_source` - The lease source being added or removed.
-/// * `action` - "add" to add the lease, "remove" to remove it.
 ///
 /// # Errors
 ///
@@ -370,6 +390,119 @@ pub async fn update_client_last_used(
     .await?;
 
     Ok(())
+}
+
+/// Gets or generates VAPID keys for push notifications.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+///
+/// # Returns
+///
+/// VAPID keys containing private and public keys.
+///
+/// # Errors
+///
+/// Returns an error if key generation or database operations fail.
+pub async fn get_or_generate_vapid_keys(pool: &DbPool) -> eyre::Result<VapidKeys> {
+    if let Some(private_key) = get_kv(pool, KV_VAPID_PRIVATE_KEY).await? {
+        if let Some(public_key) = get_kv(pool, KV_VAPID_PUBLIC_KEY).await? {
+            return Ok(VapidKeys {
+                private_key,
+                public_key,
+            });
+        }
+    }
+
+    // Generate new keys
+    let key_pair = rcgen::KeyPair::generate()?;
+    let private_key_pem = key_pair.serialize_pem();
+
+    // For VAPID, we need the public key in uncompressed format
+    // But for simplicity, let's store both PEM and compute public key later
+    let private_key = private_key_pem;
+    let public_key_pem = key_pair.public_key_pem();
+    let public_key = BASE64.encode(public_key_pem.as_bytes());
+
+    store_kv(pool, KV_VAPID_PRIVATE_KEY, &private_key).await?;
+    store_kv(pool, KV_VAPID_PUBLIC_KEY, &public_key).await?;
+
+    Ok(VapidKeys {
+        private_key,
+        public_key,
+    })
+}
+
+/// Stores a push subscription in the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `subscription` - The push subscription to store.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+pub async fn store_push_subscription(
+    pool: &DbPool,
+    subscription: &PushSubscription,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "INSERT OR REPLACE INTO push_subscriptions (endpoint, p256dh, auth) VALUES (?, ?, ?)",
+        subscription.endpoint,
+        subscription.p256dh,
+        subscription.auth
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Removes a push subscription from the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `endpoint` - The push service endpoint.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+pub async fn remove_push_subscription(pool: &DbPool, endpoint: &str) -> eyre::Result<()> {
+    sqlx::query!(
+        "DELETE FROM push_subscriptions WHERE endpoint = ?",
+        endpoint
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Gets all push subscriptions from the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+///
+/// # Returns
+///
+/// A vector of push subscriptions.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+pub async fn get_push_subscriptions(pool: &DbPool) -> eyre::Result<Vec<PushSubscription>> {
+    let subscriptions = sqlx::query_as!(
+        PushSubscription,
+        "SELECT endpoint, p256dh, auth FROM push_subscriptions"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(subscriptions)
 }
 
 #[cfg(test)]

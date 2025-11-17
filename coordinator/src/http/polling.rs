@@ -14,6 +14,7 @@ use shuthost_common::create_signed_message;
 
 use crate::{
     config::{ControllerConfig, watch_config_file},
+    http::notifications,
     websocket::WsMessage,
 };
 
@@ -101,13 +102,15 @@ pub fn start_background_tasks(
     ws_tx: &broadcast::Sender<WsMessage>,
     config_tx: &watch::Sender<Arc<ControllerConfig>>,
     config_path: &Path,
+    db_pool: &Option<crate::db::DbPool>,
 ) {
     // Start host status polling task
     {
         let config_rx = config_rx.clone();
         let hoststatus_tx = hoststatus_tx.clone();
+        let db_pool = db_pool.clone();
         tokio::spawn(async move {
-            poll_host_statuses(config_rx, hoststatus_tx).await;
+            poll_host_statuses(config_rx, hoststatus_tx, db_pool).await;
         });
     }
 
@@ -156,6 +159,7 @@ pub fn start_background_tasks(
 async fn poll_host_statuses(
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
+    db_pool: Option<crate::db::DbPool>,
 ) {
     let poll_interval = Duration::from_secs(2);
     let mut ticker = interval(poll_interval);
@@ -178,6 +182,24 @@ async fn poll_host_statuses(
         let results = futures::future::join_all(futures).await;
         let status_map: HashMap<_, _> = results.into_iter().collect();
 
+        let hosts_came_online: Vec<String> = if let Some(ref _pool) = db_pool {
+            let old_status_map = hoststatus_tx.borrow();
+            let old_status_map = old_status_map.as_ref();
+            status_map
+                .iter()
+                .filter_map(|(host, &is_online)| {
+                    let was_online = old_status_map.get(host).copied().unwrap_or(false);
+                    if is_online && !was_online {
+                        Some(host.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        } else {
+            vec![]
+        };
+
         let is_new = {
             let old_status_map = hoststatus_tx.borrow();
             let old_status_map = old_status_map.as_ref();
@@ -189,8 +211,15 @@ async fn poll_host_statuses(
                 debug!("Host status receiver dropped, stopping polling");
                 break;
             }
-        } else {
-            debug!("No change in host status");
+        }
+
+        // Send push notifications for hosts that came online
+        if let Some(ref pool) = db_pool {
+            for host in hosts_came_online {
+                if let Err(e) = notifications::send_host_online_notifications(pool, &host).await {
+                    tracing::error!("Failed to send push notifications for host {}: {}", host, e);
+                }
+            }
         }
 
         ticker.tick().await;

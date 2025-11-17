@@ -355,7 +355,14 @@ async fn initialize_state(
     }
 
     // Start background tasks
-    polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
+    polling::start_background_tasks(
+        &config_rx,
+        &hoststatus_tx,
+        &ws_tx,
+        &config_tx,
+        config_path,
+        &db_pool,
+    );
 
     let auth_runtime = std::sync::Arc::new(
         auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?,

@@ -5,6 +5,7 @@
   ],
   "compilerOptions": {
     "noEmit": false,
-    "types": []
+    "types": [],
+    "lib": ["es2024", "webworker", "dom"]
   }
 }

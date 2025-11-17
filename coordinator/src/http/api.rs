@@ -4,15 +4,73 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
+use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::{
-    http::AppState,
-    http::m2m::{broadcast_lease_update, handle_host_state},
+    db,
+    http::{
+        AppState,
+        m2m::{broadcast_lease_update, handle_host_state},
+    },
 };
 
 pub use super::m2m::{LeaseMap, LeaseSource};
+
+/// Lease action for lease endpoints (shared between web and m2m)
+#[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum LeaseAction {
+    Take,
+    Release,
+}
+
+/// Response for hosts status endpoint.
+#[derive(Serialize)]
+pub struct HostsStatusResponse {
+    /// Map of host names to their online status.
+    pub hosts: std::collections::HashMap<String, bool>,
+}
+
+/// Response for VAPID public key endpoint.
+#[derive(Serialize)]
+pub struct VapidPublicKeyResponse {
+    /// The VAPID public key in base64 format.
+    pub public_key: String,
+}
+
+/// Response for lease action endpoint.
+#[derive(Serialize)]
+pub struct LeaseActionResponse {
+    /// Success message.
+    pub message: String,
+}
+
+/// Response for reset client leases endpoint.
+#[derive(Serialize)]
+pub struct ResetClientLeasesResponse {
+    /// Success message.
+    pub message: String,
+}
+
+/// Push subscription request payload.
+#[derive(Deserialize)]
+pub struct PushSubscriptionRequest {
+    /// The push service endpoint URL.
+    pub endpoint: String,
+    /// The encryption keys.
+    pub keys: PushKeys,
+}
+
+/// Push subscription keys.
+#[derive(Deserialize)]
+pub struct PushKeys {
+    /// The P-256 DH key for encryption.
+    pub p256dh: String,
+    /// The auth secret for the subscription.
+    pub auth: String,
+}
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -22,14 +80,9 @@ pub fn routes() -> Router<AppState> {
             post(handle_reset_client_leases),
         )
         .route("/hosts_status", get(get_hosts_status))
-}
-
-/// Lease action for lease endpoints (shared between web and m2m)
-#[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum LeaseAction {
-    Take,
-    Release,
+        .route("/push/vapid_public_key", get(get_vapid_public_key))
+        .route("/push/subscribe", post(subscribe_push))
+        .route("/push/unsubscribe", post(unsubscribe_push))
 }
 
 /// Handles taking or releasing a lease on a host via the web interface.
@@ -137,5 +190,81 @@ async fn handle_reset_client_leases(
 #[axum::debug_handler]
 async fn get_hosts_status(State(state): State<AppState>) -> impl IntoResponse {
     let hoststatus = state.hoststatus_rx.borrow().clone();
-    axum::Json((*hoststatus).clone())
+    axum::Json(HostsStatusResponse {
+        hosts: (*hoststatus).clone(),
+    })
+}
+
+/// Returns the VAPID public key for push notifications.
+#[axum::debug_handler]
+async fn get_vapid_public_key(State(state): State<AppState>) -> impl IntoResponse {
+    if let Some(ref pool) = state.db_pool {
+        match db::get_or_generate_vapid_keys(pool).await {
+            Ok(vapid_keys) => axum::Json(VapidPublicKeyResponse {
+                public_key: vapid_keys.public_key,
+            })
+            .into_response(),
+            Err(e) => {
+                tracing::error!("Failed to get VAPID keys: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+            }
+        }
+    } else {
+        (StatusCode::SERVICE_UNAVAILABLE, "Database not available").into_response()
+    }
+}
+
+/// Subscribes to push notifications.
+#[axum::debug_handler]
+async fn subscribe_push(
+    State(state): State<AppState>,
+    axum::Json(subscription): axum::Json<PushSubscriptionRequest>,
+) -> impl IntoResponse {
+    if let Some(ref pool) = state.db_pool {
+        let push_subscription = db::PushSubscription {
+            endpoint: subscription.endpoint.clone(),
+            p256dh: subscription.keys.p256dh,
+            auth: subscription.keys.auth,
+        };
+        match db::store_push_subscription(pool, &push_subscription).await {
+            Ok(()) => {
+                tracing::info!(
+                    "Stored push subscription for endpoint: {}",
+                    subscription.endpoint
+                );
+                StatusCode::OK.into_response()
+            }
+            Err(e) => {
+                tracing::error!("Failed to store push subscription: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+            }
+        }
+    } else {
+        (StatusCode::SERVICE_UNAVAILABLE, "Database not available").into_response()
+    }
+}
+
+/// Unsubscribes from push notifications.
+#[axum::debug_handler]
+async fn unsubscribe_push(
+    State(state): State<AppState>,
+    axum::Json(subscription): axum::Json<PushSubscriptionRequest>,
+) -> impl IntoResponse {
+    if let Some(ref pool) = state.db_pool {
+        match db::remove_push_subscription(pool, &subscription.endpoint).await {
+            Ok(()) => {
+                tracing::info!(
+                    "Removed push subscription for endpoint: {}",
+                    subscription.endpoint
+                );
+                StatusCode::OK.into_response()
+            }
+            Err(e) => {
+                tracing::error!("Failed to remove push subscription: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+            }
+        }
+    } else {
+        (StatusCode::SERVICE_UNAVAILABLE, "Database not available").into_response()
+    }
 }

@@ -26,6 +26,31 @@ type WsMessage =
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
+    /** Response from /api/hosts_status endpoint */
+type HostsStatusResponse = {
+    hosts: Record<string, boolean>;
+}
+
+/** Response from /api/push/vapid_public_key endpoint */
+type VapidPublicKeyResponse = {
+    public_key: string;
+}
+
+/** Request payload for /api/push/subscribe endpoint */
+type PushSubscriptionRequest = {
+    endpoint: string;
+    keys: PushKeys;
+}
+
+/** Push subscription keys */
+type PushKeys = {
+    p256dh: string;
+    auth: string;
+}
+
+/** Lease action enum */
+type LeaseAction = 'take' | 'release';
+
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
@@ -427,7 +452,7 @@ const updateClientsTable = () => {
 /**
  * Send a lease action request to the backend.
  */
-const updateLease = async (host: string, action: 'take' | 'release') => {
+const updateLease = async (host: string, action: LeaseAction) => {
     if (DemoMode.isActive) {
         DemoMode.updateLease(host, action);
         return;
@@ -498,11 +523,127 @@ const setupInstallerCommands = () => {
 // Initialization
 // ==========================
 
+// Register service worker for push notifications
+async function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.info('Service Worker registered:', registration);
+
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.info('New service worker available, consider refreshing the page');
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Service Worker registration failed:', error);
+        }
+    } else {
+        console.warn('Service Workers not supported');
+    }
+}
+
+// Request notification permission and subscribe to push notifications
+async function setupPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        console.warn('Push notifications not supported');
+        return;
+    }
+
+    try {
+        // First check if the server supports push notifications
+        const vapidResponse = await fetch('/api/push/vapid_public_key');
+        if (vapidResponse.status === 503) {
+            console.info('Push notifications not supported by server');
+            return;
+        }
+        if (!vapidResponse.ok) {
+            throw new Error('Failed to get VAPID public key');
+        }
+        const vapidData: VapidPublicKeyResponse = await vapidResponse.json();
+        const { public_key: publicKey } = vapidData;
+
+        // Request permission only if server supports push notifications
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.info('Notification permission denied');
+            return;
+        }
+
+        // Subscribe
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource
+        });
+
+        // Send subscription to server
+        const subscribeRequest: PushSubscriptionRequest = {
+            endpoint: subscription.endpoint,
+            keys: {
+                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+                auth: arrayBufferToBase64(subscription.getKey('auth')!)
+            }
+        };
+
+        const subscribeResponse = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(subscribeRequest)
+        });
+
+        if (subscribeResponse.ok) {
+            console.info('Push subscription successful');
+        } else {
+            console.error('Push subscription failed');
+        }
+    } catch (error) {
+        console.error('Error setting up push notifications:', error);
+    }
+}
+
+// Utility function to convert VAPID key
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// Utility function to convert ArrayBuffer to base64
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+    }
+    return window.btoa(binary);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         connectWebSocket();
         setupCopyButtons();
         setupInstallerCommands();
+        registerServiceWorker().then(() => {
+            setupPushNotifications();
+        });
         if (DemoMode.isActive) {
             console.info('Demo mode enabled: UI is using simulated data.');
         }

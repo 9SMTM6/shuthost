@@ -7,6 +7,7 @@ pub mod assets;
 pub mod download;
 pub mod login;
 pub mod m2m;
+pub mod notifications;
 pub mod polling;
 pub mod server;
 
