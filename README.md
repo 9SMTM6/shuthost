@@ -88,23 +88,22 @@ Choose either the binary (recommended for reliability and WOL support) or the co
     curl -L -o shuthost_coordinator "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-apple-darwin"
     ```
     ```bash
-    # Optionally verify the checksum
+    # Make the binary executable
+    chmod +x shuthost_coordinator
+    # Optionally verify the checksum with the one provided on the releases page
     shasum -a 256 shuthost_coordinator
     ```
 - Install as a system service (binary supports systemd/openrc/launchd)
-  - Install command (installs binary, creates a config with restrictive permissions and enables start-on-boot):
-    ```bash
-    # Make the binary executable
-    chmod +x shuthost_coordinator
-    # Run the installer (installs binary, creates a config with restrictive permissions and enables start-on-boot)
-    sudo ./shuthost_coordinator install #<optional user>
-    # Remove the binary (it'll have been copied to the appropriate location by the installer)
-    rm shuthost_coordinator
-    # Access the WebUI at http://localhost:8080
-    ```
-  - Notes:
-    - The installer infers the target user from SUDO_USER if you run under sudo, otherwise the user is required to be specified.
-    - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
+  ```bash
+  # Run the installer (installs binary, creates a config with restrictive permissions and enables start-on-boot)
+  sudo ./shuthost_coordinator install #<optional user>
+  # Remove the binary (it'll have been copied to the appropriate location by the installer)
+  rm shuthost_coordinator
+  # Access the WebUI at http://localhost:8080
+  ```
+- Notes:
+  - The installer infers the target user from SUDO_USER if you run under sudo, otherwise the user is required to be specified.
+  - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
 
 #### Docker (Linux only)
 -  Download the [example_config.toml](docs/examples/example_config.toml) and [docker-compose.yml](docs/examples/docker-compose.yml) from Github and run the service:
@@ -113,16 +112,16 @@ Choose either the binary (recommended for reliability and WOL support) or the co
     mkdir -p coordinator_config data
     curl -L -o coordinator_config/coordinator_config.toml \
       https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/example_config.toml
-
+    
     # Set restrictive permissions (readable/writable by owner only)
     chmod 600 coordinator_config/coordinator_config.toml
     # Download the docker-compose file
     curl -L -o docker-compose.yml \
       https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yml
-
+    
     # Run the service in the background
     docker-compose up -d shuthost
-
+    
     # Access the WebUI at http://localhost:8080
     ```
 - Notes:
