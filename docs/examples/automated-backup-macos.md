@@ -17,7 +17,7 @@ This setup uses launchd for scheduling and execution.
 - ShutHost coordinator and client configured
 - Kopia installed and configured with repositories (installed via Homebrew at `/opt/homebrew/bin/kopia`)
 - A backup host managed by ShutHost
-- macOS with launchd
+- terminal-notifier installed (optional, via Homebrew: `brew install terminal-notifier`)
 
 ## Configuration Files
 
@@ -72,11 +72,15 @@ KOPIA_PATH="/opt/homebrew/bin/kopia"
 
 # Function to send notification
 notify_fail() {
-    osascript -e "display notification \"$1\" with title \"Backup Failed\" sound name \"Basso\""
+    if command -v terminal-notifier >/dev/null 2>&1; then
+        terminal-notifier -title "Backup Failed" -message "$1" -sound Basso
+    fi
 }
 
 notify_success() {
-    osascript -e "display notification \"$1\" with title \"Backup Succeeded\" sound name \"Glass\""
+    if command -v terminal-notifier >/dev/null 2>&1; then
+        terminal-notifier -title "Backup Succeeded" -message "$1" -sound Glass
+    fi
 }
 
 
@@ -101,8 +105,7 @@ notify_success "Backup completed successfully"
 - Replace `<your_username>` with your macOS username
 - Set the `SHUTHOST_CLIENT`, `BACKUP_HOST`, and `KOPIA_PATH` variables at the top of the script to match your setup
 - The script uses `set -ex` for strict error handling - any command failure will stop execution
-- Desktop notifications provide feedback on backup status using `osascript`
-- **Note:** The addition of notifications is untested
+- Desktop notifications provide feedback on backup status using `terminal-notifier` (if installed)
 
 ## Setup Instructions
 
@@ -128,7 +131,7 @@ notify_success "Backup completed successfully"
 
 - **Change the schedule:** Modify the `StartCalendarInterval` in the plist file
 - **Add more backup commands:** Extend the backup block in the script
-- **Different notification methods:** Replace `osascript` with other notification systems
+- **Different notification methods:** Replace `terminal-notifier` with other notification systems
 - **Multiple backup hosts:** Add more `take`/`release` pairs for different hosts
 
 ## Troubleshooting
