@@ -1,4 +1,4 @@
-# [IN TESTING] Automated Backup with Kopia and ShutHost on Windows (Task Scheduler)
+# Automated Backup with Kopia and ShutHost on Windows (Task Scheduler)
 
 This example demonstrates how to set up an automated daily backup system using [Kopia](https://kopia.io/) for snapshot-based backups and ShutHost for managing host standby states. The setup ensures that the backup host is woken up before the backup and put back to sleep afterward, while providing notifications for success or failure.
 
@@ -97,7 +97,7 @@ Send-Notification -Title "Backup Succeeded" -Message "Backup completed successfu
    - Save the PowerShell script as `backup.ps1` in `%USERPROFILE%\bin\` (the directory should already contain the shuthost client)
    - Update the paths and host names as noted
 
-2. **Create the scheduled task:**
+2. [IN TESTING] **Create the scheduled task:**
    ```powershell
    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File $env:USERPROFILE\bin\backup.ps1"
    $trigger = New-ScheduledTaskTrigger -Daily -At 14:00
