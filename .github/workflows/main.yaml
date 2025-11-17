@@ -884,8 +884,8 @@ jobs:
       - name: Extract manual changes
         run: |
           COMMIT_MSG=$(git log --format=%B -1 ${{ github.sha }})
-          if echo "$COMMIT_MSG" | grep -q "^## Manual Changes$"; then
-            MANUAL_CHANGES=$(echo "$COMMIT_MSG" | sed -n '/^## Manual Changes$/,$p' | tail -n +2)
+          if echo "$COMMIT_MSG" | grep -q "^## Changes not tracked in a PR:$"; then
+            MANUAL_CHANGES=$(echo "$COMMIT_MSG" | sed -n '/^## Changes not tracked in a PR:$/,$p' | tail -n +2)
             echo "manual_changes<<EOF" >> $GITHUB_ENV
             echo "$MANUAL_CHANGES" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
