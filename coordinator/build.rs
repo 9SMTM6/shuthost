@@ -1,3 +1,29 @@
+//! Build script for the ShutHost Coordinator.
+//!
+//! This build script performs several tasks to prepare the frontend assets and generate necessary files
+//! for the Rust application. It is responsible for:
+//!
+//! - Setting the workspace root environment variable.
+//! - Installing and running npm to build the frontend assets.
+//! - Generating PNG icons from the SVG favicon at various sizes.
+//! - Processing HTML templates by replacing placeholders with hashed asset paths and content.
+//! - Generating SHA256 hashes for inline scripts in served HTML files for Content Security Policy (CSP).
+//! - Emitting build warnings based on configuration (e.g., Windows builds, missing agent features).
+//!
+//! Note: This script assumes a specific directory structure with a symlinked or adjacent `frontend` directory.
+//! On Windows, some rerun-if-changed directives may not work correctly due to symlinks, but this is documented.
+//!
+//! # Environment Variables Set
+//!
+//! - `WORKSPACE_ROOT`: The root path of the workspace.
+//! - `BUILD_WARNINGS`: Semicolon-separated list of build warnings.
+//! - `INLINE_SCRIPT_HASHES`: Space-separated list of SHA256 hashes for inline scripts.
+//! - Various `ASSET_HASH_*` variables for hashed asset paths.
+//!
+//! # Rerun Conditions
+//!
+//! The script informs Cargo to rerun the build if certain frontend asset files change, ensuring
+//! that modifications to templates, styles, or icons trigger a rebuild.
 #![expect(clippy::indexing_slicing, reason = "This is fine at build time")]
 use std::{collections::HashMap, fs, path::PathBuf, process};
 
@@ -27,6 +53,36 @@ const FRONTEND_DIR: &str = "../frontend";
 const NPM_BIN: &str = "npm";
 #[cfg(target_os = "windows")]
 const NPM_BIN: &str = "npm.cmd";
+
+fn main() -> eyre::Result<()> {
+    set_workspace_root()?;
+
+    setup_npm()?;
+
+    println!("{RERUN_IF}/styles.tailwind.css");
+    println!("{RERUN_IF}/app.ts");
+    println!("{RERUN_IF}/index.tmpl.html");
+    println!("{RERUN_IF}/login.tmpl.html");
+    println!("{RERUN_IF}/partials");
+    run_npm_build()?;
+
+    // Generate PNG icons from SVG (placed into frontend/assets/icons).
+    println!("{RERUN_IF}/favicon.svg");
+    generate_png_icons()?;
+
+    // Process HTML templates.
+    println!("{RERUN_IF}/manifest.tmpl.json");
+    println!("{RERUN_IF}/client_install_requirements_gotchas.md");
+    println!("{RERUN_IF}/agent_install_requirements_gotchas.md");
+    process_templates()?;
+
+    // Generate hashes for all inline scripts in templates.
+    generate_inline_script_hashes()?;
+
+    emit_build_warnings();
+
+    Ok(())
+}
 
 fn emit_build_warnings() {
     #[allow(
@@ -66,27 +122,6 @@ fn emit_build_warnings() {
     );
 }
 
-fn main() -> eyre::Result<()> {
-    set_workspace_root()?;
-
-    setup_npm()?;
-
-    run_npm_build()?;
-
-    // Generate PNG icons from SVG (placed into frontend/assets/icons).
-    generate_png_icons()?;
-
-    // Process HTML templates.
-    process_templates()?;
-
-    // Generate hashes for all inline scripts in templates.
-    generate_inline_script_hashes()?;
-
-    emit_build_warnings();
-
-    Ok(())
-}
-
 fn set_workspace_root() -> eyre::Result<()> {
     let workspace_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let workspace_dir = workspace_dir
@@ -104,15 +139,6 @@ fn set_workspace_root() -> eyre::Result<()> {
 }
 
 fn run_npm_build() -> eyre::Result<()> {
-    println!("{RERUN_IF}/styles.tailwind.css");
-    println!("{RERUN_IF}/app.ts");
-    println!("{RERUN_IF}/index.tmpl.html");
-    println!("{RERUN_IF}/login.tmpl.html");
-    println!("{RERUN_IF}/manifest.tmpl.json");
-    println!("{RERUN_IF}/partials");
-    println!("{RERUN_IF}/client_install_requirements_gotchas.md");
-    println!("{RERUN_IF}/agent_install_requirements_gotchas.md");
-
     process::Command::new(NPM_BIN)
         .arg("run")
         .arg("build")
@@ -150,7 +176,6 @@ fn setup_npm() -> eyre::Result<()> {
 }
 
 fn generate_png_icons() -> eyre::Result<()> {
-    println!("{RERUN_IF}/favicon.svg");
     let out_dir = PathBuf::from("../frontend/assets/generated/icons");
     if !out_dir.exists() {
         fs::create_dir_all(&out_dir).wrap_err_with(|| format!("creating {}", out_dir.display()))?;
