@@ -489,10 +489,27 @@ async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -
     response.headers_mut().insert(
         HeaderName::from_static("content-security-policy"),
         HeaderValue::from_static(concat!(
-            "default-src 'self'; script-src 'self' ",
-            env!("INLINE_SCRIPT_HASHES"),
-            "; style-src 'self'; object-src 'none'; base-uri 'self'; require-trusted-types-for 'script';"
+            "default-src 'self'; ",
+            "require-trusted-types-for 'script'; ",
+            "script-src ",
+            env!("CSP_INLINE_SCRIPTS_HASHES"),
+            "; ",
+            "manifest-src 'self'; ",
+            // env!("CSP_MANIFEST_HASH"),
+            // "'; ",
+            "style-src-elem 'self'; ",
+            // env!("CSP_STYLES_HASH"),
+            // "'; ",
+            "style-src-attr 'none'; ",
+            "object-src 'none'; ",
+            "base-uri 'none'; ",
+            "frame-src 'none'; ",
+            "media-src 'none'; ",
         )),
+    );
+    response.headers_mut().insert(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
     );
     response
 }

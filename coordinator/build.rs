@@ -66,18 +66,15 @@ fn main() -> eyre::Result<()> {
     println!("{RERUN_IF}/partials");
     run_npm_build()?;
 
-    // Generate PNG icons from SVG (placed into frontend/assets/icons).
     println!("{RERUN_IF}/favicon.svg");
     generate_png_icons()?;
 
-    // Process HTML templates.
     println!("{RERUN_IF}/manifest.tmpl.json");
     println!("{RERUN_IF}/client_install_requirements_gotchas.md");
     println!("{RERUN_IF}/agent_install_requirements_gotchas.md");
     process_templates()?;
 
-    // Generate hashes for all inline scripts in templates.
-    generate_inline_script_hashes()?;
+    generate_csp_hashes()?;
 
     emit_build_warnings();
 
@@ -175,6 +172,7 @@ fn setup_npm() -> eyre::Result<()> {
         .wrap_err("Failed to npm ci")?
 }
 
+/// Generate PNG icons from SVG (placed into frontend/assets/icons).
 fn generate_png_icons() -> eyre::Result<()> {
     let out_dir = PathBuf::from("../frontend/assets/generated/icons");
     if !out_dir.exists() {
@@ -210,10 +208,10 @@ fn generate_png_icons() -> eyre::Result<()> {
     Ok(())
 }
 
-/// note that this will silently ignore any non module code!
-fn generate_inline_script_hashes() -> eyre::Result<()> {
+/// Generate CSP hashes for inline scripts, manifest, and styles
+fn generate_csp_hashes() -> eyre::Result<()> {
     let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;
-    let mut hashes = std::collections::HashSet::new();
+    let mut script_hashes = std::collections::HashSet::new();
 
     let served_html_files = [
         "../frontend/assets/generated/index.html",
@@ -224,20 +222,40 @@ fn generate_inline_script_hashes() -> eyre::Result<()> {
         let content = fs::read_to_string(file_path)?;
         for cap in script_regex.captures_iter(&content) {
             if let Some(script_content) = cap.get(1) {
-                let hash = Sha256::digest(script_content.as_str().as_bytes());
-                let hash_b64 = general_purpose::STANDARD.encode(hash);
-                let hash_tok = format!("'sha256-{}'", hash_b64);
-                hashes.insert(hash_tok);
+                let hash_tok = generate_encoded_hash(script_content.as_str().as_bytes())?;
+                script_hashes.insert(format!("'{hash_tok}'"));
             }
         }
     }
 
-    let mut hash_list: Vec<_> = hashes.into_iter().collect();
-    hash_list.sort();
-    let hashes_str = hash_list.join(" ");
-    println!("cargo::rustc-env=INLINE_SCRIPT_HASHES={}", hashes_str);
+    let mut script_hash_list: Vec<_> = script_hashes.into_iter().collect();
+    script_hash_list.sort();
+    let script_hashes_str = script_hash_list.join(" ");
+    println!("cargo::rustc-env=CSP_INLINE_SCRIPTS_HASHES={}", script_hashes_str);
+
+    // // Generate CSP hash for manifest
+    // let manifest_hash = generate_csp_hash_from_file("../frontend/assets/generated/manifest.json")?;
+    // println!("cargo::rustc-env=CSP_MANIFEST_HASH={}", manifest_hash);
+
+    // // Generate CSP hash for styles
+    // let styles_hash = generate_csp_hash_from_file("../frontend/assets/generated/styles.css")?;
+    // println!("cargo::rustc-env=CSP_STYLES_HASH={}", styles_hash);
+
     Ok(())
 }
+
+/// Generate a CSP-compatible SHA256 hash for content
+fn generate_encoded_hash(content: impl AsRef<[u8]>) -> eyre::Result<String> {
+    let hash = Sha256::digest(content);
+    let hash_b64 = general_purpose::STANDARD.encode(hash);
+    Ok(format!("sha256-{}", hash_b64))
+}
+
+// /// Generate a CSP-compatible SHA256 hash for a file
+// fn generate_csp_hash_from_file(file_path: &str) -> eyre::Result<String> {
+//     let content = fs::read_to_string(file_path)?;
+//     generate_encoded_hash(content.as_str())
+// }
 
 fn process_templates() -> eyre::Result<()> {
     fn short_hash(content: &[u8]) -> String {
@@ -252,10 +270,7 @@ fn process_templates() -> eyre::Result<()> {
     let styles_css = fs::read_to_string("../frontend/assets/generated/styles.css")
         .wrap_err("Failed to read generated styles.css")?;
     let styles_short_hash = short_hash(styles_css.as_bytes());
-    let styles_integrity = format!(
-        "sha256-{}",
-        general_purpose::STANDARD.encode(Sha256::digest(styles_css.as_bytes()))
-    );
+    let styles_integrity = generate_encoded_hash(&styles_css)?;
 
     let favicon_short_hash = short_hash(include_frontend_asset!("favicon.svg").as_bytes());
 
