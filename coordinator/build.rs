@@ -231,7 +231,10 @@ fn generate_csp_hashes() -> eyre::Result<()> {
     let mut script_hash_list: Vec<_> = script_hashes.into_iter().collect();
     script_hash_list.sort();
     let script_hashes_str = script_hash_list.join(" ");
-    println!("cargo::rustc-env=CSP_INLINE_SCRIPTS_HASHES={}", script_hashes_str);
+    println!(
+        "cargo::rustc-env=CSP_INLINE_SCRIPTS_HASHES={}",
+        script_hashes_str
+    );
 
     // // Generate CSP hash for manifest
     // let manifest_hash = generate_csp_hash_from_file("../frontend/assets/generated/manifest.json")?;
