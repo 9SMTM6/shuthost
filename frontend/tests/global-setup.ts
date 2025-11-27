@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 
-export default async function globalSetup() {
+const globalSetup = async () => {
     if (process.env['SKIP_BUILD']) {
         console.log('SKIP_BUILD set — skipping coordinator build');
         return;
@@ -11,3 +11,5 @@ export default async function globalSetup() {
     console.log(`Global setup: building coordinator (${flags})`);
     execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env: process.env });
 }
+
+export default globalSetup;

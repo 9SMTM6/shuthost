@@ -12,13 +12,13 @@ export const configs = {
 }
 
 // Get the test port for parallel workers to avoid conflicts.
-export function getTestPort(): number {
+export const getTestPort = (): number => {
   const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
   return 8081 + parallelIndex;
 }
 
 // Utilities to build, start, wait for, and stop the Rust backend used by Playwright tests.
-export async function waitForServerReady(port: number, useTls = false, timeout = 30000) {
+export const waitForServerReady = async (port: number, useTls = false, timeout = 30000) => {
   const start = Date.now();
   const protocol = useTls ? await import('node:https') : await import('node:http');
   while (Date.now() - start < timeout) {
@@ -45,7 +45,7 @@ export async function waitForServerReady(port: number, useTls = false, timeout =
   throw new Error(`Timed out waiting for server at 127.0.0.1:${port}`);
 }
 
-export async function startBackend(configPath?: string, useTls = false, command = 'control-service') {
+export const startBackend = async (configPath?: string, useTls = false, command = 'control-service') => {
   // Spawn the backend with provided config (if any). Build is performed in globalSetup.
   const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
   // Determine per-worker port to allow parallel test workers.
@@ -64,7 +64,7 @@ export async function startBackend(configPath?: string, useTls = false, command 
   return proc;
 }
 
-export async function stopBackend(proc?: ChildProcess) {
+export const stopBackend = async (proc?: ChildProcess) => {
   if (!proc) return;
 
   // Try a graceful shutdown first
