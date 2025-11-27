@@ -33,13 +33,19 @@ $adjectives = @("red", "blue", "swift", "calm", "bold", "wise", "kind", "brave")
 $nouns = @("fox", "bird", "wolf", "bear", "lion", "deer", "hawk", "eagle")
 
 # Generate a random client ID using word lists
-if (-not $ClientId) {
-    $randomAdjective = $adjectives | Get-Random
-    $randomNoun = $nouns | Get-Random
-    $ClientId = "${randomAdjective}_${randomNoun}"
+$randomAdjective = $adjectives | Get-Random
+$randomNoun = $nouns | Get-Random
+$randomPart = "${randomAdjective}_${randomNoun}"
+
+if ($ClientId) {
+    $baseId = $ClientId
+} else {
+    $baseId = $randomPart
 }
 
-$clientScriptName = "shuthost_client_${ClientId}.ps1"
+$ClientId = "$(hostname)_${baseId}"
+
+$clientScriptName = "shuthost_client_${baseId}.ps1"
 
 ################## Boring setup complete ------------- Interesting stuff is starting here
 
