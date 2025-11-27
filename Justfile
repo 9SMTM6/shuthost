@@ -106,7 +106,7 @@ alias deny := ci_cargo_deny
 ci_typo:
     typos
 
-playwright flags="":
+playwright +flags="":
     cd frontend && npm ci && npx tsc --noEmit && npx playwright test {{flags}}
 
 playwright_report:
