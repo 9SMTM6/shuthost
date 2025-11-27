@@ -5,10 +5,10 @@
       - table:
         - rowgroup:
           - row "Component Linux macOS Windows":
-            - cell "Component"
-            - cell "Linux"
-            - cell "macOS"
-            - cell "Windows"
+            - columnheader "Component"
+            - columnheader "Linux"
+            - columnheader "macOS"
+            - columnheader "Windows"
         - rowgroup:
           - row "Web GUI ✅ (any modern browser) ✅ (any modern browser) ✅ (any modern browser)":
             - cell "Web GUI"

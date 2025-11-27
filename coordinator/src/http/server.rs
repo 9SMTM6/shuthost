@@ -18,6 +18,7 @@ use axum::{
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use clap::Parser;
 use eyre::WrapErr;
+use hyper::StatusCode;
 use tokio::{
     fs, signal,
     sync::{broadcast, watch},
@@ -253,7 +254,10 @@ fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
     let middleware_stack = middleware_stack.compression();
 
     let middleware_stack = middleware_stack
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
         .layer(axum::middleware::from_fn(secure_headers_middleware));
 
     // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
