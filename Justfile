@@ -53,7 +53,7 @@ clean:
     cd frontend && rm -rf node_modules && npm ci
 
 update_dependencies:
-    cargo update
+    cargo update --verbose
     cd frontend && npm update
 
 export DATABASE_URL := "sqlite:./shuthost.db"
