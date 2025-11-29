@@ -22,6 +22,19 @@ let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 let persistedClientList: string[] = [];
 
+// ==========================
+// Error Handling
+// ==========================
+
+const showJSError = (message: string) => {
+    const errorDiv = document.getElementById('js-error') as HTMLDivElement;
+    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement;
+    if (errorDiv && messageEl) {
+        messageEl.textContent = message;
+        errorDiv.hidden = false;
+    }
+};
+
 // Global WebSocket reference for bfcache handling
 let currentSocket: WebSocket | null = null;
 
@@ -406,11 +419,16 @@ const setupInstallerCommands = () => {
 // ==========================
 
 document.addEventListener('DOMContentLoaded', () => {
-    connectWebSocket();
-    setupCopyButtons();
-    setupInstallerCommands();
-    if (DemoMode.isActive) {
-        console.info('Demo mode enabled: UI is using simulated data.');
+    try {
+        connectWebSocket();
+        setupCopyButtons();
+        setupInstallerCommands();
+        if (DemoMode.isActive) {
+            console.info('Demo mode enabled: UI is using simulated data.');
+        }
+    } catch (err) {
+        console.error('Error during initialization:', err);
+        showJSError(err instanceof Error ? err.message : String(err));
     }
 });
 
@@ -429,6 +447,17 @@ window.addEventListener('pagehide', (event) => {
         currentSocket.close();
         currentSocket = null;
     }
+});
+
+// Global error handlers
+window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+    showJSError(event.error?.message || 'An unknown error occurred');
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    showJSError(event.reason?.message || 'An unhandled promise rejection occurred');
 });
 
 /**

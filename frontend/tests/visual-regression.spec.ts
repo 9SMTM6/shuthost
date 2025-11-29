@@ -41,6 +41,21 @@ test.describe('main page(s)', () => {
         await page.waitForSelector('#platform-support-title', { state: 'visible' });
         await expect(page.locator('section[aria-labelledby="platform-support-title"]')).toHaveScreenshot(`platform_support.png`);
     });
+
+    test('javascript error display', async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+        // Introduce an actual JS error that triggers the global error handler
+        await page.evaluate(() => {
+            setTimeout(() => {
+                throw new Error('Test JavaScript error for visual regression');
+            }, 0);
+        });
+        // Wait for the error to be displayed
+        await page.waitForSelector('#js-error', { state: 'visible' });
+        await expect(page.locator('#js-error')).toBeVisible();
+        await expect(page.locator('body')).toHaveScreenshot('js_error_display.png');
+    });
 });
 
 test.describe('token login', () => {
@@ -70,6 +85,17 @@ test.describe('token login', () => {
         await page.waitForSelector('.alert-warning', { state: 'visible' });
         await page.waitForLoadState('networkidle');
         await expect(page.locator('#main-content')).toHaveScreenshot(`login_token_session_expired.png`);
+    });
+
+    test('noscript warning when JS disabled', async ({ browser }) => {
+        const context = await browser.newContext({ javaScriptEnabled: false });
+        const page = await context.newPage();
+        const port = getTestPort();
+        await page.goto(`https://127.0.0.1:${port}/login`);
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('#noscript-warning')).toBeVisible();
+        await expect(page.locator('body')).toHaveScreenshot('noscript_warning.png');
+        await context.close();
     });
 });
 

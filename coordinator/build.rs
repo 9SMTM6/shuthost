@@ -377,6 +377,10 @@ fn process_templates() -> eyre::Result<()> {
     // Process index.tmpl.html
     let content = include_frontend_asset!("index.tmpl.html")
         .replace("{ html_head }", &html_head)
+        .replace(
+            "{ js_warnings }",
+            include_frontend_asset!("partials/js_warnings.tmpl.html"),
+        )
         .replace("{ title }", "ShutHost Coordinator")
         .replace(
             "{ architecture_documentation }",
@@ -429,6 +433,10 @@ fn process_templates() -> eyre::Result<()> {
     // Process login.tmpl.html
     let login_content = include_frontend_asset!("login.tmpl.html")
         .replace("{ html_head }", &html_head)
+        .replace(
+            "{ js_warnings }",
+            include_frontend_asset!("partials/js_warnings.tmpl.html"),
+        )
         .replace("{ title }", "Login • ShutHost")
         .replace(
             "{ header }",

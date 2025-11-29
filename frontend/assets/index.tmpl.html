@@ -9,6 +9,7 @@
 
     <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
         <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
+            { js_warnings }
             { maybe_auth_warning }
 
             <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
@@ -21,22 +22,22 @@
                         </summary>
                         <div id="host-install-content" class="collapsible-content" role="group"
                             aria-labelledby="host-install-title">
-                        <p class="mb-1 text-sm">Run the following command in your terminal:</p>
-                        <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#host-install-command" type="button"
-                                aria-label="Copy install command">Copy</button>
-                            <code id="host-install-command" class="code-block">Loading...</code>
-                        </div>
-                        <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
-                            section of your config on the Coordinator Host:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#config-location" type="button"
-                                aria-label="Copy config location">Copy</button>
-                            <code id="config-location" class="code-block">{ coordinator_config }</code>
-                        </div>
+                            <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                            <div class="code-container py-2">
+                                <button class="copy-button" data-copy-target="#host-install-command" type="button"
+                                    aria-label="Copy install command">Copy</button>
+                                <code id="host-install-command" class="code-block">Loading...</code>
+                            </div>
+                            <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
+                                section of your config on the Coordinator Host:</p>
+                            <div class="code-container">
+                                <button class="copy-button" data-copy-target="#config-location" type="button"
+                                    aria-label="Copy config location">Copy</button>
+                                <code id="config-location" class="code-block">{ coordinator_config }</code>
+                            </div>
 
-                        { agent_install_requirements_gotchas }
-                    </div>
+                            { agent_install_requirements_gotchas }
+                        </div>
                     </details>
                 </section>
 
