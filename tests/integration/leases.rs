@@ -353,6 +353,7 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
 }
 
 #[tokio::test]
+// known spurious deadlocks in CI: 1
 async fn test_m2m_lease_sync_release_timeout_when_host_online() {
     let coord_port = get_free_port();
 

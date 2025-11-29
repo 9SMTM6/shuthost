@@ -789,8 +789,8 @@ jobs:
             frontend/test-results
           compression-level: 9
 
-  container-release:
-    name: Tag & Push Container (branch/tag/latest)
+  container-release-tag:
+    name: Tag & Push Container (tag)
     needs: 
       - container-merge
       - container-test
@@ -805,7 +805,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -823,21 +823,60 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Retag multi-arch image with branch/tag name
+      - name: Retag multi-arch image with tag name
         run: |
           docker buildx imagetools create \
-            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }} \
+            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }} \
             ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
 
-      - name: Retag multi-arch image as latest (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Retag multi-arch image as latest
         run: |
           docker buildx imagetools create \
             --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest \
             ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
 
-  release:
-    name: Upload Release Binaries
+  container-release-branch:
+    name: Tag & Push Container (branch nightly)
+    needs: 
+      - container-merge
+      - container-test
+      - test-service-installation
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      - test-client-scripts-alpine
+      - test-client-scripts-windows
+      - test
+      - test-compatibility
+      - playwright-tests
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get release texts
+        id: release_texts
+        uses: ./.github/actions/get-release-texts
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Retag multi-arch image with branch name (nightly)
+        run: |
+          docker buildx imagetools create \
+            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }} \
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+
+  release-tag:
+    name: Upload Release Binaries (tag)
     needs:
       - test-service-installation
       - test-client-scripts-macos
@@ -847,7 +886,7 @@ jobs:
       - test
       - test-compatibility
       - playwright-tests
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -882,33 +921,96 @@ jobs:
         uses: ./.github/actions/get-release-texts
 
       - name: Extract manual changes
+        id: extract_manual_changes
         run: |
           COMMIT_MSG=$(git log --format=%B -1 ${{ github.sha }})
           if echo "$COMMIT_MSG" | grep -q "^## Changes not tracked in a PR:$"; then
             MANUAL_CHANGES=$(echo "$COMMIT_MSG" | sed -n '/^## Changes not tracked in a PR:$/,$p' | tail -n +2)
-            echo "manual_changes<<EOF" >> $GITHUB_ENV
-            echo "$MANUAL_CHANGES" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
+            echo "manual_changes<<EOF" >> $GITHUB_OUTPUT
+            echo "$MANUAL_CHANGES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
       - name: Upload binaries to release (create one if not existing)
         uses: softprops/action-gh-release@v2
-        if: ${{ github.event_name == 'push' }}
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*
-          tag_name: ${{ steps.release_texts.outputs.tag }}
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          tag_name: ${{ github.ref_name }}
+          prerelease: false
           generate_release_notes: true
           body: |
             ## Changes without a PR:
-            ${{ env.manual_changes }}
+            ${{ steps.extract_manual_changes.outputs.manual_changes }}
 
             📦 **Container Image** available at:
 
             ```
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ steps.release_texts.outputs.tag }}
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }}
             ```
 
             Also available as `:latest` if this is a tagged release.
 
+  release-branch:
+    name: Upload Release Binaries (branch)
+    needs:
+      - test-service-installation
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      - test-client-scripts-alpine
+      - test-client-scripts-windows
+      - test
+      - test-compatibility
+      - playwright-tests
+    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all coordinator binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coordinator-*
+          path: ./release-assets
+      
+      - name: Prepare release assets directory
+        run: |
+          # Move coordinator binaries to a common directory with target-based binary names
+          # this is required, as otherwise there'd be naming conflicts
+          mkdir -p release-assets/flat
+          for dir in release-assets/coordinator-*; do
+            target=$(basename "$dir" | sed 's/^coordinator-//')
+            # Skip Windows coordinator binary as it's only for testing client scripts
+            if [[ "$target" == x86_64-pc-windows-msvc ]]; then
+              continue
+            fi
+            if [ -f "$dir/shuthost_coordinator" ]; then
+              cp "$dir/shuthost_coordinator" "release-assets/flat/shuthost_coordinator-$target"
+            fi
+          done
+
+      - name: Get release texts
+        id: release_texts
+        uses: ./.github/actions/get-release-texts
+
+      - name: Upload binaries to release (create one if not existing)
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          files: ./release-assets/flat/*
+          tag_name: ${{ github.ref_name }}
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            ## Nightly Build
+
+            This release contains the latest artifacts for the `${{ github.ref_name }}` branch, updated on each push.
+
+            📦 **Container Image** available at:
+
+            ```
+            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }}
+            ```

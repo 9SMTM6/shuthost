@@ -1,9 +1,6 @@
 name: 'Get Release Texts'
-description: 'Generates release tag and lowercase repo name'
+description: 'Generates lowercase repo name'
 outputs:
-  tag:
-    description: "The release tag"
-    value: ${{ steps.release_texts.outputs.tag }}
   repo_lowercase:
     description: "The lowercase repository name"
     value: ${{ steps.release_texts.outputs.repo_lowercase }}
@@ -14,8 +11,4 @@ runs:
       id: release_texts
       shell: bash
       run: |
-        string=${{ github.ref }};
-        cleaned_string="${string#refs/tags/}";
-        cleaned_string="${cleaned_string#refs/heads/}";
-        echo "tag=$cleaned_string" >> $GITHUB_OUTPUT;
         echo "repo_lowercase=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT;
