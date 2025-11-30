@@ -1,3 +1,7 @@
+# this ensures that just running just give a list of commands
+_list:
+    just --list
+
 install_cross_toolchains_on_apple_silicon:
     rustup target add x86_64-apple-darwin
 
