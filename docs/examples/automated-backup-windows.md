@@ -73,11 +73,14 @@ if (-not $connected) {
 # Run backup commands, exit on failure
 try {
     & $ShutHostClient take $BackupHost
+    
     & $Kopia snapshot create --all
-    & $ShutHostClient release $BackupHost
 } catch {
     Send-Notification -Title "Backup Failed" -Message "Backup command failed: $($_.Exception.Message)" -Type "Error"
     exit 1
+} finally {
+    # Always release the host, even if backup failed
+    & $ShutHostClient release $BackupHost
 }
 
 # Notify success
@@ -90,6 +93,7 @@ Send-Notification -Title "Backup Succeeded" -Message "Backup completed successfu
 - Network connectivity is verified before proceeding
 - Console notifications are always shown; desktop toast notifications appear if BurntToast module is installed
 - Ensure Kopia is in your PATH or provide the full path
+- The `finally` block ensures the backup host is always released (put back to sleep), even if the Kopia backup fails
 
 ## Setup Instructions
 

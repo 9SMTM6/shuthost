@@ -85,16 +85,19 @@ notify_success() {
 
 
 # Run backup commands, exit on failure
+$SHUTHOST_CLIENT take $BACKUP_HOST
+trap "$SHUTHOST_CLIENT release $BACKUP_HOST" EXIT
+
 {
-    $SHUTHOST_CLIENT take $BACKUP_HOST
-    printf "\n"
     $KOPIA_PATH snapshot create --all
-    printf "\n"
-    $SHUTHOST_CLIENT release $BACKUP_HOST
 } || {
     notify_fail "Backup command failed"
     exit 1
 }
+
+# Success: release and remove trap
+$SHUTHOST_CLIENT release $BACKUP_HOST
+trap - EXIT
 
 # Notify success
 notify_success "Backup completed successfully"
@@ -106,6 +109,7 @@ notify_success "Backup completed successfully"
 - Set the `SHUTHOST_CLIENT`, `BACKUP_HOST`, and `KOPIA_PATH` variables at the top of the script to match your setup
 - The script uses `set -ex` for strict error handling - any command failure will stop execution
 - Desktop notifications provide feedback on backup status using `terminal-notifier` (if installed)
+- The `trap` ensures the backup host is always released (put back to sleep), even if the Kopia backup fails
 
 ## Setup Instructions
 

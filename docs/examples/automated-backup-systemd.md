@@ -86,16 +86,19 @@ if ! ping -c1 1.1.1.1 >/dev/null 2>&1; then
 fi
 
 # Run backup commands, exit on failure
+$SHUTHOST_CLIENT take $BACKUP_HOST
+trap "$SHUTHOST_CLIENT release $BACKUP_HOST" EXIT
+
 {
-    $SHUTHOST_CLIENT take $BACKUP_HOST
-    printf "\n"
     kopia snapshot create --all
-    printf "\n"
-    $SHUTHOST_CLIENT release $BACKUP_HOST
 } || {
     notify_fail "Backup command failed"
     exit 1
 }
+
+# Success: release and remove trap
+$SHUTHOST_CLIENT release $BACKUP_HOST
+trap - EXIT
 
 # Notify success
 notify_success "Backup completed successfully"
@@ -106,6 +109,7 @@ notify_success "Backup completed successfully"
 - The script uses `set -ex` for strict error handling - any command failure will stop execution
 - Network connectivity is verified before proceeding
 - Desktop notifications provide feedback on backup status
+- The `trap` ensures the backup host is always released (put back to sleep), even if the Kopia backup fails
 
 ## Setup Instructions
 
