@@ -62,13 +62,16 @@ update_dependencies:
 
 export DATABASE_URL := "sqlite:./shuthost.db"
 
-create_db:
+db_create:
     cargo sqlx database drop
     cargo sqlx database create
     cargo sqlx migrate run --source coordinator/migrations
 
 update_sqlx_cache:
     cargo sqlx prepare --workspace
+
+db_add_migration name:
+    cd coordinator && sqlx migrate add {{name}}
 
 test_all:
     cargo test --workspace

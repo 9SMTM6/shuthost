@@ -129,6 +129,14 @@ sqlx migrate run --source coordinator/migrations
 cargo sqlx prepare --workspace
 ```
 
+To add a new migration, run from the repository root:
+
+```sh
+cd coordinator && sqlx migrate add <migration_name>
+```
+
+This will create a new migration file in `coordinator/migrations` with the given name. After adding a migration, you may need to run the migrations and update the sqlx cache as described above.
+
 Persistence notes and the coordinator's DB behavior are described in the top-level README; please read that section before developing or testing DB-related features.
 
 ## How to Contribute
