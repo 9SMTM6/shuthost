@@ -240,13 +240,9 @@ pub async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Result<()>
 ///
 /// Returns an error if the database query fails.
 pub async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<String>> {
-    let result = sqlx::query_as!(
-        KvRecord,
-        "SELECT value FROM kv_store WHERE key = ?",
-        key
-    )
-    .fetch_optional(pool)
-    .await?;
+    let result = sqlx::query_as!(KvRecord, "SELECT value FROM kv_store WHERE key = ?", key)
+        .fetch_optional(pool)
+        .await?;
 
     Ok(result.map(|r| r.value))
 }
