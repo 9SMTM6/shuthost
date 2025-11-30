@@ -10,17 +10,23 @@ type LeaseSource =
     | { type: 'WebInterface' }
     | { type: 'Client'; value: string };
 
+/** Client statistics. */
+type ClientStats = {
+    last_used: string | null; // ISO string
+};
+
 /** WebSocket message types exchanged with the coordinator backend. */
 type WsMessage =
     | { type: 'HostStatus'; payload: Record<string, boolean> }
     | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[] } }
-    | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]> } }
+    | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 let persistedClientList: string[] = [];
+let persistedClientStats: Record<string, ClientStats> = {};
 
 // ==========================
 // Error Handling
@@ -95,6 +101,7 @@ const handleMessage = (message: WsMessage) => {
             persistedLeaseMap = message.payload.leases;
             persistedClientList = message.payload.clients;
             persistedHostsList = message.payload.hosts;
+            persistedClientStats = message.payload.client_stats;
             updateHostsTable();
             updateClientsTable();
             break;
@@ -168,6 +175,16 @@ const formatLeaseSource = (lease: LeaseSource): string => {
 };
 
 /**
+ * Format the last used timestamp for display.
+ */
+const formatLastUsed = (clientId: string): string => {
+    const stats = persistedClientStats[clientId];
+    if (!stats || !stats.last_used) return 'Never';
+    const date = new Date(stats.last_used);
+    return date.toLocaleString();
+};
+
+/**
  * Sort items into active and inactive groups, then combine with active first, sorted lexicographically.
  */
 const sortActiveFirst = <T>(
@@ -230,6 +247,9 @@ const createClientRow = (clientId: string, leases: string[]): HTMLTableRowElemen
 
     template.querySelector<HTMLElement>('.leases')!
         .textContent = leases.join(', ') || 'None';
+
+    template.querySelector<HTMLElement>('.last-used')!
+        .textContent = formatLastUsed(clientId);
 
     const resetBtn = template.querySelector<HTMLButtonElement>('.reset-client')!;
     const resetText = 'Reset Leases';
@@ -479,7 +499,8 @@ namespace DemoMode {
                     hosts: ["archive", "tarbean"],
                     clients: [],
                     status: { tarbean: false, archive: false },
-                    leases: { archive: [] }
+                    leases: { archive: [] },
+                    client_stats: {}
                 }
             });
         }, 500);

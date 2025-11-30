@@ -26,6 +26,7 @@ axum = { version = "0.8.3", features = ["macros", "ws"] }
 axum-extra = { version = "0.12", features = ["cookie", "cookie-signed"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 base64.workspace = true
+chrono = { version = "0.4", features = ["serde"] }
 clap = { workspace = true, features = ["env"] }
 cookie = "0.18"
 eyre.workspace = true
@@ -48,7 +49,7 @@ serde_json = "1.0.140"
 serde_plain = "1.0.2"
 sha2.workspace = true
 shuthost_common.workspace = true
-sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "macros", "migrate"] }
+sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "macros", "migrate", "chrono"] }
 tokio.workspace = true
 toml = "0.9.x"
 tower = "0.5"

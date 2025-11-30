@@ -8,18 +8,21 @@
         - heading "Clients Table" [level=2]
         - table:
           - rowgroup:
-            - row "Client ID Leases Actions":
+            - row "Client ID Leases Last Used Actions":
               - columnheader "Client ID"
               - columnheader "Leases"
+              - columnheader "Last Used"
               - columnheader "Actions"
           - rowgroup:
-            - row "denna Leases Actions":
+            - row "denna Leases Last Used Actions":
               - rowheader "denna"
               - cell "Leases"
+              - cell "Last Used"
               - cell "Actions":
                 - button "Reset Leases" [disabled]
-            - row "felurian Leases Actions":
+            - row "felurian Leases Last Used Actions":
               - rowheader "felurian"
               - cell "Leases"
+              - cell "Last Used"
               - cell "Actions":
                 - button "Reset Leases" [disabled]

@@ -38,6 +38,7 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
 
 use crate::{
     config::ControllerConfig,
+    db::ClientStats,
     http::{AppState, m2m::LeaseSource},
 };
 
@@ -57,6 +58,7 @@ pub enum WsMessage {
         clients: Vec<String>,
         status: HashMap<String, bool>,
         leases: HashMap<String, HashSet<LeaseSource>>,
+        client_stats: HashMap<String, ClientStats>,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate {
@@ -75,6 +77,7 @@ pub async fn ws_handler(
         hoststatus_rx,
         config_rx,
         leases,
+        db_pool,
         ..
     }): State<AppState>,
 ) -> impl IntoResponse {
@@ -89,6 +92,7 @@ pub async fn ws_handler(
     let hoststatus_rx = hoststatus_rx.clone();
     let config_rx = config_rx.clone();
     let current_leases = leases.clone();
+    let db_pool_clone = db_pool.clone();
 
     // Log that we're returning an on_upgrade responder; the actual upgrade
     // happens asynchronously when the client completes the handshake.
@@ -96,7 +100,15 @@ pub async fn ws_handler(
 
     ws.on_upgrade(async move |mut socket| {
         info!("WebSocket upgrade completed; starting event loop");
-        match send_startup_msg(&mut socket, hoststatus_rx, config_rx, current_leases).await {
+        match send_startup_msg(
+            &mut socket,
+            hoststatus_rx,
+            config_rx,
+            current_leases,
+            db_pool_clone.as_ref(),
+        )
+        .await
+        {
             Ok(()) => {}
             Err(e) => {
                 warn!("Failed to send initial state: {}", e);
@@ -157,6 +169,7 @@ async fn send_startup_msg(
     hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
     config_rx: watch::Receiver<Arc<ControllerConfig>>,
     current_leases: Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>,
+    db_pool: Option<&crate::db::DbPool>,
 ) -> Result<(), axum::Error> {
     // Read freshest values from the receivers just before sending.
     let current_state = hoststatus_rx.borrow().clone();
@@ -165,11 +178,19 @@ async fn send_startup_msg(
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
     let leases = { current_leases.lock().await.clone() };
+    let client_stats = if let Some(pool) = db_pool {
+        crate::db::get_all_client_stats(pool)
+            .await
+            .unwrap_or_default()
+    } else {
+        HashMap::new()
+    };
     let initial_msg = WsMessage::Initial {
         hosts,
         clients,
         status: current_state.as_ref().clone(),
         leases,
+        client_stats,
     };
 
     send_ws_message(socket, &initial_msg).await

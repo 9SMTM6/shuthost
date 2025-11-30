@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT client_id, last_used FROM client_stats WHERE client_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "client_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "last_used",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "5d4f8c8689f5fa16cc18514fb6cdd36cbc06dc5168d0ea9a67a3a415ef1afcd1"
+}
