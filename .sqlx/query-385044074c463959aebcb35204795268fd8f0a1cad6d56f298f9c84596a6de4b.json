@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO client_stats (client_id, last_used) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "385044074c463959aebcb35204795268fd8f0a1cad6d56f298f9c84596a6de4b"
+}

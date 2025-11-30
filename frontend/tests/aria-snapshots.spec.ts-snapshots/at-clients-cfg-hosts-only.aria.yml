@@ -8,8 +8,9 @@
         - heading "Clients Table" [level=2]
         - table:
           - rowgroup:
-            - row "Client ID Leases Actions":
+            - row "Client ID Leases Last Used Actions":
               - columnheader "Client ID"
               - columnheader "Leases"
+              - columnheader "Last Used"
               - columnheader "Actions"
           - rowgroup
