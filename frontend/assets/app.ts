@@ -181,6 +181,40 @@ const formatLastUsed = (clientId: string): string => {
     const stats = persistedClientStats[clientId];
     if (!stats || !stats.last_used) return 'Never';
     const date = new Date(stats.last_used);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    // One year threshold (approximate 365 days)
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+    if (diffMs >= oneYearMs) {
+        return date.toLocaleString();
+    }
+
+    // Coarse-grained relative formatting for times within last year
+    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+    const seconds = Math.round(diffMs / 1000);
+    if (seconds < 45) return 'just now';
+    if (seconds < 90) return rtf.format(-1, 'minute');
+
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return rtf.format(-minutes, 'minute');
+
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return rtf.format(-hours, 'hour');
+
+    const days = Math.round(hours / 24);
+    if (days < 7) return rtf.format(-days, 'day');
+
+    if (days < 30) {
+        const weeks = Math.round(days / 7);
+        return rtf.format(-weeks, 'week');
+    }
+
+    const months = Math.round(days / 30);
+    if (months < 12) return rtf.format(-months, 'month');
+
+    // Fallback: if it reaches a year or more, show absolute
     return date.toLocaleString();
 };
 
