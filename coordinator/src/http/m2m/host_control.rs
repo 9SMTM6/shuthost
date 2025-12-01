@@ -14,6 +14,7 @@ use tracing::{debug, error, info, warn};
 use shuthost_common::create_signed_message;
 
 #[cfg(not(coverage))]
+#[cfg(not(test))]
 use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
@@ -85,7 +86,7 @@ async fn wake_up_host(
             "Sending WoL packet to '{}' (MAC: {})",
             host, host_config.mac
         );
-        #[cfg(not(coverage))]
+        #[cfg(not(any(coverage, test)))]
         send_magic_packet(&host_config.mac, "255.255.255.255").map_err(|e| {
             error!("Failed to send WoL packet to '{}': {}", host, e);
             (

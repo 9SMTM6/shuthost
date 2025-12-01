@@ -98,11 +98,10 @@ async fn handle_m2m_lease_action(
     };
 
     // Update client's last used timestamp
-    if let Some(ref pool) = state.db_pool {
-        if let Err(e) = crate::db::update_client_last_used(pool, &client_id, Utc::now()).await {
+    if let Some(ref pool) = state.db_pool
+        && let Err(e) = crate::db::update_client_last_used(pool, &client_id, Utc::now()).await {
             tracing::error!("Failed to update client last used: {}", e);
         }
-    }
 
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(host.clone()).or_default();

@@ -318,6 +318,10 @@ pub async fn get_all_client_stats(pool: &DbPool) -> eyre::Result<HashMap<String,
 
 /// Retrieves statistics for a specific client.
 /// This function is only used in tests.
+#[expect(
+    clippy::missing_errors_doc,
+    reason = "This function is only used in tests."
+)]
 pub async fn get_client_stats(pool: &DbPool, client_id: &str) -> eyre::Result<Option<ClientStats>> {
     let result = sqlx::query_as!(
         ClientStatsRecord,
