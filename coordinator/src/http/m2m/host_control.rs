@@ -13,8 +13,7 @@ use tracing::{debug, error, info, warn};
 
 use shuthost_common::create_signed_message;
 
-#[cfg(not(coverage))]
-#[cfg(not(test))]
+#[cfg(not(any(coverage, test)))]
 use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
