@@ -8,10 +8,10 @@
             - paragraph: "Run one of the following commands in your terminal:"
             - paragraph: "For Linux/macOS:"
             - button "Copy install command"
-            - code: "/curl -sSL <protocol:\\/\\/base_url>\\/download\\/client_installer[\\d,.]+[hmsp]+ \\| sh -s <protocol:\\/\\/base_url> # \\[optional_client_id\\]/"
+            - code: /curl -sSL <protocol:\/\/base_url>\/download\/client_installer[\d,.]+[hmsp]+ \| sh -s <protocol:\/\/base_url>/
             - paragraph: "For Windows (PowerShell):"
             - button "Copy install command"
-            - code: "Invoke-WebRequest -Uri '<protocol://base_url>/download/client_installer.ps1' -UseBasicParsing -OutFile 'client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 <protocol://base_url> # [optional_client_id]"
+            - code: Invoke-WebRequest -Uri '<protocol://base_url>/download/client_installer.ps1' -UseBasicParsing -OutFile 'client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\client_installer.ps1 <protocol://base_url>
             - paragraph:
               - text: Optionally specify a custom base client ID as the second argument (otherwise random). The full client ID will include your hostname.
               - strong: "Tip:"
