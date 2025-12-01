@@ -51,47 +51,10 @@ pub async fn handle_host_state(
 
     debug!("Current state for host '{}': is_on={}", host, host_is_on);
 
-    let poll_with_err = |desired_state: bool| async move {
-        match poll_until_host_state(
-            host,
-            desired_state,
-            60,
-            200,
-            &state.config_rx,
-            &state.hoststatus_tx,
-        )
-        .await
-        {
-            Ok(()) => Ok(()),
-            Err(e) => {
-                warn!("{e}");
-                Err((
-                    StatusCode::GATEWAY_TIMEOUT,
-                    format!(
-                        "Timeout waiting for host {host} to become {}",
-                        if desired_state { "online" } else { "offline" }
-                    ),
-                ))
-            }
-        }
-    };
-
     if should_be_running && !host_is_on {
-        info!(
-            "Host '{host}' needs to wake up - has {} active lease(s): {:?}",
-            lease_set.len(),
-            lease_set
-        );
-        wake_host(host, state).map_err(|(sc, err)| (sc, err.to_owned()))?;
-        // Poll until host is online, updating global state
-        poll_with_err(true).await?;
+        wake_up_host(host, lease_set, state).await?;
     } else if !should_be_running && host_is_on {
-        info!("Host '{host}' should shut down - no active leases");
-        shutdown_host(host, state)
-            .await
-            .map_err(|(sc, err)| (sc, err.to_owned()))?;
-        // Poll until host is offline, updating global state
-        poll_with_err(false).await?;
+        shutdown_host_action(host, state).await?;
     } else {
         debug!(
             "No action needed for host '{}' (is_on={}, should_be_running={})",
@@ -100,6 +63,72 @@ pub async fn handle_host_state(
     }
 
     Ok(())
+}
+
+/// Wake up a host if WOL is enabled, and poll until online.
+async fn wake_up_host(
+    host: &str,
+    lease_set: &std::collections::HashSet<LeaseSource>,
+    state: &AppState,
+) -> Result<(), (StatusCode, String)> {
+    info!(
+        "Host '{host}' needs to wake up - has {} active lease(s): {:?}",
+        lease_set.len(),
+        lease_set
+    );
+    let host_config = get_host_config(host, state).map_err(|(sc, err)| (sc, err.to_owned()))?;
+    if host_config.mac.eq_ignore_ascii_case("disablewol") {
+        info!("WOL disabled for host '{}' (MAC set to 'disableWOL')", host);
+        Ok(())
+    } else {
+        info!(
+            "Sending WoL packet to '{}' (MAC: {})",
+            host, host_config.mac
+        );
+        #[cfg(not(coverage))]
+        send_magic_packet(&host_config.mac, "255.255.255.255").map_err(|e| {
+            error!("Failed to send WoL packet to '{}': {}", host, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to send wake packet".to_owned(),
+            )
+        })?;
+        info!("Successfully sent WoL packet to '{}'", host);
+        // Poll until host is online, updating global state
+        poll_until_host_state_wrapped(host, true, state).await
+    }
+}
+
+/// Shut down a host and poll until offline.
+async fn shutdown_host_action(host: &str, state: &AppState) -> Result<(), (StatusCode, String)> {
+    info!("Host '{host}' should shut down - no active leases");
+    send_shutdown_to_host(host, state)
+        .await
+        .map_err(|(sc, err)| (sc, err.to_owned()))?;
+    // Poll until host is offline, updating global state
+    poll_until_host_state_wrapped(host, false, state).await
+}
+
+/// Poll until a host reaches the desired state, mapping polling errors to
+/// a `(StatusCode::GATEWAY_TIMEOUT, String)` and logging a warning.
+async fn poll_until_host_state_wrapped(
+    host: &str,
+    desired_state: bool,
+    state: &AppState,
+) -> Result<(), (StatusCode, String)> {
+    poll_until_host_state(
+        host,
+        desired_state,
+        60,
+        200,
+        &state.config_rx,
+        &state.hoststatus_tx,
+    )
+    .await
+    .map_err(|e| {
+        warn!("{e}");
+        (StatusCode::GATEWAY_TIMEOUT, e)
+    })
 }
 
 /// Get host configuration from the current config.
@@ -121,37 +150,6 @@ pub fn get_host_config(
             Err((StatusCode::NOT_FOUND, "Unknown host"))
         }
     }
-}
-
-/// Send a wake-on-LAN packet to wake up a host.
-fn wake_host(host_name: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
-    debug!("Attempting to wake host '{}'", host_name);
-
-    let host_config = get_host_config(host_name, state)?;
-
-    if host_config.mac.eq_ignore_ascii_case("disablewol") {
-        info!(
-            "WOL disabled for host '{}' (MAC set to 'disableWOL')",
-            host_name
-        );
-        return Ok(());
-    }
-
-    info!(
-        "Sending WoL packet to '{}' (MAC: {})",
-        host_name, host_config.mac
-    );
-    #[cfg(not(coverage))]
-    send_magic_packet(&host_config.mac, "255.255.255.255").map_err(|e| {
-        error!("Failed to send WoL packet to '{}': {}", host_name, e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to send wake packet",
-        )
-    })?;
-
-    info!("Successfully sent WoL packet to '{}'", host_name);
-    Ok(())
 }
 
 /// Execute a TCP shutdown request to a host.
@@ -178,7 +176,7 @@ async fn execute_tcp_shutdown_request(
 }
 
 /// Send a shutdown command to a host via TCP.
-pub async fn send_shutdown(ip: &str, port: u16, secret: &str) -> Result<String> {
+pub async fn send_shutdown_to_address(ip: &str, port: u16, secret: &str) -> Result<String> {
     let addr = format!("{ip}:{port}");
     debug!("Connecting to {}", addr);
 
@@ -199,7 +197,10 @@ pub async fn send_shutdown(ip: &str, port: u16, secret: &str) -> Result<String> 
 }
 
 /// Send a shutdown command to a host.
-async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, &'static str)> {
+async fn send_shutdown_to_host(
+    host: &str,
+    state: &AppState,
+) -> Result<(), (StatusCode, &'static str)> {
     debug!("Attempting to shutdown host '{}'", host);
 
     let host_config = {
@@ -223,7 +224,7 @@ async fn shutdown_host(host: &str, state: &AppState) -> Result<(), (StatusCode, 
         "Sending shutdown command to '{}' ({}:{})",
         host, host_config.ip, host_config.port
     );
-    send_shutdown(
+    send_shutdown_to_address(
         &host_config.ip,
         host_config.port,
         &host_config.shared_secret,

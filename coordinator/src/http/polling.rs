@@ -87,8 +87,7 @@ pub async fn poll_until_host_state(
         }
         if start.elapsed().as_secs() >= timeout_secs {
             return Err(format!(
-                "Timeout waiting for host '{}' to become {}.",
-                host_name,
+                "Timeout waiting for host '{host_name}' to become {}.",
                 if desired_state { "online" } else { "offline" }
             ));
         }
