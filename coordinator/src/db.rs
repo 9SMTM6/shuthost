@@ -539,9 +539,6 @@ mod tests {
         assert!(stats.is_empty());
 
         // Update last used for a client
-        let start = DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
         let now = Utc::now();
         update_client_last_used(&pool, "client1", now)
             .await

@@ -138,7 +138,7 @@ release TYPE:
     just update_test_config_diffs
     just patch_test_configs
     just ci_cargo_deny
-    just update_sqlx_cache
+    just db_update_sqlx_cache
     just coverage
     CURRENT_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
