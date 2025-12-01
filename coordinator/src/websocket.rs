@@ -13,7 +13,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast, watch};
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
@@ -38,7 +38,7 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
 
 use crate::{
     config::ControllerConfig,
-    db::ClientStats,
+    db::{self, ClientStats},
     http::{AppState, m2m::LeaseSource},
 };
 
@@ -179,9 +179,13 @@ async fn send_startup_msg(
     let clients = config.clients.keys().cloned().collect();
     let leases = { current_leases.lock().await.clone() };
     let client_stats = if let Some(pool) = db_pool {
-        crate::db::get_all_client_stats(pool)
-            .await
-            .unwrap_or_default()
+        match db::get_all_client_stats(pool).await {
+            Ok(stats) => stats,
+            Err(e) => {
+                error!("Failed to get client stats: {}", e);
+                HashMap::new()
+            }
+        }
     } else {
         HashMap::new()
     };
