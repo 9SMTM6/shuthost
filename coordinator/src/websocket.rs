@@ -13,7 +13,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast, watch};
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
