@@ -315,7 +315,7 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
 
         [hosts."{agent_id}"]
         ip = "127.0.0.1"
-        mac = "disableWOL"
+        mac = "00:00:00:00:00:00"
         port = {agent_port}
         shared_secret = "{agent_secret}"
 
