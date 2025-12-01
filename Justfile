@@ -197,6 +197,6 @@ release TYPE:
     git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "- Updated dependencies" -m "- Formatted code with cargo fmt" -m "- Bumped version to $NEW_VERSION" -m "- Updated Playwright snapshots" -m "- Updated config patches" -m "- Updated sqlx cache (if required)" -m "- Updated coverage report" -m "" -m "## Changes not tracked in a PR:" -m "$MANUAL_CHANGES"
     git tag "$NEW_VERSION"
     # we need separate pushes here to ensure that the tag push triggers the *release-tag jobs
-    git push origin main
+    git push origin refs/heads/main
     git push origin "$NEW_VERSION"
     echo "{{TYPE}} release $NEW_VERSION completed successfully!"
