@@ -174,6 +174,9 @@ const formatLeaseSource = (lease: LeaseSource): string => {
     }
 };
 
+const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+
 /**
  * Format the last used timestamp for display.
  */
@@ -191,29 +194,26 @@ const formatLastUsed = (clientId: string): string => {
     }
 
     // Coarse-grained relative formatting for times within last year
-    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-
     const seconds = Math.round(diffMs / 1000);
     if (seconds < 45) return 'just now';
-    if (seconds < 90) return rtf.format(-1, 'minute');
+    if (seconds < 90) return RTF.format(-1, 'minute');
 
     const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return rtf.format(-minutes, 'minute');
+    if (minutes < 60) return RTF.format(-minutes, 'minute');
 
     const hours = Math.round(minutes / 60);
-    if (hours < 24) return rtf.format(-hours, 'hour');
+    if (hours < 24) return RTF.format(-hours, 'hour');
 
     const days = Math.round(hours / 24);
-    if (days < 7) return rtf.format(-days, 'day');
+    if (days < 7) return RTF.format(-days, 'day');
 
     if (days < 30) {
         const weeks = Math.round(days / 7);
-        return rtf.format(-weeks, 'week');
+        return RTF.format(-weeks, 'week');
     }
 
     const months = Math.round(days / 30);
-    if (months < 12) return rtf.format(-months, 'month');
-
+    if (months < 12) return RTF.format(-months, 'month');
     // Fallback: if it reaches a year or more, show absolute
     return date.toLocaleString();
 };
