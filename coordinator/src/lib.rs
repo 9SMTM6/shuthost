@@ -74,7 +74,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             INIT_RUSTLS.call_once(|| {
                 rustls::crypto::aws_lc_rs::default_provider()
                     .install_default()
-                    .unwrap();
+                    .expect("failed to install default rustls provider");
             });
 
             for warning in env!("BUILD_WARNINGS").split(";") {

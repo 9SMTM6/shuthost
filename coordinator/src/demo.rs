@@ -44,7 +44,7 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         Response::builder()
             .header("Content-Type", "text/html")
             .body(html)
-            .unwrap()
+            .expect("failed to build HTTP response")
     }
 
     let (hoststatus_tx, hoststatus_rx) = watch::channel(Arc::new(HashMap::new()));
@@ -59,7 +59,7 @@ pub async fn run_demo_service(port: u16, bind: &str) {
         auth: Arc::new(
             auth::Runtime::from_config(&AuthConfig::default(), None)
                 .await
-                .unwrap(),
+                .expect("failed to initialize auth runtime"),
         ),
         tls_enabled: false,
         db_pool: None,

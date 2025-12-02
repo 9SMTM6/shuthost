@@ -50,7 +50,7 @@ pub fn start_host_agent(mut config: ServiceOptions) {
                 let action = handle_client(stream, &config);
                 match action {
                     Action::Shutdown => {
-                        execute_shutdown(&config).unwrap();
+                        execute_shutdown(&config).expect("failed to execute shutdown command");
                     }
                     Action::Abort => {
                         println!("Abort requested. Stopping host_agent service.");

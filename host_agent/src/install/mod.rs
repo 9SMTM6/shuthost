@@ -136,7 +136,7 @@ pub fn install_host_agent(arguments: &Args) -> Result<(), String> {
     println!(
         "Place the following in the coordinator:\n{config_entry}",
         config_entry = CONFIG_ENTRY
-            .replace("{name}", &get_hostname().unwrap())
+            .replace("{name}", &get_hostname().expect("failed to get hostname"))
             .replace(
                 "{ip}",
                 &interface

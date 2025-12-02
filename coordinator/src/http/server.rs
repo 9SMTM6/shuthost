@@ -192,8 +192,10 @@ async fn setup_tls_config(
 
     let rustls_cfg = if cert_exists && key_exists {
         let rustls_cfg = AxumRustlsConfig::from_pem_file(
-            cert_path.to_str().unwrap(),
-            key_path.to_str().unwrap(),
+            cert_path
+                .to_str()
+                .expect("cert path contains invalid UTF-8"),
+            key_path.to_str().expect("key path contains invalid UTF-8"),
         )
         .await?;
         info!("Listening on https://{} (provided certs)", addr);
@@ -403,7 +405,8 @@ async fn start_server(
     let shutdown_signal = async {
         #[cfg(unix)]
         {
-            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
+            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+                .expect("failed to create SIGTERM signal handler");
             let _ = sigterm.recv().await;
         }
         #[cfg(not(unix))]
