@@ -524,7 +524,7 @@ const setupInstallerCommands = () => {
 // ==========================
 
 // Register service worker for push notifications
-async function registerServiceWorker() {
+const registerServiceWorker = async () => {
     if ('serviceWorker' in navigator) {
         try {
             const registration = await navigator.serviceWorker.register('/sw.js');
@@ -550,7 +550,7 @@ async function registerServiceWorker() {
 }
 
 // Request notification permission and subscribe to push notifications
-async function setupPushNotifications() {
+const setupPushNotifications = async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
         console.warn('Push notifications not supported');
         return;
@@ -611,7 +611,7 @@ async function setupPushNotifications() {
 }
 
 // Utility function to convert VAPID key
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
         .replace(/-/g, '+')
@@ -627,7 +627,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 // Utility function to convert ArrayBuffer to base64
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
     const bytes = new Uint8Array(buffer);
     let binary = '';
     for (let i = 0; i < bytes.length; i++) {
