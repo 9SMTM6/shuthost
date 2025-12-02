@@ -32,6 +32,7 @@ use demo::run_demo_service;
 use http::start;
 
 static INIT_TRACING: Once = Once::new();
+static INIT_RUSTLS: Once = Once::new();
 
 /// The coordinator's main function; can be called from a shim binary.
 ///
@@ -40,6 +41,10 @@ static INIT_TRACING: Once = Once::new();
 /// # Errors
 ///
 /// Returns an error if installation fails or if the server fails to start.
+///
+/// # Panics
+///
+/// Panics if the OpenSSL crypto provider cannot be installed.
 pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
         #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
@@ -64,6 +69,12 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                     )
                     .pretty()
                     .init(); // Initialize logging
+            });
+
+            INIT_RUSTLS.call_once(|| {
+                rustls_openssl::default_provider()
+                    .install_default()
+                    .expect("failed to install default rustls provider");
             });
 
             for warning in env!("BUILD_WARNINGS").split(";") {
