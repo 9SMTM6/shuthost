@@ -1,7 +1,9 @@
 // Service Worker for handling push notifications
+/// <reference lib="webworker" />
+
+export {};
 
 declare var self: ServiceWorkerGlobalScope;
-export { };
 
 // Different types of push notifications
 // To add a new notification type:
