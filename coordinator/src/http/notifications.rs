@@ -44,10 +44,7 @@ fn create_host_status_notification(host_name: &str, action: &str) -> Notificatio
 /// # Errors
 ///
 /// Returns an error if VAPID keys cannot be retrieved or push sending fails.
-pub async fn send_host_online_notifications(
-    pool: &db::DbPool,
-    host_name: &str,
-) -> eyre::Result<()> {
+pub async fn send_host_online(pool: &db::DbPool, host_name: &str) -> eyre::Result<()> {
     let vapid_keys = db::get_or_generate_vapid_keys(pool).await?;
     let subscriptions = db::get_push_subscriptions(pool).await?;
 
@@ -75,8 +72,15 @@ pub async fn send_host_online_notifications(
         builder.set_payload(web_push::ContentEncoding::Aes128Gcm, &message_content);
         builder.set_vapid_signature(vapid_signature);
 
+        #[expect(clippy::shadow_unrelated, reason = "false positive")]
         let message = builder.build()?;
-        let message_bytes = message.payload.as_ref().unwrap().content.clone();
+        #[expect(clippy::missing_panics_doc, reason = "the payload was set above")]
+        let message_bytes = message
+            .payload
+            .as_ref()
+            .expect("The payload was set above")
+            .content
+            .clone();
 
         // Send the HTTP request
         let client = reqwest::Client::new();

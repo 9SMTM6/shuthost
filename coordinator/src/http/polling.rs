@@ -216,7 +216,7 @@ async fn poll_host_statuses(
         // Send push notifications for hosts that came online
         if let Some(ref pool) = db_pool {
             for host in hosts_came_online {
-                if let Err(e) = notifications::send_host_online_notifications(pool, &host).await {
+                if let Err(e) = notifications::send_host_online(pool, &host).await {
                     tracing::error!("Failed to send push notifications for host {}: {}", host, e);
                 }
             }

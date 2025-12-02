@@ -226,7 +226,8 @@ async fn setup_tls_config(
             key_path.display()
         ))?;
 
-        let rustls_cfg = AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
+        let rustls_cfg =
+            AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
         info!(
             "Listening on https://{} (self-signed, persisted at {:?})",
             addr, cfg_dir
