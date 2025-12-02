@@ -15,7 +15,7 @@ use axum::{
     response::{Redirect, Response},
     routing::{self, IntoMakeService, any, get},
 };
-use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
+use axum_server::tls_openssl::OpenSSLConfig;
 use clap::Parser;
 use eyre::WrapErr;
 use hyper::StatusCode;
@@ -179,8 +179,8 @@ async fn setup_tls_config(
     let cert_exists = cert_path.exists();
     let key_exists = key_path.exists();
 
-    let rustls_cfg = if cert_exists && key_exists {
-        let rustls_cfg = AxumRustlsConfig::from_pem_file(
+    let openssl_cfg = if cert_exists && key_exists {
+        let openssl_cfg = OpenSSLConfig::from_pem_file(
             cert_path
                 .to_str()
                 .expect("cert path contains invalid UTF-8"),
@@ -193,7 +193,7 @@ async fn setup_tls_config(
             key_path.display()
         ))?;
         info!("Listening on https://{} (provided certs)", addr);
-        rustls_cfg
+        openssl_cfg
     } else if tls_cfg.persist_self_signed {
         // If cert files already exist partially, refuse to do anything.
         if cert_exists ^ key_exists {
@@ -226,18 +226,17 @@ async fn setup_tls_config(
             key_path.display()
         ))?;
 
-        let rustls_cfg =
-            AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
+        let openssl_cfg = OpenSSLConfig::from_pem(&cert_pem.into_bytes(), &key_pem.into_bytes())?;
         info!(
             "Listening on https://{} (self-signed, persisted at {:?})",
             addr, cfg_dir
         );
-        rustls_cfg
+        openssl_cfg
     } else {
         eyre::bail!("TLS configuration error: neither provided certs nor self-signed allowed");
     };
 
-    Ok(rustls_cfg)
+    Ok(openssl_cfg)
 }
 
 fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
@@ -247,17 +246,10 @@ fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         forward_to_default: F,
     }
 
-    impl tower_http::trace::OnFailure<ServerErrorsFailureClass>
-        for LevelAdjustingOnFailure<DefaultOnFailure>
-    {
-        fn on_failure(
-            &mut self,
-            failure: ServerErrorsFailureClass,
-            latency: std::time::Duration,
-            span: &tracing::Span,
-        ) {
-            use ServerErrorsFailureClass as S;
+    use ServerErrorsFailureClass as S;
 
+    impl tower_http::trace::OnFailure<S> for LevelAdjustingOnFailure<DefaultOnFailure> {
+        fn on_failure(&mut self, failure: S, latency: std::time::Duration, span: &tracing::Span) {
             match failure {
                 value @ S::StatusCode(StatusCode::SERVICE_UNAVAILABLE) => {
                     tracing::info!(classification = %value, latency = %format!("{} ms", latency.as_millis()), "response failed (downgraded)");
@@ -464,8 +456,8 @@ async fn start_server(
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
         Some(tls_cfg) => {
-            let rustls_cfg = setup_tls_config(tls_cfg, config_path, listen_ip, addr).await?;
-            let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app);
+            let openssl_cfg = setup_tls_config(tls_cfg, config_path, listen_ip, addr).await?;
+            let server = axum_server::bind_openssl(addr, openssl_cfg).serve(app);
             tokio::select! {
                 res = server => res?,
                 _ = shutdown_signal => {

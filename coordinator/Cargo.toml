@@ -13,7 +13,7 @@ categories.workspace = true
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
-default = ["compression-br", "compression-zstd"]
+default = ["compression-br", "compression-zstd", "vendored-openssl"]
 compression-br = ["tower-http/compression-br", "reqwest/brotli"]
 compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
 compression-gzip = ["tower-http/compression-gzip", "reqwest/gzip"]
@@ -26,11 +26,12 @@ include_linux_musl_aarch64_agent = []
 include_linux_musl_x86_64_agent = []
 include_macos_aarch64_agent = []
 include_macos_x86_64_agent = []
+vendored-openssl = ["native-tls/vendored"]
 
 [dependencies]
 axum = { version = "0.8.3", features = ["macros", "ws"] }
 axum-extra = { version = "0.12", features = ["cookie", "cookie-signed"] }
-axum-server = { version = "0.7", features = ["tls-rustls"] }
+axum-server = { version = "0.7", features = ["tls-openssl"] }
 base64.workspace = true
 chrono = { version = "0.4", features = ["serde"] }
 clap = { workspace = true, features = ["env"] }
@@ -39,17 +40,17 @@ eyre.workspace = true
 futures.workspace = true
 hex.workspace = true
 hmac.workspace = true
-hyper = "1.8.x"
+hyper = "1.x"
+native-tls = "0.2.14"
 notify = "8.0.0"
 openidconnect = { version = "4.x", default-features = false, features = [
     "reqwest",
-    "rustls-tls",
+    "native-tls",
 ] }
 rand.workspace = true
 rcgen = "0.14.x"
 regex.workspace = true
-reqwest = { workspace = true, features = ["rustls-tls", "http2", "charset"] }
-rustls = "0.23.x"
+reqwest = { workspace = true, features = ["native-tls", "http2", "charset"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_plain = "1.0.2"
