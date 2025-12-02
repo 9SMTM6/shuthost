@@ -26,11 +26,6 @@ type WsMessage =
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
-/** Response from /api/hosts_status endpoint */
-type HostsStatusResponse = {
-    hosts: Record<string, boolean>;
-}
-
 /** Response from /api/push/vapid_public_key endpoint */
 type VapidPublicKeyResponse = {
     public_key: string;
@@ -679,6 +674,11 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     showJSError(event.reason?.message || 'An unhandled promise rejection occurred');
+});
+
+window.addEventListener('securitypolicyviolation', (event) => {    
+    console.error('Security policy violation:', event);
+    showJSError('A security policy violation occurred');
 });
 
 /**

@@ -536,7 +536,7 @@ async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -
         HeaderName::from_static("content-security-policy"),
         HeaderValue::from_static(concat!(
             "default-src 'self'; ",
-            "require-trusted-types-for 'script'; ",
+            // "require-trusted-types-for 'script'; ",
             "script-src ",
             env!("CSP_INLINE_SCRIPTS_HASHES"),
             "; ",
@@ -548,6 +548,7 @@ async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -
             // "'; ",
             "style-src-attr 'none'; ",
             "object-src 'none'; ",
+            "worker-src 'self'; ",
             "base-uri 'none'; ",
             "frame-src 'none'; ",
             "media-src 'none'; ",
