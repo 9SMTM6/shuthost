@@ -44,8 +44,8 @@ hyper = "1.x"
 native-tls = "0.2.14"
 notify = "8.0.0"
 openidconnect = { version = "4.x", default-features = false, features = [
-    "reqwest",
     "native-tls",
+    "reqwest",
 ] }
 rand.workspace = true
 rcgen = "0.14.x"
@@ -56,7 +56,13 @@ serde_json = "1.0.140"
 serde_plain = "1.0.2"
 sha2.workspace = true
 shuthost_common.workspace = true
-sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "macros", "migrate", "chrono"] }
+sqlx = { version = "0.8", features = [
+    "chrono",
+    "macros",
+    "migrate",
+    "runtime-tokio",
+    "sqlite",
+] }
 tokio.workspace = true
 toml = "0.9.x"
 tower = "0.5"
@@ -77,10 +83,10 @@ workspace = true
 
 [build-dependencies]
 # Generate PNG favicons from SVG at build time (no external browser)
-resvg = "0.45.1"
-tiny-skia = "0.11"
-eyre.workspace = true
-sha2.workspace = true
-regex.workspace = true
 base64.workspace = true
+eyre.workspace = true
 hex.workspace = true
+regex.workspace = true
+resvg = "0.45.1"
+sha2.workspace = true
+tiny-skia = "0.11"
