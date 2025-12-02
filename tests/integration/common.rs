@@ -11,6 +11,7 @@
 )]
 
 use clap::Parser;
+use reqwest::Client;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;
 use std::io::Write;
@@ -172,4 +173,20 @@ pub async fn wait_for_agent_ready(port: u16, shared_secret: &str, timeout_secs: 
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     panic!("agent did not become ready within timeout");
+}
+
+/// Wait for a host to be reported as online by the coordinator API.
+/// Polls the /api/hosts_status endpoint until the specified host is online or times out.
+pub async fn wait_for_host_online(client: &Client, url: &str, host: &str) -> bool {
+    for _ in 0..10 {
+        let resp = client.get(url).send().await;
+        if let Ok(resp) = resp
+            && let Ok(json) = resp.json::<serde_json::Value>().await
+            && json["hosts"][host] == true
+        {
+            return true;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    }
+    false
 }

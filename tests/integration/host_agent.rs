@@ -2,7 +2,7 @@
 
 use crate::common::{
     get_agent_bin, get_free_port, spawn_coordinator_with_config, spawn_host_agent,
-    wait_for_agent_ready, wait_for_listening,
+    wait_for_agent_ready, wait_for_host_online, wait_for_listening,
 };
 
 #[test]
@@ -55,18 +55,7 @@ async fn test_shutdown_command_execution() {
 
     let client = reqwest::Client::new();
     let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
-    let mut online = false;
-    for _ in 0..10 {
-        let resp = client.get(&status_url).send().await;
-        if let Ok(resp) = resp
-            && let Ok(json) = resp.json::<serde_json::Value>().await
-            && json["testhost"] == true
-        {
-            online = true;
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-    }
+    let online = wait_for_host_online(&client, &status_url, "testhost").await;
     assert!(online, "Host should be online before triggering shutdown");
 
     let url = format!("http://127.0.0.1:{coord_port}/api/lease/testhost/release");

@@ -26,7 +26,7 @@ type WsMessage =
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
-    /** Response from /api/hosts_status endpoint */
+/** Response from /api/hosts_status endpoint */
 type HostsStatusResponse = {
     hosts: Record<string, boolean>;
 }
