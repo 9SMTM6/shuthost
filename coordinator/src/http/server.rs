@@ -24,7 +24,13 @@ use tokio::{
     sync::{broadcast, watch},
 };
 use tower::ServiceBuilder;
-use tower_http::{ServiceBuilderExt as _, request_id::MakeRequestUuid, timeout::TimeoutLayer};
+use tower_http::{
+    ServiceBuilderExt as _,
+    classify::ServerErrorsFailureClass,
+    request_id::MakeRequestUuid,
+    timeout::TimeoutLayer,
+    trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, OnFailure, TraceLayer},
+};
 use tracing::{info, warn};
 
 use crate::{
@@ -235,13 +241,50 @@ async fn setup_tls_config(
 }
 
 fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
+    #[derive(Clone, Copy)]
+    /// custom failure handling: downgrade 503-related failures to INFO
+    struct LevelAdjustingOnFailure<F: OnFailure<ServerErrorsFailureClass>> {
+        forward_to_default: F,
+    }
+
+    impl tower_http::trace::OnFailure<ServerErrorsFailureClass>
+        for LevelAdjustingOnFailure<DefaultOnFailure>
+    {
+        fn on_failure(
+            &mut self,
+            failure: ServerErrorsFailureClass,
+            latency: std::time::Duration,
+            _span: &tracing::Span,
+        ) {
+            use ServerErrorsFailureClass as S;
+
+            match failure {
+                S::StatusCode(StatusCode::SERVICE_UNAVAILABLE) => {
+                    tracing::info!(classification = %S::StatusCode(StatusCode::SERVICE_UNAVAILABLE), latency = %format!("{} ms", latency.as_millis()), "response failed (downgraded)");
+                }
+                value => {
+                    self.forward_to_default.on_failure(value, latency, _span);
+                }
+            }
+        }
+    }
+
     // TODO: figure out rate limiting
+    let trace_layer = TraceLayer::new_for_http()
+        // keep default spans
+        .make_span_with(DefaultMakeSpan::new())
+        // default behavior for successful responses
+        .on_response(DefaultOnResponse::new())
+        .on_failure(LevelAdjustingOnFailure {
+            forward_to_default: DefaultOnFailure::new(),
+        });
+
     let middleware_stack = ServiceBuilder::new()
         .sensitive_headers([AUTHORIZATION, COOKIE])
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
         // must be after request-id
-        .trace_for_http();
+        .layer(trace_layer);
 
     #[cfg(any(
         feature = "compression-br",
