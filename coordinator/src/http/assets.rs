@@ -247,7 +247,7 @@ pub async fn serve_styles() -> impl IntoResponse {
 
 #[axum::debug_handler]
 async fn serve_service_worker() -> impl IntoResponse {
-    const JS: &'static str = include_utf8_asset!("generated/sw.js");
+    const JS: &str = include_utf8_asset!("generated/sw.js");
     Response::builder()
         .header("Content-Type", "application/javascript")
         .header("Cache-Control", "public, max-age=31536000, immutable")

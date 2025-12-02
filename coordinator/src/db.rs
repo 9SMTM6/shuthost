@@ -406,14 +406,13 @@ pub async fn update_client_last_used(
 ///
 /// Returns an error if key generation or database operations fail.
 pub async fn get_or_generate_vapid_keys(pool: &DbPool) -> eyre::Result<VapidKeys> {
-    if let Some(private_key) = get_kv(pool, KV_VAPID_PRIVATE_KEY).await? {
-        if let Some(public_key) = get_kv(pool, KV_VAPID_PUBLIC_KEY).await? {
+    if let Some(private_key) = get_kv(pool, KV_VAPID_PRIVATE_KEY).await?
+        && let Some(public_key) = get_kv(pool, KV_VAPID_PUBLIC_KEY).await? {
             return Ok(VapidKeys {
                 private_key,
                 public_key,
             });
         }
-    }
 
     // Generate new keys
     let key_pair = rcgen::KeyPair::generate()?;
