@@ -56,12 +56,16 @@ let persistedClientStats: Record<string, ClientStats> | null = null;
 // Error Handling
 // ==========================
 
-const showJSError = (message: string) => {
+const showJSErrorDiv = (doShow = true) => {
     const errorDiv = document.getElementById('js-error') as HTMLDivElement;
+    errorDiv.hidden = !doShow;
+}
+
+const showJSError = (message: string) => {
     const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement;
-    if (errorDiv && messageEl) {
+    if (messageEl) {
         messageEl.textContent = message;
-        errorDiv.hidden = false;
+        showJSErrorDiv(true);
     }
 };
 
@@ -118,6 +122,7 @@ const connectWebSocket = () => {
         // `ev` is typically an Event without much detail; still log to help
         // spot timing or repeated failures.
         console.error('WebSocket error', ev);
+        showJSError(`A WebSocket error occurred, please check the console for details.`); 
     };
     socket.onclose = (ev) => {
         console.warn('WebSocket closed', { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });

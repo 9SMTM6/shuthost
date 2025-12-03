@@ -77,20 +77,19 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     
     // Focus existing window or open new one
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: readonly WindowClient[]) => {
-            const url = self.location.origin;
-            
-            for (const client of clientList) {
-                if (client.url === url && 'focus' in client) {
-                    return client.focus();
-                }
+    event.waitUntil((async () => {
+        const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        const url = self.location.origin;
+        
+        for (const client of clientList) {
+            if (client.url === url && 'focus' in client) {
+                return client.focus();
             }
-            
-            if (self.clients.openWindow) {
-                return self.clients.openWindow(url);
-            }
-            return Promise.resolve(null);
-        })
-    );
+        }
+        
+        if (self.clients.openWindow) {
+            return self.clients.openWindow(url);
+        }
+        return null;
+    })());
 });
