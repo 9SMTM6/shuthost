@@ -25,10 +25,6 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - uses: ./.github/actions/rust-build
-        with:
-          bin-name: shuthost_coordinator
-
       - name: Build and snapshot demo
         run: ./scripts/build-gh-pages.sh
 

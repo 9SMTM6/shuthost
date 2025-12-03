@@ -283,7 +283,8 @@ jobs:
         with:
           name: coordinator-aarch64-apple-darwin
 
-      - name: Start controller service (background)
+      - &start_controller
+        name: Start controller service (background)
         run: |
           chmod +x shuthost_coordinator
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
@@ -360,15 +361,8 @@ jobs:
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
-      - name: Start controller service (background)
-        run: |
-          chmod +x shuthost_coordinator
-          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          # Wait for coordinator to be ready (timeout 30s)
-          for i in $(seq 1 30); do
-            curl -fsSL http://localhost:8080/login && break || sleep 1
-          done
-          curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
+
+      - *start_controller
 
       - name: Install and run client
         run: |
@@ -439,15 +433,8 @@ jobs:
           docker exec run_container sh -c "apk update"
           docker exec run_container sh -c "apk add --no-cache curl openssl busybox-extras"
 
-      - name: Start controller service (background)
-        run: |
-          chmod +x shuthost_coordinator
-          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          # Wait for coordinator to be ready (timeout 30s)
-          for i in $(seq 1 30); do
-            curl -fsSL http://localhost:8080/login && break || sleep 1
-          done
-          curl -fsSL http://localhost:8080/login || { echo "Controller service is not running"; exit 1; }
+
+      - *start_controller
 
       - name: Install and run client
         run: |
@@ -605,7 +592,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
+      - &docker_login
+        name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -618,9 +606,13 @@ jobs:
           cp ./rehydrate/shuthost_coordinator target/${{ matrix.rustc_target }}/release/shuthost_coordinator
           chmod +x target/${{ matrix.rustc_target }}/release/shuthost_coordinator
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - &release_image_name
+        id: release_image_name
+        name: Get release image base
+        run: |
+          repo_lowercase=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+          image_base="ghcr.io/$repo_lowercase/shuthost-coordinator"
+          echo "image_base=$image_base" >> $GITHUB_OUTPUT
 
       - name: Build & Push Multi-Arch Alpine Image (SHA only)
         uses: docker/build-push-action@v6
@@ -630,7 +622,8 @@ jobs:
           platforms: linux/${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{matrix.platform }}-${{ github.sha }}
+            ${{ steps.release_image_name.outputs.image_base }}:${{matrix.platform }}-${{ github.sha }}
+          
           build-args: |
             RUSTC_TARGET=${{ matrix.rustc_target }}
 
@@ -644,23 +637,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - *release_image_name
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - *docker_login
 
       - name: Create and Push Multi-Arch Manifest
         run: |
           docker buildx imagetools create \
-            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }} \
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:amd64-${{ github.sha }} \
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:arm64-${{ github.sha }}
+            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ github.sha }} \
+            ${{ steps.release_image_name.outputs.image_base }}:amd64-${{ github.sha }} \
+            ${{ steps.release_image_name.outputs.image_base }}:arm64-${{ github.sha }}
 
   container-test:
     name: Test Container Image
@@ -669,17 +655,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - *release_image_name
 
       - name: Pull image
         run: |
-          docker pull ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:amd64-${{ github.sha }}
+          docker pull ${{ steps.release_image_name.outputs.image_base }}:amd64-${{ github.sha }}
 
       - name: Test image runs
         run: |
-          docker run --rm ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:amd64-${{ github.sha }} shuthost_coordinator --help
+          docker run --rm ${{ steps.release_image_name.outputs.image_base }}:amd64-${{ github.sha }} shuthost_coordinator --help
 
   test-compatibility:
     name: Test Compatibility on Older OS Releases
@@ -789,19 +773,80 @@ jobs:
             frontend/test-results
           compression-level: 9
 
-  container-release-tag:
-    name: Tag & Push Container (tag)
-    needs: 
-      - container-merge
-      - container-test
-      - test-service-installation
+  test-client-scripts:
+    name: Test Client Scripts (virtual)
+    runs-on: ubuntu-latest
+    needs:
       - test-client-scripts-macos
       - test-client-scripts-ubuntu
       - test-client-scripts-alpine
       - test-client-scripts-windows
-      - test
+    steps:
+      - name: Test Client Scripts (grouping)
+        run: echo "Test Client Scripts grouping job — nothing to run" 
+
+  ci-only-tests:
+    name: CI-only Tests (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      - test-client-scripts-alpine
+      - test-client-scripts-windows
+      - test-service-installation
       - test-compatibility
+    steps:
+      - name: CI-only Tests (grouping)
+        run: echo "CI-only grouping job — nothing to run"
+
+  container-readiness:
+    name: Container Readiness (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - container-merge
+      - container-test
+    steps:
+      - name: Container readiness (grouping)
+        run: echo "Container readiness grouping job — nothing to run"
+
+  tests-aggregate:
+    name: Aggregated Tests (virtual)
+    runs-on: ubuntu-latest
+    needs:
       - playwright-tests
+      - test
+      - ci-only-tests
+    steps:
+      - name: Aggregated tests (grouping)
+        run: echo "Aggregated tests grouping job — nothing to run"
+
+  release-needs-flattened:
+    name: Release Needs (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - build-coordinators
+      # test-aggregate
+      - playwright-tests
+      - test
+      ## ci-only-tests
+      - test-service-installation
+      - test-compatibility
+      ### test-client-scripts
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      - test-client-scripts-alpine
+      - test-client-scripts-windows
+      # container-readiness
+      - container-merge
+      - container-test
+    steps:
+      - name: Release needs (grouping)
+        run: echo "Release needs grouping job — nothing to run"
+
+  container-release-tag:
+    name: Tag & Push Container (tag)
+    needs:
+      - release-needs-flattened
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -809,16 +854,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - *release_image_name
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - *docker_login
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -826,28 +864,19 @@ jobs:
       - name: Retag multi-arch image with tag name
         run: |
           docker buildx imagetools create \
-            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }} \
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }} \
+            ${{ steps.release_image_name.outputs.image_base }}:${{ github.sha }}
 
       - name: Retag multi-arch image as latest
         run: |
           docker buildx imagetools create \
-            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:latest \
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+            --tag ${{ steps.release_image_name.outputs.image_base }}:latest \
+            ${{ steps.release_image_name.outputs.image_base }}:${{ github.sha }}
 
   container-release-branch:
     name: Tag & Push Container (branch nightly)
-    needs: 
-      - container-merge
-      - container-test
-      - test-service-installation
-      - test-client-scripts-macos
-      - test-client-scripts-ubuntu
-      - test-client-scripts-alpine
-      - test-client-scripts-windows
-      - test
-      - test-compatibility
-      - playwright-tests
+    needs:
+      - release-needs-flattened
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -855,16 +884,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - *release_image_name
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - *docker_login
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -872,20 +894,13 @@ jobs:
       - name: Retag multi-arch image with branch name (nightly)
         run: |
           docker buildx imagetools create \
-            --tag ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }} \
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.sha }}
+            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }} \
+            ${{ steps.release_image_name.outputs.image_base }}:${{ github.sha }}
 
   release-tag:
     name: Upload Release Binaries (tag)
     needs:
-      - test-service-installation
-      - test-client-scripts-macos
-      - test-client-scripts-ubuntu
-      - test-client-scripts-alpine
-      - test-client-scripts-windows
-      - test
-      - test-compatibility
-      - playwright-tests
+      - release-needs-flattened
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     permissions:
       contents: write
@@ -900,7 +915,8 @@ jobs:
           pattern: coordinator-*
           path: ./release-assets
       
-      - name: Prepare release assets directory
+      - &prepare_release_assets
+        name: Prepare release assets directory
         run: |
           # Move coordinator binaries to a common directory with target-based binary names
           # this is required, as otherwise there'd be naming conflicts
@@ -916,9 +932,7 @@ jobs:
             fi
           done
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - *release_image_name
 
       - name: Extract manual changes
         id: extract_manual_changes
@@ -946,7 +960,7 @@ jobs:
             📦 **Container Image** available at:
 
             ```
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }}
+            ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }}
             ```
 
             Also available as `:latest` if this is a tagged release.
@@ -954,14 +968,7 @@ jobs:
   release-branch:
     name: Upload Release Binaries (branch)
     needs:
-      - test-service-installation
-      - test-client-scripts-macos
-      - test-client-scripts-ubuntu
-      - test-client-scripts-alpine
-      - test-client-scripts-windows
-      - test
-      - test-compatibility
-      - playwright-tests
+      - release-needs-flattened
     if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
     permissions:
       contents: write
@@ -976,25 +983,9 @@ jobs:
           pattern: coordinator-*
           path: ./release-assets
       
-      - name: Prepare release assets directory
-        run: |
-          # Move coordinator binaries to a common directory with target-based binary names
-          # this is required, as otherwise there'd be naming conflicts
-          mkdir -p release-assets/flat
-          for dir in release-assets/coordinator-*; do
-            target=$(basename "$dir" | sed 's/^coordinator-//')
-            # Skip Windows coordinator binary as it's only for testing client scripts
-            if [[ "$target" == x86_64-pc-windows-msvc ]]; then
-              continue
-            fi
-            if [ -f "$dir/shuthost_coordinator" ]; then
-              cp "$dir/shuthost_coordinator" "release-assets/flat/shuthost_coordinator-$target"
-            fi
-          done
+      - *prepare_release_assets
 
-      - name: Get release texts
-        id: release_texts
-        uses: ./.github/actions/get-release-texts
+      - *release_image_name
 
       - name: Upload binaries to release (create one if not existing)
         uses: softprops/action-gh-release@v2
@@ -1012,5 +1003,5 @@ jobs:
             📦 **Container Image** available at:
 
             ```
-            ghcr.io/${{ steps.release_texts.outputs.repo_lowercase }}/shuthost-coordinator:${{ github.ref_name }}
+            ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }}
             ```
