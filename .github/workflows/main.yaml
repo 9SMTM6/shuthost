@@ -147,45 +147,8 @@ jobs:
       - name: Test on Linux (systemd)
         run: |
           set -x
-          docker run --privileged --rm -itd --name testinit docker.io/heywoodlh/systemd:latest journalctl -f
-
-          # Install dependencies
-          docker exec testinit bash -c "apt-get update; apt-get install -y curl"
-
-          # Copy controller binary
-          docker cp ./shuthost_coordinator testinit:/
-
-          # Install the coordinator as a service (it gets started automatically)
-          docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
-
-          # Wait for coordinator to be ready (timeout 30s)
-          for i in $(seq 1 30); do
-            docker exec testinit curl -fsSL http://localhost:8080/login && break || sleep 1
-          done
-          docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
-
-          # Run agent installer (downloads from running coordinator)
-          docker exec testinit sh -c "
-            export RUST_BACKTRACE=1;
-            curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
-          "
-
-          # Wait for agent to be ready (timeout 30s) - wait for process to appear
-          for i in $(seq 1 30); do
-            if docker exec testinit pgrep -af shuthost_host_agent >/dev/null 2>&1; then
-              break
-            fi
-            sleep 1
-          done
-
-          # Check on agent service according to init system
-          docker exec testinit systemctl status shuthost_host_agent
-
-          # Check logs or process running
-          docker exec testinit ps aux | grep shuthost_host_agent
-
-          # Clean up
-          docker stop testinit
+          ./scripts/test-service-installation.sh ./shuthost_coordinator root systemd
+          sudo systemctl status shuthost_host_agent
 
   test-service-installation-openrc:
     name: Test Service Installation (openrc)
@@ -216,37 +179,13 @@ jobs:
           docker exec testinit sh -c "apk update"
           docker exec testinit sh -c "apk --no-cache add curl"
 
-          # Copy controller binary
+          # Copy binaries and script
           docker cp ./shuthost_coordinator testinit:/
+          docker cp ./scripts/test-service-installation.sh testinit:/
 
-          # Install the coordinator as a service (it gets started automatically)
-          docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
-
-          # Wait for coordinator to be ready (timeout 30s)
-          for i in $(seq 1 30); do
-            docker exec testinit curl -fsSL http://localhost:8080/login && break || sleep 1
-          done
-          docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
-
-          # Run agent installer (downloads from running coordinator)
-          docker exec testinit sh -c "
-            export RUST_BACKTRACE=1;
-            curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
-          "
-
-          # Wait for agent to be ready (timeout 30s) - wait for process to appear
-          for i in $(seq 1 30); do
-            if docker exec testinit pgrep -af shuthost_host_agent >/dev/null 2>&1; then
-              break
-            fi
-            sleep 1
-          done
-
-          # Check on agent service according to init system
+          # Run the test script in the container
+          docker exec testinit sh -c "chmod +x /test-service-installation.sh && /test-service-installation.sh /shuthost_coordinator root openrc"
           docker exec testinit rc-service shuthost_host_agent status
-
-          # Check logs or process running
-          docker exec testinit ps aux | grep shuthost_host_agent
 
           # Clean up
           docker stop testinit
@@ -268,19 +207,7 @@ jobs:
       - name: Test on macOS (launchd)
         run: |
           set -x
-          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-
-          # Wait for coordinator to be ready (timeout 30s)
-          for i in $(seq 1 30); do
-            curl -fsSL http://localhost:8080/login && break || sleep 1
-          done
-
-          curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
-
-          # Wait for agent to be installed/started (timeout 30s)
-          for i in $(seq 1 30); do
-            launchctl print system/com.github_9smtm6.shuthost_host_agent >/dev/null 2>&1 && break || sleep 1
-          done
+          ./scripts/test-service-installation.sh ./shuthost_coordinator "$(whoami)" launchd
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
   test-service-installation-serviceless:
