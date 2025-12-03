@@ -6,6 +6,8 @@ bind = "127.0.0.1"
 
 [server.tls]
 
+[db]
+
 [hosts]
 
 [clients]

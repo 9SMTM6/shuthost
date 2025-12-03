@@ -9,6 +9,8 @@ client_secret = "your-client-secret"
 
 [server.tls]
 
+[db]
+
 [hosts]
 
 [clients]

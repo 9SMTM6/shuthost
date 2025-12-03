@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 import { Page } from '@playwright/test';
 import { spawn, ChildProcess } from 'node:child_process';
 
@@ -9,6 +11,7 @@ export const configs = {
   "auth-token": './tests/configs/auth-token.toml',
   "auth-oidc": './tests/configs/auth-oidc.toml',
   "auth-outdated-exceptions": './tests/configs/auth-outdated-exceptions.toml',
+  "no-db": './tests/configs/no-db.toml',
 }
 
 // Get the test port for parallel workers to avoid conflicts.

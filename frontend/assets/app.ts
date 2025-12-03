@@ -23,14 +23,14 @@ type ClientStats = {
 type WsMessage =
     | { type: 'HostStatus'; payload: Record<string, boolean> }
     | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[] } }
-    | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> } }
+    | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
 let persistedClientList: string[] = [];
-let persistedClientStats: Record<string, ClientStats> = {};
+let persistedClientStats: Record<string, ClientStats> | null = null;
 
 // ==========================
 // Error Handling
@@ -201,6 +201,7 @@ const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
  * Format the last used timestamp for display.
  */
 const formatLastUsed = (clientId: string): string => {
+    if (persistedClientStats === null) return '';
     const stats = persistedClientStats[clientId];
     if (!stats || !stats.last_used) return 'Never';
     const date = new Date(stats.last_used);
@@ -302,8 +303,12 @@ const createClientRow = (clientId: string, leases: string[]): HTMLTableRowElemen
     template.querySelector<HTMLElement>('.leases')!
         .textContent = leases.join(', ') || 'None';
 
-    template.querySelector<HTMLElement>('.last-used')!
-        .textContent = formatLastUsed(clientId);
+    const lastUsedCell = template.querySelector<HTMLElement>('.last-used')!;
+    if (persistedClientStats === null) {
+        lastUsedCell.hidden = true;
+    } else {
+        lastUsedCell.textContent = formatLastUsed(clientId);
+    }
 
     const resetBtn = template.querySelector<HTMLButtonElement>('.reset-client')!;
     const resetText = 'Reset Leases';
@@ -412,6 +417,7 @@ const updateClientsTable = () => {
 
     const clientTableBody = document.getElementById('client-table-body') as HTMLTableSectionElement;
     clientTableBody.replaceChildren(...sortedClients.map(([clientId, leases]) => createClientRow(clientId, leases)));
+    document.getElementById('last-used-header')!.hidden = persistedClientStats === null;
 };
 
 // ==========================

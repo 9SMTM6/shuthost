@@ -33,6 +33,24 @@ for (const name of hostsConfigs) {
   });
 }
 
+// Test for no-db config to ensure Last Used column is hidden
+test.describe('no-db config', () => {
+  test.beforeAll(async () => {
+    backendProcess = await startBackend(configs["no-db"]);
+  });
+
+  test('ARIA snapshot for clients table (no-db)', async ({ page }) => {
+    await page.goto('#clients');
+    await page.waitForSelector('#client-table-body', { state: 'attached' });
+    await expect(page.locator('#client-table-body')).toMatchAriaSnapshot({ name: `at_clients-table-cfg_no-db.aria.yml` });
+  });
+
+  test.afterAll(async () => {
+    stopBackend(backendProcess);
+    backendProcess = undefined;
+  });
+});
+
 // Architecture tab is independent of config
 test.describe('architecture tab', () => {
   test.beforeAll(async () => {

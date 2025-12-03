@@ -1,0 +1,11 @@
+- rowgroup:
+  - row "denna Leases Actions":
+    - rowheader "denna"
+    - cell "Leases"
+    - cell "Actions":
+      - button "Reset Leases" [disabled]
+  - row "felurian Leases Actions":
+    - rowheader "felurian"
+    - cell "Leases"
+    - cell "Actions":
+      - button "Reset Leases" [disabled]

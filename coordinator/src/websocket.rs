@@ -58,7 +58,7 @@ pub enum WsMessage {
         clients: Vec<String>,
         status: HashMap<String, bool>,
         leases: HashMap<String, HashSet<LeaseSource>>,
-        client_stats: HashMap<String, ClientStats>,
+        client_stats: Option<HashMap<String, ClientStats>>,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate {
@@ -180,14 +180,14 @@ async fn send_startup_msg(
     let leases = { current_leases.lock().await.clone() };
     let client_stats = if let Some(pool) = db_pool {
         match db::get_all_client_stats(pool).await {
-            Ok(stats) => stats,
+            Ok(stats) => Some(stats),
             Err(e) => {
                 error!("Failed to get client stats: {}", e);
-                HashMap::new()
+                None
             }
         }
     } else {
-        HashMap::new()
+        None
     };
     let initial_msg = WsMessage::Initial {
         hosts,
