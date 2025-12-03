@@ -38,7 +38,7 @@ build_all_host_agents_on_mac:
     wait
 
 deploy_branch_on_metal:
-    cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
+    unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
 build_graphs:
     dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/generated/architecture.svg
