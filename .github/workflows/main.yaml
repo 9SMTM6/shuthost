@@ -130,66 +130,27 @@ jobs:
       - name: Run tests
         run: cargo test --workspace
 
-  test-service-installation:
-    name: Test Service Installation & Startup
-    runs-on: ${{ matrix.runner }}
+  test-service-installation-systemd:
+    name: Test Service Installation (systemd)
+    runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            runner: ubuntu-latest
-            init: systemd
-            docker_image: docker.io/heywoodlh/systemd:latest
-            binary_target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            runner: ubuntu-latest
-            init: openrc
-            docker_image: docker.io/heywoodlh/openrc:latest
-            binary_target: x86_64-unknown-linux-musl
-          - os: macos-latest
-            runner: macos-latest
-            init: launchd
-            binary_target: aarch64-apple-darwin
-          - os: ubuntu-latest
-            runner: ubuntu-latest
-            init: serviceless
-            binary_target: x86_64-unknown-linux-gnu
-
     steps:
       - uses: actions/checkout@v6
 
       - name: Download coordinator binary
         uses: actions/download-artifact@v6
         with:
-          name: coordinator-${{ matrix.binary_target }}
+          name: coordinator-x86_64-unknown-linux-gnu
 
       - run: chmod +x shuthost_coordinator
 
-      - name: Test on Linux (systemd/openrc)
-        if: ${{ matrix.init == 'systemd' || matrix.init == 'openrc' }}
+      - name: Test on Linux (systemd)
         run: |
           set -x
-          if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker run --privileged --rm -itd --name testinit ${{ matrix.docker_image }} journalctl -f
-          elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker run --privileged --memory=2g --rm -itd --name testinit ${{ matrix.docker_image }} sh -c "
-              set -x
-              rc-update add syslog default;
-              rc-service syslog start;
-              touch /var/log/messages;
-              tail -f /var/log/messages;
-            "
-          fi
+          docker run --privileged --rm -itd --name testinit docker.io/heywoodlh/systemd:latest journalctl -f
 
           # Install dependencies
-          if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker exec testinit bash -c "apt-get update; apt-get install -y curl"
-          elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit sh -c "apk update"
-            docker exec testinit sh -c "apk --no-cache add curl"
-          fi
+          docker exec testinit bash -c "apt-get update; apt-get install -y curl"
 
           # Copy controller binary
           docker cp ./shuthost_coordinator testinit:/
@@ -218,11 +179,7 @@ jobs:
           done
 
           # Check on agent service according to init system
-          if [ "${{ matrix.init }}" = "systemd" ]; then
-            docker exec testinit systemctl status shuthost_host_agent
-          elif [ "${{ matrix.init }}" = "openrc" ]; then
-            docker exec testinit rc-service shuthost_host_agent status
-          fi
+          docker exec testinit systemctl status shuthost_host_agent
 
           # Check logs or process running
           docker exec testinit ps aux | grep shuthost_host_agent
@@ -230,8 +187,85 @@ jobs:
           # Clean up
           docker stop testinit
 
+  test-service-installation-openrc:
+    name: Test Service Installation (openrc)
+    runs-on: ubuntu-latest
+    needs: [build-host_agents, build-coordinators]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v6
+        with:
+          name: coordinator-x86_64-unknown-linux-musl
+
+      - run: chmod +x shuthost_coordinator
+
+      - name: Test on Linux (openrc)
+        run: |
+          set -x
+          docker run --privileged --memory=2g --rm -itd --name testinit docker.io/heywoodlh/openrc:latest sh -c "
+            set -x
+            rc-update add syslog default;
+            rc-service syslog start;
+            touch /var/log/messages;
+            tail -f /var/log/messages;
+          "
+
+          # Install dependencies
+          docker exec testinit sh -c "apk update"
+          docker exec testinit sh -c "apk --no-cache add curl"
+
+          # Copy controller binary
+          docker cp ./shuthost_coordinator testinit:/
+
+          # Install the coordinator as a service (it gets started automatically)
+          docker exec testinit sh -c "RUST_BACKTRACE=1 ./shuthost_coordinator install root --port 8080 --bind 127.0.0.1"
+
+          # Wait for coordinator to be ready (timeout 30s)
+          for i in $(seq 1 30); do
+            docker exec testinit curl -fsSL http://localhost:8080/login && break || sleep 1
+          done
+          docker exec testinit curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
+
+          # Run agent installer (downloads from running coordinator)
+          docker exec testinit sh -c "
+            export RUST_BACKTRACE=1;
+            curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080
+          "
+
+          # Wait for agent to be ready (timeout 30s) - wait for process to appear
+          for i in $(seq 1 30); do
+            if docker exec testinit pgrep -af shuthost_host_agent >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          # Check on agent service according to init system
+          docker exec testinit rc-service shuthost_host_agent status
+
+          # Check logs or process running
+          docker exec testinit ps aux | grep shuthost_host_agent
+
+          # Clean up
+          docker stop testinit
+
+  test-service-installation-launchd:
+    name: Test Service Installation (launchd)
+    runs-on: macos-latest
+    needs: [build-host_agents, build-coordinators]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v6
+        with:
+          name: coordinator-aarch64-apple-darwin
+
+      - run: chmod +x shuthost_coordinator
+
       - name: Test on macOS (launchd)
-        if: ${{ matrix.os == 'macos-latest' }}
         run: |
           set -x
           sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
@@ -249,8 +283,21 @@ jobs:
           done
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
+  test-service-installation-serviceless:
+    name: Test Service Installation (serviceless)
+    runs-on: ubuntu-latest
+    needs: [build-host_agents, build-coordinators]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v6
+        with:
+          name: coordinator-x86_64-unknown-linux-gnu
+
+      - run: chmod +x shuthost_coordinator
+
       - name: Test on Linux (serviceless)
-        if: ${{ matrix.init == 'serviceless' }}
         run: |
           set -x
           # Start the coordinator in the background
@@ -786,6 +833,18 @@ jobs:
       - name: Test Client Scripts (grouping)
         run: echo "Test Client Scripts grouping job — nothing to run" 
 
+  test-service-installation:
+    name: Test Service Installation (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-service-installation-systemd
+      - test-service-installation-openrc
+      - test-service-installation-launchd
+      - test-service-installation-serviceless
+    steps:
+      - name: Test Service Installation (grouping)
+        run: echo "Test Service Installation grouping job — nothing to run"
+
   ci-only-tests:
     name: CI-only Tests (virtual)
     runs-on: ubuntu-latest
@@ -794,7 +853,10 @@ jobs:
       - test-client-scripts-ubuntu
       - test-client-scripts-alpine
       - test-client-scripts-windows
-      - test-service-installation
+      - test-service-installation-systemd
+      - test-service-installation-openrc
+      - test-service-installation-launchd
+      - test-service-installation-serviceless
       - test-compatibility
     steps:
       - name: CI-only Tests (grouping)
@@ -830,7 +892,11 @@ jobs:
       - playwright-tests
       - test
       ## ci-only-tests
-      - test-service-installation
+      ### test-service-installation
+      - test-service-installation-systemd
+      - test-service-installation-openrc
+      - test-service-installation-launchd
+      - test-service-installation-serviceless
       - test-compatibility
       ### test-client-scripts
       - test-client-scripts-macos
