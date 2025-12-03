@@ -573,9 +573,20 @@ const setupPushNotifications = async () => {
 
         // Subscribe
         const registration = await navigator.serviceWorker.ready;
+        const applicationServerKey = urlBase64ToUint8Array(publicKey) as BufferSource;
+        console.log('VAPID public key:', publicKey);
+        console.log('Application server key length:', applicationServerKey.byteLength);
+
+        // Unsubscribe any existing subscription to avoid key mismatch
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+            await existingSubscription.unsubscribe();
+            console.info('Unsubscribed from existing push subscription');
+        }
+
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource
+            applicationServerKey
         });
 
         // Send subscription to server

@@ -421,7 +421,7 @@ pub async fn get_or_generate_vapid_keys(pool: &DbPool) -> eyre::Result<VapidKeys
 
     let private_key = private_key_pem;
     let public_key_raw = key_pair.public_key_raw();
-    let public_key = general_purpose::URL_SAFE_NO_PAD.encode(&public_key_raw);
+    let public_key = general_purpose::URL_SAFE.encode(public_key_raw);
 
     store_kv(pool, KV_VAPID_PRIVATE_KEY, &private_key).await?;
     store_kv(pool, KV_VAPID_PUBLIC_KEY, &public_key).await?;
