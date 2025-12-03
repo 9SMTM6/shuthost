@@ -1001,7 +1001,7 @@ jobs:
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*
-          tag_name: ${{ github.ref_name }}
+          tag_name: nightly_release_${{ github.ref_name }}
           prerelease: true
           generate_release_notes: true
           body: |
