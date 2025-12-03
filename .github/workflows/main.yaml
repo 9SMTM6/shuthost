@@ -971,4 +971,3 @@ jobs:
 
             ```
             ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }}
-            ```

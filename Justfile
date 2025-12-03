@@ -37,16 +37,8 @@ build_all_host_agents_on_mac:
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_host_agent --target aarch64-unknown-linux-musl &
     wait
 
-build_coordinator_on_mac:
-    cargo build --release --bin shuthost_coordinator --target aarch64-apple-darwin &
-    cargo build --release --bin shuthost_coordinator --target x86_64-apple-darwin &
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-gnu &
-    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --bin shuthost_coordinator --target aarch64-unknown-linux-gnu &
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-musl &
-    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_coordinator --target aarch64-unknown-linux-musl &
-    wait
-
-build_all: build_all_host_agents_on_mac build_coordinator_on_mac
+deploy_branch_on_metal:
+    cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
 build_graphs:
     dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/generated/architecture.svg
