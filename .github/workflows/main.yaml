@@ -83,26 +83,17 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Rehydrate target directory structure (Unix)
-        if: ${{ matrix.target != 'x86_64-pc-windows-msvc' }}
+      - name: Rehydrate target directory structure
+        shell: bash
         run: |
+          set -eux
           mkdir -p target
           for dir in ./rehydrate/host_agent-*; do
             target=$(basename "$dir" | sed 's/^host_agent-//')
             mkdir -p "target/$target/release"
             cp "$dir/shuthost_host_agent" "target/$target/release/"
-            chmod +x "target/$target/release/shuthost_host_agent"
+            chmod +x "target/$target/release/shuthost_host_agent" || true
           done
-
-      - name: Rehydrate target directory structure (Windows)
-        if: ${{ matrix.target == 'x86_64-pc-windows-msvc' }}
-        run: |
-          New-Item -ItemType Directory -Force -Path target | Out-Null
-          foreach ($dir in Get-ChildItem -Directory ./rehydrate/host_agent-*) {
-            $target = $dir.Name -replace '^host_agent-', ''
-            New-Item -ItemType Directory -Force -Path "target/$target/release" | Out-Null
-            Copy-Item "$dir/shuthost_host_agent" "target/$target/release/"
-          }
 
       - uses: ./.github/actions/rust-build
         with:
@@ -306,11 +297,6 @@ jobs:
             echo "Could not parse client config line from installer output"; exit 1
           fi
 
-          # Wait for the client binary to appear/be executable (timeout 20s)
-          for i in $(seq 1 20); do
-            test -x $CLIENT_PATH && break || sleep 1
-          done
-
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
           # We want to test that the request is sent correctly and succeeds
@@ -371,11 +357,6 @@ jobs:
           else
             echo "Could not parse client config line from installer output"; exit 1
           fi
-
-          # Wait for the client binary to appear/be executable (timeout 20s)
-          for i in $(seq 1 20); do
-            test -x $CLIENT_PATH && break || sleep 1
-          done
 
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
@@ -443,11 +424,6 @@ jobs:
           else
             echo "Could not parse client config line from installer output"; exit 1
           fi
-
-          # Wait for the client binary to appear/be executable (timeout 20s)
-          for i in $(seq 1 20); do
-            docker exec run_container sh -c "test -x $CLIENT_PATH" && break || sleep 1
-          done
 
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
