@@ -45,6 +45,23 @@ const showJSError = (message: string) => {
 let currentSocket: WebSocket | null = null;
 
 /**
+ * Check authentication before attempting to reconnect WebSocket.
+ * If authentication fails, redirect to login; otherwise, reconnect after delay.
+ */
+const checkAuthThenReconnect = async () => {
+    try {
+        const resp = await fetch('/api/hosts_status', { credentials: 'same-origin' });
+        if (resp.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+    } catch (err) {
+        // Network error or other issue, proceed to reconnect
+    }
+    setTimeout(connectWebSocket, 2000);
+};
+
+/**
  * Establish and maintain a WebSocket connection to the backend API.
  * Reconnects automatically on close (with a small delay).
  */
@@ -81,8 +98,7 @@ const connectWebSocket = () => {
     socket.onclose = (ev) => {
         console.warn('WebSocket closed', { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
         currentSocket = null;
-        // Try reconnecting with exponential backoff up to a cap
-        setTimeout(connectWebSocket, 2000);
+        checkAuthThenReconnect();
     };
 };
 
