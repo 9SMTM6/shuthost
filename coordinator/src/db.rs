@@ -9,7 +9,7 @@ use eyre::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
 
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::http::m2m::{LeaseMap, LeaseSource};
 
@@ -419,11 +419,9 @@ pub async fn get_or_generate_vapid_keys(pool: &DbPool) -> eyre::Result<VapidKeys
     let key_pair = rcgen::KeyPair::generate()?;
     let private_key_pem = key_pair.serialize_pem();
 
-    // For VAPID, we need the public key in uncompressed format
-    // But for simplicity, let's store both PEM and compute public key later
     let private_key = private_key_pem;
-    let public_key_pem = key_pair.public_key_pem();
-    let public_key = BASE64.encode(public_key_pem.as_bytes());
+    let public_key_raw = key_pair.public_key_raw();
+    let public_key = general_purpose::URL_SAFE_NO_PAD.encode(&public_key_raw);
 
     store_kv(pool, KV_VAPID_PRIVATE_KEY, &private_key).await?;
     store_kv(pool, KV_VAPID_PUBLIC_KEY, &public_key).await?;
