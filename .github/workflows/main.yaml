@@ -30,7 +30,7 @@ jobs:
             runner: ubuntu-24.04-arm
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -42,7 +42,7 @@ jobs:
           bin-name: shuthost_host_agent
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: host_agent-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_host_agent
@@ -72,10 +72,10 @@ jobs:
             runner: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download all host_agent binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: ./rehydrate
 
@@ -111,7 +111,7 @@ jobs:
           additional-flags: --features include_linux_agents,include_macos_agents
 
       - name: Upload coordinator binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coordinator-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_coordinator${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
@@ -121,8 +121,9 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - run: rustup update stable
 
       - uses: Swatinem/rust-cache@v2
 
@@ -157,10 +158,10 @@ jobs:
             binary_target: x86_64-unknown-linux-gnu
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-${{ matrix.binary_target }}
 
@@ -279,7 +280,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-aarch64-apple-darwin
 
@@ -357,7 +358,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
@@ -423,7 +424,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
@@ -495,7 +496,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-x86_64-pc-windows-msvc
 
@@ -581,10 +582,10 @@ jobs:
           - platform: arm64
             rustc_target: aarch64-unknown-linux-musl
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download MUSL coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-${{ matrix.rustc_target }}
           path: ./rehydrate
@@ -635,7 +636,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - *release_image_name
 
@@ -653,7 +654,7 @@ jobs:
     needs: container-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - *release_image_name
 
@@ -699,16 +700,16 @@ jobs:
           - rustc_target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coordinator-${{ matrix.rustc_target }}
           path: ./bin
 
       - name: Download host_agent binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: host_agent-${{ matrix.rustc_target }}
           path: ./bin
@@ -728,7 +729,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           fetch-depth: 0
@@ -765,7 +766,7 @@ jobs:
 
       - name: Upload Playwright report + test-results (zip via Actions)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-artifacts-${{ github.run_id }}
           path: |
@@ -852,7 +853,7 @@ jobs:
       packages: write
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - *release_image_name
 
@@ -882,7 +883,7 @@ jobs:
       packages: write
     if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - *release_image_name
 
@@ -907,10 +908,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Download all coordinator binaries
-        uses: actions/download-artifact@v4
+      - &download_coordinator_binaries
+        name: Download all coordinator binaries
+        uses: actions/download-artifact@v6
         with:
           pattern: coordinator-*
           path: ./release-assets
@@ -975,13 +977,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Download all coordinator binaries
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coordinator-*
-          path: ./release-assets
+      - *download_coordinator_binaries
       
       - *prepare_release_assets
 

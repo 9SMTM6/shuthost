@@ -20,8 +20,9 @@ jobs:
     outputs:
       artifact-path: gh-pages
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - run: rustup update stable
 
       - uses: Swatinem/rust-cache@v2
 
