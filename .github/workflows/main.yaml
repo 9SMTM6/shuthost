@@ -257,7 +257,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y podman
 
-      - name: Validate systemd snapshots
+      - name: Validate file snapshots
         run: |
           ./scripts/snapshot-files-container.sh "docker.io/heywoodlh/systemd:latest" "apt-get update && apt-get install -y curl patch file" "./install-file-snapshots/systemd" "./coordinator-x86_64-unknown-linux-gnu/shuthost_coordinator"
           ./scripts/snapshot-files-container.sh "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
