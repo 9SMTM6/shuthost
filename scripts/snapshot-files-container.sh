@@ -60,7 +60,6 @@ podman rm --force -t 1 temp-container >/dev/null 2>&1
 echo "Diffing filesystem changes..."
 
 # Get diff output
-echo "Processing coordinator diff..."
 process_diff() {
     image="$1"
     base_image="$2"
