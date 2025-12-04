@@ -5,16 +5,16 @@
 
 set -e
 
-cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-gnu
-cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-gnu --features=include_linux_x86_64_agent
-
+# Arguments: base_image install_deps_command base_output_dir host_binary
+BASE_IMAGE="$1"
+INSTALL_DEPS="$2"
+OUTPUT_DIR="$3"
+HOST_BINARY="$4"
 # Configuration
 BASE_IMAGE_NAME="shuthost-base"
 COORDINATOR_INSTALLED_NAME="shuthost-coordinator-installed"
 AGENT_INSTALLED_NAME="shuthost-agent-installed"
-HOST_BINARY="./target/x86_64-unknown-linux-gnu/release/shuthost_coordinator"
 CONTAINER_BINARY="/root/shuthost_coordinator"
-OUTPUT_DIR="./install-file-snapshot"
 
 # Cleanup function
 cleanup() {
@@ -27,29 +27,20 @@ trap cleanup EXIT
 # Ensure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
-echo "Creating images using one container..."
 # Run container from base image with privileged for systemd
-podman run -d -t --rm --privileged --name temp-container docker.io/heywoodlh/systemd:latest sleep infinity
+podman run -d -t --rm --privileged --name temp-container "$BASE_IMAGE" sleep infinity
 
 # Install curl in the container
-podman exec temp-container apt-get update
-podman exec temp-container apt-get install -y curl patch file
+podman exec temp-container sh -c "$INSTALL_DEPS"
 
 # Copy the binary
 podman cp "$HOST_BINARY" temp-container:"$CONTAINER_BINARY"
-podman cp docs/examples/example_config_external.toml.patch temp-container:"/root/config.patch"
 
 # Commit to base image
 podman commit temp-container "$BASE_IMAGE_NAME"
 
 # Install the coordinator
 podman exec temp-container "$CONTAINER_BINARY" install root
-
-# Apply the config patch
-podman exec temp-container sh -c "patch /home/root/.config/shuthost_coordinator/config.toml < /root/config.patch"
-
-# Restart the coordinator service
-podman exec temp-container systemctl restart shuthost_coordinator
 
 # Commit to coordinator installed image
 podman commit temp-container "$COORDINATOR_INSTALLED_NAME"
@@ -82,6 +73,7 @@ process_diff() {
     # Mount temp file and get metadata
     podman run --rm -v "$temp_file":/tmp/paths:ro --entrypoint /bin/sh "$image" -c "
         while read -r path; do
+            case \"\$path\" in /run/*) continue ;; esac
             if [ -f \"\$path\" ]; then
                 perms=\$(stat -c '%a' \"\$path\")
                 ftype=\$(file -b \"\$path\" | cut -d, -f1)

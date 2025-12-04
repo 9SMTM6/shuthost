@@ -15,7 +15,7 @@ gh-pages
 *.db-shm
 
 ## Additional Docker ignores
-snapshot-output/
+install-file-snapshots/
 *.tar
 
 # New entries
@@ -24,5 +24,6 @@ snapshot-output/
 scripts
 README.md
 docs
+!docs/examples/example_config.toml
 .github
 .containerignore

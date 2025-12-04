@@ -1,0 +1,35 @@
+[[files]]
+path = "/etc/systemd/system/multi-user.target.wants/shuthost_coordinator.service"
+perms = "777"
+type = "symbolic link to /etc/systemd/system/shuthost_coordinator.service"
+
+[[files]]
+path = "/etc/systemd/system/shuthost_coordinator.service"
+perms = "640"
+type = "ASCII text"
+
+[[files]]
+path = "/home/root/.config/shuthost_coordinator/config.toml"
+perms = "600"
+type = "ASCII text"
+
+[[files]]
+path = "/home/root/.config/shuthost_coordinator/shuthost.db"
+perms = "644"
+type = "SQLite 3.x database"
+
+[[files]]
+path = "/home/root/.config/shuthost_coordinator/shuthost.db-shm"
+perms = "644"
+type = "SQLite Write-Ahead Log shared memory"
+
+[[files]]
+path = "/home/root/.config/shuthost_coordinator/shuthost.db-wal"
+perms = "644"
+type = "SQLite Write-Ahead Log"
+
+[[files]]
+path = "/usr/sbin/shuthost_coordinator"
+perms = "755"
+type = "ELF 64-bit LSB pie executable"
+
