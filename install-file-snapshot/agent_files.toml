@@ -1,0 +1,15 @@
+[[files]]
+path = "/usr/sbin/shuthost_host_agent"
+perms = "755"
+type = "ELF 64-bit LSB pie executable"
+
+[[files]]
+path = "/etc/systemd/system/shuthost_host_agent.service"
+perms = "640"
+type = "ASCII text"
+
+[[files]]
+path = "/etc/systemd/system/multi-user.target.wants/shuthost_host_agent.service"
+perms = "777"
+type = "symbolic link to /etc/systemd/system/shuthost_host_agent.service"
+
