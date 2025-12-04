@@ -77,7 +77,7 @@ process_diff() {
     temp_file=$(mktemp)
     
     # Get diff plain text and extract added paths
-    podman image diff "$image" "$base_image" | grep '^A' | sed 's/^A //' > "$temp_file"
+    podman image diff "$image" "$base_image" | grep '^A' | sed 's/^A //' | sort > "$temp_file"
     
     # Mount temp file and get metadata
     podman run --rm -v "$temp_file":/tmp/paths:ro --entrypoint /bin/sh "$image" -c "
