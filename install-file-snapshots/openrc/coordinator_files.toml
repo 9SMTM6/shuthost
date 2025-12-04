@@ -1,12 +1,12 @@
 [[files]]
-path = "/etc/systemd/system/multi-user.target.wants/shuthost_coordinator.service"
-perms = "777"
-type = "symbolic link to /etc/systemd/system/shuthost_coordinator.service"
+path = "/etc/init.d/shuthost_coordinator"
+perms = "750"
+type = "OpenRC script"
 
 [[files]]
-path = "/etc/systemd/system/shuthost_coordinator.service"
-perms = "640"
-type = "ASCII text"
+path = "/etc/runlevels/default/shuthost_coordinator"
+perms = "777"
+type = "symbolic link to /etc/init.d/shuthost_coordinator"
 
 [[files]]
 path = "/home/root/.config/shuthost_coordinator/config.toml"
@@ -26,7 +26,7 @@ type = "SQLite Write-Ahead Log shared memory"
 [[files]]
 path = "/home/root/.config/shuthost_coordinator/shuthost.db-wal"
 perms = "644"
-type = "empty"
+type = "SQLite Write-Ahead Log"
 
 [[files]]
 path = "/usr/sbin/shuthost_coordinator"
