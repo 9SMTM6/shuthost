@@ -186,14 +186,13 @@ pub fn setup(args: Args) -> eyre::Result<()> {
         std::fs::set_permissions(&config_location, std::fs::Permissions::from_mode(0o600))?;
 
         println!("Created config file at {config_location:?}");
-
+        let user_info = User::from_name(&user)
+            .wrap_err("Failed to get user info")?
+            .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
+            
         // Chown the config directory if it was created
         if created_dir && let Some(parent_dir) = config_location.parent() {
             std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
-
-            let user_info = User::from_name(&user)
-                .wrap_err("Failed to get user info")?
-                .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
             fs::chown(
                 parent_dir,
                 Some(user_info.uid.into()),
@@ -203,9 +202,6 @@ pub fn setup(args: Args) -> eyre::Result<()> {
             println!("Chowned config directory at {parent_dir:?} for {user}",);
         }
 
-        let user_info = User::from_name(&user)
-            .wrap_err("Failed to get user info")?
-            .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
         fs::chown(
             &config_location,
             Some(user_info.uid.into()),

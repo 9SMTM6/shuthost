@@ -25,6 +25,12 @@ Note that the theme (light/dark) is selected based on your system preference.
 
 ---
 
+<!-- TODO release. Features without PR:
+* add redirect to authentication page when session expired, even the webpage is only using websockets (beforehand you had to refresh manually)
+* hide last used column on clients page if no db is enabled
+* change the config location to /etc/shuthost/coordinator_config.toml, and move data (db) etc accordingly
+-->
+
 ## ✨ Features
 
 - Manage standby state of Unix hosts with Wake-On-Lan (WOL) and lightweight agents
