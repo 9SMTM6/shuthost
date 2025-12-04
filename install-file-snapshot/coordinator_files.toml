@@ -1,9 +1,4 @@
 [[files]]
-path = "/usr/sbin/shuthost_coordinator"
-perms = "755"
-type = "ELF 64-bit LSB pie executable"
-
-[[files]]
 path = "/etc/systemd/system/multi-user.target.wants/shuthost_coordinator.service"
 perms = "777"
 type = "symbolic link to /etc/systemd/system/shuthost_coordinator.service"
@@ -32,4 +27,9 @@ type = "SQLite Write-Ahead Log shared memory"
 path = "/home/root/.config/shuthost_coordinator/shuthost.db-wal"
 perms = "644"
 type = "empty"
+
+[[files]]
+path = "/usr/sbin/shuthost_coordinator"
+perms = "755"
+type = "ELF 64-bit LSB pie executable"
 
