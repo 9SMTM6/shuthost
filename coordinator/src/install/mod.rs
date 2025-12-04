@@ -6,12 +6,13 @@ use std::{
     fs::File,
     io::Write,
     net::IpAddr,
+    os::unix::fs::{self, PermissionsExt},
     path::{Path, PathBuf},
-    process::Command,
 };
 
 use clap::Parser;
 use eyre::WrapErr;
+use nix::unistd::User;
 
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -115,15 +116,12 @@ pub fn setup(args: Args) -> eyre::Result<()> {
 
         // Chown the new directory if it was created
         if created_new_dir && let Some(parent_dir) = new_config_location.parent() {
-            let status = Command::new("chown")
-                .arg(format!("{user}:")) // ":" = default group
-                .arg(parent_dir)
-                .status()
-                .wrap_err("Failed to run chown on migrated config directory")?;
+            std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
 
-            if !status.success() {
-                eyre::bail!("Failed to chown migrated config directory: {status}");
-            }
+            let user_info = User::from_name(&user)
+                .wrap_err("Failed to get user info")?
+                .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
+            fs::chown(parent_dir, Some(user_info.uid.into()), Some(user_info.gid.into()))?;
 
             println!("Chowned migrated config directory at {parent_dir:?} for {user}",);
         }
@@ -181,44 +179,26 @@ pub fn setup(args: Args) -> eyre::Result<()> {
             .write_all(config_content.as_bytes())
             .wrap_err("Failed to write config file")?;
 
-        let status = Command::new("chmod")
-            .arg("600")
-            .arg(&config_location)
-            .status()
-            .wrap_err("Failed to run chmod")?;
-
-        if !status.success() {
-            eyre::bail!("Failed to chmod file: {status}");
-        }
+        std::fs::set_permissions(&config_location, std::fs::Permissions::from_mode(0o600))?;
 
         println!("Created config file at {config_location:?}");
 
         // Chown the config directory if it was created
         if created_dir && let Some(parent_dir) = config_location.parent() {
-            #[expect(clippy::shadow_unrelated, reason = "name 'status' is clearer here")]
-            let status = Command::new("chown")
-                .arg(format!("{user}:")) // ":" = default group
-                .arg(parent_dir)
-                .status()
-                .wrap_err("Failed to run chown on config directory")?;
+            std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
 
-            if !status.success() {
-                eyre::bail!("Failed to chown config directory: {status}");
-            }
+            let user_info = User::from_name(&user)
+                .wrap_err("Failed to get user info")?
+                .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
+            fs::chown(parent_dir, Some(user_info.uid.into()), Some(user_info.gid.into()))?;
 
             println!("Chowned config directory at {parent_dir:?} for {user}",);
         }
 
-        #[expect(clippy::shadow_unrelated, reason = "name 'status' is clearer here")]
-        let status = Command::new("chown")
-            .arg(format!("{user}:")) // ":" = default group
-            .arg(&config_location)
-            .status()
-            .wrap_err("Failed to run chown")?;
-
-        if !status.success() {
-            eyre::bail!("Failed to chown file: {status}");
-        }
+        let user_info = User::from_name(&user)
+            .wrap_err("Failed to get user info")?
+            .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
+        fs::chown(&config_location, Some(user_info.uid.into()), Some(user_info.gid.into()))?;
 
         println!("Chowned config file at {config_location:?} for {user}",);
     } else {
