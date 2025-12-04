@@ -1,4 +1,5 @@
 # Based on .gitignore, suitable for Docker builds
+# Ignore entire target directory except for specific binaries (see exceptions below)
 /target
 shuthost_coordinator.toml
 tls_cert.pem
