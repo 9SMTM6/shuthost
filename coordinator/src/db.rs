@@ -81,7 +81,12 @@ fn check_file_permissions(path: &Path, expected_mode: u32) {
     if let Ok(metadata) = std::fs::metadata(path) {
         let mode = metadata.permissions().mode() & 0o777;
         if mode != expected_mode {
-            warn!("File {} has permissions {:o}, which are not restrictive. Expected {:o}.", path.display(), mode, expected_mode);
+            warn!(
+                "File {} has permissions {:o}, which are not restrictive. Expected {:o}.",
+                path.display(),
+                mode,
+                expected_mode
+            );
         }
     } else {
         warn!("Could not check permissions of file {}", path.display());
@@ -120,7 +125,8 @@ pub async fn init(db_path: &Path) -> eyre::Result<DbPool> {
             db_path.display()
         ))?;
 
-    #[cfg(unix)] {
+    #[cfg(unix)]
+    {
         check_file_permissions(db_path, 0o600);
         let wal_path = db_path.with_extension("db-wal");
         if wal_path.exists() {
