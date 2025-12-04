@@ -10,6 +10,12 @@ BASE_IMAGE="$1"
 INSTALL_DEPS="$2"
 OUTPUT_DIR="$3"
 HOST_BINARY="$4"
+
+# Validate arguments
+if [ -z "$BASE_IMAGE" ] || [ -z "$INSTALL_DEPS" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$HOST_BINARY" ]; then
+    echo "Usage: $0 <base_image> <install_deps_command> <output_dir> <host_binary>" >&2
+    exit 1
+fi
 # Configuration
 BASE_IMAGE_NAME="shuthost-base"
 COORDINATOR_INSTALLED_NAME="shuthost-coordinator-installed"
