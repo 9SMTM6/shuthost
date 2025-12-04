@@ -17,6 +17,7 @@ pub mod install;
 pub mod websocket;
 pub mod wol;
 
+use nix::sys::stat;
 // for use in integration tests
 pub use websocket::WsMessage;
 
@@ -53,6 +54,9 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             Ok(())
         }
         Command::ControlService(args) => {
+            // Set umask to ensure database files have restrictive permissions
+            stat::umask(stat::Mode::S_IRWXU.complement());
+
             let config_path = fs::canonicalize(&args.config)
                 .wrap_err(format!("Config file not found at: {}", args.config))?;
 

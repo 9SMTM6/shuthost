@@ -39,7 +39,8 @@ eyre.workspace = true
 futures.workspace = true
 hex.workspace = true
 hmac.workspace = true
-hyper = "1.8.x"
+hyper = "1.x"
+nix.workspace = true
 notify = "8.0.0"
 openidconnect = { version = "4.x", default-features = false, features = [
     "reqwest",
