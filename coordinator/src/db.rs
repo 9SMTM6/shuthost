@@ -4,10 +4,14 @@
 
 use std::{collections::HashMap, path::Path};
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use chrono::{DateTime, Utc};
 use eyre::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
+use tracing::warn;
 
 use base64::{Engine as _, engine::general_purpose};
 
@@ -72,6 +76,18 @@ pub struct ClientStats {
     pub last_used: Option<DateTime<Utc>>,
 }
 
+#[cfg(unix)]
+fn check_file_permissions(path: &Path, expected_mode: u32) {
+    if let Ok(metadata) = std::fs::metadata(path) {
+        let mode = metadata.permissions().mode() & 0o777;
+        if mode != expected_mode {
+            warn!("File {} has permissions {:o}, which are not restrictive. Expected {:o}.", path.display(), mode, expected_mode);
+        }
+    } else {
+        warn!("Could not check permissions of file {}", path.display());
+    }
+}
+
 /// Creates or opens the SQLite database and runs migrations.
 ///
 /// # Arguments
@@ -103,6 +119,18 @@ pub async fn init(db_path: &Path) -> eyre::Result<DbPool> {
             "Failed to run database migrations on: {}",
             db_path.display()
         ))?;
+
+    #[cfg(unix)] {
+        check_file_permissions(db_path, 0o600);
+        let wal_path = db_path.with_extension("db-wal");
+        if wal_path.exists() {
+            check_file_permissions(&wal_path, 0o600);
+        }
+        let shm_path = db_path.with_extension("db-shm");
+        if shm_path.exists() {
+            check_file_permissions(&shm_path, 0o600);
+        }
+    }
 
     Ok(pool)
 }
