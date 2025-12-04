@@ -17,6 +17,7 @@ pub mod install;
 pub mod websocket;
 pub mod wol;
 
+#[cfg(unix)]
 use nix::sys::stat;
 // for use in integration tests
 pub use websocket::WsMessage;
@@ -55,6 +56,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
         }
         Command::ControlService(args) => {
             // Set umask to ensure database files have restrictive permissions
+            #[cfg(unix)]
             stat::umask(stat::Mode::S_IRWXU.complement());
 
             let config_path = fs::canonicalize(&args.config)
