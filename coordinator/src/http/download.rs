@@ -58,32 +58,32 @@ macro_rules! host_agent_handler {
 host_agent_handler!(
     fn host_agent_macos_aarch64,
     target = "aarch64-apple-darwin",
-    feature = "include_macos_agents"
+    feature = "include_macos_aarch64_agent"
 );
 host_agent_handler!(
     fn host_agent_macos_x86_64,
     target = "x86_64-apple-darwin",
-    feature = "include_macos_agents"
+    feature = "include_macos_x86_64_agent"
 );
 host_agent_handler!(
     fn host_agent_linux_x86_64,
     target = "x86_64-unknown-linux-gnu",
-    feature = "include_linux_agents"
+    feature = "include_linux_x86_64_agent"
 );
 host_agent_handler!(
     fn host_agent_linux_aarch64,
     target = "aarch64-unknown-linux-gnu",
-    feature = "include_linux_agents"
+    feature = "include_linux_aarch64_agent"
 );
 host_agent_handler!(
     fn host_agent_linux_musl_x86_64,
     target = "x86_64-unknown-linux-musl",
-    feature = "include_linux_agents"
+    feature = "include_linux_musl_x86_64_agent"
 );
 host_agent_handler!(
     fn host_agent_linux_musl_aarch64,
     target = "aarch64-unknown-linux-musl",
-    feature = "include_linux_agents"
+    feature = "include_linux_musl_aarch64_agent"
 );
 
 static_text_download_handler!(fn download_host_agent_installer, file = "m2m/host_agent_installer.sh");

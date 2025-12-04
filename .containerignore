@@ -1,3 +1,28 @@
-*
-!target/x86_64-unknown-linux-musl/release/shuthost_coordinator
-!target/aarch64-unknown-linux-musl/release/shuthost_coordinator
+# Based on .gitignore, suitable for Docker builds
+/target
+shuthost_coordinator.toml
+tls_cert.pem
+tls_key.pem
+.DS_Store
+.vscode
+coverage/
+
+gh-pages
+
+## SQLite database files
+*.db
+*.db-wal
+*.db-shm
+
+## Additional Docker ignores
+snapshot-output/
+*.tar
+
+# New entries
+!target/**/shuthost_coordinator
+!target/**/shuthost_host_agent
+scripts
+README.md
+docs
+.github
+.containerignore
