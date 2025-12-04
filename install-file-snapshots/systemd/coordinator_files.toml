@@ -15,17 +15,17 @@ type = "ASCII text"
 
 [[files]]
 path = "/home/root/.config/shuthost_coordinator/shuthost.db"
-perms = "644"
+perms = "600"
 type = "SQLite 3.x database"
 
 [[files]]
 path = "/home/root/.config/shuthost_coordinator/shuthost.db-shm"
-perms = "644"
+perms = "600"
 type = "SQLite Write-Ahead Log shared memory"
 
 [[files]]
 path = "/home/root/.config/shuthost_coordinator/shuthost.db-wal"
-perms = "644"
+perms = "600"
 type = "SQLite Write-Ahead Log"
 
 [[files]]

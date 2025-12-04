@@ -7,7 +7,7 @@ use shuthost_common::create_signed_message;
 
 use crate::common::{
     get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
-    wait_for_listening,
+    wait_for_host_online, wait_for_listening,
 };
 
 #[tokio::test]
@@ -397,18 +397,7 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
 
     let client = reqwest::Client::new();
     let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
-    let mut online = false;
-    for _ in 0..10 {
-        let resp = client.get(&status_url).send().await;
-        if let Ok(resp) = resp
-            && let Ok(json) = resp.json::<serde_json::Value>().await
-            && json["testhost"] == true
-        {
-            online = true;
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-    }
+    let online = wait_for_host_online(&client, &status_url, "testhost").await;
     assert!(online, "Host should be online before triggering shutdown");
 
     // Try to release a lease synchronously when host is online but no lease exists

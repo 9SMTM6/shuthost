@@ -17,6 +17,7 @@ pub mod install;
 pub mod websocket;
 pub mod wol;
 
+use nix::sys::stat;
 // for use in integration tests
 pub use websocket::WsMessage;
 
@@ -44,7 +45,7 @@ static INIT_RUSTLS: Once = Once::new();
 ///
 /// # Panics
 ///
-/// Panics if the AWS LC crypto provider cannot be installed.
+/// Panics if the OpenSSL crypto provider cannot be installed.
 pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
         #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
@@ -53,6 +54,9 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             Ok(())
         }
         Command::ControlService(args) => {
+            // Set umask to ensure database files have restrictive permissions
+            stat::umask(stat::Mode::S_IRWXU.complement());
+
             let config_path = fs::canonicalize(&args.config)
                 .wrap_err(format!("Config file not found at: {}", args.config))?;
 
@@ -72,7 +76,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             });
 
             INIT_RUSTLS.call_once(|| {
-                rustls::crypto::aws_lc_rs::default_provider()
+                rustls_openssl::default_provider()
                     .install_default()
                     .expect("failed to install default rustls provider");
             });

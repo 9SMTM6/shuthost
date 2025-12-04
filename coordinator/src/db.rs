@@ -4,10 +4,16 @@
 
 use std::{collections::HashMap, path::Path};
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use chrono::{DateTime, Utc};
 use eyre::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
+use tracing::warn;
+
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::http::m2m::{LeaseMap, LeaseSource};
 
@@ -17,6 +23,26 @@ use crate::http::m2m::{LeaseMap, LeaseSource};
     reason = "Just using 'Pool' would be harder to understand."
 )]
 pub type DbPool = SqlitePool;
+
+/// Represents a push notification subscription.
+#[derive(Debug, Clone)]
+pub struct PushSubscription {
+    /// The push service endpoint URL.
+    pub endpoint: String,
+    /// The P-256 DH key for encryption.
+    pub p256dh: String,
+    /// The auth secret for the subscription.
+    pub auth: String,
+}
+
+/// Represents VAPID keys for push notifications.
+#[derive(Debug, Clone)]
+pub struct VapidKeys {
+    /// The private key in PEM format.
+    pub private_key: String,
+    /// The public key in base64 format.
+    pub public_key: String,
+}
 
 /// Represents a lease record from the database.
 struct LeaseRecord {
@@ -48,6 +74,23 @@ pub const KV_VAPID_PUBLIC_KEY: &str = "vapid_public_key";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientStats {
     pub last_used: Option<DateTime<Utc>>,
+}
+
+#[cfg(unix)]
+fn check_file_permissions(path: &Path, expected_mode: u32) {
+    if let Ok(metadata) = std::fs::metadata(path) {
+        let mode = metadata.permissions().mode() & 0o777;
+        if mode != expected_mode {
+            warn!(
+                "File {} has permissions {:o}, which are not restrictive. Expected {:o}.",
+                path.display(),
+                mode,
+                expected_mode
+            );
+        }
+    } else {
+        warn!("Could not check permissions of file {}", path.display());
+    }
 }
 
 /// Creates or opens the SQLite database and runs migrations.
@@ -82,6 +125,19 @@ pub async fn init(db_path: &Path) -> eyre::Result<DbPool> {
             db_path.display()
         ))?;
 
+    #[cfg(unix)]
+    {
+        check_file_permissions(db_path, 0o600);
+        let wal_path = db_path.with_extension("db-wal");
+        if wal_path.exists() {
+            check_file_permissions(&wal_path, 0o600);
+        }
+        let shm_path = db_path.with_extension("db-shm");
+        if shm_path.exists() {
+            check_file_permissions(&shm_path, 0o600);
+        }
+    }
+
     Ok(pool)
 }
 
@@ -101,7 +157,6 @@ pub async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Result<()> {
     // Clear existing leases
     leases_guard.clear();
 
-    // Load all lease records
     let lease_records = sqlx::query_as!(
         LeaseRecord,
         "SELECT hostname, lease_source_type, lease_source_value FROM leases"
@@ -136,7 +191,6 @@ pub async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Result<()> {
 /// * `pool` - Database connection pool.
 /// * `hostname` - The hostname for the lease.
 /// * `lease_source` - The lease source being added or removed.
-/// * `action` - "add" to add the lease, "remove" to remove it.
 ///
 /// # Errors
 ///
@@ -370,6 +424,117 @@ pub async fn update_client_last_used(
     .await?;
 
     Ok(())
+}
+
+/// Gets or generates VAPID keys for push notifications.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+///
+/// # Returns
+///
+/// VAPID keys containing private and public keys.
+///
+/// # Errors
+///
+/// Returns an error if key generation or database operations fail.
+pub async fn get_or_generate_vapid_keys(pool: &DbPool) -> eyre::Result<VapidKeys> {
+    if let Some(private_key) = get_kv(pool, KV_VAPID_PRIVATE_KEY).await?
+        && let Some(public_key) = get_kv(pool, KV_VAPID_PUBLIC_KEY).await?
+    {
+        return Ok(VapidKeys {
+            private_key,
+            public_key,
+        });
+    }
+
+    // Generate new keys
+    let key_pair = rcgen::KeyPair::generate()?;
+    let private_key_pem = key_pair.serialize_pem();
+
+    let private_key = private_key_pem;
+    let public_key_raw = key_pair.public_key_raw();
+    let public_key = general_purpose::URL_SAFE.encode(public_key_raw);
+
+    store_kv(pool, KV_VAPID_PRIVATE_KEY, &private_key).await?;
+    store_kv(pool, KV_VAPID_PUBLIC_KEY, &public_key).await?;
+
+    Ok(VapidKeys {
+        private_key,
+        public_key,
+    })
+}
+
+/// Stores a push subscription in the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `subscription` - The push subscription to store.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+pub async fn store_push_subscription(
+    pool: &DbPool,
+    subscription: &PushSubscription,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "INSERT OR REPLACE INTO push_subscriptions (endpoint, p256dh, auth) VALUES (?, ?, ?)",
+        subscription.endpoint,
+        subscription.p256dh,
+        subscription.auth
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Removes a push subscription from the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+/// * `endpoint` - The push service endpoint.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+pub async fn remove_push_subscription(pool: &DbPool, endpoint: &str) -> eyre::Result<()> {
+    sqlx::query!(
+        "DELETE FROM push_subscriptions WHERE endpoint = ?",
+        endpoint
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Gets all push subscriptions from the database.
+///
+/// # Arguments
+///
+/// * `pool` - Database connection pool.
+///
+/// # Returns
+///
+/// A vector of push subscriptions.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+pub async fn get_push_subscriptions(pool: &DbPool) -> eyre::Result<Vec<PushSubscription>> {
+    let subscriptions = sqlx::query_as!(
+        PushSubscription,
+        "SELECT endpoint, p256dh, auth FROM push_subscriptions"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(subscriptions)
 }
 
 #[cfg(test)]
