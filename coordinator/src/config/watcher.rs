@@ -32,7 +32,7 @@ async fn process_config_change(
     let prev = rx.borrow().clone();
     let new_config = config::load(path)
         .await
-        .wrap_err("Failed to reload config")?;
+        .wrap_err(format!("Failed to reload config at: {}", path.display()))?;
     let effective = ControllerConfig {
         hosts: new_config.hosts.clone(),
         clients: new_config.clients.clone(),

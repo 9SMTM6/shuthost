@@ -279,7 +279,7 @@ jobs:
           # Parse the client config line from installer output and add to config
           clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
-            config_path="/Users/$(whoami)/.config/shuthost_coordinator.toml"
+            config_path="/Users/$(whoami)/.config/shuthost_coordinator/config.toml"
             echo "Config file before modification:"
             sudo cat "$config_path"
             # Add the host if not present
@@ -322,7 +322,6 @@ jobs:
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
-
       - *start_controller
 
       - name: Install and run client
@@ -340,7 +339,7 @@ jobs:
           # Parse the client config line from installer output and add to config
           clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
-            config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
+            config_path="/home/$(whoami)/.config/shuthost_coordinator/config.toml"
             echo "Config file before modification:"
             sudo cat "$config_path"
             # Add the host if not present
@@ -389,7 +388,6 @@ jobs:
           docker exec run_container sh -c "apk update"
           docker exec run_container sh -c "apk add --no-cache curl openssl busybox-extras"
 
-
       - *start_controller
 
       - name: Install and run client
@@ -407,7 +405,7 @@ jobs:
           # Parse the client config line from installer output and add to config
           clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
-            config_path="/home/$(whoami)/.config/shuthost_coordinator.toml"
+            config_path="/home/$(whoami)/.config/shuthost_coordinator/config.toml"
             echo "Config file before modification:"
             sudo cat "$config_path"
             # Add the host if not present

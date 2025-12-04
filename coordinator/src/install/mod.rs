@@ -63,9 +63,73 @@ pub fn setup(args: Args) -> eyre::Result<()> {
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
-    let config_location = PathBuf::from(format!("/home/{user}/.config/{name}.toml",));
+    let old_config_location = PathBuf::from(format!("/home/{user}/.config/{name}.toml",));
+    #[cfg(target_os = "linux")]
+    let new_config_location = PathBuf::from(format!("/home/{user}/.config/{name}/config.toml",));
     #[cfg(target_os = "macos")]
-    let config_location = PathBuf::from(format!("/Users/{user}/.config/{name}.toml",));
+    let old_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}.toml",));
+    #[cfg(target_os = "macos")]
+    let new_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}/config.toml",));
+
+    // Move existing config from old location to new location if old exists and new doesn't
+    let mut created_new_dir = false;
+    if old_config_location.exists() && !new_config_location.exists() {
+        if let Some(parent_dir) = new_config_location.parent()
+            && !parent_dir.exists()
+        {
+            std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
+            created_new_dir = true;
+        }
+        std::fs::rename(&old_config_location, &new_config_location).wrap_err(format!(
+            "Failed to move config file from {} to {}",
+            old_config_location.display(),
+            new_config_location.display()
+        ))?;
+        println!("Moved config file from {old_config_location:?} to {new_config_location:?}");
+
+        // Also move associated files (database and certificates) from old directory to new directory
+        if let (Some(old_dir), Some(new_dir)) =
+            (old_config_location.parent(), new_config_location.parent())
+        {
+            let files_to_move = [
+                "shuthost.db",
+                "shuthost.db-wal",
+                "shuthost.db-shm",
+                "tls_cert.pem",
+                "tls_key.pem",
+            ];
+            for file_name in &files_to_move {
+                let old_file = old_dir.join(file_name);
+                let new_file = new_dir.join(file_name);
+                if old_file.exists() && !new_file.exists() {
+                    std::fs::rename(&old_file, &new_file).wrap_err(format!(
+                        "Failed to move {} from {} to {}",
+                        file_name,
+                        old_file.display(),
+                        new_file.display()
+                    ))?;
+                    println!("Moved {file_name} from {old_file:?} to {new_file:?}");
+                }
+            }
+        }
+
+        // Chown the new directory if it was created
+        if created_new_dir && let Some(parent_dir) = new_config_location.parent() {
+            let status = Command::new("chown")
+                .arg(format!("{user}:")) // ":" = default group
+                .arg(parent_dir)
+                .status()
+                .wrap_err("Failed to run chown on migrated config directory")?;
+
+            if !status.success() {
+                eyre::bail!("Failed to chown migrated config directory: {status}");
+            }
+
+            println!("Chowned migrated config directory at {parent_dir:?} for {user}",);
+        }
+    }
+
+    let config_location = new_config_location;
 
     let bind_known_vals = |arg: &str| {
         arg.to_owned()
@@ -97,14 +161,19 @@ pub fn setup(args: Args) -> eyre::Result<()> {
         .map_err(eyre::Report::msg)?;
 
     if !Path::new(&config_location).exists() {
-        if let Some(parent_dir) = config_location.parent()
+        let created_dir = if let Some(parent_dir) = config_location.parent()
             && !parent_dir.exists()
         {
             std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
-        }
+            true
+        } else {
+            false
+        };
 
-        let mut config_file =
-            File::create(&config_location).wrap_err("Failed to create config file")?;
+        let mut config_file = File::create(&config_location).wrap_err(format!(
+            "Failed to create config file at {}",
+            config_location.display()
+        ))?;
         let config_content = include_str!("../../../docs/examples/example_config.toml")
             .replace("port = 8080", &format!("port = {}", args.port))
             .replace("bind = \"127.0.0.1\"", &format!("bind = \"{}\"", args.bind));
@@ -123,6 +192,22 @@ pub fn setup(args: Args) -> eyre::Result<()> {
         }
 
         println!("Created config file at {config_location:?}");
+
+        // Chown the config directory if it was created
+        if created_dir && let Some(parent_dir) = config_location.parent() {
+            #[expect(clippy::shadow_unrelated, reason = "name 'status' is clearer here")]
+            let status = Command::new("chown")
+                .arg(format!("{user}:")) // ":" = default group
+                .arg(parent_dir)
+                .status()
+                .wrap_err("Failed to run chown on config directory")?;
+
+            if !status.success() {
+                eyre::bail!("Failed to chown config directory: {status}");
+            }
+
+            println!("Chowned config directory at {parent_dir:?} for {user}",);
+        }
 
         #[expect(clippy::shadow_unrelated, reason = "name 'status' is clearer here")]
         let status = Command::new("chown")

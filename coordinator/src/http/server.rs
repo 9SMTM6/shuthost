@@ -29,7 +29,7 @@ use tracing::{info, warn};
 
 use crate::{
     auth,
-    config::{ControllerConfig, DbConfig, TlsConfig, load},
+    config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_path},
     db::{self, DbPool},
     http::{
         api,
@@ -137,15 +137,11 @@ async fn initialize_database(
             enable: true,
             ref path,
         }) => {
-            let db_path = if std::path::Path::new(path).is_absolute() {
-                std::path::PathBuf::from(path)
-            } else {
-                config_path
-                    .parent()
-                    .map(|d| d.join(path))
-                    .unwrap_or_else(|| std::path::PathBuf::from(path))
-            };
-            let pool = db::init(&db_path).await?;
+            let db_path = resolve_config_relative_path(config_path, path);
+            let pool = db::init(&db_path).await.wrap_err(format!(
+                "Failed to initialize database at: {}",
+                db_path.display()
+            ))?;
             info!(
                 "Database initialized at: {} (note: WAL mode creates .db-wal and .db-shm files alongside)",
                 db_path.display()
@@ -166,26 +162,13 @@ async fn setup_tls_config(
     listen_ip: IpAddr,
     addr: std::net::SocketAddr,
 ) -> eyre::Result<AxumRustlsConfig> {
-    // Helper: resolve a configured path relative to the config file unless it's absolute
-    let resolve_path = |p: &str| {
-        let path = std::path::Path::new(p);
-        if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            config_path
-                .parent()
-                .map(|d| d.join(path))
-                .unwrap_or_else(|| std::path::PathBuf::from(path))
-        }
-    };
-
     // Use provided certs when both files exist. Otherwise, if persist_self_signed is true
     // (default), generate and persist self-signed cert/key next to the config file.
     let cert_path_cfg = tls_cfg.cert_path.as_str();
     let key_path_cfg = tls_cfg.key_path.as_str();
 
-    let cert_path = resolve_path(cert_path_cfg);
-    let key_path = resolve_path(key_path_cfg);
+    let cert_path = resolve_config_relative_path(config_path, cert_path_cfg);
+    let key_path = resolve_config_relative_path(config_path, key_path_cfg);
 
     let cert_exists = cert_path.exists();
     let key_exists = key_path.exists();
@@ -197,7 +180,12 @@ async fn setup_tls_config(
                 .expect("cert path contains invalid UTF-8"),
             key_path.to_str().expect("key path contains invalid UTF-8"),
         )
-        .await?;
+        .await
+        .wrap_err(format!(
+            "Failed to load TLS certificates from cert: {}, key: {}",
+            cert_path.display(),
+            key_path.display()
+        ))?;
         info!("Listening on https://{} (provided certs)", addr);
         rustls_cfg
     } else if tls_cfg.persist_self_signed {
@@ -216,13 +204,21 @@ async fn setup_tls_config(
 
         // Ensure parent dir exists (typically same dir as config)
         let cfg_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
-        fs::create_dir_all(cfg_dir).await?;
+        fs::create_dir_all(&cfg_dir).await.wrap_err(format!(
+            "Failed to create certificate directory at: {}",
+            cfg_dir.display()
+        ))?;
 
         // Write cert/key files
         tokio::try_join!(
             fs::write(&cert_path, cert_pem.as_bytes()),
             fs::write(&key_path, key_pem.as_bytes())
-        )?;
+        )
+        .wrap_err(format!(
+            "Failed to write TLS certificates to cert: {}, key: {}",
+            cert_path.display(),
+            key_path.display()
+        ))?;
 
         let rustls_cfg =
             AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;

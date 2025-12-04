@@ -126,6 +126,60 @@ const fn do_db_enable() -> bool {
     true
 }
 
+/// Resolves a path relative to the config file location.
+///
+/// If the path is absolute, returns it as-is. If relative, joins it with the
+/// config file's parent directory and normalizes the result to remove redundant
+/// components like `./`.
+///
+/// # Arguments
+///
+/// * `config_path` - Path to the config file
+/// * `relative_path` - Path to resolve (may be absolute or relative)
+///
+/// # Returns
+///
+/// A normalized absolute path
+pub fn resolve_config_relative_path(
+    config_path: &std::path::Path,
+    relative_path: &str,
+) -> std::path::PathBuf {
+    let path = std::path::Path::new(relative_path);
+    let resolved = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        config_path
+            .parent()
+            .map(|d| d.join(path))
+            .unwrap_or_else(|| path.to_path_buf())
+    };
+
+    // Normalize the path to remove redundant ./ components
+    // We can't use canonicalize() because the file might not exist yet
+    normalize_path(&resolved)
+}
+
+fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
+    let mut result = std::path::PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(c) => {
+                result.push(c);
+            }
+            std::path::Component::ParentDir => {
+                result.pop();
+            }
+            std::path::Component::CurDir => {
+                // Skip current directory components
+            }
+            std::path::Component::RootDir | std::path::Component::Prefix(_) => {
+                result.push(component);
+            }
+        }
+    }
+    result
+}
+
 /// Supported authentication modes for the Web UI
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]

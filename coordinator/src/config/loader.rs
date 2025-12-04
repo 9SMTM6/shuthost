@@ -19,11 +19,15 @@ use crate::config::ControllerConfig;
 ///
 /// Returns an error if the config file cannot be read or parsed.
 pub async fn load<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
-    let content = tokio::fs::read_to_string(path)
-        .await
-        .wrap_err("Failed to read config file")?;
-    let config: ControllerConfig =
-        toml::from_str(&content).wrap_err("Failed to parse config as TOML")?;
+    let path_ref = path.as_ref();
+    let content = tokio::fs::read_to_string(&path).await.wrap_err(format!(
+        "Failed to read config file at: {}",
+        path_ref.display()
+    ))?;
+    let config: ControllerConfig = toml::from_str(&content).wrap_err(format!(
+        "Failed to parse config as TOML at: {}",
+        path_ref.display()
+    ))?;
     Ok(config)
 }
 

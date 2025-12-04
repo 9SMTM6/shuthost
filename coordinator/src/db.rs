@@ -5,6 +5,7 @@
 use std::{collections::HashMap, path::Path};
 
 use chrono::{DateTime, Utc};
+use eyre::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
 
@@ -73,7 +74,13 @@ pub async fn init(db_path: &Path) -> eyre::Result<DbPool> {
     let pool = SqlitePool::connect(&db_url).await?;
 
     // Run migrations
-    sqlx::migrate!("./migrations").run(&pool).await?;
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .wrap_err(format!(
+            "Failed to run database migrations on: {}",
+            db_path.display()
+        ))?;
 
     Ok(pool)
 }
