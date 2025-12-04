@@ -238,6 +238,35 @@ jobs:
           # Check for a fitting process in the process list
           sudo pgrep -af '/tmp/selfbin' || sudo ps aux | grep '/tmp/selfbin'
 
+  validate-file-snapshots:
+    name: Validate File Snapshots
+    runs-on: ubuntu-latest
+    needs: build-coordinators
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download coordinator binary
+        uses: actions/download-artifact@v6
+        with:
+          pattern: coordinator-x86_64-unknown-linux-*
+
+      - run: chmod +x coordinator-x86_64-unknown-linux-*/shuthost_coordinator
+
+      - name: Install podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Validate systemd snapshots
+        run: |
+          ./scripts/snapshot-files-container.sh "docker.io/heywoodlh/systemd:latest" "apt-get update && apt-get install -y curl patch file" "./install-file-snapshots/systemd" "./coordinator-x86_64-unknown-linux-gnu/shuthost_coordinator"
+          ./scripts/snapshot-files-container.sh "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
+          if ! git diff --quiet ./install-file-snapshots/; then
+            echo "install file snapshots have changed!"
+            git diff ./install-file-snapshots/
+            exit 1
+          fi
+
   test-client-scripts-macos:
     name: Test Client Scripts on macOS
     runs-on: macos-latest
