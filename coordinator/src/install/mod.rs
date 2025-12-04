@@ -121,7 +121,11 @@ pub fn setup(args: Args) -> eyre::Result<()> {
             let user_info = User::from_name(&user)
                 .wrap_err("Failed to get user info")?
                 .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
-            fs::chown(parent_dir, Some(user_info.uid.into()), Some(user_info.gid.into()))?;
+            fs::chown(
+                parent_dir,
+                Some(user_info.uid.into()),
+                Some(user_info.gid.into()),
+            )?;
 
             println!("Chowned migrated config directory at {parent_dir:?} for {user}",);
         }
@@ -190,7 +194,11 @@ pub fn setup(args: Args) -> eyre::Result<()> {
             let user_info = User::from_name(&user)
                 .wrap_err("Failed to get user info")?
                 .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
-            fs::chown(parent_dir, Some(user_info.uid.into()), Some(user_info.gid.into()))?;
+            fs::chown(
+                parent_dir,
+                Some(user_info.uid.into()),
+                Some(user_info.gid.into()),
+            )?;
 
             println!("Chowned config directory at {parent_dir:?} for {user}",);
         }
@@ -198,7 +206,11 @@ pub fn setup(args: Args) -> eyre::Result<()> {
         let user_info = User::from_name(&user)
             .wrap_err("Failed to get user info")?
             .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
-        fs::chown(&config_location, Some(user_info.uid.into()), Some(user_info.gid.into()))?;
+        fs::chown(
+            &config_location,
+            Some(user_info.uid.into()),
+            Some(user_info.gid.into()),
+        )?;
 
         println!("Chowned config file at {config_location:?} for {user}",);
     } else {
