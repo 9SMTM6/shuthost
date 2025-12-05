@@ -952,16 +952,16 @@ jobs:
           prerelease: false
           generate_release_notes: true
           body: |
-            ## Changes without a PR:
-            ${{ steps.extract_manual_changes.outputs.manual_changes }}
-
             📦 **Container Image** available at:
 
             ```
             ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }}
             ```
 
-            Also available as `:latest` if this is a tagged release.
+            Also available as `:latest`.
+
+            ## Changes without a PR:
+            ${{ steps.extract_manual_changes.outputs.manual_changes }}
 
   release-branch:
     name: Upload Release Binaries (branch)
