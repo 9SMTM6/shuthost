@@ -20,6 +20,7 @@ do_snapshot() {
     OUTPUT_DIR="$3"
     HOST_BINARY="$4"
     RESTART_CMD="$5"
+    STOP_CMD="$6"
 
     # Configuration
     BASE_IMAGE_NAME="shuthost-base"
@@ -61,7 +62,7 @@ do_snapshot() {
     podman exec temp-container sh -c "
       curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 &&
       echo 'Installer completed, killing coordinator...'
-      pkill -f $CONTAINER_BINARY
+      $STOP_CMD
     " || true
     # Commit to final installed image
     podman commit temp-container "$AGENT_INSTALLED_NAME"

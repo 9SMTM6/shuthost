@@ -14,6 +14,6 @@ fi
 
 trap cleanup EXIT
 
-do_snapshot "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "$HOST_BINARY" "rc-service shuthost_coordinator restart"
+do_snapshot "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "$HOST_BINARY" "rc-service shuthost_coordinator restart" "rc-service shuthost_coordinator stop"
 
 do_diff "./install-file-snapshots/openrc"

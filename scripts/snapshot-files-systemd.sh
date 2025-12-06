@@ -15,6 +15,6 @@ fi
 
 trap cleanup EXIT
 
-do_snapshot "docker.io/heywoodlh/systemd:latest" "apt-get update && apt-get install -y curl patch file" "./install-file-snapshots/systemd" "$HOST_BINARY" "systemctl restart shuthost_coordinator"
+do_snapshot "docker.io/heywoodlh/systemd:latest" "apt-get update && apt-get install -y curl patch file" "./install-file-snapshots/systemd" "$HOST_BINARY" "systemctl restart shuthost_coordinator" "systemctl stop shuthost_coordinator"
 
 do_diff "./install-file-snapshots/systemd"
