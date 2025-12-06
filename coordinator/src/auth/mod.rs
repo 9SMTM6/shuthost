@@ -24,8 +24,10 @@ use crate::{
     http::AppState,
 };
 
-pub(crate) use cookies::{COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE};
 pub(crate) use cookies::OIDCSessionClaims;
+pub(crate) use cookies::{
+    COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+};
 pub(crate) use middleware::{request_is_secure, require};
 
 // Centralized login error keys used as query values on /login?error=<key>
@@ -116,7 +118,10 @@ impl Runtime {
     /// - The configured `cookie_secret` does not decode to exactly 32 bytes
     /// - Database operations fail when storing, retrieving, or deleting cookie secrets or auth tokens
     /// - A stored cookie secret in the database is corrupted (invalid base64 or wrong length)
-    pub(crate) async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
+    pub(crate) async fn from_config(
+        cfg: &AuthConfig,
+        db_pool: Option<&DbPool>,
+    ) -> eyre::Result<Self> {
         let cookie_key = setup_cookie_key(&cfg.cookie_secret, db_pool).await?;
         let mode = resolve_auth_mode(&cfg.mode, db_pool).await?;
 

@@ -12,7 +12,10 @@ use eyre::Context;
 /// # Errors
 ///
 /// Returns an error if the MAC address is invalid or if the UDP socket cannot be bound or sent.
-#[cfg_attr(test, expect(dead_code, reason = "This function is not used in tests."))]
+#[cfg_attr(
+    test,
+    expect(dead_code, reason = "This function is not used in tests.")
+)]
 pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::Result<()> {
     let mac_bytes = parse_mac(mac_address)?;
     let mut packet = [0xFFu8; 102];

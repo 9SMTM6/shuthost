@@ -333,7 +333,9 @@ pub(crate) async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
 /// # Errors
 ///
 /// Returns an error if the database query fails.
-pub(crate) async fn get_all_client_stats(pool: &DbPool) -> eyre::Result<HashMap<String, ClientStats>> {
+pub(crate) async fn get_all_client_stats(
+    pool: &DbPool,
+) -> eyre::Result<HashMap<String, ClientStats>> {
     let records = sqlx::query_as!(
         ClientStatsRecord,
         "SELECT client_id, last_used FROM client_stats"
@@ -362,8 +364,14 @@ pub(crate) async fn get_all_client_stats(pool: &DbPool) -> eyre::Result<HashMap<
 //     clippy::missing_errors_doc,
 //     reason = "This function is only used in tests."
 // )]
-#[cfg_attr(not(test), expect(dead_code, reason = "This function is only used in tests."))]
-pub(crate) async fn get_client_stats(pool: &DbPool, client_id: &str) -> eyre::Result<Option<ClientStats>> {
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "This function is only used in tests.")
+)]
+pub(crate) async fn get_client_stats(
+    pool: &DbPool,
+    client_id: &str,
+) -> eyre::Result<Option<ClientStats>> {
     let result = sqlx::query_as!(
         ClientStatsRecord,
         "SELECT client_id, last_used FROM client_stats WHERE client_id = ?",
