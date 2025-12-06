@@ -69,7 +69,7 @@ pub enum WsMessage {
 
 /// Gets called for every new web client and spins up an event loop
 #[axum::debug_handler]
-pub async fn ws_handler(
+pub(crate) async fn ws_handler(
     ws: WebSocketUpgrade,
     headers: HeaderMap,
     State(AppState {

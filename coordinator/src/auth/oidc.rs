@@ -121,7 +121,7 @@ async fn build_client(
 
 /// Initiate OIDC login.
 #[axum::debug_handler]
-pub async fn login(
+pub(crate) async fn login(
     State(AppState {
         auth, tls_enabled, ..
     }): State<AppState>,
@@ -201,7 +201,7 @@ pub async fn login(
 
 #[derive(Deserialize)]
 /// Query parameters for OIDC callback deserialization.
-pub struct CallbackQueryParams {
+pub(crate) struct CallbackQueryParams {
     code: Option<String>,
     state: Option<String>,
     error: Option<String>,
@@ -375,7 +375,7 @@ async fn process_token_and_build_session(
 
 /// OIDC callback handler
 #[axum::debug_handler]
-pub async fn callback(
+pub(crate) async fn callback(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,

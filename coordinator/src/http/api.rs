@@ -12,9 +12,9 @@ use crate::{
     http::m2m::{broadcast_lease_update, handle_host_state},
 };
 
-pub use super::m2m::{LeaseMap, LeaseSource};
+pub(crate) use super::m2m::LeaseSource;
 
-pub fn routes() -> Router<AppState> {
+pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route(
@@ -27,7 +27,7 @@ pub fn routes() -> Router<AppState> {
 /// Lease action for lease endpoints (shared between web and m2m)
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
-pub enum LeaseAction {
+pub(crate) enum LeaseAction {
     Take,
     Release,
 }

@@ -3,7 +3,7 @@ use reqwest::Client;
 use crate::common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
 /// Convenience: spawn a coordinator configured to use token auth.
-pub fn spawn_coordinator_with_token(port: u16, token: &str) -> KillOnDrop {
+pub(crate) fn spawn_coordinator_with_token(port: u16, token: &str) -> KillOnDrop {
     let config = format!(
         r#"
     [server]

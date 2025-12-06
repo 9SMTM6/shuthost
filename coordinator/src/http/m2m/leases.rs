@@ -13,7 +13,7 @@ use tracing::debug;
 use crate::websocket::WsMessage;
 
 /// host_name => set of lease sources holding lease
-pub type LeaseMap = Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>;
+pub(crate) type LeaseMap = Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>;
 
 /// Represents a source that holds a lease on a host.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
@@ -35,7 +35,7 @@ impl Display for LeaseSource {
 }
 
 /// Broadcast a lease update to WebSocket clients.
-pub async fn broadcast_lease_update(
+pub(crate) async fn broadcast_lease_update(
     host: &str,
     leases: &HashSet<LeaseSource>,
     ws_tx: &broadcast::Sender<WsMessage>,

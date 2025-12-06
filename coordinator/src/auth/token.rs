@@ -16,17 +16,17 @@ use crate::{
 };
 
 #[derive(Deserialize)]
-pub struct LoginForm {
+pub(crate) struct LoginForm {
     token: String,
 }
 
 #[derive(Deserialize, Default)]
-pub struct LoginQuery {
+pub(crate) struct LoginQuery {
     pub error: Option<String>,
 }
 
 #[axum::debug_handler]
-pub async fn login_post(
+pub(crate) async fn login_post(
     State(AppState {
         auth, tls_enabled, ..
     }): State<AppState>,

@@ -18,7 +18,7 @@ use crate::auth::{
 };
 
 /// Middleware that enforces authentication depending on configured mode.
-pub async fn require(
+pub(crate) async fn require(
     State(LayerState { auth }): State<LayerState>,
     req: Request<Body>,
     next: Next,
@@ -102,7 +102,7 @@ fn wants_html(headers: &HeaderMap) -> bool {
 /// First considers whether the server was started with TLS enabled. If so,
 /// all requests are treated as secure. Otherwise falls back to the common
 /// proxy headers: X-Forwarded-Proto, Forwarded and X-Forwarded-SSL.
-pub fn request_is_secure(headers: &HeaderMap, tls_enabled: bool) -> bool {
+pub(crate) fn request_is_secure(headers: &HeaderMap, tls_enabled: bool) -> bool {
     if tls_enabled {
         return true;
     }

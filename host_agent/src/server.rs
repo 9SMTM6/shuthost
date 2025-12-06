@@ -35,7 +35,7 @@ pub struct ServiceOptions {
 /// # Panics
 ///
 /// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set (and the value wasn't smuggled into ServiceArgs).
-pub fn start_host_agent(mut config: ServiceOptions) {
+pub(crate) fn start_host_agent(mut config: ServiceOptions) {
     config.shared_secret.get_or_insert_with(|| {
         env::var("SHUTHOST_SHARED_SECRET")
             .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected")
@@ -93,7 +93,7 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Action {
 }
 
 /// Returns the default shutdown command for this OS and init system.
-pub fn get_default_shutdown_command() -> String {
+pub(crate) fn get_default_shutdown_command() -> String {
     #[cfg(target_os = "linux")]
     return if shuthost_common::is_systemd() {
         "systemctl poweroff"

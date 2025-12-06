@@ -24,17 +24,17 @@ use crate::http::AppState;
 use crate::http::api::LeaseAction;
 
 // Re-export public API
-pub use host_control::handle_host_state;
-pub use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
+pub(crate) use host_control::handle_host_state;
+pub(crate) use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
-pub fn routes() -> axum::Router<AppState> {
+pub(crate) fn routes() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/lease/{hostname}/{action}", post(handle_m2m_lease_action))
         .route("/test_wol", post(test_wol))
 }
 
 #[derive(serde::Deserialize)]
-pub struct WolTestQuery {
+pub(crate) struct WolTestQuery {
     port: u16,
 }
 
@@ -61,7 +61,7 @@ async fn test_wol() -> impl IntoResponse {
 }
 
 #[derive(serde::Deserialize)]
-pub struct LeaseActionQuery {
+pub(crate) struct LeaseActionQuery {
     #[serde(default)]
     r#async: Option<bool>,
 }

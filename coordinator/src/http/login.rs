@@ -23,7 +23,7 @@ use crate::{
 };
 
 /// Returns a router with all authentication-related routes.
-pub fn routes() -> Router<AppState> {
+pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/login", get(page).post(token::login_post))
         .route("/logout", post(logout))
@@ -37,7 +37,7 @@ pub fn routes() -> Router<AppState> {
 ///
 /// Panics if the HTTP response cannot be built.
 #[axum::debug_handler]
-pub async fn page(
+pub(crate) async fn page(
     State(AppState { auth, .. }): State<AppState>,
     headers: axum::http::HeaderMap,
     axum::extract::Query(LoginQuery { error }): axum::extract::Query<LoginQuery>,
@@ -95,7 +95,7 @@ pub async fn page(
 
 /// Handle logout requests.
 #[axum::debug_handler]
-pub async fn logout(
+pub(crate) async fn logout(
     _: State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,

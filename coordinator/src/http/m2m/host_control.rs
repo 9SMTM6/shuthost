@@ -22,7 +22,7 @@ use crate::{
 };
 
 /// Timeout for TCP operations
-pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
+pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Handle host state changes based on lease status.
 ///
@@ -32,7 +32,7 @@ pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
 /// - Waking up the host fails (e.g., network issues, invalid configuration)
 /// - Shutting down the host fails (e.g., network issues, invalid configuration)
 /// - The host fails to reach the desired state within the timeout period (60 seconds)
-pub async fn handle_host_state(
+pub(crate) async fn handle_host_state(
     host: &str,
     lease_set: &std::collections::HashSet<LeaseSource>,
     state: &AppState,
@@ -132,7 +132,7 @@ async fn poll_until_host_state_wrapped(
 }
 
 /// Get host configuration from the current config.
-pub fn get_host_config(
+pub(crate) fn get_host_config(
     host_name: &str,
     state: &AppState,
 ) -> Result<Host, (StatusCode, &'static str)> {
@@ -176,7 +176,7 @@ async fn execute_tcp_shutdown_request(
 }
 
 /// Send a shutdown command to a host via TCP.
-pub async fn send_shutdown_to_address(ip: &str, port: u16, secret: &str) -> Result<String> {
+pub(crate) async fn send_shutdown_to_address(ip: &str, port: u16, secret: &str) -> Result<String> {
     let addr = format!("{ip}:{port}");
     debug!("Connecting to {}", addr);
 

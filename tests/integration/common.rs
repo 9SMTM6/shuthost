@@ -22,12 +22,12 @@ use tokio::time::timeout;
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(10000);
 
-pub fn get_free_port() -> u16 {
+pub(crate) fn get_free_port() -> u16 {
     NEXT_PORT.fetch_add(1, Ordering::SeqCst)
 }
 
 /// Guard that kills the coordinator or agent when dropped.
-pub enum KillOnDrop {
+pub(crate) enum KillOnDrop {
     Coordinator(tokio::task::JoinHandle<()>),
     Agent {
         thread: Option<std::thread::JoinHandle<()>>,
@@ -60,13 +60,13 @@ impl Drop for KillOnDrop {
     }
 }
 
-pub fn get_agent_bin() -> &'static str {
+pub(crate) fn get_agent_bin() -> &'static str {
     env!("CARGO_BIN_EXE_host_agent")
 }
 
 /// Spawn the coordinator service from a given config string.
 /// Writes the config to a temp file and spawns the coordinator binary.
-pub fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> KillOnDrop {
+pub(crate) fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> KillOnDrop {
     let tmp = std::env::temp_dir().join(format!("integration_test_config_{}.toml", port));
     std::fs::write(&tmp, config_toml).expect("failed to write config");
 
@@ -74,7 +74,7 @@ pub fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> KillOnDrop
 }
 
 /// Spawn the coordinator service from a given config file path.
-pub fn spawn_coordinator_with_config_file(config_path: &std::path::Path) -> KillOnDrop {
+pub(crate) fn spawn_coordinator_with_config_file(config_path: &std::path::Path) -> KillOnDrop {
     let cli = CoordinatorCli::parse_from(&[
         "shuthost_coordinator",
         "control-service",
@@ -93,7 +93,7 @@ pub fn spawn_coordinator_with_config_file(config_path: &std::path::Path) -> Kill
 }
 
 /// Spawn the host agent binary with the given secret, port, and shutdown command.
-pub fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) -> KillOnDrop {
+pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) -> KillOnDrop {
     let args = [
         "shuthost_host_agent",
         "service",
@@ -122,12 +122,12 @@ pub fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) -> Kill
 }
 
 /// Spawn a test host agent with the given secret and port.
-pub fn spawn_host_agent_default(secret: &str, port: u16) -> KillOnDrop {
+pub(crate) fn spawn_host_agent_default(secret: &str, port: u16) -> KillOnDrop {
     spawn_host_agent(secret, port, "")
 }
 
 /// Block until a TCP listener is accepting on `127.0.0.1:port` or timeout.
-pub async fn wait_for_listening(port: u16, timeout_secs: u64) {
+pub(crate) async fn wait_for_listening(port: u16, timeout_secs: u64) {
     let start = Instant::now();
     while std::net::TcpStream::connect(("127.0.0.1", port)).is_err() {
         if start.elapsed() > Duration::from_secs(timeout_secs) {
@@ -139,7 +139,7 @@ pub async fn wait_for_listening(port: u16, timeout_secs: u64) {
 
 /// Block until the host agent is ready to accept status requests.
 /// Sends a proper HMAC-signed status message to verify the agent is responding correctly.
-pub async fn wait_for_agent_ready(port: u16, shared_secret: &str, timeout_secs: u64) {
+pub(crate) async fn wait_for_agent_ready(port: u16, shared_secret: &str, timeout_secs: u64) {
     let start = Instant::now();
     let addr = format!("127.0.0.1:{}", port);
 

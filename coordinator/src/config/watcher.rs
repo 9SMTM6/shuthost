@@ -73,7 +73,7 @@ async fn process_config_change(
 /// # Panics
 ///
 /// Panics if the file watcher cannot be created or if the config file doesnt have a parent directory.
-pub async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
+pub(crate) async fn watch_config_file(path: std::path::PathBuf, tx: watch::Sender<Arc<ControllerConfig>>) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 
     let mut watcher = RecommendedWatcher::new(

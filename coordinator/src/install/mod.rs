@@ -54,7 +54,7 @@ pub struct Args {
 /// # Panics
 ///
 /// Panics if the TOML serialization of the configuration fails.
-pub fn setup(args: Args) -> eyre::Result<()> {
+pub(crate) fn setup(args: Args) -> eyre::Result<()> {
     let name = env!("CARGO_PKG_NAME");
     let user = args.user;
 

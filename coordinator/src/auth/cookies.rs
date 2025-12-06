@@ -8,23 +8,23 @@ use sha2::{Digest, Sha256};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Cookie name constants for authentication
-pub const COOKIE_OIDC_SESSION: &str = "shuthost_oidc_session";
-pub const COOKIE_TOKEN_SESSION: &str = "shuthost_token_session";
-pub const COOKIE_STATE: &str = "shuthost_oidc_state";
-pub const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
-pub const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
-pub const COOKIE_RETURN_TO: &str = "shuthost_return_to";
+pub(crate) const COOKIE_OIDC_SESSION: &str = "shuthost_oidc_session";
+pub(crate) const COOKIE_TOKEN_SESSION: &str = "shuthost_token_session";
+pub(crate) const COOKIE_STATE: &str = "shuthost_oidc_state";
+pub(crate) const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
+pub(crate) const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
+pub(crate) const COOKIE_RETURN_TO: &str = "shuthost_return_to";
 
 /// Session claims for token authentication.
 #[derive(Serialize, Deserialize)]
-pub struct TokenSessionClaims {
+pub(crate) struct TokenSessionClaims {
     pub iat: u64,           // issued at
     pub exp: u64,           // expiry
     pub token_hash: String, // hash of the token
 }
 
 impl TokenSessionClaims {
-    pub fn new(token: &str) -> Self {
+    pub(crate) fn new(token: &str) -> Self {
         let now = now_ts();
         let exp_duration: i64 = 60 * 60 * 8; // 8 hours expiry
         Self {
@@ -39,11 +39,11 @@ impl TokenSessionClaims {
     }
 
     /// Check if the session has expired.
-    pub fn is_expired(&self) -> bool {
+    pub(crate) fn is_expired(&self) -> bool {
         now_ts() >= self.exp
     }
     /// Check if the token matches (by hash).
-    pub fn matches_token(&self, token: &str) -> bool {
+    pub(crate) fn matches_token(&self, token: &str) -> bool {
         let mut hasher = Sha256::new();
         hasher.update(token.as_bytes());
         let hash = format!("{:x}", hasher.finalize());
@@ -54,7 +54,7 @@ impl TokenSessionClaims {
 /// Session claims for OIDC authentication.
 /// Contains some claims from the [OIDC Id Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken)
 #[derive(Serialize, Deserialize)]
-pub struct OIDCSessionClaims {
+pub(crate) struct OIDCSessionClaims {
     /// The sub claim, a unique user identifier
     pub sub: String,
     /// The expiry as provided by the IdP, after which shuthost should reject the session. Unix second timestamp
@@ -63,7 +63,7 @@ pub struct OIDCSessionClaims {
 
 impl OIDCSessionClaims {
     /// Check if the session has expired.
-    pub fn is_expired(&self) -> bool {
+    pub(crate) fn is_expired(&self) -> bool {
         now_ts() >= self.exp
     }
 }
@@ -73,7 +73,7 @@ impl OIDCSessionClaims {
 /// # Panics
 ///
 /// Panics if the system time is set to before the UNIX epoch (January 1, 1970).
-pub fn now_ts() -> u64 {
+pub(crate) fn now_ts() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -81,7 +81,7 @@ pub fn now_ts() -> u64 {
 }
 
 /// Invalidate session cookies for logout.
-pub fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
+pub(crate) fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session_oidc = jar.get(COOKIE_OIDC_SESSION).is_some();
     let had_session_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
@@ -100,7 +100,7 @@ pub fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
 }
 
 /// Generate a random alphanumeric token of 48 characters.
-pub fn generate_token() -> String {
+pub(crate) fn generate_token() -> String {
     rand::rng()
         .sample_iter(Alphanumeric)
         .take(48)
@@ -109,7 +109,7 @@ pub fn generate_token() -> String {
 }
 
 /// Create a protected cookie with standard security properties.
-pub fn create_protected_cookie(
+pub(crate) fn create_protected_cookie(
     name: &'static str,
     value: String,
     max_age: CookieDuration,
@@ -124,7 +124,7 @@ pub fn create_protected_cookie(
 }
 
 /// Create a return-to cookie for redirect-after-login functionality.
-pub fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
+pub(crate) fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
     create_protected_cookie(COOKIE_RETURN_TO, return_to, CookieDuration::minutes(10))
 }
 
@@ -133,7 +133,7 @@ pub fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
 /// # Panics
 ///
 /// Panics if the token data cannot be serialized to JSON.
-pub fn create_token_session_cookie(
+pub(crate) fn create_token_session_cookie(
     token_data: &TokenSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
@@ -149,7 +149,7 @@ pub fn create_token_session_cookie(
 /// # Panics
 ///
 /// Panics if the session data cannot be serialized to JSON.
-pub fn create_oidc_session_cookie(
+pub(crate) fn create_oidc_session_cookie(
     session_data: &OIDCSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
@@ -160,12 +160,12 @@ pub fn create_oidc_session_cookie(
     )
 }
 
-pub fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDCSessionClaims> {
+pub(crate) fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDCSessionClaims> {
     jar.get(COOKIE_OIDC_SESSION)
         .and_then(|session| serde_json::from_str::<OIDCSessionClaims>(session.value()).ok())
 }
 
-pub fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<TokenSessionClaims> {
+pub(crate) fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<TokenSessionClaims> {
     jar.get(COOKIE_TOKEN_SESSION)
         .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
 }
