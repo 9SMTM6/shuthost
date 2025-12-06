@@ -11,7 +11,7 @@ ARG RUSTC_TARGET=x86_64-unknown-linux-musl
 # This containerfile is mostly to be used in the CI pipeline.
 COPY target/${RUSTC_TARGET}/release/shuthost_coordinator /usr/sbin/
 
-ENV SHUTHOST_CONTROLLER_CONFIG_PATH=/config/coordinator_config.toml
+ENV SHUTHOST_CONTROLLER_CONFIG_PATH=/config/config.toml
 
 # Declare the bind location for the config (note declaring like that is just for reference)
 VOLUME [ "/config" ]

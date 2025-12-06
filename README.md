@@ -110,11 +110,11 @@ Choose either the binary (recommended for reliability and WOL support) or the co
     ```bash
     # Create config directory and download the example config from GitHub
     mkdir -p coordinator_config data
-    curl -L -o coordinator_config/coordinator_config.toml \
+    curl -L -o coordinator_config/config.toml \
       https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/example_config.toml
     
     # Set restrictive permissions (readable/writable by owner only)
-    chmod 600 coordinator_config/coordinator_config.toml
+    chmod 600 coordinator_config/config.toml
     # Download the docker-compose file
     curl -L -o docker-compose.yml \
       https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yml
