@@ -5,15 +5,16 @@
 
 set -e
 
-# Arguments: base_image install_deps_command base_output_dir host_binary
+# Arguments: base_image install_deps_command base_output_dir host_binary restart_cmd
 BASE_IMAGE="$1"
 INSTALL_DEPS="$2"
 OUTPUT_DIR="$3"
 HOST_BINARY="$4"
+RESTART_CMD="$5"
 
 # Validate arguments
 if [ -z "$BASE_IMAGE" ] || [ -z "$INSTALL_DEPS" ] || [ -z "$OUTPUT_DIR" ] || [ -z "$HOST_BINARY" ]; then
-    echo "Usage: $0 <base_image> <install_deps_command> <output_dir> <host_binary>" >&2
+    echo "Usage: $0 <base_image> <install_deps_command> <output_dir> <host_binary> [restart_cmd]" >&2
     exit 1
 fi
 # Configuration
@@ -48,12 +49,21 @@ podman commit temp-container "$BASE_IMAGE_NAME"
 # Install the coordinator
 podman exec temp-container "$CONTAINER_BINARY" install root
 
+# Enable TLS in the config
+podman exec temp-container sed -i 's/# \[server\.tls\]/[server.tls]/' /home/root/.config/shuthost_coordinator/config.toml
+
+# Restart the service if restart_cmd provided
+if [ -n "$RESTART_CMD" ]; then
+    podman exec temp-container sh -c "$RESTART_CMD" || true
+    sleep 2
+fi
+
 # Commit to coordinator installed image
 podman commit temp-container "$COORDINATOR_INSTALLED_NAME"
 
 # Now install the agent in the same container
 podman exec temp-container sh -c "
-  curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 &&
+  curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 &&
   echo 'Installer completed, killing coordinator...'
   pkill -f $CONTAINER_BINARY
 " || true

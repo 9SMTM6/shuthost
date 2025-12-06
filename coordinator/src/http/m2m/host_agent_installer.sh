@@ -13,6 +13,14 @@ fi
 REMOTE_URL="$1"
 shift
 
+# Determine if we should accept self-signed certificates (for localhost/testing)
+HOST=$(echo "$REMOTE_URL" | sed -e 's|^https*://||' -e 's|/.*$||' -e 's|:.*$||')
+if [ "$HOST" = "localhost" ] || echo "$HOST" | grep -q '^127\.'; then
+    CURL_OPTS="-k"
+else
+    CURL_OPTS=""
+fi
+
 DEFAULT_PORT="5757"
 USER_ARCH=""
 USER_OS=""
@@ -101,7 +109,7 @@ test_wol_packet_reachability() {
     sleep 1
 
     # Test via coordinator API
-    TEST_RESULT=$(curl -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
+    TEST_RESULT=$(curl $CURL_OPTS -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
     # kill the agent test process, if its still running.
     kill $RECEIVER_PID || true
 
@@ -166,7 +174,7 @@ echo "$PLATFORM"
 echo "$INSTALLER_ARGS"
 
 
-curl --compressed -fL "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
+curl --compressed -fL $CURL_OPTS "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
 exit_on_glibc_error
