@@ -16,7 +16,6 @@ use axum::{
     routing::{self, IntoMakeService, any, get},
 };
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
-use clap::Parser;
 use eyre::WrapErr;
 use hyper::StatusCode;
 use tokio::{
@@ -81,18 +80,6 @@ fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
         ));
 
     public.merge(private)
-}
-
-/// Command-line arguments for the HTTP service subcommand.
-#[derive(Debug, Parser)]
-pub struct ServiceArgs {
-    /// Path to the coordinator TOML config file.
-    #[arg(
-        long = "config",
-        env = "SHUTHOST_CONTROLLER_CONFIG_PATH",
-        default_value = "shuthost_coordinator.toml"
-    )]
-    pub config: String,
 }
 
 /// Application state shared across request handlers and background tasks.
