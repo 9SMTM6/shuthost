@@ -259,8 +259,9 @@ jobs:
 
       - name: Validate file snapshots
         run: |
-          ./scripts/snapshot-files-container.sh "docker.io/heywoodlh/systemd:latest" "apt-get update && apt-get install -y curl patch file" "./install-file-snapshots/systemd" "./coordinator-x86_64-unknown-linux-gnu/shuthost_coordinator"
-          ./scripts/snapshot-files-container.sh "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
+          ./scripts/snapshot-files-systemd.sh "./coordinator-x86_64-unknown-linux-gnu/shuthost_coordinator"
+          ./scripts/snapshot-files-openrc.sh "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
+          ./scripts/snapshot-files-docker-compose.sh "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
           if ! git diff --quiet ./install-file-snapshots/; then
             echo "install file snapshots have changed!"
             git diff ./install-file-snapshots/

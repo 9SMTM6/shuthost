@@ -3,8 +3,17 @@
 
 set -e
 
-# Build the binaries in a container
-podman build -t shuthost-builder -f scripts/build.Containerfile .
-podman run --rm -v "$(pwd):/src" shuthost-builder sh -c "cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-musl && cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-musl --features=include_linux_musl_x86_64_agent"
+. ./scripts/snapshot-files-common.sh
 
-./scripts/snapshot-files-container.sh "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "./target/x86_64-unknown-linux-musl/release/shuthost_coordinator" "rc-service shuthost_coordinator restart"
+if [ -n "$1" ]; then
+    HOST_BINARY="$1"
+else
+    build_musl
+    HOST_BINARY="./target/x86_64-unknown-linux-musl/release/shuthost_coordinator"
+fi
+
+trap cleanup EXIT
+
+do_snapshot "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "$HOST_BINARY" "rc-service shuthost_coordinator restart"
+
+do_diff "./install-file-snapshots/openrc"
