@@ -16,7 +16,6 @@ use axum::{
     routing::{self, IntoMakeService, any, get},
 };
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
-use clap::Parser;
 use eyre::WrapErr;
 use hyper::StatusCode;
 use tokio::{
@@ -57,7 +56,7 @@ use crate::{
 /// defined there include authentication endpoints (e.g., login, logout, OIDC callbacks) whose behavior and
 /// accessibility may depend on this version when handling external authentication modes.
 /// When routes get added to public routes, this needs to be bumped.
-pub const EXPECTED_AUTH_EXCEPTIONS_VERSION: u32 = 2;
+pub(crate) const EXPECTED_AUTH_EXCEPTIONS_VERSION: u32 = 2;
 
 /// Creates the main application router by merging public and private routes.
 ///
@@ -89,21 +88,9 @@ fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
     public.merge(private)
 }
 
-/// Command-line arguments for the HTTP service subcommand.
-#[derive(Debug, Parser)]
-pub struct ServiceArgs {
-    /// Path to the coordinator TOML config file.
-    #[arg(
-        long = "config",
-        env = "SHUTHOST_CONTROLLER_CONFIG_PATH",
-        default_value = "shuthost_coordinator.toml"
-    )]
-    pub config: String,
-}
-
 /// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
-pub struct AppState {
+pub(crate) struct AppState {
     /// Path to the configuration file for template injection and reloads.
     pub config_path: std::path::PathBuf,
 
@@ -493,7 +480,7 @@ async fn start_server(
 /// # Panics
 ///
 /// Panics if the certificate path cannot be converted to a string.
-pub async fn start(
+pub(crate) async fn start(
     config_path: &std::path::Path,
     port_override: Option<u16>,
     bind_override: Option<&str>,

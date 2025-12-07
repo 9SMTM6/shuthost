@@ -1,0 +1,35 @@
+[[files]]
+path = "/workspace/coordinator_config/config.toml"
+perms = "600"
+type = "ASCII text"
+
+[[files]]
+path = "/workspace/coordinator_config/shuthost.db"
+perms = "600"
+type = "SQLite 3.x database"
+
+[[files]]
+path = "/workspace/coordinator_config/shuthost.db-shm"
+perms = "600"
+type = "SQLite Write-Ahead Log shared memory"
+
+[[files]]
+path = "/workspace/coordinator_config/shuthost.db-wal"
+perms = "600"
+type = "SQLite Write-Ahead Log"
+
+[[files]]
+path = "/workspace/coordinator_config/tls_cert.pem"
+perms = "600"
+type = "PEM certificate"
+
+[[files]]
+path = "/workspace/coordinator_config/tls_key.pem"
+perms = "600"
+type = "OpenSSH private key (no password)"
+
+[[files]]
+path = "/workspace/docker-compose.yml"
+perms = "644"
+type = "ASCII text"
+

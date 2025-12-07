@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 /// Represents a configured host entry with network and security parameters.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct Host {
+pub(crate) struct Host {
     /// IP address of the host agent.
     pub ip: String,
     /// MAC address of the host agent's network interface, required for WOL.
@@ -25,14 +25,14 @@ pub struct Host {
 
 /// Configuration for a client with its shared secret.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct Client {
+pub(crate) struct Client {
     /// Shared secret used for authenticating callbacks.
     pub shared_secret: String,
 }
 
 /// HTTP server binding configuration section.
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
-pub struct ServerConfig {
+pub(crate) struct ServerConfig {
     /// TCP port for the web control service.
     pub port: u16,
     /// Bind address for the HTTP listener.
@@ -49,7 +49,7 @@ pub struct ServerConfig {
 ///
 /// Paths in the config are interpreted relative to the config file when not absolute.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct TlsConfig {
+pub(crate) struct TlsConfig {
     /// Optional path to a certificate PEM file. If present, enables TLS when paired with `key_path`.
     #[serde(default = "relative_cert_path")]
     pub cert_path: String,
@@ -82,7 +82,7 @@ impl Default for TlsConfig {
 
 /// Configuration for an optional local SQLite database.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct DbConfig {
+pub(crate) struct DbConfig {
     /// Path to the SQLite database file. Relative paths are resolved relative to the config file.
     #[serde(default = "default_db_path")]
     pub path: String,
@@ -183,7 +183,7 @@ fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
 /// Supported authentication modes for the Web UI
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
-pub enum AuthMode {
+pub(crate) enum AuthMode {
     /// No authentication, everything is public
     #[default]
     None,
@@ -219,7 +219,7 @@ fn default_oidc_client_id() -> String {
 
 /// Authentication configuration wrapper
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
-pub struct AuthConfig {
+pub(crate) struct AuthConfig {
     #[serde(flatten)]
     pub mode: AuthMode,
     /// Optional base64-encoded cookie key (32 bytes). If omitted, a random key is generated and persisted to database if available.
@@ -228,17 +228,9 @@ pub struct AuthConfig {
 }
 
 /// Root config structure for the coordinator, including server settings, hosts, and clients.
-///
-/// # Examples
-///
-/// ```
-/// use shuthost_coordinator::config::ControllerConfig;
-/// let config = ControllerConfig::default();
-/// assert!(config.hosts.is_empty());
-/// assert!(config.clients.is_empty());
 /// ```
 #[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
-pub struct ControllerConfig {
+pub(crate) struct ControllerConfig {
     /// HTTP server binding configuration.
     pub server: ServerConfig,
     /// Map of host identifiers to host configurations.

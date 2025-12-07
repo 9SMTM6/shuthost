@@ -24,30 +24,32 @@ use crate::{
     http::AppState,
 };
 
-pub use cookies::{COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE};
-pub use cookies::{OIDCSessionClaims, TokenSessionClaims};
-pub use middleware::{request_is_secure, require};
+pub(crate) use cookies::OIDCSessionClaims;
+pub(crate) use cookies::{
+    COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+};
+pub(crate) use middleware::{request_is_secure, require};
 
 // Centralized login error keys used as query values on /login?error=<key>
-pub const LOGIN_ERROR_INSECURE: &str = "insecure";
-pub const LOGIN_ERROR_UNKNOWN: &str = "unknown";
-pub const LOGIN_ERROR_TOKEN: &str = "token";
-pub const LOGIN_ERROR_OIDC: &str = "oidc";
-pub const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";
+pub(crate) const LOGIN_ERROR_INSECURE: &str = "insecure";
+pub(crate) const LOGIN_ERROR_UNKNOWN: &str = "unknown";
+pub(crate) const LOGIN_ERROR_TOKEN: &str = "token";
+pub(crate) const LOGIN_ERROR_OIDC: &str = "oidc";
+pub(crate) const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";
 
 // Helper function for login error redirects
-pub fn login_error_redirect(error: &str) -> Redirect {
+pub(crate) fn login_error_redirect(error: &str) -> Redirect {
     Redirect::to(&format!("/login?error={}", error))
 }
 
 #[derive(Clone)]
-pub struct Runtime {
+pub(crate) struct Runtime {
     pub mode: Resolved,
     pub cookie_key: Key,
 }
 
 #[derive(Clone, Debug)]
-pub enum Resolved {
+pub(crate) enum Resolved {
     Disabled,
     Token {
         token: String,
@@ -116,7 +118,10 @@ impl Runtime {
     /// - The configured `cookie_secret` does not decode to exactly 32 bytes
     /// - Database operations fail when storing, retrieving, or deleting cookie secrets or auth tokens
     /// - A stored cookie secret in the database is corrupted (invalid base64 or wrong length)
-    pub async fn from_config(cfg: &AuthConfig, db_pool: Option<&DbPool>) -> eyre::Result<Self> {
+    pub(crate) async fn from_config(
+        cfg: &AuthConfig,
+        db_pool: Option<&DbPool>,
+    ) -> eyre::Result<Self> {
         let cookie_key = setup_cookie_key(&cfg.cookie_secret, db_pool).await?;
         let mode = resolve_auth_mode(&cfg.mode, db_pool).await?;
 
@@ -216,7 +221,7 @@ async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<String> {
 }
 
 #[derive(Clone)]
-pub struct LayerState {
+pub(crate) struct LayerState {
     pub auth: Arc<Runtime>,
 }
 

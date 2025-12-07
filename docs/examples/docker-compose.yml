@@ -5,6 +5,5 @@ services:
     network_mode: "host"      # required for WOL
     restart: unless-stopped
     volumes:
-      - ./coordinator_config/:/config/:ro
-      - ./data/:/data/        # persist DB and generated certs here, optional
+      - ./coordinator_config/:/config/
     # no ports, since network_mode: host. The web UI will be available on host's port 8080 by default

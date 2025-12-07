@@ -72,7 +72,7 @@ impl std::fmt::Display for InitSystem {
 /// Performs host_agent installation based on provided arguments.
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
-pub fn install_host_agent(arguments: &Args) -> Result<(), String> {
+pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
     let bind_known_vals = |arg: &str| {
         arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
@@ -222,7 +222,7 @@ fn get_default_interface() -> Option<String> {
 }
 
 /// Retrieves the MAC address for the named network interface.
-pub fn get_mac(interface: &str) -> Option<String> {
+pub(crate) fn get_mac(interface: &str) -> Option<String> {
     #[cfg(target_os = "linux")]
     {
         let output = Command::new("ip")
@@ -252,7 +252,7 @@ pub fn get_mac(interface: &str) -> Option<String> {
 }
 
 /// Retrieves the IP address for the named network interface.
-pub fn get_ip(interface: &str) -> Option<String> {
+pub(crate) fn get_ip(interface: &str) -> Option<String> {
     #[cfg(target_os = "linux")]
     {
         let output = Command::new("ip")
@@ -289,7 +289,7 @@ pub fn get_ip(interface: &str) -> Option<String> {
 }
 
 /// Retrieves the system hostname.
-pub fn get_hostname() -> Option<String> {
+pub(crate) fn get_hostname() -> Option<String> {
     let output = Command::new("hostname").output().ok()?;
 
     let hostname = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -302,7 +302,7 @@ pub fn get_hostname() -> Option<String> {
 }
 
 /// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
-pub fn test_wol_reachability(port: u16) -> Result<(), String> {
+pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
     let socket = UdpSocket::bind(format!("0.0.0.0:{port}"))
         .map_err(|e| format!("Failed to bind test socket: {e}"))?;
 

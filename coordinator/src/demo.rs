@@ -31,7 +31,7 @@ use crate::{
 /// # Panics
 ///
 /// Panics if the TCP listener cannot be bound to the specified address.
-pub async fn run_demo_service(port: u16, bind: &str) {
+pub(crate) async fn run_demo_service(port: u16, bind: &str) {
     let addr = format!("{}:{}", bind, port);
     info!("Starting demo service on http://{}", addr);
 

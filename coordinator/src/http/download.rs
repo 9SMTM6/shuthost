@@ -92,7 +92,7 @@ static_text_download_handler!(fn download_client_installer_ps1, file = "m2m/clie
 static_text_download_handler!(fn download_client_script, file = "m2m/shuthost_client.tmpl.sh");
 static_text_download_handler!(fn download_client_script_ps1, file = "m2m/shuthost_client.tmpl.ps1");
 
-pub fn routes() -> Router<AppState> {
+pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route(
             "/host_agent_installer.sh",

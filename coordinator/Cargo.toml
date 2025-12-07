@@ -31,7 +31,7 @@ vendored-openssl = ["rustls-openssl/vendored"]
 [dependencies]
 axum = { version = "0.8.3", features = ["macros", "ws"] }
 axum-extra = { version = "0.12", features = ["cookie", "cookie-signed"] }
-axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
+axum-server = { version = "0.8", features = ["tls-rustls-no-provider"] }
 base64.workspace = true
 chrono = { version = "0.4", features = ["serde"] }
 clap = { workspace = true, features = ["env"] }

@@ -11,4 +11,4 @@ pub mod notifications;
 pub mod polling;
 pub mod server;
 
-pub use server::*;
+pub(crate) use server::*;

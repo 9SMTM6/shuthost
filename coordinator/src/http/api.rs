@@ -16,7 +16,7 @@ use crate::{
     },
 };
 
-pub use super::m2m::{LeaseMap, LeaseSource};
+pub(crate) use super::m2m::LeaseSource;
 
 /// Lease action for lease endpoints (shared between web and m2m)
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
@@ -72,7 +72,7 @@ pub struct PushKeys {
     pub auth: String,
 }
 
-pub fn routes() -> Router<AppState> {
+pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/lease/{hostname}/{action}", post(handle_web_lease_action))
         .route(

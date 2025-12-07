@@ -26,7 +26,7 @@ macro_rules! include_utf8_asset {
 }
 
 /// Returns the router handling core UI assets (manifest, favicon, SVGs) - except index.html.
-pub fn routes() -> Router<AppState> {
+pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route(
             concat!("/manifest.", env!("ASSET_HASH_MANIFEST_JSON"), ".json"),
@@ -130,7 +130,7 @@ macro_rules! static_png_download_handler {
 }
 
 /// HTML rendering mode for the UI template
-pub enum UiMode<'a> {
+pub(crate) enum UiMode<'a> {
     Normal {
         config_path: &'a std::path::Path,
         show_logout: bool,
@@ -140,7 +140,7 @@ pub enum UiMode<'a> {
 }
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
-pub fn render_ui_html(mode: &UiMode<'_>) -> String {
+pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
     let maybe_logout = if matches!(
         *mode,
         UiMode::Normal {
@@ -181,7 +181,7 @@ pub fn render_ui_html(mode: &UiMode<'_>) -> String {
 ///
 /// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
-pub async fn serve_ui(
+pub(crate) async fn serve_ui(
     State(AppState {
         config_path, auth, ..
     }): State<AppState>,
@@ -223,7 +223,7 @@ pub async fn serve_ui(
 ///
 /// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
-pub async fn serve_manifest() -> impl IntoResponse {
+pub(crate) async fn serve_manifest() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
         .header("Cache-Control", "public, max-age=31536000, immutable")
@@ -237,7 +237,7 @@ pub async fn serve_manifest() -> impl IntoResponse {
 ///
 /// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
-pub async fn serve_styles() -> impl IntoResponse {
+pub(crate) async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
         .header("Cache-Control", "public, max-age=31536000, immutable")

@@ -7,6 +7,6 @@ mod loader;
 mod types;
 mod watcher;
 
-pub use loader::*;
-pub use types::*;
-pub use watcher::*;
+pub(crate) use loader::*;
+pub(crate) use types::*;
+pub(crate) use watcher::*;

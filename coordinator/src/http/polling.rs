@@ -19,7 +19,7 @@ use crate::{
 };
 
 /// Poll a single host for its online status.
-pub async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &str) -> bool {
+pub(crate) async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &str) -> bool {
     let addr = format!("{}:{}", ip, port);
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
@@ -52,7 +52,7 @@ pub async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &s
 /// # Errors
 ///
 /// Returns an error if the polling times out or if there are issues with the host configuration.
-pub async fn poll_until_host_state(
+pub(crate) async fn poll_until_host_state(
     host_name: &str,
     desired_state: bool,
     timeout_secs: u64,
@@ -96,7 +96,7 @@ pub async fn poll_until_host_state(
 }
 
 /// Start all background tasks for the HTTP server.
-pub fn start_background_tasks(
+pub(crate) fn start_background_tasks(
     config_rx: &watch::Receiver<Arc<ControllerConfig>>,
     hoststatus_tx: &watch::Sender<Arc<HashMap<String, bool>>>,
     ws_tx: &broadcast::Sender<WsMessage>,
