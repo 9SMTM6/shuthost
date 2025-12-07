@@ -44,7 +44,7 @@ fn create_host_status_notification(host_name: &str, action: &str) -> Notificatio
 /// # Errors
 ///
 /// Returns an error if VAPID keys cannot be retrieved or push sending fails.
-pub async fn send_host_online(pool: &db::DbPool, host_name: &str) -> eyre::Result<()> {
+pub(crate) async fn send_host_online(pool: &db::DbPool, host_name: &str) -> eyre::Result<()> {
     let vapid_keys = db::get_or_generate_vapid_keys(pool).await?;
     let subscriptions = db::get_push_subscriptions(pool).await?;
 
@@ -74,7 +74,8 @@ pub async fn send_host_online(pool: &db::DbPool, host_name: &str) -> eyre::Resul
 
         #[expect(clippy::shadow_unrelated, reason = "false positive")]
         let message = builder.build()?;
-        #[expect(clippy::missing_panics_doc, reason = "the payload was set above")]
+        // this is a false negative because of pub(crate)
+        // #[expect(clippy::missing_panics_doc, reason = "the payload was set above")]
         let message_bytes = message
             .payload
             .as_ref()

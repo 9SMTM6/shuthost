@@ -177,7 +177,7 @@ pub(crate) async fn wait_for_agent_ready(port: u16, shared_secret: &str, timeout
 
 /// Wait for a host to be reported as online by the coordinator API.
 /// Polls the /api/hosts_status endpoint until the specified host is online or times out.
-pub async fn wait_for_host_online(client: &Client, url: &str, host: &str) -> bool {
+pub(crate) async fn wait_for_host_online(client: &Client, url: &str, host: &str) -> bool {
     for _ in 0..10 {
         let resp = client.get(url).send().await;
         if let Ok(resp) = resp

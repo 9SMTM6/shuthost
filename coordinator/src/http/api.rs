@@ -21,42 +21,28 @@ pub(crate) use super::m2m::LeaseSource;
 /// Lease action for lease endpoints (shared between web and m2m)
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
-pub enum LeaseAction {
+pub(crate) enum LeaseAction {
     Take,
     Release,
 }
 
 /// Response for hosts status endpoint.
 #[derive(Serialize)]
-pub struct HostsStatusResponse {
+pub(crate) struct HostsStatusResponse {
     /// Map of host names to their online status.
     pub hosts: std::collections::HashMap<String, bool>,
 }
 
 /// Response for VAPID public key endpoint.
 #[derive(Serialize)]
-pub struct VapidPublicKeyResponse {
+pub(crate) struct VapidPublicKeyResponse {
     /// The VAPID public key in base64 format.
     pub public_key: String,
 }
 
-/// Response for lease action endpoint.
-#[derive(Serialize)]
-pub struct LeaseActionResponse {
-    /// Success message.
-    pub message: String,
-}
-
-/// Response for reset client leases endpoint.
-#[derive(Serialize)]
-pub struct ResetClientLeasesResponse {
-    /// Success message.
-    pub message: String,
-}
-
 /// Push subscription request payload.
 #[derive(Deserialize)]
-pub struct PushSubscriptionRequest {
+pub(crate) struct PushSubscriptionRequest {
     /// The push service endpoint URL.
     pub endpoint: String,
     /// The encryption keys.
@@ -65,7 +51,7 @@ pub struct PushSubscriptionRequest {
 
 /// Push subscription keys.
 #[derive(Deserialize)]
-pub struct PushKeys {
+pub(crate) struct PushKeys {
     /// The P-256 DH key for encryption.
     pub p256dh: String,
     /// The auth secret for the subscription.
