@@ -88,6 +88,19 @@ process_diff() {
             if [ -f \"\$path\" ]; then
                 perms=\$(stat -c '%a' \"\$path\")
                 ftype=\$(file -b \"\$path\" | cut -d, -f1)
+                # Handle known SQLite files that may appear empty
+                case \"\$path\" in
+                    */shuthost.db-wal)
+                        if [ \"\$ftype\" = \"empty\" ]; then
+                            ftype=\"SQLite Write-Ahead Log\"
+                        fi
+                        ;;
+                    */shuthost.db-shm)
+                        if [ \"\$ftype\" = \"empty\" ]; then
+                            ftype=\"SQLite Write-Ahead Log shared memory\"
+                        fi
+                        ;;
+                esac
                 echo '[[files]]'
                 echo \"path = \\\"\$path\\\"\"
                 echo \"perms = \\\"\$perms\\\"\"
