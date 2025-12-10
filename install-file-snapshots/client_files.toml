@@ -1,0 +1,5 @@
+[[files]]
+path = "/root/.local/bin/shuthost_client_test-client"
+perms = "700"
+type = "POSIX shell script"
+

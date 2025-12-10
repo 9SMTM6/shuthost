@@ -6,7 +6,7 @@
 cleanup() {
     echo "Cleaning up..."
     podman rm --force -t 1 temp-container >/dev/null 2>&1 || true
-    podman rmi "$BASE_IMAGE_NAME" "$COORDINATOR_INSTALLED_NAME" "$AGENT_INSTALLED_NAME" >/dev/null 2>&1 || true
+    podman rmi "$BASE_IMAGE_NAME" "$COORDINATOR_INSTALLED_NAME" "$AGENT_INSTALLED_NAME" "$CLIENT_INSTALLED_NAME" >/dev/null 2>&1 || true
 }
 
 build_musl() {
