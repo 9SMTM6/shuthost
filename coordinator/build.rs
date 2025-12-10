@@ -82,7 +82,7 @@ fn main() -> eyre::Result<()> {
 }
 
 fn emit_build_warnings() {
-    #[allow(
+    #[expect(
         clippy::allow_attributes,
         reason = "This seems cleanest way to do this."
     )]
