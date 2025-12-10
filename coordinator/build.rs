@@ -100,7 +100,7 @@ fn emit_build_warnings() {
         println!("cargo::warning={warning}");
     }
 
-    let missing_agents = [
+    let missing_agents: [&str; _] = [
         #[cfg(not(feature = "include_linux_x86_64_agent"))]
         "linux_x86_64",
         #[cfg(not(feature = "include_linux_aarch64_agent"))]
