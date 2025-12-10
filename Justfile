@@ -100,6 +100,13 @@ patch_test_configs:
     patch example_config.toml -o example_config_oidc.toml < example_config_oidc.toml.patch
     patch example_config.toml -o example_config_external.toml < example_config_external.toml.patch
 
+update_file_snapshots:
+    #!/usr/bin/env sh
+    set -e
+    ./scripts/snapshot-files-systemd.sh
+    ./scripts/snapshot-files-openrc.sh
+    ./scripts/snapshot-files-docker-compose.sh
+
 alias deny := ci_cargo_deny
 
 ci_typo:
@@ -129,6 +136,7 @@ release TYPE:
     cargo fmt
     just update_test_config_diffs
     just patch_test_configs
+    just update_file_snapshots
     just ci_cargo_deny
     just db_update_sqlx_cache
     just coverage
@@ -186,7 +194,7 @@ release TYPE:
         MANUAL_CHANGES="(None)"
     fi
 
-    git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "* Updated dependencies" -m "* Formatted code with cargo fmt" -m "* Bumped version to $NEW_VERSION" -m "* Updated Playwright snapshots" -m "* Updated config patches" -m "* Updated sqlx cache (if required)" -m "* Updated coverage report" -m "" -m "## Changes not tracked in a PR:" -m "$MANUAL_CHANGES"
+    git commit -m "Create Release $NEW_VERSION" -m "Automated release tasks performed:" -m "* Updated dependencies" -m "* Formatted code with cargo fmt" -m "* Bumped version to $NEW_VERSION" -m "* Updated Playwright snapshots" -m "* Updated config patches" -m "* Updated file snapshots" -m "* Updated sqlx cache (if required)" -m "* Updated coverage report" -m "" -m "## Changes not tracked in a PR:" -m "$MANUAL_CHANGES"
     git tag "$NEW_VERSION"
     # we need separate pushes here to ensure that the tag push triggers the *release-tag jobs
     git push origin refs/heads/main

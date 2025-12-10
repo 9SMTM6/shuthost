@@ -10,6 +10,7 @@ client_secret = "your-client-secret"
 [server.tls]
 
 [db]
+path = ":memory:"
 
 [hosts]
 

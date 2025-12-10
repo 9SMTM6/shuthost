@@ -6,6 +6,7 @@ bind = "127.0.0.1"
 exceptions_version = 2
 
 [db]
+path = ":memory:"
 
 [hosts]
 

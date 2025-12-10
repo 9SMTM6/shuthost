@@ -6,6 +6,14 @@ set -e
 INSTALL_DIR="$HOME/.local/bin"
 REMOTE_URL="${1:-http://localhost:8080}"
 
+# Determine if we should accept self-signed certificates (for localhost/testing)
+HOST=$(echo "$REMOTE_URL" | sed -e 's|^https*://||' -e 's|/.*$||' -e 's|:.*$||')
+if [ "$HOST" = "localhost" ] || echo "$HOST" | grep -q '^127\.'; then
+    CURL_OPTS="-k"
+else
+    CURL_OPTS=""
+fi
+
 # Ensure the installation directory exists
 if [ ! -d "$INSTALL_DIR" ]; then
   echo "Creating installation directory: $INSTALL_DIR"
@@ -47,7 +55,7 @@ echo "$REMOTE_URL"
 echo "$CLIENT_ID"
 
 
-curl --compressed -L --fail-with-body "${REMOTE_URL}/download/shuthost_client.sh" -o "/tmp/$CLIENT_SCRIPT_NAME.tmpl"
+curl --compressed -L --fail-with-body $CURL_OPTS "${REMOTE_URL}/download/shuthost_client.sh" -o "/tmp/$CLIENT_SCRIPT_NAME.tmpl"
 
 # Generate a random shared secret using openssl
 SHARED_SECRET=$(openssl rand -hex 16)

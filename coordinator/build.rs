@@ -83,7 +83,7 @@ fn main() -> eyre::Result<()> {
 }
 
 fn emit_build_warnings() {
-    #[allow(
+    #[expect(
         clippy::allow_attributes,
         reason = "This seems cleanest way to do this."
     )]
@@ -91,27 +91,39 @@ fn emit_build_warnings() {
         unused_mut,
         reason = "This will receive false positives when no build warning is emitted."
     )]
-    let mut build_warnings = Vec::<&'static str>::new();
+    let mut build_warnings = Vec::<String>::new();
 
     #[cfg(target_os = "windows")]
     {
         let warning = "Windows builds are currently only supported for internal testing purposes and should not be used in production.";
-        build_warnings.push(warning);
+        build_warnings.push(warning.to_string());
         println!("cargo::warning={warning}");
     }
 
-    #[cfg(not(feature = "include_linux_agents"))]
-    {
-        let warning = "No linux agents embedded. Trying to install any linux agents from the coordinator will result in errors";
-        build_warnings.push(warning);
-        println!("cargo::warning={warning}");
-    }
+    let missing_agents = [
+        #[cfg(not(feature = "include_linux_x86_64_agent"))]
+        "linux_x86_64",
+        #[cfg(not(feature = "include_linux_aarch64_agent"))]
+        "linux_aarch64",
+        #[cfg(not(feature = "include_linux_musl_x86_64_agent"))]
+        "linux_musl_x86_64",
+        #[cfg(not(feature = "include_linux_musl_aarch64_agent"))]
+        "linux_musl_aarch64",
+        #[cfg(not(feature = "include_macos_aarch64_agent"))]
+        "macos_aarch64",
+        #[cfg(not(feature = "include_macos_x86_64_agent"))]
+        "macos_x86_64",
+    ];
 
-    #[cfg(not(feature = "include_macos_agents"))]
-    {
-        let warning = "No MacOS agents embedded. Trying to install any MacOS agents from the coordinator will result in errors";
-        build_warnings.push(warning);
-        println!("cargo::warning={warning}");
+    #[expect(clippy::allow_attributes, reason = "Build-dependent code")]
+    #[allow(clippy::const_is_empty, reason = "Build-dependent code")]
+    if !missing_agents.is_empty() {
+        let warning = format!(
+            "The following agents are not embedded: {}. Trying to install any missing agents from the coordinator will result in errors.",
+            missing_agents.join(", ")
+        );
+        build_warnings.push(warning.clone());
+        println!("cargo::warning={}", warning);
     }
 
     println!(

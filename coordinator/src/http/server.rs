@@ -34,7 +34,7 @@ use tracing::{info, warn};
 
 use crate::{
     auth,
-    config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_path},
+    config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
     db::{self, DbPool},
     http::{
         api,
@@ -130,7 +130,7 @@ async fn initialize_database(
             enable: true,
             ref path,
         }) => {
-            let db_path = resolve_config_relative_path(config_path, path);
+            let db_path = resolve_config_relative_paths(config_path, path);
             let pool = db::init(&db_path).await.wrap_err(format!(
                 "Failed to initialize database at: {}",
                 db_path.display()
@@ -160,8 +160,8 @@ async fn setup_tls_config(
     let cert_path_cfg = tls_cfg.cert_path.as_str();
     let key_path_cfg = tls_cfg.key_path.as_str();
 
-    let cert_path = resolve_config_relative_path(config_path, cert_path_cfg);
-    let key_path = resolve_config_relative_path(config_path, key_path_cfg);
+    let cert_path = resolve_config_relative_paths(config_path, cert_path_cfg);
+    let key_path = resolve_config_relative_paths(config_path, key_path_cfg);
 
     let cert_exists = cert_path.exists();
     let key_exists = key_path.exists();

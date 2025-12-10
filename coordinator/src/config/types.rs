@@ -126,7 +126,7 @@ const fn do_db_enable() -> bool {
     true
 }
 
-/// Resolves a path relative to the config file location.
+/// Resolves a path to an absolute one.
 ///
 /// If the path is absolute, returns it as-is. If relative, joins it with the
 /// config file's parent directory and normalizes the result to remove redundant
@@ -140,12 +140,15 @@ const fn do_db_enable() -> bool {
 /// # Returns
 ///
 /// A normalized absolute path
-pub fn resolve_config_relative_path(
+pub fn resolve_config_relative_paths(
     config_path: &std::path::Path,
     relative_path: &str,
 ) -> std::path::PathBuf {
     let path = std::path::Path::new(relative_path);
     let resolved = if path.is_absolute() {
+        path.to_path_buf()
+    } else if relative_path == ":memory:" {
+        // Special case: SQLite in-memory database path
         path.to_path_buf()
     } else {
         config_path

@@ -16,11 +16,12 @@ fi
 
 # Configuration
 BASE_IMAGE="quay.io/podman/stable"
-INSTALL_DEPS="dnf install -y podman-compose curl hostname file"
+INSTALL_DEPS="dnf install -y podman-compose curl hostname file openssl"
 OUTPUT_DIR="./install-file-snapshots/docker-compose"
 BASE_IMAGE_NAME="shuthost-compose-base"
 COORDINATOR_INSTALLED_NAME="shuthost-compose-coordinator-installed"
 AGENT_INSTALLED_NAME="shuthost-compose-agent-installed"
+CLIENT_INSTALLED_NAME="shuthost-compose-client-installed"
 
 trap cleanup EXIT
 
@@ -67,15 +68,26 @@ podman commit temp-container "$COORDINATOR_INSTALLED_NAME"
 # This will end up installing the serviceless agent, since it can't detect an init system in this container.
 # We override the OS to linux-musl since the coordinator we built only contains that agent.
 podman exec -w /workspace temp-container sh -c "
-  curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 --os linux-musl &&
-  echo 'Installer completed, killing coordinator...'
-  podman compose down
+  curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 --os linux-musl
 " || true
 
 # Commit to final installed image
 podman commit temp-container "$AGENT_INSTALLED_NAME"
 
+# Now install the client in the same container
+podman exec -w /workspace temp-container sh -c "
+  curl -k -sSL https://localhost:8080/download/client_installer.sh | sh -s https://localhost:8080 test-client &&
+  echo 'Client installer completed, killing coordinator...' &&
+  podman compose down
+" || true
+
+# Commit to client installed image
+podman commit temp-container "$CLIENT_INSTALLED_NAME"
+
 # Clean up the container
 podman rm --force -t 1 temp-container >/dev/null 2>&1
 
 do_diff "$OUTPUT_DIR"
+
+# Diff client files
+process_diff "$CLIENT_INSTALLED_NAME" "$AGENT_INSTALLED_NAME" "./install-file-snapshots/client_files.toml"
