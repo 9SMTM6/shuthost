@@ -1,7 +1,7 @@
 {
     "name": "shuthost-frontend",
     "private": true,
-    "version": "1.0.0",
+    "type": "module",
     "scripts": {
         "build": "cd assets && tsc --outDir ./generated && npx @tailwindcss/cli -i ./styles.tailwind.css -o ./generated/styles.css",
         "test": "tsc --noEmit && playwright test",
