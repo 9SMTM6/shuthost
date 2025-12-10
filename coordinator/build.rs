@@ -82,21 +82,13 @@ fn main() -> eyre::Result<()> {
 }
 
 fn emit_build_warnings() {
-    #[expect(
-        clippy::allow_attributes,
-        reason = "This seems cleanest way to do this."
-    )]
-    #[allow(
-        unused_mut,
-        reason = "This will receive false positives when no build warning is emitted."
-    )]
+    #[expect(clippy::allow_attributes, reason = "Build dependent code")]
+    #[allow(unused_mut, reason = "Build dependent code")]
     let mut build_warnings = Vec::<String>::new();
 
     #[cfg(target_os = "windows")]
     {
-        let warning = "Windows builds are currently only supported for internal testing purposes and should not be used in production.";
-        build_warnings.push(warning.to_string());
-        println!("cargo::warning={warning}");
+        build_warnings.push("Windows builds are currently only supported for internal testing purposes and should not be used in production.".to_string());
     }
 
     let missing_agents: [&str; _] = [
@@ -117,12 +109,14 @@ fn emit_build_warnings() {
     #[expect(clippy::allow_attributes, reason = "Build-dependent code")]
     #[allow(clippy::const_is_empty, reason = "Build-dependent code")]
     if !missing_agents.is_empty() {
-        let warning = format!(
+        build_warnings.push(format!(
             "The following agents are not embedded: {}. Trying to install any missing agents from the coordinator will result in errors.",
             missing_agents.join(", ")
-        );
-        build_warnings.push(warning.clone());
-        println!("cargo::warning={}", warning);
+        ));
+    }
+
+    for warning in &build_warnings {
+        println!("cargo::warning={warning}");
     }
 
     println!(
