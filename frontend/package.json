@@ -5,6 +5,7 @@
     "scripts": {
         "build": "cd assets && tsc --outDir ./generated && npx @tailwindcss/cli -i ./styles.tailwind.css -o ./generated/styles.css",
         "build-about": "tsc --noEmit && node render-about.ts",
+        "generate-npm-licenses": "license-checker --json > assets/generated/npm-licenses.json",
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps"
@@ -20,5 +21,6 @@
         "@playwright/test": "^1.43.0",
         "@types/handlebars": "^4.0.40",
         "@types/node": "^24.7.0",
+        "license-checker": "^25.0.1"
     }
 }

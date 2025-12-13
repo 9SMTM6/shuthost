@@ -2,38 +2,35 @@ import fs from 'fs';
 import path from 'path';
 import handlebars from 'handlebars';
 
-interface LicenseOverview {
+type LicenseOverview = {
     name: string;
     id: string;
     count: number;
     text: string;
 }
 
-interface UsedBy {
-    name: string;
-    version: string;
-    repository?: string;
-    crate?: {
+type UsedBy = {
+    crate: {
         name: string;
         version: string;
         repository?: string;
     };
 }
 
-interface LicenseDetail {
+type LicenseDetail = {
     name: string;
     id: string;
     text: string;
     used_by: UsedBy[];
 }
 
-interface CargoAboutData {
+type CargoAboutData = {
     overview: LicenseOverview[];
     licenses: LicenseDetail[];
     crates?: any[]; // optional
 }
 
-interface NpmLicenseInfo {
+type NpmLicenseInfo = {
     licenses: string;
     repository?: string;
     path: string;
@@ -44,11 +41,28 @@ interface NpmLicenseInfo {
 
 type NpmLicensesData = Record<string, NpmLicenseInfo>;
 
-interface AdditionalData {
+type AdditionalData = {
     overview?: LicenseOverview[];
     licenses?: LicenseDetail[];
     [key: string]: any;
 }
+
+// Mapping from SPDX license IDs to full names for unification
+const licenseNameMap: Record<string, string> = {
+    "MIT": "MIT License",
+    "Apache-2.0": "Apache License 2.0",
+    "ISC": "ISC License",
+    "BSD-3-Clause": "BSD 3-Clause \"New\" or \"Revised\" License",
+    "BSD-2-Clause": "BSD 2-Clause \"Simplified\" License",
+    "CC0-1.0": "Creative Commons Zero v1.0 Universal",
+    "MPL-2.0": "Mozilla Public License 2.0",
+    "Zlib": "zlib License",
+    "OpenSSL": "OpenSSL License",
+    "Unicode-3.0": "Unicode License v3",
+    "CDLA-Permissive-2.0": "Community Data License Agreement Permissive 2.0",
+    "CC-BY-3.0": "Creative Commons Attribution 3.0",
+    // Add more as needed
+};
 
 // Load the cargo about JSON
 const cargoAboutPath = path.join(process.cwd(), 'assets', 'generated', 'cargo_about.json');
@@ -62,7 +76,7 @@ if (fs.existsSync(additionalDataPath)) {
 }
 
 // Load npm licenses if exists
-const npmLicensesPath = path.join(process.cwd(), 'npm-licenses.json');
+const npmLicensesPath = path.join(process.cwd(), 'assets', 'generated', 'npm-licenses.json');
 let npmOverview: LicenseOverview[] = [];
 let npmLicenses: LicenseDetail[] = [];
 if (fs.existsSync(npmLicensesPath)) {
@@ -72,16 +86,25 @@ if (fs.existsSync(npmLicensesPath)) {
 
     for (const [pkg, info] of Object.entries(npmData)) {
         const license = info.licenses;
-        if (!licenseMap[license] || !usedByMap[license]) {
-            licenseMap[license] = { name: license, id: license, count: 0, text: '' }; // text empty for now
-            usedByMap[license] = [];
+        const fullName = licenseNameMap[license] || license;
+        if (!licenseMap[fullName] || !usedByMap[fullName]) {
+            let text = '';
+            try {
+                text = fs.readFileSync(info.licenseFile, 'utf8');
+            } catch (e) {
+                // ignore if file not found
+            }
+            licenseMap[fullName] = { name: fullName, id: license, count: 0, text };
+            usedByMap[fullName] = [];
         }
-        licenseMap[license].count++;
+        licenseMap[fullName].count++;
         const [name, version] = pkg.split('@');
-        usedByMap[license].push({
-            name: name!,
-            version: version!,
-            repository: info.repository!
+        usedByMap[fullName].push({
+            crate: {
+                name: name!,
+                version: version!,
+                repository: info.repository || `https://www.npmjs.com/package/${name}`
+            }
         });
     }
 
@@ -90,14 +113,53 @@ if (fs.existsSync(npmLicensesPath)) {
         name: lic.name,
         id: lic.id,
         text: lic.text,
-        used_by: usedByMap[lic.id]!
+        used_by: usedByMap[lic.name]!
     }));
 }
 
 // Merge data
+const overviewMap = new Map<string, LicenseOverview>();
+const licensesMap = new Map<string, LicenseDetail>();
+
+// Helper to add overview
+const addOverview = (items: LicenseOverview[]) => {
+    for (const item of items) {
+        const existing = overviewMap.get(item.name);
+        if (existing) {
+            existing.count += item.count;
+        } else {
+            overviewMap.set(item.name, { ...item });
+        }
+    }
+};
+
+// Helper to add licenses
+const addLicenses = (items: LicenseDetail[]) => {
+    for (const item of items) {
+        const existing = licensesMap.get(item.name);
+        if (existing) {
+            existing.used_by.push(...item.used_by);
+        } else {
+            licensesMap.set(item.name, { ...item, used_by: [...item.used_by] });
+        }
+    }
+};
+
+// Add from cargo
+addOverview(cargoAbout.overview || []);
+addLicenses(cargoAbout.licenses || []);
+
+// Add from npm
+addOverview(npmOverview);
+addLicenses(npmLicenses);
+
+// Add from additional
+addOverview(additional.overview || []);
+addLicenses(additional.licenses || []);
+
 const data: CargoAboutData & AdditionalData = {
-    overview: [...(cargoAbout.overview || []), ...npmOverview, ...(additional.overview || [])],
-    licenses: [...(cargoAbout.licenses || []), ...npmLicenses, ...(additional.licenses || [])],
+    overview: Array.from(overviewMap.values()),
+    licenses: Array.from(licensesMap.values()),
     ...additional
 };
 
