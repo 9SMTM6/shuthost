@@ -4,18 +4,21 @@
     "type": "module",
     "scripts": {
         "build": "cd assets && tsc --outDir ./generated && npx @tailwindcss/cli -i ./styles.tailwind.css -o ./generated/styles.css",
+        "build-about": "tsc --noEmit && node render-about.ts",
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps"
     },
     "dependencies": {
         "@tailwindcss/cli": "^4.1.8",
+        "handlebars": "^4.7.8",
         "tailwindcss": "^4.1.8",
         "typescript": "^5.8.3"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.10.2",
         "@playwright/test": "^1.43.0",
-        "@types/node": "^24.7.0"
+        "@types/handlebars": "^4.0.40",
+        "@types/node": "^24.7.0",
     }
 }

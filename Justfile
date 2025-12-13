@@ -118,6 +118,10 @@ playwright +flags="":
 playwright_report:
     cd frontend && npx playwright show-report
 
+license_collect:
+    cargo about generate --all-features --workspace --format json --output-file frontend/assets/generated/cargo_about.json
+    cd frontend && npm run generate-npm-licenses
+
 release TYPE:
     #!/usr/bin/env bash
     set -e
