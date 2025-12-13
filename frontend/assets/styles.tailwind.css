@@ -39,6 +39,26 @@ footer {
 }
 
 @layer components {
+    .container {
+        @apply max-w-3xl mx-auto font-sans p-4;
+    }
+
+    .intro {
+        @apply text-center;
+    }
+
+    .licenses-list {
+        @apply m-0 p-0 space-y-6;
+    }
+
+    .license-used-by {
+        @apply -mt-2.5 space-y-1 mb-4 text-right;
+    }
+
+    .license-text {
+        @apply max-h-50 overflow-y-scroll whitespace-pre-wrap;
+    }
+
     .html-body {
         @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen;
     }

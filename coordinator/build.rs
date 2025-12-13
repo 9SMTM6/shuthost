@@ -66,6 +66,11 @@ fn main() -> eyre::Result<()> {
     println!("{RERUN_IF}/partials");
     run_npm_build()?;
 
+    println!("{RERUN_IF}/about.tmpl.hbs");
+    println!("{RERUN_IF}/frontend/package-lock.json");
+    run_npm_generate_licenses()?;
+    run_npm_build_about()?;
+
     println!("{RERUN_IF}/favicon.svg");
     generate_png_icons()?;
 
@@ -155,6 +160,38 @@ fn run_npm_build() -> eyre::Result<()> {
             }
         })
         .wrap_err("Failed to npm run build")?
+}
+
+fn run_npm_generate_licenses() -> eyre::Result<()> {
+    process::Command::new(NPM_BIN)
+        .arg("run")
+        .arg("generate-npm-licenses")
+        .current_dir(FRONTEND_DIR)
+        .status()
+        .map(|it| {
+            if it.success() {
+                Ok(())
+            } else {
+                bail!("npm run generate-npm-licenses failed with {it}")
+            }
+        })
+        .wrap_err("Failed to npm run generate-npm-licenses")?
+}
+
+fn run_npm_build_about() -> eyre::Result<()> {
+    process::Command::new(NPM_BIN)
+        .arg("run")
+        .arg("build-about")
+        .current_dir(FRONTEND_DIR)
+        .status()
+        .map(|it| {
+            if it.success() {
+                Ok(())
+            } else {
+                bail!("npm run build-about failed with {it}")
+            }
+        })
+        .wrap_err("Failed to npm run build-about")?
 }
 
 fn setup_npm() -> eyre::Result<()> {
@@ -461,6 +498,12 @@ fn process_templates() -> eyre::Result<()> {
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("login.html"), login_content)?;
+
+    // Process about.tmpl.html
+    let about_content = include_frontend_asset!("generated/about.tmpl.html")
+        .replace("{ html_head }", &html_head)
+        .replace("{ title }", "Third Party Licenses");
+    fs::write(generated_dir.join("about.html"), about_content)?;
 
     Ok(())
 }

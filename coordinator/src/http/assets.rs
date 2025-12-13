@@ -36,6 +36,7 @@ pub(crate) fn routes() -> Router<AppState> {
             concat!("/styles.", env!("ASSET_HASH_STYLES_CSS"), ".css"),
             get(serve_styles),
         )
+        .route("/about", get(serve_about))
         .route(
             "/favicon.svg",
             get(async || {
@@ -241,6 +242,19 @@ pub(crate) async fn serve_styles() -> impl IntoResponse {
         .header("Content-Type", "text/css")
         .header("Cache-Control", "public, max-age=31536000, immutable")
         .body(include_utf8_asset!("generated/styles.css").into_response())
+        .unwrap()
+}
+
+/// Serves the third party licenses page.
+///
+/// # Panics
+///
+/// Panics if the response builder fails to build the response.
+#[axum::debug_handler]
+pub(crate) async fn serve_about() -> impl IntoResponse {
+    Response::builder()
+        .header("Content-Type", "text/html")
+        .body(include_utf8_asset!("generated/about.html").into_response())
         .unwrap()
 }
 

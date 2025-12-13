@@ -164,7 +164,7 @@ const data: CargoAboutData & AdditionalData = {
 };
 
 // Load the template
-const templatePath = path.join(process.cwd(), 'about.hbs');
+const templatePath = path.join(process.cwd(), "assets", 'about.tmpl.hbs');
 const template = fs.readFileSync(templatePath, 'utf8');
 
 // Compile and render
@@ -172,7 +172,7 @@ const compiled = handlebars.compile(template);
 const html = compiled(data);
 
 // Write to output
-const outputPath = 'assets/generated/about.html';
+const outputPath = 'assets/generated/about.tmpl.html';
 fs.writeFileSync(outputPath, html);
 
 console.log('About page generated at', outputPath);
