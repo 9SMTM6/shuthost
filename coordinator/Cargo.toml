@@ -9,6 +9,7 @@ license.workspace = true
 readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
+build = "build/mod.rs"
 
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
