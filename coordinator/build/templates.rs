@@ -1,8 +1,8 @@
 #![expect(clippy::indexing_slicing, reason = "This is fine at build time")]
-use std::{collections::HashMap, fs, path::PathBuf};
-use eyre::{WrapErr, Ok};
-use sha2::{Digest, Sha256};
 use base64::{Engine as _, engine::general_purpose};
+use eyre::{Ok, WrapErr};
+use sha2::{Digest, Sha256};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 macro_rules! include_frontend_asset {
     ($path:expr) => {

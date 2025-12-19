@@ -24,12 +24,12 @@
 //!
 //! The script informs Cargo to rerun the build if certain frontend asset files change, ensuring
 //! that modifications to templates, styles, or icons trigger a rebuild.
+mod csp;
+mod icons;
+mod npm;
+mod templates;
 mod warnings;
 mod workspace;
-mod npm;
-mod icons;
-mod csp;
-mod templates;
 
 use eyre::Ok;
 

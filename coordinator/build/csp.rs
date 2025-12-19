@@ -1,8 +1,8 @@
-use std::fs;
-use regex::Regex;
-use eyre::Ok;
 use base64::{Engine as _, engine::general_purpose};
+use eyre::Ok;
+use regex::Regex;
 use sha2::{Digest, Sha256};
+use std::fs;
 
 pub fn generate_hashes() -> eyre::Result<()> {
     let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;

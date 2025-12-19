@@ -1,6 +1,6 @@
-use std::{fs, path::PathBuf};
-use eyre::{WrapErr, eyre, Ok};
+use eyre::{Ok, WrapErr, eyre};
 use resvg::usvg;
+use std::{fs, path::PathBuf};
 use tiny_skia::Pixmap;
 
 pub fn generate_pngs() -> eyre::Result<()> {

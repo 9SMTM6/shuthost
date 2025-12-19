@@ -1,5 +1,5 @@
+use eyre::{Ok, WrapErr, bail};
 use std::process;
-use eyre::{WrapErr, bail, Ok};
 
 #[cfg(not(target_os = "windows"))]
 const NPM_BIN: &str = "npm";

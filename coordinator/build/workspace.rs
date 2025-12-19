@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use eyre::{ContextCompat, Ok};
+use std::path::PathBuf;
 
 pub fn set_root() -> eyre::Result<()> {
     let workspace_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
