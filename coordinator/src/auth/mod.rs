@@ -25,9 +25,9 @@ use crate::{
     http::AppState,
 };
 
-pub(crate) use cookies::OIDCSessionClaims;
 pub(crate) use cookies::{
     COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+    OIDCSessionClaims,
 };
 pub(crate) use middleware::{request_is_secure, require};
 
@@ -185,7 +185,7 @@ async fn resolve_token_auth(
     config_token: &Option<Arc<SecretString>>,
     db_pool: Option<&DbPool>,
 ) -> eyre::Result<Resolved> {
-    let token = if let Some(cfg_token) = config_token {
+    let token = if let &Some(ref cfg_token) = config_token {
         // Configured token - remove any stored value to avoid confusion
         if let Some(pool) = db_pool {
             delete_kv(pool, KV_AUTH_TOKEN).await?;
@@ -207,7 +207,7 @@ async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<Arc<Secret
             Ok(Arc::new(SecretString::from(stored_token)))
         } else {
             let generated = cookies::generate_token();
-            store_kv(pool, KV_AUTH_TOKEN, &generated.expose_secret()).await?;
+            store_kv(pool, KV_AUTH_TOKEN, generated.expose_secret()).await?;
             info!("Auth mode: token (auto generated, stored in db)");
             info!("Token: {}", generated.expose_secret());
             Ok(generated)

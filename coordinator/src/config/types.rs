@@ -3,9 +3,14 @@
 //! This module contains all the data structures used for configuration,
 //! including host, client, server, TLS, and authentication settings.
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    path::Component,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
+// TODO: consider using secrets crate or secure-types instead for their OS locks.
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
@@ -157,11 +162,8 @@ const fn do_db_enable() -> bool {
 /// # Returns
 ///
 /// A normalized absolute path
-pub fn resolve_config_relative_paths(
-    config_path: &std::path::Path,
-    relative_path: &str,
-) -> std::path::PathBuf {
-    let path = std::path::Path::new(relative_path);
+pub fn resolve_config_relative_paths(config_path: &Path, relative_path: &str) -> PathBuf {
+    let path = Path::new(relative_path);
     let resolved = if path.is_absolute() {
         path.to_path_buf()
     } else if relative_path == ":memory:" {
@@ -179,20 +181,21 @@ pub fn resolve_config_relative_paths(
     normalize_path(&resolved)
 }
 
-fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
-    let mut result = std::path::PathBuf::new();
+fn normalize_path(path: &Path) -> PathBuf {
+    let mut result = PathBuf::new();
     for component in path.components() {
+        use Component as C;
         match component {
-            std::path::Component::Normal(c) => {
+            C::Normal(c) => {
                 result.push(c);
             }
-            std::path::Component::ParentDir => {
+            C::ParentDir => {
                 result.pop();
             }
-            std::path::Component::CurDir => {
+            C::CurDir => {
                 // Skip current directory components
             }
-            std::path::Component::RootDir | std::path::Component::Prefix(_) => {
+            C::RootDir | C::Prefix(_) => {
                 result.push(component);
             }
         }
@@ -230,32 +233,33 @@ pub(crate) enum AuthMode {
 
 impl PartialEq for AuthMode {
     fn eq(&self, other: &Self) -> bool {
+        use AuthMode as AM;
         match (self, other) {
-            (AuthMode::None, AuthMode::None) => true,
-            (AuthMode::Token { token: t1 }, AuthMode::Token { token: t2 }) => match (t1, t2) {
-                (Some(s1), Some(s2)) => s1.expose_secret() == s2.expose_secret(),
-                (None, None) => true,
+            (&AM::None, &AM::None) => true,
+            (&AM::Token { token: ref t1 }, &AM::Token { token: ref t2 }) => match (t1, t2) {
+                (&Some(ref s1), &Some(ref s2)) => s1.expose_secret() == s2.expose_secret(),
+                (&None, &None) => true,
                 _ => false,
             },
             (
-                AuthMode::Oidc {
-                    issuer: i1,
-                    client_id: c1,
-                    client_secret: s1,
-                    scopes: sc1,
+                &AM::Oidc {
+                    issuer: ref i1,
+                    client_id: ref c1,
+                    client_secret: ref s1,
+                    scopes: ref sc1,
                 },
-                AuthMode::Oidc {
-                    issuer: i2,
-                    client_id: c2,
-                    client_secret: s2,
-                    scopes: sc2,
+                &AM::Oidc {
+                    issuer: ref i2,
+                    client_id: ref c2,
+                    client_secret: ref s2,
+                    scopes: ref sc2,
                 },
             ) => i1 == i2 && c1 == c2 && s1.expose_secret() == s2.expose_secret() && sc1 == sc2,
             (
-                AuthMode::External {
+                &AM::External {
                     exceptions_version: v1,
                 },
-                AuthMode::External {
+                &AM::External {
                     exceptions_version: v2,
                 },
             ) => v1 == v2,
@@ -287,8 +291,8 @@ impl PartialEq for AuthConfig {
     fn eq(&self, other: &Self) -> bool {
         self.mode == other.mode && {
             match (&self.cookie_secret, &other.cookie_secret) {
-                (Some(s1), Some(s2)) => s1.expose_secret() == s2.expose_secret(),
-                (None, None) => true,
+                (&Some(ref s1), &Some(ref s2)) => s1.expose_secret() == s2.expose_secret(),
+                (&None, &None) => true,
                 _ => false,
             }
         }
