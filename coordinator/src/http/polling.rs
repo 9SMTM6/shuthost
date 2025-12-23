@@ -18,7 +18,12 @@ use crate::{
 };
 
 /// Poll a single host for its online status.
-pub(crate) async fn poll_host_status(name: &str, ip: &str, port: u16, shared_secret: &str) -> bool {
+pub(crate) async fn poll_host_status(
+    name: &str,
+    ip: &str,
+    port: u16,
+    shared_secret: &secrecy::SecretString,
+) -> bool {
     let addr = format!("{}:{}", ip, port);
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
@@ -70,7 +75,8 @@ pub(crate) async fn poll_until_host_state(
                 None => return Err(format!("No configuration found for host '{}'.", host_name)),
             }
         };
-        let poll_fut = poll_host_status(host_name, &host.ip, host.port, &host.shared_secret);
+        let poll_fut =
+            poll_host_status(host_name, &host.ip, host.port, host.shared_secret.as_ref());
         let tick_fut = ticker.tick();
         let (is_online, _) = tokio::join!(poll_fut, tick_fut);
         // Update global state
@@ -169,7 +175,7 @@ async fn poll_host_statuses(
             let port = host.port;
             let shared_secret = host.shared_secret.clone();
             async move {
-                let is_online = poll_host_status(&name, &ip, port, &shared_secret).await;
+                let is_online = poll_host_status(&name, &ip, port, shared_secret.as_ref()).await;
                 debug!("Polled {} at {}:{} - online: {}", name, ip, port, is_online);
                 (name, is_online)
             }

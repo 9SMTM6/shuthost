@@ -16,6 +16,7 @@ use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
 use base64::{Engine, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context;
+use secrecy::{ExposeSecret, SecretString};
 use tracing::{info, warn};
 
 use crate::{
@@ -42,22 +43,21 @@ pub(crate) fn login_error_redirect(error: &str) -> Redirect {
     Redirect::to(&format!("/login?error={}", error))
 }
 
-#[derive(Clone)]
 pub(crate) struct Runtime {
     pub mode: Resolved,
     pub cookie_key: Key,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) enum Resolved {
     Disabled,
     Token {
-        token: String,
+        token: Arc<SecretString>,
     },
     Oidc {
         issuer: String,
         client_id: String,
-        client_secret: String,
+        client_secret: Arc<SecretString>,
         scopes: Vec<String>,
     },
     /// External auth (reverse proxy / external provider) acknowledged by operator.
@@ -131,7 +131,7 @@ impl Runtime {
 
 /// Set up the cookie key from config or database.
 async fn setup_cookie_key(
-    cookie_secret: &Option<String>,
+    cookie_secret: &Option<Arc<SecretString>>,
     db_pool: Option<&DbPool>,
 ) -> eyre::Result<Key> {
     if let &Some(ref cookie_secret_val) = cookie_secret {
@@ -145,7 +145,7 @@ async fn setup_cookie_key(
 
         // Try to decode the configured secret
         let bytes = base64_gp_STANDARD
-            .decode(cookie_secret_val)
+            .decode((*cookie_secret_val).expose_secret().as_bytes())
             .wrap_err("Invalid cookie_secret in config")?;
         Key::try_from(bytes.as_slice())
             .wrap_err("Invalid cookie_secret length in config: expected 32 bytes")
@@ -169,7 +169,7 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
             Ok(Resolved::Oidc {
                 issuer: issuer.to_string(),
                 client_id: client_id.to_string(),
-                client_secret: client_secret.to_string(),
+                client_secret: client_secret.clone(),
                 scopes: scopes.to_vec(),
             })
         }
@@ -182,16 +182,16 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
 
 /// Resolve token authentication mode.
 async fn resolve_token_auth(
-    config_token: &Option<String>,
+    config_token: &Option<Arc<SecretString>>,
     db_pool: Option<&DbPool>,
 ) -> eyre::Result<Resolved> {
-    let token = if let Some(cfg_token) = config_token.clone() {
+    let token = if let Some(cfg_token) = config_token {
         // Configured token - remove any stored value to avoid confusion
         if let Some(pool) = db_pool {
             delete_kv(pool, KV_AUTH_TOKEN).await?;
         }
         info!("Auth mode: token (configured)");
-        cfg_token
+        cfg_token.clone()
     } else {
         resolve_auto_token(db_pool).await?
     };
@@ -200,22 +200,22 @@ async fn resolve_token_auth(
 }
 
 /// Resolve token when not configured (try DB, then generate).
-async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<String> {
+async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<Arc<SecretString>> {
     if let Some(pool) = db_pool {
         if let Some(stored_token) = get_kv(pool, KV_AUTH_TOKEN).await? {
             info!("Auth mode: token (from database)");
-            Ok(stored_token)
+            Ok(Arc::new(SecretString::from(stored_token)))
         } else {
             let generated = cookies::generate_token();
-            store_kv(pool, KV_AUTH_TOKEN, &generated).await?;
+            store_kv(pool, KV_AUTH_TOKEN, &generated.expose_secret()).await?;
             info!("Auth mode: token (auto generated, stored in db)");
-            info!("Token: {}", generated);
+            info!("Token: {}", generated.expose_secret());
             Ok(generated)
         }
     } else {
         let generated = cookies::generate_token();
         info!("Auth mode: token (auto generated, not stored for lack of a db)");
-        info!("Token: {}", generated);
+        info!("Token: {}", generated.expose_secret());
         Ok(generated)
     }
 }
@@ -264,14 +264,16 @@ mod tests {
         .await
         .unwrap();
 
-        let cfg_token = "configured_token";
+        let cfg_token = Some(Arc::new(SecretString::from("configured_token")));
 
         // Provide configured values -> they should cause DB entries to be removed
         let cfg = AuthConfig {
             mode: AuthMode::Token {
-                token: Some(cfg_token.to_string()),
+                token: cfg_token.clone(),
             },
-            cookie_secret: Some(base64_gp_STANDARD.encode(Key::generate().master())),
+            cookie_secret: Some(Arc::new(SecretString::from(
+                base64_gp_STANDARD.encode(Key::generate().master()),
+            ))),
         };
 
         let runtime = Runtime::from_config(&cfg, Some(&pool)).await.unwrap();
@@ -282,7 +284,7 @@ mod tests {
 
         // runtime should use configured token
         match runtime.mode {
-            Resolved::Token { token } => assert_eq!(token, cfg_token),
+            Resolved::Token { token } => assert_eq!((*token).expose_secret(), "configured_token"),
             _ => panic!("expected token mode"),
         }
     }
@@ -294,7 +296,7 @@ mod tests {
         // invalid base64 value in config
         let cfg = AuthConfig {
             mode: AuthMode::None,
-            cookie_secret: Some("not-base64!!".to_string()),
+            cookie_secret: Some(Arc::new(SecretString::from("not-base64!!"))),
         };
 
         let res = Runtime::from_config(&cfg, Some(&pool)).await;

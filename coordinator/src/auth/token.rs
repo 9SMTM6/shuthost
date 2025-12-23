@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
 
 #[derive(Deserialize)]
 pub(crate) struct LoginForm {
-    token: String,
+    token: SecretString,
 }
 
 #[derive(Deserialize, Default)]
@@ -45,8 +46,8 @@ pub(crate) async fn login_post(
         &Resolved::Token {
             token: ref expected,
             ..
-        } if &token == expected => {
-            let claims = TokenSessionClaims::new(expected);
+        } if token.expose_secret() == expected.expose_secret() => {
+            let claims = TokenSessionClaims::new((*expected).expose_secret());
             let cookie = create_token_session_cookie(
                 &claims,
                 cookie::time::Duration::seconds((claims.exp - claims.iat) as i64),

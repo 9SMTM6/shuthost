@@ -18,6 +18,7 @@ use axum::{
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use eyre::WrapErr;
 use hyper::StatusCode;
+use secrecy::{ExposeSecret, SecretBox};
 use tokio::{
     fs, signal,
     sync::{broadcast, watch},
@@ -161,18 +162,21 @@ async fn setup_tls_config(
     let key_exists = key_path.exists();
 
     let rustls_cfg = if cert_exists && key_exists {
-        let rustls_cfg = AxumRustlsConfig::from_pem_file(
-            cert_path
-                .to_str()
-                .expect("cert path contains invalid UTF-8"),
-            key_path.to_str().expect("key path contains invalid UTF-8"),
-        )
-        .await
-        .wrap_err(format!(
-            "Failed to load TLS certificates from cert: {}, key: {}",
-            cert_path.display(),
-            key_path.display()
+        let cert_pem = fs::read(&cert_path).await.wrap_err(format!(
+            "Failed to read TLS certificate from {}",
+            cert_path.display()
         ))?;
+        let key_pem = SecretBox::new(Box::new(fs::read(&key_path).await.wrap_err(format!(
+            "Failed to read TLS key from {}",
+            key_path.display()
+        ))?));
+        let rustls_cfg = AxumRustlsConfig::from_pem(cert_pem, key_pem.expose_secret().clone())
+            .await
+            .wrap_err(format!(
+                "Failed to load TLS certificates from cert: {}, key: {}",
+                cert_path.display(),
+                key_path.display()
+            ))?;
         info!("Listening on https://{} (provided certs)", addr);
         rustls_cfg
     } else if tls_cfg.persist_self_signed {
@@ -187,7 +191,7 @@ async fn setup_tls_config(
             rcgen::generate_simple_self_signed(hostnames)
                 .wrap_err("Failed to generate self-signed certificate")?;
         let cert_pem = cert.pem();
-        let key_pem = signing_key.serialize_pem();
+        let key_pem = SecretBox::new(Box::new(signing_key.serialize_pem().into_bytes()));
 
         // Ensure parent dir exists (typically same dir as config)
         let cfg_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
@@ -199,7 +203,7 @@ async fn setup_tls_config(
         // Write cert/key files
         tokio::try_join!(
             fs::write(&cert_path, cert_pem.as_bytes()),
-            fs::write(&key_path, key_pem.as_bytes())
+            fs::write(&key_path, key_pem.expose_secret())
         )
         .wrap_err(format!(
             "Failed to write TLS certificates to cert: {}, key: {}",
@@ -208,7 +212,8 @@ async fn setup_tls_config(
         ))?;
 
         let rustls_cfg =
-            AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.into_bytes()).await?;
+            AxumRustlsConfig::from_pem(cert_pem.into_bytes(), key_pem.expose_secret().clone())
+                .await?;
         info!(
             "Listening on https://{} (self-signed, persisted at {:?})",
             addr, cfg_dir

@@ -34,8 +34,10 @@ pub(crate) async fn load<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConf
 #[cfg(test)]
 mod tests {
     use crate::config::AuthMode;
+    use secrecy::{ExposeSecret, SecretString};
     use std::fs;
     use std::process::Command;
+    use std::sync::Arc;
 
     use super::*;
 
@@ -64,9 +66,9 @@ mod tests {
         assert_eq!(host.ip, "1.2.3.4");
         assert_eq!(host.mac, "aa:aa:aa:aa:aa:aa");
         assert_eq!(host.port, 5678);
-        assert_eq!(host.shared_secret, "s1");
+        assert_eq!((*host.shared_secret).expose_secret(), "s1");
         let client = cfg.clients.get("bar").unwrap();
-        assert_eq!(client.shared_secret, "s2");
+        assert_eq!((*client.shared_secret).expose_secret(), "s2");
     }
 
     #[tokio::test]
@@ -225,7 +227,7 @@ mod tests {
             AuthMode::Oidc {
                 issuer: "https://your-oidc-provider.com/realms/your-realm".to_string(),
                 client_id: "shuthost".to_string(),
-                client_secret: "your-client-secret".to_string(),
+                client_secret: Arc::new(SecretString::from("your-client-secret")),
                 scopes: vec!["openid".to_string(), "profile".to_string()]
             }
         );

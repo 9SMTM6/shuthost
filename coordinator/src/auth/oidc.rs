@@ -16,6 +16,7 @@ use openidconnect::{
     },
 };
 use reqwest::redirect::Policy;
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
 use crate::{
@@ -67,7 +68,7 @@ type OidcClientReady = CoreClient<
 async fn build_client(
     issuer: &str,
     client_id: &str,
-    client_secret: &str,
+    client_secret: &SecretString,
     headers: &HeaderMap,
 ) -> Result<(OidcClientReady, reqwest::Client), axum::http::StatusCode> {
     // HTTP client for discovery and token exchange
@@ -95,7 +96,7 @@ async fn build_client(
     let client = CoreClient::from_provider_metadata(
         provider_metadata.clone(),
         ClientId::new(client_id.to_string()),
-        Some(ClientSecret::new(client_secret.to_string())),
+        Some(ClientSecret::new(client_secret.expose_secret().to_string())),
     )
     .set_auth_uri(provider_metadata.authorization_endpoint().clone());
     let client = if let Some(token_url) = provider_metadata.token_endpoint().cloned() {
