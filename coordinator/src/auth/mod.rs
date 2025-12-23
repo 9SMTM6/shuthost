@@ -209,12 +209,14 @@ async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<Arc<Secret
             let generated = cookies::generate_token();
             store_kv(pool, KV_AUTH_TOKEN, generated.expose_secret()).await?;
             info!("Auth mode: token (auto generated, stored in db)");
+            // We expose the generated token in logs once for operator use
             info!("Token: {}", generated.expose_secret());
             Ok(generated)
         }
     } else {
         let generated = cookies::generate_token();
         info!("Auth mode: token (auto generated, not stored for lack of a db)");
+        // We expose the generated token in logs once for operator use
         info!("Token: {}", generated.expose_secret());
         Ok(generated)
     }
