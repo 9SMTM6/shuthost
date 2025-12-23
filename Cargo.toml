@@ -8,7 +8,7 @@ edition = "2024"
 authors = ["Samuel Maier"]
 description = "A neat helper that manages the standby state of unix hosts with Wake-On-Lan configured, with Web-GUI."
 repository = "https://github.com/9SMTM6/shuthost"
-license = "GPL-2.0-Only"
+license = "GPL-2.0-only"
 readme = true
 keywords = ["wol", "wake-on-lan", "pwa", "progressive-web-app", "oidc", "openid-connect", "oidc-client", "homelab", "power-management", "energy-consumption", "green-computing", "energy-management", "machine-to-machine"]
 # this ain't no crate
