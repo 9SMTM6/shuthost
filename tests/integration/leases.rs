@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use reqwest::Client;
+use secrecy::SecretString;
 use shuthost_common::create_signed_message;
 
 use crate::common::{
@@ -45,7 +46,7 @@ async fn test_m2m_lease_take_and_release() {
     // Take a lease via M2M endpoint
     let take_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take",);
 
-    let signed_message = create_signed_message("take", client_secret);
+    let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
     // start the synchronous (by default) lease request
     let take_lease_req = tokio::spawn(async move {
@@ -72,7 +73,7 @@ async fn test_m2m_lease_take_and_release() {
         let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
-        wait_for_agent_ready(agent_port, agent_secret, 5).await;
+        wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
         agent
     };
 
@@ -82,7 +83,7 @@ async fn test_m2m_lease_take_and_release() {
     // Release the lease
     let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release",);
 
-    let signed_message = create_signed_message("release", client_secret);
+    let signed_message = create_signed_message("release", &SecretString::from(client_secret));
 
     // start the synchronous (by default) lease request
     let release_lease_req = tokio::spawn(async move {
@@ -151,7 +152,7 @@ async fn test_m2m_lease_async_take_and_release() {
     let take_url =
         format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take?async=true",);
 
-    let signed_message = create_signed_message("take", client_secret);
+    let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
     // start the asynchronous lease request. We will not start the agent, but it should still return
     let resp = Client::new()
@@ -176,7 +177,7 @@ async fn test_m2m_lease_async_take_and_release() {
         let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
-        wait_for_agent_ready(agent_port, agent_secret, 5).await;
+        wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
         agent
     };
 
@@ -184,7 +185,7 @@ async fn test_m2m_lease_async_take_and_release() {
     let release_url =
         format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release?async=true",);
 
-    let signed_message = create_signed_message("release", client_secret);
+    let signed_message = create_signed_message("release", &SecretString::from(client_secret));
 
     // start the synchronous (by default) lease request
     let resp = Client::new()
@@ -242,7 +243,7 @@ async fn test_api_reset_client_leases() {
     let take_url =
         format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take?async=true",);
 
-    let signed_message = create_signed_message("take", client_secret);
+    let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
     let resp = client
         .post(&take_url)
@@ -258,7 +259,7 @@ async fn test_api_reset_client_leases() {
         let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
-        wait_for_agent_ready(agent_port, agent_secret, 5).await;
+        wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
         agent
     };
 
@@ -329,7 +330,7 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
     // Take a lease synchronously (host remains offline)
     let take_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take",);
 
-    let signed_message = create_signed_message("take", client_secret);
+    let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
     // Start the lease request
     let resp = Client::new()
@@ -391,7 +392,7 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
         let agent = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
-        wait_for_agent_ready(agent_port, agent_secret, 5).await;
+        wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
         agent
     };
 
@@ -414,7 +415,7 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
     // Try to release a lease synchronously when host is online but no lease exists
     let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release",);
 
-    let signed_message = create_signed_message("release", client_secret);
+    let signed_message = create_signed_message("release", &SecretString::from(client_secret));
 
     // Start the release request
     let resp = Client::new()

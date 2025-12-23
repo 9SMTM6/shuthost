@@ -41,7 +41,7 @@ pub(crate) fn validate_m2m_request(
             .clone()
     };
 
-    let command = match validate_hmac_message(data_str, &shared_secret) {
+    let command = match validate_hmac_message(data_str, shared_secret.as_ref()) {
         shuthost_common::HmacValidationResult::Valid(valid_message) => valid_message,
         shuthost_common::HmacValidationResult::InvalidTimestamp => {
             info!("Timestamp out of range for client '{}'", client_id);

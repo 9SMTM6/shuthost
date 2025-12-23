@@ -4,6 +4,7 @@
 //! formatting signed messages with timestamps.
 
 use hmac::{Hmac, Mac};
+use secrecy::ExposeSecret;
 use sha2::Sha256;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -19,30 +20,24 @@ pub fn create_hmac(message: &str, secret: &[u8]) -> Hmac<Sha256> {
 }
 
 /// Signs a message with HMAC using the provided secret.
-pub fn sign_hmac(message: &str, secret: &str) -> String {
-    let mac = create_hmac(message, secret.as_bytes());
+pub fn sign_hmac(message: &str, secret: &secrecy::SecretString) -> String {
+    let mac = create_hmac(message, secret.expose_secret().as_bytes());
     hex::encode(mac.finalize().into_bytes())
-}
-
-/// Creates a timestamped message string.
-pub fn create_hmac_message(command: &str) -> String {
-    format!("{}|{}", unix_time_seconds(), command)
 }
 
 /// Creates a signed message by prepending a timestamp and appending an HMAC signature.
 ///
 /// # Arguments
 ///
-/// * `message` - The message to sign.
+/// * `command` - The command to sign.
 /// * `secret` - The secret key used for HMAC.
 ///
 /// # Returns
 ///
-/// A string of the form "timestamp|message|signature".
-pub fn create_signed_message(message: &str, secret: &str) -> String {
-    let message = create_hmac_message(message);
-    let signature = sign_hmac(&message, secret);
-    format!("{message}|{signature}")
+/// A string of the form "timestamp|command|signature".
+pub fn create_signed_message(command: &str, secret: &secrecy::SecretString) -> String {
+    let message = format!("{}|{}", unix_time_seconds(), command);
+    format!("{}|{}", message, sign_hmac(&message, secret))
 }
 
 /// Gets the current Unix timestamp in seconds.

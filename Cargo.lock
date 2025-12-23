@@ -2595,6 +2595,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "secrecy"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e891af845473308773346dc847b2c23ee78fe442e0472ac50e22a18a93d3ae5a"
+dependencies = [
+ "serde",
+ "zeroize",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2771,6 +2781,7 @@ dependencies = [
  "futures",
  "futures-util",
  "reqwest",
+ "secrecy",
  "serde",
  "serde_json",
  "shuthost_common",
@@ -2788,6 +2799,7 @@ dependencies = [
  "hmac",
  "nix",
  "rand 0.9.2",
+ "secrecy",
  "sha2",
 ]
 
@@ -2816,6 +2828,7 @@ dependencies = [
  "reqwest",
  "resvg",
  "rustls",
+ "secrecy",
  "serde",
  "serde_json",
  "serde_plain",
@@ -2837,6 +2850,7 @@ name = "shuthost_host_agent"
 version = "1.4.12"
 dependencies = [
  "clap",
+ "secrecy",
  "shuthost_common",
 ]
 
