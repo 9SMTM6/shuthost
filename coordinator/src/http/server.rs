@@ -16,7 +16,7 @@ use axum::{
     routing::{self, IntoMakeService, any, get},
 };
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
-use eyre::WrapErr;
+use eyre::{ContextCompat, WrapErr};
 use hyper::StatusCode;
 use secrecy::{ExposeSecret, SecretBox};
 use tokio::{
@@ -162,21 +162,16 @@ async fn setup_tls_config(
     let key_exists = key_path.exists();
 
     let rustls_cfg = if cert_exists && key_exists {
-        let cert_pem = fs::read(&cert_path).await.wrap_err(format!(
-            "Failed to read TLS certificate from {}",
-            cert_path.display()
-        ))?;
-        let key_pem = SecretBox::new(Box::new(fs::read(&key_path).await.wrap_err(format!(
-            "Failed to read TLS key from {}",
+        let rustls_cfg = AxumRustlsConfig::from_pem_file(
+            cert_path.to_str().wrap_err("Invalid Cert-Path")?,
+            key_path.to_str().wrap_err("Invalid Key-Path")?,
+        )
+        .await
+        .wrap_err(format!(
+            "Failed to load TLS certificates from cert: {}, key: {}",
+            cert_path.display(),
             key_path.display()
-        ))?));
-        let rustls_cfg = AxumRustlsConfig::from_pem(cert_pem, key_pem.expose_secret().clone())
-            .await
-            .wrap_err(format!(
-                "Failed to load TLS certificates from cert: {}, key: {}",
-                cert_path.display(),
-                key_path.display()
-            ))?;
+        ))?;
         info!("Listening on https://{} (provided certs)", addr);
         rustls_cfg
     } else if tls_cfg.persist_self_signed {
