@@ -29,18 +29,18 @@ pub fn setup() -> eyre::Result<()> {
         .wrap_err("Failed to npm ci")?
 }
 
-pub fn run_build() -> eyre::Result<()> {
+pub fn run(task: &str) -> eyre::Result<()> {
     process::Command::new(NPM_BIN)
         .arg("run")
-        .arg("build")
+        .arg(task)
         .current_dir(FRONTEND_DIR)
         .status()
         .map(|it| {
             if it.success() {
                 Ok(())
             } else {
-                bail!("npm run build failed with {it}")
+                bail!("npm run {task} failed with {it}")
             }
         })
-        .wrap_err("Failed to npm run build")?
+        .wrap_err(format!("Failed to npm run {task}"))?
 }
