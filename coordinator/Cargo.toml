@@ -79,18 +79,18 @@ workspace = true
 
 [build-dependencies]
 # Generate PNG favicons from SVG at build time (no external browser)
-resvg = "0.45.1"
-tiny-skia = "0.11"
-eyre.workspace = true
-sha2.workspace = true
-regex.workspace = true
 base64.workspace = true
-hex.workspace = true
 cargo-about = "0.8.4"
+eyre.workspace = true
 handlebars = "6.3.2"
+hex.workspace = true
 krates = "0.20.0"
-toml.workspace = true
-spdx = { version = "0.13", features = ["text"] }
-url = "2"
+regex.workspace = true
+resvg = "0.45.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+sha2.workspace = true
+spdx = { version = "0.13", features = ["text"] }
+tiny-skia = "0.11"
+toml.workspace = true
+url = "2"
