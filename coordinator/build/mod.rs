@@ -24,6 +24,7 @@
 //!
 //! The script informs Cargo to rerun the build if certain frontend asset files change, ensuring
 //! that modifications to templates, styles, or icons trigger a rebuild.
+mod about;
 mod csp;
 mod icons;
 mod npm;
@@ -43,7 +44,12 @@ fn main() -> eyre::Result<()> {
     println!("cargo::rerun-if-changed=frontend/assets/index.tmpl.html");
     println!("cargo::rerun-if-changed=frontend/assets/login.tmpl.html");
     println!("cargo::rerun-if-changed=frontend/assets/partials");
-    npm::run_build()?;
+    npm::run("build")?;
+
+    println!("cargo::rerun-if-changed=frontend/package.json");
+    println!("cargo::rerun-if-changed=frontend/package-lock.json");
+    npm::run("generate-npm-licenses")?;
+    about::collect_deps()?;
 
     println!("cargo::rerun-if-changed=frontend/assets/favicon.svg");
     icons::generate_pngs()?;

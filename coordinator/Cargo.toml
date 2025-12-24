@@ -61,7 +61,7 @@ sha2.workspace = true
 shuthost_common.workspace = true
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "macros", "migrate", "chrono"] }
 tokio.workspace = true
-toml = "0.9.x"
+toml.workspace = true
 tower = "0.5"
 tower-http = { version = "0.6", features = [
     "request-id",
@@ -86,3 +86,11 @@ sha2.workspace = true
 regex.workspace = true
 base64.workspace = true
 hex.workspace = true
+cargo-about = "0.8.4"
+handlebars = "6.3.2"
+krates = "0.20.0"
+toml.workspace = true
+spdx = { version = "0.13", features = ["text"] }
+url = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

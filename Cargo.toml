@@ -69,6 +69,7 @@ shuthost_common = {path = "./common"}
 shuthost_coordinator = { path = "./coordinator" }
 shuthost_host_agent = { path = "./host_agent" }
 tokio = { version = "1.44.2", features = ["full"] }
+toml = "0.9.x"
 
 [workspace.lints.rust]
 edition_2024_expr_fragment_specifier = "allow"
