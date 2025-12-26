@@ -14,6 +14,18 @@ use crate::{
     http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
 };
 
+use axum::http::response::Builder;
+
+trait ImmutableCacheControl {
+    fn immutable(self) -> Self;
+}
+
+impl ImmutableCacheControl for Builder {
+    fn immutable(self) -> Self {
+        self.header("Cache-Control", "public, max-age=31536000, immutable")
+    }
+}
+
 #[macro_export]
 macro_rules! include_utf8_asset {
     ($asset_path:expr) => {
@@ -100,7 +112,7 @@ macro_rules! static_svg_download_handler {
             const SVG: &'static str = include_utf8_asset!($file);
             Response::builder()
                 .header("Content-Type", "image/svg+xml")
-                .header("Cache-Control", "public, max-age=31536000, immutable")
+                .immutable()
                 .header("Content-Length", SVG.len().to_string())
                 .body(SVG.into_response())
                 .unwrap()
@@ -120,7 +132,7 @@ macro_rules! static_png_download_handler {
             ));
             Response::builder()
                 .header("Content-Type", "image/png")
-                .header("Cache-Control", "public, max-age=31536000, immutable")
+                .immutable()
                 .header("Content-Length", DATA.len().to_string())
                 .body(DATA.into_response())
                 .unwrap()
@@ -225,7 +237,7 @@ pub(crate) async fn serve_ui(
 pub(crate) async fn serve_manifest() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "application/json")
-        .header("Cache-Control", "public, max-age=31536000, immutable")
+        .immutable()
         .body(include_utf8_asset!("generated/manifest.json").into_response())
         .unwrap()
 }
@@ -239,7 +251,7 @@ pub(crate) async fn serve_manifest() -> impl IntoResponse {
 pub(crate) async fn serve_styles() -> impl IntoResponse {
     Response::builder()
         .header("Content-Type", "text/css")
-        .header("Cache-Control", "public, max-age=31536000, immutable")
+        .immutable()
         .body(include_utf8_asset!("generated/styles.css").into_response())
         .unwrap()
 }
