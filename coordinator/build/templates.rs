@@ -177,6 +177,7 @@ pub fn process() -> eyre::Result<()> {
                 .wrap_err("Failed to read generated app.js")?,
         )
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("index.html"), content)?;
 
@@ -203,6 +204,7 @@ pub fn process() -> eyre::Result<()> {
             &format!("./favicon.{}.svg", favicon_short_hash),
         )
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("login.html"), login_content)?;
 
@@ -225,6 +227,7 @@ pub fn process() -> eyre::Result<()> {
             &format!("./favicon.{}.svg", favicon_short_hash),
         )
         .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("about.html"), about_content)?;
 
