@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -eu
 
 # Helper script to install the ShutHost coordinator binary
 # Based on the installation steps from README.md
@@ -62,7 +62,7 @@ detect_platform() {
 verify_checksum() {
     # Compute checksum
     echo "Computing SHA256 checksum..."
-    COMPUTED_CHECKSUM=$(shasum -a 256 "$FILENAME" | cut -d' ' -f1)
+    COMPUTED_CHECKSUM=$(sha256sum "$FILENAME" | cut -d' ' -f1)
     echo "Computed checksum: $COMPUTED_CHECKSUM"
     echo
     if [ "$CI_MODE" = true ]; then
@@ -72,17 +72,15 @@ verify_checksum() {
     echo "Please verify this checksum against the one provided on the releases page:"
     echo "https://github.com/9SMTM6/shuthost/releases/latest"
     echo
-    printf "Have you verified the checksum? (y/n/C): "
+    printf "Have you verified the checksum? (y/N): "
     read REPLY
     echo
     case "$REPLY" in
         [Yy]*)
             ;;
-        [Nn]*)
+        *)
             echo "Checksum verification aborted. Installation cancelled."
             exit 1
-            ;;
-        *)
             ;;
     esac
 }
@@ -103,12 +101,12 @@ BASE_URL="https://github.com/9SMTM6/shuthost/releases/latest/download"
 FILENAME="shuthost_coordinator-${TARGET_TRIPLE}.tar.gz"
 DOWNLOAD_URL="${BASE_URL}/${FILENAME}"
 
-curl -L -o "$FILENAME" "$DOWNLOAD_URL"
+curl -fL -o "$FILENAME" "$DOWNLOAD_URL"
+
+verify_checksum
 
 # Extract the archive
 tar -xzf "$FILENAME"
-
-verify_checksum
 
 # Run the installer
 sudo ./shuthost_coordinator install
