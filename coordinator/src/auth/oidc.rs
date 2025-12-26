@@ -21,9 +21,12 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE,
-        LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
-        cookies::{create_oidc_session_cookie, create_protected_cookie, extract_return_to_and_remove_cookie},
+        self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, LOGIN_ERROR_INSECURE,
+        LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
+        cookies::{
+            create_oidc_session_cookie, create_protected_cookie,
+            extract_return_to_and_remove_cookie,
+        },
         login_error_redirect, request_is_secure,
     },
     http::AppState,
