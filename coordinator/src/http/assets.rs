@@ -229,7 +229,7 @@ pub(crate) async fn serve_ui(
         .unwrap()
 }
 
-/// Serves the compiled stylesheet for the UI.
+/// Serves the about and licenses page HTML.
 ///
 /// # Panics
 ///

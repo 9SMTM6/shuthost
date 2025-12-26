@@ -120,7 +120,7 @@ fn process_entry(
         .requirements()
         .map(|req| req.req.license.clone())
         .collect();
-    licenses_set.append(&mut requirements.clone());
+    licenses_set.extend(requirements.iter().cloned());
     for license in requirements.iter() {
         let license_str = license.to_string();
         license_html = license_html.replace(
