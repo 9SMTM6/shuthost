@@ -73,6 +73,8 @@ detect_platform() {
     esac
 }
 
+BASE_URL="https://github.com/9SMTM6/shuthost/releases/latest"
+
 verify_checksum() {
     # Compute checksum
     echo "Computing SHA256 checksum..."
@@ -84,7 +86,7 @@ verify_checksum() {
         return
     fi
     echo "Please verify this checksum against the one provided on the releases page:"
-    echo "https://github.com/9SMTM6/shuthost/releases/latest"
+    echo $BASE_URL
     echo
     printf "Have you verified the checksum? (y/N): "
     read REPLY
@@ -111,9 +113,8 @@ echo "Detected platform: $TARGET_TRIPLE"
 echo
 
 # Construct download URL and filename
-BASE_URL="https://github.com/9SMTM6/shuthost/releases/latest/download"
 FILENAME="shuthost_coordinator-${TARGET_TRIPLE}.tar.gz"
-DOWNLOAD_URL="${BASE_URL}/${FILENAME}"
+DOWNLOAD_URL="${BASE_URL}/download/${FILENAME}"
 
 curl -fL -o "$FILENAME" "$DOWNLOAD_URL"
 

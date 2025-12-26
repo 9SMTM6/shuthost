@@ -65,7 +65,7 @@ Extended documentation, examples, and additional resources to help you get the m
 Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
 
 #### Binary (recommended)
-- Use the automated installation script:
+- Use the [automated installation script](scripts/install_coordinator.sh):
   ```bash
   curl -fsSL https://raw.githubusercontent.com/9SMTM6/shuthost/main/scripts/install_coordinator.sh | sh
   ```
