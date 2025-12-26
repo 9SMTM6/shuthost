@@ -6,7 +6,7 @@ set -e
 
 # Build and run demo service
 cargo build --release --bin shuthost_coordinator
-./target/release/shuthost_coordinator demo-service --port 8090 &
+./target/release/shuthost_coordinator demo-service --port 8090 --subpath "${1:-"/"}"&
 DEMO_PID=$!
 
 # Wait for server to start
