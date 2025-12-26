@@ -1,12 +1,11 @@
-use cargo_about;
 use handlebars::Handlebars;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
-use serde_json;
-use spdx::expression::Expression;
-use spdx::{LicenseItem, Licensee};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::fs::read_to_string;
+use spdx::{LicenseItem, Licensee, expression::Expression};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    fs::read_to_string,
+};
 use url::Url;
 
 #[derive(Deserialize)]
@@ -20,7 +19,7 @@ struct Licenses {
 }
 
 fn about_config() -> eyre::Result<cargo_about::licenses::config::Config> {
-    let deny: DenyConfig = toml::from_str(&include_str!("../../deny.toml"))?;
+    let deny: DenyConfig = toml::from_str(include_str!("../../deny.toml"))?;
     let accepted: Vec<Licensee> = deny
         .licenses
         .allow
@@ -76,21 +75,21 @@ where
 
 fn parse_url(should_be_url: Option<&str>) -> Result<Option<Url>, eyre::Error> {
     Ok(match should_be_url {
-        Some(r) => Some(Url::parse(&r).map_err(|e| eyre::eyre!("invalid repository url {}", e))?),
+        Some(r) => Some(Url::parse(r).map_err(|e| eyre::eyre!("invalid repository url {}", e))?),
         None => None,
     })
 }
 
 fn parse_author(author_str: &str) -> Author {
-    if let Some(start) = author_str.find('<') {
-        if let Some(end) = author_str.find('>') {
-            let name = author_str[..start].trim().to_string();
-            let email = author_str[start + 1..end].trim().to_string();
-            return Author {
-                name: if name.is_empty() { email.clone() } else { name },
-                email: Some(email),
-            };
-        }
+    if let Some(start) = author_str.find('<')
+        && let Some(end) = author_str.find('>')
+    {
+        let name = author_str[..start].trim().to_string();
+        let email = author_str[start + 1..end].trim().to_string();
+        return Author {
+            name: if name.is_empty() { email.clone() } else { name },
+            email: Some(email),
+        };
     }
     Author {
         name: author_str.to_string(),
@@ -104,17 +103,17 @@ fn process_entry(
     name: String,
     version: String,
     ecosystem: Ecosystem,
-    license_str: String,
+    license_expr_str: String,
     authors: Vec<Author>,
     repository: Option<Url>,
     licenses_set: &mut BTreeSet<LicenseItem>,
 ) -> eyre::Result<CombinedEntry> {
     // parse SPDX expression
-    let expr: Expression = license_str
+    let expr: Expression = license_expr_str
         .parse()
         .map_err(|e| eyre::eyre!("invalid SPDX expression for {}: {e}", name))?;
 
-    let mut license_html = license_str.clone();
+    let mut license_html = license_expr_str;
 
     // collect license ids from the expression requirements
     let requirements: BTreeSet<_> = expr
@@ -170,7 +169,7 @@ pub fn build_html() -> eyre::Result<()> {
             offline: false,
         },
         &cfg,
-        &vec![], // target
+        &[], // target
     )
     .map_err(|e| eyre::eyre!("{e}"))?;
 
@@ -231,12 +230,12 @@ pub fn build_html() -> eyre::Result<()> {
             version,
             Ecosystem::Npm,
             license_str,
-            if let Some(publisher) = &info.publisher {
+            if let &Some(ref publisher) = &info.publisher {
                 vec![Author {
                     name: publisher.clone(),
                     email: info.email.clone(),
                 }]
-            } else if let Some(email) = &info.email {
+            } else if let &Some(ref email) = &info.email {
                 vec![Author {
                     name: email.clone(),
                     email: Some(email.clone()),
