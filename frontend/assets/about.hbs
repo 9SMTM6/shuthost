@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dependencies and Licenses</title>
+</head>
+
+<body>
+    <h1>Dependencies</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Version</th>
+                <th>License</th>
+                <th>Authors/Publisher</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each entries}}
+            <tr>
+                <td>{{#if repository}}<a href="{{repository}}">{{name}}</a>{{else}}{{name}}{{/if}}</td>
+                <td>{{version}}</td>
+                <td>{{{license_html}}}</td>
+                <td>
+                    {{#each authors}}
+                    {{#if email}}<a href="mailto:{{email}}">{{name}}</a>{{else}}{{name}}{{/if}}{{#unless @last}},
+                    {{/unless}}
+                    {{/each}}
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+    <h1>Licenses</h1>
+    {{#each licenses}}
+    <h2 id="license-{{@key}}">{{@key}}</h2>
+    <pre>{{this}}</pre>
+    {{/each}}
+</body>
+
+</html>

@@ -44,12 +44,13 @@ fn main() -> eyre::Result<()> {
     println!("cargo::rerun-if-changed=frontend/assets/index.tmpl.html");
     println!("cargo::rerun-if-changed=frontend/assets/login.tmpl.html");
     println!("cargo::rerun-if-changed=frontend/assets/partials");
+    println!("cargo::rerun-if-changed=frontend/assets/about.hbs");
     npm::run("build")?;
 
     println!("cargo::rerun-if-changed=frontend/package.json");
     println!("cargo::rerun-if-changed=frontend/package-lock.json");
     npm::run("generate-npm-licenses")?;
-    about::collect_deps()?;
+    about::build_html()?;
 
     println!("cargo::rerun-if-changed=frontend/assets/favicon.svg");
     icons::generate_pngs()?;
