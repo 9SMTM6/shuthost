@@ -255,7 +255,7 @@ pub fn build_html() -> eyre::Result<()> {
 
     // Render HTML with Handlebars
     let hb = Handlebars::new();
-    let template = include_str!("../frontend/assets/about.hbs");
+    let template = include_str!("../frontend/assets/about.tmpl.hbs");
     let data = serde_json::json!({
         "entries": combined,
         "licenses": licenses_map,
@@ -263,6 +263,6 @@ pub fn build_html() -> eyre::Result<()> {
     let html = hb
         .render_template(template, &data)
         .map_err(|e| eyre::eyre!("Handlebars error: {}", e))?;
-    std::fs::write("../frontend/assets/generated/licenses.html", &html)?;
+    std::fs::write("../frontend/assets/generated/about.tmpl.html", &html)?;
     Ok(())
 }

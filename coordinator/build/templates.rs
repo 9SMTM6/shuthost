@@ -206,6 +206,12 @@ pub fn process() -> eyre::Result<()> {
         .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("login.html"), login_content)?;
 
+    // Process about.tmpl.html
+    let about_content = fs::read_to_string(generated_dir.join("about.tmpl.html"))?
+        .replace("{ html_head }", &html_head)
+        .replace("{ title }", "Dependencies and Licenses");
+    fs::write(generated_dir.join("about.html"), about_content)?;
+
     Ok(())
 }
 
