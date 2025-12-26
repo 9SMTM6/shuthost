@@ -163,5 +163,4 @@ jobs:
         run: echo "permit nopass root" >> /etc/doas.conf
       - name: Test install script on Alpine
         run: |
-          chmod +x scripts/install_coordinator.sh
           ./scripts/install_coordinator.sh --ci
