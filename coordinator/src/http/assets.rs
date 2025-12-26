@@ -148,7 +148,9 @@ pub(crate) enum UiMode<'a> {
         show_logout: bool,
         maybe_auth_warning: &'a str,
     },
-    Demo,
+    Demo {
+        subpath: &'a str,
+    },
 }
 
 /// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
@@ -164,27 +166,30 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
     } else {
         ""
     };
-    let maybe_demo_disclaimer = if matches!(*mode, UiMode::Demo) {
-        include_utf8_asset!("partials/demo_disclaimer.html")
-    } else {
-        ""
+    let maybe_demo_disclaimer = match *mode {
+        UiMode::Demo { subpath } => {
+            // Build a small disclaimer div with a `data-subpath` attribute so the
+            // frontend demo code can adapt links and installer commands.
+            include_utf8_asset!("partials/demo_disclaimer.html").replace("{ subpath }", subpath)
+        }
+        _ => "".to_string(),
     };
     let maybe_auth_warning = match *mode {
         UiMode::Normal {
             maybe_auth_warning, ..
         } => maybe_auth_warning,
-        UiMode::Demo => "",
+        UiMode::Demo { .. } => "",
     };
     let config_path = match *mode {
         UiMode::Normal { config_path, .. } => config_path.to_string_lossy().to_string(),
-        UiMode::Demo => "/this/is/a/demo.toml".to_string(),
+        UiMode::Demo { .. } => "/this/is/a/demo.toml".to_string(),
     };
 
     include_utf8_asset!("generated/index.html")
         .replace("{ coordinator_config }", &config_path)
         .replace("{ maybe_auth_warning }", maybe_auth_warning)
         .replace("{ maybe_logout }", maybe_logout)
-        .replace("{ maybe_demo_disclaimer }", maybe_demo_disclaimer)
+        .replace("{ maybe_demo_disclaimer }", &maybe_demo_disclaimer)
 }
 
 /// Serves the main HTML template, injecting dynamic content.
