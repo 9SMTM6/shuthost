@@ -331,20 +331,20 @@ footer {
     }
 
     /* Hide hamburger on login page but keep space */
-    .login-page .hamburger {
+    .disable-nav .hamburger {
         visibility: hidden;
     }
 
-    .login-page .mobile-menu-backdrop {
+    .disable-nav .mobile-menu-backdrop {
         display: none;
     }
 
     /* Hide nav-tabs and logout on login page but keep space */
-    .login-page .nav-tabs {
+    .disable-nav .nav-tabs {
         visibility: hidden;
     }
 
-    .login-page .logout {
+    .disable-nav .logout {
         visibility: hidden;
     }
 
