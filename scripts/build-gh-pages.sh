@@ -6,7 +6,7 @@ set -e
 
 # Build and run demo service
 cargo build --release --bin shuthost_coordinator
-./target/release/shuthost_coordinator demo-service --port 8090 --subpath "${1:-"/"}"&
+./target/release/shuthost_coordinator demo-service --port 8090 "${1:-"/"}" &
 DEMO_PID=$!
 
 # Wait for server to start
@@ -36,6 +36,6 @@ for extra in architecture_simplified.svg architecture.svg favicon.svg manifest.j
 done
 
 # Stop demo service
-kill $DEMO_PID
+kill -9 $DEMO_PID
 
 echo "Static demo prepared in ./gh-pages. Ready for GitHub Pages deployment."
