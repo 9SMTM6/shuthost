@@ -22,6 +22,20 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+elevate_privileges() {
+    cmd="$*"
+    if command -v sudo >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        sudo $cmd
+    elif command -v doas >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        doas sh -c "SUDO_USER=\"\$DOAS_USER\" $cmd"
+    else
+        echo "Error: Neither sudo nor doas found. Please install sudo or doas."
+        exit 1
+    fi
+}
+
 cleanup() {
     rm -f "$FILENAME" shuthost_coordinator
 }
@@ -109,7 +123,7 @@ verify_checksum
 tar -xzf "$FILENAME"
 
 # Run the installer
-sudo ./shuthost_coordinator install
+elevate_privileges ./shuthost_coordinator install
 
 set +v
 
