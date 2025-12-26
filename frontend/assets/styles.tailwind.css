@@ -303,6 +303,11 @@ footer {
         @apply mb-1;
     }
 
+    /* Link styles */
+    .link {
+        @apply text-[#005fb8] dark:text-[#3794ff] hover:underline;
+    }
+
     /* Hamburger menu styles */
     .hamburger {
         display: flex;
