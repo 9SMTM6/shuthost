@@ -5,6 +5,23 @@ set -e
 # Helper script to install the ShutHost coordinator binary
 # Based on the installation steps from README.md
 
+CI_MODE=false
+
+# Parse arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --ci)
+            CI_MODE=true
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--ci]"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 cleanup() {
     rm -f "$FILENAME" shuthost_coordinator
 }
@@ -48,6 +65,10 @@ verify_checksum() {
     COMPUTED_CHECKSUM=$(shasum -a 256 "$FILENAME" | cut -d' ' -f1)
     echo "Computed checksum: $COMPUTED_CHECKSUM"
     echo
+    if [ "$CI_MODE" = true ]; then
+        echo "CI mode: Skipping checksum verification prompt."
+        return
+    fi
     echo "Please verify this checksum against the one provided on the releases page:"
     echo "https://github.com/9SMTM6/shuthost/releases/latest"
     echo
