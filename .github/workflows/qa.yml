@@ -158,7 +158,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install dependencies
-        run: apk add --no-cache curl
+        run: apk add --no-cache curl doas
       - name: Test install script on Alpine
         run: |
           chmod +x scripts/install_coordinator.sh
