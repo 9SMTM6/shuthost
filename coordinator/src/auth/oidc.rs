@@ -21,9 +21,9 @@ use serde::Deserialize;
 
 use crate::{
     auth::{
-        self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_RETURN_TO, COOKIE_STATE,
+        self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE,
         LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
-        cookies::{create_oidc_session_cookie, create_protected_cookie},
+        cookies::{create_oidc_session_cookie, create_protected_cookie, extract_return_to_and_remove_cookie},
         login_error_redirect, request_is_secure,
     },
     http::AppState,
@@ -148,11 +148,7 @@ pub(crate) async fn login(
     let had_session = jar.get(COOKIE_OIDC_SESSION).is_some();
     tracing::debug!(had_session, "oidc_login: called");
     if had_session {
-        let return_to = jar
-            .get(COOKIE_RETURN_TO)
-            .map(|c| c.value().to_string())
-            .unwrap_or_else(|| "/".to_string());
-        let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+        let (return_to, jar) = extract_return_to_and_remove_cookie(jar);
         tracing::info!(return_to = %return_to, "oidc_login: existing session, redirecting to return_to");
         return (jar, Redirect::to(&return_to)).into_response();
     }
@@ -179,7 +175,7 @@ pub(crate) async fn login(
     tracing::debug!(state = %csrf_token.secret(), nonce = %nonce.secret(), pkce_len = verifier.secret().len(), "oidc_login: storing state/nonce/pkce in cookies");
     // Short-lived cookies for OIDC state to mitigate replay attacks
     let short_exp = CookieDuration::minutes(10);
-    let signed = jar
+    let jar = jar
         .add(create_protected_cookie(
             COOKIE_STATE,
             csrf_token.secret().clone(),
@@ -197,7 +193,7 @@ pub(crate) async fn login(
         ));
 
     tracing::info!(auth_url = %auth_url, "oidc_login: redirecting to provider authorization endpoint");
-    (signed, Redirect::to(auth_url.as_str())).into_response()
+    (jar, Redirect::to(auth_url.as_str())).into_response()
 }
 
 #[derive(Deserialize)]
@@ -268,11 +264,7 @@ fn finalize_session_and_redirect(jar: SignedCookieJar, session: &OIDCSessionClai
     let jar =
         clear_oidc_ephemeral_cookies(jar).add(create_oidc_session_cookie(session, session_max_age));
 
-    let return_to = jar
-        .get(COOKIE_RETURN_TO)
-        .map(|c| c.value().to_string())
-        .unwrap_or_else(|| "/".to_string());
-    let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+    let (return_to, jar) = extract_return_to_and_remove_cookie(jar);
     (jar, Redirect::to(&return_to)).into_response()
 }
 
