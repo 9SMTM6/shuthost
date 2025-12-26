@@ -79,26 +79,26 @@ Choose either the binary (recommended for reliability and WOL support) or the co
       ```
       ```bash
       # Linux on Intel/AMD
-      curl -L -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-unknown-linux-musl.tar.gz"
+      curl -fL -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-unknown-linux-musl.tar.gz"
       # There are also gnu binaries available, but the musl variants have wider compatibility for users that dont know which version of libc they have.
       ```
       ```bash
       # Linux on ARM
-      curl -L -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-unknown-linux-musl.tar.gz"
+      curl -fL -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-unknown-linux-musl.tar.gz"
       ```
       ```bash
       # macOS on Apple Silicon
-      curl -L -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-apple-darwin.tar.gz"
+      curl -fL -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-aarch64-apple-darwin.tar.gz"
       ```
       ```bash
       # macOS on Intel
-      curl -L -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-apple-darwin.tar.gz"
+      curl -fL -o shuthost_coordinator.tar.gz "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator-x86_64-apple-darwin.tar.gz"
       ```
       ```bash
-      # Extract the downloaded archive
-      tar -xzf shuthost_coordinator.tar.gz
       # Optionally verify the checksum against the one provided on the releases page
       shasum -a 256 shuthost_coordinator.tar.gz
+      # Extract the downloaded archive
+      tar -xzf shuthost_coordinator.tar.gz
       rm shuthost_coordinator.tar.gz
       ```
   - Install as a system service (binary supports systemd/openrc/launchd)
