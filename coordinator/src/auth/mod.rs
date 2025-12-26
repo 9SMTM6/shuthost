@@ -26,8 +26,7 @@ use crate::{
 };
 
 pub(crate) use cookies::{
-    COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE,
-    OIDCSessionClaims,
+    COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, OIDCSessionClaims,
 };
 pub(crate) use middleware::{request_is_secure, require};
 

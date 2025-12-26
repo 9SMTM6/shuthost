@@ -178,7 +178,9 @@ pub(crate) fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<Tok
 }
 
 #[must_use]
-pub(crate) fn extract_return_to_and_remove_cookie(jar: SignedCookieJar) -> (String, SignedCookieJar) {
+pub(crate) fn extract_return_to_and_remove_cookie(
+    jar: SignedCookieJar,
+) -> (String, SignedCookieJar) {
     let return_to = jar
         .get(COOKIE_RETURN_TO)
         .map(|c| c.value().to_string())
