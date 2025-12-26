@@ -126,7 +126,7 @@ fn process_entry(
         let license_str = license.to_string();
         license_html = license_html.replace(
             &license_str,
-            &format!("<a href=\"#license-{license_str}\">{license_str}</a>",),
+            &format!("<a href=\"#license-{license_str}\" class=\"link\">{license_str}</a>",),
         );
     }
 
@@ -232,9 +232,15 @@ pub fn build_html() -> eyre::Result<()> {
             Ecosystem::Npm,
             license_str,
             if let Some(publisher) = &info.publisher {
-                vec![Author { name: publisher.clone(), email: info.email.clone() }]
+                vec![Author {
+                    name: publisher.clone(),
+                    email: info.email.clone(),
+                }]
             } else if let Some(email) = &info.email {
-                vec![Author { name: email.clone(), email: Some(email.clone()) }]
+                vec![Author {
+                    name: email.clone(),
+                    email: Some(email.clone()),
+                }]
             } else {
                 vec![]
             },

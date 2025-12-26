@@ -209,7 +209,23 @@ pub fn process() -> eyre::Result<()> {
     // Process about.tmpl.html
     let about_content = fs::read_to_string(generated_dir.join("about.tmpl.html"))?
         .replace("{ html_head }", &html_head)
-        .replace("{ title }", "Dependencies and Licenses");
+        .replace("{ title }", "Dependencies and Licenses")
+        .replace(
+            "{ header }",
+            include_frontend_asset!("partials/header.tmpl.html"),
+        )
+        .replace(
+            "{ footer }",
+            include_frontend_asset!("partials/footer.tmpl.html"),
+        )
+        .replace("{ maybe_logout }", "")
+        .replace("{ maybe_demo_disclaimer }", "")
+        .replace(
+            "{ favicon_src }",
+            &format!("./favicon.{}.svg", favicon_short_hash),
+        )
+        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{ version }", env!("CARGO_PKG_VERSION"));
     fs::write(generated_dir.join("about.html"), about_content)?;
 
     Ok(())
