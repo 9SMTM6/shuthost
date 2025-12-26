@@ -154,7 +154,7 @@ jobs:
   install-script-test-alpine:
     name: Test automated install script on Alpine
     runs-on: ubuntu-latest
-    container: alpine:latest
+    container: docker.io/heywoodlh/openrc:latest
     steps:
       - uses: actions/checkout@v6
       - name: Install dependencies
