@@ -159,6 +159,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: apk add --no-cache curl doas
+      - name: Configure doas for root
+        run: echo "permit nopass root" >> /etc/doas.conf
       - name: Test install script on Alpine
         run: |
           chmod +x scripts/install_coordinator.sh
