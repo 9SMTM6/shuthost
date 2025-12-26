@@ -17,7 +17,7 @@ pub(crate) const COOKIE_TOKEN_SESSION: &str = "shuthost_token_session";
 pub(crate) const COOKIE_STATE: &str = "shuthost_oidc_state";
 pub(crate) const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 pub(crate) const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
-pub(crate) const COOKIE_RETURN_TO: &str = "shuthost_return_to";
+const COOKIE_RETURN_TO: &str = "shuthost_return_to";
 
 /// Session claims for token authentication.
 #[derive(Serialize, Deserialize)]
@@ -175,4 +175,14 @@ pub(crate) fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDC
 pub(crate) fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<TokenSessionClaims> {
     jar.get(COOKIE_TOKEN_SESSION)
         .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
+}
+
+#[must_use]
+pub(crate) fn extract_return_to_and_remove_cookie(jar: SignedCookieJar) -> (String, SignedCookieJar) {
+    let return_to = jar
+        .get(COOKIE_RETURN_TO)
+        .map(|c| c.value().to_string())
+        .unwrap_or_else(|| "/".to_string());
+    let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+    (return_to, jar)
 }
