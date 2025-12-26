@@ -177,7 +177,6 @@ pub(crate) fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<Tok
         .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
 }
 
-#[must_use]
 pub(crate) fn extract_return_to_and_remove_cookie(
     jar: SignedCookieJar,
 ) -> (String, SignedCookieJar) {
