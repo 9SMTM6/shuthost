@@ -931,7 +931,12 @@ jobs:
             fi
             if [ -f "$dir/shuthost_coordinator" ]; then
               cp "$dir/shuthost_coordinator" "release-assets/flat/shuthost_coordinator-$target"
+              chmod +x "release-assets/flat/shuthost_coordinator-$target"
             fi
+          done
+          # Create .tar.gz archives
+          for file in release-assets/flat/*; do
+            tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform 's|.*|shuthost_coordinator|' "$(basename "$file")" && rm "$file"
           done
 
       - *release_image_name
