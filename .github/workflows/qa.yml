@@ -138,3 +138,28 @@ jobs:
         run: |
           docker compose config
           docker compose pull
+
+  install-script-test:
+    name: Test automated install script
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test install script on ${{ matrix.os }}
+        run: |
+          ./scripts/install_coordinator.sh --ci
+
+  install-script-test-alpine:
+    name: Test automated install script on Alpine
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        run: apk add --no-cache curl
+      - name: Test install script on Alpine
+        run: |
+          chmod +x scripts/install_coordinator.sh
+          ./scripts/install_coordinator.sh --ci
