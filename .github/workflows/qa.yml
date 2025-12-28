@@ -7,40 +7,38 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      # Checkout version is also defined below for LFS 
-      - &checkout
-        uses: actions/checkout@v6
+      - uses: &checkout actions/checkout@v6
       - run: rustup update stable
       - run: rustup component add rustfmt
-      - uses: Swatinem/rust-cache@v2
+      - uses: &rust-cache Swatinem/rust-cache@v2
       - run: cargo +stable --locked fmt --all -- --check
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
-    - *checkout
+    - uses: *checkout
     - uses: EmbarkStudios/cargo-deny-action@v2
       with:
         rust-version: stable
   spell-check:
     runs-on: ubuntu-latest
     steps:
-      - *checkout
+      - uses: *checkout
       - name: Check spelling of entire workspace
         uses: crate-ci/typos@master
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - *checkout
+      - uses: *checkout
       - run: rustup update stable
       - run: rustup component add clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: *rust-cache
       - run: cargo +stable clippy --workspace -- -D warnings
 
   sqlx-offline-cache:
     name: sqlx offline cache check with prepare
     runs-on: ubuntu-latest
     steps:
-      - *checkout
+      - uses: *checkout
       - run: rustup update stable
       - name: Install sqlx-cli (sqlite support)
         run: |
@@ -55,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
-        uses: actions/checkout@v6
+        uses: *checkout
         with:
           lfs: true
           fetch-depth: 0
@@ -80,7 +78,7 @@ jobs:
 
       - run: rustup update stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: *rust-cache
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
@@ -130,7 +128,7 @@ jobs:
     name: Test Docker examples (compose and CLI)
     runs-on: ubuntu-latest
     steps:
-      - *checkout
+      - uses: *checkout
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -148,7 +146,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - *checkout
+      - uses: *checkout
       - &install
         run: |
           ./scripts/install_coordinator.sh --ci
@@ -158,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     container: docker.io/heywoodlh/openrc:latest
     steps:
-      - *checkout
+      - uses: *checkout
       - name: Install dependencies
         run: apk add --no-cache curl doas
       - name: Configure doas for root
