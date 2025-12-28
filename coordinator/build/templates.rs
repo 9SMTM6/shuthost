@@ -1,6 +1,6 @@
 #![expect(clippy::indexing_slicing, reason = "This is fine at build time")]
 use base64::{Engine as _, engine::general_purpose};
-use eyre::{Ok, WrapErr};
+use eyre::WrapErr;
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, fs, path::PathBuf};
 
@@ -8,6 +8,128 @@ macro_rules! include_frontend_asset {
     ($path:expr) => {
         include_str!(concat!("../../frontend/assets/", $path))
     };
+}
+
+trait TemplateExt {
+    fn include_svgs(&self, svg_hashes: &HashMap<String, String>) -> String;
+    fn include_png_icons(&self, icon_hashes: &HashMap<u32, String>) -> String;
+    fn insert_metadata(&self) -> String;
+    fn insert_js_warnings(&self) -> String;
+    fn insert_footer(&self) -> String;
+    fn no_logout(&self) -> String;
+    fn no_demo_differences_or_not_in_demo(&self) -> String;
+    fn insert_header_tmpl(&self) -> String;
+    fn insert_header_not_main_page(&self) -> String;
+    fn insert_html_head(
+        &self,
+        title: &str,
+        svg_hashes: &HashMap<String, String>,
+        manifest_hash: &str,
+        styles_hash: &str,
+        styles_integrity: &str,
+        icon_hashes: &HashMap<u32, String>,
+    ) -> String;
+}
+
+impl<T: AsRef<str>> TemplateExt for T {
+    fn include_svgs(&self, svg_hashes: &HashMap<String, String>) -> String {
+        let mut result = self.as_ref().to_string();
+        for (asset, hash) in svg_hashes.iter() {
+            result = result.replace(
+                &format!("{{ {} }}", asset),
+                &format!("./{}.{}.svg", asset, hash),
+            );
+        }
+        result
+    }
+
+    fn include_png_icons(&self, icon_hashes: &HashMap<u32, String>) -> String {
+        let mut result = self.as_ref().to_string();
+        for (size, hash) in icon_hashes.iter() {
+            result = result.replace(
+                &format!("{{ icon_{} }}", size),
+                &format!("./icons/icon-{}.{}.png", size, hash),
+            );
+        }
+        result
+    }
+
+    fn insert_metadata(&self) -> String {
+        let s = self.as_ref();
+        s.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
+            .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
+            .replace("{ version }", env!("CARGO_PKG_VERSION"))
+    }
+
+    /// Note that this doesnt provide the needed JS to show the warnings, these are only in `app.ts`, as parts of the code are used there,
+    /// This means that where that isn't included all this does show the noscript warning.
+    fn insert_js_warnings(&self) -> String {
+        self.as_ref().replace(
+            "{ js_warnings }",
+            include_frontend_asset!("partials/js_warnings.html"),
+        )
+    }
+
+    fn insert_footer(&self) -> String {
+        self.as_ref()
+            .replace(
+                "{ footer }",
+                include_frontend_asset!("partials/footer.tmpl.html"),
+            )
+            .insert_metadata()
+    }
+
+    fn no_logout(&self) -> String {
+        self.as_ref().replace("{ maybe_logout }", "")
+    }
+
+    fn insert_header_tmpl(&self) -> String {
+        self.as_ref()
+            .replace(
+                "{ header }",
+                include_frontend_asset!("partials/header.tmpl.html"),
+            )
+            .replace("{ maybe_demo_disclaimer }", "")
+    }
+
+    fn no_demo_differences_or_not_in_demo(&self) -> String {
+        self.as_ref().replace("{ maybe_demo_disclaimer }", "")
+    }
+
+    /// Sites other than the SPA main page get
+    /// * no logout
+    ///   * mostly since its easier like that
+    /// * and no demo disclaimer
+    ///   * since they're not actually differing in behavior there
+    fn insert_header_not_main_page(&self) -> String {
+        self.as_ref()
+            .insert_header_tmpl()
+            .no_demo_differences_or_not_in_demo()
+            .no_logout()
+    }
+
+    fn insert_html_head(
+        &self,
+        title: &str,
+        svg_hashes: &HashMap<String, String>,
+        manifest_hash: &str,
+        styles_hash: &str,
+        styles_integrity: &str,
+        icon_hashes: &HashMap<u32, String>,
+    ) -> String {
+        let html_head_content = include_frontend_asset!("partials/html_head.tmpl.html")
+            .include_svgs(svg_hashes)
+            .replace(
+                "{ manifest }",
+                &format!("./manifest.{}.json", manifest_hash),
+            )
+            .replace("{ styles }", &format!("./styles.{}.css", styles_hash))
+            .replace("{ styles_integrity }", styles_integrity)
+            .include_png_icons(icon_hashes)
+            .replace("{ title }", title);
+
+        self.as_ref().replace("{ html_head }", &html_head_content)
+    }
 }
 
 pub fn process() -> eyre::Result<()> {
@@ -27,7 +149,7 @@ pub fn process() -> eyre::Result<()> {
 
     let favicon_short_hash = short_hash(include_frontend_asset!("favicon.svg").as_bytes());
 
-    let sizes = [32, 48, 64, 128, 180, 192, 512];
+    let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
     let mut icon_hashes = HashMap::new();
     for &size in &sizes {
         let png_path = format!("../frontend/assets/generated/icons/icon-{size}.png");
@@ -75,21 +197,19 @@ pub fn process() -> eyre::Result<()> {
         arch_complete_short_hash
     );
 
+    let mut svg_hashes = HashMap::new();
+    svg_hashes.insert("favicon".to_string(), favicon_short_hash);
+    svg_hashes.insert(
+        "architecture_simplified".to_string(),
+        arch_simplified_short_hash,
+    );
+    svg_hashes.insert("architecture".to_string(), arch_complete_short_hash);
+
     // Process manifest.tmpl.json
     let manifest_content = include_frontend_asset!("manifest.tmpl.json")
-        .replace(
-            "{ icon_192_src }",
-            &format!("./icons/icon-192.{}.png", icon_hashes[&192]),
-        )
-        .replace(
-            "{ icon_512_src }",
-            &format!("./icons/icon-512.{}.png", icon_hashes[&512]),
-        )
-        .replace(
-            "{ favicon_src }",
-            &format!("./favicon.{}.svg", favicon_short_hash),
-        )
-        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"));
+        .include_svgs(&svg_hashes)
+        .include_png_icons(&icon_hashes)
+        .insert_metadata();
     let manifest_short_hash = short_hash(manifest_content.as_bytes());
     fs::write(generated_dir.join("manifest.json"), &manifest_content)?;
     println!(
@@ -97,50 +217,17 @@ pub fn process() -> eyre::Result<()> {
         manifest_short_hash
     );
 
-    let html_head_template = include_frontend_asset!("partials/html_head.tmpl.html");
-    let html_head = html_head_template
-        .replace(
-            "{ manifest_href }",
-            &format!("./manifest.{}.json", manifest_short_hash),
-        )
-        .replace(
-            "{ favicon_href }",
-            &format!("./favicon.{}.svg", favicon_short_hash),
-        )
-        .replace(
-            "{ styles_href }",
-            &format!("./styles.{}.css", styles_short_hash),
-        )
-        .replace("{ styles_integrity }", &styles_integrity)
-        .replace(
-            "{ icon_32_href }",
-            &format!("./icons/icon-32.{}.png", icon_hashes[&32]),
-        )
-        .replace(
-            "{ icon_48_href }",
-            &format!("./icons/icon-48.{}.png", icon_hashes[&48]),
-        )
-        .replace(
-            "{ icon_64_href }",
-            &format!("./icons/icon-64.{}.png", icon_hashes[&64]),
-        )
-        .replace(
-            "{ icon_128_href }",
-            &format!("./icons/icon-128.{}.png", icon_hashes[&128]),
-        )
-        .replace(
-            "{ icon_180_href }",
-            &format!("./icons/icon-180.{}.png", icon_hashes[&180]),
-        );
-
     // Process index.tmpl.html
     let content = include_frontend_asset!("index.tmpl.html")
-        .replace("{ html_head }", &html_head)
-        .replace(
-            "{ js_warnings }",
-            include_frontend_asset!("partials/js_warnings.tmpl.html"),
+        .insert_html_head(
+            "ShutHost Coordinator",
+            &svg_hashes,
+            &manifest_short_hash,
+            &styles_short_hash,
+            &styles_integrity,
+            &icon_hashes,
         )
-        .replace("{ title }", "ShutHost Coordinator")
+        .insert_js_warnings()
         .replace(
             "{ architecture_documentation }",
             include_frontend_asset!("partials/architecture.html"),
@@ -157,87 +244,46 @@ pub fn process() -> eyre::Result<()> {
             "{ agent_install_requirements_gotchas }",
             include_frontend_asset!("agent_install_requirements_gotchas.md"),
         )
-        .replace(
-            "{ header }",
-            include_frontend_asset!("partials/header.tmpl.html"),
-        )
-        .replace(
-            "{ footer }",
-            include_frontend_asset!("partials/footer.tmpl.html"),
-        )
-        .replace(
-            "{ favicon_src }",
-            &format!("./favicon.{}.svg", favicon_short_hash),
-        )
-        .replace(
-            "{ architecture_simplified_src }",
-            &format!(
-                "./architecture_simplified.{}.svg",
-                arch_simplified_short_hash
-            ),
-        )
-        .replace(
-            "{ architecture_src }",
-            &format!("./architecture.{}.svg", arch_complete_short_hash),
-        )
+        .insert_header_tmpl()
+        .insert_footer()
+        .include_svgs(&svg_hashes)
         .replace(
             "{ js }",
             &fs::read_to_string("../frontend/assets/generated/app.js")
                 .wrap_err("Failed to read generated app.js")?,
         )
-        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-        .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
-        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+        .insert_metadata();
     fs::write(generated_dir.join("index.html"), content)?;
 
     // Process login.tmpl.html
     let login_content = include_frontend_asset!("login.tmpl.html")
-        .replace("{ html_head }", &html_head)
-        .replace(
-            "{ js_warnings }",
-            include_frontend_asset!("partials/js_warnings.tmpl.html"),
+        .insert_html_head(
+            "Login • ShutHost",
+            &svg_hashes,
+            &manifest_short_hash,
+            &styles_short_hash,
+            &styles_integrity,
+            &icon_hashes,
         )
-        .replace("{ title }", "Login • ShutHost")
-        .replace(
-            "{ header }",
-            include_frontend_asset!("partials/header.tmpl.html"),
-        )
-        .replace(
-            "{ footer }",
-            include_frontend_asset!("partials/footer.tmpl.html"),
-        )
-        .replace("{ maybe_logout }", "")
-        .replace("{ maybe_demo_disclaimer }", "")
-        .replace(
-            "{ favicon_src }",
-            &format!("./favicon.{}.svg", favicon_short_hash),
-        )
-        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-        .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
-        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+        .insert_js_warnings()
+        .insert_header_not_main_page()
+        .insert_footer()
+        .insert_metadata();
     fs::write(generated_dir.join("login.html"), login_content)?;
 
     // Process about.tmpl.html
     let about_content = fs::read_to_string(generated_dir.join("about.tmpl.html"))?
-        .replace("{ html_head }", &html_head)
-        .replace("{ title }", "Dependencies and Licenses")
-        .replace(
-            "{ header }",
-            include_frontend_asset!("partials/header.tmpl.html"),
+        .insert_html_head(
+            "Dependencies and Licenses",
+            &svg_hashes,
+            &manifest_short_hash,
+            &styles_short_hash,
+            &styles_integrity,
+            &icon_hashes,
         )
-        .replace(
-            "{ footer }",
-            include_frontend_asset!("partials/footer.tmpl.html"),
-        )
-        .replace("{ maybe_logout }", "")
-        .replace("{ maybe_demo_disclaimer }", "")
-        .replace(
-            "{ favicon_src }",
-            &format!("./favicon.{}.svg", favicon_short_hash),
-        )
-        .replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-        .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
-        .replace("{ version }", env!("CARGO_PKG_VERSION"));
+        .insert_header_not_main_page()
+        .insert_footer()
+        .insert_metadata();
     fs::write(generated_dir.join("about.html"), about_content)?;
 
     Ok(())
