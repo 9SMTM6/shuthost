@@ -167,15 +167,6 @@ pub fn process() -> eyre::Result<()> {
         .wrap_err("Failed to read generated architecture.svg")?;
     let arch_complete_short_hash = short_hash(arch_complete_svg.as_bytes());
 
-    // Process sw.js template
-    let sw_content = fs::read_to_string("../frontend/assets/generated/sw.tmpl.js")
-        .wrap_err("Failed to read generated sw.tmpl.js")?;
-    let sw_content = sw_content.replace(
-        "'{ favicon_src }'",
-        &format!("'./favicon.{}.svg'", favicon_short_hash),
-    );
-    fs::write(generated_dir.join("sw.js"), sw_content)?;
-
     println!(
         "cargo::rustc-env=ASSET_HASH_STYLES_CSS={}",
         styles_short_hash
@@ -204,6 +195,13 @@ pub fn process() -> eyre::Result<()> {
         arch_simplified_short_hash,
     );
     svg_hashes.insert("architecture".to_string(), arch_complete_short_hash);
+
+    // Process sw.js template
+    let sw_content = fs::read_to_string("../frontend/assets/generated/sw.tmpl.js")
+        .wrap_err("Failed to read generated sw.tmpl.js")?;
+    let sw_content = sw_content
+        .include_svgs(&svg_hashes);
+    fs::write(generated_dir.join("sw.js"), sw_content)?;
 
     // Process manifest.tmpl.json
     let manifest_content = include_frontend_asset!("manifest.tmpl.json")

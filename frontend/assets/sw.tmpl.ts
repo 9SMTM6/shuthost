@@ -53,8 +53,8 @@ self.addEventListener('push', (event) => {
             const { host, action } = notification.data;
             options = {
                 body: `Host '${host}' is now ${action}`,
-                icon: '{ favicon_src }',
-                badge: '{ favicon_src }',
+                icon: '{ favicon }',
+                badge: '{ favicon }',
                 tag: `host-${action}`,
                 requireInteraction: false,
                 silent: false,
