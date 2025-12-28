@@ -62,7 +62,7 @@ impl<T: AsRef<str>> TemplateExt for T {
     }
 
     /// Note that this doesnt provide the needed JS to show the warnings, these are only in `app.ts`, as parts of the code are used there,
-    /// This means that where that isnt included all this does is replace the placeholder with a hidden item.
+    /// This means that where that isn't included all this does show the noscript warning.
     fn insert_js_warnings(&self) -> String {
         self.as_ref().replace(
             "{ js_warnings }",
