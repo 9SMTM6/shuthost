@@ -7,7 +7,9 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # Checkout version is also defined below for LFS 
+      - &checkout
+        uses: actions/checkout@v6
       - run: rustup update stable
       - run: rustup component add rustfmt
       - uses: Swatinem/rust-cache@v2
@@ -15,20 +17,20 @@ jobs:
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - *checkout
     - uses: EmbarkStudios/cargo-deny-action@v2
       with:
         rust-version: stable
   spell-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - *checkout
       - name: Check spelling of entire workspace
         uses: crate-ci/typos@master
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - *checkout
       - run: rustup update stable
       - run: rustup component add clippy
       - uses: Swatinem/rust-cache@v2
@@ -38,7 +40,7 @@ jobs:
     name: sqlx offline cache check with prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - *checkout
       - run: rustup update stable
       - name: Install sqlx-cli (sqlite support)
         run: |
@@ -128,7 +130,7 @@ jobs:
     name: Test Docker examples (compose and CLI)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - *checkout
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -146,8 +148,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v6
-      - name: Test install script on ${{ matrix.os }}
+      - *checkout
+      - &install
         run: |
           ./scripts/install_coordinator.sh --ci
 
@@ -156,11 +158,9 @@ jobs:
     runs-on: ubuntu-latest
     container: docker.io/heywoodlh/openrc:latest
     steps:
-      - uses: actions/checkout@v6
+      - *checkout
       - name: Install dependencies
         run: apk add --no-cache curl doas
       - name: Configure doas for root
         run: echo "permit nopass root" >> /etc/doas.conf
-      - name: Test install script on Alpine
-        run: |
-          ./scripts/install_coordinator.sh --ci
+      - *install
