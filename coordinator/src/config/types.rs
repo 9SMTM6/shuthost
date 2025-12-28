@@ -3,12 +3,19 @@
 //! This module contains all the data structures used for configuration,
 //! including host, client, server, TLS, and authentication settings.
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::Component,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
-use serde::{Deserialize, Serialize};
+// TODO: consider using secrets crate or secure-types instead for their OS locks.
+use secrecy::{ExposeSecret, SecretString};
+use serde::Deserialize;
 
 /// Represents a configured host entry with network and security parameters.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct Host {
     /// IP address of the host agent.
     pub ip: String,
@@ -20,18 +27,33 @@ pub(crate) struct Host {
     /// TCP port the host agent listens on.
     pub port: u16,
     /// Shared secret for HMAC authentication.
-    pub shared_secret: String,
+    pub shared_secret: Arc<SecretString>,
+}
+
+impl PartialEq for Host {
+    fn eq(&self, other: &Self) -> bool {
+        self.ip == other.ip
+            && self.mac == other.mac
+            && self.port == other.port
+            && self.shared_secret.expose_secret() == other.shared_secret.expose_secret()
+    }
 }
 
 /// Configuration for a client with its shared secret.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct Client {
     /// Shared secret used for authenticating callbacks.
-    pub shared_secret: String,
+    pub shared_secret: Arc<SecretString>,
+}
+
+impl PartialEq for Client {
+    fn eq(&self, other: &Self) -> bool {
+        self.shared_secret.expose_secret() == other.shared_secret.expose_secret()
+    }
 }
 
 /// HTTP server binding configuration section.
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
 pub(crate) struct ServerConfig {
     /// TCP port for the web control service.
     pub port: u16,
@@ -48,7 +70,7 @@ pub(crate) struct ServerConfig {
 /// TLS configuration for the HTTP server.
 ///
 /// Paths in the config are interpreted relative to the config file when not absolute.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub(crate) struct TlsConfig {
     /// Optional path to a certificate PEM file. If present, enables TLS when paired with `key_path`.
     #[serde(default = "relative_cert_path")]
@@ -81,7 +103,7 @@ impl Default for TlsConfig {
 }
 
 /// Configuration for an optional local SQLite database.
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub(crate) struct DbConfig {
     /// Path to the SQLite database file. Relative paths are resolved relative to the config file.
     #[serde(default = "default_db_path")]
@@ -140,11 +162,8 @@ const fn do_db_enable() -> bool {
 /// # Returns
 ///
 /// A normalized absolute path
-pub fn resolve_config_relative_paths(
-    config_path: &std::path::Path,
-    relative_path: &str,
-) -> std::path::PathBuf {
-    let path = std::path::Path::new(relative_path);
+pub fn resolve_config_relative_paths(config_path: &Path, relative_path: &str) -> PathBuf {
+    let path = Path::new(relative_path);
     let resolved = if path.is_absolute() {
         path.to_path_buf()
     } else if relative_path == ":memory:" {
@@ -162,20 +181,21 @@ pub fn resolve_config_relative_paths(
     normalize_path(&resolved)
 }
 
-fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
-    let mut result = std::path::PathBuf::new();
+fn normalize_path(path: &Path) -> PathBuf {
+    let mut result = PathBuf::new();
     for component in path.components() {
+        use Component as C;
         match component {
-            std::path::Component::Normal(c) => {
+            C::Normal(c) => {
                 result.push(c);
             }
-            std::path::Component::ParentDir => {
+            C::ParentDir => {
                 result.pop();
             }
-            std::path::Component::CurDir => {
+            C::CurDir => {
                 // Skip current directory components
             }
-            std::path::Component::RootDir | std::path::Component::Prefix(_) => {
+            C::RootDir | C::Prefix(_) => {
                 result.push(component);
             }
         }
@@ -184,7 +204,7 @@ fn normalize_path(path: &std::path::Path) -> std::path::PathBuf {
 }
 
 /// Supported authentication modes for the Web UI
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Default)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum AuthMode {
     /// No authentication, everything is public
@@ -193,13 +213,13 @@ pub(crate) enum AuthMode {
     /// Simple token based auth. If token is not provided, a random token will be generated and logged on startup.
     /// The token persists across restarts when a database is configured, otherwise it's regenerated each startup.
     /// For security, the token is only logged during initial generation, not when loaded from database.
-    Token { token: Option<String> },
+    Token { token: Option<Arc<SecretString>> },
     /// OpenID Connect login via authorization code flow
     Oidc {
         issuer: String,
         #[serde(default = "default_oidc_client_id")]
         client_id: String,
-        client_secret: String,
+        client_secret: Arc<SecretString>,
         #[serde(default = "default_oidc_scopes")]
         scopes: Vec<String>,
     },
@@ -209,6 +229,43 @@ pub(crate) enum AuthMode {
     /// match the current expected version so operators can update their proxy
     /// rules.
     External { exceptions_version: u32 },
+}
+
+impl PartialEq for AuthMode {
+    fn eq(&self, other: &Self) -> bool {
+        use AuthMode as AM;
+        match (self, other) {
+            (&AM::None, &AM::None) => true,
+            (&AM::Token { token: ref t1 }, &AM::Token { token: ref t2 }) => match (t1, t2) {
+                (&Some(ref s1), &Some(ref s2)) => s1.expose_secret() == s2.expose_secret(),
+                (&None, &None) => true,
+                _ => false,
+            },
+            (
+                &AM::Oidc {
+                    issuer: ref i1,
+                    client_id: ref c1,
+                    client_secret: ref s1,
+                    scopes: ref sc1,
+                },
+                &AM::Oidc {
+                    issuer: ref i2,
+                    client_id: ref c2,
+                    client_secret: ref s2,
+                    scopes: ref sc2,
+                },
+            ) => i1 == i2 && c1 == c2 && s1.expose_secret() == s2.expose_secret() && sc1 == sc2,
+            (
+                &AM::External {
+                    exceptions_version: v1,
+                },
+                &AM::External {
+                    exceptions_version: v2,
+                },
+            ) => v1 == v2,
+            _ => false,
+        }
+    }
 }
 
 // Defaults for OIDC fields used by serde(default = ...)
@@ -221,18 +278,30 @@ fn default_oidc_client_id() -> String {
 }
 
 /// Authentication configuration wrapper
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub(crate) struct AuthConfig {
     #[serde(flatten)]
     pub mode: AuthMode,
     /// Optional base64-encoded cookie key (32 bytes). If omitted, a random key is generated and persisted to database if available.
     #[serde(default)]
-    pub cookie_secret: Option<String>,
+    pub cookie_secret: Option<Arc<SecretString>>,
+}
+
+impl PartialEq for AuthConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.mode == other.mode && {
+            match (&self.cookie_secret, &other.cookie_secret) {
+                (&Some(ref s1), &Some(ref s2)) => s1.expose_secret() == s2.expose_secret(),
+                (&None, &None) => true,
+                _ => false,
+            }
+        }
+    }
 }
 
 /// Root config structure for the coordinator, including server settings, hosts, and clients.
 /// ```
-#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
 pub(crate) struct ControllerConfig {
     /// HTTP server binding configuration.
     pub server: ServerConfig,

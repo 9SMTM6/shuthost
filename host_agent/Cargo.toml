@@ -12,6 +12,7 @@ categories.workspace = true
 
 [dependencies]
 clap.workspace = true
+secrecy.workspace = true
 shuthost_common.workspace = true
 
 [lints]

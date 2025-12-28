@@ -38,14 +38,15 @@ pub enum Action {
 /// # Examples
 ///
 /// ```
-/// use shuthost_host_agent::validation::validate_request;
-/// use shuthost_common::create_signed_message;
-/// use shuthost_host_agent::server::ServiceOptions;
-/// use shuthost_host_agent::validation::Action;
+/// # use shuthost_host_agent::validation::validate_request;
+/// # use shuthost_common::create_signed_message;
+/// # use shuthost_host_agent::server::ServiceOptions;
+/// # use shuthost_host_agent::validation::Action;
+/// # use secrecy::SecretString;
 ///
-/// let secret = "secret";
-/// let args = ServiceOptions { port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.to_string()) };
-/// let signed = create_signed_message("status", secret);
+/// let secret = SecretString::from("secret");
+/// # let args = ServiceOptions { port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.clone()) };
+/// let signed = create_signed_message("status", &secret);
 /// let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
 /// assert_eq!(resp, "OK: status");
 /// assert_eq!(action, Action::None);
@@ -98,20 +99,22 @@ pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -
 
 #[cfg(test)]
 mod tests {
+    use secrecy::SecretString;
+
     use super::*;
     use crate::server::ServiceOptions;
 
-    fn make_args(secret: &str) -> ServiceOptions {
+    fn make_args(secret: SecretString) -> ServiceOptions {
         ServiceOptions {
             port: 0,
             shutdown_command: "shutdown_cmd".to_string(),
-            shared_secret: Some(secret.to_string()),
+            shared_secret: Some(secret),
         }
     }
 
     #[test]
     fn test_handle_invalid_utf8() {
-        let args = make_args("s");
+        let args = make_args(SecretString::from("s"));
         let data = [0xff, 0xfe, 0xfd];
         let (resp, action) = validate_request(&data, &args, "peer");
         assert_eq!(resp, "ERROR: Invalid UTF-8");
@@ -120,10 +123,10 @@ mod tests {
 
     #[test]
     fn test_handle_status() {
-        let secret = "sec";
-        let args = make_args(secret);
+        let secret = SecretString::from("sec");
+        let args = make_args(secret.clone());
         // create valid status command
-        let signed = shuthost_common::create_signed_message("status", secret);
+        let signed = shuthost_common::create_signed_message("status", &secret);
         let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "OK: status");
         assert_eq!(action, Action::None);
@@ -131,9 +134,9 @@ mod tests {
 
     #[test]
     fn test_handle_shutdown() {
-        let secret = "sec";
-        let args = make_args(secret);
-        let signed = shuthost_common::create_signed_message("shutdown", secret);
+        let secret = SecretString::from("sec");
+        let args = make_args(secret.clone());
+        let signed = shuthost_common::create_signed_message("shutdown", &secret);
         let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert!(resp.contains("shutdown_cmd"));
         assert_eq!(action, Action::Shutdown);
@@ -141,9 +144,9 @@ mod tests {
 
     #[test]
     fn test_handle_abort() {
-        let secret = "sec";
-        let args = make_args(secret);
-        let signed = shuthost_common::create_signed_message("abort", secret);
+        let secret = SecretString::from("sec");
+        let args = make_args(secret.clone());
+        let signed = shuthost_common::create_signed_message("abort", &secret);
         let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "OK: aborting service");
         assert_eq!(action, Action::Abort);
@@ -151,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_handle_invalid_timestamp() {
-        let secret = "s";
+        let secret = SecretString::from("s");
         let args = make_args(secret);
         let data = "0|cmd|signature".to_string();
         let (resp, action) = validate_request(data.as_bytes(), &args, "peer");
@@ -161,9 +164,9 @@ mod tests {
 
     #[test]
     fn test_handle_invalid_hmac() {
-        let secret = "s";
-        let args = make_args(secret);
-        let signed = shuthost_common::create_signed_message("cmd", secret) + "x";
+        let secret = SecretString::from("s");
+        let args = make_args(secret.clone());
+        let signed = shuthost_common::create_signed_message("cmd", &secret) + "x";
         let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
         assert_eq!(resp, "ERROR: Invalid HMAC signature");
         assert_eq!(action, Action::None);
@@ -171,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_handle_malformed() {
-        let secret = "s";
+        let secret = SecretString::from("s");
         let args = make_args(secret);
         let data = "no separators";
         let (resp, action) = validate_request(data.as_bytes(), &args, "peer");

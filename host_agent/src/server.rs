@@ -7,6 +7,7 @@ use std::{
 };
 
 use clap::Parser;
+use secrecy::SecretString;
 
 use crate::{
     commands::execute_shutdown,
@@ -27,7 +28,7 @@ pub struct ServiceOptions {
     /// Shared secret for validating incoming HMAC-signed requests.
     /// Usually set from environment variables, after parsing.
     #[clap(skip)]
-    pub shared_secret: Option<String>,
+    pub shared_secret: Option<SecretString>,
 }
 
 /// Starts the TCP listener and handles incoming client connections in sequence.
@@ -37,8 +38,10 @@ pub struct ServiceOptions {
 /// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set (and the value wasn't smuggled into ServiceArgs).
 pub(crate) fn start_host_agent(mut config: ServiceOptions) {
     config.shared_secret.get_or_insert_with(|| {
-        env::var("SHUTHOST_SHARED_SECRET")
-            .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected")
+        SecretString::from(
+            env::var("SHUTHOST_SHARED_SECRET")
+                .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected"),
+        )
     });
     let addr = format!("0.0.0.0:{}", config.port);
     let listener = TcpListener::bind(&addr).expect("Failed to bind port");

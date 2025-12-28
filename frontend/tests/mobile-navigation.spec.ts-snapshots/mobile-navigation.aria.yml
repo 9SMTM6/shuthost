@@ -1,8 +1,10 @@
 - link "Skip to main content":
   - /url: "#main-content"
 - banner:
-  - img "ShutHost Logo"
-  - heading "ShutHost" [level=1]
+  - link "ShutHost Logo ShutHost":
+    - /url: /
+    - img "ShutHost Logo"
+    - heading "ShutHost" [level=1]
   - tablist "Main tabs":
     - tab "Docs"
     - tab "Hosts" [selected]
@@ -22,4 +24,4 @@
               - columnheader "Status"
               - columnheader "Actions"
           - rowgroup
-- contentinfo: ShutHost Coordinator v<<VERSION>>
+- contentinfo: ShutHost Coordinator v<<VERSION>> | About & Licenses

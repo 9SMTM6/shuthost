@@ -303,6 +303,11 @@ footer {
         @apply mb-1;
     }
 
+    /* Link styles */
+    .link {
+        @apply text-[#005fb8] dark:text-[#3794ff] hover:underline;
+    }
+
     /* Hamburger menu styles */
     .hamburger {
         display: flex;
@@ -326,20 +331,20 @@ footer {
     }
 
     /* Hide hamburger on login page but keep space */
-    .login-page .hamburger {
+    .disable-nav .hamburger {
         visibility: hidden;
     }
 
-    .login-page .mobile-menu-backdrop {
+    .disable-nav .mobile-menu-backdrop {
         display: none;
     }
 
     /* Hide nav-tabs and logout on login page but keep space */
-    .login-page .nav-tabs {
+    .disable-nav .nav-tabs {
         visibility: hidden;
     }
 
-    .login-page .logout {
+    .disable-nav .logout {
         visibility: hidden;
     }
 

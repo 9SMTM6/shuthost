@@ -4,6 +4,7 @@ use crate::common::{
     get_agent_bin, get_free_port, spawn_coordinator_with_config, spawn_host_agent,
     wait_for_agent_ready, wait_for_host_online, wait_for_listening,
 };
+use secrecy::SecretString;
 
 #[test]
 fn test_host_agent_binary_runs() {
@@ -51,7 +52,7 @@ async fn test_shutdown_command_execution() {
     );
 
     // Wait for agent to be ready
-    wait_for_agent_ready(agent_port, shared_secret, 5).await;
+    wait_for_agent_ready(agent_port, &SecretString::from(shared_secret), 5).await;
 
     let client = reqwest::Client::new();
     let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");

@@ -501,7 +501,7 @@ const setupCopyButtons = () => {
  * This keeps embedded strings in the UI in sync with where the page is served from.
  */
 const setupInstallerCommands = () => {
-    const baseUrl = window.location.origin;
+    const baseUrl = window.location.origin + DemoMode.subpath;
 
     // Install commands
     const hostInstallCommand = document.getElementById('host-install-command');
@@ -647,6 +647,16 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        // If demo mode is active adjust root-relative anchors
+        if (DemoMode.isActive) {
+            document.querySelectorAll<HTMLAnchorElement>('a[href^="/"]').forEach(a => {
+                const href = a.getAttribute('href');
+                if (!href) return;
+                if (href.startsWith('//')) return; // skip protocol relative
+                a.setAttribute('href', DemoMode.subpath + href);
+            });
+        }
+
         connectWebSocket();
         setupCopyButtons();
         setupInstallerCommands();
@@ -700,7 +710,10 @@ window.addEventListener('securitypolicyviolation', (event) => {
  */
 namespace DemoMode {
     /** Detected demo mode by presence of disclaimer element  */
-    export const isActive = !!document.getElementById('demo-mode-disclaimer');
+    const el = document.getElementById('demo-mode-disclaimer');
+    export const isActive = !!el;
+    const raw = el?.dataset['subpath'] ?? '/';
+    export const subpath = raw === '/' ? '' : (raw.startsWith('/') ? raw.replace(/\/$/, '') : '/' + raw.replace(/\/$/, ''));
 
     let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
     let statusTimeout: ReturnType<typeof setTimeout> | null = null;

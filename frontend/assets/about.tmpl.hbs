@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{ html_head }
+
+<body class="html-body disable-nav">
+
+    { header }
+
+    <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
+        <section class="py-4 sm:py-6" aria-labelledby="about-page-title">
+            
+            <!-- About Section -->
+            <section class="section-container p-4 sm:p-6" aria-labelledby="about-shuthost-title">
+                <h1 id="about-page-title" class="section-title text-xl sm:text-2xl">About ShutHost</h1>
+                <div class="text-sm sm:text-base text-[#616161] dark:text-[#9d9d9d] space-y-3">
+                    <p>
+                        { description }
+                    </p>
+
+                    <p>
+                        Shuthost is licensed under <a href="#license-GPL-2.0-only" class="link font-medium">GPL 2.0-only</a>.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Dependencies Section -->
+            <section class="section-container mt-4 p-4 sm:p-6" aria-labelledby="dependencies-title">
+                <h2 id="dependencies-title" class="section-title text-lg sm:text-xl">Open Source Dependencies</h2>
+                <p class="text-sm sm:text-base text-[#616161] dark:text-[#9d9d9d] mb-4">
+                    We are grateful to the open source community and the authors of the following libraries that make this project possible.
+                </p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" aria-describedby="dependencies-title">
+                        <thead class="bg-[#f3f3f3] dark:bg-[#252526]">
+                            <tr>
+                                <th class="table-header text-left" scope="col">Name</th>
+                                <th class="table-header text-left" scope="col">Version</th>
+                                <th class="table-header text-left" scope="col">License</th>
+                                <th class="table-header text-left" scope="col">Authors/Publisher</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#e5e5e5] dark:divide-[#3e3e42]">
+                            {{#each entries}}
+                            <tr class="hover:bg-[#f9f9f9] dark:hover:bg-[#252526] transition-colors">
+                                <td class="table-cell">
+                                    {{#if repository}}
+                                    <a href="{{repository}}" class="link font-medium">{{name}}</a>
+                                    {{else}}
+                                    {{name}}
+                                    {{/if}}
+                                </td>
+                                <td class="table-cell">{{version}}</td>
+                                <td class="table-cell">{{{license_html}}}</td>
+                                <td class="table-cell">
+                                    {{#each authors}}
+                                    {{#if email}}
+                                    <a href="mailto:{{email}}" class="link">{{name}}</a>
+                                    {{else}}
+                                    {{name}}
+                                    {{/if}}
+                                    {{#unless @last}}, {{/unless}}
+                                    {{/each}}
+                                </td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Licenses Section -->
+            <section class="section-container mt-4 p-4 sm:p-6" aria-labelledby="licenses-title">
+                <h2 id="licenses-title" class="section-title text-lg sm:text-xl">License Texts</h2>
+                <div class="space-y-6">
+                    {{#each licenses}}
+                    <div>
+                        <h3 id="license-{{@key}}" class="text-base sm:text-lg font-semibold text-black dark:text-[#cccccc] mb-2">{{@key}}</h3>
+                        <pre class="bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] p-3 overflow-x-auto text-xs sm:text-sm font-mono whitespace-pre-wrap wrap-break-word">{{this}}</pre>
+                    </div>
+                    {{/each}}
+                </div>
+            </section>
+
+        </section>
+    </main>
+
+    { footer }
+
+</body>
+
+</html>

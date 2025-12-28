@@ -3,13 +3,16 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
+use axum_extra::extract::cookie::SignedCookieJar;
+use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
 use crate::{
     auth::{
-        COOKIE_RETURN_TO, LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved,
-        cookies::{TokenSessionClaims, create_token_session_cookie},
+        LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved,
+        cookies::{
+            TokenSessionClaims, create_token_session_cookie, extract_return_to_and_remove_cookie,
+        },
         login_error_redirect, request_is_secure,
     },
     http::AppState,
@@ -17,7 +20,7 @@ use crate::{
 
 #[derive(Deserialize)]
 pub(crate) struct LoginForm {
-    token: String,
+    token: SecretString,
 }
 
 #[derive(Deserialize, Default)]
@@ -45,18 +48,14 @@ pub(crate) async fn login_post(
         &Resolved::Token {
             token: ref expected,
             ..
-        } if &token == expected => {
-            let claims = TokenSessionClaims::new(expected);
+        } if token.expose_secret() == expected.expose_secret() => {
+            let claims = TokenSessionClaims::new((*expected).expose_secret());
             let cookie = create_token_session_cookie(
                 &claims,
                 cookie::time::Duration::seconds((claims.exp - claims.iat) as i64),
             );
             let jar = jar.add(cookie);
-            let return_to = jar
-                .get(COOKIE_RETURN_TO)
-                .map(|c| c.value().to_string())
-                .unwrap_or_else(|| "/".to_string());
-            let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+            let (return_to, jar) = extract_return_to_and_remove_cookie(jar);
             (jar, Redirect::to(&return_to)).into_response()
         }
         // Wrong token: redirect back to login with an error flag

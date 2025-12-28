@@ -47,3 +47,9 @@ The install scripts cannot validate self-signed certificates without additional 
 Yes, OIDC login occasionally fails to revalidate the session and shows a generic error. Clicking "Login with SSO" again typically succeeds.
 
 **Solution:** This issue is currently undiagnosed due to lack of data. As a workaround, simply click "Login with SSO" again to log in successfully. If you experience this issue, please consider reporting details to help us diagnose it.
+
+### 🌐 Must be served on a (sub)domain, not a subpath
+
+Shuthost must be served from a dedicated domain or subdomain (for example
+`coordinator.example.com`). Serving it from a URL path such as
+`ex.ample.com/shuthost` is not supported and will break important features.

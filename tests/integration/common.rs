@@ -12,6 +12,7 @@
 
 use clap::Parser;
 use reqwest::Client;
+use secrecy::SecretString;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;
 use std::io::Write;
@@ -33,7 +34,7 @@ pub(crate) enum KillOnDrop {
     Agent {
         thread: Option<std::thread::JoinHandle<()>>,
         port: u16,
-        secret: String,
+        secret: SecretString,
     },
 }
 
@@ -50,7 +51,7 @@ impl Drop for KillOnDrop {
             } => {
                 // Send abort command to the agent
                 if let Ok(mut stream) = std::net::TcpStream::connect(("127.0.0.1", *port)) {
-                    let signed_message = shuthost_common::create_signed_message("abort", secret);
+                    let signed_message = shuthost_common::create_signed_message("abort", &secret);
                     drop(stream.write_all(signed_message.as_bytes()));
                 }
                 if let Some(handle) = thread.take() {
@@ -108,7 +109,7 @@ pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) 
         shuthost_host_agent::Command::Service(opts) => opts,
         _ => panic!("Expected service command"),
     };
-    config.shared_secret = Some(secret.to_string());
+    config.shared_secret = Some(SecretString::from(secret));
     let new_cli = AgentCli {
         command: shuthost_host_agent::Command::Service(config),
     };
@@ -118,7 +119,7 @@ pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) 
     KillOnDrop::Agent {
         thread: Some(handle),
         port,
-        secret: secret.to_string(),
+        secret: SecretString::from(secret),
     }
 }
 
@@ -140,7 +141,11 @@ pub(crate) async fn wait_for_listening(port: u16, timeout_secs: u64) {
 
 /// Block until the host agent is ready to accept status requests.
 /// Sends a proper HMAC-signed status message to verify the agent is responding correctly.
-pub(crate) async fn wait_for_agent_ready(port: u16, shared_secret: &str, timeout_secs: u64) {
+pub(crate) async fn wait_for_agent_ready(
+    port: u16,
+    shared_secret: &SecretString,
+    timeout_secs: u64,
+) {
     let start = Instant::now();
     let addr = format!("127.0.0.1:{}", port);
 

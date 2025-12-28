@@ -9,6 +9,8 @@ mod login_error_redirects;
 mod token_login;
 mod websocket;
 
+use secrecy::SecretString;
+
 use reqwest::Client;
 
 use common::{
@@ -67,7 +69,7 @@ async fn test_coordinator_and_agent_online_status() {
     let _agent = spawn_host_agent_default(shared_secret, agent_port);
 
     // Wait for agent to be ready
-    wait_for_agent_ready(agent_port, shared_secret, 5).await;
+    wait_for_agent_ready(agent_port, &SecretString::from(shared_secret), 5).await;
 
     let client = Client::new();
     let url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");

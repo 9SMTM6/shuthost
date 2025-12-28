@@ -66,7 +66,7 @@ This launch agent triggers the backup script daily at 2:00 PM. The `RunAtLoad` k
 set -ex
 
 # Configuration variables
-SHUTHOST_CLIENT="~/.local/bin/shuthost_client_<unique_ident>"
+SHUTHOST_CLIENT="$HOME/.local/bin/shuthost_client_<unique_ident>"
 BACKUP_HOST="<kopia backup host>"
 KOPIA_PATH="/opt/homebrew/bin/kopia"
 

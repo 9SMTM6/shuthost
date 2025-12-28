@@ -3,12 +3,9 @@
 //! This module provides a minimal demo mode that serves only static assets
 //! without any backend state or functionality.
 
-use std::{
-    collections::HashMap,
-    sync::{Arc, OnceLock},
-};
+use std::{collections::HashMap, sync::Arc};
 
-use axum::{Router, extract::State, http::Response, response::IntoResponse, routing};
+use axum::{Router, extract::State, http::Response, routing};
 use tokio::{
     net::TcpListener,
     sync::{broadcast, watch},
@@ -31,21 +28,24 @@ use crate::{
 /// # Panics
 ///
 /// Panics if the TCP listener cannot be bound to the specified address.
-pub(crate) async fn run_demo_service(port: u16, bind: &str) {
+pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
     let addr = format!("{}:{}", bind, port);
     info!("Starting demo service on http://{}", addr);
 
     // Custom asset route for demo mode: inject disclaimer into HTML
-    async fn serve_demo_ui(State(_): State<AppState>) -> impl IntoResponse {
-        static HTML_TEMPLATE: OnceLock<String> = OnceLock::new();
-        let html = HTML_TEMPLATE
-            .get_or_init(|| render_ui_html(&UiMode::Demo))
-            .clone();
-        Response::builder()
-            .header("Content-Type", "text/html")
-            .body(html)
-            .expect("failed to build HTTP response")
-    }
+    let serve_demo_ui = {
+        let subpath = subpath.to_string();
+        move |State(_): State<AppState>| {
+            let subpath = subpath.clone();
+            async move {
+                let html = render_ui_html(&UiMode::Demo { subpath: &subpath });
+                Response::builder()
+                    .header("Content-Type", "text/html")
+                    .body(html)
+                    .expect("failed to build HTTP response")
+            }
+        }
+    };
 
     let (hoststatus_tx, hoststatus_rx) = watch::channel(Arc::new(HashMap::new()));
 

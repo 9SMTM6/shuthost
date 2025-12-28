@@ -3,9 +3,13 @@
 use axum_extra::extract::{SignedCookieJar, cookie::Cookie};
 use cookie::{SameSite, time::Duration as CookieDuration};
 use rand::{Rng as _, distr::Alphanumeric};
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 /// Cookie name constants for authentication
 pub(crate) const COOKIE_OIDC_SESSION: &str = "shuthost_oidc_session";
@@ -13,7 +17,7 @@ pub(crate) const COOKIE_TOKEN_SESSION: &str = "shuthost_token_session";
 pub(crate) const COOKIE_STATE: &str = "shuthost_oidc_state";
 pub(crate) const COOKIE_NONCE: &str = "shuthost_oidc_nonce";
 pub(crate) const COOKIE_PKCE: &str = "shuthost_oidc_pkce";
-pub(crate) const COOKIE_RETURN_TO: &str = "shuthost_return_to";
+const COOKIE_RETURN_TO: &str = "shuthost_return_to";
 
 /// Session claims for token authentication.
 #[derive(Serialize, Deserialize)]
@@ -43,9 +47,9 @@ impl TokenSessionClaims {
         now_ts() >= self.exp
     }
     /// Check if the token matches (by hash).
-    pub(crate) fn matches_token(&self, token: &str) -> bool {
+    pub(crate) fn matches_token(&self, token: &SecretString) -> bool {
         let mut hasher = Sha256::new();
-        hasher.update(token.as_bytes());
+        hasher.update(token.expose_secret().as_bytes());
         let hash = format!("{:x}", hasher.finalize());
         self.token_hash == hash
     }
@@ -100,12 +104,15 @@ pub(crate) fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
 }
 
 /// Generate a random alphanumeric token of 48 characters.
-pub(crate) fn generate_token() -> String {
-    rand::rng()
-        .sample_iter(Alphanumeric)
-        .take(48)
-        .map(char::from)
-        .collect()
+pub(crate) fn generate_token() -> Arc<SecretString> {
+    Arc::new(
+        rand::rng()
+            .sample_iter(Alphanumeric)
+            .take(48)
+            .map(char::from)
+            .collect::<String>()
+            .into(),
+    )
 }
 
 /// Create a protected cookie with standard security properties.
@@ -168,4 +175,15 @@ pub(crate) fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDC
 pub(crate) fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<TokenSessionClaims> {
     jar.get(COOKIE_TOKEN_SESSION)
         .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
+}
+
+pub(crate) fn extract_return_to_and_remove_cookie(
+    jar: SignedCookieJar,
+) -> (String, SignedCookieJar) {
+    let return_to = jar
+        .get(COOKIE_RETURN_TO)
+        .map(|c| c.value().to_string())
+        .unwrap_or_else(|| "/".to_string());
+    let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
+    (return_to, jar)
 }

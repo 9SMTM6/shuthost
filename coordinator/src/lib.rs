@@ -93,8 +93,12 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             start(&config_path, args.port, args.bind.as_deref()).await?;
             Ok(())
         }
-        Command::DemoService { port, bind } => {
-            run_demo_service(port, &bind).await;
+        Command::DemoService {
+            port,
+            bind,
+            subpath,
+        } => {
+            run_demo_service(port, &bind, &subpath).await;
             Ok(())
         }
     }

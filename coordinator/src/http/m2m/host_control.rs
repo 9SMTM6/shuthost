@@ -176,7 +176,11 @@ async fn execute_tcp_shutdown_request(
 }
 
 /// Send a shutdown command to a host via TCP.
-pub(crate) async fn send_shutdown_to_address(ip: &str, port: u16, secret: &str) -> Result<String> {
+pub(crate) async fn send_shutdown_to_address(
+    ip: &str,
+    port: u16,
+    secret: &secrecy::SecretString,
+) -> Result<String> {
     let addr = format!("{ip}:{port}");
     debug!("Connecting to {}", addr);
 
@@ -227,7 +231,7 @@ async fn send_shutdown_to_host(
     send_shutdown_to_address(
         &host_config.ip,
         host_config.port,
-        &host_config.shared_secret,
+        host_config.shared_secret.as_ref(),
     )
     .await
     .map_err(|e| {

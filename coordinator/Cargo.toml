@@ -9,6 +9,7 @@ license.workspace = true
 readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
+build = "build/mod.rs"
 
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
@@ -58,6 +59,7 @@ rustls-openssl = "0.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_plain = "1.0.2"
+secrecy = { workspace = true, features = ["serde"] }
 sha2.workspace = true
 shuthost_common.workspace = true
 sqlx = { version = "0.8", features = [
@@ -68,7 +70,7 @@ sqlx = { version = "0.8", features = [
     "sqlite",
 ] }
 tokio.workspace = true
-toml = "0.9.x"
+toml.workspace = true
 tower = "0.5"
 tower-http = { version = "0.6", features = [
     "request-id",
@@ -88,9 +90,17 @@ workspace = true
 [build-dependencies]
 # Generate PNG favicons from SVG at build time (no external browser)
 base64.workspace = true
+cargo-about = "0.8.4"
 eyre.workspace = true
+handlebars = "6.3.2"
 hex.workspace = true
+krates = "0.20.0"
 regex.workspace = true
 resvg = "0.45.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 sha2.workspace = true
+spdx = { version = "0.13", features = ["text"] }
 tiny-skia = "0.11"
+toml.workspace = true
+url = "2"

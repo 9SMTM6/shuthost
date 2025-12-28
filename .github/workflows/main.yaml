@@ -30,9 +30,9 @@ jobs:
             runner: ubuntu-24.04-arm
 
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: Swatinem/rust-cache@v2
+      - uses: &checkout actions/checkout@v6
+      
+      - uses: &rust-cache Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
 
@@ -42,7 +42,7 @@ jobs:
           bin-name: shuthost_host_agent
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: &upload-artifact actions/upload-artifact@v5
         with:
           name: host_agent-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_host_agent
@@ -72,14 +72,14 @@ jobs:
             runner: windows-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download all host_agent binaries
-        uses: actions/download-artifact@v6
+        uses: &download-artifact actions/download-artifact@v6
         with:
           path: ./rehydrate
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: *rust-cache
         with:
           key: ${{ matrix.target }}
 
@@ -102,7 +102,7 @@ jobs:
           additional-flags: --features include_linux_agents,include_macos_agents
 
       - name: Upload coordinator binary
-        uses: actions/upload-artifact@v5
+        uses: *upload-artifact
         with:
           name: coordinator-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_coordinator${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
@@ -112,11 +112,11 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - run: rustup update stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: *rust-cache
 
       - name: Run tests
         run: cargo test --workspace
@@ -126,10 +126,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
@@ -146,10 +146,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-x86_64-unknown-linux-musl
 
@@ -186,10 +186,10 @@ jobs:
     runs-on: macos-latest
     needs: [build-host_agents, build-coordinators]
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-aarch64-apple-darwin
 
@@ -206,10 +206,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
@@ -243,10 +243,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-coordinators
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           pattern: coordinator-x86_64-unknown-linux-*
 
@@ -278,7 +278,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-aarch64-apple-darwin
 
@@ -351,7 +351,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
@@ -411,7 +411,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-x86_64-unknown-linux-gnu
 
@@ -477,7 +477,7 @@ jobs:
     steps:
       
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-x86_64-pc-windows-msvc
 
@@ -563,16 +563,16 @@ jobs:
           - platform: arm64
             rustc_target: aarch64-unknown-linux-musl
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download MUSL coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-${{ matrix.rustc_target }}
           path: ./rehydrate
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: &setup-buildx docker/setup-buildx-action@v3
 
       - &docker_login
         name: Login to GitHub Container Registry
@@ -617,7 +617,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - *release_image_name
 
@@ -635,7 +635,7 @@ jobs:
     needs: container-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - *release_image_name
 
@@ -681,16 +681,16 @@ jobs:
           - rustc_target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - name: Download coordinator binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: coordinator-${{ matrix.rustc_target }}
           path: ./bin
 
       - name: Download host_agent binary
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           name: host_agent-${{ matrix.rustc_target }}
           path: ./bin
@@ -710,7 +710,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
-        uses: actions/checkout@v6
+        uses: *checkout
         with:
           lfs: true
           fetch-depth: 0
@@ -732,7 +732,7 @@ jobs:
           npm ci
           npm run install-chromium-ci
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: *rust-cache
 
       - uses: ./.github/actions/rust-build
         with:
@@ -747,7 +747,7 @@ jobs:
 
       - name: Upload Playwright report + test-results (zip via Actions)
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: *upload-artifact
         with:
           name: playwright-artifacts-${{ github.run_id }}
           path: |
@@ -853,14 +853,14 @@ jobs:
       packages: write
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - *release_image_name
 
       - *docker_login
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: *setup-buildx
 
       - name: Retag multi-arch image with tag name
         run: |
@@ -883,14 +883,14 @@ jobs:
       packages: write
     if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - *release_image_name
 
       - *docker_login
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: *setup-buildx
 
       - name: Retag multi-arch image with branch name (nightly)
         run: |
@@ -908,11 +908,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - &download_coordinator_binaries
         name: Download all coordinator binaries
-        uses: actions/download-artifact@v6
+        uses: *download-artifact
         with:
           pattern: coordinator-*
           path: ./release-assets
@@ -931,7 +931,12 @@ jobs:
             fi
             if [ -f "$dir/shuthost_coordinator" ]; then
               cp "$dir/shuthost_coordinator" "release-assets/flat/shuthost_coordinator-$target"
+              chmod +x "release-assets/flat/shuthost_coordinator-$target"
             fi
+          done
+          # Create .tar.gz archives
+          for file in release-assets/flat/*; do
+            tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform 's|.*|shuthost_coordinator|' "$(basename "$file")" && rm "$file"
           done
 
       - *release_image_name
@@ -948,7 +953,7 @@ jobs:
           fi
 
       - name: Upload binaries to release (create one if not existing)
-        uses: softprops/action-gh-release@v2
+        uses: &gh-release softprops/action-gh-release@v2
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*
@@ -977,7 +982,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: *checkout
 
       - *download_coordinator_binaries
       
@@ -986,7 +991,7 @@ jobs:
       - *release_image_name
 
       - name: Upload binaries to release (create one if not existing)
-        uses: softprops/action-gh-release@v2
+        uses: *gh-release
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*

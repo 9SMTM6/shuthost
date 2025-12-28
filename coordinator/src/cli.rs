@@ -33,6 +33,10 @@ pub enum Command {
         port: u16,
         #[arg(long, default_value = "0.0.0.0")]
         bind: String,
+        /// Subpath where the demo is hosted (e.g. "/shuthost").
+        /// Defaults to `/` and is a positional argument.
+        #[arg(default_value = "/")]
+        subpath: String,
     },
 }
 
