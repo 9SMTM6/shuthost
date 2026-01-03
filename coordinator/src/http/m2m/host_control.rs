@@ -17,8 +17,11 @@ use shuthost_common::create_signed_message;
 use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
-    http::m2m::leases::LeaseSource,
-    http::{AppState, polling::poll_until_host_state},
+    http::{
+        polling::poll_until_host_state,
+        server::{AppState, ConfigRx, HostStatusRx, HostStatusTx},
+    },
+    websocket::LeaseSources,
 };
 
 /// Timeout for TCP operations
@@ -34,8 +37,10 @@ pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
 /// - The host fails to reach the desired state within the timeout period (60 seconds)
 pub(crate) async fn handle_host_state(
     host: &str,
-    lease_set: &std::collections::HashSet<LeaseSource>,
-    state: &AppState,
+    lease_set: &LeaseSources,
+    hoststatus_rx: &HostStatusRx,
+    config_rx: &ConfigRx,
+    hoststatus_tx: &HostStatusTx,
 ) -> Result<(), (StatusCode, String)> {
     let should_be_running = !lease_set.is_empty();
 
@@ -45,16 +50,16 @@ pub(crate) async fn handle_host_state(
     );
 
     let host_is_on = {
-        let hoststatus_rx = state.hoststatus_rx.borrow();
+        let hoststatus_rx = hoststatus_rx.borrow();
         hoststatus_rx.get(host).copied().unwrap_or(false)
     };
 
     debug!("Current state for host '{}': is_on={}", host, host_is_on);
 
     if should_be_running && !host_is_on {
-        wake_up_host(host, lease_set, state).await?;
+        wake_up_host(host, lease_set, config_rx, hoststatus_tx).await?;
     } else if !should_be_running && host_is_on {
-        shutdown_host_action(host, state).await?;
+        shutdown_host_action(host, config_rx, hoststatus_tx).await?;
     } else {
         debug!(
             "No action needed for host '{}' (is_on={}, should_be_running={})",
@@ -68,15 +73,16 @@ pub(crate) async fn handle_host_state(
 /// Wake up a host if WOL is enabled, and poll until online.
 async fn wake_up_host(
     host: &str,
-    lease_set: &std::collections::HashSet<LeaseSource>,
-    state: &AppState,
+    lease_set: &LeaseSources,
+    config_rx: &ConfigRx,
+    hoststatus_tx: &HostStatusTx,
 ) -> Result<(), (StatusCode, String)> {
     info!(
         "Host '{host}' needs to wake up - has {} active lease(s): {:?}",
         lease_set.len(),
         lease_set
     );
-    let host_config = get_host_config(host, state).map_err(|(sc, err)| (sc, err.to_owned()))?;
+    let host_config = get_host_config(host, config_rx).map_err(|(sc, err)| (sc, err.to_owned()))?;
     if host_config.mac.eq_ignore_ascii_case("disablewol") {
         info!("WOL disabled for host '{}' (MAC set to 'disableWOL')", host);
         Ok(())
@@ -95,18 +101,45 @@ async fn wake_up_host(
         })?;
         info!("Successfully sent WoL packet to '{}'", host);
         // Poll until host is online, updating global state
-        poll_until_host_state_wrapped(host, true, state).await
+        poll_until_host_state_wrapped(host, true, config_rx, hoststatus_tx).await
     }
 }
 
 /// Shut down a host and poll until offline.
-async fn shutdown_host_action(host: &str, state: &AppState) -> Result<(), (StatusCode, String)> {
+async fn shutdown_host_action(
+    host: &str,
+    config_rx: &ConfigRx,
+    hoststatus_tx: &HostStatusTx,
+) -> Result<(), (StatusCode, String)> {
     info!("Host '{host}' should shut down - no active leases");
-    send_shutdown_to_host(host, state)
+    send_shutdown_to_host(host, config_rx)
         .await
         .map_err(|(sc, err)| (sc, err.to_owned()))?;
     // Poll until host is offline, updating global state
-    poll_until_host_state_wrapped(host, false, state).await
+    poll_until_host_state_wrapped(host, false, config_rx, hoststatus_tx).await
+}
+
+/// Helper function to spawn an async task that handles host state changes.
+/// This clones the necessary state fields and spawns a background task to handle the host state change.
+pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, state: &AppState) {
+    let host = host.to_string();
+    let lease_set = lease_set.clone();
+    let hoststatus_rx = state.hoststatus_rx.clone();
+    let config_rx = state.config_rx.clone();
+    let hoststatus_tx = state.hoststatus_tx.clone();
+
+    tokio::spawn(async move {
+        drop(
+            handle_host_state(
+                &host,
+                &lease_set,
+                &hoststatus_rx,
+                &config_rx,
+                &hoststatus_tx,
+            )
+            .await,
+        );
+    });
 }
 
 /// Poll until a host reaches the desired state, mapping polling errors to
@@ -114,29 +147,23 @@ async fn shutdown_host_action(host: &str, state: &AppState) -> Result<(), (Statu
 async fn poll_until_host_state_wrapped(
     host: &str,
     desired_state: bool,
-    state: &AppState,
+    config_rx: &ConfigRx,
+    hoststatus_tx: &HostStatusTx,
 ) -> Result<(), (StatusCode, String)> {
-    poll_until_host_state(
-        host,
-        desired_state,
-        60,
-        200,
-        &state.config_rx,
-        &state.hoststatus_tx,
-    )
-    .await
-    .map_err(|e| {
-        warn!("{e}");
-        (StatusCode::GATEWAY_TIMEOUT, e)
-    })
+    poll_until_host_state(host, desired_state, 60, 200, config_rx, hoststatus_tx)
+        .await
+        .map_err(|e| {
+            warn!("{e}");
+            (StatusCode::GATEWAY_TIMEOUT, e)
+        })
 }
 
 /// Get host configuration from the current config.
 pub(crate) fn get_host_config(
     host_name: &str,
-    state: &AppState,
+    config_rx: &ConfigRx,
 ) -> Result<Host, (StatusCode, &'static str)> {
-    let config = state.config_rx.borrow();
+    let config = config_rx.borrow();
     match config.hosts.get(host_name) {
         Some(host) => {
             debug!(
@@ -203,26 +230,11 @@ pub(crate) async fn send_shutdown_to_address(
 /// Send a shutdown command to a host.
 async fn send_shutdown_to_host(
     host: &str,
-    state: &AppState,
+    config_rx: &ConfigRx,
 ) -> Result<(), (StatusCode, &'static str)> {
     debug!("Attempting to shutdown host '{}'", host);
 
-    let host_config = {
-        let config = state.config_rx.borrow();
-        match config.hosts.get(host) {
-            Some(config) => {
-                debug!(
-                    "Found configuration for host '{}': ip={}, port={}",
-                    host, config.ip, config.port
-                );
-                config.clone()
-            }
-            None => {
-                error!("No configuration found for host '{}'", host);
-                return Err((StatusCode::NOT_FOUND, "Unknown host"));
-            }
-        }
-    };
+    let host_config = get_host_config(host, config_rx)?;
 
     info!(
         "Sending shutdown command to '{}' ({}:{})",

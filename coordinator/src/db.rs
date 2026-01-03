@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 use eyre::Context;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
-use tracing::warn;
+use tracing::{error, warn};
 
 use base64::{Engine as _, engine::general_purpose};
 
@@ -115,7 +115,7 @@ pub(crate) async fn init(db_path: &Path) -> eyre::Result<DbPool> {
         Sqlite::create_database(&db_url).await?;
     }
 
-    let pool = SqlitePool::connect(&db_url).await?;
+    let pool = DbPool::connect(&db_url).await?;
 
     // Run migrations
     sqlx::migrate!("./migrations")
@@ -163,7 +163,11 @@ pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Resul
         "SELECT hostname, lease_source_type, lease_source_value FROM leases"
     )
     .fetch_all(pool)
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Failed to load leases from database: {}", e);
+        e
+    })?;
 
     for row in lease_records {
         let hostname = row.hostname;
@@ -173,7 +177,13 @@ pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Resul
         let lease_source = match lease_source_type.as_str() {
             "web_interface" => LeaseSource::WebInterface,
             "client" => LeaseSource::Client(lease_source_value.unwrap_or_default()),
-            _ => continue, // Skip invalid records
+            _ => {
+                warn!(
+                    "Skipping invalid lease record with type: {}",
+                    lease_source_type
+                );
+                continue;
+            }
         };
 
         leases_guard
@@ -185,13 +195,13 @@ pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Resul
     Ok(())
 }
 
-/// Persists a lease change to the database.
+/// Persists a lease to the database.
 ///
 /// # Arguments
 ///
 /// * `pool` - Database connection pool.
 /// * `hostname` - The hostname for the lease.
-/// * `lease_source` - The lease source being added or removed.
+/// * `lease_source` - The lease source to persist.
 ///
 /// # Errors
 ///
@@ -208,7 +218,14 @@ pub(crate) async fn add_lease(
                 hostname
             )
             .execute(pool)
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    "Failed to persist web interface lease for host '{}': {}",
+                    hostname, e
+                );
+                e
+            })?;
         }
         LeaseSource::Client(ref client_id) => {
             sqlx::query!(
@@ -217,7 +234,14 @@ pub(crate) async fn add_lease(
                 client_id
             )
             .execute(pool)
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    "Failed to persist client lease for host '{}' and client '{}': {}",
+                    hostname, client_id, e
+                );
+                e
+            })?;
         }
     }
     Ok(())
@@ -246,7 +270,14 @@ pub(crate) async fn remove_lease(
                 hostname
             )
             .execute(pool)
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    "Failed to remove web interface lease for host '{}': {}",
+                    hostname, e
+                );
+                e
+            })?;
         }
         LeaseSource::Client(ref client_id) => {
             sqlx::query!(
@@ -255,7 +286,14 @@ pub(crate) async fn remove_lease(
                 client_id
             )
             .execute(pool)
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    "Failed to remove client lease for host '{}' and client '{}': {}",
+                    hostname, client_id, e
+                );
+                e
+            })?;
         }
     }
     Ok(())
@@ -274,7 +312,14 @@ pub(crate) async fn remove_lease(
 pub(crate) async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre::Result<()> {
     sqlx::query!("DELETE FROM client_leases WHERE client_id = ?", client_id)
         .execute(pool)
-        .await?;
+        .await
+        .map_err(|e| {
+            error!(
+                "Failed to remove client leases for client '{}': {}",
+                client_id, e
+            );
+            e
+        })?;
 
     Ok(())
 }
@@ -297,7 +342,14 @@ pub(crate) async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Res
         value
     )
     .execute(pool)
-    .await?;
+    .await
+    .map_err(|e| {
+        error!(
+            "Failed to store key-value pair '{}'='{}': {}",
+            key, value, e
+        );
+        e
+    })?;
 
     Ok(())
 }
@@ -319,7 +371,11 @@ pub(crate) async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Res
 pub(crate) async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<String>> {
     let result = sqlx::query_as!(KvRecord, "SELECT value FROM kv_store WHERE key = ?", key)
         .fetch_optional(pool)
-        .await?;
+        .await
+        .map_err(|e| {
+            error!("Failed to retrieve key-value pair for key '{}': {}", key, e);
+            e
+        })?;
 
     Ok(result.map(|r| r.value))
 }
@@ -337,7 +393,11 @@ pub(crate) async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<Stri
 pub(crate) async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
     sqlx::query!("DELETE FROM kv_store WHERE key = ?", key)
         .execute(pool)
-        .await?;
+        .await
+        .map_err(|e| {
+            error!("Failed to delete key-value pair for key '{}': {}", key, e);
+            e
+        })?;
 
     Ok(())
 }

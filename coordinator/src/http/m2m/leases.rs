@@ -1,19 +1,21 @@
 //! Lease management types and utilities.
 
 use std::{
-    collections::{HashMap, HashSet},
     fmt::{self, Display},
     sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Mutex, broadcast};
+use tokio::sync::Mutex;
 use tracing::debug;
 
-use crate::websocket::WsMessage;
+use crate::{
+    http::WsTx,
+    websocket::{LeaseMapRaw, LeaseSources, WsMessage},
+};
 
-/// host_name => set of lease sources holding lease
-pub(crate) type LeaseMap = Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>;
+/// See [`LeaseMapRaw`]
+pub(crate) type LeaseMap = Arc<Mutex<LeaseMapRaw>>;
 
 /// Represents a source that holds a lease on a host.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
@@ -35,11 +37,7 @@ impl Display for LeaseSource {
 }
 
 /// Broadcast a lease update to WebSocket clients.
-pub(crate) async fn broadcast_lease_update(
-    host: &str,
-    leases: &HashSet<LeaseSource>,
-    ws_tx: &broadcast::Sender<WsMessage>,
-) {
+pub(crate) async fn broadcast_lease_update(host: &str, leases: &LeaseSources, ws_tx: &WsTx) {
     let msg = WsMessage::LeaseUpdate {
         host: host.to_string(),
         leases: leases.clone(),

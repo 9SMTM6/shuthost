@@ -6,14 +6,15 @@ use axum::{
 };
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{error, info};
 
 use crate::{
     db,
     http::{
         AppState,
-        m2m::{broadcast_lease_update, handle_host_state},
+        m2m::{broadcast_lease_update, spawn_handle_host_state},
     },
+    websocket::LeaseSources,
 };
 
 pub(crate) use super::m2m::LeaseSource;
@@ -71,6 +72,42 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/push/unsubscribe", post(unsubscribe_push))
 }
 
+/// Updates the lease set for a host, persists to database if available, and broadcasts the update.
+/// Returns the updated lease set.
+pub(crate) async fn update_lease_and_broadcast(
+    hostname: &str,
+    lease_source: LeaseSource,
+    action: LeaseAction,
+    state: &AppState,
+) -> Result<LeaseSources, Box<dyn std::error::Error + Send + Sync>> {
+    let mut leases = state.leases.lock().await;
+    let lease_set = leases.entry(hostname.to_string()).or_default();
+
+    use LeaseAction as LA;
+
+    match action {
+        LA::Take => {
+            lease_set.insert(lease_source.clone());
+            info!("{} took lease on '{}'", lease_source, hostname);
+            if let Some(ref pool) = state.db_pool {
+                db::add_lease(pool, hostname, &lease_source).await?;
+            }
+        }
+        LA::Release => {
+            lease_set.remove(&lease_source);
+            info!("{} released lease on '{}'", lease_source, hostname);
+            if let Some(ref pool) = state.db_pool {
+                db::remove_lease(pool, hostname, &lease_source).await?;
+            }
+        }
+    }
+
+    let lease_set = lease_set.clone();
+    broadcast_lease_update(hostname, &lease_set, &state.ws_tx).await;
+
+    Ok(lease_set)
+}
+
 /// Handles taking or releasing a lease on a host via the web interface.
 ///
 /// This function is used by the web UI to take or release a lease on a host. It does not require
@@ -84,42 +121,18 @@ async fn handle_web_lease_action(
     Path((hostname, action)): Path<(String, LeaseAction)>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let mut leases = state.leases.lock().await;
-    let lease_set = leases.entry(hostname.clone()).or_default();
     let lease_source = LeaseSource::WebInterface;
-    match action {
-        LeaseAction::Take => {
-            lease_set.insert(lease_source.clone());
-            info!("Web interface took lease on '{}'", hostname);
-            // Persist to database when enabled
-            if let Some(ref pool) = state.db_pool
-                && let Err(e) = crate::db::add_lease(pool, &hostname, &lease_source).await
-            {
-                tracing::error!("Failed to persist lease change: {}", e);
-            }
+    let lease_set = match update_lease_and_broadcast(&hostname, lease_source, action, &state).await
+    {
+        Ok(set) => set,
+        Err(e) => {
+            error!("Failed to update lease: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
-        LeaseAction::Release => {
-            lease_set.remove(&lease_source);
-            info!("Web interface released lease on '{}'", hostname);
-            // Persist to database when enabled
-            if let Some(ref pool) = state.db_pool
-                && let Err(e) = crate::db::remove_lease(pool, &hostname, &lease_source).await
-            {
-                tracing::error!("Failed to persist lease change: {}", e);
-            }
-        }
-    }
-
-    // Broadcast lease update to WebSocket clients
-    broadcast_lease_update(&hostname, lease_set, &state.ws_tx).await;
-
-    let lease_set = lease_set.clone();
-    let state = state.clone();
+    };
 
     // Handle host state after lease change
-    tokio::spawn(async move {
-        drop(handle_host_state(&hostname, &lease_set, &state).await);
-    });
+    spawn_handle_host_state(&hostname, &lease_set, &state);
 
     match action {
         LeaseAction::Take => "Lease taken (async)".into_response(),
@@ -161,12 +174,7 @@ async fn handle_reset_client_leases(
 
     // Handle host state after lease changes
     for (host, lease_set) in leases.iter() {
-        let host = host.clone();
-        let lease_set = lease_set.clone();
-        let state = state.clone();
-        tokio::spawn(async move {
-            drop(handle_host_state(&host, &lease_set, &state).await);
-        });
+        spawn_handle_host_state(host, lease_set, &state);
     }
 
     format!("All leases for client '{client_id}' have been reset.").into_response()

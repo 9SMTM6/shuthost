@@ -5,7 +5,6 @@ use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
-    sync::{broadcast, watch},
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
 use tracing::{debug, info};
@@ -13,8 +12,8 @@ use tracing::{debug, info};
 use shuthost_common::create_signed_message;
 
 use crate::{
-    config::{ControllerConfig, watch_config_file},
-    http::notifications,
+    config::watch_config_file,
+    http::{notifications, ConfigRx, ConfigTx, HostStatusTx, WsTx},
     websocket::WsMessage,
 };
 
@@ -62,8 +61,8 @@ pub(crate) async fn poll_until_host_state(
     desired_state: bool,
     timeout_secs: u64,
     poll_interval_ms: u64,
-    config_rx: &watch::Receiver<Arc<ControllerConfig>>,
-    hoststatus_tx: &watch::Sender<Arc<HashMap<String, bool>>>,
+    config_rx: &ConfigRx,
+    hoststatus_tx: &HostStatusTx,
 ) -> Result<(), String> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -103,10 +102,10 @@ pub(crate) async fn poll_until_host_state(
 
 /// Start all background tasks for the HTTP server.
 pub(crate) fn start_background_tasks(
-    config_rx: &watch::Receiver<Arc<ControllerConfig>>,
-    hoststatus_tx: &watch::Sender<Arc<HashMap<String, bool>>>,
-    ws_tx: &broadcast::Sender<WsMessage>,
-    config_tx: &watch::Sender<Arc<ControllerConfig>>,
+    config_rx: &ConfigRx,
+    hoststatus_tx: &HostStatusTx,
+    ws_tx: &WsTx,
+    config_tx: &ConfigTx,
     config_path: &Path,
     db_pool: &Option<crate::db::DbPool>,
 ) {
@@ -162,11 +161,7 @@ pub(crate) fn start_background_tasks(
 }
 
 /// Background task: periodically polls each host for status by attempting a TCP connection and HMAC ping.
-async fn poll_host_statuses(
-    config_rx: watch::Receiver<Arc<ControllerConfig>>,
-    hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
-    db_pool: Option<crate::db::DbPool>,
-) {
+async fn poll_host_statuses(config_rx: ConfigRx, hoststatus_tx: HostStatusTx, db_pool: Option<crate::db::DbPool>) {
     let poll_interval = Duration::from_secs(2);
     let mut ticker = interval(poll_interval);
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);

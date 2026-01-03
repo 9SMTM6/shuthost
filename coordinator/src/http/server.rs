@@ -89,6 +89,14 @@ fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
     public.merge(private)
 }
 
+pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
+pub(crate) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
+/// Maps hostname to online status (true=online, false=offline)
+pub(crate) type HostStatus = HashMap<String, bool>;
+pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
+pub(crate) type HostStatusTx = watch::Sender<Arc<HostStatus>>;
+pub(crate) type WsTx = broadcast::Sender<WsMessage>;
+
 /// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -96,21 +104,21 @@ pub(crate) struct AppState {
     pub config_path: std::path::PathBuf,
 
     /// Receiver for updated `ControllerConfig` when the file changes.
-    pub config_rx: watch::Receiver<Arc<ControllerConfig>>,
+    pub config_rx: ConfigRx,
 
     /// Receiver for host online/offline status updates.
-    pub hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
+    pub hoststatus_rx: HostStatusRx,
     /// Sender for host online/offline status updates.
-    pub hoststatus_tx: watch::Sender<Arc<HashMap<String, bool>>>,
+    pub hoststatus_tx: HostStatusTx,
 
     /// Broadcast sender for distributing WebSocket messages.
-    pub ws_tx: broadcast::Sender<WsMessage>,
+    pub ws_tx: WsTx,
 
     /// In-memory map of current leases for hosts.
     pub leases: LeaseMap,
 
     /// Authentication runtime (mode and secrets)
-    pub auth: std::sync::Arc<auth::Runtime>,
+    pub auth: Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
 
