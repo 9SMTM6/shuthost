@@ -91,7 +91,7 @@ pub(crate) async fn init(db_path: &Path) -> eyre::Result<DbPool> {
         Sqlite::create_database(&db_url).await?;
     }
 
-    let pool = SqlitePool::connect(&db_url).await?;
+    let pool = DbPool::connect(&db_url).await?;
 
     // Run migrations
     sqlx::migrate!("./migrations")
@@ -155,7 +155,10 @@ pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Resul
             "web_interface" => LeaseSource::WebInterface,
             "client" => LeaseSource::Client(lease_source_value.unwrap_or_default()),
             _ => {
-                warn!("Skipping invalid lease record with type: {}", lease_source_type);
+                warn!(
+                    "Skipping invalid lease record with type: {}",
+                    lease_source_type
+                );
                 continue;
             }
         };
@@ -194,7 +197,10 @@ pub(crate) async fn add_lease(
             .execute(pool)
             .await
             .map_err(|e| {
-                error!("Failed to persist web interface lease for host '{}': {}", hostname, e);
+                error!(
+                    "Failed to persist web interface lease for host '{}': {}",
+                    hostname, e
+                );
                 e
             })?;
         }
@@ -207,7 +213,10 @@ pub(crate) async fn add_lease(
             .execute(pool)
             .await
             .map_err(|e| {
-                error!("Failed to persist client lease for host '{}' and client '{}': {}", hostname, client_id, e);
+                error!(
+                    "Failed to persist client lease for host '{}' and client '{}': {}",
+                    hostname, client_id, e
+                );
                 e
             })?;
         }
@@ -240,7 +249,10 @@ pub(crate) async fn remove_lease(
             .execute(pool)
             .await
             .map_err(|e| {
-                error!("Failed to remove web interface lease for host '{}': {}", hostname, e);
+                error!(
+                    "Failed to remove web interface lease for host '{}': {}",
+                    hostname, e
+                );
                 e
             })?;
         }
@@ -253,7 +265,10 @@ pub(crate) async fn remove_lease(
             .execute(pool)
             .await
             .map_err(|e| {
-                error!("Failed to remove client lease for host '{}' and client '{}': {}", hostname, client_id, e);
+                error!(
+                    "Failed to remove client lease for host '{}' and client '{}': {}",
+                    hostname, client_id, e
+                );
                 e
             })?;
         }
@@ -276,7 +291,10 @@ pub(crate) async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre
         .execute(pool)
         .await
         .map_err(|e| {
-            error!("Failed to remove client leases for client '{}': {}", client_id, e);
+            error!(
+                "Failed to remove client leases for client '{}': {}",
+                client_id, e
+            );
             e
         })?;
 
@@ -303,7 +321,10 @@ pub(crate) async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Res
     .execute(pool)
     .await
     .map_err(|e| {
-        error!("Failed to store key-value pair '{}'='{}': {}", key, value, e);
+        error!(
+            "Failed to store key-value pair '{}'='{}': {}",
+            key, value, e
+        );
         e
     })?;
 

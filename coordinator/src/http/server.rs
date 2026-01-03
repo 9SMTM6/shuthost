@@ -104,7 +104,7 @@ pub(crate) struct AppState {
     pub leases: LeaseMap,
 
     /// Authentication runtime (mode and secrets)
-    pub auth: std::sync::Arc<auth::Runtime>,
+    pub auth: Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
 
