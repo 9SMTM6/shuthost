@@ -19,7 +19,7 @@ trait TemplateExt {
     fn no_logout(&self) -> String;
     fn no_demo_differences_or_not_in_demo(&self) -> String;
     fn insert_header_tmpl(&self) -> String;
-    fn insert_header_not_main_page(&self) -> String;
+    fn insert_header_not_main_page_tmpl(&self) -> String;
     fn insert_html_head(
         &self,
         title: &str,
@@ -99,7 +99,7 @@ impl<T: AsRef<str>> TemplateExt for T {
     ///   * mostly since its easier like that
     /// * and no demo disclaimer
     ///   * since they're not actually differing in behavior there
-    fn insert_header_not_main_page(&self) -> String {
+    fn insert_header_not_main_page_tmpl(&self) -> String {
         self.as_ref()
             .insert_header_tmpl()
             .no_demo_differences_or_not_in_demo()
@@ -255,7 +255,8 @@ pub fn process() -> eyre::Result<()> {
             &icon_hashes,
         )
         .insert_js_warnings()
-        .insert_header_not_main_page()
+        .insert_header_not_main_page_tmpl()
+        .include_svgs(&svg_hashes)
         .insert_footer()
         .insert_metadata();
     fs::write(generated_dir.join("login.html"), login_content)?;
@@ -270,7 +271,8 @@ pub fn process() -> eyre::Result<()> {
             &styles_integrity,
             &icon_hashes,
         )
-        .insert_header_not_main_page()
+        .insert_header_not_main_page_tmpl()
+        .include_svgs(&svg_hashes)
         .insert_footer()
         .insert_metadata();
     fs::write(generated_dir.join("about.html"), about_content)?;
