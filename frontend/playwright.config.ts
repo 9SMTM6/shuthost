@@ -9,7 +9,7 @@ export default defineConfig({
     expect: {
         timeout: 5000,
         toHaveScreenshot: {
-            maxDiffPixelRatio: 0.03,
+            maxDiffPixelRatio: 0.01,
             // have nice hi-res screenshots that can double as images in Docs.
             scale: 'device',
             // Strip the platform from the file name,
