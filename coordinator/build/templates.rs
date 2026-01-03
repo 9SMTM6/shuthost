@@ -84,11 +84,10 @@ impl<T: AsRef<str>> TemplateExt for T {
     }
 
     fn insert_header_tmpl(&self) -> String {
-        self.as_ref()
-            .replace(
-                "{ header }",
-                include_frontend_asset!("partials/header.tmpl.html"),
-            )
+        self.as_ref().replace(
+            "{ header }",
+            include_frontend_asset!("partials/header.tmpl.html"),
+        )
     }
 
     fn no_demo_differences_or_not_in_demo(&self) -> String {
