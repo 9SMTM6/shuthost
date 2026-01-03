@@ -6,15 +6,15 @@ use axum::{
 };
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use tracing::{error, info};
 
 use crate::{
     db,
     http::{
         AppState,
-        m2m::{broadcast_lease_update, handle_host_state},
+        m2m::{broadcast_lease_update, spawn_handle_host_state},
     },
+    websocket::LeaseSources,
 };
 
 pub(crate) use super::m2m::LeaseSource;
@@ -44,7 +44,7 @@ pub(crate) async fn update_lease_and_broadcast(
     lease_source: LeaseSource,
     action: LeaseAction,
     state: &AppState,
-) -> Result<HashSet<LeaseSource>, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<LeaseSources, Box<dyn std::error::Error + Send + Sync>> {
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.to_string()).or_default();
 
@@ -96,12 +96,8 @@ async fn handle_web_lease_action(
         }
     };
 
-    let state = state.clone();
-
     // Handle host state after lease change
-    tokio::spawn(async move {
-        drop(handle_host_state(&hostname, &lease_set, &state).await);
-    });
+    spawn_handle_host_state(&hostname, &lease_set, &state);
 
     match action {
         LeaseAction::Take => "Lease taken (async)".into_response(),
@@ -143,12 +139,7 @@ async fn handle_reset_client_leases(
 
     // Handle host state after lease changes
     for (host, lease_set) in leases.iter() {
-        let host = host.clone();
-        let lease_set = lease_set.clone();
-        let state = state.clone();
-        tokio::spawn(async move {
-            drop(handle_host_state(&host, &lease_set, &state).await);
-        });
+        spawn_handle_host_state(host, lease_set, &state);
     }
 
     format!("All leases for client '{client_id}' have been reset.").into_response()

@@ -22,12 +22,14 @@ use tracing::error;
 
 use crate::{
     db,
-    http::AppState,
-    http::api::{LeaseAction, update_lease_and_broadcast},
+    http::{
+        AppState,
+        api::{LeaseAction, update_lease_and_broadcast},
+    },
 };
 
 // Re-export public API
-pub(crate) use host_control::handle_host_state;
+pub(crate) use host_control::{handle_host_state, spawn_handle_host_state};
 pub(crate) use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
 pub(crate) fn routes() -> axum::Router<AppState> {
@@ -127,14 +129,17 @@ async fn handle_m2m_lease_action(
     if is_async {
         // In async mode, the host state change is triggered in the background and the response returns immediately.
         // The host may still be transitioning to the offline state when the client receives the response.
-        let host = host.clone();
-        let state = state.clone();
-        tokio::spawn(async move {
-            drop(host_control::handle_host_state(&host, &lease_set, &state).await);
-        });
+        spawn_handle_host_state(&host, &lease_set, &state);
     } else {
         // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
-        host_control::handle_host_state(&host, &lease_set, &state).await?;
+        handle_host_state(
+            &host,
+            &lease_set,
+            &state.hoststatus_rx,
+            &state.config_rx,
+            &state.hoststatus_tx,
+        )
+        .await?;
     };
     Ok(match (action, is_async) {
         (LA::Take, true) => "Lease taken (async)",

@@ -3,14 +3,20 @@
 //! This module provides functions for monitoring configuration files
 //! for changes and automatically reloading them.
 
-use std::{path::Path, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use eyre::{Result, WrapErr};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use tokio::sync::{mpsc::unbounded_channel, watch};
+use tokio::sync::mpsc::unbounded_channel;
 use tracing::{error, info, warn};
 
-use crate::config::{self, ControllerConfig};
+use crate::{
+    config::{self, ControllerConfig},
+    http::{ConfigRx, ConfigTx},
+};
 
 /// Handles the logic for reloading the configuration file and updating the application state.
 ///
@@ -23,11 +29,7 @@ use crate::config::{self, ControllerConfig};
 /// * `path` - The path to the configuration file.
 /// * `tx` - The sender part of a watch channel for broadcasting configuration updates.
 /// * `rx` - The receiver part of a watch channel for reading the current configuration state.
-async fn process_config_change(
-    path: &Path,
-    tx: &watch::Sender<Arc<ControllerConfig>>,
-    rx: &watch::Receiver<Arc<ControllerConfig>>,
-) -> Result<()> {
+async fn process_config_change(path: &Path, tx: &ConfigTx, rx: &ConfigRx) -> Result<()> {
     info!("Config file modified. Reloading...");
     let prev = rx.borrow().clone();
     let new_config = config::load(path)
@@ -73,10 +75,7 @@ async fn process_config_change(
 /// # Panics
 ///
 /// Panics if the file watcher cannot be created or if the config file doesnt have a parent directory.
-pub(crate) async fn watch_config_file(
-    path: std::path::PathBuf,
-    tx: watch::Sender<Arc<ControllerConfig>>,
-) {
+pub(crate) async fn watch_config_file(path: PathBuf, tx: ConfigTx) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 
     let mut watcher = RecommendedWatcher::new(

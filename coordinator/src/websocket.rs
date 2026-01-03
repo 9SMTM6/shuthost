@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::collections::{HashMap, HashSet};
 
 use axum::{
     extract::{
@@ -12,9 +9,17 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Mutex, broadcast, watch};
+use tokio::sync::broadcast;
 use tracing::{error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
+
+use crate::{
+    db::{self, ClientStats, DbPool},
+    http::{
+        AppState, ConfigRx, HostStatus, HostStatusRx,
+        m2m::{LeaseMap, LeaseSource},
+    },
+};
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
 fn is_websocket_closed(err: &axum::Error) -> bool {
@@ -36,17 +41,17 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
     false
 }
 
-use crate::{
-    config::ControllerConfig,
-    db::{self, ClientStats},
-    http::{AppState, m2m::LeaseSource},
-};
+/// The set of lease sources for a single host
+pub(crate) type LeaseSources = HashSet<LeaseSource>;
+
+/// host_name => set of lease sources holding lease
+pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]
 pub enum WsMessage {
     /// Gets sent on host status changes
-    HostStatus(HashMap<String, bool>),
+    HostStatus(HostStatus),
     /// We watch for select config changes and update the WebUI to immediately reflect additions to hosts or clients
     ConfigChanged {
         hosts: Vec<String>,
@@ -56,15 +61,12 @@ pub enum WsMessage {
     Initial {
         hosts: Vec<String>,
         clients: Vec<String>,
-        status: HashMap<String, bool>,
-        leases: HashMap<String, HashSet<LeaseSource>>,
+        status: HostStatus,
+        leases: LeaseMapRaw,
         client_stats: Option<HashMap<String, ClientStats>>,
     },
     /// Gets sent on Lease status updates
-    LeaseUpdate {
-        host: String,
-        leases: HashSet<LeaseSource>,
-    },
+    LeaseUpdate { host: String, leases: LeaseSources },
 }
 
 /// Gets called for every new web client and spins up an event loop
@@ -166,10 +168,10 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
 
 async fn send_startup_msg(
     socket: &mut WebSocket,
-    hoststatus_rx: watch::Receiver<Arc<HashMap<String, bool>>>,
-    config_rx: watch::Receiver<Arc<ControllerConfig>>,
-    current_leases: Arc<Mutex<HashMap<String, HashSet<LeaseSource>>>>,
-    db_pool: Option<&crate::db::DbPool>,
+    hoststatus_rx: HostStatusRx,
+    config_rx: ConfigRx,
+    current_leases: LeaseMap,
+    db_pool: Option<&DbPool>,
 ) -> Result<(), axum::Error> {
     // Read freshest values from the receivers just before sending.
     let current_state = hoststatus_rx.borrow().clone();
