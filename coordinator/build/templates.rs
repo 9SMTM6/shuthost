@@ -89,7 +89,6 @@ impl<T: AsRef<str>> TemplateExt for T {
                 "{ header }",
                 include_frontend_asset!("partials/header.tmpl.html"),
             )
-            .replace("{ maybe_demo_disclaimer }", "")
     }
 
     fn no_demo_differences_or_not_in_demo(&self) -> String {
