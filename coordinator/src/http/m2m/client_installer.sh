@@ -41,7 +41,8 @@ else
     BASE_ID="$RANDOM_PART"
 fi
 
-CLIENT_ID="$(hostname)_${BASE_ID}"
+SUBDOMAIN=$(hostname | cut -d. -f1)
+CLIENT_ID="${SUBDOMAIN}_${BASE_ID}"
 
 CLIENT_SCRIPT_NAME="shuthost_client_${BASE_ID}"
 

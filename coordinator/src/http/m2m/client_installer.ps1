@@ -43,7 +43,8 @@ if ($ClientId) {
     $baseId = $randomPart
 }
 
-$ClientId = "$(hostname)_${baseId}"
+$subdomain = ($(hostname) -split '\.')[0]
+$ClientId = "${subdomain}_${baseId}"
 
 $clientScriptName = "shuthost_client_${baseId}.ps1"
 
