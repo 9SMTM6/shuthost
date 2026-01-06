@@ -489,7 +489,7 @@ const setupInstallerCommands = () => {
 
     hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
     clientInstallCommandSh.textContent = `curl -sSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
-    clientInstallCommandPs1.textContent = `Invoke-WebRequest -Uri '${baseUrl}/download/client_installer.ps1' -UseBasicParsing -OutFile 'client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 ${baseUrl}`;
+    clientInstallCommandPs1.textContent = `curl -sSLO ${baseUrl}/download/client_installer.ps1; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 ${baseUrl}`;
 }
 
 // ==========================
