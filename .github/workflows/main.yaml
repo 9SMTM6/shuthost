@@ -505,7 +505,7 @@ jobs:
           try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null } catch { Write-Error "Coordinator service is not running"; exit 1 }
 
           # Run installer and capture output
-          $CLIENT_INSTALL_OUT = & powershell -Command "curl -sSLO http://localhost:8080/download/client_installer.ps1; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 http://localhost:8080 2>&1" 2>&1
+          $CLIENT_INSTALL_OUT = & powershell -Command "curl -sSLO 'http://localhost:8080/download/client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\client_installer.ps1 http://localhost:8080 2>&1" 2>&1
           Write-Host "--- installer output start ---"
           Write-Host $CLIENT_INSTALL_OUT
           $CLIENT_PATH = [regex]::Match($CLIENT_INSTALL_OUT, '([A-Za-z]:\\[^ ]*shuthost_client_[^ ]*\.ps1)').Groups[1].Value
