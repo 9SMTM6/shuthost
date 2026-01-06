@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [ValidateSet("take", "release")]
@@ -19,7 +21,7 @@ function Show-Help {
     $helpText = @"
 Usage: $($MyInvocation.MyCommand.Name) <take|release> <host> [remote_url] [-Async]
 
-Requires: PowerShell 5.1+ (built into Windows)
+Requires: PowerShell 6+ (on Linux/macOS or Windows)
 
 Arguments:
     <take|release>   Action to perform (required)
@@ -68,8 +70,8 @@ if ($Async) {
 }
 
 # Output request details (equivalent to bash set -v/-x)
-Write-Host "curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
+Write-Host "curl --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
 
 # Make the request
-& curl.exe --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
+& curl --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
 if ($LASTEXITCODE -ne 0) { exit 1 }

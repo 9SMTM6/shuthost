@@ -6,8 +6,12 @@ param(
     [string]$ClientId
 )
 
-# Default values
-$installDir = "$env:USERPROFILE\bin"
+if ($IsWindows) {
+    $installDir = "$env:USERPROFILE\bin"
+} else {
+    $installDir = "$env:HOME/.local/bin"
+}
+
 $remoteUrl = $RemoteUrl
 
 # Ensure the installation directory exists
@@ -17,11 +21,7 @@ if (-not (Test-Path $installDir)) {
 }
 
 # Check if the installation directory is in PATH
-$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-$machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-$fullPath = "$userPath;$machinePath"
-
-if ($fullPath -notlike "*$installDir*") {
+if ($env:PATH -notlike "*$installDir*") {
     Write-Host "Warning: $installDir is not in your PATH."
     Write-Host "You may need to add it to your PATH to use the installed script easily."
     Write-Host "To do so, add the following to your PATH environment variable:"
@@ -56,9 +56,10 @@ Write-Verbose "Remote URL: $remoteUrl"
 Write-Verbose "Client ID: $ClientId"
 
 $templateUrl = "$remoteUrl/download/shuthost_client.ps1"
-$tempTemplatePath = "$env:TEMP\$clientScriptName.tmpl"
+$tempDir = [System.IO.Path]::GetTempPath()
+$tempTemplatePath = Join-Path $tempDir "$clientScriptName.tmpl"
 
-& curl.exe --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
+& curl --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
 
 # Generate a random shared secret
 $secretBytes = New-Object byte[] 16
@@ -74,6 +75,9 @@ $customizedContent = $templateContent -replace '\{client_id\}', $ClientId `
 # Save the customized script
 $finalPath = Join-Path $installDir $clientScriptName
 $customizedContent | Out-File -FilePath $finalPath -Encoding UTF8
+if (!$IsWindows) {
+    & chmod +x $finalPath
+}
 
 # Clean up temp file
 Remove-Item $tempTemplatePath -Force
