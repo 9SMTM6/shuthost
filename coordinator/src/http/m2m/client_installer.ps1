@@ -6,10 +6,12 @@ param(
     [string]$ClientId
 )
 
-if ($IsWindows) {
-    $installDir = "$env:USERPROFILE\bin"
-} else {
+$isUnix = [Environment]::OSVersion.Platform -eq 'Unix'
+
+if ($isUnix) {
     $installDir = "$env:HOME/.local/bin"
+} else {
+    $installDir = "$env:USERPROFILE\bin"
 }
 
 $remoteUrl = $RemoteUrl
@@ -75,7 +77,7 @@ $customizedContent = $templateContent -replace '\{client_id\}', $ClientId `
 # Save the customized script
 $finalPath = Join-Path $installDir $clientScriptName
 $customizedContent | Out-File -FilePath $finalPath -Encoding UTF8
-if (!$IsWindows) {
+if ($isUnix) {
     & chmod +x $finalPath
 }
 
