@@ -99,7 +99,8 @@ pub fn generate_self_extracting_ps1_script(
         .join(", ");
 
     let script_header = format!(
-        r#"# Set environment variables
+        r#"#!/usr/bin/env pwsh
+# Set environment variables
 {env_section}
 
 # Extract and run the binary

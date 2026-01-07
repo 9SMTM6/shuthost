@@ -47,8 +47,10 @@ pub enum InitSystem {
     /// OpenRC init system (Linux).
     #[cfg(target_os = "linux")]
     OpenRC,
-    /// No init system; generates a self-extracting script you'll have to start yourself.
-    Serviceless,
+    /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    SelfExtractingShell,
+    /// Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    SelfExtractingPwsh,
     /// Launchd init system (macOS).
     #[cfg(target_os = "macos")]
     Launchd,
@@ -61,7 +63,8 @@ impl std::fmt::Display for InitSystem {
             InitSystem::Systemd => "systemd",
             #[cfg(target_os = "linux")]
             InitSystem::OpenRC => "open-rc",
-            InitSystem::Serviceless => "serviceless",
+            InitSystem::SelfExtractingShell => "self-extracting-shell",
+            InitSystem::SelfExtractingPwsh => "self-extracting-pwsh",
             #[cfg(target_os = "macos")]
             InitSystem::Launchd => "launchd",
         };
@@ -100,7 +103,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(name)?;
         }
-        InitSystem::Serviceless => {
+        InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
             shuthost_common::serviceless::generate_self_extracting_script(
                 &[
@@ -116,6 +119,24 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                 eprintln!("Failed to start self-extracting script: {e}");
             } else {
                 println!("Started self-extracting agent script in background.");
+            }
+        }
+        InitSystem::SelfExtractingPwsh => {
+            let target_script_path = format!("./{name}_self_extracting.ps1");
+            shuthost_common::serviceless::generate_self_extracting_ps1_script(
+                &[
+                    ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
+                    ("PORT", &arguments.port.to_string()),
+                    ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
+                ],
+                "service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
+                &target_script_path,
+            )?;
+            // Start the self-extracting script in the background
+            if let Err(e) = std::process::Command::new(&target_script_path).output() {
+                eprintln!("Failed to start self-extracting PowerShell script: {e}");
+            } else {
+                println!("Started self-extracting agent PowerShell script in background.");
             }
         }
         #[cfg(target_os = "macos")]
@@ -175,16 +196,16 @@ fn get_inferred_init_system() -> InitSystem {
         } else if is_openrc() {
             InitSystem::OpenRC
         } else {
-            InitSystem::Serviceless
+            InitSystem::SelfExtractingShell
         }
     }
     #[cfg(target_os = "macos")]
     {
         InitSystem::Launchd
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(target_os = "windows")]
     {
-        InitSystem::Serviceless
+        InitSystem::SelfExtractingPwsh
     }
 }
 
