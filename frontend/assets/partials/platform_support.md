@@ -2,13 +2,13 @@
 <section class="section-container mt-0 mb-4" aria-labelledby="platform-support-title">
     <h2 id="platform-support-title" class="section-title px-4 pt-4">🖥️ Platform Support</h2>
     <div class="overflow-x-auto">
-        <table class="platform-support-table">
+        <table class="info-table">
             <thead>
                 <tr>
-                    <th>Component</th>
-                    <th>Linux</th>
-                    <th>macOS</th>
-                    <th>Windows</th>
+                    <th scope="col">Component</th>
+                    <th scope="col">Linux</th>
+                    <th scope="col">macOS</th>
+                    <th scope="col">Windows</th>
                 </tr>
             </thead>
             <tbody>
