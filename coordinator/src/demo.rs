@@ -16,6 +16,7 @@ use crate::{
     auth,
     config::{AuthConfig, ControllerConfig},
     http::{
+        server::shutdown_signal,
         AppState,
         assets::{self, UiMode, render_ui_html},
         download,
@@ -74,7 +75,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
     let listener = TcpListener::bind(&addr)
         .await
         .expect("Failed to bind address");
-    axum::serve(listener, app.into_make_service())
+    axum::serve(listener, app.into_make_service()).with_graceful_shutdown(shutdown_signal())
         .await
         .expect("Demo server failed");
 }

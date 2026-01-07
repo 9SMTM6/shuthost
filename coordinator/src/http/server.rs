@@ -382,6 +382,22 @@ async fn initialize_state(
     Ok((app_state, tls_opt))
 }
 
+/// Creates a future that resolves when a shutdown signal is received.
+///
+/// On Unix systems, listens for SIGTERM. On other systems, listens for Ctrl+C.
+pub(crate) async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to create SIGTERM signal handler");
+        let _ = sigterm.recv().await;
+    }
+    #[cfg(not(unix))]
+    {
+        drop(signal::ctrl_c().await);
+    }
+}
+
 /// Start the HTTP server with optional TLS.
 async fn start_server(
     app_state: AppState,
@@ -393,18 +409,6 @@ async fn start_server(
     let app = create_app(app_state);
 
     let addr = std::net::SocketAddr::from((listen_ip, listen_port));
-    let shutdown_signal = async {
-        #[cfg(unix)]
-        {
-            let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-                .expect("failed to create SIGTERM signal handler");
-            let _ = sigterm.recv().await;
-        }
-        #[cfg(not(unix))]
-        {
-            drop(signal::ctrl_c().await);
-        }
-    };
 
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
@@ -413,7 +417,7 @@ async fn start_server(
             let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app);
             tokio::select! {
                 res = server => res?,
-                _ = shutdown_signal => {
+                _ = shutdown_signal() => {
                     info!("Received shutdown, shutting down");
                 }
             }
@@ -424,7 +428,7 @@ async fn start_server(
             let server = axum::serve(listener, app);
             tokio::select! {
                 res = server => res?,
-                _ = shutdown_signal => {
+                _ = shutdown_signal() => {
                     info!("Received shutdown, shutting down");
                 }
             }

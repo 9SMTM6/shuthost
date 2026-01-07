@@ -52,6 +52,9 @@ update_dependencies:
     cargo update --verbose
     cd frontend && npm update
 
+build_gh_pages +flags="":
+    ./scripts/build-gh-pages.sh {{flags}}
+
 export DATABASE_URL := "sqlite:./shuthost.db"
 
 db_create:
@@ -77,6 +80,7 @@ coverage:
     cargo llvm-cov clean --workspace
     cargo build --workspace
     cd frontend && npm run test && cd ..
+    just build_gh_pages target/debug/shuthost_coordinator
     cargo test --workspace --all-targets
     cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"
     cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs"

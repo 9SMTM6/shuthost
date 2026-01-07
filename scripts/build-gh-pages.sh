@@ -7,10 +7,17 @@ set -ev
 rm -rf gh-pages
 
 # Build and run demo service
-cargo build --release --bin shuthost_coordinator
+if [ -z "$1" ]; then
+    cargo build --release --bin shuthost_coordinator
+    binary="./target/release/shuthost_coordinator"
+else
+    binary="$1"
+fi
+
+echo "$binary"
 
 port=8090
-./target/release/shuthost_coordinator demo-service --port $port "${1:-"/"}" &
+"$binary" demo-service --port $port "${2:-"/"}" &
 DEMO_PID=$!
 
 # Wait for server to start
@@ -94,6 +101,6 @@ fetch_agent "linux-musl/x86_64"
 fetch_agent "linux-musl/aarch64"
 
 # Stop demo service
-kill -9 $DEMO_PID
+kill $DEMO_PID
 
 echo "Static demo prepared in ./gh-pages. Ready for GitHub Pages deployment."
