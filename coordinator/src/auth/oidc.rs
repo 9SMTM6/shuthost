@@ -423,3 +423,50 @@ pub(crate) async fn callback(
 
     finalize_session_and_redirect(jar, &session)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cookie::Key;
+
+    #[test]
+    fn test_validate_state_or_redirect_mismatch() {
+        let key = Key::generate();
+        let jar = SignedCookieJar::new(key);
+        let jar = jar.add(Cookie::new(COOKIE_STATE, "different_state"));
+        let state_param = Some("test_state".to_string());
+        let result = validate_state_or_redirect(&jar, &state_param);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_handle_provider_error_with_error() {
+        let key = Key::generate();
+        let jar = SignedCookieJar::new(key);
+        let error = Some("access_denied".to_string());
+        let error_description = Some("User denied access".to_string());
+        let result = handle_provider_error(error, &error_description, jar);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_handle_provider_error_no_error() {
+        let key = Key::generate();
+        let jar = SignedCookieJar::new(key);
+        let error = None;
+        let error_description = None;
+        let result = handle_provider_error(error, &error_description, jar);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_authorization_code_missing() {
+        let code = None;
+        let result = extract_authorization_code(code);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            LoginFlowError::LoginRedirect => {},
+            _ => panic!("Expected LoginRedirect"),
+        }
+    }
+}
