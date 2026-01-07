@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT endpoint, p256dh, auth FROM push_subscriptions",
+  "describe": {
+    "columns": [
+      {
+        "name": "endpoint",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "p256dh",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "auth",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ed993bdb27c0117437413fd11b4b4a2ed199030524f0f4dfde8ea201f6148ed2"
+}

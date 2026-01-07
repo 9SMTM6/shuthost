@@ -5,6 +5,5 @@
   ],
   "compilerOptions": {
     "noEmit": false,
-    "types": []
   }
 }

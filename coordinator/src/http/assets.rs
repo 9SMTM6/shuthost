@@ -103,6 +103,7 @@ pub(crate) fn routes() -> Router<AppState> {
             ),
             get(serve_architecture_complete),
         )
+        .route("/sw.js", get(serve_service_worker))
 }
 
 /// Macro to define a static SVG download handler using include_bytes!
@@ -272,6 +273,17 @@ pub(crate) async fn serve_styles() -> impl IntoResponse {
         .header("Content-Type", "text/css")
         .immutable()
         .body(include_utf8_asset!("generated/styles.css").into_response())
+        .unwrap()
+}
+
+#[axum::debug_handler]
+async fn serve_service_worker() -> impl IntoResponse {
+    const JS: &str = include_utf8_asset!("generated/sw.js");
+    Response::builder()
+        .header("Content-Type", "application/javascript")
+        .header("Cache-Control", "public, max-age=31536000, immutable")
+        .header("Content-Length", JS.len().to_string())
+        .body(JS.into_response())
         .unwrap()
 }
 

@@ -41,6 +41,7 @@ fn main() -> eyre::Result<()> {
 
     println!("cargo::rerun-if-changed=frontend/assets/styles.tailwind.css");
     println!("cargo::rerun-if-changed=frontend/assets/app.ts");
+    println!("cargo::rerun-if-changed=frontend/assets/sw.tmpl.ts");
     println!("cargo::rerun-if-changed=frontend/assets/index.tmpl.html");
     println!("cargo::rerun-if-changed=frontend/assets/login.tmpl.html");
     println!("cargo::rerun-if-changed=frontend/assets/partials");

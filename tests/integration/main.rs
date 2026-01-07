@@ -18,6 +18,8 @@ use common::{
     wait_for_listening,
 };
 
+use crate::common::wait_for_host_online;
+
 #[tokio::test]
 async fn test_coordinator_config_loads() {
     let port = get_free_port();
@@ -71,18 +73,7 @@ async fn test_coordinator_and_agent_online_status() {
 
     let client = Client::new();
     let url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
-    let mut online = false;
-    for _ in 0..10 {
-        let resp = client.get(&url).send().await;
-        if let Ok(resp) = resp
-            && let Ok(json) = resp.json::<serde_json::Value>().await
-            && json["testhost"] == true
-        {
-            online = true;
-            break;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-    }
+    let online = wait_for_host_online(&client, &url, "testhost").await;
     assert!(online, "Host should be online");
 }
 

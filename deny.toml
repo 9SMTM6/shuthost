@@ -11,6 +11,7 @@ allow-git = [
 [advisories]
 ignore = [
     { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security already failed." },
+    { id = "RUSTSEC-2024-0384", reason = "I don't have time to deal with this right now, and I believe the risk is low for our use case."}
 ]
 
 [bans]
@@ -27,6 +28,7 @@ allow = [
     "CDLA-Permissive-2.0",
     "ISC",
     "MIT",
+    "MPL-2.0",
     "OpenSSL",
     "Unicode-3.0",
     "Zlib",

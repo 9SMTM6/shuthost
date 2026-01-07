@@ -24,6 +24,26 @@ type WsMessage =
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
+/** Response from /api/push/vapid_public_key endpoint */
+type VapidPublicKeyResponse = {
+    public_key: string;
+}
+
+/** Request payload for /api/push/subscribe endpoint */
+type PushSubscriptionRequest = {
+    endpoint: string;
+    keys: PushKeys;
+}
+
+/** Push subscription keys */
+type PushKeys = {
+    p256dh: string;
+    auth: string;
+}
+
+/** Lease action enum */
+type LeaseAction = 'take' | 'release';
+
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
@@ -34,12 +54,16 @@ let persistedClientStats: Record<string, ClientStats> | null = null;
 // Error Handling
 // ==========================
 
-const showJSError = (message: string) => {
+const showJSErrorDiv = (doShow = true) => {
     const errorDiv = document.getElementById('js-error') as HTMLDivElement;
+    errorDiv.hidden = !doShow;
+}
+
+const showJSError = (message: string) => {
     const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement;
-    if (errorDiv && messageEl) {
+    if (messageEl) {
         messageEl.textContent = message;
-        errorDiv.hidden = false;
+        showJSErrorDiv(true);
     }
 };
 
@@ -96,6 +120,7 @@ const connectWebSocket = () => {
         // `ev` is typically an Event without much detail; still log to help
         // spot timing or repeated failures.
         console.error('WebSocket error', ev);
+        showJSError(`A WebSocket error occurred, please check the console for details.`); 
     };
     socket.onclose = (ev) => {
         console.warn('WebSocket closed', { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
@@ -425,7 +450,7 @@ const updateClientsTable = () => {
 /**
  * Send a lease action request to the backend.
  */
-const updateLease = async (host: string, action: 'take' | 'release') => {
+const updateLease = async (host: string, action: LeaseAction) => {
     if (DemoMode.isActive) {
         DemoMode.updateLease(host, action);
         return;
@@ -496,6 +521,130 @@ const setupInstallerCommands = () => {
 // Initialization
 // ==========================
 
+// Register service worker for push notifications
+const registerServiceWorker = async () => {
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.info('Service Worker registered:', registration);
+
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.info('New service worker available, consider refreshing the page');
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Service Worker registration failed:', error);
+        }
+    } else {
+        console.warn('Service Workers not supported');
+    }
+}
+
+// Request notification permission and subscribe to push notifications
+const setupPushNotifications = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        console.warn('Push notifications not supported');
+        return;
+    }
+
+    try {
+        // First check if the server supports push notifications
+        const vapidResponse = await fetch('/api/push/vapid_public_key');
+        if (vapidResponse.status === 503) {
+            console.info('Push notifications not supported by server');
+            return;
+        }
+        if (!vapidResponse.ok) {
+            throw new Error('Failed to get VAPID public key');
+        }
+        const vapidData: VapidPublicKeyResponse = await vapidResponse.json();
+        const { public_key: publicKey } = vapidData;
+
+        // Request permission only if server supports push notifications
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.info('Notification permission denied');
+            return;
+        }
+
+        // Subscribe
+        const registration = await navigator.serviceWorker.ready;
+        const applicationServerKey = urlBase64ToUint8Array(publicKey) as BufferSource;
+        console.log('VAPID public key:', publicKey);
+        console.log('Application server key length:', applicationServerKey.byteLength);
+
+        // Unsubscribe any existing subscription to avoid key mismatch
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+            await existingSubscription.unsubscribe();
+            console.info('Unsubscribed from existing push subscription');
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey
+        });
+
+        // Send subscription to server
+        const subscribeRequest: PushSubscriptionRequest = {
+            endpoint: subscription.endpoint,
+            keys: {
+                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+                auth: arrayBufferToBase64(subscription.getKey('auth')!)
+            }
+        };
+
+        const subscribeResponse = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(subscribeRequest)
+        });
+
+        if (subscribeResponse.ok) {
+            console.info('Push subscription successful');
+        } else {
+            console.error('Push subscription failed');
+        }
+    } catch (error) {
+        console.error('Error setting up push notifications:', error);
+    }
+}
+
+// Utility function to convert VAPID key
+const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// Utility function to convert ArrayBuffer to base64
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+    }
+    return window.btoa(binary);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         // If demo mode is active adjust root-relative anchors
@@ -511,6 +660,9 @@ document.addEventListener('DOMContentLoaded', () => {
         connectWebSocket();
         setupCopyButtons();
         setupInstallerCommands();
+        registerServiceWorker().then(() => {
+            setupPushNotifications();
+        });
         if (DemoMode.isActive) {
             console.info('Demo mode enabled: UI is using simulated data.');
         }
@@ -546,6 +698,11 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     showJSError(event.reason?.message || 'An unhandled promise rejection occurred');
+});
+
+window.addEventListener('securitypolicyviolation', (event) => {    
+    console.error('Security policy violation:', event);
+    showJSError('A security policy violation occurred');
 });
 
 /**
