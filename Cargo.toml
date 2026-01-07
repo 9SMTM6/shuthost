@@ -41,7 +41,7 @@ tokio.workspace = true
 [dev-dependencies]
 futures-util = "0.3"
 futures.workspace = true
-reqwest = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
+reqwest = { workspace = true, features = ["json", "blocking"] }
 secrecy.workspace = true
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -62,7 +62,7 @@ hmac = "0.12.1"
 nix = { version = "0.30.1", features = ["user", "fs"] }
 rand = "0.9.x"
 regex = "1.11.1"
-reqwest = { version = "0.12", default-features = false }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 secrecy = "0.10"
 sha2 = "0.10.8"
 shuthost_common = {path = "./common"}
