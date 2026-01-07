@@ -260,7 +260,7 @@ pub fn build_html() -> eyre::Result<()> {
 
     // Render HTML with Handlebars
     let hb = Handlebars::new();
-    let template = include_str!("../frontend/assets/about.tmpl.hbs");
+    let template = include_str!("../../frontend/assets/about.tmpl.hbs");
     let data = serde_json::json!({
         "entries": combined,
         "licenses": licenses_map,

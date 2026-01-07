@@ -74,6 +74,7 @@ impl std::fmt::Display for InitSystem {
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
+    #[cfg_attr(target_os = "windows", expect(unused_variables, reason = "windows doesn't need that, the others do"))]
     let bind_known_vals = |arg: &str| {
         arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{ port }", &arguments.port.to_string())
@@ -181,6 +182,10 @@ fn get_inferred_init_system() -> InitSystem {
     {
         InitSystem::Launchd
     }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        InitSystem::Serviceless
+    }
 }
 
 /// Attempts to determine the default network interface by parsing system routing information.
@@ -219,6 +224,20 @@ fn get_default_interface() -> Option<String> {
         }
         None
     }
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args(["-Command", "Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1 -ExpandProperty InterfaceAlias"])
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() {
+            Some(text)
+        } else {
+            None
+        }
+    }
 }
 
 /// Retrieves the MAC address for the named network interface.
@@ -248,6 +267,20 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
             }
         }
         None
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args(["-Command", &format!("Get-NetAdapter | Where-Object {{ $_.Name -eq '{}' }} | Select-Object -ExpandProperty MacAddress", interface)])
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() {
+            Some(text)
+        } else {
+            None
+        }
     }
 }
 
@@ -285,6 +318,20 @@ pub(crate) fn get_ip(interface: &str) -> Option<String> {
             }
         }
         None
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args(["-Command", &format!("Get-NetIPAddress | Where-Object {{ $_.InterfaceAlias -eq '{}' -and $_.AddressFamily -eq 'IPv4' }} | Select-Object -First 1 -ExpandProperty IPAddress", interface)])
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() {
+            Some(text)
+        } else {
+            None
+        }
     }
 }
 

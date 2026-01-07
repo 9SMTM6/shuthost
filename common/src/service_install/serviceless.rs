@@ -6,8 +6,9 @@ use std::{
     env,
     fs::{self, File},
     io::Write,
-    os::unix::fs::PermissionsExt,
 };
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 /// Generates a self-extracting shell script containing the current binary payload.
 ///
@@ -55,6 +56,7 @@ __BINARY_PAYLOAD_BELOW__
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
     script.write_all(&self_binary).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750))
         .map_err(|e| e.to_string())?;
 
@@ -131,6 +133,7 @@ __BINARY_PAYLOAD_BELOW__
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
     script.write_all(&self_binary).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750)).unwrap_or(());
 
     println!("Generated self-extracting PowerShell script: {target_script_path}");
