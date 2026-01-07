@@ -14,7 +14,7 @@ build = "build/mod.rs"
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
-default = ["compression-br", "compression-zstd"]
+default = ["compression-br", "compression-zstd", "compression-deflate", "compression-gzip"]
 compression-br = ["tower-http/compression-br", "reqwest/brotli"]
 compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
 compression-gzip = ["tower-http/compression-gzip", "reqwest/gzip"]
