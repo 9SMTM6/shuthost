@@ -16,7 +16,7 @@ fi
 
 # Configuration
 BASE_IMAGE="quay.io/podman/stable"
-INSTALL_DEPS="dnf install -y podman-compose curl hostname file openssl"
+INSTALL_DEPS="rpm -Uvh https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm || true; dnf install -y podman-compose curl hostname file openssl powershell"
 OUTPUT_DIR="./install-file-snapshots/docker-compose"
 BASE_IMAGE_NAME="shuthost-compose-base"
 COORDINATOR_INSTALLED_NAME="shuthost-compose-coordinator-installed"
@@ -77,6 +77,7 @@ podman commit temp-container "$AGENT_INSTALLED_NAME"
 # Now install the client in the same container
 podman exec -w /workspace temp-container sh -c "
   curl -k -sSL https://localhost:8080/download/client_installer.sh | sh -s https://localhost:8080 test-client &&
+  curl -k -sSLO https://localhost:8080/download/client_installer.ps1; pwsh -ExecutionPolicy Bypass -File ./client_installer.ps1 https://localhost:8080 test-client &&
   echo 'Client installer completed, killing coordinator...' &&
   podman compose down
 " || true

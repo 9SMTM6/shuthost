@@ -6,9 +6,20 @@ param(
     [string]$ClientId
 )
 
-# Default values
-$installDir = "$env:USERPROFILE\bin"
+$isUnix = [Environment]::OSVersion.Platform -eq 'Unix'
+$curlCmd = if ($isUnix) { "curl" } else { "curl.exe" }
+
+if ($isUnix) {
+    $installDir = "$env:HOME/.local/bin"
+} else {
+    $installDir = "$env:USERPROFILE\bin"
+}
+
 $remoteUrl = $RemoteUrl
+
+# Determine if we should accept self-signed certificates (for localhost/testing)
+$parsedHost = $remoteUrl -replace '^https*://', '' -replace '/.*$', '' -replace ':.*$', ''
+$curlOpts = if ($parsedHost -eq 'localhost' -or $parsedHost -match '^127\.') { '-k' } else { '' }
 
 # Ensure the installation directory exists
 if (-not (Test-Path $installDir)) {
@@ -17,11 +28,7 @@ if (-not (Test-Path $installDir)) {
 }
 
 # Check if the installation directory is in PATH
-$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-$machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-$fullPath = "$userPath;$machinePath"
-
-if ($fullPath -notlike "*$installDir*") {
+if ($env:PATH -notlike "*$installDir*") {
     Write-Host "Warning: $installDir is not in your PATH."
     Write-Host "You may need to add it to your PATH to use the installed script easily."
     Write-Host "To do so, add the following to your PATH environment variable:"
@@ -56,9 +63,13 @@ Write-Verbose "Remote URL: $remoteUrl"
 Write-Verbose "Client ID: $ClientId"
 
 $templateUrl = "$remoteUrl/download/shuthost_client.ps1"
-$tempTemplatePath = "$env:TEMP\$clientScriptName.tmpl"
+$tempDir = [System.IO.Path]::GetTempPath()
+$tempTemplatePath = Join-Path $tempDir "$clientScriptName.tmpl"
 
-& curl.exe --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
+$curlArgs = @('--compressed', '-L', '--fail-with-body')
+if ($curlOpts) { $curlArgs += $curlOpts }
+$curlArgs += @('-o', $tempTemplatePath, $templateUrl)
+& $curlCmd @curlArgs
 
 # Generate a random shared secret
 $secretBytes = New-Object byte[] 16
@@ -74,6 +85,10 @@ $customizedContent = $templateContent -replace '\{client_id\}', $ClientId `
 # Save the customized script
 $finalPath = Join-Path $installDir $clientScriptName
 $customizedContent | Out-File -FilePath $finalPath -Encoding UTF8
+if ($isUnix) {
+    # Make script executable, readable and writeable for you, but noone else 
+    & chmod 700 $finalPath
+}
 
 # Clean up temp file
 Remove-Item $tempTemplatePath -Force

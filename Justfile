@@ -118,7 +118,7 @@ playwright +flags="":
 playwright_report:
     cd frontend && npx playwright show-report
 
-release TYPE:
+release TYPE skip_updates="false":
     #!/usr/bin/env bash
     set -e
     git fetch
@@ -132,14 +132,18 @@ release TYPE:
         exit 1
     fi
     echo "Starting {{TYPE}} release process..."
-    just update_dependencies
-    cargo fmt
-    just update_test_config_diffs
-    just patch_test_configs
-    just update_file_snapshots
-    just ci_cargo_deny
-    just db_update_sqlx_cache
-    just coverage
+    if [ "{{skip_updates}}" != "true" ]; then
+        just update_dependencies
+        cargo fmt
+        just update_test_config_diffs
+        just patch_test_configs
+        just update_file_snapshots
+        just ci_cargo_deny
+        just db_update_sqlx_cache
+        just coverage
+    else
+        echo "Skipping pre-release updates..."
+    fi
     CURRENT_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
     case {{TYPE}} in

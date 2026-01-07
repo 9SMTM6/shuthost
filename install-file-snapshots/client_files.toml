@@ -3,3 +3,8 @@ path = "/root/.local/bin/shuthost_client_test-client"
 perms = "700"
 type = "POSIX shell script"
 
+[[files]]
+path = "/root/.local/bin/shuthost_client_test-client.ps1"
+perms = "700"
+type = "a pwsh script"
+

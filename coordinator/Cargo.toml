@@ -14,7 +14,7 @@ build = "build/mod.rs"
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
-default = ["compression-br", "compression-zstd", "vendored-openssl"]
+default = ["compression-br", "compression-zstd", "compression-deflate", "compression-gzip", "vendored-openssl"]
 compression-br = ["tower-http/compression-br", "reqwest/brotli"]
 compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
 compression-gzip = ["tower-http/compression-gzip", "reqwest/gzip"]
@@ -53,7 +53,7 @@ openidconnect = { version = "4.x", default-features = false, features = [
 rand.workspace = true
 rcgen = "0.14.x"
 regex.workspace = true
-reqwest = { workspace = true, features = ["rustls-tls-webpki-roots-no-provider", "http2", "charset"] }
+reqwest = { workspace = true, features = ["http2", "charset"] }
 rustls = { version = "0.23.x", default-features = false, features = ["logging", "prefer-post-quantum", "std", "tls12"] }
 rustls-openssl = "0.3.0"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -103,4 +103,4 @@ sha2.workspace = true
 spdx = { version = "0.13", features = ["text"] }
 tiny-skia = "0.11"
 toml.workspace = true
-url = "2"
+url = { version = "2", features = ["serde"]}

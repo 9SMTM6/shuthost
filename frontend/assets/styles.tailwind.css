@@ -25,6 +25,8 @@ header {
 
 .main {
     grid-area: main;
+    max-width: 100%;
+    @apply overflow-x-hidden;
 }
 
 footer {
@@ -40,11 +42,11 @@ footer {
 
 @layer components {
     .html-body {
-        @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen;
+        @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen overflow-x-hidden;
     }
 
     .section-container {
-        @apply bg-white dark:bg-[#1e1e1e] shadow-md rounded-lg overflow-hidden;
+        @apply bg-white dark:bg-[#1e1e1e] shadow-md rounded-lg overflow-x-auto overflow-y-hidden;
     }
 
     .section-title {
@@ -52,7 +54,7 @@ footer {
     }
 
     .code-container {
-        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative;
+        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative overflow-x-auto;
     }
 
     .copy-button {
@@ -64,7 +66,7 @@ footer {
 
     .code-block {
         /* add extra right padding so the copy button doesn't overlap wrapped content */
-        @apply block font-mono text-xs sm:text-sm break-words whitespace-pre-wrap max-w-full pr-20;
+        @apply block font-mono text-xs sm:text-sm wrap-break-word whitespace-pre-wrap max-w-full pr-12;
     }
 
     .description-text {
@@ -120,12 +122,12 @@ footer {
 
     /* New mobile optimizations */
     .table-wrapper {
-        @apply w-full;
-        /* Remove overflow and padding/margin adjustments */
+        @apply w-full overflow-x-auto;
     }
 
     table {
-        @apply border-collapse;
+        @apply border-collapse w-full;
+        table-layout: auto;
     }
 
     .table-header {
@@ -225,52 +227,52 @@ footer {
     }
 
     /* Platform support table */
-    .platform-support-table {
+    .info-table {
         @apply w-full text-sm;
         border-collapse: separate;
         border-spacing: 0;
     }
 
-    .platform-support-table thead {
+    .info-table thead {
         @apply bg-[#f3f3f3] dark:bg-[#252526];
     }
 
-    .platform-support-table th {
+    .info-table th {
         @apply px-4 py-3 text-left font-semibold text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42];
     }
 
-    .platform-support-table td {
+    .info-table td {
         @apply px-4 py-3 text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42] align-top;
     }
 
-    .platform-support-table tbody tr:hover {
+    .info-table tbody tr:hover {
         @apply bg-[#f9f9f9] dark:bg-[#1e1e1e];
     }
 
     /* Rounded corners for table */
-    .platform-support-table thead tr:first-child th:first-child {
+    .info-table thead tr:first-child th:first-child {
         border-top-left-radius: 0.5rem;
     }
 
-    .platform-support-table thead tr:first-child th:last-child {
+    .info-table thead tr:first-child th:last-child {
         border-top-right-radius: 0.5rem;
     }
 
-    .platform-support-table tbody tr:last-child td:first-child {
+    .info-table tbody tr:last-child td:first-child {
         border-bottom-left-radius: 0.5rem;
     }
 
-    .platform-support-table tbody tr:last-child td:last-child {
+    .info-table tbody tr:last-child td:last-child {
         border-bottom-right-radius: 0.5rem;
     }
 
     /* Remove double borders */
-    .platform-support-table th + th,
-    .platform-support-table td + td {
+    .info-table th + th,
+    .info-table td + td {
         border-left: none;
     }
 
-    .platform-support-table tbody tr + tr td {
+    .info-table tbody tr + tr td {
         border-top: none;
     }
 
@@ -301,6 +303,14 @@ footer {
 
     .alert li {
         @apply mb-1;
+    }
+
+    .license-title {
+        @apply text-base sm:text-lg font-semibold text-black dark:text-[#cccccc];
+    }
+
+    .license-listing {
+        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] p-3 overflow-x-auto text-xs sm:text-sm font-mono whitespace-pre-wrap wrap-break-word;
     }
 
     /* Link styles */
