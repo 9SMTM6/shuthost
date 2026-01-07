@@ -2,28 +2,33 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
+use std::time::Duration;
+
 use axum::{
     Router,
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Redirect},
     routing::get,
 };
+use axum_extra::{
+    TypedHeader,
+    headers::{CacheControl, ContentLength, ContentType},
+};
+use mime::{TEXT_CSS, IMAGE_SVG};
 
 use crate::{
     auth::Resolved,
     http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
 };
 
-use axum::http::response::Builder;
-
-trait ImmutableCacheControl {
-    fn immutable(self) -> Self;
-}
-
-impl ImmutableCacheControl for Builder {
-    fn immutable(self) -> Self {
-        self.header("Cache-Control", "public, max-age=31536000, immutable")
-    }
+#[allow(nonstandard_style, reason = "the functions should be const, in lack of that use a fn")]
+fn IMMUTABLE_HEADER() -> TypedHeader<CacheControl> {
+    TypedHeader(
+        CacheControl::new()
+            .with_immutable()
+            .with_public()
+            .with_max_age(Duration::from_secs(31536000)),
+    )
 }
 
 #[macro_export]
@@ -111,12 +116,12 @@ macro_rules! static_svg_download_handler {
         #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             const SVG: &'static str = include_utf8_asset!($file);
-            Response::builder()
-                .header("Content-Type", "image/svg+xml")
-                .immutable()
-                .header("Content-Length", SVG.len().to_string())
-                .body(SVG.into_response())
-                .unwrap()
+            (
+                TypedHeader(ContentType::from(IMAGE_SVG)),
+                IMMUTABLE_HEADER(),
+                TypedHeader(ContentLength(SVG.len() as u64)),
+                SVG,
+            )
         }
     };
 }
@@ -131,12 +136,12 @@ macro_rules! static_png_download_handler {
                 "frontend/assets/generated/icons/",
                 $file
             ));
-            Response::builder()
-                .header("Content-Type", "image/png")
-                .immutable()
-                .header("Content-Length", DATA.len().to_string())
-                .body(DATA.into_response())
-                .unwrap()
+            (
+                TypedHeader(ContentType::png()),
+                IMMUTABLE_HEADER(),
+                TypedHeader(ContentLength(DATA.len() as u64)),
+                DATA,
+            )
         }
     };
 }
@@ -193,10 +198,6 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
 }
 
 /// Serves the main HTML template, injecting dynamic content.
-///
-/// # Panics
-///
-/// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
 pub(crate) async fn serve_ui(
     State(AppState {
@@ -221,58 +222,43 @@ pub(crate) async fn serve_ui(
         }
     };
 
-    Response::builder()
-        .header("Content-Type", "text/html")
-        .body(
-            render_ui_html(&UiMode::Normal {
-                config_path: &config_path,
-                show_logout,
-                maybe_auth_warning,
-            })
-            .into_response(),
-        )
-        .unwrap()
+    (
+        TypedHeader(ContentType::html()),
+        render_ui_html(&UiMode::Normal {
+            config_path: &config_path,
+            show_logout,
+            maybe_auth_warning,
+        }),
+    )
 }
 
 /// Serves the about and licenses page HTML.
-///
-/// # Panics
-///
-/// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
 pub(crate) async fn serve_about() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "text/html")
-        .body(include_utf8_asset!("generated/about.html").into_response())
-        .unwrap()
+    (
+        TypedHeader(ContentType::html()),
+        include_utf8_asset!("generated/about.html"),
+    )
 }
 
 /// Serves the manifest.json file for web app metadata.
-///
-/// # Panics
-///
-/// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
 pub(crate) async fn serve_manifest() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "application/json")
-        .immutable()
-        .body(include_utf8_asset!("generated/manifest.json").into_response())
-        .unwrap()
+    (
+        TypedHeader(ContentType::json()),
+        IMMUTABLE_HEADER(),
+        include_utf8_asset!("generated/manifest.json"),
+    )
 }
 
 /// Serves the compiled stylesheet for the UI.
-///
-/// # Panics
-///
-/// Panics if the response builder fails to build the response.
 #[axum::debug_handler]
 pub(crate) async fn serve_styles() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "text/css")
-        .immutable()
-        .body(include_utf8_asset!("generated/styles.css").into_response())
-        .unwrap()
+    (
+        TypedHeader(ContentType::from(TEXT_CSS)),
+        IMMUTABLE_HEADER(),
+        include_utf8_asset!("generated/styles.css"),
+    )
 }
 
 static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");

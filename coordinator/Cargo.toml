@@ -31,7 +31,7 @@ include_macos_x86_64_agent = []
 
 [dependencies]
 axum = { version = "0.8.3", features = ["macros", "ws"] }
-axum-extra = { version = "0.12", features = ["cookie", "cookie-signed"] }
+axum-extra = { version = "0.12", features = ["cookie", "cookie-signed", "tracing", "typed-header"] }
 axum-server = { version = "0.8", features = ["tls-rustls"] }
 base64.workspace = true
 chrono = { version = "0.4", features = ["serde"] }
@@ -73,6 +73,7 @@ tower-http = { version = "0.6", features = [
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
 tungstenite = "*"
+mime = "0.3.17"
 
 [lints]
 workspace = true

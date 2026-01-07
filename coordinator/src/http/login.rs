@@ -7,7 +7,7 @@ use axum::{
     response::{IntoResponse, Redirect},
     routing::{get, post},
 };
-use axum_extra::extract::cookie::SignedCookieJar;
+use axum_extra::{TypedHeader, extract::cookie::SignedCookieJar, headers::ContentType};
 use reqwest::StatusCode;
 
 use crate::{
@@ -32,10 +32,6 @@ pub(crate) fn routes() -> Router<AppState> {
 }
 
 /// Handle GET requests to the login page.
-///
-/// # Panics
-///
-/// Panics if the HTTP response cannot be built.
 #[axum::debug_handler]
 pub(crate) async fn page(
     State(AppState { auth, .. }): State<AppState>,
@@ -87,10 +83,7 @@ pub(crate) async fn page(
     let html = include_utf8_asset!("generated/login.html")
         .replace("{ maybe_error }", maybe_error)
         .replace("{ login_form }", login_form);
-    axum::response::Response::builder()
-        .header("Content-Type", "text/html")
-        .body(axum::body::Body::from(html))
-        .unwrap()
+    (TypedHeader(ContentType::html()), html).into_response()
 }
 
 /// Handle logout requests.

@@ -1,8 +1,12 @@
 use axum::{
     Router,
-    http::{Response, StatusCode},
+    http::StatusCode,
     response::IntoResponse,
     routing::get,
+};
+use axum_extra::{
+    TypedHeader,
+    headers::{ContentLength, ContentType},
 };
 
 use crate::http::AppState;
@@ -13,12 +17,11 @@ macro_rules! static_text_download_handler {
         #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
             const DOC: &[u8] = include_bytes!($file);
-            Response::builder()
-                .header("Content-Type", "text/plain")
-                .header("Content-Length", DOC.len().to_string())
-                .status(StatusCode::OK)
-                .body(DOC.into_response())
-                .unwrap()
+            (
+                TypedHeader(ContentType::text()),
+                TypedHeader(ContentLength(DOC.len() as u64)),
+                DOC,
+            )
         }
     };
 }
@@ -33,12 +36,11 @@ macro_rules! host_agent_handler {
                 $host_agent_target,
                 "/release/shuthost_host_agent"
             ));
-            Response::builder()
-                .header("Content-Type", "application/octet-stream")
-                .header("Content-Length", AGENT_BINARY.len().to_string())
-                .status(StatusCode::OK)
-                .body(AGENT_BINARY.into_response())
-                .unwrap()
+            (
+                TypedHeader(ContentType::from(mime::APPLICATION_OCTET_STREAM)),
+                TypedHeader(ContentLength(AGENT_BINARY.len() as u64)),
+                AGENT_BINARY,
+            )
         }
     };
     (fn $name:ident, target=$host_agent_target:expr, feature=$feature:expr) => {
@@ -47,10 +49,10 @@ macro_rules! host_agent_handler {
         #[cfg(not(feature = $feature))]
         #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
-            Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body("This agent is not available in this build.".into_response())
-                .unwrap()
+            (
+                StatusCode::NOT_FOUND,
+                "This agent is not available in this build.",
+            )
         }
     };
 }
