@@ -7,17 +7,32 @@ set -ev
 rm -rf gh-pages
 
 # Build and run demo service
-if [ -z "$1" ]; then
+binary=""
+subpath="/"
+for arg in "$@"; do
+    case $arg in
+        --provided-binary=*)
+            binary="${arg#*=}"
+            ;;
+        --serve-subpath=*)
+            subpath="${arg#*=}"
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$binary" ]; then
     cargo build --release --bin shuthost_coordinator
     binary="./target/release/shuthost_coordinator"
-else
-    binary="$1"
 fi
 
 echo "$binary"
 
 port=8090
-"$binary" demo-service --port $port "${2:-"/"}" &
+"$binary" demo-service --port $port "$subpath" &
 DEMO_PID=$!
 
 # Wait for server to start

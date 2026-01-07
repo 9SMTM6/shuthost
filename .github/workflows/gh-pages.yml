@@ -27,7 +27,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build and snapshot demo
-        run: ./scripts/build-gh-pages.sh /shuthost
+        run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
