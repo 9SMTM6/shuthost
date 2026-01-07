@@ -1,7 +1,7 @@
 <!-- ONLY USE HTML IN THIS FILE, IT GETS INCLUDED IN THE WebGUI -->
 <section class="section-container mt-0 mb-4" aria-labelledby="platform-support-title">
     <h2 id="platform-support-title" class="section-title px-4 pt-4">🖥️ Platform Support</h2>
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" tabindex="0">
         <table class="info-table">
             <thead>
                 <tr>
