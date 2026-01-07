@@ -1,5 +1,5 @@
 --- example_config.toml	2025-12-04 11:02:54.566048336 +0100
-+++ example_config_oidc.toml	2025-12-06 22:24:25.888606720 +0100
++++ example_config_oidc.toml	2026-01-07 12:54:15.507891590 +0100
 @@ -62,37 +62,37 @@
  # The default if none is configured is no authentication!
  # Only one authentication mode can be active at a time.
