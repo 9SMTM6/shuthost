@@ -4,7 +4,6 @@
 pub mod macos;
 #[cfg(target_os = "linux")]
 pub mod openrc;
-#[cfg(not(target_os = "windows"))]
 pub mod serviceless;
 #[cfg(target_os = "linux")]
 pub mod systemd;

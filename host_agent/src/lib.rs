@@ -3,7 +3,7 @@
 //! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
 
 mod commands;
-#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(coverage))]
 mod install;
 pub mod server;
 pub mod validation;
@@ -34,11 +34,11 @@ pub enum Command {
     /// Start the host_agent as a background service.
     Service(ServiceOptions),
 
-    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(coverage))]
     /// Install the host_agent on the system.
     Install(install::Args),
 
-    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(coverage))]
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
         /// UDP port to listen on for WOL test packets.
@@ -49,7 +49,7 @@ pub enum Command {
 
 pub fn inner_main(invocation: Cli) {
     match invocation.command {
-        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+        #[cfg(not(coverage))]
         Command::Install(args) => match install::install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),
@@ -57,7 +57,7 @@ pub fn inner_main(invocation: Cli) {
         Command::Service(args) => {
             server::start_host_agent(args);
         }
-        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+        #[cfg(not(coverage))]
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
             Err(e) => eprintln!("Error during WoL test: {e}"),
