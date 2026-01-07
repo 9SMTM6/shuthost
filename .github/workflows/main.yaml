@@ -707,7 +707,7 @@ jobs:
 
   playwright-tests:
     name: Run Playwright (Web GUI) tests
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code (with LFS because pngs for visual regression are saved there)
         uses: *checkout
@@ -718,8 +718,9 @@ jobs:
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
           set -eux
-          # Homebrew cask fonts; fail if they can't be installed.
-          brew install --cask font-inter font-cascadia-code
+          # Ubuntu fonts; fail if they can't be installed.
+          sudo apt-get update
+          sudo apt-get install -y fonts-inter fonts-cascadia-code
           # Verify via fc-list; if fc-list isn't present this will fail which
           # is desired so the CI run fails when fonts are not available.
           fc-list | grep -i inter >/dev/null 2>&1 || { echo "Inter font not found after install" >&2; exit 1; }
@@ -812,6 +813,7 @@ jobs:
     needs:
       - playwright-tests
       - test
+      - validate-file-snapshots
       - ci-only-tests
     steps:
       - name: Aggregated tests (grouping)
@@ -825,6 +827,7 @@ jobs:
       # test-aggregate
       - playwright-tests
       - test
+      - validate-file-snapshots
       ## ci-only-tests
       ### test-service-installation
       - test-service-installation-systemd

@@ -9,8 +9,8 @@ export default defineConfig({
     expect: {
         timeout: 5000,
         toHaveScreenshot: {
-            // TODO: tighten. A value of 0.03 was too lenient and passed a significant change, but if I specify 0.01 then the CI fails, so this is a hotfix.
-            maxDiffPixelRatio: 0.02,
+            // TODO: A value of 0.03 was too lenient and passed a significant change, but if I specify 0.01 then playwright fails on macos. If someone raises an issue we can investigate further.
+            maxDiffPixelRatio: 0.01,
             // have nice hi-res screenshots that can double as images in Docs.
             scale: 'device',
             // Strip the platform from the file name,
