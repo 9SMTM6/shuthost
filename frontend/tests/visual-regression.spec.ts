@@ -78,6 +78,17 @@ test.describe('token login', () => {
         await expect(page.locator('body')).toHaveScreenshot(`login_token_auth.png`);
     });
 
+    test('redirects unauthorized access to login', async ({ page }) => {
+        // Use HTTPS for TLS-enabled configs
+        const port = getTestPort();
+        // Try to access the main page without authentication
+        await page.goto(`https://127.0.0.1:${port}/`);
+        await page.waitForLoadState('networkidle');
+        // Should redirect to login page
+        await expect(page).toHaveURL(`https://127.0.0.1:${port}/login`);
+        await expect(page.locator('h1')).toHaveText('Sign in');
+    });
+
     test('login page - session expired', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
         const port = getTestPort();
@@ -117,6 +128,17 @@ test.describe('OIDC login', () => {
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');
         await expect(page.locator('body')).toHaveScreenshot(`login_oidc_auth.png`);
+    });
+
+    test('redirects unauthorized access to login', async ({ page }) => {
+        // Use HTTPS for TLS-enabled configs
+        const port = getTestPort();
+        // Try to access the main page without authentication
+        await page.goto(`https://127.0.0.1:${port}/`);
+        await page.waitForLoadState('networkidle');
+        // Should redirect to login page
+        await expect(page).toHaveURL(`https://127.0.0.1:${port}/login`);
+        await expect(page.locator('h1')).toHaveText('Sign in');
     });
 
     test('login page - session expired', async ({ page }) => {
