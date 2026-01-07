@@ -44,6 +44,7 @@ Note that the theme (light/dark) is selected based on your system preference.
 
 Extended documentation, examples, and additional resources to help you get the most out of ShutHost:
 
+- [🧭 ShutHost Design & Operation](#-shuthost-design--operation)
 - [💿 Installation](#-installation)
 - [📚 Examples](docs/examples/)
 - [📋 Requirements](docs/requirements.md)
@@ -59,6 +60,27 @@ Extended documentation, examples, and additional resources to help you get the m
 - [🤝 Contributing](docs/CONTRIBUTING.md)
 
 ---
+## 🧭 ShutHost Design & Operation
+
+ShutHost began from a simple observation: Wake-on-LAN (WOL) is reasonably standardized for starting machines on a LAN, but there is no well-established, safe equivalent for remotely shutting down running systems. Some projects try to solve this—for example, [sleep-on-lan](https://github.com/SR-G/sleep-on-lan) and snippets/guides that log in via SSH and shut down the computer that way—but those approaches commonly enlarge the attack surface, are difficult to deploy, and lack usability.
+
+ShutHost addresses these challenges through three key design decisions:
+
+- **Authorization & safety:** Remote shutdown commands pose risks of accidental or malicious denial-of-service. To mitigate this, ShutHost requires authenticated requests: shutdowns are authorized using HMAC-signed messages with timestamps to prevent replay attacks and avoid sending plaintext credentials over the network.
+- **Privilege & init integration:** Performing a shutdown usually requires elevated privileges and must persist across reboots. ShutHost provides lightweight host agents that integrate with common service managers so the shutdown capability is available after restarts. Supported integrations include `systemd` (the dominant init on most mainstream Linux distributions), `openrc` (used by distributions like Alpine and Gentoo), and `launchd` (macOS). A "serviceless" mode is also available for custom or manual setups where users handle init integration themselves (see [Deploying the Serviceless Agent on Unraid](docs/examples/unraid-serviceless-agent-deployment.md) for an example).
+- **Network reachability & central control:** Wake-on-LAN only operates on the local broadcast domain. To manage hosts from outside the LAN, ShutHost includes a coordinator component: a single LAN-hosted coordinator provides a web GUI (installable as a PWA) and an API. The coordinator sends WOL packets to start machines locally and forwards authenticated shutdown requests to host agents over IP.
+
+Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone; its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-serviceless-agent-deployment.md).
+
+The coordinator glues the pieces together and provides usability features:
+
+- A web UI and API make it easy to start/stop machines and integrate with other services.
+- The coordinator doesn't require elevated privileges to run.
+- The coordinator offers an installer and convenience scripts that simplify deploying `host_agent`s on the LAN and clients over the internet.
+- A lease system prevents hosts from being shut down while a client holds an active lease (for instance, while a backup job is running).
+  > This safety depends on all starts and stops going through the coordinator (either the UI or a client using the coordinator API); actions performed outside the coordinator are outside its control.
+
+For a visual overview, see the architecture diagram: [Architecture](https://9smtm6.github.io/shuthost/#architecture)
 
 ## 💿 Installation
 
