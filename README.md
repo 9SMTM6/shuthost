@@ -189,11 +189,13 @@ These are generated or validated automatically as part of the test suite, and th
 - 📊 **Host state tracking for statistics**
 
 ### 🖥️ Platform Support
+- 🪟 **Windows agent (serviceless)**: Support for Windows hosts using a serviceless agent, including a PowerShell installer script.
 - 🐡 **BSD support** might happen
   - ⚠️ Requires using more advanced cross compilation
   - I have no ability to test these practically myself.
 
 ### 🔧 Management Features
+- 📦 **Individual agent installation**: Allow installing agents directly from the live demo or other sources, with interaction scripts in shell and PowerShell. (Note: Client installation already works from the live demo, though it remembers the demo's URL.)
 - 🗑️ **Uninstalls**
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
