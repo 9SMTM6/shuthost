@@ -17,6 +17,8 @@ param(
 $CLIENT_ID = "{client_id}"
 $SECRET = "{shared_secret}"
 
+$curlCmd = if ($isUnix) { "curl" } else { "curl.exe" }
+
 function Show-Help {
     $helpText = @"
 Usage: $($MyInvocation.MyCommand.Name) <take|release> <host> [remote_url] [-Async]
@@ -70,8 +72,8 @@ if ($Async) {
 }
 
 # Output request details (equivalent to bash set -v/-x)
-Write-Host "curl --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
+Write-Host "$curlCmd --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
 
 # Make the request
-& curl --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
+& $curlCmd --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
 if ($LASTEXITCODE -ne 0) { exit 1 }

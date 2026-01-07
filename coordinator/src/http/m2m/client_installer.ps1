@@ -7,6 +7,7 @@ param(
 )
 
 $isUnix = [Environment]::OSVersion.Platform -eq 'Unix'
+$curlCmd = if ($isUnix) { "curl" } else { "curl.exe" }
 
 if ($isUnix) {
     $installDir = "$env:HOME/.local/bin"
@@ -61,7 +62,7 @@ $templateUrl = "$remoteUrl/download/shuthost_client.ps1"
 $tempDir = [System.IO.Path]::GetTempPath()
 $tempTemplatePath = Join-Path $tempDir "$clientScriptName.tmpl"
 
-& curl --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
+& $curlCmd --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
 
 # Generate a random shared secret
 $secretBytes = New-Object byte[] 16
