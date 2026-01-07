@@ -14,20 +14,23 @@ use axum_extra::{
     TypedHeader,
     headers::{CacheControl, ContentLength, ContentType},
 };
-use mime::{TEXT_CSS, IMAGE_SVG};
+use mime::{IMAGE_SVG, TEXT_CSS};
 
 use crate::{
     auth::Resolved,
     http::{AppState, EXPECTED_AUTH_EXCEPTIONS_VERSION},
 };
 
-#[allow(nonstandard_style, reason = "the functions should be const, in lack of that use a fn")]
+#[expect(
+    nonstandard_style,
+    reason = "the functions should be const, in lack of that use a fn"
+)]
 fn IMMUTABLE_HEADER() -> TypedHeader<CacheControl> {
     TypedHeader(
         CacheControl::new()
             .with_immutable()
             .with_public()
-            .with_max_age(Duration::from_secs(31536000)),
+            .with_max_age(Duration::from_secs(31_536_000)),
     )
 }
 

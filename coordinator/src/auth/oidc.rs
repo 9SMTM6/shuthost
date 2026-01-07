@@ -465,7 +465,7 @@ mod tests {
         let result = extract_authorization_code(code);
         assert!(result.is_err());
         match result.unwrap_err() {
-            LoginFlowError::LoginRedirect => {},
+            LoginFlowError::LoginRedirect => {}
             _ => panic!("Expected LoginRedirect"),
         }
     }

@@ -1,9 +1,4 @@
-use axum::{
-    Router,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::get,
-};
+use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
 use axum_extra::{
     TypedHeader,
     headers::{ContentLength, ContentType},
