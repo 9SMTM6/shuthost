@@ -813,6 +813,7 @@ jobs:
     needs:
       - playwright-tests
       - test
+      - validate-file-snapshots
       - ci-only-tests
     steps:
       - name: Aggregated tests (grouping)
@@ -826,6 +827,7 @@ jobs:
       # test-aggregate
       - playwright-tests
       - test
+      - validate-file-snapshots
       ## ci-only-tests
       ### test-service-installation
       - test-service-installation-systemd
