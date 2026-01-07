@@ -3,6 +3,7 @@ port = 8081
 bind = "127.0.0.1"
 
 [server.auth.token]
+token = "testtoken"
 
 [server.tls]
 
