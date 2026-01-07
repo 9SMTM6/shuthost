@@ -17,6 +17,10 @@ if ($isUnix) {
 
 $remoteUrl = $RemoteUrl
 
+# Determine if we should accept self-signed certificates (for localhost/testing)
+$parsedHost = $remoteUrl -replace '^https*://', '' -replace '/.*$', '' -replace ':.*$', ''
+$curlOpts = if ($parsedHost -eq 'localhost' -or $parsedHost -match '^127\.') { '-k' } else { '' }
+
 # Ensure the installation directory exists
 if (-not (Test-Path $installDir)) {
     Write-Host "Creating installation directory: $installDir"
@@ -62,7 +66,10 @@ $templateUrl = "$remoteUrl/download/shuthost_client.ps1"
 $tempDir = [System.IO.Path]::GetTempPath()
 $tempTemplatePath = Join-Path $tempDir "$clientScriptName.tmpl"
 
-& $curlCmd --compressed -L --fail-with-body -o $tempTemplatePath $templateUrl
+$curlArgs = @('--compressed', '-L', '--fail-with-body')
+if ($curlOpts) { $curlArgs += $curlOpts }
+$curlArgs += @('-o', $tempTemplatePath, $templateUrl)
+& $curlCmd @curlArgs
 
 # Generate a random shared secret
 $secretBytes = New-Object byte[] 16
@@ -79,7 +86,8 @@ $customizedContent = $templateContent -replace '\{client_id\}', $ClientId `
 $finalPath = Join-Path $installDir $clientScriptName
 $customizedContent | Out-File -FilePath $finalPath -Encoding UTF8
 if ($isUnix) {
-    & chmod +x $finalPath
+    # Make script executable, readable and writeable for you, but noone else 
+    & chmod 700 $finalPath
 }
 
 # Clean up temp file

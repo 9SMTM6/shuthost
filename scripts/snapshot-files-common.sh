@@ -84,7 +84,7 @@ process_diff() {
     # Mount temp file and get metadata
     podman run --rm -v "$temp_file":/tmp/paths:ro --entrypoint /bin/sh "$image" -c "
         while read -r path; do
-            case \"\$path\" in /run/*|/var/run/*|/var/cache/*|/tmp/*) continue ;; esac
+            case \"\$path\" in /run/*|/var/run/*|/var/cache/*|/tmp/*|/root/.cache/*) continue ;; esac
             if [ -f \"\$path\" ]; then
                 perms=\$(stat -c '%a' \"\$path\")
                 ftype=\$(file -b \"\$path\" | cut -d, -f1)
