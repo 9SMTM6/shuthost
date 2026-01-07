@@ -57,9 +57,11 @@ for page in $pages; do
     fi
 done
 
-# Adjust links in HTML files for static hosting (skip root path /)
+# Adjust links in HTML files for static hosting
 for html in gh-pages/*.html; do
+    sed -i 's|href="/"|href="index.html"|g' "$html"
     sed -i 's|href="/\([^/][^"]*\)"|href="\1.html"|g' "$html"
+    sed -i 's|src="/\([^/][^"]*\)"|src="\1"|g' "$html"
 done
 
 # Infer and fetch assets from demo server
