@@ -1,12 +1,15 @@
 name: Build, Test and Release
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 on:
   push:
     branches:
       - '**'
     tags: ['*']
+  workflow_dispatch:
 
 jobs:
   build-host_agents:
@@ -106,6 +109,37 @@ jobs:
         with:
           name: coordinator-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_coordinator${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    needs: build-coordinators
+    if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+    outputs:
+      artifact-path: gh-pages
+    steps:
+      - uses: *checkout
+
+      - run: rustup update stable
+
+      - uses: *rust-cache
+
+      - name: Download coordinator binary
+        uses: *download-artifact
+        with:
+          name: coordinator-x86_64-unknown-linux-gnu
+
+      - run: chmod +x shuthost_coordinator
+
+      - name: Build and snapshot demo
+        run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost --provided-binary=./shuthost_coordinator
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./gh-pages
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
   test:
     name: Run Tests

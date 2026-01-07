@@ -200,3 +200,5 @@ These are generated or validated automatically as part of the test suite, and th
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
+
+<!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service -->
