@@ -2,13 +2,13 @@
 //!
 //! Allows bundling the binary within a shell script with custom environment and execution.
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::{
     env,
     fs::{self, File},
     io::Write,
 };
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
 
 /// Generates a self-extracting shell script containing the current binary payload.
 ///

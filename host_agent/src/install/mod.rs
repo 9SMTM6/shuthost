@@ -77,7 +77,10 @@ impl std::fmt::Display for InitSystem {
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     let name = env!("CARGO_PKG_NAME");
-    #[cfg_attr(target_os = "windows", expect(unused_variables, reason = "windows doesn't need that, the others do"))]
+    #[cfg_attr(
+        target_os = "windows",
+        expect(unused_variables, reason = "windows doesn't need that, the others do")
+    )]
     let bind_known_vals = |arg: &str| {
         arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{ port }", &arguments.port.to_string())
@@ -253,11 +256,7 @@ fn get_default_interface() -> Option<String> {
             .output()
             .ok()?;
         let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if !text.is_empty() {
-            Some(text)
-        } else {
-            None
-        }
+        if !text.is_empty() { Some(text) } else { None }
     }
 }
 
@@ -297,11 +296,7 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
             .output()
             .ok()?;
         let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if !text.is_empty() {
-            Some(text)
-        } else {
-            None
-        }
+        if !text.is_empty() { Some(text) } else { None }
     }
 }
 
@@ -348,11 +343,7 @@ pub(crate) fn get_ip(interface: &str) -> Option<String> {
             .output()
             .ok()?;
         let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if !text.is_empty() {
-            Some(text)
-        } else {
-            None
-        }
+        if !text.is_empty() { Some(text) } else { None }
     }
 }
 
