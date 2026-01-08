@@ -12,9 +12,10 @@ use std::process::Command;
 use crate::DEFAULT_PORT;
 use crate::server::get_default_shutdown_command;
 
-/// Template string for adding an agent entry in coordinator configuration.
-const CONFIG_ENTRY: &str =
-    r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
+pub mod registration;
+
+/// The binary name, derived from the Cargo package name.
+pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 #[cfg(target_os = "linux")]
 const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_host_agent.service.ini");
 #[cfg(target_os = "macos")]
@@ -39,7 +40,7 @@ pub struct Args {
 }
 
 /// Supported init systems for installing the host_agent.
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq)]
 pub enum InitSystem {
     /// Systemd init system (Linux).
     #[cfg(target_os = "linux")]
@@ -73,7 +74,7 @@ impl std::fmt::Display for InitSystem {
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
-    let name = env!("CARGO_PKG_NAME");
+    let name = BINARY_NAME;
     let bind_known_vals = |arg: &str| {
         arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{ port }", &arguments.port.to_string())
@@ -133,27 +134,10 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             "Failed to determine the default network interface. Continuing on assuming docker or similar environment."
         );
     }
-    println!(
-        "Place the following in the coordinator:\n{config_entry}",
-        config_entry = CONFIG_ENTRY
-            .replace("{name}", &get_hostname().expect("failed to get hostname"))
-            .replace(
-                "{ip}",
-                &interface
-                    .as_ref()
-                    .and_then(|it| get_ip(it))
-                    .unwrap_or("unrecognized".to_string())
-            )
-            .replace(
-                "{mac}",
-                &interface
-                    .as_ref()
-                    .and_then(|it| get_mac(it))
-                    .unwrap_or("unrecognized".to_string())
-            )
-            .replace("{port}", &arguments.port.to_string())
-            .replace("{secret}", &arguments.shared_secret)
-    );
+    registration::print_registration_config(&registration::ServiceConfig {
+        secret: arguments.shared_secret.clone(),
+        port: arguments.port,
+    })?;
 
     Ok(())
 }
