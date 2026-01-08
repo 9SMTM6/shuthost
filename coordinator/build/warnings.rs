@@ -21,6 +21,10 @@ pub fn emit() {
         "macos_aarch64",
         #[cfg(not(feature = "include_macos_x86_64_agent"))]
         "macos_x86_64",
+        #[cfg(not(feature = "include_windows_x86_64_agent"))]
+        "windows_x86_64",
+        #[cfg(not(feature = "include_windows_aarch64_agent"))]
+        "windows_aarch64",
     ];
 
     #[expect(clippy::allow_attributes, reason = "Feature-dependent code")]

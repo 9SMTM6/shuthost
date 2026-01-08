@@ -29,6 +29,12 @@ jobs:
             runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            ext: exe
+          - target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+            ext: exe
 
     steps:
       - uses: &checkout actions/checkout@v6
@@ -46,7 +52,7 @@ jobs:
         uses: &upload-artifact actions/upload-artifact@v5
         with:
           name: host_agent-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_host_agent
+          path: target/${{ matrix.target }}/release/shuthost_host_agent${{ matrix.ext || '' }}
 
   build-coordinators:
     name: Build Coordinator for ${{ matrix.target }}
@@ -92,15 +98,19 @@ jobs:
           for dir in ./rehydrate/host_agent-*; do
             target=$(basename "$dir" | sed 's/^host_agent-//')
             mkdir -p "target/$target/release"
-            cp "$dir/shuthost_host_agent" "target/$target/release/"
-            chmod +x "target/$target/release/shuthost_host_agent" || true
+            binary_name="shuthost_host_agent"
+            if [[ "$target" == *-pc-windows-* ]]; then
+              binary_name="${binary_name}.exe"
+            fi
+            cp "$dir/$binary_name" "target/$target/release/$binary_name"
+            chmod +x "target/$target/release/$binary_name" || true
           done
 
       - uses: ./.github/actions/rust-build
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_coordinator
-          additional-flags: --features include_linux_agents,include_macos_agents
+          additional-flags: --features include_agents
 
       - name: Upload coordinator binary
         uses: *upload-artifact
