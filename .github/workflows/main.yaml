@@ -179,7 +179,7 @@ jobs:
       - name: Test on Linux (systemd)
         run: |
           set -x
-          ./scripts/test-service-installation.sh ./shuthost_coordinator root systemd
+          ./scripts/test-service-installation.sh ./shuthost_coordinator root
           sudo systemctl status shuthost_host_agent
 
   test-service-installation-openrc:
@@ -217,7 +217,7 @@ jobs:
           docker cp ./scripts/test-service-installation.sh testinit:/
 
           # Run the test script in the container
-          docker exec testinit sh -c "chmod +x /test-service-installation.sh && /test-service-installation.sh /shuthost_coordinator root openrc"
+          docker exec testinit sh -c "chmod +x /test-service-installation.sh && /test-service-installation.sh /shuthost_coordinator root"
           docker exec testinit rc-service shuthost_host_agent status
 
           # Clean up
@@ -241,7 +241,7 @@ jobs:
       - name: Test on macOS (launchd)
         run: |
           set -x
-          ./scripts/test-service-installation.sh ./shuthost_coordinator "$(whoami)" launchd
+          ./scripts/test-service-installation.sh ./shuthost_coordinator "$(whoami)"
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
   test-service-installation-serviceless:
