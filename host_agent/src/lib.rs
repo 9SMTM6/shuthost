@@ -45,6 +45,10 @@ pub enum Command {
         #[arg(long = "port", default_value_t = DEFAULT_PORT + 1)]
         port: u16,
     },
+
+    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    /// Print the registration configuration for the installed agent.
+    Registration(install::registration::RegistrationArgs),
 }
 
 pub fn inner_main(invocation: Cli) {
@@ -61,6 +65,11 @@ pub fn inner_main(invocation: Cli) {
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
             Err(e) => eprintln!("Error during WoL test: {e}"),
+        },
+        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+        Command::Registration(args) => match install::registration::parse_config_and_print_registration(&args) {
+            Ok(_) => (),
+            Err(e) => eprintln!("Error printing registration: {e}"),
         },
     }
 }
