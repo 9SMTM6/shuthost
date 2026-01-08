@@ -1,5 +1,8 @@
 #!/usr/bin/env pwsh
 
+# This may be a template containing placeholders like {client_id}, {shared_secret}, and {embedded_remote_url}
+# that must be replaced with actual values before use.
+
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [ValidateSet("take", "release")]

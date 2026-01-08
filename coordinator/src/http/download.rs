@@ -11,7 +11,7 @@ macro_rules! static_text_download_handler {
     (fn $name:ident, file=$file:expr) => {
         #[axum::debug_handler]
         async fn $name() -> impl IntoResponse {
-            const DOC: &[u8] = include_bytes!($file);
+            const DOC: &[u8] = include_bytes!(concat!("../../../", $file));
             (
                 TypedHeader(ContentType::text()),
                 TypedHeader(ContentLength(DOC.len() as u64)),
@@ -83,11 +83,11 @@ host_agent_handler!(
     feature = "include_linux_musl_aarch64_agent"
 );
 
-static_text_download_handler!(fn download_host_agent_installer, file = "m2m/host_agent_installer.sh");
-static_text_download_handler!(fn download_client_installer, file = "m2m/client_installer.sh");
-static_text_download_handler!(fn download_client_installer_ps1, file = "m2m/client_installer.ps1");
-static_text_download_handler!(fn download_client_script, file = "m2m/shuthost_client.tmpl.sh");
-static_text_download_handler!(fn download_client_script_ps1, file = "m2m/shuthost_client.tmpl.ps1");
+static_text_download_handler!(fn download_host_agent_installer, file = "scripts/host_agent_installer.sh");
+static_text_download_handler!(fn download_client_installer, file = "scripts/client_installer.sh");
+static_text_download_handler!(fn download_client_installer_ps1, file = "scripts/client_installer.ps1");
+static_text_download_handler!(fn download_client_script, file = "scripts/shuthost_client.tmpl.sh");
+static_text_download_handler!(fn download_client_script_ps1, file = "scripts/shuthost_client.tmpl.ps1");
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
