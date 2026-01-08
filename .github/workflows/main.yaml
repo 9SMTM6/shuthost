@@ -187,6 +187,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
     if: github.event_name != 'workflow_dispatch'
+    container:
+      image: docker.io/heywoodlh/openrc:latest
+      options: --privileged --memory=2g
     steps:
       - uses: *checkout
 
@@ -197,31 +200,25 @@ jobs:
 
       - run: chmod +x shuthost_coordinator
 
-      - name: Test on Linux (openrc)
+      - name: Setup syslog
         run: |
           set -x
-          docker run --privileged --memory=2g --rm -itd --name testinit docker.io/heywoodlh/openrc:latest sh -c "
-            set -x
-            rc-update add syslog default;
-            rc-service syslog start;
-            touch /var/log/messages;
-            tail -f /var/log/messages;
-          "
+          rc-update add syslog default;
+          rc-service syslog start;
+          touch /var/log/messages;
 
-          # Install dependencies
-          docker exec testinit sh -c "apk update"
-          docker exec testinit sh -c "apk --no-cache add curl"
+      - name: Install dependencies
+        run: |
+          apk update
+          apk --no-cache add curl
 
-          # Copy binaries and script
-          docker cp ./shuthost_coordinator testinit:/
-          docker cp ./scripts/test-service-installation.sh testinit:/
+      - name: Run test script
+        run: |
+          ./scripts/test-service-installation.sh ./shuthost_coordinator root
 
-          # Run the test script in the container
-          docker exec testinit sh -c "chmod +x /test-service-installation.sh && /test-service-installation.sh /shuthost_coordinator root"
-          docker exec testinit rc-service shuthost_host_agent status
-
-          # Clean up
-          docker stop testinit
+      - name: Check service status
+        run: |
+          rc-service shuthost_host_agent status
 
   test-service-installation-launchd:
     name: Test Service Installation (launchd)
@@ -242,6 +239,9 @@ jobs:
         run: |
           set -x
           ./scripts/test-service-installation.sh ./shuthost_coordinator "$(whoami)"
+
+      - name: Check service status
+        run: |
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
   test-service-installation-serviceless:
@@ -456,25 +456,27 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-coordinators]
     if: github.event_name != 'workflow_dispatch'
+    container:
+      image: alpine:latest
+      options: --network=host
     steps:
       
       - name: Download coordinator binary
         uses: *download-artifact
         with:
-          name: coordinator-x86_64-unknown-linux-gnu
+          name: coordinator-x86_64-unknown-linux-musl
 
       - name: Prepare
         run: |
-          docker run -itd --network=host --name=run_container alpine:latest
-          docker exec run_container sh -c "apk update"
-          docker exec run_container sh -c "apk add --no-cache curl openssl busybox-extras"
+          apk update
+          apk add --no-cache curl openssl busybox-extras
 
       - *start_controller
 
       - name: Install and run client
         run: |
           # Run installer and capture output
-          CLIENT_INSTALL_OUT=$(docker exec run_container sh -c "curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080" 2>&1 || true)
+          CLIENT_INSTALL_OUT=$(curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080 2>&1 || true)
           echo "--- installer output start ---"
           echo "$CLIENT_INSTALL_OUT"
           CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
@@ -486,18 +488,18 @@ jobs:
           # Parse the client config line from installer output and add to config
           clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
-            config_path="/home/$(whoami)/.config/shuthost_coordinator/config.toml"
+            config_path="/root/.config/shuthost_coordinator/config.toml"
             echo "Config file before modification:"
-            sudo cat "$config_path"
+            cat "$config_path"
             # Add the host if not present
-            if ! sudo grep -q 'testhost' "$config_path"; then
-              sudo sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
+            if ! grep -q 'testhost' "$config_path"; then
+              sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
             fi
             # Add the client under [clients]
-            sudo sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
+            sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
             echo "Added client to config: $clientConfigLine"
             echo "Config file after modification:"
-            sudo cat "$config_path"
+            cat "$config_path"
             # Wait for config reload
             sleep 5
           else
@@ -507,7 +509,7 @@ jobs:
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
           # We want to test that the request is sent correctly and succeeds
-          OUTPUT=$(docker exec run_container sh -c "$CLIENT_PATH take testhost --async" 2>&1 || true)
+          OUTPUT=$($CLIENT_PATH take testhost --async 2>&1 || true)
           echo "--- client output start ---"
           echo "$OUTPUT"
           echo "--- client output end ---"
