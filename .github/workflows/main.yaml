@@ -46,7 +46,7 @@ jobs:
         uses: &upload-artifact actions/upload-artifact@v5
         with:
           name: host_agent-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_host_agent
+          path: target/${{ matrix.target }}/release/shuthost_host_agent${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
 
   build-coordinators:
     name: Build Coordinator for ${{ matrix.target }}
@@ -92,7 +92,11 @@ jobs:
           for dir in ./rehydrate/host_agent-*; do
             target=$(basename "$dir" | sed 's/^host_agent-//')
             mkdir -p "target/$target/release"
-            cp "$dir/shuthost_host_agent" "target/$target/release/"
+            if [[ "$target" == x86_64-pc-windows-msvc ]]; then
+              cp "$dir/shuthost_host_agent.exe" "target/$target/release/shuthost_host_agent"
+            else
+              cp "$dir/shuthost_host_agent" "target/$target/release/"
+            fi
             chmod +x "target/$target/release/shuthost_host_agent" || true
           done
 
@@ -979,6 +983,13 @@ jobs:
           pattern: coordinator-*
           path: ./release-assets
       
+      - &download_agent_binaries
+        name: Download all host_agent binaries
+        uses: *download-artifact
+        with:
+          pattern: host_agent-*
+          path: ./release-assets
+      
       - &prepare_release_assets
         name: Prepare release assets directory
         run: |
@@ -996,9 +1007,22 @@ jobs:
               chmod +x "release-assets/flat/shuthost_coordinator-$target"
             fi
           done
+          for dir in release-assets/host_agent-*; do
+            target=$(basename "$dir" | sed 's/^host_agent-//')
+            if [[ "$target" == x86_64-pc-windows-msvc ]]; then
+              if [ -f "$dir/shuthost_host_agent.exe" ]; then
+                cp "$dir/shuthost_host_agent.exe" "release-assets/flat/shuthost_host_agent-$target.exe"
+              fi
+            else
+              if [ -f "$dir/shuthost_host_agent" ]; then
+                cp "$dir/shuthost_host_agent" "release-assets/flat/shuthost_host_agent-$target"
+                chmod +x "release-assets/flat/shuthost_host_agent-$target" || true
+              fi
+            fi
+          done
           # Create .tar.gz archives
           for file in release-assets/flat/*; do
-            tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform 's|.*|shuthost_coordinator|' "$(basename "$file")" && rm "$file"
+            tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform "s|.*|$(basename "$file" | sed 's/-.*//')|" "$(basename "$file")" && rm "$file"
           done
 
       - *release_image_name
@@ -1048,6 +1072,8 @@ jobs:
       - uses: *checkout
 
       - *download_coordinator_binaries
+      
+      - *download_agent_binaries
       
       - *prepare_release_assets
 
