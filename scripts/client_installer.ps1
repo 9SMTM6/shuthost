@@ -1,3 +1,8 @@
+# This script installs the shuthost client by downloading the client template
+# from the coordinator, generating a client ID and shared secret,
+# filling in the template, and installing it locally.
+# It connects the client to the coordinator it downloaded from.
+
 param(
     [Parameter(Position=0)]
     [string]$RemoteUrl = "http://localhost:8080",
