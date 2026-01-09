@@ -5,6 +5,7 @@
 mod commands;
 #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
 mod install;
+pub mod script_generator;
 pub mod server;
 pub mod validation;
 
@@ -13,6 +14,9 @@ use std::env;
 use clap::{Parser, Subcommand};
 
 use server::ServiceOptions;
+
+#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+use crate::install::registration;
 
 /// Top-level CLI parser for host_agent.
 #[derive(Debug, Parser)]
@@ -48,7 +52,11 @@ pub enum Command {
 
     #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Print the registration configuration for the installed agent.
-    Registration(install::registration::Args),
+    Registration(registration::Args),
+
+    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    /// Generate a shuthost_direct_control script for this host_agent.
+    GenerateDirectControl(script_generator::Args),
 }
 
 pub fn inner_main(invocation: Cli) {
@@ -67,10 +75,19 @@ pub fn inner_main(invocation: Cli) {
             Err(e) => eprintln!("Error during WoL test: {e}"),
         },
         #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-        Command::Registration(args) => {
-            match install::registration::parse_config_and_print_registration(&args) {
+        Command::Registration(args) => match registration::parse_config(&args) {
+            Ok(config) => {
+                if let Err(e) = registration::print_registration_config(&config) {
+                    eprintln!("Error printing registration: {e}");
+                }
+            }
+            Err(e) => eprintln!("Error parsing config: {e}"),
+        },
+        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+        Command::GenerateDirectControl(args) => {
+            match script_generator::write_control_script(&args) {
                 Ok(_) => (),
-                Err(e) => eprintln!("Error printing registration: {e}"),
+                Err(e) => eprintln!("Error generating direct control script: {e}"),
             }
         }
     }
