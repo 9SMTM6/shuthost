@@ -48,7 +48,7 @@ pub enum Command {
 
     #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
     /// Print the registration configuration for the installed agent.
-    Registration(install::registration::RegistrationArgs),
+    Registration(install::registration::Args),
 }
 
 pub fn inner_main(invocation: Cli) {
@@ -67,9 +67,11 @@ pub fn inner_main(invocation: Cli) {
             Err(e) => eprintln!("Error during WoL test: {e}"),
         },
         #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-        Command::Registration(args) => match install::registration::parse_config_and_print_registration(&args) {
-            Ok(_) => (),
-            Err(e) => eprintln!("Error printing registration: {e}"),
-        },
+        Command::Registration(args) => {
+            match install::registration::parse_config_and_print_registration(&args) {
+                Ok(_) => (),
+                Err(e) => eprintln!("Error printing registration: {e}"),
+            }
+        }
     }
 }

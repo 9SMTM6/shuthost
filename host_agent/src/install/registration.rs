@@ -9,7 +9,7 @@ const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 
 #[derive(Debug, Parser)]
-pub struct RegistrationArgs {
+pub struct Args {
     /// The init system used by the host_agent installation.
     /// The service files will be parsed to extract the registration configuration.
     #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
@@ -27,10 +27,10 @@ pub(super) struct ServiceConfig {
 }
 
 pub(crate) fn parse_config_and_print_registration(
-    &RegistrationArgs {
+    &Args {
         init_system,
         ref script_path,
-    }: &RegistrationArgs,
+    }: &Args,
 ) -> Result<(), String> {
     let custom_path = if init_system == InitSystem::Serviceless {
         script_path.as_deref().ok_or_else(|| {
@@ -102,14 +102,14 @@ fn parse_systemd_config() -> Result<ServiceConfig, String> {
         if line.starts_with("Environment=SHUTHOST_SHARED_SECRET=") {
             secret = Some(line.split('=').nth(1).unwrap_or("").to_string());
         }
-        if line.contains(" --port=") {
-            if let Some(start) = line.find(" --port=") {
-                let after = &line[start + 8..];
-                if let Some(end) = after.find(' ') {
-                    port = after[..end].parse().ok();
-                } else {
-                    port = after.parse().ok();
-                }
+        if line.contains(" --port=")
+            && let Some(start) = line.find(" --port=")
+        {
+            let after = &line[start + 8..];
+            if let Some(end) = after.find(' ') {
+                port = after[..end].parse().ok();
+            } else {
+                port = after.parse().ok();
             }
         }
     }
@@ -139,14 +139,14 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
                     .to_string(),
             );
         }
-        if line.contains(" --port=") {
-            if let Some(start) = line.find(" --port=") {
-                let after = &line[start + 8..];
-                if let Some(end) = after.find(' ') {
-                    port = after[..end].trim_matches('"').parse().ok();
-                } else {
-                    port = after.trim_matches('"').parse().ok();
-                }
+        if line.contains(" --port=")
+            && let Some(start) = line.find(" --port=")
+        {
+            let after = &line[start + 8..];
+            if let Some(end) = after.find(' ') {
+                port = after[..end].trim_matches('"').parse().ok();
+            } else {
+                port = after.trim_matches('"').parse().ok();
             }
         }
     }
