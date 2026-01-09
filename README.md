@@ -187,6 +187,7 @@ These are generated or validated automatically as part of the test suite, and th
 - 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
 - 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
+- 🛡️ **Rate limiting of requests by shuthost clients**
 
 ### 🖥️ Platform Support
 - 🪟 **Windows agent (serviceless)**: Support for Windows hosts using a serviceless agent, including a PowerShell installer script.
