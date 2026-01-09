@@ -276,7 +276,8 @@ pub(crate) fn get_hostname() -> Option<String> {
     let hostname = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if !hostname.is_empty() {
-        Some(hostname)
+        // Return only the subdomain (first part before dot), matching client_installer behavior
+        Some(hostname.split('.').next().unwrap_or(&hostname).to_string())
     } else {
         None
     }

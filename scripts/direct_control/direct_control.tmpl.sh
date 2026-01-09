@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This may be a template containing placeholders like {host_ip}, {port}, {shared_secret} and {mac_address}
+# This may be a template containing placeholders like {host_ip}, {port}, {shared_secret}, {mac_address}, and {hostname}
 # that must be replaced with actual values before use.
 
 set -eu
@@ -8,6 +8,8 @@ set -eu
 print_help() {
         cat <<EOF
 Usage: $0 <status|shutdown|wake>
+
+Generated for host: {hostname}
 
 Requires: openssl, date, hexdump, printf, nc
 
