@@ -456,7 +456,8 @@ jobs:
     needs: [build-coordinators]
     if: github.event_name != 'workflow_dispatch'
     container:
-      image: alpine:latest
+      image: docker.io/heywoodlh/openrc:latest
+      options: --privileged --memory=2g
     steps:
       
       - name: Download coordinator binary
