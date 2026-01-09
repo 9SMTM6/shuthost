@@ -49,7 +49,6 @@ fn get_default_output_path() -> LossyPath {
 #[derive(Debug, clap::Parser)]
 pub struct Args {
     /// Output path for the generated control script.
-    /// Defaults to shuthost_direct_control_{hostname} where {hostname} is the system's hostname "subdomain".
     #[arg(long = "output", short = 'o', default_value_t = get_default_output_path())]
     pub output: LossyPath,
 
