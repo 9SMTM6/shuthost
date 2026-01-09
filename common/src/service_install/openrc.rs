@@ -13,6 +13,11 @@ use std::{
 
 use crate::is_superuser;
 
+/// Returns the OpenRC service file path for the given service name.
+pub fn get_service_path(name: &str) -> String {
+    format!("/etc/init.d/{}", name)
+}
+
 /// Installs the current binary as an OpenRC service init script.
 ///
 /// # Arguments
@@ -30,7 +35,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     let binary_path = env::current_exe().map_err(|e| e.to_string())?;
     let target_bin = Path::new("/usr/sbin/").join(name);
-    let init_script_path = PathBuf::from(format!("/etc/init.d/{name}"));
+    let init_script_path = PathBuf::from(get_service_path(name));
 
     // Stop and remove any existing service
     // Attempt to stop the service if it's running, but don't fail if it isn't

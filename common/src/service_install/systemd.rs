@@ -13,6 +13,11 @@ use std::{
 
 use crate::is_superuser;
 
+/// Returns the systemd service file path for the given service name.
+pub fn get_service_path(name: &str) -> String {
+    format!("/etc/systemd/system/{}.service", name)
+}
+
 /// Installs the current binary and creates a systemd service unit file.
 ///
 /// # Arguments
@@ -56,7 +61,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
         .map_err(|e| e.to_string())?;
 
-    let service_file_path = format!("/etc/systemd/system/{service_name}");
+    let service_file_path = get_service_path(&service_name);
     let service_file_content =
         init_script_content.replace("{ binary }", &target_bin.to_string_lossy());
 

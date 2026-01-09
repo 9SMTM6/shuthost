@@ -8,6 +8,17 @@ use crate::install::{
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 
+/// Generic function to parse service config from a service name using path getter and content parser.
+fn parse_config_from_path(
+    get_path_fn: fn(&str) -> String,
+    parse_content_fn: fn(&str) -> Result<ServiceConfig, String>,
+) -> Result<ServiceConfig, String> {
+    let path = get_path_fn(BINARY_NAME);
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+    parse_content_fn(&content)
+}
+
 #[derive(Debug, Parser)]
 pub struct Args {
     /// The init system used by the host_agent installation.
@@ -82,11 +93,8 @@ pub(crate) fn print_registration_config(config: &ServiceConfig) -> Result<(), St
     Ok(())
 }
 
-fn parse_systemd_config() -> Result<ServiceConfig, String> {
-    let path = format!("/etc/systemd/system/{}.service", BINARY_NAME);
-    let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
-
+#[cfg(any(target_os = "linux", test))]
+fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
 
@@ -113,11 +121,15 @@ fn parse_systemd_config() -> Result<ServiceConfig, String> {
 }
 
 #[cfg(target_os = "linux")]
-fn parse_openrc_config() -> Result<ServiceConfig, String> {
-    let path = format!("/etc/init.d/{}", BINARY_NAME);
-    let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+fn parse_systemd_config() -> Result<ServiceConfig, String> {
+    parse_config_from_path(
+        shuthost_common::systemd::get_service_path,
+        parse_systemd_content,
+    )
+}
 
+#[cfg(any(target_os = "linux", test))]
+fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
 
@@ -149,10 +161,15 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
     }
 }
 
-fn parse_serviceless_config(path: &str) -> Result<ServiceConfig, String> {
-    let content =
-        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+#[cfg(target_os = "linux")]
+fn parse_openrc_config() -> Result<ServiceConfig, String> {
+    parse_config_from_path(
+        shuthost_common::openrc::get_service_path,
+        parse_openrc_content,
+    )
+}
 
+fn parse_serviceless_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
 
@@ -177,15 +194,15 @@ fn parse_serviceless_config(path: &str) -> Result<ServiceConfig, String> {
     }
 }
 
-#[cfg(target_os = "macos")]
-fn parse_launchd_config() -> Result<ServiceConfig, String> {
-    let path = format!(
-        "/Library/LaunchDaemons/com.github_9smtm6.{}.plist",
-        BINARY_NAME
-    );
+fn parse_serviceless_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
 
+    parse_serviceless_content(&content)
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
     let mut in_secret = false;
@@ -208,5 +225,67 @@ fn parse_launchd_config() -> Result<ServiceConfig, String> {
     match (secret, port) {
         (Some(s), Some(p)) => Ok(ServiceConfig { secret: s, port: p }),
         _ => Err("Failed to parse secret and port from launchd plist file".to_string()),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn parse_launchd_config() -> Result<ServiceConfig, String> {
+    parse_config_from_path(
+        shuthost_common::macos::get_service_path,
+        parse_launchd_content,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::install;
+
+    fn test_parse_content(template: &str, parse_fn: fn(&str) -> Result<ServiceConfig, String>) {
+        let content = install::bind_template_replacements(
+            template,
+            "test desc",
+            "1234",
+            "test cmd",
+            "test_secret",
+        );
+
+        let config = parse_fn(&content).unwrap();
+        assert_eq!(config.secret, "test_secret");
+        assert_eq!(config.port, 1234);
+    }
+
+    #[test]
+    fn test_parse_systemd_content() {
+        test_parse_content(
+            install::SYSTEMD_SERVICE_FILE_TEMPLATE,
+            parse_systemd_content,
+        );
+    }
+
+    #[test]
+    fn test_parse_openrc_content() {
+        test_parse_content(install::OPENRC_SERVICE_FILE_TEMPLATE, parse_openrc_content);
+    }
+
+    #[test]
+    fn test_parse_launchd_content() {
+        test_parse_content(
+            install::LAUNCHD_SERVICE_FILE_TEMPLATE,
+            parse_launchd_content,
+        );
+    }
+
+    #[test]
+    fn test_parse_serviceless_content() {
+        let content = r#"
+SHUTHOST_SHARED_SECRET=test_secret
+PORT=1234
+SHUTDOWN_COMMAND=test cmd
+"#;
+
+        let config = parse_serviceless_content(content).unwrap();
+        assert_eq!(config.secret, "test_secret");
+        assert_eq!(config.port, 1234);
     }
 }
