@@ -1,0 +1,93 @@
+use std::path::PathBuf;
+
+use crate::install::{
+    InitSystem, get_default_interface, get_inferred_init_system, get_ip, get_mac,
+    registration::{self, parse_config},
+};
+
+#[derive(Debug)]
+pub struct ControlScriptValues {
+    pub host_ip: String,
+    pub port: u16,
+    pub shared_secret: String,
+    pub mac_address: String,
+}
+
+pub fn generate_control_script_from_values(values: &ControlScriptValues) -> String {
+    include_str!("../../scripts/direct_control/direct_control.tmpl.sh")
+        .replace("{host_ip}", &values.host_ip)
+        .replace("{port}", &values.port.to_string())
+        .replace("{shared_secret}", &values.shared_secret)
+        .replace("{mac_address}", &values.mac_address)
+}
+
+#[derive(Debug, clap::Parser)]
+pub struct Args {
+    /// Output path for the generated control script.
+    #[arg(long = "output", short = 'o')]
+    pub output: Option<PathBuf>,
+
+    /// The init system used by the host_agent installation.
+    #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
+    pub init_system: InitSystem,
+
+    /// Type of the script to generate.
+    #[arg(long = "type", default_value = "shell")]
+    pub script_type: String,
+
+    /// Path to the serviceless script, required if init-system is `serviceless`.
+    #[arg(long = "script-path")]
+    pub script_path: Option<String>,
+}
+
+pub(crate) fn generate_control_script(
+    init_system: InitSystem,
+    script_path: Option<&str>,
+) -> Result<String, String> {
+    let config = parse_config(&registration::Args {
+        init_system,
+        script_path: script_path.map(|s| s.to_string()),
+    })?;
+
+    let interface = get_default_interface().ok_or("Failed to determine default interface")?;
+    let ip = get_ip(&interface).ok_or("Failed to get IP address")?;
+    let mac = get_mac(&interface).ok_or("Failed to get MAC address")?;
+
+    let values = ControlScriptValues {
+        host_ip: ip,
+        port: config.port,
+        shared_secret: config.secret,
+        mac_address: mac,
+    };
+
+    Ok(generate_control_script_from_values(&values))
+}
+
+pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
+    let script = generate_control_script(args.init_system, args.script_path.as_deref())?;
+
+    let output_path = args.output.clone().unwrap_or_else(|| {
+        let hostname = crate::install::get_hostname()
+            .unwrap_or_else(|| "unknown".to_string())
+            .replace('.', "_");
+        PathBuf::from(format!("shuthost_direct_control_{}", hostname))
+    });
+
+    std::fs::write(&output_path, &script)
+        .map_err(|e| format!("Failed to write script to {}: {}", output_path.display(), e))?;
+
+    // Make executable
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&output_path)
+            .map_err(|e| format!("Failed to get metadata: {}", e))?
+            .permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&output_path, perms)
+            .map_err(|e| format!("Failed to set permissions: {}", e))?;
+    }
+
+    println!("Control script generated at: {}", output_path.display());
+    Ok(())
+}

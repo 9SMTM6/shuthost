@@ -21,44 +21,35 @@ pub struct Args {
 }
 
 #[derive(Debug)]
-pub(super) struct ServiceConfig {
+pub(crate) struct ServiceConfig {
     pub secret: String,
     pub port: u16,
 }
 
-pub(crate) fn parse_config_and_print_registration(
-    &Args {
-        init_system,
-        ref script_path,
-    }: &Args,
-) -> Result<(), String> {
-    let custom_path = if init_system == InitSystem::Serviceless {
-        script_path.as_deref().ok_or_else(|| {
-            "Script path must be specified for serviceless init system".to_string()
-        })?
+pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
+    let custom_path = if args.init_system == InitSystem::Serviceless {
+        args.script_path
+            .clone()
+            .unwrap_or_else(|| format!("{}_serviceless.sh", BINARY_NAME))
     } else {
-        if script_path.is_some() {
+        if args.script_path.is_some() {
             return Err("Script path is only valid for serviceless init system".to_string());
         }
-        ""
+        "".to_string()
     };
 
-    let config = match init_system {
+    Ok(match args.init_system {
         #[cfg(target_os = "linux")]
         InitSystem::Systemd => parse_systemd_config()?,
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => parse_openrc_config()?,
-        InitSystem::Serviceless => parse_serviceless_config(custom_path)?,
+        InitSystem::Serviceless => parse_serviceless_config(&custom_path)?,
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => parse_launchd_config()?,
-    };
-
-    print_registration_config(&config)?;
-
-    Ok(())
+    })
 }
 
-pub(super) fn print_registration_config(config: &ServiceConfig) -> Result<(), String> {
+pub(crate) fn print_registration_config(config: &ServiceConfig) -> Result<(), String> {
     let interface = &get_default_interface();
     if interface.is_none() {
         eprintln!(

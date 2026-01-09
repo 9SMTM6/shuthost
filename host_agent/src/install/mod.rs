@@ -150,7 +150,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         reason = "can't be const because of linux"
     )
 )]
-fn get_inferred_init_system() -> InitSystem {
+pub(crate) fn get_inferred_init_system() -> InitSystem {
     #[cfg(target_os = "linux")]
     {
         if is_systemd() {
@@ -168,7 +168,7 @@ fn get_inferred_init_system() -> InitSystem {
 }
 
 /// Attempts to determine the default network interface by parsing system routing information.
-fn get_default_interface() -> Option<String> {
+pub(crate) fn get_default_interface() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
         let output = Command::new("ip")
