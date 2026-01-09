@@ -3,24 +3,6 @@
 set -eu
 
 # Helper script to install the ShutHost coordinator binary
-# Based on the installation steps from README.md
-
-CI_MODE=false
-
-# Parse arguments
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --ci)
-            CI_MODE=true
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Usage: $0 [--ci]"
-            exit 1
-            ;;
-    esac
-    shift
-done
 
 elevate_privileges() {
     cmd="$*"
