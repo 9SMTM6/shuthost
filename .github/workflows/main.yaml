@@ -297,9 +297,9 @@ jobs:
 
       - name: Generate file snapshots
         run: |
-          ./scripts/snapshot-files-systemd.sh "./coordinator-x86_64-unknown-linux-gnu/shuthost_coordinator"
-          ./scripts/snapshot-files-openrc.sh "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
-          ./scripts/snapshot-files-docker-compose.sh "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
+          ./scripts/snapshot_files/systemd.sh "./coordinator-x86_64-unknown-linux-gnu/shuthost_coordinator"
+          ./scripts/snapshot_files/openrc.sh "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
+          ./scripts/snapshot_files/compose_and_self_extracting.sh "./coordinator-x86_64-unknown-linux-musl/shuthost_coordinator"
 
       - name: Validate file snapshots
         run: |

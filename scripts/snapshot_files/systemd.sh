@@ -1,9 +1,9 @@
 #!/bin/sh
-# Wrapper script for snapshot-files-container.sh using systemd base image.
+# Wrapper script for common.sh using systemd base image.
 
 set -e
 
-. ./scripts/snapshot-files-common.sh
+. ./scripts/snapshot_files/common.sh
 
 if [ -n "$1" ]; then
     HOST_BINARY="$1"
