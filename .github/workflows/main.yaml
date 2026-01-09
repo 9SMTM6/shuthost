@@ -200,13 +200,6 @@ jobs:
 
       - run: chmod +x shuthost_coordinator
 
-      - name: Setup syslog
-        run: |
-          set -x
-          rc-update add syslog default;
-          rc-service syslog start;
-          touch /var/log/messages;
-
       - name: Install dependencies
         run: |
           apk update
@@ -458,7 +451,6 @@ jobs:
     if: github.event_name != 'workflow_dispatch'
     container:
       image: alpine:latest
-      options: --network=host
     steps:
       
       - name: Download coordinator binary
