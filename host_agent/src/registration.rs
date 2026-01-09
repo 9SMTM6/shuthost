@@ -26,6 +26,7 @@ pub(crate) struct ServiceConfig {
     pub port: u16,
 }
 
+// TODO: add unit tests for the parsing functions (conceptually as inverse of the generation of the service files, might need to modularize things)
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     let custom_path = if args.init_system == InitSystem::Serviceless {
         args.script_path
@@ -90,8 +91,8 @@ fn parse_systemd_config() -> Result<ServiceConfig, String> {
     let mut port = None;
 
     for line in content.lines() {
-        if line.starts_with("Environment=SHUTHOST_SHARED_SECRET=") {
-            secret = Some(line.split('=').nth(1).unwrap_or("").to_string());
+        if let Some(value) = line.strip_prefix("Environment=SHUTHOST_SHARED_SECRET=") {
+            secret = Some(value.to_string());
         }
         if line.contains(" --port=")
             && let Some(start) = line.find(" --port=")
