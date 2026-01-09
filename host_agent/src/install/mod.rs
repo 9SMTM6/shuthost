@@ -13,12 +13,30 @@ use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
 
 /// The binary name, derived from the Cargo package name.
 pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
-#[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_host_agent.service.ini");
-#[cfg(target_os = "macos")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_host_agent.plist.xml");
-#[cfg(target_os = "linux")]
-const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
+#[cfg(any(target_os = "linux", test))]
+pub(crate) const SYSTEMD_SERVICE_FILE_TEMPLATE: &str =
+    include_str!("shuthost_host_agent.service.ini");
+#[cfg(any(target_os = "macos", test))]
+pub(crate) const LAUNCHD_SERVICE_FILE_TEMPLATE: &str =
+    include_str!("com.github_9smtm6.shuthost_host_agent.plist.xml");
+#[cfg(any(target_os = "linux", test))]
+pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
+
+/// Binds template placeholders with actual values.
+pub(crate) fn bind_template_replacements(
+    template: &str,
+    description: &str,
+    port: &str,
+    shutdown_command: &str,
+    secret: &str,
+) -> String {
+    template
+        .replace("{ description }", description)
+        .replace("{ port }", port)
+        .replace("{ shutdown_command }", shutdown_command)
+        .replace("{ secret }", secret)
+        .replace("{ name }", BINARY_NAME)
+}
 
 /// Arguments for the `install` subcommand of host_agent.
 #[derive(Debug, Parser)]
@@ -73,11 +91,13 @@ impl std::fmt::Display for InitSystem {
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     let name = BINARY_NAME;
     let bind_known_vals = |arg: &str| {
-        arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-            .replace("{ port }", &arguments.port.to_string())
-            .replace("{ shutdown_command }", &arguments.shutdown_command)
-            .replace("{ secret }", &arguments.shared_secret)
-            .replace("{ name }", name)
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            &arguments.port.to_string(),
+            &arguments.shutdown_command,
+            &arguments.shared_secret,
+        )
     };
 
     match arguments.init_system {
@@ -85,7 +105,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::Systemd => {
             shuthost_common::systemd::install_self_as_service(
                 name,
-                &bind_known_vals(SERVICE_FILE_TEMPLATE),
+                &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::systemd::start_and_enable_self_as_service(name)?;
         }
@@ -93,7 +113,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::OpenRC => {
             shuthost_common::openrc::install_self_as_service(
                 name,
-                &bind_known_vals(OPENRC_FILE_TEMPLATE),
+                &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(name)?;
         }
@@ -119,7 +139,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::Launchd => {
             shuthost_common::macos::install_self_as_service(
                 name,
-                &bind_known_vals(SERVICE_FILE_TEMPLATE),
+                &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::macos::start_and_enable_self_as_service(name)?;
         }
