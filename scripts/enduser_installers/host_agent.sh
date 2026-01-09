@@ -2,7 +2,7 @@
 
 set -eu
 
-# Helper script to install the ShutHost coordinator binary
+# Helper script to install the ShutHost host agent binary
 
 elevate_privileges() {
     cmd="$*"
@@ -11,7 +11,7 @@ elevate_privileges() {
         sudo $cmd
     elif command -v doas >/dev/null 2>&1; then
         # shellcheck disable=SC2086
-        doas sh -c "SUDO_USER=\"\$DOAS_USER\" $cmd"
+        doas $cmd
     else
         echo "Error: Neither sudo nor doas found. Please install sudo or doas."
         exit 1
@@ -27,7 +27,7 @@ run_as_elevated() {
 }
 
 cleanup() {
-    rm -f "$FILENAME" shuthost_coordinator
+    rm -f "$FILENAME" shuthost_host_agent
 }
 
 trap cleanup EXIT
@@ -91,8 +91,8 @@ verify_checksum() {
     esac
 }
 
-echo "ShutHost Coordinator Binary Installer"
-echo "====================================="
+echo "ShutHost Host Agent Binary Installer"
+echo "===================================="
 echo
 
 set -v
@@ -103,7 +103,7 @@ echo "Detected platform: $TARGET_TRIPLE"
 echo
 
 # Construct download URL and filename
-FILENAME="shuthost_coordinator-${TARGET_TRIPLE}.tar.gz"
+FILENAME="shuthost_host_agent-${TARGET_TRIPLE}.tar.gz"
 DOWNLOAD_URL="${BASE_URL}/download/${FILENAME}"
 
 curl -fLO "$DOWNLOAD_URL"
@@ -114,10 +114,9 @@ verify_checksum
 tar -xzf "$FILENAME"
 
 # Run the installer
-run_as_elevated ./shuthost_coordinator install "$(whoami)"
+run_as_elevated ./shuthost_host_agent install
 
 set +v
 
 echo "Installation complete!"
-echo "Access the WebUI at http://localhost:8080"
 echo
