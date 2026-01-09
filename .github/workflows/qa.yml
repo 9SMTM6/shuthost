@@ -150,7 +150,7 @@ jobs:
       - uses: *checkout
       - &install
         run: |
-          ./scripts/install_coordinator.sh --ci
+          ./scripts/enduser_installers/coordinator.sh --ci
 
   install-script-test-alpine:
     name: Test automated install script on Alpine
