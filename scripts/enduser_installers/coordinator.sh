@@ -71,11 +71,11 @@ verify_checksum() {
     COMPUTED_CHECKSUM=$(sha256sum "$FILENAME" | cut -d' ' -f1)
     echo "Computed checksum: $COMPUTED_CHECKSUM"
     echo
-    if [ "$CI_MODE" = true ]; then
+    if [ "${CI_MODE:-false}" = true ]; then
         echo "CI mode: Skipping checksum verification prompt."
         return
     fi
-    echo "Please verify this checksum against the one provided on the releases page:"
+    echo "Please verify this checksum against the one provided for $FILENAME on the releases page:"
     echo $BASE_URL
     echo
     printf "Have you verified the checksum? (y/N): "
