@@ -196,12 +196,11 @@ These are generated or validated automatically as part of the test suite, and th
   - I have no ability to test these practically myself.
 
 ### 🔧 Management Features
-- 📦 **Individual agent installation**: Allow installing agents directly from the live demo or other sources. 
-  - Got that partially working already when installing from live-demo
-  - but I think I want to do it differently for the official route.
-  - add an installer script like for coordinator
-  - with interaction scripts in shell and PowerShell
+- 📦 **Individual agent installation**: Allow installing agents directly and simplify using them 
+  - with interaction scripts in shell (and later powershell)
   - support generation of interaction scripts from the agent binary
+  - in windows_agent branch add a powershell script to install the agent and the generation of an interaction script
+  - add documentation for this
 - 🗑️ **Uninstalls**
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
