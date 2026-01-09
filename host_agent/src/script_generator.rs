@@ -1,7 +1,9 @@
 use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 use crate::{
-    install::{InitSystem, get_default_interface, get_hostname, get_inferred_init_system, get_ip, get_mac},
+    install::{
+        InitSystem, get_default_interface, get_hostname, get_inferred_init_system, get_ip, get_mac,
+    },
     registration::{self, parse_config},
 };
 
@@ -41,9 +43,11 @@ pub fn generate_control_script_from_values(values: &ControlScriptValues) -> Stri
 }
 
 fn get_default_output_path() -> LossyPath {
-    let hostname = get_hostname()
-        .unwrap_or_else(|| "unknown".to_string());
-    LossyPath(PathBuf::from(format!("shuthost_direct_control_{}", hostname)))
+    let hostname = get_hostname().unwrap_or_else(|| "unknown".to_string());
+    LossyPath(PathBuf::from(format!(
+        "shuthost_direct_control_{}",
+        hostname
+    )))
 }
 
 #[derive(Debug, clap::Parser)]
@@ -95,18 +99,18 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
 
     let output_path = &args.output.0;
 
-    std::fs::write(&output_path, &script)
+    std::fs::write(output_path, &script)
         .map_err(|e| format!("Failed to write script to {}: {}", output_path.display(), e))?;
 
     // Make executable
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(&output_path)
+        let mut perms = std::fs::metadata(output_path)
             .map_err(|e| format!("Failed to get metadata: {}", e))?
             .permissions();
         perms.set_mode(0o755);
-        std::fs::set_permissions(&output_path, perms)
+        std::fs::set_permissions(output_path, perms)
             .map_err(|e| format!("Failed to set permissions: {}", e))?;
     }
 
