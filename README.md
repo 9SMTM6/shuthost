@@ -87,9 +87,9 @@ For a visual overview, see the architecture diagram: [Architecture](https://9smt
 Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
 
 #### Binary (recommended)
-- Use the [automated installation script](scripts/install_coordinator.sh):
+- Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/9SMTM6/shuthost/main/scripts/install_coordinator.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/9SMTM6/shuthost/main/scripts/enduser_installers/coordinator.sh | sh
   ```
   This script will automatically detect your platform, download the appropriate binary, verify the checksum (with user confirmation), and install the coordinator as a system service.
 
