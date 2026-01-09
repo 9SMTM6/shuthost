@@ -325,7 +325,11 @@ jobs:
         name: Start controller service (background)
         run: |
           chmod +x shuthost_coordinator
-          ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+
+      - &wait_for_controller    
+        name: Start controller service (background)
+        run: |
           # Wait for coordinator to be ready (timeout 30s)
           for i in $(seq 1 30); do
             curl -fsSL http://localhost:8080/login && break || sleep 1
@@ -397,6 +401,8 @@ jobs:
 
       - *start_controller
 
+      - *wait_for_controller
+
       - name: Install and run client
         run: |
           # Run installer and capture output
@@ -461,9 +467,15 @@ jobs:
       - name: Prepare
         run: |
           apk update
-          apk add --no-cache curl openssl busybox-extras
+          apk add --no-cache curl openssl busybox-extras doas
+          echo "permit nopass root" >> /etc/doas.conf
 
-      - *start_controller
+      - name: Start controller service (background)
+        run: |
+          chmod +x shuthost_coordinator
+          doas ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
+
+      - *wait_for_controller
 
       - name: Install and run client
         run: |
