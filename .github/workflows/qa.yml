@@ -175,17 +175,26 @@ jobs:
         run: |
           curl -sSL https://9smtm6.github.io/shuthost/download/client_installer.sh | sh -s https://9smtm6.github.io/shuthost
 
-  client-ps1-installer-test:
-    name: Test client installer (powershell)
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+  client-ps1-installer-test-windows:
+    name: Test client installer (powershell on Windows)
+    runs-on: windows-latest
     steps:
       - name: Install client
         run: |
           curl.exe -sSLO 'https://9smtm6.github.io/shuthost/download/client_installer.ps1'
           powershell -ExecutionPolicy Bypass -File .\client_installer.ps1 https://9smtm6.github.io/shuthost
+
+  client-ps1-installer-test-unix:
+    name: Test client installer (powershell on Unix)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install client
+        run: |
+          curl -sSL https://9smtm6.github.io/shuthost/download/client_installer.ps1 -o client_installer.ps1
+          pwsh -ExecutionPolicy Bypass -File ./client_installer.ps1 https://9smtm6.github.io/shuthost
 
   host-agent-installer-test:
     name: Test host agent installer
