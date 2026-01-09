@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::install::{
-    InitSystem, get_default_interface, get_inferred_init_system, get_ip, get_mac,
+use crate::{
+    install::{InitSystem, get_default_interface, get_inferred_init_system, get_ip, get_mac},
     registration::{self, parse_config},
 };
 

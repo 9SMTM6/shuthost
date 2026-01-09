@@ -5,6 +5,8 @@
 mod commands;
 #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
 mod install;
+#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+pub mod registration;
 pub mod script_generator;
 pub mod server;
 pub mod validation;
@@ -14,9 +16,6 @@ use std::env;
 use clap::{Parser, Subcommand};
 
 use server::ServiceOptions;
-
-#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
-use crate::install::registration;
 
 /// Top-level CLI parser for host_agent.
 #[derive(Debug, Parser)]

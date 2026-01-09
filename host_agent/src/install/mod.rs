@@ -9,10 +9,7 @@ use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
 use std::process::Command;
 
-use crate::DEFAULT_PORT;
-use crate::server::get_default_shutdown_command;
-
-pub mod registration;
+use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
 
 /// The binary name, derived from the Cargo package name.
 pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
