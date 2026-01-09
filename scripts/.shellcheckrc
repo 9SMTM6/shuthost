@@ -1,3 +1,4 @@
 source-path=SCRIPTDIR
 source-path=SCRIPTDIR/..
+source-path=SCRIPTDIR/snapshot_files
 external-sources=true

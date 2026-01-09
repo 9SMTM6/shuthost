@@ -5,7 +5,7 @@
 
 set -e
 
-. ./scripts/snapshot-files-common.sh
+. ./scripts/snapshot_files/common.sh
 
 if [ -n "$1" ]; then
     HOST_BINARY="$1"
