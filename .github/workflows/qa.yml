@@ -163,3 +163,37 @@ jobs:
       - name: Configure doas for root
         run: echo "permit nopass root" >> /etc/doas.conf
       - *install
+
+  client-sh-installer-test:
+    name: Test client installer (shell)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install client
+        run: |
+          curl -sSL https://9smtm6.github.io/shuthost/download/client_installer.sh | sh -s https://9smtm6.github.io/shuthost
+
+  client-ps1-installer-test:
+    name: Test client installer (powershell)
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install client
+        run: |
+          curl.exe -sSLO 'https://9smtm6.github.io/shuthost/download/client_installer.ps1'
+          powershell -ExecutionPolicy Bypass -File .\client_installer.ps1 https://9smtm6.github.io/shuthost
+
+  host-agent-installer-test:
+    name: Test host agent installer
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install host agent
+        run: |
+          curl -fsSL https://9smtm6.github.io/shuthost/download/host_agent_installer.sh | sh -s https://9smtm6.github.io/shuthost --port 5757
