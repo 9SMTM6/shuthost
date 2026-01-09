@@ -1,9 +1,26 @@
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 use crate::{
-    install::{InitSystem, get_default_interface, get_inferred_init_system, get_ip, get_mac},
+    install::{InitSystem, get_default_interface, get_hostname, get_inferred_init_system, get_ip, get_mac},
     registration::{self, parse_config},
 };
+
+#[derive(Debug, Clone)]
+pub struct LossyPath(PathBuf);
+
+impl FromStr for LossyPath {
+    type Err = <PathBuf as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(PathBuf::from_str(s)?))
+    }
+}
+
+impl Display for LossyPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_string_lossy())
+    }
+}
 
 #[derive(Debug)]
 pub struct ControlScriptValues {
@@ -11,6 +28,7 @@ pub struct ControlScriptValues {
     pub port: u16,
     pub shared_secret: String,
     pub mac_address: String,
+    pub hostname: String,
 }
 
 pub fn generate_control_script_from_values(values: &ControlScriptValues) -> String {
@@ -19,13 +37,21 @@ pub fn generate_control_script_from_values(values: &ControlScriptValues) -> Stri
         .replace("{port}", &values.port.to_string())
         .replace("{shared_secret}", &values.shared_secret)
         .replace("{mac_address}", &values.mac_address)
+        .replace("{hostname}", &values.hostname)
+}
+
+fn get_default_output_path() -> LossyPath {
+    let hostname = get_hostname()
+        .unwrap_or_else(|| "unknown".to_string());
+    LossyPath(PathBuf::from(format!("shuthost_direct_control_{}", hostname)))
 }
 
 #[derive(Debug, clap::Parser)]
 pub struct Args {
     /// Output path for the generated control script.
-    #[arg(long = "output", short = 'o')]
-    pub output: Option<PathBuf>,
+    /// Defaults to shuthost_direct_control_{hostname} where {hostname} is the system's hostname "subdomain".
+    #[arg(long = "output", short = 'o', default_value_t = get_default_output_path())]
+    pub output: LossyPath,
 
     /// The init system used by the host_agent installation.
     #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
@@ -35,7 +61,7 @@ pub struct Args {
     #[arg(long = "type", default_value = "shell")]
     pub script_type: String,
 
-    /// Path to the serviceless script, required if init-system is `serviceless`.
+    /// Path to the serviceless script, only used if init-system is `serviceless`.
     #[arg(long = "script-path")]
     pub script_path: Option<String>,
 }
@@ -52,12 +78,14 @@ pub(crate) fn generate_control_script(
     let interface = get_default_interface().ok_or("Failed to determine default interface")?;
     let ip = get_ip(&interface).ok_or("Failed to get IP address")?;
     let mac = get_mac(&interface).ok_or("Failed to get MAC address")?;
+    let hostname = get_hostname().unwrap_or_else(|| "unknown".to_string());
 
     let values = ControlScriptValues {
         host_ip: ip,
         port: config.port,
         shared_secret: config.secret,
         mac_address: mac,
+        hostname,
     };
 
     Ok(generate_control_script_from_values(&values))
@@ -66,12 +94,7 @@ pub(crate) fn generate_control_script(
 pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
     let script = generate_control_script(args.init_system, args.script_path.as_deref())?;
 
-    let output_path = args.output.clone().unwrap_or_else(|| {
-        let hostname = crate::install::get_hostname()
-            .unwrap_or_else(|| "unknown".to_string())
-            .replace('.', "_");
-        PathBuf::from(format!("shuthost_direct_control_{}", hostname))
-    });
+    let output_path = &args.output.0;
 
     std::fs::write(&output_path, &script)
         .map_err(|e| format!("Failed to write script to {}: {}", output_path.display(), e))?;

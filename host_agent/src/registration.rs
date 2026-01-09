@@ -15,7 +15,7 @@ pub struct Args {
     #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
-    /// Path to the serviceless script, required if init-system is `serviceless`.
+    /// Path to the serviceless script, only used if init-system is `serviceless`.
     #[arg(long = "script-path")]
     pub script_path: Option<String>,
 }
