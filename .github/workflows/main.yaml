@@ -493,7 +493,7 @@ jobs:
           # Parse the client config line from installer output and add to config
           clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
           if [ -n "$clientConfigLine" ]; then
-            config_path="/root/.config/shuthost_coordinator/config.toml"
+            config_path="/home/root/.config/shuthost_coordinator/config.toml"
             echo "Config file before modification:"
             cat "$config_path"
             # Add the host if not present
