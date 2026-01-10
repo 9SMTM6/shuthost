@@ -1,6 +1,6 @@
 FROM docker.io/heywoodlh/systemd:latest
 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl openssl sudo
 
 COPY scripts /repo/scripts
 
