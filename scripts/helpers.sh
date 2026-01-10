@@ -1,6 +1,7 @@
 #!/bin/sh
 
 build_musl() {
+    #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
     docker build -t shuthost-builder -f scripts/build.Containerfile .
     docker run --rm \
         -v "$(pwd):/src" \
@@ -137,6 +138,37 @@ generate_embedded_scripts() {
         embed_script "$file" "$tag" > "target/scripts/$relative"
         chmod +x "target/scripts/$relative"
     done
+}
+
+wait_for_coordinator_ready() {
+    port="${1:-8080}"
+    printf 'Waiting for coordinator to be ready on port %s...\n' "$port"
+    i=1
+    while [ "$i" -le 30 ]; do
+        if curl -fsSL "http://localhost:$port/login" >/dev/null 2>&1; then
+            printf 'Coordinator is ready!\n'
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 1
+    done
+    printf 'Coordinator did not become ready within 30 seconds\n'
+    return 1
+}
+
+wait_for_agent_ready() {
+    printf 'Waiting for agent to be ready...\n'
+    i=1
+    while [ "$i" -le 30 ]; do
+        if run_as_elevated pgrep -af shuthost_host_agent >/dev/null 2>&1; then
+            printf 'Agent is ready!\n'
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 1
+    done
+    printf 'Agent did not become ready within 30 seconds\n'
+    return 1
 }
 
 # provide default values for BASE_URL and DOWNLOAD_URL for when helpers.sh is sourced and not embedded
