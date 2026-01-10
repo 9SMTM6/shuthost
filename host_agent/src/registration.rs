@@ -41,7 +41,7 @@ pub(crate) struct ServiceConfig {
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     let custom_path = match args.init_system {
         InitSystem::SelfExtractingPwsh => {
-            return Err("PowerShell self-extracting parsing not implemented".to_string());
+            todo!("PowerShell self-extracting parsing not implemented");
         }
         InitSystem::SelfExtractingShell => args
             .script_path
