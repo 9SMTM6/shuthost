@@ -21,7 +21,7 @@ wait_for_agent_ready
 
 run_as_elevated pgrep -af shuthost_host_agent || { printf 'Host agent service is not running\n' ; exit 1; }
 
-"$HOST_AGENT_BINARY" generate-direct-control -o shuthost_direct_control
+run_as_elevated "$HOST_AGENT_BINARY" generate-direct-control -o shuthost_direct_control
 
 ./shuthost_direct_control shutdown
 
