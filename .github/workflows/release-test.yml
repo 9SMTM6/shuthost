@@ -1,0 +1,97 @@
+name: Test Released Install Scripts
+
+on:
+    release:
+        types: [published]
+
+permissions:
+    contents: read
+
+jobs:
+    test-coordinator-ubuntu:
+        name: Test Coordinator Install Script on Ubuntu
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download install scripts
+              run: |
+                  gh release download ${{ github.event.release.tag_name }} --pattern "coordinator.sh" --dir install-scripts
+            - name: Make scripts executable
+              run: chmod +x install-scripts/*.sh
+            - name: Test coordinator install script
+              run: |
+                  CI_MODE=true ./install-scripts/coordinator.sh
+
+    test-coordinator-macos:
+        name: Test Coordinator Install Script on macOS
+        runs-on: macos-latest
+        steps:
+            - name: Download install scripts
+              run: |
+                  gh release download ${{ github.event.release.tag_name }} --pattern "coordinator.sh" --dir install-scripts
+            - name: Make scripts executable
+              run: chmod +x install-scripts/*.sh
+            - name: Test coordinator install script
+              run: |
+                  CI_MODE=true ./install-scripts/coordinator.sh
+
+    test-coordinator-alpine:
+        name: Test Coordinator Install Script on Alpine
+        runs-on: ubuntu-latest
+        container: docker.io/heywoodlh/openrc:latest
+        steps:
+            - name: Prepare Alpine
+              run: |
+                  apk add --no-cache curl doas github-cli
+                  echo "permit nopass root" >> /etc/doas.conf
+            - name: Download install scripts
+              run: |
+                  gh release download ${{ github.event.release.tag_name }} --pattern "coordinator.sh" --dir install-scripts
+            - name: Make scripts executable
+              run: chmod +x install-scripts/*.sh
+            - name: Test coordinator install script
+              run: |
+                  CI_MODE=true ./install-scripts/coordinator.sh
+
+    test-host-agent-ubuntu:
+        name: Test Host Agent Install Script on Ubuntu
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download install scripts
+              run: |
+                  gh release download ${{ github.event.release.tag_name }} --pattern "host_agent.sh" --dir install-scripts
+            - name: Make scripts executable
+              run: chmod +x install-scripts/*.sh
+            - name: Test host agent install script
+              run: |
+                  CI_MODE=true ./install-scripts/host_agent.sh
+
+    test-host-agent-macos:
+        name: Test Host Agent Install Script on macOS
+        runs-on: macos-latest
+        steps:
+            - name: Download install scripts
+              run: |
+                  gh release download ${{ github.event.release.tag_name }} --pattern "host_agent.sh" --dir install-scripts
+            - name: Make scripts executable
+              run: chmod +x install-scripts/*.sh
+            - name: Test host agent install script
+              run: |
+                  CI_MODE=true ./install-scripts/host_agent.sh
+
+    test-host-agent-alpine:
+        name: Test Host Agent Install Script on Alpine
+        runs-on: ubuntu-latest
+        container: docker.io/heywoodlh/openrc:latest
+        steps:
+            - name: Prepare Alpine
+              run: |
+                  apk add --no-cache curl doas github-cli
+                  echo "permit nopass root" >> /etc/doas.conf
+            - name: Download install scripts
+              run: |
+                  gh release download ${{ github.event.release.tag_name }} --pattern "host_agent.sh" --dir install-scripts
+            - name: Make scripts executable
+              run: chmod +x install-scripts/*.sh
+            - name: Test host agent install script
+              run: |
+                  CI_MODE=true ./install-scripts/host_agent.sh
