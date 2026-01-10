@@ -1,0 +1,7 @@
+FROM docker.io/heywoodlh/openrc:latest
+
+RUN apk update && apk add curl patch file
+
+WORKDIR /workspace
+
+COPY target/x86_64-unknown-linux-musl/release/shuthost_coordinator .

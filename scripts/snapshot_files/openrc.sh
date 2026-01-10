@@ -6,15 +6,21 @@ set -e
 . ./scripts/snapshot_files/common.sh
 . ./scripts/helpers.sh
 
+# Configuration
+CONTAINERFILE="scripts/snapshot_files/Containerfile.openrc"
+RESTART_CMD="rc-service shuthost_coordinator restart"
+STOP_CMD="rc-service shuthost_coordinator stop"
+BASE_IMAGE="shuthost-openrc"
+OUTPUT_DIR="./install-file-snapshots/openrc"
+
 if [ -n "$1" ]; then
-    HOST_BINARY="$1"
+    cp "$1" ./target/x86_64-unknown-linux-musl/release/shuthost_coordinator
 else
     build_musl
-    HOST_BINARY="./target/x86_64-unknown-linux-musl/release/shuthost_coordinator"
 fi
 
 trap cleanup EXIT
 
-do_snapshot "docker.io/heywoodlh/openrc:latest" "apk update && apk add curl patch file" "./install-file-snapshots/openrc" "$HOST_BINARY" "rc-service shuthost_coordinator restart" "rc-service shuthost_coordinator stop"
+do_snapshot
 
-do_diff "./install-file-snapshots/openrc"
+do_diff
