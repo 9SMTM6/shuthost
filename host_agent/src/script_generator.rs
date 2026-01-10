@@ -52,22 +52,24 @@ impl std::fmt::Display for ScriptType {
 
 fn get_default_script_type() -> ScriptType {
     #[cfg(target_os = "windows")]
-    { ScriptType::Pwsh }
+    {
+        ScriptType::Pwsh
+    }
     #[cfg(not(target_os = "windows"))]
-    { ScriptType::UnixShell }
+    {
+        ScriptType::UnixShell
+    }
 }
 
-pub fn generate_control_script_from_values(raw: &'static str, values: &ControlScriptValues) -> String {
-    raw
-        .replace("{host_ip}", &values.host_ip)
+pub fn generate_control_script_from_values(
+    raw: &'static str,
+    values: &ControlScriptValues,
+) -> String {
+    raw.replace("{host_ip}", &values.host_ip)
         .replace("{port}", &values.port.to_string())
         .replace("{shared_secret}", &values.shared_secret)
         .replace("{mac_address}", &values.mac_address)
         .replace("{hostname}", &values.hostname)
-}
-
-pub fn generate_unix_shell_script(values: &ControlScriptValues) -> String {
-    generate_control_script_from_values(include_str!("../../scripts/direct_control/direct_control.tmpl.sh"), values)
 }
 
 fn get_default_output_path() -> LossyPath {
@@ -129,13 +131,23 @@ pub(crate) fn generate_control_script(
     };
 
     Ok(match script_type {
-        ScriptType::UnixShell => generate_unix_shell_script(&values),
-        ScriptType::Pwsh => todo!("PwSh script generation"),
+        ScriptType::UnixShell => generate_control_script_from_values(
+            include_str!("../../scripts/direct_control/direct_control.tmpl.sh"),
+            &values,
+        ),
+        ScriptType::Pwsh => generate_control_script_from_values(
+            include_str!("../../scripts/direct_control/direct_control.tmpl.ps1"),
+            &values,
+        ),
     })
 }
 
 pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
-    let script = generate_control_script(args.init_system, args.script_path.as_deref(), args.script_type.clone())?;
+    let script = generate_control_script(
+        args.init_system,
+        args.script_path.as_deref(),
+        args.script_type.clone(),
+    )?;
 
     let mut output_path = args.output.0.clone();
     if matches!(args.script_type, ScriptType::Pwsh) {
