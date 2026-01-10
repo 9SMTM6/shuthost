@@ -126,7 +126,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         }
         InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
-            shuthost_common::serviceless::generate_self_extracting_script(
+            shuthost_common::self_extracting::generate_self_extracting_script(
                 &[
                     ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
                     ("PORT", &arguments.port.to_string()),
@@ -144,7 +144,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         }
         InitSystem::SelfExtractingPwsh => {
             let target_script_path = format!("./{name}_self_extracting.ps1");
-            shuthost_common::serviceless::generate_self_extracting_ps1_script(
+            shuthost_common::self_extracting::generate_self_extracting_ps1_script(
                 &[
                     ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
                     ("PORT", &arguments.port.to_string()),

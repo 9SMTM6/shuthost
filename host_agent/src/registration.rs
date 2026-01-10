@@ -26,7 +26,7 @@ pub struct Args {
     #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
-    /// Path to the serviceless script, only used if init-system is `serviceless`.
+    /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
     #[arg(long = "script-path")]
     pub script_path: Option<String>,
 }
@@ -41,12 +41,12 @@ pub(crate) struct ServiceConfig {
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     let custom_path = match args.init_system {
         InitSystem::SelfExtractingPwsh => {
-            return Err("PowerShell serviceless parsing not implemented".to_string());
+            return Err("PowerShell self-extracting parsing not implemented".to_string());
         }
         InitSystem::SelfExtractingShell => args
             .script_path
             .clone()
-            .unwrap_or_else(|| format!("{}_serviceless.sh", BINARY_NAME)),
+            .unwrap_or_else(|| format!("{}_self_extracting.sh", BINARY_NAME)),
         _ => {
             if args.script_path.is_some() {
                 return Err("Script path is only valid for SelfExtracting* init system".to_string());
@@ -60,8 +60,10 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::Systemd => parse_systemd_config()?,
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => parse_openrc_config()?,
-        InitSystem::SelfExtractingShell => parse_serviceless_config(&custom_path)?,
-        InitSystem::SelfExtractingPwsh => todo!("PowerShell serviceless parsing not implemented"),
+        InitSystem::SelfExtractingShell => parse_self_extracting_shell_config(&custom_path)?,
+        InitSystem::SelfExtractingPwsh => {
+            todo!("PowerShell self-extracting parsing not implemented")
+        }
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => parse_launchd_config()?,
     })
@@ -175,7 +177,7 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
     )
 }
 
-fn parse_serviceless_content(content: &str) -> Result<ServiceConfig, String> {
+fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
 
@@ -196,15 +198,15 @@ fn parse_serviceless_content(content: &str) -> Result<ServiceConfig, String> {
 
     match (secret, port) {
         (Some(s), Some(p)) => Ok(ServiceConfig { secret: s, port: p }),
-        _ => Err("Failed to parse secret and port from serviceless script".to_string()),
+        _ => Err("Failed to parse secret and port from self-extracting script".to_string()),
     }
 }
 
-fn parse_serviceless_config(path: &str) -> Result<ServiceConfig, String> {
+fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
 
-    parse_serviceless_content(&content)
+    parse_self_extracting_shell_content(&content)
 }
 
 #[cfg(any(target_os = "macos", test))]
@@ -283,14 +285,14 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_serviceless_content() {
+    fn test_parse_self_extracting_shell_content() {
         let content = r#"
 SHUTHOST_SHARED_SECRET=test_secret
 PORT=1234
 SHUTDOWN_COMMAND=test cmd
 "#;
 
-        let config = parse_serviceless_content(content).unwrap();
+        let config = parse_self_extracting_shell_content(content).unwrap();
         assert_eq!(config.secret, "test_secret");
         assert_eq!(config.port, 1234);
     }

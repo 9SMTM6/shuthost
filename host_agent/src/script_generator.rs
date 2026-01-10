@@ -64,7 +64,7 @@ pub struct Args {
     #[arg(long = "type", default_value = "shell")]
     pub script_type: String,
 
-    /// Path to the serviceless script, only used if init-system is `serviceless`.
+    /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
     #[arg(long = "script-path")]
     pub script_path: Option<String>,
 }

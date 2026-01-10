@@ -53,7 +53,7 @@ sleep 5
 podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-coordinator-installed"
 
 # Now install the agent in the same container
-# This will end up installing the serviceless agent, since it can't detect an init system in this container.
+# This will end up installing the self-extracting-shell agent, since it can't detect an init system in this container.
 # We override the OS to linux-musl since the coordinator we built only contains that agent.
 podman exec -w /workspace "temp-$BASE_IMAGE-container" sh -c "
   curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 --os linux-musl
