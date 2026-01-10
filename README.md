@@ -89,7 +89,7 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 #### Binary (recommended)
 - Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/9SMTM6/shuthost/main/scripts/enduser_installers/coordinator.sh | sh
+  curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
   ```
   This script will automatically detect your platform, download the appropriate binary, verify the checksum (with user confirmation), and install the coordinator as a system service.
 

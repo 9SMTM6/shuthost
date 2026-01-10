@@ -4,6 +4,8 @@ set -eu
 
 # Helper script to install the ShutHost host agent binary
 
+# This embeds the script during the release process. 
+# That build script then gets released as an asset, with a tagged download URL.
 . ./scripts/helpers.sh
 
 cleanup() {
