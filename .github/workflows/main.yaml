@@ -997,6 +997,11 @@ jobs:
           pattern: host_agent-*
           path: ./release-assets
       
+      - &generate_embedded_installers
+        name: Generate embedded installer scripts
+        run: |
+          . ./scripts/helpers.sh && generate_embedded_scripts "${{ github.ref_name }}"
+
       - &prepare_release_assets
         name: Prepare release assets directory
         run: |
@@ -1031,6 +1036,9 @@ jobs:
           for file in release-assets/flat/*; do
             tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform "s|.*|$(basename "$file" | sed 's/-.*//')|" "$(basename "$file")" && rm "$file"
           done
+          # Add embedded installer scripts
+          cp target/scripts/enduser_installers/coordinator.sh release-assets/flat/shuthost_coordinator_installer.sh
+          cp target/scripts/enduser_installers/host_agent.sh release-assets/flat/shuthost_host_agent_installer.sh
 
       - *release_image_name
 
@@ -1081,6 +1089,8 @@ jobs:
       - *download_coordinator_binaries
       
       - *download_agent_binaries
+
+      - *generate_embedded_installers
       
       - *prepare_release_assets
 
