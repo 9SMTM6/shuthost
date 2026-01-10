@@ -207,3 +207,11 @@ These are generated or validated automatically as part of the test suite, and th
     - Server secret?
 
 <!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service -->
+<!-- 
+todo: add a bunch of pwsh scripts for windows agent, once we again work on the windows_agent branch
+ * test pwsh (on unix)
+ * consider running on metal generally and for windows specifically.
+
+
+* todo: port test-client-scripts to run locally as well
+-->
