@@ -22,7 +22,7 @@ install-file-snapshots/
 # New entries
 !target/**/shuthost_coordinator
 !target/**/shuthost_host_agent
-scripts
+!target/scripts
 README.md
 docs
 !docs/examples/example_config.toml

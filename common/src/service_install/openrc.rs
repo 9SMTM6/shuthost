@@ -13,6 +13,11 @@ use std::{
 
 use crate::is_superuser;
 
+/// Returns the OpenRC service file path for the given service name.
+pub fn get_service_path(name: &str) -> String {
+    format!("/etc/init.d/{}", name)
+}
+
 /// Installs the current binary as an OpenRC service init script.
 ///
 /// # Arguments
@@ -30,7 +35,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     let binary_path = env::current_exe().map_err(|e| e.to_string())?;
     let target_bin = Path::new("/usr/sbin/").join(name);
-    let init_script_path = PathBuf::from(format!("/etc/init.d/{name}"));
+    let init_script_path = PathBuf::from(get_service_path(name));
 
     // Stop and remove any existing service
     // Attempt to stop the service if it's running, but don't fail if it isn't
@@ -56,9 +61,6 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     // Set binary permissions to 0755 (root can write, others can read/execute)
     fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
         .map_err(|e| e.to_string())?;
-
-    let init_script_content =
-        init_script_content.replace("{ binary }", &target_bin.to_string_lossy());
 
     let mut script_file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     script_file

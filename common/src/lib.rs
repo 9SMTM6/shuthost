@@ -5,13 +5,11 @@
 //! - OS-specific service installation helpers
 
 mod secrets;
-#[cfg(not(coverage))]
 mod service_install;
 mod signing;
 mod validation;
 
 pub use secrets::*;
-#[cfg(not(coverage))]
 pub use service_install::*;
 pub use signing::*;
 pub use validation::*;

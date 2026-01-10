@@ -46,6 +46,7 @@ Extended documentation, examples, and additional resources to help you get the m
 
 - [🧭 ShutHost Design & Operation](#-shuthost-design--operation)
 - [💿 Installation](#-installation)
+- [⚡ Agent-only Install](#-agent-only-install)
 - [📚 Examples](docs/examples/)
 - [📋 Requirements](docs/requirements.md)
 - [🔒 Security Considerations](docs/security_considerations.md)
@@ -87,9 +88,9 @@ For a visual overview, see the architecture diagram: [Architecture](https://9smt
 Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
 
 #### Binary (recommended)
-- Use the [automated installation script](scripts/install_coordinator.sh):
+- Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/9SMTM6/shuthost/main/scripts/install_coordinator.sh | sh
+  curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
   ```
   This script will automatically detect your platform, download the appropriate binary, verify the checksum (with user confirmation), and install the coordinator as a system service.
 
@@ -161,6 +162,30 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
 - To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
 
+## ⚡ Agent-only Install
+
+[UNRELEASED]
+
+Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
+
+Install the released agent installer and generate a direct-control script:
+
+```bash
+# Install the agent (released installer):
+curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.sh | sh
+
+# Generate a direct-control script (run on the machine where the agent binary is installed):
+# If the agent is in your PATH:
+shuthost_host_agent generate-direct-control
+
+# Make the script executable and move it to the device you want to use as the controller (same LAN):
+chmod +x shuthost_direct_control_<hostname>
+# copy via scp, USB, etc.
+```
+
+After moving the direct-control script to the controller device, you can run `./shuthost_direct_control_<hostname> wake`, `./shuthost_direct_control_<hostname> status` or `./shuthost_direct_control_<hostname> shutdown` while on the same LAN. See the example document for tradeoffs and security notes.
+
+
 ---
 
 ## 📷 UI screenshots
@@ -187,6 +212,7 @@ These are generated or validated automatically as part of the test suite, and th
 - 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
 - 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
+- 🛡️ **Rate limiting of requests by shuthost clients**
 
 ### 🖥️ Platform Support
 - 🪟 **Windows agent (serviceless)**: Support for Windows hosts using a serviceless agent, including a PowerShell installer script.
@@ -195,10 +221,22 @@ These are generated or validated automatically as part of the test suite, and th
   - I have no ability to test these practically myself.
 
 ### 🔧 Management Features
-- 📦 **Individual agent installation**: Allow installing agents directly from the live demo or other sources, with interaction scripts in shell and PowerShell. (Note: Client installation already works from the live demo, though it remembers the demo's URL.)
+- 📦 **Individual agent installation**: Allow installing agents directly and simplify using them 
+  - with interaction scripts in shell (and later powershell)
+  - support generation of interaction scripts from the agent binary
+  - in windows_agent branch add a powershell script to install the agent and the generation of an interaction script
+  - add documentation for this
 - 🗑️ **Uninstalls**
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
 
 <!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service -->
+<!-- 
+todo: add a bunch of pwsh scripts for windows agent, once we again work on the windows_agent branch
+ * test pwsh (on unix)
+ * consider running on metal generally and for windows specifically.
+
+
+* todo: port test-client-scripts to run locally as well
+-->

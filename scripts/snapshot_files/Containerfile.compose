@@ -1,0 +1,11 @@
+FROM quay.io/podman/stable
+
+RUN rpm -Uvh https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm || true; dnf install -y podman-compose curl hostname file openssl powershell
+
+WORKDIR /workspace
+
+RUN mkdir -p coordinator_config data
+
+COPY Containerfile .
+
+COPY target/x86_64-unknown-linux-musl/debug/shuthost_coordinator target/x86_64-unknown-linux-musl/release/

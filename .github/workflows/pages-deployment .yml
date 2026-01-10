@@ -1,0 +1,86 @@
+name: Deploy GitHub Pages on Release
+permissions:
+  contents: read
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  deploy_gh_pages:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Download coordinator binary
+      run: |
+        gh release download ${{ github.event.release.tag_name }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
+        tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
+        chmod +x shuthost_coordinator
+
+    - name: Build and snapshot demo
+      run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost --provided-binary=./shuthost_coordinator
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: ./gh-pages
+
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4
+
+  client-sh-installer-test:
+    name: Test live-demo client installer (shell)
+    runs-on: ${{ matrix.os }}
+    needs: deploy_gh_pages
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install client
+        run: |
+          curl -sSL https://9smtm6.github.io/shuthost/download/client_installer.sh | sh -s https://9smtm6.github.io/shuthost
+
+  client-ps1-installer-test-windows:
+    name: Test live-demo client installer (powershell on Windows)
+    runs-on: windows-latest
+    needs: deploy_gh_pages
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    steps:
+      - name: Install client
+        run: |
+          curl.exe -sSLO 'https://9smtm6.github.io/shuthost/download/client_installer.ps1'
+          powershell -ExecutionPolicy Bypass -File .\client_installer.ps1 https://9smtm6.github.io/shuthost
+
+  client-ps1-installer-test-unix:
+    name: Test live-demo client installer (powershell on Unix)
+    runs-on: ${{ matrix.os }}
+    needs: deploy_gh_pages
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install client
+        run: |
+          curl -sSLO https://9smtm6.github.io/shuthost/download/client_installer.ps1
+          pwsh -ExecutionPolicy Bypass -File ./client_installer.ps1 https://9smtm6.github.io/shuthost
+
+  host-agent-installer-test:
+    name: Test live-demo host agent installer
+    runs-on: ${{ matrix.os }}
+    needs: deploy_gh_pages
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install host agent
+        run: |
+          curl -fsSL https://9smtm6.github.io/shuthost/download/host_agent_installer.sh | sh -s https://9smtm6.github.io/shuthost --port 5757

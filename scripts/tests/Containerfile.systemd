@@ -1,0 +1,11 @@
+FROM docker.io/heywoodlh/systemd:latest
+
+RUN apt-get update && apt-get install -y curl openssl sudo bsdmainutils netcat-openbsd
+
+COPY scripts /repo/scripts
+
+ENV CI_MODE=true
+
+RUN cd /repo && . ./scripts/helpers.sh && generate_embedded_scripts
+
+WORKDIR /repo

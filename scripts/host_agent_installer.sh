@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# This script installs the shuthost host agent by determining the correct binary
+# for the current platform and architecture from the coordinator,
+# downloading it, and running the agent's installer with elevated privileges.
+
 set -e
 
 # TODO: consider a way to embed the install options. Main issue outside of it being annoying: Different defaults between OSs (mostly shutdown argument)

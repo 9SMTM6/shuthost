@@ -1,65 +1,65 @@
 name: Cleanup releases & tags on branch delete
 
 on:
-    delete:
-        # GitHub sends delete events for branches and tags; we filter for branches in the job
-        
+  delete:
+    # GitHub sends delete events for branches and tags; we filter for branches in the job
+
 permissions:
-    contents: write
-    packages: write
-        
+  contents: write
+  packages: write
+
 jobs:
-    cleanup:
-        name: Remove releases and tags for deleted branch
-        runs-on: ubuntu-latest
-        if: github.event.ref_type == 'branch'
-        steps:
-        - name: Remove release and tag matching branch
-          uses: actions/github-script@v7
-          with:
-            script: |
-                const owner = context.repo.owner;
-                const repo = context.repo.repo;
-                const branch = context.payload.ref; // branch name
-                    
-                // Tag name pattern used by the release workflow for branch uploads
-                const tag = `nightly_release_${branch}`;
-                    
-                core.info(`Branch deleted: ${branch}`);
-                core.info(`Looking for release with tag: ${tag}`);
-                    
-                // Try to get the release by tag
-                let releaseId = null;
-                try {
-                const rel = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-                releaseId = rel.data.id;
-                } catch (err) {
-                if (err.status === 404) {
-                    core.info('No release found for that tag.');
-                } else {
-                    throw err;
-                }
-                }
-                    
-                if (releaseId) {
-                core.info(`Deleting release id=${releaseId}`);
-                await github.rest.repos.deleteRelease({ owner, repo, release_id: releaseId });
-                core.info('Release deleted.');
-                }
-                    
-                // Try to delete the git tag ref if it exists
-                const ref = `tags/${tag}`;
-                try {
-                await github.rest.git.getRef({ owner, repo, ref });
-                core.info(`Found git ref ${ref}, deleting it.`);
-                await github.rest.git.deleteRef({ owner, repo, ref });
-                core.info(`Deleted git ref ${ref}`);
-                } catch (err) {
-                if (err.status === 404) {
-                    core.info(`No git ref ${ref} found.`);
-                } else {
-                    throw err;
-                }
-                }
-                    
-                core.info('Cleanup job finished.');
+  cleanup:
+    name: Remove releases and tags for deleted branch
+    runs-on: ubuntu-latest
+    if: github.event.ref_type == 'branch'
+    steps:
+      - name: Remove release and tag matching branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = context.payload.ref; // branch name
+                
+            // Tag name pattern used by the release workflow for branch uploads
+            const tag = `nightly_release_${branch}`;
+                
+            core.info(`Branch deleted: ${branch}`);
+            core.info(`Looking for release with tag: ${tag}`);
+                
+            // Try to get the release by tag
+            let releaseId = null;
+            try {
+            const rel = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            releaseId = rel.data.id;
+            } catch (err) {
+            if (err.status === 404) {
+                core.info('No release found for that tag.');
+            } else {
+                throw err;
+            }
+            }
+                
+            if (releaseId) {
+            core.info(`Deleting release id=${releaseId}`);
+            await github.rest.repos.deleteRelease({ owner, repo, release_id: releaseId });
+            core.info('Release deleted.');
+            }
+                
+            // Try to delete the git tag ref if it exists
+            const ref = `tags/${tag}`;
+            try {
+            await github.rest.git.getRef({ owner, repo, ref });
+            core.info(`Found git ref ${ref}, deleting it.`);
+            await github.rest.git.deleteRef({ owner, repo, ref });
+            core.info(`Deleted git ref ${ref}`);
+            } catch (err) {
+            if (err.status === 404) {
+                core.info(`No git ref ${ref} found.`);
+            } else {
+                throw err;
+            }
+            }
+                
+            core.info('Cleanup job finished.');

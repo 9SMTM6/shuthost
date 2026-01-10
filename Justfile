@@ -107,9 +107,17 @@ patch_test_configs:
 update_file_snapshots:
     #!/usr/bin/env sh
     set -e
-    ./scripts/snapshot-files-systemd.sh
-    ./scripts/snapshot-files-openrc.sh
-    ./scripts/snapshot-files-docker-compose.sh
+    parallel :::\
+        ./scripts/snapshot_files/systemd.sh\
+        ./scripts/snapshot_files/openrc.sh\
+        ./scripts/snapshot_files/compose_and_self_extracting.sh
+
+install_test_scripts:
+    ./scripts/tests/enduser_install_scripts.sh
+    ./scripts/tests/direct-control-openrc.sh
+    ./scripts/tests/direct-control-systemd.sh
+    ./scripts/tests/service-installation-openrc.sh
+    ./scripts/tests/service-installation-systemd.sh
 
 alias deny := ci_cargo_deny
 

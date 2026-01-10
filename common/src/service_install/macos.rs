@@ -13,6 +13,11 @@ use std::{
 
 use crate::is_superuser;
 
+/// Returns the launchd service file path for the given service name.
+pub fn get_service_path(name: &str) -> String {
+    format!("/Library/LaunchDaemons/com.github_9smtm6.{}.plist", name)
+}
+
 /// Installs the current binary as a launchd system service.
 ///
 /// # Arguments
@@ -32,7 +37,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     let target_bin = PathBuf::from("/usr/local/bin/").join(name);
     let label = format!("com.github_9smtm6.{name}");
-    let plist_path = PathBuf::from(format!("/Library/LaunchDaemons/{label}.plist"));
+    let plist_path = PathBuf::from(get_service_path(name));
 
     fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
     println!("Installed binary to {target_bin:?}");
@@ -87,7 +92,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 /// Returns `Err` if `launchctl` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     let label = format!("com.github_9smtm6.{name}");
-    let plist_path = PathBuf::from(format!("/Library/LaunchDaemons/{label}.plist"));
+    let plist_path = PathBuf::from(get_service_path(name));
 
     // Load and start the daemon (modern launchctl)
     Command::new("launchctl")

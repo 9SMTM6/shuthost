@@ -9,18 +9,34 @@ use shuthost_common::{is_openrc, is_systemd};
 use std::net::UdpSocket;
 use std::process::Command;
 
-use crate::DEFAULT_PORT;
-use crate::server::get_default_shutdown_command;
+use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
 
-/// Template string for adding an agent entry in coordinator configuration.
-const CONFIG_ENTRY: &str =
-    r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
-#[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_host_agent.service.ini");
-#[cfg(target_os = "macos")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("com.github_9smtm6.shuthost_host_agent.plist.xml");
-#[cfg(target_os = "linux")]
-const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
+/// The binary name, derived from the Cargo package name.
+pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
+#[cfg(any(target_os = "linux", test))]
+pub(crate) const SYSTEMD_SERVICE_FILE_TEMPLATE: &str =
+    include_str!("shuthost_host_agent.service.ini");
+#[cfg(any(target_os = "macos", test))]
+pub(crate) const LAUNCHD_SERVICE_FILE_TEMPLATE: &str =
+    include_str!("com.github_9smtm6.shuthost_host_agent.plist.xml");
+#[cfg(any(target_os = "linux", test))]
+pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
+
+/// Binds template placeholders with actual values.
+pub(crate) fn bind_template_replacements(
+    template: &str,
+    description: &str,
+    port: &str,
+    shutdown_command: &str,
+    secret: &str,
+) -> String {
+    template
+        .replace("{ description }", description)
+        .replace("{ port }", port)
+        .replace("{ shutdown_command }", shutdown_command)
+        .replace("{ secret }", secret)
+        .replace("{ name }", BINARY_NAME)
+}
 
 /// Arguments for the `install` subcommand of host_agent.
 #[derive(Debug, Parser)]
@@ -39,7 +55,7 @@ pub struct Args {
 }
 
 /// Supported init systems for installing the host_agent.
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq)]
 pub enum InitSystem {
     /// Systemd init system (Linux).
     #[cfg(target_os = "linux")]
@@ -76,17 +92,19 @@ impl std::fmt::Display for InitSystem {
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
-    let name = env!("CARGO_PKG_NAME");
+    let name = BINARY_NAME;
     #[cfg_attr(
         target_os = "windows",
         expect(unused_variables, reason = "windows doesn't need that, the others do")
     )]
     let bind_known_vals = |arg: &str| {
-        arg.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
-            .replace("{ port }", &arguments.port.to_string())
-            .replace("{ shutdown_command }", &arguments.shutdown_command)
-            .replace("{ secret }", &arguments.shared_secret)
-            .replace("{ name }", name)
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            &arguments.port.to_string(),
+            &arguments.shutdown_command,
+            &arguments.shared_secret,
+        )
     };
 
     match arguments.init_system {
@@ -94,7 +112,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::Systemd => {
             shuthost_common::systemd::install_self_as_service(
                 name,
-                &bind_known_vals(SERVICE_FILE_TEMPLATE),
+                &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::systemd::start_and_enable_self_as_service(name)?;
         }
@@ -102,7 +120,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::OpenRC => {
             shuthost_common::openrc::install_self_as_service(
                 name,
-                &bind_known_vals(OPENRC_FILE_TEMPLATE),
+                &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(name)?;
         }
@@ -146,7 +164,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::Launchd => {
             shuthost_common::macos::install_self_as_service(
                 name,
-                &bind_known_vals(SERVICE_FILE_TEMPLATE),
+                &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE),
             )?;
             shuthost_common::macos::start_and_enable_self_as_service(name)?;
         }
@@ -158,27 +176,10 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             "Failed to determine the default network interface. Continuing on assuming docker or similar environment."
         );
     }
-    println!(
-        "Place the following in the coordinator:\n{config_entry}",
-        config_entry = CONFIG_ENTRY
-            .replace("{name}", &get_hostname().expect("failed to get hostname"))
-            .replace(
-                "{ip}",
-                &interface
-                    .as_ref()
-                    .and_then(|it| get_ip(it))
-                    .unwrap_or("unrecognized".to_string())
-            )
-            .replace(
-                "{mac}",
-                &interface
-                    .as_ref()
-                    .and_then(|it| get_mac(it))
-                    .unwrap_or("unrecognized".to_string())
-            )
-            .replace("{port}", &arguments.port.to_string())
-            .replace("{secret}", &arguments.shared_secret)
-    );
+    registration::print_registration_config(&registration::ServiceConfig {
+        secret: arguments.shared_secret.clone(),
+        port: arguments.port,
+    })?;
 
     Ok(())
 }
@@ -191,7 +192,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         reason = "can't be const because of linux"
     )
 )]
-fn get_inferred_init_system() -> InitSystem {
+pub(crate) fn get_inferred_init_system() -> InitSystem {
     #[cfg(target_os = "linux")]
     {
         if is_systemd() {
@@ -213,7 +214,7 @@ fn get_inferred_init_system() -> InitSystem {
 }
 
 /// Attempts to determine the default network interface by parsing system routing information.
-fn get_default_interface() -> Option<String> {
+pub(crate) fn get_default_interface() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
         let output = Command::new("ip")
@@ -354,7 +355,8 @@ pub(crate) fn get_hostname() -> Option<String> {
     let hostname = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
     if !hostname.is_empty() {
-        Some(hostname)
+        // Return only the subdomain (first part before dot), matching client_installer behavior
+        Some(hostname.split('.').next().unwrap_or(&hostname).to_string())
     } else {
         None
     }

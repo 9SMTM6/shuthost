@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This may be a template containing placeholders like {client_id}, {shared_secret}, and {embedded_remote_url}
+# that must be replaced with actual values before use.
+
 set -eu
 
 print_help() {

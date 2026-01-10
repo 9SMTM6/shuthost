@@ -148,9 +148,9 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: *checkout
-      - &install
+      - &install-coordinator
         run: |
-          ./scripts/install_coordinator.sh --ci
+          CI_MODE=true ./scripts/enduser_installers/coordinator.sh
 
   install-script-test-alpine:
     name: Test automated install script on Alpine
@@ -158,8 +158,30 @@ jobs:
     container: docker.io/heywoodlh/openrc:latest
     steps:
       - uses: *checkout
-      - name: Install dependencies
-        run: apk add --no-cache curl doas
-      - name: Configure doas for root
-        run: echo "permit nopass root" >> /etc/doas.conf
-      - *install
+      - &prepare_alpine
+        name: Prepare
+        run: |
+          apk add --no-cache curl doas
+          echo "permit nopass root" >> /etc/doas.conf
+      - *install-coordinator
+
+  host-agent-script-test:
+    name: Test automated host agent install script
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: *checkout
+      - &install-host-agent
+        run: |
+          CI_MODE=true ./scripts/enduser_installers/host_agent.sh
+
+  host-agent-script-test-alpine:
+    name: Test automated host agent install script on Alpine
+    runs-on: ubuntu-latest
+    container: docker.io/heywoodlh/openrc:latest
+    steps:
+      - uses: *checkout
+      - *prepare_alpine
+      - *install-host-agent
