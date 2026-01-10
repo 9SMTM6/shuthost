@@ -26,13 +26,13 @@ jobs:
             container: docker.io/heywoodlh/openrc:latest
             prepare: true
             name_suffix: Alpine
-          - component: host-agent
+          - component: host_agent
             os: ubuntu-latest
             name_suffix: Ubuntu
-          - component: host-agent
+          - component: host_agent
             os: macos-latest
             name_suffix: macOS
-          - component: host-agent
+          - component: host_agent
             os: ubuntu-latest
             container: docker.io/heywoodlh/openrc:latest
             prepare: true
@@ -45,9 +45,9 @@ jobs:
           echo "permit nopass root" >> /etc/doas.conf
       - name: Download install scripts
         run: |
-          gh release download ${{ github.event.release.tag_name }} --pattern "${{ matrix.component }}.sh" --dir install-scripts
+          gh release download ${{ github.event.release.tag_name }} --pattern "shuthost_${{ matrix.component }}_installer.sh" --dir install-scripts
       - name: Make scripts executable
         run: chmod +x install-scripts/*.sh
       - name: Test ${{ matrix.component }} install script
         run: |
-          CI_MODE=true ./install-scripts/${{ matrix.component }}.sh
+          CI_MODE=true ./install-scripts/shuthost_${{ matrix.component }}_installer.sh
