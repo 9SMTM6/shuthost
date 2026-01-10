@@ -1,53 +1,53 @@
 name: Test Released Install Scripts
 
 on:
-    release:
-        types: [published]
+  release:
+    types: [published]
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    test-install-scripts:
-        name: Test ${{ matrix.component }} on ${{ matrix.name_suffix }}
-        runs-on: ${{ matrix.os }}
-        container: ${{ matrix.container }}
-        strategy:
-            matrix:
-                include:
-                    - component: coordinator
-                      os: ubuntu-latest
-                      name_suffix: Ubuntu
-                    - component: coordinator
-                      os: macos-latest
-                      name_suffix: macOS
-                    - component: coordinator
-                      os: ubuntu-latest
-                      container: docker.io/heywoodlh/openrc:latest
-                      prepare: true
-                      name_suffix: Alpine
-                    - component: host-agent
-                      os: ubuntu-latest
-                      name_suffix: Ubuntu
-                    - component: host-agent
-                      os: macos-latest
-                      name_suffix: macOS
-                    - component: host-agent
-                      os: ubuntu-latest
-                      container: docker.io/heywoodlh/openrc:latest
-                      prepare: true
-                      name_suffix: Alpine
-        steps:
-            - name: Prepare Alpine
-              if: matrix.prepare
-              run: |
-                  apk add --no-cache curl doas github-cli
-                  echo "permit nopass root" >> /etc/doas.conf
-            - name: Download install scripts
-              run: |
-                  gh release download ${{ github.event.release.tag_name }} --pattern "${{ matrix.component }}.sh" --dir install-scripts
-            - name: Make scripts executable
-              run: chmod +x install-scripts/*.sh
-            - name: Test ${{ matrix.component }} install script
-              run: |
-                  CI_MODE=true ./install-scripts/${{ matrix.component }}.sh
+  test-install-scripts:
+    name: Test ${{ matrix.component }} on ${{ matrix.name_suffix }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        include:
+          - component: coordinator
+            os: ubuntu-latest
+            name_suffix: Ubuntu
+          - component: coordinator
+            os: macos-latest
+            name_suffix: macOS
+          - component: coordinator
+            os: ubuntu-latest
+            container: docker.io/heywoodlh/openrc:latest
+            prepare: true
+            name_suffix: Alpine
+          - component: host-agent
+            os: ubuntu-latest
+            name_suffix: Ubuntu
+          - component: host-agent
+            os: macos-latest
+            name_suffix: macOS
+          - component: host-agent
+            os: ubuntu-latest
+            container: docker.io/heywoodlh/openrc:latest
+            prepare: true
+            name_suffix: Alpine
+    steps:
+      - name: Prepare Alpine
+        if: matrix.prepare
+        run: |
+          apk add --no-cache curl doas github-cli
+          echo "permit nopass root" >> /etc/doas.conf
+      - name: Download install scripts
+        run: |
+          gh release download ${{ github.event.release.tag_name }} --pattern "${{ matrix.component }}.sh" --dir install-scripts
+      - name: Make scripts executable
+        run: chmod +x install-scripts/*.sh
+      - name: Test ${{ matrix.component }} install script
+        run: |
+          CI_MODE=true ./install-scripts/${{ matrix.component }}.sh
