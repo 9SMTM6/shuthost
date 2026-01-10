@@ -44,7 +44,15 @@ OUT=$(mktemp /tmp/selfbin.XXXXXX)
 TAIL_LINE=$(awk '/^__BINARY_PAYLOAD_BELOW__/ {{ print NR + 1; exit 0; }}' "$0")
 tail -n +$TAIL_LINE "$0" > "$OUT"
 chmod +x "$OUT"
-nohup "$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" "$@" >"$OUT.log" 2>&1 &
+if [ "$#" -gt 0 ] && [ "${{1#-}}" = "$1" ]; then
+    if [ "$1" = "generate-direct-control" ] || [ "$1" = "registration" ]; then
+        "$OUT" "$@" --script-path "$0" --init-system self-extracting-shell
+    else
+        "$OUT" "$@"
+    fi
+else
+    nohup "$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" "$@" >"$OUT.log" 2>&1 &
+fi
 exit 0
 
 __BINARY_PAYLOAD_BELOW__
@@ -111,8 +119,16 @@ if ($IsLinux -or $IsMacOS) {{
 }}
 
 # Run the binary
-$argList = @("service", "--port=$env:PORT", "--shutdown-command=$env:SHUTDOWN_COMMAND") + $args
-Start-Process -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.err"
+if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {{
+    if ($args[0] -eq "generate-direct-control" -or $args[0] -eq "registration") {{
+        & $tempFile ($args + @("--script-path", $scriptPath, "--init-system", "self-extracting-pwsh"))
+    }} else {{
+        & $tempFile $args
+    }}
+}} else {{
+    $argList = @("service", "--port=$env:PORT", "--shutdown-command=$env:SHUTDOWN_COMMAND") + $args
+    Start-Process -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.err"
+}}
 
 exit 0
 
