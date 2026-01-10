@@ -8,9 +8,8 @@ set -eu
 . ./scripts/helpers.sh
 
 HOST_AGENT_BINARY="${1:-./shuthost_host_agent}"
-USER="${2:-root}"
 
-printf 'Testing direct host_agent installation:\n  Host agent binary: %s\n  User: %s\n' "$HOST_AGENT_BINARY" "$USER"
+printf 'Testing direct host_agent installation:\n  Host agent binary: %s\n' "$HOST_AGENT_BINARY"
 
 export RUST_BACKTRACE=1
 
