@@ -3,7 +3,7 @@
 # Creates images at different steps and diffs filesystem changes.
 # Requires podman.
 
-set -e
+set -ev
 
 . ./scripts/snapshot_files/common.sh
 . ./scripts/helpers.sh
