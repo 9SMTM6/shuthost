@@ -107,9 +107,10 @@ patch_test_configs:
 update_file_snapshots:
     #!/usr/bin/env sh
     set -e
-    ./scripts/snapshot_files/systemd.sh
-    ./scripts/snapshot_files/openrc.sh
-    ./scripts/snapshot_files/compose_and_self_extracting.sh
+    parallel :::\
+        ./scripts/snapshot_files/systemd.sh\
+        ./scripts/snapshot_files/openrc.sh\
+        ./scripts/snapshot_files/compose_and_self_extracting.sh
 
 alias deny := ci_cargo_deny
 
