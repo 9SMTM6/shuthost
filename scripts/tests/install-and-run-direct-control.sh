@@ -28,7 +28,7 @@ run_as_elevated "$HOST_AGENT_BINARY" generate-direct-control -o shuthost_direct_
 # yield to system
 sleep 1
 
-if [ -f /tmp/shutdown_executed ]; then
+if run_as_elevated test -f /tmp/shutdown_executed; then
     printf 'Shutdown command executed successfully!\n'
 else
     printf 'Shutdown command did not execute\n'
