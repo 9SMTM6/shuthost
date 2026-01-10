@@ -46,6 +46,7 @@ Extended documentation, examples, and additional resources to help you get the m
 
 - [🧭 ShutHost Design & Operation](#-shuthost-design--operation)
 - [💿 Installation](#-installation)
+- [⚡ Agent-only Install](#-agent-only-install)
 - [📚 Examples](docs/examples/)
 - [📋 Requirements](docs/requirements.md)
 - [🔒 Security Considerations](docs/security_considerations.md)
@@ -160,6 +161,28 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 ### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
 - To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
+
+## ⚡ Agent-only Install
+
+Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
+
+Install the released agent installer and generate a direct-control script:
+
+```bash
+# Install the agent (released installer):
+curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.sh | sh
+
+# Generate a direct-control script (run on the machine where the agent binary is installed):
+# If the agent is in your PATH:
+shuthost_host_agent generate-direct-control
+
+# Make the script executable and move it to the device you want to use as the controller (same LAN):
+chmod +x shuthost_direct_control_<hostname>
+# copy via scp, USB, etc.
+```
+
+After moving the direct-control script to the controller device, you can run `./shuthost_direct_control_<hostname> wake`, `./shuthost_direct_control_<hostname> status` or `./shuthost_direct_control_<hostname> shutdown` while on the same LAN. See the example document for tradeoffs and security notes.
+
 
 ---
 
