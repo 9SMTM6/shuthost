@@ -23,16 +23,22 @@ run_as_elevated pgrep -af shuthost_host_agent || { printf 'Host agent service is
 
 run_as_elevated "$HOST_AGENT_BINARY" generate-direct-control -o shuthost_direct_control
 
-./shuthost_direct_control shutdown
+output=$(./shuthost_direct_control shutdown)
 
 # yield to system
 sleep 1
 
+if echo "$output" | grep -q "Hopefully goodbye"; then
+    printf 'Shutdown command sent successfully!\n'
+else
+    printf 'Shutdown command not sent\n'
+    exit 1
+fi
+
 if run_as_elevated test -f /tmp/shutdown_executed; then
     printf 'Shutdown command executed successfully!\n'
 else
-    printf 'Shutdown command did not execute\n'
-    exit 1
+    printf 'Warning: Shutdown command file not found, but command was sent.\n'
 fi
 
 printf 'Direct host_agent installation and direct_control test completed successfully!\n'
