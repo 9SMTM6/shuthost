@@ -150,7 +150,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                "service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
+                "service --port=$PORT --shutdown-command=$SHUTDOWN_COMMAND",
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background

@@ -10,6 +10,8 @@ use std::{
     io::Write,
 };
 
+use base64::{Engine as _, engine::general_purpose};
+
 /// Generates a self-extracting shell script containing the current binary payload.
 ///
 /// # Arguments
@@ -94,7 +96,7 @@ pub fn generate_self_extracting_ps1_script(
     // Prepare argument list for PowerShell array
     let arg_list_str = exec_args
         .split_whitespace()
-        .map(|s| format!("'{}'", s))
+        .map(|s| format!("\"{}\"", s))
         .collect::<Vec<_>>()
         .join(", ");
 
@@ -109,8 +111,8 @@ $content = Get-Content $scriptPath -Raw
 $marker = "__BINARY_PAYLOAD_BELOW__`n"
 $markerIndex = $content.IndexOf($marker)
 $binaryStart = $markerIndex + $marker.Length
-$allBytes = [System.IO.File]::ReadAllBytes($scriptPath)
-$binaryBytes = $allBytes[$binaryStart..($allBytes.Length - 1)]
+$encodedBinary = $content.Substring($binaryStart)
+$binaryBytes = [System.Convert]::FromBase64String($encodedBinary)
 $tempFile = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
 
@@ -121,7 +123,7 @@ if ($IsLinux -or $IsMacOS) {{
 
 # Run the binary
 $argList = @({arg_list_str}) + $args
-Start-Process -NoWait -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.log"
+Start-Process -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.err"
 
 exit 0
 
@@ -133,7 +135,8 @@ __BINARY_PAYLOAD_BELOW__
     script
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
-    script.write_all(&self_binary).map_err(|e| e.to_string())?;
+    let encoded = general_purpose::STANDARD.encode(&self_binary);
+    script.write_all(encoded.as_bytes()).map_err(|e| e.to_string())?;
     #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750)).unwrap_or(());
 
