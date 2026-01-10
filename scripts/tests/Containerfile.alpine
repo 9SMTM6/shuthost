@@ -1,6 +1,6 @@
 FROM docker.io/heywoodlh/openrc:latest
 
-RUN apk add --no-cache curl doas
+RUN apk add --no-cache curl openssl doas
 
 RUN echo 'permit nopass root' >> /etc/doas.conf
 
