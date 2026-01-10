@@ -973,8 +973,7 @@ jobs:
           pattern: host_agent-*
           path: ./release-assets
       
-      - &generate_embedded_installers
-        name: Generate embedded installer scripts
+      - name: Generate embedded installer scripts
         run: |
           . ./scripts/helpers.sh && generate_embedded_scripts "${{ github.ref_name }}"
 
@@ -1066,8 +1065,10 @@ jobs:
       
       - *download_agent_binaries
 
-      - *generate_embedded_installers
-      
+      - name: Generate embedded installer scripts
+        run: |
+          . ./scripts/helpers.sh && generate_embedded_scripts "nightly_release_${{ github.ref_name }}"
+
       - *prepare_release_assets
 
       - *release_image_name
