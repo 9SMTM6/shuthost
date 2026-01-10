@@ -1,5 +1,7 @@
 # Agent-only Installation (detailed)
 
+[UNRELEASED]
+
 This document shows how to install the host agent only (no coordinator), the tradeoffs involved, and how to generate and use a direct-control script to wake and shutdown hosts while on the same LAN.
 
 ## Tradeoffs (short)

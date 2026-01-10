@@ -12,3 +12,4 @@ This directory contains examples and guides for using ShutHost in various scenar
 - [WebUI Network Configuration](./webui-network-config.md)
 - [Docker Compose Example](./docker-compose.yml)
 - [Deploying the Serviceless Agent on Unraid](./unraid-serviceless-agent-deployment.md)
+ - [Agent-only Installation](./agent-installation.md)
