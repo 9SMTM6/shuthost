@@ -1029,7 +1029,7 @@ jobs:
       
       - name: Generate embedded installer scripts
         run: |
-          . ./scripts/helpers.sh && generate_embedded_scripts "${{ github.ref_name }}"
+          . ./scripts/helpers.sh && generate_embedded_scripts
 
       - &prepare_release_assets
         name: Prepare release assets directory
@@ -1121,7 +1121,7 @@ jobs:
 
       - name: Generate embedded installer scripts
         run: |
-          . ./scripts/helpers.sh && generate_embedded_scripts "nightly_release_${{ github.ref_name }}"
+          . ./scripts/helpers.sh && generate_embedded_scripts
 
       - *prepare_release_assets
 

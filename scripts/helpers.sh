@@ -101,18 +101,13 @@ verify_checksum() {
 
 embed_script() {
     script_file="$1"
-    tag="$2"
     while IFS= read -r line; do
         case "$line" in
         ". "*)
             sourced="${line#". "}"
             if [ -f "$sourced" ]; then
                 if [ "$sourced" = "./scripts/helpers.sh" ]; then
-                    embed_script "$sourced" "$tag"
-                    if [ -n "$tag" ]; then
-                        echo "BASE_URL=\"https://github.com/9SMTM6/shuthost/releases/tag/${tag}\""
-                        echo "DOWNLOAD_URL=\"https://github.com/9SMTM6/shuthost/releases/download/${tag}\""
-                    fi
+                    embed_script "$sourced"
                 else
                     cat "$sourced"
                 fi
@@ -128,12 +123,11 @@ embed_script() {
 }
 
 generate_embedded_scripts() {
-    tag="$1"
     mkdir -p target/scripts
     find scripts -name "*.sh" -type f | while read -r file; do
         relative="${file#scripts/}"
         mkdir -p "target/scripts/$(dirname "$relative")"
-        embed_script "$file" "$tag" > "target/scripts/$relative"
+        embed_script "$file" > "target/scripts/$relative"
         chmod +x "target/scripts/$relative"
     done
 }
@@ -169,7 +163,7 @@ wait_for_agent_ready() {
     return 1
 }
 
-# provide default values for BASE_URL and DOWNLOAD_URL for when helpers.sh is sourced and not embedded
+# provide default values for BASE_URL and DOWNLOAD_URL
 BASE_URL="https://github.com/9SMTM6/shuthost/releases/latest/"
 # shellcheck disable=SC2034 # DOWNLOAD_URL is used externally
 DOWNLOAD_URL="https://github.com/9SMTM6/shuthost/releases/latest/download"
