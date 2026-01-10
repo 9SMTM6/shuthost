@@ -6,6 +6,8 @@ tls_key.pem
 .vscode
 coverage/
 
+shuthost_direct_control
+
 gh-pages
 
 # SQLite database files

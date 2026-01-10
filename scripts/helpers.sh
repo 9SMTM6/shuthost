@@ -24,11 +24,9 @@ build_musl() {
 elevate_privileges() {
     cmd="$*"
     if command -v sudo >/dev/null 2>&1; then
-        # shellcheck disable=SC2086
-        sudo $cmd
+        sudo sh -c "$cmd"
     elif command -v doas >/dev/null 2>&1; then
-        # shellcheck disable=SC2086
-        doas $cmd
+        doas sh -c "$cmd"
     else
         echo "Error: Neither sudo nor doas found. Please install sudo or doas."
         exit 1

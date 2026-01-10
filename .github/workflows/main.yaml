@@ -240,6 +240,50 @@ jobs:
           # Check for a fitting process in the process list
           sudo pgrep -af '/tmp/selfbin' || sudo ps aux | grep '/tmp/selfbin'
 
+  test-direct-control:
+    name: Test Direct Control (${{ matrix.init }})
+    runs-on: ${{ matrix.runner }}
+    needs: [build-host_agents]
+    container: ${{ matrix.container }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - init: systemd
+            runner: ubuntu-latest
+            binary: host_agent-x86_64-unknown-linux-gnu
+          - init: openrc
+            runner: ubuntu-latest
+            binary: host_agent-x86_64-unknown-linux-musl
+            container:
+              image: docker.io/heywoodlh/openrc:latest
+              options: --privileged --memory=2g
+          - init: launchd
+            runner: macos-latest
+            binary: host_agent-x86_64-apple-darwin
+    
+    steps:
+      - uses: *checkout
+
+      - name: Download host_agent binary
+        uses: *download-artifact
+        with:
+          name: ${{ matrix.binary }}
+
+      - name: Prepare
+        if: matrix.init == 'openrc'
+        run: |
+          apk update
+          apk add --no-cache curl openssl doas
+          echo 'permit nopass root' >> /etc/doas.conf
+
+      - name: Test direct control
+        run: |
+          chmod +x shuthost_host_agent
+          set -x
+          ./scripts/tests/install-and-run-direct-control.sh ./shuthost_host_agent
+
   validate-file-snapshots:
     name: Validate File Snapshots
     runs-on: ubuntu-latest
@@ -831,6 +875,7 @@ jobs:
       - test-service-installation-openrc
       - test-service-installation-launchd
       - test-service-installation-serviceless
+      - test-direct-control
       - test-compatibility
     
     steps:
@@ -876,6 +921,8 @@ jobs:
       - test-service-installation-openrc
       - test-service-installation-launchd
       - test-service-installation-serviceless
+      ### test-direct-control
+      - test-direct-control
       - test-compatibility
       ### test-client-scripts
       - test-client-scripts-macos
