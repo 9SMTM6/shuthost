@@ -13,10 +13,12 @@ BASE_IMAGE="shuthost-systemd"
 OUTPUT_DIR="./install-file-snapshots/systemd"
 
 if [ -n "$1" ]; then
-    cp "$1" ./target/x86_64-unknown-linux-gnu/release/shuthost_coordinator
+    directory="./target/x86_64-unknown-linux-gnu/debug"
+    mkdir -p ${directory}
+    cp "$1" "${directory}/shuthost_coordinator"
 else
-    cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-gnu
-    cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-gnu --features=include_linux_x86_64_agent
+    cargo build --bin shuthost_host_agent --target x86_64-unknown-linux-gnu
+    cargo build --bin shuthost_coordinator --target x86_64-unknown-linux-gnu --features=include_linux_x86_64_agent
 fi
 
 trap cleanup EXIT
