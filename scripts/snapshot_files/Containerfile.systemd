@@ -4,4 +4,4 @@ RUN apt-get update && apt-get install -y curl patch file
 
 WORKDIR /workspace
 
-COPY target/x86_64-unknown-linux-gnu/release/shuthost_coordinator .
+COPY target/x86_64-unknown-linux-gnu/debug/shuthost_coordinator .

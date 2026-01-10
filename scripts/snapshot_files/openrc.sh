@@ -14,7 +14,9 @@ BASE_IMAGE="shuthost-openrc"
 OUTPUT_DIR="./install-file-snapshots/openrc"
 
 if [ -n "$1" ]; then
-    cp "$1" ./target/x86_64-unknown-linux-musl/release/shuthost_coordinator
+    directory="./target/x86_64-unknown-linux-musl/debug"
+    mkdir -p ${directory}
+    cp "$1" "${directory}/shuthost_coordinator"
 else
     build_musl
 fi
