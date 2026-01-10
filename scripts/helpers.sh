@@ -1,8 +1,15 @@
 #!/bin/sh
 
 build_musl() {
-    docker build -t shuthost-builder -f scripts/snapshot_files/build.Containerfile .
-    docker run --rm -v "$(pwd):/src" shuthost-builder sh -c "cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-musl && cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-musl --features=include_linux_musl_x86_64_agent"
+    docker build -t shuthost-builder -f scripts/build.Containerfile .
+    docker run --rm \
+        -v "$(pwd):/src" \
+        -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
+        -v "$HOME/.cargo/git:/usr/local/cargo/git" \
+        shuthost-builder sh -c "\
+            cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-musl &&\
+            cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-musl --features=include_linux_musl_x86_64_agent\
+        "
 }
 
 elevate_privileges() {
