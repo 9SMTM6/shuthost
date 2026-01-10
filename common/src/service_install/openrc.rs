@@ -62,9 +62,6 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
         .map_err(|e| e.to_string())?;
 
-    let init_script_content =
-        init_script_content.replace("{ binary }", &target_bin.to_string_lossy());
-
     let mut script_file = File::create(&init_script_path).map_err(|e| e.to_string())?;
     script_file
         .write_all(init_script_content.as_bytes())
