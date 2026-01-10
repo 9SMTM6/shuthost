@@ -3,7 +3,7 @@
 supervisor=supervise-daemon
 name="{ name }"
 description="{ description }"
-command="{ name }"
+command="{ binary }"
 command_args="service --port={ port } --shutdown-command=\"{ shutdown_command }\""
 command_user="root"
 pidfile="/run/${RC_SVCNAME}.pid"

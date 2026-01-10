@@ -61,6 +61,10 @@ pub struct Args {
     pub init_system: InitSystem,
 
     /// Type of the script to generate.
+    ///
+    /// NOTE: This argument is currently parsed but not used. It is reserved for future
+    /// support of additional script types (e.g. PowerShell), as referenced in the
+    /// TODOs in the project README. For now, only shell scripts are generated.
     #[arg(long = "type", default_value = "shell")]
     pub script_type: String,
 

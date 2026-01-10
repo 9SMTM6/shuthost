@@ -113,7 +113,7 @@ update_file_snapshots:
         ./scripts/snapshot_files/compose_and_self_extracting.sh
 
 test_install_scripts:
-    ./scripts/tests/install_scripts.sh
+    ./scripts/tests/enduser_install_scripts.sh
 
 alias deny := ci_cargo_deny
 
