@@ -27,6 +27,8 @@ echo
 FILENAME="shuthost_coordinator-${TARGET_TRIPLE}.tar.gz"
 DOWNLOAD_FILE_URL="${DOWNLOAD_URL}/${FILENAME}"
 
+echo "Downloading binary from $DOWNLOAD_FILE_URL ..."
+
 curl -fLO "$DOWNLOAD_FILE_URL"
 
 verify_checksum

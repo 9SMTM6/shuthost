@@ -1,0 +1,13 @@
+FROM docker.io/heywoodlh/openrc:latest
+
+RUN apk add --no-cache curl doas
+
+RUN echo 'permit nopass root' >> /etc/doas.conf
+
+COPY scripts /repo/scripts
+
+ENV CI_MODE=true
+
+RUN cd /repo && . ./scripts/helpers.sh && generate_embedded_scripts
+
+WORKDIR /repo
