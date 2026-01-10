@@ -10,8 +10,11 @@ set -e
 
 if [ -n "$1" ]; then
     directory="./target/x86_64-unknown-linux-musl/debug"
-    mkdir -p ${directory}
+    # we need this here for the build of the container in the compose setup
+    directory2="./target/x86_64-unknown-linux-musl/release"
+    mkdir -p ${directory} ${directory2}
     cp "$1" "${directory}/shuthost_coordinator"
+    cp "$1" "${directory2}/shuthost_coordinator"
 else
     build_musl
 fi
