@@ -17,7 +17,6 @@ use base64::{Engine as _, engine::general_purpose};
 /// # Arguments
 ///
 /// * `env_vars` - List of environment variable tuples (name, value) to include in the script.
-/// * `exec_args` - Shell command arguments for the extracted binary.
 /// * `target_script_path` - Destination path for the generated script file.
 ///
 /// # Errors
@@ -25,7 +24,6 @@ use base64::{Engine as _, engine::general_purpose};
 /// Returns `Err` if any filesystem or I/O operations fail.
 pub fn generate_self_extracting_script(
     env_vars: &[(&str, &str)],
-    exec_args: &str,
     target_script_path: &str,
 ) -> Result<(), String> {
     let self_path = env::current_exe().map_err(|e| e.to_string())?;
@@ -46,7 +44,7 @@ OUT=$(mktemp /tmp/selfbin.XXXXXX)
 TAIL_LINE=$(awk '/^__BINARY_PAYLOAD_BELOW__/ {{ print NR + 1; exit 0; }}' "$0")
 tail -n +$TAIL_LINE "$0" > "$OUT"
 chmod +x "$OUT"
-nohup "$OUT" {exec_args} "$@" >"$OUT.log" 2>&1 &
+nohup "$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" "$@" >"$OUT.log" 2>&1 &
 exit 0
 
 __BINARY_PAYLOAD_BELOW__
@@ -72,7 +70,6 @@ __BINARY_PAYLOAD_BELOW__
 /// # Arguments
 ///
 /// * `env_vars` - List of environment variable tuples (name, value) to include in the script.
-/// * `exec_args` - Space-separated command arguments for the extracted binary.
 /// * `target_script_path` - Destination path for the generated script file (.ps1).
 ///
 /// # Errors
@@ -80,7 +77,6 @@ __BINARY_PAYLOAD_BELOW__
 /// Returns `Err` if any filesystem or I/O operations fail.
 pub fn generate_self_extracting_ps1_script(
     env_vars: &[(&str, &str)],
-    exec_args: &str,
     target_script_path: &str,
 ) -> Result<(), String> {
     let self_path = env::current_exe().map_err(|e| e.to_string())?;
@@ -92,13 +88,6 @@ pub fn generate_self_extracting_ps1_script(
         .map(|&(k, v)| format!(r#"$env:{k} = "{v}""#))
         .collect::<Vec<_>>()
         .join("\n");
-
-    // Prepare argument list for PowerShell array
-    let arg_list_str = exec_args
-        .split_whitespace()
-        .map(|s| format!("\"{}\"", s))
-        .collect::<Vec<_>>()
-        .join(", ");
 
     let script_header = format!(
         r#"#!/usr/bin/env pwsh
@@ -122,7 +111,7 @@ if ($IsLinux -or $IsMacOS) {{
 }}
 
 # Run the binary
-$argList = @({arg_list_str}) + $args
+$argList = @("service", "--port=$env:PORT", "--shutdown-command=$env:SHUTDOWN_COMMAND") + $args
 Start-Process -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.err"
 
 exit 0

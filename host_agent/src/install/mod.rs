@@ -2,6 +2,8 @@
 //!
 //! Handles subcommand parsing, agent installation across init systems, network interface discovery, and Wake-on-LAN testing.
 
+pub mod self_extracting;
+
 use clap::Parser;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
@@ -126,13 +128,12 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         }
         InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
-            shuthost_common::self_extracting::generate_self_extracting_script(
+            crate::install::self_extracting::generate_self_extracting_script(
                 &[
                     ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                "service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
@@ -144,13 +145,12 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         }
         InitSystem::SelfExtractingPwsh => {
             let target_script_path = format!("./{name}_self_extracting.ps1");
-            shuthost_common::self_extracting::generate_self_extracting_ps1_script(
+            crate::install::self_extracting::generate_self_extracting_ps1_script(
                 &[
                     ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                "service --port=$PORT --shutdown-command=$SHUTDOWN_COMMAND",
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background

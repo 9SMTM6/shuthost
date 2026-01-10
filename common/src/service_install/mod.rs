@@ -4,7 +4,6 @@
 pub mod macos;
 #[cfg(target_os = "linux")]
 pub mod openrc;
-pub mod self_extracting;
 #[cfg(target_os = "linux")]
 pub mod systemd;
 

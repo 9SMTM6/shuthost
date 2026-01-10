@@ -3299,7 +3299,6 @@ dependencies = [
 name = "shuthost_common"
 version = "1.4.15"
 dependencies = [
- "base64 0.22.1",
  "hex",
  "hmac",
  "nix",
@@ -3360,6 +3359,7 @@ dependencies = [
 name = "shuthost_host_agent"
 version = "1.4.15"
 dependencies = [
+ "base64 0.22.1",
  "clap",
  "secrecy",
  "shuthost_common",
