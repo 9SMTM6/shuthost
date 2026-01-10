@@ -15,7 +15,7 @@ export RUST_BACKTRACE=1
 
 set -v
 
-run_as_elevated "$HOST_AGENT_BINARY install --shutdown-command \"touch /tmp/shutdown_executed\""
+run_as_elevated "$HOST_AGENT_BINARY install --shutdown-command=\"touch /tmp/shutdown_executed\""
 
 wait_for_agent_ready
 
