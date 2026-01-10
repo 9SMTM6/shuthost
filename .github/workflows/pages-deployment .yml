@@ -1,0 +1,35 @@
+name: Deploy GitHub Pages on Release
+permissions:
+  contents: read
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  deploy_gh_pages:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Download coordinator binary
+      run: |
+        gh release download ${{ github.event.release.tag_name }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
+        tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
+        chmod +x shuthost_coordinator
+
+    - name: Build and snapshot demo
+      run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost --provided-binary=./shuthost_coordinator
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: ./gh-pages
+
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4
