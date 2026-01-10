@@ -9,11 +9,6 @@ cleanup() {
     podman rmi "$BASE_IMAGE_NAME" "$COORDINATOR_INSTALLED_NAME" "$AGENT_INSTALLED_NAME" "$CLIENT_INSTALLED_NAME" >/dev/null 2>&1 || true
 }
 
-build_musl() {
-    podman build -t shuthost-builder -f scripts/snapshot_files/build.Containerfile .
-    podman run --rm -v "$(pwd):/src" shuthost-builder sh -c "cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-musl && cargo build --release --bin shuthost_coordinator --target x86_64-unknown-linux-musl --features=include_linux_musl_x86_64_agent"
-}
-
 do_snapshot() {
     BASE_IMAGE="$1"
     INSTALL_DEPS="$2"
