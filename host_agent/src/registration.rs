@@ -39,15 +39,20 @@ pub(crate) struct ServiceConfig {
 
 // TODO: add unit tests for the parsing functions (conceptually as inverse of the generation of the service files, might need to modularize things)
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
-    let custom_path = if args.init_system == InitSystem::Serviceless {
-        args.script_path
-            .clone()
-            .unwrap_or_else(|| format!("{}_serviceless.sh", BINARY_NAME))
-    } else {
-        if args.script_path.is_some() {
-            return Err("Script path is only valid for serviceless init system".to_string());
+    let custom_path = match args.init_system {
+        InitSystem::SelfExtractingPwsh => {
+            return Err("PowerShell serviceless parsing not implemented".to_string());
         }
-        "".to_string()
+        InitSystem::SelfExtractingShell => args
+            .script_path
+            .clone()
+            .unwrap_or_else(|| format!("{}_serviceless.sh", BINARY_NAME)),
+        _ => {
+            if args.script_path.is_some() {
+                return Err("Script path is only valid for SelfExtracting* init system".to_string());
+            }
+            "".to_string()
+        }
     };
 
     Ok(match args.init_system {
@@ -55,7 +60,8 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::Systemd => parse_systemd_config()?,
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => parse_openrc_config()?,
-        InitSystem::Serviceless => parse_serviceless_config(&custom_path)?,
+        InitSystem::SelfExtractingShell => parse_serviceless_config(&custom_path)?,
+        InitSystem::SelfExtractingPwsh => todo!("PowerShell serviceless parsing not implemented"),
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => parse_launchd_config()?,
     })

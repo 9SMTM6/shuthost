@@ -5,7 +5,7 @@
 mod commands;
 #[cfg(not(coverage))]
 mod install;
-#[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(coverage))]
 pub mod registration;
 pub mod script_generator;
 pub mod server;
@@ -49,11 +49,11 @@ pub enum Command {
         port: u16,
     },
 
-    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(coverage))]
     /// Print the registration configuration for the installed agent.
     Registration(registration::Args),
 
-    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(coverage))]
     /// Generate a shuthost_direct_control script for this host_agent.
     GenerateDirectControl(script_generator::Args),
 }
@@ -73,7 +73,7 @@ pub fn inner_main(invocation: Cli) {
             Ok(_) => (),
             Err(e) => eprintln!("Error during WoL test: {e}"),
         },
-        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+        #[cfg(not(coverage))]
         Command::Registration(args) => match registration::parse_config(&args) {
             Ok(config) => {
                 if let Err(e) = registration::print_registration_config(&config) {
@@ -82,7 +82,7 @@ pub fn inner_main(invocation: Cli) {
             }
             Err(e) => eprintln!("Error parsing config: {e}"),
         },
-        #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+        #[cfg(not(coverage))]
         Command::GenerateDirectControl(args) => {
             match script_generator::write_control_script(&args) {
                 Ok(_) => (),
