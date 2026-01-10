@@ -18,16 +18,7 @@ set -v
 
 run_as_elevated "$HOST_AGENT_BINARY install --shutdown-command \"touch /tmp/shutdown_executed\""
 
-printf 'Waiting for agent to be ready...\n'
-i=1
-while [ "$i" -le 30 ]; do
-    if run_as_elevated pgrep -af shuthost_host_agent >/dev/null 2>&1; then
-        printf 'Agent is ready!\n'
-        break
-    fi
-    i=$((i + 1))
-    sleep 1
-done
+wait_for_agent_ready
 
 run_as_elevated pgrep -af shuthost_host_agent || { printf 'Host agent service is not running\n' ; exit 1; }
 

@@ -144,7 +144,7 @@ jobs:
       - name: Test on Linux (systemd)
         run: |
           set -x
-          ./scripts/test-service-installation.sh ./shuthost_coordinator root
+          ./scripts/tests/coordinator_and_agent_service_installation.sh ./shuthost_coordinator root
           sudo systemctl status shuthost_host_agent
 
   test-service-installation-openrc:
@@ -172,7 +172,7 @@ jobs:
 
       - name: Run test script
         run: |
-          ./scripts/test-service-installation.sh ./shuthost_coordinator root
+          ./scripts/tests/coordinator_and_agent_service_installation.sh ./shuthost_coordinator root
 
       - name: Check service status
         run: |
@@ -196,7 +196,7 @@ jobs:
       - name: Test on macOS (launchd)
         run: |
           set -x
-          ./scripts/test-service-installation.sh ./shuthost_coordinator "$(whoami)"
+          ./scripts/tests/coordinator_and_agent_service_installation.sh ./shuthost_coordinator "$(whoami)"
 
       - name: Check service status
         run: |
