@@ -112,8 +112,12 @@ update_file_snapshots:
         ./scripts/snapshot_files/openrc.sh\
         ./scripts/snapshot_files/compose_and_self_extracting.sh
 
-test_install_scripts:
-    ./scripts/tests/install_scripts.sh
+install_test_scripts:
+    ./scripts/tests/enduser_install_scripts.sh
+    ./scripts/tests/direct-control-openrc.sh
+    ./scripts/tests/direct-control-systemd.sh
+    ./scripts/tests/service-installation-openrc.sh
+    ./scripts/tests/service-installation-systemd.sh
 
 alias deny := ci_cargo_deny
 
