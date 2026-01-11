@@ -3,6 +3,10 @@ name: Test Released Install Scripts
 on:
   release:
     types: [published]
+  workflow_run:
+    workflows: ["Build, Test and Release"]
+    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,6 +16,8 @@ jobs:
     name: Test ${{ matrix.component }} on ${{ matrix.name_suffix }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
+    env:
+      GH_TOKEN: ${{ github.token }}
     strategy:
       matrix:
         include:
@@ -38,6 +44,15 @@ jobs:
             prepare: true
             name_suffix: Alpine
     steps:
+      - name: Check if tag push
+        if: github.event_name == 'workflow_run'
+        run: |
+          if [[ "${{ github.event.workflow_run.head_ref }}" =~ ^refs/tags/ ]]; then
+            echo "Proceed with tag release test"
+          else
+            echo "Not a tag push, skipping"
+            exit 0
+          fi
       - name: Prepare Alpine
         if: matrix.prepare
         run: |

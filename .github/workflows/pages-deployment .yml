@@ -6,6 +6,9 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Build, Test and Release"]
+    types: [completed]
 
 jobs:
   deploy_gh_pages:
@@ -13,8 +16,19 @@ jobs:
     permissions:
       pages: write
       id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     steps:
+    - name: Check if tag push
+      if: github.event_name == 'workflow_run'
+      run: |
+        if [[ "${{ github.event.workflow_run.head_ref }}" =~ ^refs/tags/ ]]; then
+          echo "Proceed with tag release deployment"
+        else
+          echo "Not a tag push, skipping"
+          exit 0
+        fi
     - uses: actions/checkout@v6
 
     - name: Download coordinator binary
