@@ -40,9 +40,10 @@ pub(crate) struct ServiceConfig {
 // TODO: add unit tests for the parsing functions (conceptually as inverse of the generation of the service files, might need to modularize things)
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     let custom_path = match args.init_system {
-        InitSystem::SelfExtractingPwsh => {
-            todo!("PowerShell self-extracting parsing not implemented");
-        }
+        InitSystem::SelfExtractingPwsh => args
+            .script_path
+            .clone()
+            .unwrap_or_else(|| format!("{}_self_extracting.ps1", BINARY_NAME)),
         InitSystem::SelfExtractingShell => args
             .script_path
             .clone()
@@ -61,9 +62,7 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => parse_openrc_config()?,
         InitSystem::SelfExtractingShell => parse_self_extracting_shell_config(&custom_path)?,
-        InitSystem::SelfExtractingPwsh => {
-            todo!("PowerShell self-extracting parsing not implemented")
-        }
+        InitSystem::SelfExtractingPwsh => parse_self_extracting_pwsh_config(&custom_path)?,
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => parse_launchd_config()?,
     })
@@ -178,30 +177,24 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
 }
 
 fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, String> {
-    let mut secret = None;
-    let mut port = None;
+    let Some(secret) = content.lines().find_map(|line| {
+        line.strip_prefix("export SHUTHOST_SHARED_SECRET=\"")
+            .and_then(|s| s.strip_suffix("\""))
+    }) else {
+        return Err("SHUTHOST_SHARED_SECRET not found in self-extracting script".to_string());
+    };
+    let Some(port) = content.lines().find_map(|line| {
+        line.strip_prefix("export PORT=\"")
+            .and_then(|s| s.strip_suffix("\""))
+            .and_then(|s| s.parse().ok())
+    }) else {
+        return Err("PORT not found in self-extracting script".to_string());
+    };
 
-    for line in content.lines() {
-        if secret.is_none() {
-            secret = line
-                .strip_prefix("export SHUTHOST_SHARED_SECRET=\"")
-                .and_then(|s| s.strip_suffix("\""));
-        }
-        if port.is_none() {
-            port = line
-                .strip_prefix("export PORT=\"")
-                .and_then(|s| s.strip_suffix("\""))
-                .and_then(|s| s.parse().ok());
-        }
-    }
-
-    match (secret, port) {
-        (Some(s), Some(p)) => Ok(ServiceConfig {
-            secret: s.to_string(),
-            port: p,
-        }),
-        _ => Err("Failed to parse secret and port from self-extracting script".to_string()),
-    }
+    Ok(ServiceConfig {
+        secret: secret.to_string(),
+        port,
+    })
 }
 
 fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
@@ -209,6 +202,34 @@ fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, Strin
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
 
     parse_self_extracting_shell_content(&content)
+}
+
+fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, String> {
+    let Some(secret) = content.lines().find_map(|line| {
+        line.strip_prefix("$env:SHUTHOST_SHARED_SECRET = \"")
+            .and_then(|s| s.strip_suffix("\""))
+    }) else {
+        return Err("SHUTHOST_SHARED_SECRET not found in self-extracting PowerShell script".to_string());
+    };
+    let Some(port) = content.lines().find_map(|line| {
+        line.strip_prefix("$env:PORT = \"")
+            .and_then(|s| s.strip_suffix("\""))
+            .and_then(|s| s.parse().ok())
+    }) else {
+        return Err("PORT not found in self-extracting PowerShell script".to_string());
+    };
+
+    Ok(ServiceConfig {
+        secret: secret.to_string(),
+        port,
+    })
+}
+
+fn parse_self_extracting_pwsh_config(path: &str) -> Result<ServiceConfig, String> {
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+
+    parse_self_extracting_pwsh_content(&content)
 }
 
 #[cfg(any(target_os = "macos", test))]
@@ -295,6 +316,19 @@ SHUTDOWN_COMMAND=test cmd
 "#;
 
         let config = parse_self_extracting_shell_content(content).unwrap();
+        assert_eq!(config.secret, "test_secret");
+        assert_eq!(config.port, 1234);
+    }
+
+    #[test]
+    fn test_parse_self_extracting_pwsh_content() {
+        let content = r#"
+$env:SHUTHOST_SHARED_SECRET = "test_secret"
+$env:PORT = "1234"
+$env:SHUTDOWN_COMMAND = "test cmd"
+"#;
+
+        let config = parse_self_extracting_pwsh_content(content).unwrap();
         assert_eq!(config.secret, "test_secret");
         assert_eq!(config.port, 1234);
     }
