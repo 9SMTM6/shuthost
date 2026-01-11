@@ -182,22 +182,24 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
     let mut port = None;
 
     for line in content.lines() {
-        if line.starts_with("SHUTHOST_SHARED_SECRET=") {
-            secret = Some(line.split('=').nth(1).unwrap_or("").to_string());
+        if secret.is_none() {
+            secret = line
+                .strip_prefix("export SHUTHOST_SHARED_SECRET=\"")
+                .and_then(|s| s.strip_suffix("\""));
         }
-        if line.starts_with("PORT=") {
-            port = Some(
-                line.split('=')
-                    .nth(1)
-                    .unwrap_or("")
-                    .parse()
-                    .map_err(|_| "Invalid port".to_string())?,
-            );
+        if port.is_none() {
+            port = line
+                .strip_prefix("export PORT=\"")
+                .and_then(|s| s.strip_suffix("\""))
+                .and_then(|s| s.parse().ok());
         }
     }
 
     match (secret, port) {
-        (Some(s), Some(p)) => Ok(ServiceConfig { secret: s, port: p }),
+        (Some(s), Some(p)) => Ok(ServiceConfig {
+            secret: s.to_string(),
+            port: p,
+        }),
         _ => Err("Failed to parse secret and port from self-extracting script".to_string()),
     }
 }

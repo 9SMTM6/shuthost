@@ -42,7 +42,7 @@ pub fn generate_self_extracting_script(
 
 OUT=$(mktemp /tmp/selfbin.XXXXXX)
 TAIL_LINE=$(awk '/^__BINARY_PAYLOAD_BELOW__/ {{ print NR + 1; exit 0; }}' "$0")
-tail -n +$TAIL_LINE "$0" > "$OUT"
+tail -n +$TAIL_LINE "$0" | base64 -d > "$OUT"
 chmod +x "$OUT"
 if [ "$#" -gt 0 ] && [ "${{1#-}}" = "$1" ]; then
     if [ "$1" = "generate-direct-control" ] || [ "$1" = "registration" ]; then
@@ -63,7 +63,8 @@ __BINARY_PAYLOAD_BELOW__
     script
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
-    script.write_all(&self_binary).map_err(|e| e.to_string())?;
+    let encoded = general_purpose::STANDARD.encode(&self_binary);
+    script.write_all(encoded.as_bytes()).map_err(|e| e.to_string())?;
     #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750))
         .map_err(|e| e.to_string())?;
