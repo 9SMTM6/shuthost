@@ -106,8 +106,8 @@ static_text_download_handler!(fn download_host_agent_installer, file = "scripts/
 static_text_download_handler!(fn download_host_agent_installer_ps1, file = "scripts/coordinator_installers/host_agent.ps1");
 static_text_download_handler!(fn download_client_installer, file = "scripts/coordinator_installers/client.sh");
 static_text_download_handler!(fn download_client_installer_ps1, file = "scripts/coordinator_installers/client.ps1");
-static_text_download_handler!(fn download_client_script, file = "scripts/shuthost_client/shuthost_client.tmpl.sh");
-static_text_download_handler!(fn download_client_script_ps1, file = "scripts/shuthost_client/shuthost_client.tmpl.ps1");
+static_text_download_handler!(fn download_client_script, file = "scripts/enduser_templates/shuthost_client.tmpl.sh");
+static_text_download_handler!(fn download_client_script_ps1, file = "scripts/enduser_templates/shuthost_client.tmpl.ps1");
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()

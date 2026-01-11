@@ -132,11 +132,11 @@ pub(crate) fn generate_control_script(
 
     Ok(match script_type {
         ScriptType::UnixShell => generate_control_script_from_values(
-            include_str!("../../scripts/direct_control/direct_control.tmpl.sh"),
+            include_str!("../../scripts/enduser_templates/direct_control.tmpl.sh"),
             &values,
         ),
         ScriptType::Pwsh => generate_control_script_from_values(
-            include_str!("../../scripts/direct_control/direct_control.tmpl.ps1"),
+            include_str!("../../scripts/enduser_templates/direct_control.tmpl.ps1"),
             &values,
         ),
     })
