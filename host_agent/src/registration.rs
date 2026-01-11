@@ -37,7 +37,6 @@ pub(crate) struct ServiceConfig {
     pub port: u16,
 }
 
-// TODO: add unit tests for the parsing functions (conceptually as inverse of the generation of the service files, might need to modularize things)
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     let custom_path = match args.init_system {
         InitSystem::SelfExtractingPwsh => args

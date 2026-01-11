@@ -9,7 +9,7 @@ export default defineConfig({
     expect: {
         timeout: 5000,
         toHaveScreenshot: {
-            // TODO: A value of 0.03 was too lenient and passed a significant change, but if I specify 0.01 then playwright fails on macos. If someone raises an issue we can investigate further.
+            // Note: A value of 0.03 was too lenient and passed a significant change, but if I specify 0.01 then playwright fails on macos. If someone raises an issue we can investigate further.
             maxDiffPixelRatio: 0.01,
             // have nice hi-res screenshots that can double as images in Docs.
             scale: 'device',
