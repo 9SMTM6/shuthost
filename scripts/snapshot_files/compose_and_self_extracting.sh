@@ -20,7 +20,7 @@ else
 fi
 
 # Configuration
-OUTPUT_DIR="./install-file-snapshots/docker-compose"
+OUTPUT_DIR="./install-file-snapshots/compose-and-self-extracting"
 BASE_IMAGE="shuthost-compose"
 
 trap cleanup EXIT
@@ -66,6 +66,16 @@ podman exec -w /workspace "temp-$BASE_IMAGE-container" sh -c "
 # Commit to final installed image
 podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-agent-installed"
 
+# Generate direct control scripts
+#  we need to specify the output path, otherwise it'll contain the randomly generated docker hostname
+podman exec "temp-$BASE_IMAGE-container" sh -c "
+    ./shuthost_host_agent_self_extracting generate-direct-control --output /root/shuthost_direct_control &&
+    ./shuthost_host_agent_self_extracting.ps1 generate-direct-control --output /root/shuthost_direct_control --type pwsh
+"
+
+# Commit to direct control installed image
+podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-direct-control-installed"
+
 # Now install the client in the same container
 podman exec -w /workspace "temp-$BASE_IMAGE-container" sh -c "
   curl -k -sSL https://localhost:8080/download/client_installer.sh | sh -s https://localhost:8080 test-client &&
@@ -83,4 +93,4 @@ podman rm --force -t 1 "temp-$BASE_IMAGE-container" >/dev/null 2>&1
 do_diff
 
 # Diff client files
-process_diff "$BASE_IMAGE-client-installed" "$BASE_IMAGE-agent-installed" "./install-file-snapshots/client_files.toml"
+process_diff "$BASE_IMAGE-client-installed" "$BASE_IMAGE-direct-control-installed" "./install-file-snapshots/client.toml"

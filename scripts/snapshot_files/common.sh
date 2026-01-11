@@ -7,7 +7,7 @@ cleanup() {
     echo "Cleaning up..."
     podman rm --force -t 1 "temp-$BASE_IMAGE-container" >/dev/null 2>&1 || true
     # don't delete the built image to speed up repeated runs
-    podman rmi "$BASE_IMAGE" "$BASE_IMAGE-coordinator-installed" "$BASE_IMAGE-agent-installed" "$BASE_IMAGE-client-installed" >/dev/null 2>&1 || true
+    podman rmi "$BASE_IMAGE" "$BASE_IMAGE-coordinator-installed" "$BASE_IMAGE-agent-installed" "$BASE_IMAGE-direct-control-installed" "$BASE_IMAGE-client-installed" >/dev/null 2>&1 || true
 }
 
 do_snapshot() {
@@ -43,8 +43,16 @@ do_snapshot() {
       echo 'Installer completed, killing coordinator...'
       $STOP_CMD
     " || true
-    # Commit to final installed image
+
+    # Commit to agent installed image
     podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-agent-installed"
+
+    # Generate direct control script
+    #  we need to specify the output path, otherwise it'll contain the randomly generated docker hostname
+    podman exec "temp-$BASE_IMAGE-container" shuthost_host_agent generate-direct-control --output /root/shuthost_direct_control
+
+    # Commit to final installed image
+    podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-direct-control-installed"
 
     # Clean up the container
     podman rm --force -t 1 "temp-$BASE_IMAGE-container" >/dev/null 2>&1
@@ -94,7 +102,8 @@ process_diff() {
 
 do_diff() {
     echo "Diffing filesystem changes..."
-    process_diff "$BASE_IMAGE-coordinator-installed" "$BASE_IMAGE" "$OUTPUT_DIR/coordinator_files.toml"
-    process_diff "$BASE_IMAGE-agent-installed" "$BASE_IMAGE-coordinator-installed" "$OUTPUT_DIR/agent_files.toml"
+    process_diff "$BASE_IMAGE-coordinator-installed" "$BASE_IMAGE" "$OUTPUT_DIR/coordinator.toml"
+    process_diff "$BASE_IMAGE-agent-installed" "$BASE_IMAGE-coordinator-installed" "$OUTPUT_DIR/agent.toml"
+    process_diff "$BASE_IMAGE-direct-control-installed" "$BASE_IMAGE-agent-installed" "$OUTPUT_DIR/direct_control.toml"
     echo "Cleaned file lists with permissions and types saved to $OUTPUT_DIR/"
 }

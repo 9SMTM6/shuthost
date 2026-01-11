@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 # This may be a template containing placeholders like {host_ip}, {port}, {shared_secret}, {mac_address}, and {hostname}
 # that must be replaced with actual values before use.
 
