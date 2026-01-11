@@ -90,9 +90,7 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 #### Binary (recommended)
 - Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/9SMTM6/shuthost/main/scripts/enduser_installers/coordinator.sh | sh
-  # TODO: Once the installer is released, change to:
-  # curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
+  curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
   ```
   This script will automatically detect your platform, download the appropriate binary, verify the checksum (with user confirmation), and install the coordinator as a system service.
 
@@ -166,8 +164,6 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 
 ## ⚡ Agent-only Install
 
-[UNRELEASED]
-
 Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
 
 > **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
@@ -175,7 +171,7 @@ Lightweight option: install the host agent only (no coordinator). This does not 
 Install the released agent installer and generate a direct-control script:
 
 ```bash
-# Install the agent (released installer):
+# Install the agent:
 curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.sh | sh
 
 # Generate a direct-control script (run on the machine where the agent binary is installed):
