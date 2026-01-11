@@ -32,7 +32,7 @@ Run this on the machine where the agent binary is installed:
 
 ```bash
 # The agent should be in your PATH with most installations; if not, adjust the command accordingly.
-shuthost_host_agent generate-direct-control
+sudo shuthost_host_agent generate-direct-control
 
 # The command places `shuthost_direct_control_<hostname>` into your current working directory.
 ```

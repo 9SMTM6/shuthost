@@ -176,7 +176,7 @@ curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_
 
 # Generate a direct-control script (run on the machine where the agent binary is installed):
 # If the agent is in your PATH:
-shuthost_host_agent generate-direct-control
+sudo shuthost_host_agent generate-direct-control
 
 # Make the script executable and move it to the device you want to use as the controller (same LAN):
 chmod +x shuthost_direct_control_<hostname>
@@ -233,10 +233,9 @@ These are generated or validated automatically as part of the test suite, and th
 
 <!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service -->
 <!-- 
-todo: add a bunch of pwsh scripts for windows agent, once we again work on the windows_agent branch
- * test pwsh (on unix)
- * add self-extracting-pwsh file-snapshot
- * consider running on metal generally and for windows specifically.
+todo: add a bunch of pwsh scripts for windows agent
+ * add tests to CI
+ * consider running tests on metal generally and for windows specifically.
 
 
 * todo: port test-client-scripts to run locally as well
