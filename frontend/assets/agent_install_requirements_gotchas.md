@@ -17,7 +17,7 @@
 <aside class="alert alert-error" role="note" aria-label="Platform Limitations">
     <h3 class="alert-title">🚫 Platform Limitations</h3>
     <ul>
-        <li><strong>No Windows Support:</strong> Only Unix distributions are supported for the agent.</li>
+        <li><strong>Windows Support (Limited):</strong> Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like <a href="https://nssm.cc/" target="_blank" rel="noopener noreferrer">NSSM</a>.</li>
         <li><strong>No BSD Support:</strong> BSD-based systems are not currently supported.</li>
     </ul>
 </aside>

@@ -168,6 +168,8 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 
 Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
 
+> **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
+
 Install the released agent installer and generate a direct-control script:
 
 ```bash

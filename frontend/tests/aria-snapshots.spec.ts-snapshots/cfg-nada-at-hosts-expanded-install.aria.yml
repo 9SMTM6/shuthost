@@ -36,8 +36,11 @@
               - heading "🚫 Platform Limitations" [level=3]
               - list:
                 - listitem:
-                  - strong: "No Windows Support:"
-                  - text: Only Unix distributions are supported for the agent.
+                  - strong: "Windows Support (Limited):"
+                  - text: Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like
+                  - link "NSSM":
+                    - /url: https://nssm.cc/
+                  - text: .
                 - listitem:
                   - strong: "No BSD Support:"
                   - text: BSD-based systems are not currently supported.
