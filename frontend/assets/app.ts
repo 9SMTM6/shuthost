@@ -479,15 +479,17 @@ const setupInstallerCommands = () => {
     const baseUrl = window.location.origin + DemoMode.subpath;
 
     // Install commands
-    const hostInstallCommand = document.getElementById('host-install-command');
+    const hostInstallCommandSh = document.getElementById('host-install-command-sh');
+    const hostInstallCommandPs1 = document.getElementById('host-install-command-ps1');
     const clientInstallCommandSh = document.getElementById('client-install-command-sh');
     const clientInstallCommandPs1 = document.getElementById('client-install-command-ps1');
 
-    if (!hostInstallCommand || !clientInstallCommandSh || !clientInstallCommandPs1) {
+    if (!hostInstallCommandSh || !hostInstallCommandPs1 || !clientInstallCommandSh || !clientInstallCommandPs1) {
         throw new Error('Missing required install command elements');
     }
 
-    hostInstallCommand.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    hostInstallCommandSh.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
+    hostInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} --port 5757`;
     clientInstallCommandSh.textContent = `curl -sSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
     clientInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 ${baseUrl}`;
 }

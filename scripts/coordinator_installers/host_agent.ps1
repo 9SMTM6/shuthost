@@ -21,8 +21,11 @@ $curlOpts = if ($hostPart -eq 'localhost' -or $hostPart -match '^127\.') { '-k' 
 $isUnix = $PSVersionTable.Platform -eq 'Unix'
 $curlCmd = if ($isUnix) { 'curl' } else { 'curl.exe' }
 
+$scriptPath = $MyInvocation.MyCommand.Path
+
 function Cleanup {
     Remove-Item -Path $script:FILENAME -ErrorAction SilentlyContinue
+    Remove-Item -Path $scriptPath -ErrorAction SilentlyContinue
 }
 
 function Detect-Platform {

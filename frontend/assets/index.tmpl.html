@@ -22,11 +22,20 @@
                         </summary>
                         <div id="host-install-content" class="collapsible-content" role="group"
                             aria-labelledby="host-install-title">
-                            <p class="mb-1 text-sm">Run the following command in your terminal:</p>
+                            <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
+                            
+                            <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
                             <div class="code-container py-2">
-                                <button class="copy-button" data-copy-target="#host-install-command" type="button"
+                                <button class="copy-button" data-copy-target="#host-install-command-sh" type="button"
                                     aria-label="Copy install command">Copy</button>
-                                <code id="host-install-command" class="code-block">Loading...</code>
+                                <code id="host-install-command-sh" class="code-block">Loading...</code>
+                            </div>
+                            
+                            <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
+                            <div class="code-container py-2">
+                                <button class="copy-button" data-copy-target="#host-install-command-ps1" type="button"
+                                    aria-label="Copy install command">Copy</button>
+                                <code id="host-install-command-ps1" class="code-block">Loading...</code>
                             </div>
                             <p class="description-text text-xs">Adjust options as needed. Add the output to the hosts
                                 section of your config on the Coordinator Host:</p>
