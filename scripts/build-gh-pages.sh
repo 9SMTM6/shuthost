@@ -93,6 +93,7 @@ fetch_download() {
 
 # Installers and scripts
 fetch_download "host_agent_installer.sh"
+fetch_download "host_agent_installer.ps1"
 fetch_download "client_installer.sh"
 fetch_download "client_installer.ps1"
 fetch_download "shuthost_client.sh"
