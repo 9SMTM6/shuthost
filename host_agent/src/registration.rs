@@ -208,7 +208,9 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
         line.strip_prefix("$env:SHUTHOST_SHARED_SECRET = \"")
             .and_then(|s| s.strip_suffix("\""))
     }) else {
-        return Err("SHUTHOST_SHARED_SECRET not found in self-extracting PowerShell script".to_string());
+        return Err(
+            "SHUTHOST_SHARED_SECRET not found in self-extracting PowerShell script".to_string(),
+        );
     };
     let Some(port) = content.lines().find_map(|line| {
         line.strip_prefix("$env:PORT = \"")

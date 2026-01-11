@@ -64,7 +64,9 @@ __BINARY_PAYLOAD_BELOW__
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
     let encoded = general_purpose::STANDARD.encode(&self_binary);
-    script.write_all(encoded.as_bytes()).map_err(|e| e.to_string())?;
+    script
+        .write_all(encoded.as_bytes())
+        .map_err(|e| e.to_string())?;
     #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750))
         .map_err(|e| e.to_string())?;
@@ -142,7 +144,9 @@ __BINARY_PAYLOAD_BELOW__
         .write_all(script_header.as_bytes())
         .map_err(|e| e.to_string())?;
     let encoded = general_purpose::STANDARD.encode(&self_binary);
-    script.write_all(encoded.as_bytes()).map_err(|e| e.to_string())?;
+    script
+        .write_all(encoded.as_bytes())
+        .map_err(|e| e.to_string())?;
     #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750)).unwrap_or(());
 

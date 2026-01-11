@@ -33,7 +33,7 @@ pub struct ControlScriptValues {
     pub hostname: String,
 }
 
-#[derive(Debug, Clone, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
 pub enum ScriptType {
     /// A .sh script for macOS/Linux/Unix hosts
     UnixShell,
@@ -43,14 +43,14 @@ pub enum ScriptType {
 
 impl std::fmt::Display for ScriptType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
+        match *self {
             ScriptType::UnixShell => write!(f, "unix-shell"),
             ScriptType::Pwsh => write!(f, "pwsh"),
         }
     }
 }
 
-fn get_default_script_type() -> ScriptType {
+const fn get_default_script_type() -> ScriptType {
     #[cfg(target_os = "windows")]
     {
         ScriptType::Pwsh
@@ -146,7 +146,7 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
     let script = generate_control_script(
         args.init_system,
         args.script_path.as_deref(),
-        args.script_type.clone(),
+        args.script_type,
     )?;
 
     let mut output_path = args.output.0.clone();
