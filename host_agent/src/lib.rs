@@ -3,9 +3,7 @@
 //! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
 
 mod commands;
-#[cfg(not(coverage))]
 mod install;
-#[cfg(not(coverage))]
 pub mod registration;
 pub mod script_generator;
 pub mod server;
@@ -37,11 +35,9 @@ pub enum Command {
     /// Start the host_agent as a background service.
     Service(ServiceOptions),
 
-    #[cfg(not(coverage))]
     /// Install the host_agent on the system.
     Install(install::Args),
 
-    #[cfg(not(coverage))]
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
         /// UDP port to listen on for WOL test packets.
@@ -49,18 +45,15 @@ pub enum Command {
         port: u16,
     },
 
-    #[cfg(not(coverage))]
     /// Print the registration configuration for the installed agent.
     Registration(registration::Args),
 
-    #[cfg(not(coverage))]
     /// Generate a shuthost_direct_control script for this host_agent.
     GenerateDirectControl(script_generator::Args),
 }
 
 pub fn inner_main(invocation: Cli) {
     match invocation.command {
-        #[cfg(not(coverage))]
         Command::Install(args) => match install::install_host_agent(&args) {
             Ok(_) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),
@@ -68,12 +61,10 @@ pub fn inner_main(invocation: Cli) {
         Command::Service(args) => {
             server::start_host_agent(args);
         }
-        #[cfg(not(coverage))]
         Command::TestWol { port } => match install::test_wol_reachability(port) {
             Ok(_) => (),
             Err(e) => eprintln!("Error during WoL test: {e}"),
         },
-        #[cfg(not(coverage))]
         Command::Registration(args) => match registration::parse_config(&args) {
             Ok(config) => {
                 if let Err(e) = registration::print_registration_config(&config) {
@@ -82,7 +73,6 @@ pub fn inner_main(invocation: Cli) {
             }
             Err(e) => eprintln!("Error parsing config: {e}"),
         },
-        #[cfg(not(coverage))]
         Command::GenerateDirectControl(args) => {
             match script_generator::write_control_script(&args) {
                 Ok(_) => (),
