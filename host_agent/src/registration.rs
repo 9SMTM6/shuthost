@@ -311,9 +311,9 @@ mod tests {
     #[test]
     fn test_parse_self_extracting_shell_content() {
         let content = r#"
-SHUTHOST_SHARED_SECRET=test_secret
-PORT=1234
-SHUTDOWN_COMMAND=test cmd
+export SHUTHOST_SHARED_SECRET="test_secret"
+export PORT="1234"
+export SHUTDOWN_COMMAND="test cmd"
 "#;
 
         let config = parse_self_extracting_shell_content(content).unwrap();
