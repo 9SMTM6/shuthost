@@ -66,6 +66,7 @@ pub enum InitSystem {
     #[cfg(target_os = "linux")]
     OpenRC,
     /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    #[cfg(unix)]
     SelfExtractingShell,
     /// Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
     SelfExtractingPwsh,
@@ -81,6 +82,7 @@ impl std::fmt::Display for InitSystem {
             InitSystem::Systemd => "systemd",
             #[cfg(target_os = "linux")]
             InitSystem::OpenRC => "open-rc",
+            #[cfg(unix)]
             InitSystem::SelfExtractingShell => "self-extracting-shell",
             InitSystem::SelfExtractingPwsh => "self-extracting-pwsh",
             #[cfg(target_os = "macos")]
@@ -126,6 +128,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(name)?;
         }
+        #[cfg(unix)]
         InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
             crate::install::self_extracting::generate_self_extracting_script(

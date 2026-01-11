@@ -43,6 +43,7 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
             .script_path
             .clone()
             .unwrap_or_else(|| format!("{}_self_extracting.ps1", BINARY_NAME)),
+        #[cfg(unix)]
         InitSystem::SelfExtractingShell => args
             .script_path
             .clone()
@@ -60,6 +61,7 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::Systemd => parse_systemd_config()?,
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => parse_openrc_config()?,
+        #[cfg(unix)]
         InitSystem::SelfExtractingShell => parse_self_extracting_shell_config(&custom_path)?,
         InitSystem::SelfExtractingPwsh => parse_self_extracting_pwsh_config(&custom_path)?,
         #[cfg(target_os = "macos")]
@@ -175,6 +177,7 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
     )
 }
 
+#[cfg(unix)]
 fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, String> {
     let Some(secret) = content.lines().find_map(|line| {
         line.strip_prefix("export SHUTHOST_SHARED_SECRET=\"")
@@ -196,6 +199,7 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
     })
 }
 
+#[cfg(unix)]
 fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
