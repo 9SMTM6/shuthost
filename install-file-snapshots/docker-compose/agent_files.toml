@@ -1,5 +1,0 @@
-[[files]]
-path = "/workspace/shuthost_host_agent_self_extracting"
-perms = "750"
-type = "POSIX shell script executable (binary data)"
-

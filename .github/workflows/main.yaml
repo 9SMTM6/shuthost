@@ -28,6 +28,12 @@ jobs:
             runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            ext: .exe
+          - target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+            ext: .exe
 
     steps:
       - uses: &checkout actions/checkout@v6
@@ -45,7 +51,7 @@ jobs:
         uses: &upload-artifact actions/upload-artifact@v5
         with:
           name: host_agent-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_host_agent${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          path: target/${{ matrix.target }}/release/shuthost_host_agent${{ matrix.ext || '' }}
 
   build-coordinators:
     name: Build Coordinator for ${{ matrix.target }}
@@ -91,19 +97,19 @@ jobs:
           for dir in ./rehydrate/host_agent-*; do
             target=$(basename "$dir" | sed 's/^host_agent-//')
             mkdir -p "target/$target/release"
-            if [[ "$target" == x86_64-pc-windows-msvc ]]; then
-              cp "$dir/shuthost_host_agent.exe" "target/$target/release/shuthost_host_agent"
-            else
-              cp "$dir/shuthost_host_agent" "target/$target/release/"
+            binary_name="shuthost_host_agent"
+            if [[ "$target" == *-pc-windows-* ]]; then
+              binary_name="${binary_name}.exe"
             fi
-            chmod +x "target/$target/release/shuthost_host_agent" || true
+            cp "$dir/$binary_name" "target/$target/release/$binary_name"
+            chmod +x "target/$target/release/$binary_name" || true
           done
 
       - uses: ./.github/actions/rust-build
         with:
           target: ${{ matrix.target }}
           bin-name: shuthost_coordinator
-          additional-flags: --features include_linux_agents,include_macos_agents
+          additional-flags: --features include_agents
 
       - name: Upload coordinator binary
         uses: *upload-artifact
@@ -202,8 +208,8 @@ jobs:
         run: |
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
-  test-service-installation-serviceless:
-    name: Test Service Installation (serviceless)
+  test-service-installation-self-extracting-shell:
+    name: Test Service Installation (self-extracting-shell)
     runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
     
@@ -217,7 +223,7 @@ jobs:
 
       - run: chmod +x shuthost_coordinator
 
-      - name: Test on Linux (serviceless)
+      - name: Test on Linux (self-extracting-shell)
         run: |
           set -x
           # Start the coordinator in the background
@@ -228,8 +234,8 @@ jobs:
           done
 
           curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
-          # Download and install host_agent with serviceless init system
-          curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system serviceless
+          # Download and install host_agent with self-extracting-shell init system
+          curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system self-extracting-shell
           # Wait for the agent to start (timeout 30s) - check for listening port or process
           for i in $(seq 1 30); do
             sudo ss -ltnp | grep ':5757' >/dev/null 2>&1 || sudo lsof -i :5757 >/dev/null 2>&1 || sudo netstat -tlnp | grep ':5757' >/dev/null 2>&1 || sudo pgrep -af '/tmp/selfbin' >/dev/null 2>&1 && break || true
@@ -239,6 +245,8 @@ jobs:
           sudo ss -ltnp | grep ':5757' || sudo lsof -i :5757 || sudo netstat -tlnp | grep ':5757'
           # Check for a fitting process in the process list
           sudo pgrep -af '/tmp/selfbin' || sudo ps aux | grep '/tmp/selfbin'
+
+  # TODO: Add job for self-extracting-pwsh init system
 
   test-direct-control:
     name: Test Direct Control (${{ matrix.init }})
@@ -857,8 +865,7 @@ jobs:
       - test-service-installation-systemd
       - test-service-installation-openrc
       - test-service-installation-launchd
-      - test-service-installation-serviceless
-    
+      - test-service-installation-self-extracting-shell
     steps:
       - name: Test Service Installation (grouping)
         run: echo "Test Service Installation grouping job — nothing to run"
@@ -874,7 +881,7 @@ jobs:
       - test-service-installation-systemd
       - test-service-installation-openrc
       - test-service-installation-launchd
-      - test-service-installation-serviceless
+      - test-service-installation-self-extracting-shell
       - test-direct-control
       - test-compatibility
     
@@ -920,7 +927,7 @@ jobs:
       - test-service-installation-systemd
       - test-service-installation-openrc
       - test-service-installation-launchd
-      - test-service-installation-serviceless
+      - test-service-installation-self-extracting-shell
       ### test-direct-control
       - test-direct-control
       - test-compatibility
@@ -1022,7 +1029,7 @@ jobs:
       
       - name: Generate embedded installer scripts
         run: |
-          . ./scripts/helpers.sh && generate_embedded_scripts "${{ github.ref_name }}"
+          . ./scripts/helpers.sh && generate_embedded_scripts
 
       - &prepare_release_assets
         name: Prepare release assets directory
@@ -1114,7 +1121,7 @@ jobs:
 
       - name: Generate embedded installer scripts
         run: |
-          . ./scripts/helpers.sh && generate_embedded_scripts "nightly_release_${{ github.ref_name }}"
+          . ./scripts/helpers.sh && generate_embedded_scripts
 
       - *prepare_release_assets
 

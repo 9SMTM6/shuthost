@@ -5,9 +5,13 @@
         - group "Install Host Agent":
           - heading "Install Host Agent" [level=2]
           - group "Install Host Agent":
-            - paragraph: "Run the following command in your terminal:"
+            - paragraph: "Run one of the following commands in your terminal:"
+            - paragraph: "For Linux/macOS:"
             - button "Copy install command"
-            - code: /curl -fsSL <protocol:\/\/base_url>\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s <protocol:\/\/base_url> --port \d+/
+            - code: /curl -fsSL http:\/\/\d+\.\d+\.0\.1:\d+\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s http:\/\/\d+\.\d+\.0\.1:\d+ --port \d+/
+            - paragraph: "For Windows (PowerShell):"
+            - button "Copy install command"
+            - code: /curl\.exe -sSLO 'http:\/\/\d+\.\d+\.0\.1:\d+\/download\/host_agent_installer\.ps1'; powershell -ExecutionPolicy Bypass -File \.\\host_agent_installer\.ps1 http:\/\/\d+\.\d+\.0\.1:\d+ --port \d+/
             - paragraph: "Adjust options as needed. Add the output to the hosts section of your config on the Coordinator Host:"
             - button "Copy config location"
             - code: <coordinator_config_location>
@@ -32,8 +36,11 @@
               - heading "🚫 Platform Limitations" [level=3]
               - list:
                 - listitem:
-                  - strong: "No Windows Support:"
-                  - text: Only Unix distributions are supported for the agent.
+                  - strong: "Windows Support (Limited):"
+                  - text: Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like
+                  - link "NSSM":
+                    - /url: https://nssm.cc/
+                  - text: .
                 - listitem:
                   - strong: "No BSD Support:"
                   - text: BSD-based systems are not currently supported.

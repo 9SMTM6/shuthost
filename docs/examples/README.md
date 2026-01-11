@@ -11,5 +11,5 @@ This directory contains examples and guides for using ShutHost in various scenar
 - [Automated Backup with Kopia and ShutHost on Windows](./automated-backup-windows.md)
 - [WebUI Network Configuration](./webui-network-config.md)
 - [Docker Compose Example](./docker-compose.yml)
-- [Deploying the Serviceless Agent on Unraid](./unraid-serviceless-agent-deployment.md)
+- [Deploying the Self-Extracting Agent on Unraid](./unraid-self-extracting-agent-deployment.md)
  - [Agent-only Installation](./agent-installation.md)

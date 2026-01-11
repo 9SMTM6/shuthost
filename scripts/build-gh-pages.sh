@@ -81,9 +81,9 @@ done
 
 # Fetch downloadable files (installers, scripts, binaries)
 echo "Fetching downloadable files..."
-mkdir -p gh-pages/download/host_agent/macos
-mkdir -p gh-pages/download/host_agent/linux
-mkdir -p gh-pages/download/host_agent/linux-musl
+
+agent_dir="gh-pages/download/host_agent"
+mkdir -p $agent_dir
 
 # Function to fetch downloadable files
 fetch_download() {
@@ -93,6 +93,7 @@ fetch_download() {
 
 # Installers and scripts
 fetch_download "host_agent_installer.sh"
+fetch_download "host_agent_installer.ps1"
 fetch_download "client_installer.sh"
 fetch_download "client_installer.ps1"
 fetch_download "shuthost_client.sh"
@@ -101,9 +102,9 @@ fetch_download "shuthost_client.ps1"
 # Function to fetch agent binaries with proper error handling
 fetch_agent() {
     path="$1"
-    echo "Fetching $path agent..."
+    mkdir -p "$(dirname "$agent_dir/$path")"
     if curl -s -w "%{http_code}" "$base_url/download/host_agent/$path" | grep -q "^2"; then
-        curl -s "$base_url/download/host_agent/$path" -o "gh-pages/download/host_agent/$path"
+        curl -s "$base_url/download/host_agent/$path" -o "$agent_dir/$path"
     else
         echo "$path agent not available"
     fi
@@ -116,6 +117,8 @@ fetch_agent "linux/x86_64"
 fetch_agent "linux/aarch64"
 fetch_agent "linux-musl/x86_64"
 fetch_agent "linux-musl/aarch64"
+fetch_agent "windows/x86_64"
+fetch_agent "windows/aarch64"
 
 # Stop demo service
 kill $DEMO_PID

@@ -68,10 +68,10 @@ ShutHost began from a simple observation: Wake-on-LAN (WOL) is reasonably standa
 ShutHost addresses these challenges through three key design decisions:
 
 - **Authorization & safety:** Remote shutdown commands pose risks of accidental or malicious denial-of-service. To mitigate this, ShutHost requires authenticated requests: shutdowns are authorized using HMAC-signed messages with timestamps to prevent replay attacks and avoid sending plaintext credentials over the network.
-- **Privilege & init integration:** Performing a shutdown usually requires elevated privileges and must persist across reboots. ShutHost provides lightweight host agents that integrate with common service managers so the shutdown capability is available after restarts. Supported integrations include `systemd` (the dominant init on most mainstream Linux distributions), `openrc` (used by distributions like Alpine and Gentoo), and `launchd` (macOS). A "serviceless" mode is also available for custom or manual setups where users handle init integration themselves (see [Deploying the Serviceless Agent on Unraid](docs/examples/unraid-serviceless-agent-deployment.md) for an example).
+- **Privilege & init integration:** Performing a shutdown usually requires elevated privileges and must persist across reboots. ShutHost provides lightweight host agents that integrate with common service managers so the shutdown capability is available after restarts. Supported integrations include `systemd` (the dominant init on most mainstream Linux distributions), `openrc` (used by distributions like Alpine and Gentoo), and `launchd` (macOS). A "self-extracting" mode is also available for custom or manual setups where users handle init integration themselves (see [Deploying the Self-Extracting Agent on Unraid](docs/examples/unraid-self-extracting-agent-deployment.md) for an example).
 - **Network reachability & central control:** Wake-on-LAN only operates on the local broadcast domain. To manage hosts from outside the LAN, ShutHost includes a coordinator component: a single LAN-hosted coordinator provides a web GUI (installable as a PWA) and an API. The coordinator sends WOL packets to start machines locally and forwards authenticated shutdown requests to host agents over IP.
 
-Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone; its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-serviceless-agent-deployment.md).
+Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone; its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-self-extracting-agent-deployment.md).
 
 The coordinator glues the pieces together and provides usability features:
 
@@ -170,6 +170,8 @@ Choose either the binary (recommended for reliability and WOL support) or the co
 
 Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
 
+> **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
+
 Install the released agent installer and generate a direct-control script:
 
 ```bash
@@ -178,7 +180,7 @@ curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_
 
 # Generate a direct-control script (run on the machine where the agent binary is installed):
 # If the agent is in your PATH:
-shuthost_host_agent generate-direct-control
+sudo shuthost_host_agent generate-direct-control
 
 # Make the script executable and move it to the device you want to use as the controller (same LAN):
 chmod +x shuthost_direct_control_<hostname>
@@ -217,7 +219,7 @@ These are generated or validated automatically as part of the test suite, and th
 - 🛡️ **Rate limiting of requests by shuthost clients**
 
 ### 🖥️ Platform Support
-- 🪟 **Windows agent (serviceless)**: Support for Windows hosts using a serviceless agent, including a PowerShell installer script.
+- 🪟 **Windows agent (self-extracting)**: Support for Windows hosts using a self-extracting agent, including a PowerShell installer script.
 - 🐡 **BSD support** might happen
   - ⚠️ Requires using more advanced cross compilation
   - I have no ability to test these practically myself.
@@ -235,9 +237,9 @@ These are generated or validated automatically as part of the test suite, and th
 
 <!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service -->
 <!-- 
-todo: add a bunch of pwsh scripts for windows agent, once we again work on the windows_agent branch
- * test pwsh (on unix)
- * consider running on metal generally and for windows specifically.
+todo: add a bunch of pwsh scripts for windows agent
+ * add tests to CI
+ * consider running tests on metal generally and for windows specifically.
 
 
 * todo: port test-client-scripts to run locally as well

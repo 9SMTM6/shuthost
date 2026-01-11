@@ -2,6 +2,8 @@
 //!
 //! Handles subcommand parsing, agent installation across init systems, network interface discovery, and Wake-on-LAN testing.
 
+pub mod self_extracting;
+
 use clap::Parser;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
@@ -63,8 +65,11 @@ pub enum InitSystem {
     /// OpenRC init system (Linux).
     #[cfg(target_os = "linux")]
     OpenRC,
-    /// No init system; generates a self-extracting script you'll have to start yourself.
-    Serviceless,
+    /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    #[cfg(unix)]
+    SelfExtractingShell,
+    /// Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    SelfExtractingPwsh,
     /// Launchd init system (macOS).
     #[cfg(target_os = "macos")]
     Launchd,
@@ -77,7 +82,9 @@ impl std::fmt::Display for InitSystem {
             InitSystem::Systemd => "systemd",
             #[cfg(target_os = "linux")]
             InitSystem::OpenRC => "open-rc",
-            InitSystem::Serviceless => "serviceless",
+            #[cfg(unix)]
+            InitSystem::SelfExtractingShell => "self-extracting-shell",
+            InitSystem::SelfExtractingPwsh => "self-extracting-pwsh",
             #[cfg(target_os = "macos")]
             InitSystem::Launchd => "launchd",
         };
@@ -90,6 +97,10 @@ impl std::fmt::Display for InitSystem {
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     let name = BINARY_NAME;
+    #[cfg_attr(
+        target_os = "windows",
+        expect(unused_variables, reason = "windows doesn't need that, the others do")
+    )]
     let bind_known_vals = |arg: &str| {
         bind_template_replacements(
             arg,
@@ -117,15 +128,15 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             )?;
             shuthost_common::openrc::start_and_enable_self_as_service(name)?;
         }
-        InitSystem::Serviceless => {
+        #[cfg(unix)]
+        InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
-            shuthost_common::serviceless::generate_self_extracting_script(
+            crate::install::self_extracting::generate_self_extracting_script(
                 &[
                     ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
                     ("PORT", &arguments.port.to_string()),
                     ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
                 ],
-                "service --port=\"$PORT\" --shutdown-command=\"$SHUTDOWN_COMMAND\"",
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
@@ -133,6 +144,23 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                 eprintln!("Failed to start self-extracting script: {e}");
             } else {
                 println!("Started self-extracting agent script in background.");
+            }
+        }
+        InitSystem::SelfExtractingPwsh => {
+            let target_script_path = format!("./{name}_self_extracting.ps1");
+            crate::install::self_extracting::generate_self_extracting_ps1_script(
+                &[
+                    ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
+                    ("PORT", &arguments.port.to_string()),
+                    ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
+                ],
+                &target_script_path,
+            )?;
+            // Start the self-extracting script in the background
+            if let Err(e) = std::process::Command::new(&target_script_path).output() {
+                eprintln!("Failed to start self-extracting PowerShell script: {e}");
+            } else {
+                println!("Started self-extracting agent PowerShell script in background.");
             }
         }
         #[cfg(target_os = "macos")]
@@ -175,12 +203,16 @@ pub(crate) fn get_inferred_init_system() -> InitSystem {
         } else if is_openrc() {
             InitSystem::OpenRC
         } else {
-            InitSystem::Serviceless
+            InitSystem::SelfExtractingShell
         }
     }
     #[cfg(target_os = "macos")]
     {
         InitSystem::Launchd
+    }
+    #[cfg(target_os = "windows")]
+    {
+        InitSystem::SelfExtractingPwsh
     }
 }
 
@@ -220,6 +252,16 @@ pub(crate) fn get_default_interface() -> Option<String> {
         }
         None
     }
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args(["-Command", "Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1 -ExpandProperty InterfaceAlias"])
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() { Some(text) } else { None }
+    }
 }
 
 /// Retrieves the MAC address for the named network interface.
@@ -249,6 +291,16 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
             }
         }
         None
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args(["-Command", &format!("Get-NetAdapter | Where-Object {{ $_.Name -eq '{}' }} | Select-Object -ExpandProperty MacAddress", interface)])
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() { Some(text) } else { None }
     }
 }
 
@@ -286,6 +338,16 @@ pub(crate) fn get_ip(interface: &str) -> Option<String> {
             }
         }
         None
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args(["-Command", &format!("Get-NetIPAddress | Where-Object {{ $_.InterfaceAlias -eq '{}' -and $_.AddressFamily -eq 'IPv4' }} | Select-Object -First 1 -ExpandProperty IPAddress", interface)])
+            .output()
+            .ok()?;
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !text.is_empty() { Some(text) } else { None }
     }
 }
 

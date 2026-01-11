@@ -26,7 +26,7 @@ pub struct Args {
     #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
-    /// Path to the serviceless script, only used if init-system is `serviceless`.
+    /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
     #[arg(long = "script-path")]
     pub script_path: Option<String>,
 }
@@ -37,17 +37,23 @@ pub(crate) struct ServiceConfig {
     pub port: u16,
 }
 
-// TODO: add unit tests for the parsing functions (conceptually as inverse of the generation of the service files, might need to modularize things)
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
-    let custom_path = if args.init_system == InitSystem::Serviceless {
-        args.script_path
+    let custom_path = match args.init_system {
+        InitSystem::SelfExtractingPwsh => args
+            .script_path
             .clone()
-            .unwrap_or_else(|| format!("{}_serviceless.sh", BINARY_NAME))
-    } else {
-        if args.script_path.is_some() {
-            return Err("Script path is only valid for serviceless init system".to_string());
+            .unwrap_or_else(|| format!("{}_self_extracting.ps1", BINARY_NAME)),
+        #[cfg(unix)]
+        InitSystem::SelfExtractingShell => args
+            .script_path
+            .clone()
+            .unwrap_or_else(|| format!("{}_self_extracting.sh", BINARY_NAME)),
+        _ => {
+            if args.script_path.is_some() {
+                return Err("Script path is only valid for SelfExtracting* init system".to_string());
+            }
+            "".to_string()
         }
-        "".to_string()
     };
 
     Ok(match args.init_system {
@@ -55,7 +61,9 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::Systemd => parse_systemd_config()?,
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => parse_openrc_config()?,
-        InitSystem::Serviceless => parse_serviceless_config(&custom_path)?,
+        #[cfg(unix)]
+        InitSystem::SelfExtractingShell => parse_self_extracting_shell_config(&custom_path)?,
+        InitSystem::SelfExtractingPwsh => parse_self_extracting_pwsh_config(&custom_path)?,
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => parse_launchd_config()?,
     })
@@ -169,36 +177,64 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
     )
 }
 
-fn parse_serviceless_content(content: &str) -> Result<ServiceConfig, String> {
-    let mut secret = None;
-    let mut port = None;
+#[cfg(unix)]
+fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, String> {
+    let Some(secret) = content.lines().find_map(|line| {
+        line.strip_prefix("export SHUTHOST_SHARED_SECRET=\"")
+            .and_then(|s| s.strip_suffix("\""))
+    }) else {
+        return Err("SHUTHOST_SHARED_SECRET not found in self-extracting script".to_string());
+    };
+    let Some(port) = content.lines().find_map(|line| {
+        line.strip_prefix("export PORT=\"")
+            .and_then(|s| s.strip_suffix("\""))
+            .and_then(|s| s.parse().ok())
+    }) else {
+        return Err("PORT not found in self-extracting script".to_string());
+    };
 
-    for line in content.lines() {
-        if line.starts_with("SHUTHOST_SHARED_SECRET=") {
-            secret = Some(line.split('=').nth(1).unwrap_or("").to_string());
-        }
-        if line.starts_with("PORT=") {
-            port = Some(
-                line.split('=')
-                    .nth(1)
-                    .unwrap_or("")
-                    .parse()
-                    .map_err(|_| "Invalid port".to_string())?,
-            );
-        }
-    }
-
-    match (secret, port) {
-        (Some(s), Some(p)) => Ok(ServiceConfig { secret: s, port: p }),
-        _ => Err("Failed to parse secret and port from serviceless script".to_string()),
-    }
+    Ok(ServiceConfig {
+        secret: secret.to_string(),
+        port,
+    })
 }
 
-fn parse_serviceless_config(path: &str) -> Result<ServiceConfig, String> {
+#[cfg(unix)]
+fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
 
-    parse_serviceless_content(&content)
+    parse_self_extracting_shell_content(&content)
+}
+
+fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, String> {
+    let Some(secret) = content.lines().find_map(|line| {
+        line.strip_prefix("$env:SHUTHOST_SHARED_SECRET = \"")
+            .and_then(|s| s.strip_suffix("\""))
+    }) else {
+        return Err(
+            "SHUTHOST_SHARED_SECRET not found in self-extracting PowerShell script".to_string(),
+        );
+    };
+    let Some(port) = content.lines().find_map(|line| {
+        line.strip_prefix("$env:PORT = \"")
+            .and_then(|s| s.strip_suffix("\""))
+            .and_then(|s| s.parse().ok())
+    }) else {
+        return Err("PORT not found in self-extracting PowerShell script".to_string());
+    };
+
+    Ok(ServiceConfig {
+        secret: secret.to_string(),
+        port,
+    })
+}
+
+fn parse_self_extracting_pwsh_config(path: &str) -> Result<ServiceConfig, String> {
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+
+    parse_self_extracting_pwsh_content(&content)
 }
 
 #[cfg(any(target_os = "macos", test))]
@@ -277,14 +313,27 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_serviceless_content() {
+    fn test_parse_self_extracting_shell_content() {
         let content = r#"
-SHUTHOST_SHARED_SECRET=test_secret
-PORT=1234
-SHUTDOWN_COMMAND=test cmd
+export SHUTHOST_SHARED_SECRET="test_secret"
+export PORT="1234"
+export SHUTDOWN_COMMAND="test cmd"
 "#;
 
-        let config = parse_serviceless_content(content).unwrap();
+        let config = parse_self_extracting_shell_content(content).unwrap();
+        assert_eq!(config.secret, "test_secret");
+        assert_eq!(config.port, 1234);
+    }
+
+    #[test]
+    fn test_parse_self_extracting_pwsh_content() {
+        let content = r#"
+$env:SHUTHOST_SHARED_SECRET = "test_secret"
+$env:PORT = "1234"
+$env:SHUTDOWN_COMMAND = "test cmd"
+"#;
+
+        let config = parse_self_extracting_pwsh_content(content).unwrap();
         assert_eq!(config.secret, "test_secret");
         assert_eq!(config.port, 1234);
     }

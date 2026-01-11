@@ -1,0 +1,5 @@
+[[files]]
+path = "/root/shuthost_direct_control"
+perms = "755"
+type = "POSIX shell script"
+

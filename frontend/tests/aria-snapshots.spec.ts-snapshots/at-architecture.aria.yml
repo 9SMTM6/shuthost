@@ -20,11 +20,11 @@
             - cell "✅ Binary ✅ Docker"
             - cell "✅ Binary ❌ Docker ✅ Linux VM (bridged networking)"
             - cell "❌ Binary ❌ Docker ❌ WSL ✅ Linux VM (bridged networking)"
-          - row "Host Agent ✅ Binary ✅ Binary ❌ Binary ❌ WSL":
+          - row "Host Agent ✅ Binary ✅ Binary ✅ Self-extracting (manual service setup required)":
             - cell "Host Agent"
             - cell "✅ Binary"
             - cell "✅ Binary"
-            - cell "❌ Binary ❌ WSL"
+            - cell "✅ Self-extracting (manual service setup required)"
           - row "Client ✅ Shell ✅ Docker ✅ Shell ✅ Docker ✅ PowerShell ✅ Docker ✅ WSL (Shell)":
             - cell "Client"
             - cell "✅ Shell ✅ Docker"

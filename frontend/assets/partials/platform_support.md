@@ -28,7 +28,7 @@
                     <td>Host Agent</td>
                     <td>✅ Binary</td>
                     <td>✅ Binary</td>
-                    <td>❌ Binary<br>❌ WSL</td>
+                    <td>✅ Self-extracting (manual service setup required)</td>
                 </tr>
                 <tr>
                     <td>Client</td>

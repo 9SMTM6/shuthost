@@ -11,6 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+base64.workspace = true
 clap.workspace = true
 secrecy.workspace = true
 shuthost_common.workspace = true

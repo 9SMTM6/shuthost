@@ -33,9 +33,39 @@ pub struct ControlScriptValues {
     pub hostname: String,
 }
 
-pub fn generate_control_script_from_values(values: &ControlScriptValues) -> String {
-    include_str!("../../scripts/direct_control/direct_control.tmpl.sh")
-        .replace("{host_ip}", &values.host_ip)
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum ScriptType {
+    /// A .sh script for macOS/Linux/Unix hosts
+    UnixShell,
+    /// A .ps1 PowerShell script (should support all platforms with PowerShell installed)
+    Pwsh,
+}
+
+impl std::fmt::Display for ScriptType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            ScriptType::UnixShell => write!(f, "unix-shell"),
+            ScriptType::Pwsh => write!(f, "pwsh"),
+        }
+    }
+}
+
+const fn get_default_script_type() -> ScriptType {
+    #[cfg(target_os = "windows")]
+    {
+        ScriptType::Pwsh
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        ScriptType::UnixShell
+    }
+}
+
+pub fn generate_control_script_from_values(
+    raw: &'static str,
+    values: &ControlScriptValues,
+) -> String {
+    raw.replace("{host_ip}", &values.host_ip)
         .replace("{port}", &values.port.to_string())
         .replace("{shared_secret}", &values.shared_secret)
         .replace("{mac_address}", &values.mac_address)
@@ -53,6 +83,7 @@ fn get_default_output_path() -> LossyPath {
 #[derive(Debug, clap::Parser)]
 pub struct Args {
     /// Output path for the generated control script.
+    /// Powershell scripts will have a .ps1 extension automatically added.
     #[arg(long = "output", short = 'o', default_value_t = get_default_output_path())]
     pub output: LossyPath,
 
@@ -61,10 +92,10 @@ pub struct Args {
     pub init_system: InitSystem,
 
     /// Type of the script to generate.
-    #[arg(long = "type", default_value = "shell")]
-    pub script_type: String,
+    #[arg(long = "type", default_value_t = get_default_script_type())]
+    pub script_type: ScriptType,
 
-    /// Path to the serviceless script, only used if init-system is `serviceless`.
+    /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
     #[arg(long = "script-path")]
     pub script_path: Option<String>,
 }
@@ -72,6 +103,7 @@ pub struct Args {
 pub(crate) fn generate_control_script(
     init_system: InitSystem,
     script_path: Option<&str>,
+    script_type: ScriptType,
 ) -> Result<String, String> {
     let config = parse_config(&registration::Args {
         init_system,
@@ -98,26 +130,42 @@ pub(crate) fn generate_control_script(
         hostname,
     };
 
-    Ok(generate_control_script_from_values(&values))
+    Ok(match script_type {
+        ScriptType::UnixShell => generate_control_script_from_values(
+            include_str!("../../scripts/enduser_templates/direct_control.tmpl.sh"),
+            &values,
+        ),
+        ScriptType::Pwsh => generate_control_script_from_values(
+            include_str!("../../scripts/enduser_templates/direct_control.tmpl.ps1"),
+            &values,
+        ),
+    })
 }
 
 pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
-    let script = generate_control_script(args.init_system, args.script_path.as_deref())?;
+    let script = generate_control_script(
+        args.init_system,
+        args.script_path.as_deref(),
+        args.script_type,
+    )?;
 
-    let output_path = &args.output.0;
+    let mut output_path = args.output.0.clone();
+    if matches!(args.script_type, ScriptType::Pwsh) {
+        output_path.set_extension("ps1");
+    }
 
-    std::fs::write(output_path, &script)
+    std::fs::write(&output_path, &script)
         .map_err(|e| format!("Failed to write script to {}: {}", output_path.display(), e))?;
 
     // Make executable
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(output_path)
+        let mut perms = std::fs::metadata(&output_path)
             .map_err(|e| format!("Failed to get metadata: {}", e))?
             .permissions();
         perms.set_mode(0o755);
-        std::fs::set_permissions(output_path, perms)
+        std::fs::set_permissions(&output_path, perms)
             .map_err(|e| format!("Failed to set permissions: {}", e))?;
     }
 

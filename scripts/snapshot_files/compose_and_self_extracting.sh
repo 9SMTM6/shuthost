@@ -20,7 +20,7 @@ else
 fi
 
 # Configuration
-OUTPUT_DIR="./install-file-snapshots/docker-compose"
+OUTPUT_DIR="./install-file-snapshots/compose-and-self-extracting"
 BASE_IMAGE="shuthost-compose"
 
 trap cleanup EXIT
@@ -53,14 +53,28 @@ sleep 5
 podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-coordinator-installed"
 
 # Now install the agent in the same container
-# This will end up installing the serviceless agent, since it can't detect an init system in this container.
+# This will end up installing the self-extracting-shell agent, since it can't detect an init system in this container.
 # We override the OS to linux-musl since the coordinator we built only contains that agent.
+# TODO also test:
+  # curl -k -fsSLO 'https://localhost:8081/download/host_agent_installer.ps1'; pwsh -ExecutionPolicy Bypass -File ./host_agent_installer.ps1 https://localhost:8081 --os linux-musl &&
+  # curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 --os linux-musl --init-system=self-extracting-pwsh
 podman exec -w /workspace "temp-$BASE_IMAGE-container" sh -c "
-  curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 --os linux-musl
+  curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 --os linux-musl &&
+  curl -k -fsSLO 'https://localhost:8080/download/host_agent_installer.ps1'; pwsh -ExecutionPolicy Bypass -File ./host_agent_installer.ps1 https://localhost:8080 --os linux-musl --init-system=self-extracting-pwsh
 " || true
 
 # Commit to final installed image
 podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-agent-installed"
+
+# Generate direct control scripts
+#  we need to specify the output path, otherwise it'll contain the randomly generated docker hostname
+podman exec "temp-$BASE_IMAGE-container" sh -c "
+    ./shuthost_host_agent_self_extracting generate-direct-control --output /root/shuthost_direct_control &&
+    ./shuthost_host_agent_self_extracting.ps1 generate-direct-control --output /root/shuthost_direct_control --type pwsh
+"
+
+# Commit to direct control installed image
+podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-direct-control-installed"
 
 # Now install the client in the same container
 podman exec -w /workspace "temp-$BASE_IMAGE-container" sh -c "
@@ -79,4 +93,4 @@ podman rm --force -t 1 "temp-$BASE_IMAGE-container" >/dev/null 2>&1
 do_diff
 
 # Diff client files
-process_diff "$BASE_IMAGE-client-installed" "$BASE_IMAGE-agent-installed" "./install-file-snapshots/client_files.toml"
+process_diff "$BASE_IMAGE-client-installed" "$BASE_IMAGE-direct-control-installed" "./install-file-snapshots/client.toml"
