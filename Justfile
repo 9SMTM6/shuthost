@@ -114,8 +114,9 @@ update_file_snapshots:
 
 install_test_scripts:
     ./scripts/tests/enduser_install_scripts.sh
-    ./scripts/tests/direct-control-openrc.sh
-    ./scripts/tests/direct-control-systemd.sh
+    ./scripts/tests/direct-control-alpine.sh
+    ./scripts/tests/direct-control-pwsh.sh
+    ./scripts/tests/direct-control-ubuntu.sh
     ./scripts/tests/service-installation-openrc.sh
     ./scripts/tests/service-installation-systemd.sh
 

@@ -11,6 +11,7 @@ on:
     types: [completed]
 
 jobs:
+  # TODO: doesnt work correctly, at least on manual triggers, IDK if the triggers do actually trigger
   deploy_gh_pages:
     runs-on: ubuntu-latest
     permissions:
