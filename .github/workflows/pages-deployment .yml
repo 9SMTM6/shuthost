@@ -27,13 +27,21 @@ jobs:
           echo "Proceed with tag release deployment"
         else
           echo "Not a tag push, skipping"
-          exit 0
+          exit 1
+        fi
+    - name: Set tag
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+        elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+          TAG=$(echo "${{ github.event.workflow_run.head_ref }}" | sed 's|refs/tags/||')
+          echo "TAG=$TAG" >> $GITHUB_ENV
         fi
     - uses: actions/checkout@v6
 
     - name: Download coordinator binary
       run: |
-        gh release download ${{ github.event.release.tag_name }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
+        gh release download ${{ env.TAG || 'latest' }} --repo ${{ github.repository }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
         tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
         chmod +x shuthost_coordinator
 
