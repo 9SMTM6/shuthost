@@ -93,7 +93,10 @@ function Test-WolPacketReachability {
     Start-Sleep -Seconds 1
 
     # Test via coordinator API
-    $TEST_RESULT = & $curlCmd $curlOpts -s -X POST "$RemoteUrl/api/m2m/test_wol?port=$WOL_TEST_PORT"
+    $TEST_RESULT = & $curlCmd $curlOpts -s -X POST "$RemoteUrl/api/m2m/test_wol?port=$WOL_TEST_PORT" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        $TEST_RESULT = ""
+    }
 
     # Stop the job
     Stop-Job $job -ErrorAction SilentlyContinue

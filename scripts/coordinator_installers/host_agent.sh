@@ -113,7 +113,7 @@ test_wol_packet_reachability() {
     sleep 1
 
     # Test via coordinator API
-    TEST_RESULT=$(curl $CURL_OPTS -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT")
+    TEST_RESULT=$(curl $CURL_OPTS -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT" 2>/dev/null || echo "")
     # kill the agent test process, if its still running.
     kill $RECEIVER_PID || true
 
