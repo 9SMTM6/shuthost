@@ -109,19 +109,18 @@ function Verify-Checksum {
     Write-Host "Computed checksum: $computedChecksum"
     Write-Host
 
-    if ($env:CI_MODE -eq 'true') {
-        Write-Host "CI mode: Skipping checksum verification prompt."
-        return
-    }
-
     Write-Host "Please verify this checksum against the one provided for $FILENAME on the releases page:"
     Write-Host $BASE_URL
     Write-Host
 
-    $reply = Read-Host "Have you verified the checksum? (y/N)"
-    if ($reply -notmatch '^[Yy]') {
-        Write-Error "Checksum verification aborted. Installation cancelled."
-        exit 1
+    try {
+        $reply = Read-Host "Have you verified the checksum? (y/N)"
+        if ($reply -notmatch '^[Yy]') {
+            Write-Error "Checksum verification aborted. Installation cancelled."
+            exit 1
+        }
+    } catch {
+        Write-Host "Non-interactive mode: Skipping checksum verification prompt (defaulting to yes)."
     }
 }
 

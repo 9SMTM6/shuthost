@@ -79,24 +79,24 @@ verify_checksum() {
     COMPUTED_CHECKSUM=$(sha256sum "$FILENAME" | cut -d' ' -f1)
     echo "Computed checksum: $COMPUTED_CHECKSUM"
     echo
-    if [ "${CI_MODE:-false}" = true ]; then
-        echo "CI mode: Skipping checksum verification prompt."
-        return
-    fi
     echo "Please verify this checksum against the one provided for $FILENAME on the releases page:"
     echo "$BASE_URL"
     echo
-    printf "Have you verified the checksum? (y/N): "
-    read REPLY
-    echo
-    case "$REPLY" in
-        [Yy]*)
-            ;;
-        *)
-            echo "Checksum verification aborted. Installation cancelled."
-            exit 1
-            ;;
-    esac
+    if [ -t 0 ]; then
+        printf "Have you verified the checksum? (y/N): "
+        read REPLY
+        echo
+        case "$REPLY" in
+            [Yy]*)
+                ;;
+            *)
+                echo "Checksum verification aborted. Installation cancelled."
+                exit 1
+                ;;
+        esac
+    else
+        echo "Non-interactive mode: Skipping checksum verification prompt (defaulting to yes)."
+    fi
 }
 
 embed_script() {
