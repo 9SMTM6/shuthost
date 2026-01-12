@@ -23,7 +23,7 @@ pub enum Command {
     /// Launch the control web service (WebUI) for managing hosts.
     ControlService(ServiceArgs),
 
-    #[cfg(all(not(coverage), any(target_os = "linux", target_os = "macos")))]
+    #[cfg(unix)]
     /// Install the coordinator service to start on boot.
     Install(crate::install::Args),
 

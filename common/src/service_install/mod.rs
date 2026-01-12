@@ -8,7 +8,7 @@ pub mod openrc;
 pub mod systemd;
 
 /// Returns `true` if the current process is running as superuser (root).
-#[cfg(any(target_os = "linux", target_os = "macos", target_os = "freebsd"))]
+#[cfg(unix)]
 pub fn is_superuser() -> bool {
     nix::unistd::geteuid().as_raw() == 0
 }
