@@ -92,7 +92,7 @@ Choose either the binary (recommended for reliability and WOL support) or the co
   ```bash
   curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
   ```
-  This script will automatically detect your platform, download the appropriate binary, verify the checksum (with user confirmation), and install the coordinator as a system service.
+  This script will automatically detect your platform, download the appropriate binary, print the checksum, and install the coordinator as a system service.
 
 - Or follow the manual steps:
   - Download the latest release from: https://github.com/9SMTM6/shuthost/releases/latest
@@ -178,9 +178,10 @@ curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_
 sudo shuthost_host_agent generate-direct-control
 ```
 ```bash
-# Move the script to the device you want to use as the controller (same LAN):
-chmod +x shuthost_direct_control_<hostname>
+# Move the script to the device you want to use as the controller (same LAN).
 # copy via scp, USB, etc.
+# Ensure its executable (on Unix):
+chmod +x shuthost_direct_control_<hostname>
 ```
 
 After moving the direct-control script to the controller device, you can run `./shuthost_direct_control_<hostname> wake`, `./shuthost_direct_control_<hostname> status` or `./shuthost_direct_control_<hostname> shutdown` while on the same LAN. See the example document for tradeoffs and security notes.
