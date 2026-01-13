@@ -12,7 +12,7 @@ build_musl
 docker build -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .
 
 # Run the test
-docker run --rm -t --privileged -v "$(pwd)":/repo shuthost-test-alpine /bin/sh -c "
+docker run --rm -t --privileged -v "$(pwd)":/repo --env-file scripts/tests/coverage.env shuthost-test-alpine /bin/sh -c "
 cd /repo
 ./scripts/tests/coordinator_and_agent_service_installation.sh ./target/x86_64-unknown-linux-musl/release/shuthost_coordinator
 # rc-service shuthost_host_agent status

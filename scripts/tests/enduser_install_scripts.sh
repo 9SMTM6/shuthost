@@ -9,11 +9,11 @@ docker build -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
 docker build -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .
 
 alpine_test() {
-    docker run --rm -t shuthost-test-alpine "$1"
+    docker run --rm -t -v "$(pwd)":/repo --env-file scripts/tests/coverage.env shuthost-test-alpine /bin/sh -c "cd /repo; $1"
 }
 
 systemd_test() {
-    docker run --rm -t --privileged shuthost-test-systemd "$1"
+    docker run --rm -t --privileged -v "$(pwd)":/repo --env-file scripts/tests/coverage.env shuthost-test-systemd /bin/sh -c "cd /repo; $1"
 }
 
 set +e
