@@ -4,13 +4,15 @@
 
 set -e
 
-# Check if the cargo llvm-cov subcommand exists and set up the environment
-if cargo llvm-cov --help > /dev/null 2>&1; then
-    eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
-fi
+. ./scripts/helpers.sh
 
-# Build the host_agent binary
-cargo build --bin shuthost_host_agent
+if [ -n "$1" ]; then
+    directory="./target/x86_64-unknown-linux-gnu/debug"
+    mkdir -p ${directory}
+    cp "$1" "${directory}/shuthost_host_agent"
+else
+    build_gnu
+fi
 
 # Build the container
 docker build -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
