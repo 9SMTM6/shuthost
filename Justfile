@@ -96,8 +96,8 @@ coverage:
     ./scripts/tests/service-installation-openrc.sh ./target/debug/shuthost_coordinator
     ./scripts/snapshot_files/openrc.sh ./target/debug/shuthost_coordinator
     ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
-    cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|.*cargo/registry/src/.*|tests/integration/.*"
-    cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|.*cargo/registry/src/.*|tests/integration/.*"
+    cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|src/bin/host_agent.rs|.*cargo/registry/src/.*|tests/integration/.*"
+    cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|src/bin/host_agent.rs|.*cargo/registry/src/.*|tests/integration/.*"
 
 ci_cargo_deny:
     cargo +stable --locked deny check --hide-inclusion-graph
