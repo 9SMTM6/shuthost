@@ -11,13 +11,15 @@ build_musl() {
             # build with coverage support
             eval \"\$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)\"
             cargo build --bin shuthost_host_agent
+            cp ./target/debug/shuthost_host_agent ./target/release/
             cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/debug/
             # copy agent debug build to release path for inclusion in coordinator
-            cp ./target/x86_64-unknown-linux-musl/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
+            cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
             cargo build --bin shuthost_coordinator --features=include_linux_musl_x86_64_agent
+            cp ./target/debug/shuthost_coordinator ./target/release/
             cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/debug/
             # copy coordinator debug build to release path for other scripts that expect the binary there
-            cp ./target/x86_64-unknown-linux-musl/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/release/
+            cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/release/
         "
 }
 

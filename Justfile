@@ -89,6 +89,9 @@ coverage:
     # just install_test_scripts
     # ought to run this before the musl tests to ensure its running the gnu binary (not that it should make a huge difference)
     ./scripts/tests/direct-control-ubuntu.sh
+    ./scripts/tests/service-installation-systemd.sh
+    # now run musl tests
+    ./scripts/tests/service-installation-openrc.sh
     ./scripts/tests/direct-control-alpine.sh
     ./scripts/tests/direct-control-pwsh.sh
     cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|usr/local/cargo/registry/.*"
