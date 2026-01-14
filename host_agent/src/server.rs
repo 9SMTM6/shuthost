@@ -8,6 +8,7 @@ use std::{
 
 use clap::Parser;
 use secrecy::SecretString;
+use shuthost_common::UnwrapToStringExt;
 
 use crate::{
     commands::execute_shutdown,
@@ -76,7 +77,7 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Action {
     let peer_addr = stream
         .peer_addr()
         .map(|a| a.to_string())
-        .unwrap_or_else(|_| "unknown".to_string());
+        .unwrap_or_to_string("unknown");
     match stream.read(&mut buffer) {
         Ok(size) => {
             let Some(data) = buffer.get(..size) else {

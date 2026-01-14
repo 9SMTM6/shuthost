@@ -11,6 +11,7 @@ use std::{
 };
 
 use base64::{Engine as _, engine::general_purpose};
+use shuthost_common::ResultMapErrExt;
 
 /// Generates a self-extracting shell script containing the current binary payload.
 ///
@@ -26,8 +27,8 @@ pub fn generate_self_extracting_script(
     env_vars: &[(&str, &str)],
     target_script_path: &str,
 ) -> Result<(), String> {
-    let self_path = env::current_exe().map_err(|e| e.to_string())?;
-    let self_binary = fs::read(&self_path).map_err(|e| e.to_string())?;
+    let self_path = env::current_exe().map_err_to_string_simple()?;
+    let self_binary = fs::read(&self_path).map_err_to_string_simple()?;
 
     // Format environment variable declarations
     let env_section = env_vars
@@ -59,17 +60,17 @@ __BINARY_PAYLOAD_BELOW__
 "#
     );
 
-    let mut script = File::create(target_script_path).map_err(|e| e.to_string())?;
+    let mut script = File::create(target_script_path).map_err_to_string_simple()?;
     script
         .write_all(script_header.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     let encoded = general_purpose::STANDARD.encode(&self_binary);
     script
         .write_all(encoded.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750))
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     println!("Generated self-extracting script: {target_script_path}");
     Ok(())
@@ -90,8 +91,8 @@ pub fn generate_self_extracting_ps1_script(
     env_vars: &[(&str, &str)],
     target_script_path: &str,
 ) -> Result<(), String> {
-    let self_path = env::current_exe().map_err(|e| e.to_string())?;
-    let self_binary = fs::read(&self_path).map_err(|e| e.to_string())?;
+    let self_path = env::current_exe().map_err_to_string_simple()?;
+    let self_binary = fs::read(&self_path).map_err_to_string_simple()?;
 
     // Format environment variable declarations
     let env_section = env_vars
@@ -139,14 +140,14 @@ __BINARY_PAYLOAD_BELOW__
 "#,
     );
 
-    let mut script = File::create(target_script_path).map_err(|e| e.to_string())?;
+    let mut script = File::create(target_script_path).map_err_to_string_simple()?;
     script
         .write_all(script_header.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     let encoded = general_purpose::STANDARD.encode(&self_binary);
     script
         .write_all(encoded.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     #[cfg(unix)]
     fs::set_permissions(target_script_path, fs::Permissions::from_mode(0o750)).unwrap_or(());
 
