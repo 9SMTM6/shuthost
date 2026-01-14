@@ -79,12 +79,12 @@ coverage:
     eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
     # note: removes binaries too (only in combination with previous line)
     cargo llvm-cov clean --workspace
-    # note: building for a provided target instead of native 
+    # note: building for a provided target instead of native
     # doesnt seem to result in an instrumented binary
     . ./scripts/helpers.sh && build_gnu
-    # cd frontend && npm run test && cd ..
-    # just build_gh_pages --provided-binary=target/debug/shuthost_coordinator
-    # cargo test --workspace --all-targets
+    cd frontend && npm run test && cd ..
+    just build_gh_pages --provided-binary=target/debug/shuthost_coordinator
+    cargo test --workspace --all-targets
     # ought to run this before the musl tests to ensure its running the gnu binary (not that it should make a huge difference)
     ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
     ./scripts/tests/service-installation-systemd.sh ./target/debug/shuthost_coordinator
