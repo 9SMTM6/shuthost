@@ -4,6 +4,7 @@ use crate::install::{
     BINARY_NAME, InitSystem, get_default_interface, get_hostname, get_inferred_init_system, get_ip,
     get_mac,
 };
+use shuthost_common::ResultMapErrExt;
 
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
@@ -15,7 +16,7 @@ fn parse_config_from_path(
 ) -> Result<ServiceConfig, String> {
     let path = get_path_fn(BINARY_NAME);
     let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        std::fs::read_to_string(&path).map_err_to_string(&format!("Failed to read {}", path))?;
     parse_content_fn(&content)
 }
 
@@ -202,7 +203,7 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
 #[cfg(unix)]
 fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
-        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {}", path))?;
 
     parse_self_extracting_shell_content(&content)
 }
@@ -232,7 +233,7 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
 
 fn parse_self_extracting_pwsh_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
-        std::fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {}", path))?;
 
     parse_self_extracting_pwsh_content(&content)
 }

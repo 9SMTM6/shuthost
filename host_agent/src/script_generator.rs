@@ -6,6 +6,7 @@ use crate::{
     },
     registration::{self, parse_config},
 };
+use shuthost_common::{ResultMapErrExt, UnwrapToStringExt};
 
 #[derive(Debug, Clone)]
 pub struct LossyPath(PathBuf);
@@ -73,7 +74,7 @@ pub fn generate_control_script_from_values(
 }
 
 fn get_default_output_path() -> LossyPath {
-    let hostname = get_hostname().unwrap_or_else(|| "unknown".to_string());
+    let hostname = get_hostname().unwrap_or_to_string("unknown");
     LossyPath(PathBuf::from(format!(
         "shuthost_direct_control_{}",
         hostname
@@ -111,8 +112,8 @@ pub(crate) fn generate_control_script(
     })?;
 
     let (ip, mac) = if let Some(interface) = get_default_interface() {
-        let ip = get_ip(&interface).unwrap_or_else(|| "127.0.0.1".to_string());
-        let mac = get_mac(&interface).unwrap_or_else(|| "00:00:00:00:00:00".to_string());
+        let ip = get_ip(&interface).unwrap_or_to_string("127.0.0.1");
+        let mac = get_mac(&interface).unwrap_or_to_string("00:00:00:00:00:00");
         (ip, mac)
     } else {
         eprintln!(
@@ -120,7 +121,7 @@ pub(crate) fn generate_control_script(
         );
         ("127.0.0.1".to_string(), "00:00:00:00:00:00".to_string())
     };
-    let hostname = get_hostname().unwrap_or_else(|| "unknown".to_string());
+    let hostname = get_hostname().unwrap_or_to_string("unknown");
 
     let values = ControlScriptValues {
         host_ip: ip,
@@ -155,18 +156,18 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
     }
 
     std::fs::write(&output_path, &script)
-        .map_err(|e| format!("Failed to write script to {}: {}", output_path.display(), e))?;
+        .map_err_to_string(&format!("Failed to write script to {}", output_path.display()))?;
 
     // Make executable
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         let mut perms = std::fs::metadata(&output_path)
-            .map_err(|e| format!("Failed to get metadata: {}", e))?
+            .map_err_to_string("Failed to get metadata")?
             .permissions();
         perms.set_mode(0o755);
         std::fs::set_permissions(&output_path, perms)
-            .map_err(|e| format!("Failed to set permissions: {}", e))?;
+            .map_err_to_string("Failed to set permissions")?;
     }
 
     println!("Control script generated at: {}", output_path.display());
