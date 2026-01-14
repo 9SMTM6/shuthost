@@ -11,6 +11,8 @@
 )]
 
 use clap::Parser;
+use nix::sys::signal::{Signal, kill};
+use nix::unistd::Pid;
 use secrecy::SecretString;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;
@@ -35,6 +37,7 @@ pub(crate) enum KillOnDrop {
         port: u16,
         secret: SecretString,
     },
+    Binary(Option<std::process::Child>),
 }
 
 impl Drop for KillOnDrop {
@@ -57,12 +60,24 @@ impl Drop for KillOnDrop {
                     drop(handle.join());
                 }
             }
+            KillOnDrop::Binary(child_opt) => {
+                if let Some(child) = child_opt {
+                    let _ = kill(Pid::from_raw(child.id() as i32), Signal::SIGTERM);
+                    drop(child.wait());
+                }
+            }
         }
     }
 }
 
-pub(crate) fn get_agent_bin() -> &'static str {
-    env!("CARGO_BIN_EXE_host_agent")
+/// Spawn the host_agent binary as a separate process with the provided args.
+pub(crate) fn spawn_host_agent_bin(args: &[&str]) -> KillOnDrop {
+    let child = std::process::Command::new(env!("CARGO_BIN_EXE_host_agent"))
+        .args(args)
+        .stdout(std::process::Stdio::null())
+        .spawn()
+        .expect("failed to spawn host_agent binary");
+    KillOnDrop::Binary(Some(child))
 }
 
 /// Spawn the coordinator service from a given config string.
@@ -76,7 +91,7 @@ pub(crate) fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> Kil
 
 /// Spawn the coordinator service from a given config file path.
 pub(crate) fn spawn_coordinator_with_config_file(config_path: &std::path::Path) -> KillOnDrop {
-    let cli = CoordinatorCli::parse_from(&[
+    let cli = CoordinatorCli::parse_from([
         "shuthost_coordinator",
         "control-service",
         "--config",
@@ -93,17 +108,16 @@ pub(crate) fn spawn_coordinator_with_config_file(config_path: &std::path::Path) 
     KillOnDrop::Coordinator(handle)
 }
 
-/// Spawn the host agent binary with the given secret, port, and shutdown command.
+/// Spawn the host agent in a separate thread with the given secret, port, and shutdown command.
 pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) -> KillOnDrop {
-    let args = [
+    let cli = AgentCli::parse_from([
         "shuthost_host_agent",
         "service",
         "--port",
         &port.to_string(),
         "--shutdown-command",
         shutdown_command,
-    ];
-    let cli = AgentCli::parse_from(&args);
+    ]);
     let mut config = match cli.command {
         shuthost_host_agent::Command::Service(opts) => opts,
         _ => panic!("Expected service command"),
