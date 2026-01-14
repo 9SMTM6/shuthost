@@ -88,11 +88,14 @@ coverage:
     # ought to run this before the musl tests to ensure its running the gnu binary (not that it should make a huge difference)
     ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
     ./scripts/tests/service-installation-systemd.sh ./target/debug/shuthost_coordinator
+    ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
     # now run musl tests
     . ./scripts/helpers.sh && build_musl
     ./scripts/tests/direct-control-alpine.sh ./target/debug/shuthost_host_agent
     ./scripts/tests/direct-control-pwsh.sh ./target/debug/shuthost_host_agent
     ./scripts/tests/service-installation-openrc.sh ./target/debug/shuthost_coordinator
+    ./scripts/snapshot_files/openrc.sh ./target/debug/shuthost_coordinator
+    ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
     cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|usr/local/cargo/registry/.*"
     cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|usr/local/cargo/registry/.*"
 
