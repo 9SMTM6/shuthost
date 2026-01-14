@@ -7,6 +7,7 @@ tls_key.pem
 coverage/
 
 shuthost_direct_control
+shuthost_direct_control.ps1
 
 gh-pages
 
