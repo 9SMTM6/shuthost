@@ -155,8 +155,10 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
         output_path.set_extension("ps1");
     }
 
-    std::fs::write(&output_path, &script)
-        .map_err_to_string(&format!("Failed to write script to {}", output_path.display()))?;
+    std::fs::write(&output_path, &script).map_err_to_string(&format!(
+        "Failed to write script to {}",
+        output_path.display()
+    ))?;
 
     // Make executable
     #[cfg(unix)]
