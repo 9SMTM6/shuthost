@@ -1,20 +1,23 @@
 //! Integration tests for host_agent functionality
 
 use crate::common::{
-    get_agent_bin, get_free_port, spawn_coordinator_with_config, spawn_host_agent,
-    wait_for_agent_ready, wait_for_listening,
+    KillOnDrop, get_free_port, spawn_coordinator_with_config, spawn_host_agent,
+    spawn_host_agent_bin, wait_for_agent_ready, wait_for_listening,
 };
 use secrecy::SecretString;
 
 #[test]
 fn test_host_agent_binary_runs() {
-    let bin = get_agent_bin();
-    let output = std::process::Command::new(bin)
-        .args(["--help"])
-        .stdout(std::process::Stdio::null())
-        .output()
-        .expect("failed to run host_agent");
-    assert!(output.status.success() || output.status.code() == Some(0));
+    let mut guard = spawn_host_agent_bin(&["--help"]);
+    let KillOnDrop::Binary(ref mut child_opt) = guard else {
+        unreachable!("Should be binary variant");
+    };
+    let status = child_opt
+        .take()
+        .expect("to be the first to take")
+        .wait()
+        .expect("failed to wait");
+    assert!(status.success());
 }
 
 #[tokio::test]
