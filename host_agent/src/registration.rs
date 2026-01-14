@@ -70,7 +70,7 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     })
 }
 
-pub(crate) fn print_registration_config(config: &ServiceConfig) -> Result<(), String> {
+pub(crate) fn print_registration_config(config: &ServiceConfig) {
     let interface = &get_default_interface();
     if interface.is_none() {
         eprintln!(
@@ -98,8 +98,6 @@ pub(crate) fn print_registration_config(config: &ServiceConfig) -> Result<(), St
             .replace("{port}", &config.port.to_string())
             .replace("{secret}", &config.secret)
     );
-
-    Ok(())
 }
 
 #[cfg(any(target_os = "linux", test))]

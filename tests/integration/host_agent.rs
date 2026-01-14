@@ -8,7 +8,6 @@ use secrecy::SecretString;
 
 #[test]
 fn test_host_agent_binary_runs() {
-    // Use helper to run the built binary (respects CARGO_BIN_EXE_ env when present)
     let bin = get_agent_bin();
     let output = std::process::Command::new(bin)
         .args(["--help"])
