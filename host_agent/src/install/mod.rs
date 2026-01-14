@@ -182,7 +182,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     registration::print_registration_config(&registration::ServiceConfig {
         secret: arguments.shared_secret.clone(),
         port: arguments.port,
-    })?;
+    });
 
     Ok(())
 }

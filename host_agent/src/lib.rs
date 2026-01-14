@@ -67,9 +67,7 @@ pub fn inner_main(invocation: Cli) {
         },
         Command::Registration(args) => match registration::parse_config(&args) {
             Ok(config) => {
-                if let Err(e) = registration::print_registration_config(&config) {
-                    eprintln!("Error printing registration: {e}");
-                }
+                registration::print_registration_config(&config);
             }
             Err(e) => eprintln!("Error parsing config: {e}"),
         },
