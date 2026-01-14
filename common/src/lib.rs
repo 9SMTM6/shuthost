@@ -3,6 +3,10 @@
 //! This crate provides:
 //! - Timestamped HMAC message signing and validation
 //! - OS-specific service installation helpers
+#![expect(
+    clippy::missing_errors_doc,
+    reason = "The situation it maps to errors should be obvious."
+)]
 
 mod secrets;
 mod service_install;
