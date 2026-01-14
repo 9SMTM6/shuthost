@@ -6,7 +6,13 @@ set -e
 
 . ./scripts/helpers.sh
 
-build_musl
+if [ -n "$1" ]; then
+    directory="./target/x86_64-unknown-linux-musl/debug"
+    mkdir -p ${directory}
+    cp "$1" "${directory}/shuthost_coordinator"
+else
+    build_musl
+fi
 
 # Build the container
 docker build -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .

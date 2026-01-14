@@ -4,6 +4,7 @@
 set -e
 
 . ./scripts/snapshot_files/common.sh
+. ./scripts/helpers.sh
 
 # Configuration
 CONTAINERFILE="scripts/snapshot_files/Containerfile.systemd"
@@ -17,8 +18,7 @@ if [ -n "$1" ]; then
     mkdir -p ${directory}
     cp "$1" "${directory}/shuthost_coordinator"
 else
-    cargo build --bin shuthost_host_agent --target x86_64-unknown-linux-gnu
-    cargo build --bin shuthost_coordinator --target x86_64-unknown-linux-gnu --features=include_linux_x86_64_agent
+    build_gnu
 fi
 
 trap cleanup EXIT

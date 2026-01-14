@@ -9,12 +9,10 @@ set -ev
 . ./scripts/helpers.sh
 
 if [ -n "$1" ]; then
-    directory="./target/x86_64-unknown-linux-musl/debug"
     # we need this here for the build of the container in the compose setup
-    directory2="./target/x86_64-unknown-linux-musl/release"
-    mkdir -p ${directory} ${directory2}
+    directory="./target/x86_64-unknown-linux-musl/debug"
+    mkdir -p ${directory}
     cp "$1" "${directory}/shuthost_coordinator"
-    cp "$1" "${directory2}/shuthost_coordinator"
 else
     build_musl
 fi
