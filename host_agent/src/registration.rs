@@ -4,7 +4,7 @@ use crate::install::{
     BINARY_NAME, InitSystem, get_default_interface, get_hostname, get_inferred_init_system, get_ip,
     get_mac,
 };
-use shuthost_common::ResultMapErrExt;
+use shuthost_common::{ResultMapErrExt, UnwrapToStringExt};
 
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
@@ -43,12 +43,12 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::SelfExtractingPwsh => args
             .script_path
             .clone()
-            .unwrap_or_else(|| format!("{}_self_extracting.ps1", BINARY_NAME)),
+            .unwrap_or_to_string(&format!("{}_self_extracting.ps1", BINARY_NAME)),
         #[cfg(unix)]
         InitSystem::SelfExtractingShell => args
             .script_path
             .clone()
-            .unwrap_or_else(|| format!("{}_self_extracting.sh", BINARY_NAME)),
+            .unwrap_or_to_string(&format!("{}_self_extracting.sh", BINARY_NAME)),
         _ => {
             if args.script_path.is_some() {
                 return Err("Script path is only valid for SelfExtracting* init system".to_string());
