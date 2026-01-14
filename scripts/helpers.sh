@@ -3,6 +3,7 @@
 build_musl() {
     #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
     docker build --dns 8.8.8.8 -t shuthost-builder -f scripts/build.Containerfile .
+    mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug target/release target/debug
     docker run --rm \
         -v "$(pwd):/src" \
         -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
@@ -28,6 +29,7 @@ build_gnu() {
     if cargo llvm-cov --help > /dev/null 2>&1; then
         eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
     fi
+    mkdir -p target/x86_64-unknown-linux-gnu/release target/x86_64-unknown-linux-gnu/debug target/release target/debug target/x86_64-unknown-linux-musl/release/
 
     # Build the coordinator binary
     cargo build --bin shuthost_host_agent
