@@ -12,7 +12,6 @@ build_musl
 docker build -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .
 
 # Run the test
-docker run --rm -t --privileged -v "$(pwd)":/repo --env-file scripts/tests/coverage.env shuthost-test-alpine /bin/sh -c "
-cd /repo
+docker run --rm -t --privileged -v "$(pwd)":/repo --workdir /repo --env-file scripts/tests/coverage.env shuthost-test-alpine /bin/sh -c "
 ./scripts/tests/install-and-run-direct-control.sh ./target/x86_64-unknown-linux-musl/debug/shuthost_host_agent
 "

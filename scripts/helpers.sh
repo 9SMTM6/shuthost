@@ -2,23 +2,23 @@
 
 build_musl() {
     #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
-    docker build -t shuthost-builder -f scripts/build.Containerfile .
+    docker build --dns 8.8.8.8 -t shuthost-builder -f scripts/build.Containerfile .
     docker run --rm \
         -v "$(pwd):/src" \
         -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
         -v "$HOME/.cargo/git:/usr/local/cargo/git" \
         shuthost-builder sh -c "\
-            cargo build --bin shuthost_host_agent --target x86_64-unknown-linux-musl
+            # build with coverage support
+            eval \"\$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)\"
+            cargo build --bin shuthost_host_agent
+            cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/debug/
+            # copy agent debug build to release path for inclusion in coordinator
+            cp ./target/x86_64-unknown-linux-musl/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
+            cargo build --bin shuthost_coordinator --features=include_linux_musl_x86_64_agent
+            cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/debug/
+            # copy coordinator debug build to release path for other scripts that expect the binary there
+            cp ./target/x86_64-unknown-linux-musl/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/release/
         "
-    cp ./target/x86_64-unknown-linux-musl/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
-    docker run --rm \
-        -v "$(pwd):/src" \
-        -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
-        -v "$HOME/.cargo/git:/usr/local/cargo/git" \
-        shuthost-builder sh -c "\
-            cargo build --bin shuthost_coordinator --target x86_64-unknown-linux-musl --features=include_linux_musl_x86_64_agent
-        "
-    cp ./target/x86_64-unknown-linux-musl/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/release/
 }
 
 elevate_privileges() {
