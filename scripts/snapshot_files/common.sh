@@ -2,6 +2,14 @@
 
 # Common functions for snapshot scripts
 
+exec_with_coverage() {
+    podman exec --env-file scripts/tests/coverage.env -w /workspace "temp-$BASE_IMAGE-container" "$@"
+}
+
+commit_snapshot() {
+    podman commit "temp-$BASE_IMAGE-container" "$1"
+}
+
 # Use with trap cleanup EXIT
 cleanup() {
     echo "Cleaning up..."
@@ -19,40 +27,47 @@ do_snapshot() {
     # Build the base image from Containerfile
     podman build -f "$CONTAINERFILE" -t "$BASE_IMAGE-built" .
 
-    podman run -d -t --rm --privileged --name "temp-$BASE_IMAGE-container" "$BASE_IMAGE-built" sleep infinity
-    podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE"
+    podman run -d -t --rm --privileged -v "$(pwd)":/repo --name "temp-$BASE_IMAGE-container" "$BASE_IMAGE-built" sleep infinity
+    commit_snapshot "$BASE_IMAGE"
 
     # Install the coordinator
-    podman exec "temp-$BASE_IMAGE-container" //workspace/shuthost_coordinator install root
+    exec_with_coverage //workspace/shuthost_coordinator install root
+
+    # Set environment for the service
+    if [ "$BASE_IMAGE" = "shuthost-systemd" ]; then
+        exec_with_coverage sed -i '/\[Service\]/a Environment=LLVM_PROFILE_FILE=/repo/target/shuthost-%p-%16m.profraw' /etc/systemd/system/shuthost_coordinator.service
+    elif [ "$BASE_IMAGE" = "shuthost-openrc" ]; then
+        exec_with_coverage sed -i '2a export LLVM_PROFILE_FILE=/repo/target/shuthost-%p-%16m.profraw' /etc/init.d/shuthost_coordinator
+    fi
 
     # Enable TLS in the config
-    podman exec "temp-$BASE_IMAGE-container" sed -i 's/# \[server\.tls\]/[server.tls]/' /home/root/.config/shuthost_coordinator/config.toml
+    exec_with_coverage sed -i 's/# \[server\.tls\]/[server.tls]/' /home/root/.config/shuthost_coordinator/config.toml
 
     # Restart the service if restart_cmd provided
     if [ -n "$RESTART_CMD" ]; then
-        podman exec "temp-$BASE_IMAGE-container" sh -c "$RESTART_CMD" || true
+        exec_with_coverage sh -c "$RESTART_CMD" || true
         sleep 2
     fi
 
     # Commit to coordinator installed image
-    podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-coordinator-installed"
+    commit_snapshot "$BASE_IMAGE-coordinator-installed"
 
     # Now install the agent in the same container
-    podman exec "temp-$BASE_IMAGE-container" sh -c "
+    exec_with_coverage sh -c "
       curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 &&
       echo 'Installer completed, killing coordinator...'
       $STOP_CMD
     " || true
 
     # Commit to agent installed image
-    podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-agent-installed"
+    commit_snapshot "$BASE_IMAGE-agent-installed"
 
     # Generate direct control script
     #  we need to specify the output path, otherwise it'll contain the randomly generated docker hostname
-    podman exec "temp-$BASE_IMAGE-container" shuthost_host_agent generate-direct-control --output /root/shuthost_direct_control
+    exec_with_coverage shuthost_host_agent generate-direct-control --output /root/shuthost_direct_control
 
     # Commit to final installed image
-    podman commit "temp-$BASE_IMAGE-container" "$BASE_IMAGE-direct-control-installed"
+    commit_snapshot "$BASE_IMAGE-direct-control-installed"
 
     # Clean up the container
     podman rm --force -t 1 "temp-$BASE_IMAGE-container" >/dev/null 2>&1
