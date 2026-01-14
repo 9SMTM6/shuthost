@@ -1,13 +1,17 @@
+# build artifacts
 /target
+
+# Local config file for testing
 shuthost_coordinator.toml
+
+# Generated during test etc.
 tls_cert.pem
 tls_key.pem
-.DS_Store
-.vscode
 coverage/
-
 shuthost_direct_control
 shuthost_direct_control.ps1
+shuthost_host_agent
+shuthost_host_agent.ps1
 
 gh-pages
 
@@ -15,3 +19,7 @@ gh-pages
 *.db
 *.db-wal
 *.db-shm
+
+# OS and editor files
+.DS_Store
+.vscode
