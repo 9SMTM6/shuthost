@@ -11,7 +11,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::is_superuser;
+use crate::{ResultMapErrExt, is_superuser};
 
 /// Returns the systemd service file path for the given service name.
 pub fn get_service_path(name: &str) -> String {
@@ -33,7 +33,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         return Err("You must run this command as root or with sudo.".to_string());
     }
 
-    let binary_path = env::current_exe().map_err(|e| e.to_string())?;
+    let binary_path = env::current_exe().map_err_to_string_simple()?;
     let target_bin = PathBuf::from("/usr/sbin/").join(name);
     let service_name = format!("{name}.service");
 
@@ -55,21 +55,20 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         }
     }
 
-    fs::copy(binary_path, &target_bin).map_err(|e| e.to_string())?;
+    fs::copy(binary_path, &target_bin).map_err_to_string_simple()?;
     println!("Installed binary to {target_bin:?}");
     // Set binary permissions to 0755 (root can write, others can read/execute)
     fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
-        .map_err(|e| e.to_string())?;
-
+        .map_err_to_string_simple()?;
     let service_file_path = get_service_path(name);
 
-    let mut service_file = File::create(&service_file_path).map_err(|e| e.to_string())?;
+    let mut service_file = File::create(&service_file_path).map_err_to_string_simple()?;
     service_file
         .write_all(init_script_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     // Set service file permissions to 0640 (root:root)
     fs::set_permissions(&service_file_path, fs::Permissions::from_mode(0o640))
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     println!("Created systemd service file at {service_file_path}");
 
     drop(service_file);
@@ -77,7 +76,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     Command::new("systemctl")
         .arg("daemon-reload")
         .output()
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     Ok(())
 }
@@ -97,19 +96,19 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     Command::new("systemctl")
         .arg("daemon-reload")
         .output()
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     Command::new("systemctl")
         .arg("enable")
         .arg(&service_name)
         .output()
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     Command::new("systemctl")
         .arg("start")
         .arg(&service_name)
         .output()
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     println!("Service {service_name} started and enabled.");
     Ok(())

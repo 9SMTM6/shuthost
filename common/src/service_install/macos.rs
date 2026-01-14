@@ -33,17 +33,17 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         return Err("You must run this command as root or with sudo.".to_string());
     }
 
-    let binary_path = env::current_exe().map_err(|e| e.to_string())?;
+    let binary_path = env::current_exe().map_err_to_string_simple()?;
 
     let target_bin = PathBuf::from("/usr/local/bin/").join(name);
     let label = format!("com.github_9smtm6.{name}");
     let plist_path = PathBuf::from(get_service_path(name));
 
-    fs::copy(&binary_path, &target_bin).map_err(|e| e.to_string())?;
+    fs::copy(&binary_path, &target_bin).map_err_to_string_simple()?;
     println!("Installed binary to {target_bin:?}");
     // Set binary permissions to 0755 (root can write, others can read/execute)
     fs::set_permissions(&target_bin, fs::Permissions::from_mode(0o755))
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     // Stop existing job if it's already loaded (modern launchctl)
     match Command::new("launchctl")
@@ -66,17 +66,17 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     let plist_content = init_script_content.replace("{name}", name);
 
-    let mut plist_file = File::create(&plist_path).map_err(|e| e.to_string())?;
+    let mut plist_file = File::create(&plist_path).map_err_to_string_simple()?;
     plist_file
         .write_all(plist_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
     println!("Created launchd plist file at {plist_path:?}");
 
     drop(plist_file);
 
     // Set proper permissions
     fs::set_permissions(&plist_path, fs::Permissions::from_mode(0o640))
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     Ok(())
 }
@@ -100,7 +100,7 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
         .arg("system")
         .arg(&plist_path)
         .output()
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     println!("Service bootstrapped with launchctl.");
 
@@ -109,7 +109,7 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
         .arg("print")
         .arg(format!("system/{label}"))
         .output()
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string_simple()?;
 
     if status.status.success() {
         println!(
