@@ -81,19 +81,18 @@ coverage:
     cargo llvm-cov clean --workspace
     # note: building for a provided target instead of native 
     # doesnt seem to result in an instrumented binary
-    # note: no embedded agents
-    cargo build --workspace
+    . ./scripts/helpers.sh && build_gnu
     # cd frontend && npm run test && cd ..
     # just build_gh_pages --provided-binary=target/debug/shuthost_coordinator
     # cargo test --workspace --all-targets
-    # just install_test_scripts
     # ought to run this before the musl tests to ensure its running the gnu binary (not that it should make a huge difference)
-    ./scripts/tests/direct-control-ubuntu.sh
-    ./scripts/tests/service-installation-systemd.sh
+    ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
+    ./scripts/tests/service-installation-systemd.sh ./target/debug/shuthost_coordinator
     # now run musl tests
-    ./scripts/tests/service-installation-openrc.sh
-    ./scripts/tests/direct-control-alpine.sh
-    ./scripts/tests/direct-control-pwsh.sh
+    . ./scripts/helpers.sh && build_musl
+    ./scripts/tests/direct-control-alpine.sh ./target/debug/shuthost_host_agent
+    ./scripts/tests/direct-control-pwsh.sh ./target/debug/shuthost_host_agent
+    ./scripts/tests/service-installation-openrc.sh ./target/debug/shuthost_coordinator
     cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|usr/local/cargo/registry/.*"
     cargo llvm-cov report --html --output-dir coverage --ignore-filename-regex "src/bin/coordinator.rs|host_agent/src/main.rs|usr/local/cargo/registry/.*"
 
