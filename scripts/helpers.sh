@@ -2,7 +2,7 @@
 
 build_musl() {
     #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
-    docker build --dns 8.8.8.8 -t shuthost-builder -f scripts/build.Containerfile .
+    docker build --network host -t shuthost-builder -f scripts/build.Containerfile .
     mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug target/release target/debug
     docker run --rm \
         -v "$(pwd):/src" \
