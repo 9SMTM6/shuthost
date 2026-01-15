@@ -3283,7 +3283,6 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "nix",
  "reqwest",
  "secrecy",
  "serde",
