@@ -3,7 +3,8 @@
 use std::process;
 
 use crate::common::{
-    get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent, wait_for_agent_ready, wait_for_listening
+    get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent,
+    wait_for_agent_ready, wait_for_listening,
 };
 use secrecy::SecretString;
 

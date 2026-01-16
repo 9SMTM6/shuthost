@@ -1,8 +1,6 @@
+use std::path::Path;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
-use std::{
-    path::Path,
-};
 
 use std::os::unix::fs::{self as unix_fs, PermissionsExt};
 
@@ -26,10 +24,7 @@ use crate::install::BINARY_NAME;
 /// # Errors
 ///
 /// Returns an error if file operations fail.
-pub fn migrate_old_config(
-    user: &str,
-    new_config_location: &Path,
-) -> eyre::Result<()> {
+pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Result<()> {
     #[cfg(target_os = "linux")]
     let old_config_location = PathBuf::from(format!("/home/{user}/.config/{BINARY_NAME}.toml"));
     #[cfg(target_os = "macos")]
@@ -44,7 +39,7 @@ pub fn migrate_old_config(
             std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
             created_new_dir = true;
         }
-        std::fs::rename(&old_config_location, &new_config_location).wrap_err(format!(
+        std::fs::rename(&old_config_location, new_config_location).wrap_err(format!(
             "Failed to move config file from {} to {}",
             old_config_location.display(),
             new_config_location.display()
@@ -81,7 +76,7 @@ pub fn migrate_old_config(
         if created_new_dir && let Some(parent_dir) = new_config_location.parent() {
             std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
 
-            let user_info = User::from_name(&user)
+            let user_info = User::from_name(user)
                 .wrap_err("Failed to get user info")?
                 .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
             unix_fs::chown(
