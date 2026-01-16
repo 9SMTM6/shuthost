@@ -45,7 +45,8 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
         )
     });
     let addr = format!("0.0.0.0:{}", config.port);
-    let listener = TcpListener::bind(&addr).expect(&format!("Failed to bind port {addr}"));
+    let listener =
+        TcpListener::bind(&addr).unwrap_or_else(|_| panic!("Failed to bind port {addr}"));
     println!("Listening on {addr}");
 
     for stream in listener.incoming() {
