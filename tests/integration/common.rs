@@ -25,6 +25,10 @@ use tokio::time::timeout;
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(10000);
 
+pub(crate) fn host_agent_bin_path() -> &'static str {
+    env!("CARGO_BIN_EXE_host_agent")
+}
+
 pub(crate) fn get_free_port() -> u16 {
     NEXT_PORT.fetch_add(1, Ordering::SeqCst)
 }
@@ -190,5 +194,5 @@ pub(crate) async fn wait_for_agent_ready(
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    panic!("agent did not become ready within timeout");
+    panic!("agent on port {port} did not become ready within timeout");
 }
