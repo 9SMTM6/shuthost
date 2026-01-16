@@ -3,21 +3,18 @@
 use std::process;
 
 use crate::common::{
-    KillOnDrop, get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent, spawn_host_agent_bin, wait_for_agent_ready, wait_for_listening
+    get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent, wait_for_agent_ready, wait_for_listening
 };
 use secrecy::SecretString;
 
 #[test]
 fn test_host_agent_binary_runs() {
-    let mut guard = spawn_host_agent_bin(&["--help"]);
-    let KillOnDrop::Binary(ref mut child_opt) = guard else {
-        unreachable!("Should be binary variant");
-    };
-    let status = child_opt
-        .take()
-        .expect("to be the first to take")
-        .wait()
-        .expect("failed to wait");
+    let mut child = process::Command::new(host_agent_bin_path())
+        .args(&["--help"])
+        .stdout(process::Stdio::null())
+        .spawn()
+        .expect("failed to spawn host_agent binary");
+    let status = child.wait().expect("failed to wait");
     assert!(status.success());
 }
 
