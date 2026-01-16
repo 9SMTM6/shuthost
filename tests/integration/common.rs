@@ -11,6 +11,8 @@
 )]
 
 use clap::Parser;
+use nix::sys::signal::{Signal, kill};
+use nix::unistd::Pid;
 use secrecy::SecretString;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;
@@ -27,10 +29,6 @@ pub(crate) fn get_free_port() -> u16 {
     NEXT_PORT.fetch_add(1, Ordering::SeqCst)
 }
 
-pub(crate) fn host_agent_bin_path() -> &'static str {
-    env!("CARGO_BIN_EXE_host_agent")
-}
-
 /// Guard that kills the coordinator or agent when dropped.
 pub(crate) enum KillOnDrop {
     Coordinator(tokio::task::JoinHandle<()>),
@@ -39,6 +37,7 @@ pub(crate) enum KillOnDrop {
         port: u16,
         secret: SecretString,
     },
+    Binary(Option<std::process::Child>),
 }
 
 impl Drop for KillOnDrop {
@@ -61,8 +60,24 @@ impl Drop for KillOnDrop {
                     drop(handle.join());
                 }
             }
+            KillOnDrop::Binary(child_opt) => {
+                if let Some(child) = child_opt {
+                    let _ = kill(Pid::from_raw(child.id() as i32), Signal::SIGTERM);
+                    drop(child.wait());
+                }
+            }
         }
     }
+}
+
+/// Spawn the host_agent binary as a separate process with the provided args.
+pub(crate) fn spawn_host_agent_bin(args: &[&str]) -> KillOnDrop {
+    let child = std::process::Command::new(env!("CARGO_BIN_EXE_host_agent"))
+        .args(args)
+        .stdout(std::process::Stdio::null())
+        .spawn()
+        .expect("failed to spawn host_agent binary");
+    KillOnDrop::Binary(Some(child))
 }
 
 /// Spawn the coordinator service from a given config string.
@@ -175,5 +190,5 @@ pub(crate) async fn wait_for_agent_ready(
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    panic!("agent on port {port} did not become ready within timeout");
+    panic!("agent did not become ready within timeout");
 }

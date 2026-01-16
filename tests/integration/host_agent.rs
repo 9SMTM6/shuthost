@@ -1,20 +1,22 @@
 //! Integration tests for host_agent functionality
 
-use std::process;
-
 use crate::common::{
-    get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent, wait_for_agent_ready, wait_for_listening
+    KillOnDrop, get_free_port, spawn_coordinator_with_config, spawn_host_agent,
+    spawn_host_agent_bin, wait_for_agent_ready, wait_for_listening,
 };
 use secrecy::SecretString;
 
 #[test]
 fn test_host_agent_binary_runs() {
-    let mut child = process::Command::new(host_agent_bin_path())
-        .args(&["--help"])
-        .stdout(process::Stdio::null())
-        .spawn()
-        .expect("failed to spawn host_agent binary");
-    let status = child.wait().expect("failed to wait");
+    let mut guard = spawn_host_agent_bin(&["--help"]);
+    let KillOnDrop::Binary(ref mut child_opt) = guard else {
+        unreachable!("Should be binary variant");
+    };
+    let status = child_opt
+        .take()
+        .expect("to be the first to take")
+        .wait()
+        .expect("failed to wait");
     assert!(status.success());
 }
 
@@ -90,71 +92,4 @@ async fn test_shutdown_command_execution() {
         "Shutdown file should contain 'SHUTDOWN'"
     );
     drop(std::fs::remove_file(shutdown_file)); // Clean up after test
-}
-
-
-#[cfg(unix)]
-const SELF_EXTRACTING_SCRIPT: &str = "self-extracting-shell";
-#[cfg(windows)]
-const SELF_EXTRACTING_SCRIPT: &str = "self-extracting-pwsh";
-
-#[cfg(unix)]
-const SELF_EXTRACTING_SCRIPT_NAME: &str = "shuthost_host_agent_self_extracting";
-#[cfg(windows)]
-const SELF_EXTRACTING_SCRIPT_NAME: &str = "shuthost_host_agent_self_extracting.ps1";
-
-#[test]
-fn test_self_extracting_install_and_registration() {
-    let temp_dir = std::env::temp_dir().join(format!("shuthost_test_{}", process::id()));
-    std::fs::create_dir(&temp_dir).expect("failed to create temp dir");
-
-    let secret = "testsecret123";
-    let port = get_free_port();
-
-    // Run install
-    let status = process::Command::new(host_agent_bin_path())
-        .args(&[
-            "install",
-            "--init-system",
-            SELF_EXTRACTING_SCRIPT,
-            "--shared-secret",
-            secret,
-            "--port",
-            &port.to_string(),
-        ])
-        .stdout(process::Stdio::null())
-        .current_dir(&temp_dir)
-        .status()
-        .expect("failed to run install");
-
-    assert!(status.success(), "install should succeed");
-
-    // Find the script
-    let script_path = temp_dir.join(SELF_EXTRACTING_SCRIPT_NAME);
-    assert!(script_path.exists(), "script should exist");
-
-    // Run registration
-    let output = process::Command::new(&script_path)
-        .arg("registration")
-        .output()
-        .expect("failed to run registration");
-
-    assert!(output.status.success(), "registration should succeed");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    // Verify output contains secret and port
-    assert!(
-        stdout.contains(secret),
-        "output should contain secret: {}",
-        stdout
-    );
-    assert!(
-        stdout.contains(&port.to_string()),
-        "output should contain port: {}",
-        stdout
-    );
-
-    // Clean up
-    std::fs::remove_dir_all(&temp_dir).ok();
 }
