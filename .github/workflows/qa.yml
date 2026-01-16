@@ -75,10 +75,12 @@ jobs:
           cd frontend
           npm ci
           npm run install-chromium-ci
+          sudo chown -R 1001:1001 node_modules
+          sudo chown -R 1001:1001 "/.npm"
 
       - run: rustup update stable
 
-      - uses: *rust-cache
+      # - uses: *rust-cache
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
