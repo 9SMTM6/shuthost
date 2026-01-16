@@ -14,6 +14,8 @@ use clap::Parser;
 use eyre::WrapErr;
 use nix::unistd::User;
 
+mod migration;
+
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 
@@ -24,6 +26,8 @@ const SERVICE_FILE_TEMPLATE: &str =
     include_str!("com.github_9smtm6.shuthost_coordinator.plist.xml");
 #[cfg(target_os = "linux")]
 const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.sh");
+
+const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 
 /// Arguments for the `install` subcommand of the coordinator.
 #[derive(Debug, Parser)]
@@ -55,7 +59,7 @@ pub struct Args {
 ///
 /// Panics if the TOML serialization of the configuration fails.
 pub(crate) fn setup(args: Args) -> eyre::Result<()> {
-    let name = env!("CARGO_PKG_NAME");
+    let name = BINARY_NAME;
     let user = args.user;
 
     args.bind
@@ -64,72 +68,11 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
-    let old_config_location = PathBuf::from(format!("/home/{user}/.config/{name}.toml",));
-    #[cfg(target_os = "linux")]
     let new_config_location = PathBuf::from(format!("/home/{user}/.config/{name}/config.toml",));
     #[cfg(target_os = "macos")]
-    let old_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}.toml",));
-    #[cfg(target_os = "macos")]
-    let new_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}/config.toml",));
+    let new_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}/config.toml"));
 
-    // Move existing config from old location to new location if old exists and new doesn't
-    let mut created_new_dir = false;
-    if old_config_location.exists() && !new_config_location.exists() {
-        if let Some(parent_dir) = new_config_location.parent()
-            && !parent_dir.exists()
-        {
-            std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
-            created_new_dir = true;
-        }
-        std::fs::rename(&old_config_location, &new_config_location).wrap_err(format!(
-            "Failed to move config file from {} to {}",
-            old_config_location.display(),
-            new_config_location.display()
-        ))?;
-        println!("Moved config file from {old_config_location:?} to {new_config_location:?}");
-
-        // Also move associated files (database and certificates) from old directory to new directory
-        if let (Some(old_dir), Some(new_dir)) =
-            (old_config_location.parent(), new_config_location.parent())
-        {
-            let files_to_move = [
-                "shuthost.db",
-                "shuthost.db-wal",
-                "shuthost.db-shm",
-                "tls_cert.pem",
-                "tls_key.pem",
-            ];
-            for file_name in &files_to_move {
-                let old_file = old_dir.join(file_name);
-                let new_file = new_dir.join(file_name);
-                if old_file.exists() && !new_file.exists() {
-                    std::fs::rename(&old_file, &new_file).wrap_err(format!(
-                        "Failed to move {} from {} to {}",
-                        file_name,
-                        old_file.display(),
-                        new_file.display()
-                    ))?;
-                    println!("Moved {file_name} from {old_file:?} to {new_file:?}");
-                }
-            }
-        }
-
-        // Chown the new directory if it was created
-        if created_new_dir && let Some(parent_dir) = new_config_location.parent() {
-            std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
-
-            let user_info = User::from_name(&user)
-                .wrap_err("Failed to get user info")?
-                .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
-            fs::chown(
-                parent_dir,
-                Some(user_info.uid.into()),
-                Some(user_info.gid.into()),
-            )?;
-
-            println!("Chowned migrated config directory at {parent_dir:?} for {user}",);
-        }
-    }
+    migration::migrate_old_config(&user, &new_config_location)?;
 
     let config_location = new_config_location;
 
