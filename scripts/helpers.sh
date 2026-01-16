@@ -4,12 +4,16 @@ build_musl() {
     #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
     docker build --network host -t shuthost-builder -f scripts/build.Containerfile .
     run_as_elevated chown -R "$(id -u)":"$(id -g)" target/
+    run_as_elevated chown -R "$(id -u)":"$(id -g)" frontend/node_modules/ || true
+    run_as_elevated chown -R "$(id -u)":"$(id -g)" ~/.npm || true
     docker run --rm \
         --user "$(id -u):$(id -g)" \
         -v "$(pwd):/src" \
         -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
         -v "$HOME/.cargo/git:/usr/local/cargo/git" \
         shuthost-builder sh -c "\
+            sudo chown -R $(id -u):$(id -g) ~/.npm || true
+            sudo chown -R $(id -u):$(id -g) frontend/node_modules/ || true
             mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug target/release target/debug
             # build with coverage support
             eval \"\$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)\"
