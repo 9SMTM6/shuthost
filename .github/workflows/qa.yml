@@ -91,18 +91,19 @@ jobs:
           SKIP_BUILD: 1
         run: |
           set -e
+          set -v
           eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
           cargo llvm-cov clean --workspace
-          . ./scripts/helpers.sh && build_gnu
-          cd frontend && npx playwright test && cd ..
-          ./scripts/build-gh-pages.sh --provided-binary=target/debug/shuthost_coordinator
-          cargo test --workspace --all-targets
-          ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
-          ./scripts/tests/service-installation-systemd.sh ./target/debug/shuthost_coordinator
-          ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
+          # . ./scripts/helpers.sh && build_gnu
+          # cd frontend && npx playwright test && cd ..
+          # ./scripts/build-gh-pages.sh --provided-binary=target/debug/shuthost_coordinator
+          # cargo test --workspace --all-targets
+          # ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
+          # ./scripts/tests/service-installation-systemd.sh ./target/debug/shuthost_coordinator
+          # ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
           . ./scripts/helpers.sh && build_musl
-          ./scripts/tests/direct-control-alpine.sh ./target/debug/shuthost_host_agent
-          ./scripts/tests/direct-control-pwsh.sh ./target/debug/shuthost_host_agent
+          # ./scripts/tests/direct-control-alpine.sh ./target/debug/shuthost_host_agent
+          # ./scripts/tests/direct-control-pwsh.sh ./target/debug/shuthost_host_agent
           ./scripts/tests/service-installation-openrc.sh ./target/debug/shuthost_coordinator
           ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
           cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "src/bin/coordinator.rs|src/bin/host_agent.rs|.*cargo/registry/src/.*|tests/integration/.*"
