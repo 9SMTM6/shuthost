@@ -38,6 +38,15 @@ shuthost_coordinator.workspace = true
 shuthost_host_agent.workspace = true
 tokio.workspace = true
 
+# binary targets, these exist solely so that binaries are available in integration tests
+[[bin]]
+name = "coordinator"
+path = "coordinator/src/main.rs"
+
+[[bin]]
+name = "host_agent"
+path = "host_agent/src/main.rs"
+
 [dev-dependencies]
 futures-util = "0.3"
 futures.workspace = true

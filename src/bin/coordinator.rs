@@ -1,1 +1,0 @@
-../../coordinator/src/main.rs
