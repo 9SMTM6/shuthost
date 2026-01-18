@@ -18,7 +18,5 @@ WORKDIR /src
 
 # Get cargo-llvm-cov to allow for code coverage builds
 RUN curl --proto '=https' --tlsv1.2 -fsSLO "https://github.com/taiki-e/cargo-llvm-cov/releases/latest/download/cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz"
-RUN mkdir -p /root/.cargo/bin
-RUN tar xzf cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz -C /root/.cargo/bin
-RUN chmod +x /root/.cargo/bin/cargo-llvm-cov
-ENV PATH="/root/.cargo/bin:$PATH"
+RUN tar xzf cargo-llvm-cov-x86_64-unknown-linux-musl.tar.gz -C /usr/local/bin
+RUN chmod +x /usr/local/bin/cargo-llvm-cov
