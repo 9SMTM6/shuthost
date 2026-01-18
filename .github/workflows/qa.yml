@@ -75,7 +75,6 @@ jobs:
           cd frontend
           npm ci
           npm run install-chromium-ci
-          sudo chown -R 1001:1001 node_modules
 
       - run: rustup update stable
 

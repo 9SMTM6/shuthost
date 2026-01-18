@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::path::PathBuf;
 
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::os::unix::fs::{self as unix_fs, PermissionsExt};
 
 use eyre::WrapErr;
@@ -11,18 +13,18 @@ use crate::install::BINARY_NAME;
 /// Migrates old config file and associated files from the old location to the new location.
 ///
 /// This function checks if the old config exists and the new one doesn't, then moves the config
-/// file and associated database and certificate files. It also handles creating the new directory
-/// if needed and setting appropriate permissions and ownership.
+/// if needed and setting appropriate permissions and ownership. The old config file location is
+/// determined internally based on the operating system and the provided username.
 ///
 /// # Arguments
 ///
 /// * `user` - The username for ownership.
-/// * `old_config_location` - Path to the old config file.
 /// * `new_config_location` - Path to the new config file location.
 ///
 /// # Errors
 ///
 /// Returns an error if file operations fail.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Result<()> {
     #[cfg(target_os = "linux")]
     let old_config_location = PathBuf::from(format!("/home/{user}/.config/{BINARY_NAME}.toml"));

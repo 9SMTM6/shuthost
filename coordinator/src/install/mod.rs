@@ -72,6 +72,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
     #[cfg(target_os = "macos")]
     let new_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}/config.toml"));
 
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     migration::migrate_old_config(&user, &new_config_location)?;
 
     let config_location = new_config_location;
