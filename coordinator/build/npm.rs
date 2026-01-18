@@ -18,6 +18,7 @@ pub fn setup() -> eyre::Result<()> {
     process::Command::new(NPM_BIN)
         .arg("ci")
         .current_dir(FRONTEND_DIR)
+        .env("npm_config_cache", "/tmp/.npm")
         .status()
         .map(|it| {
             if it.success() {
@@ -34,6 +35,7 @@ pub fn run(task: &str) -> eyre::Result<()> {
         .arg("run")
         .arg(task)
         .current_dir(FRONTEND_DIR)
+        .env("npm_config_cache", "/tmp/.npm")
         .status()
         .map(|it| {
             if it.success() {
