@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::path::PathBuf;
 
-
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::os::unix::fs::{self as unix_fs, PermissionsExt};
 
