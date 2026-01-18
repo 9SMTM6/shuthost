@@ -216,17 +216,11 @@ These are generated or validated automatically as part of the test suite, and th
 - 🛡️ **Rate limiting of requests by shuthost clients**
 
 ### 🖥️ Platform Support
-- 🪟 **Windows agent (self-extracting)**: Support for Windows hosts using a self-extracting agent, including a PowerShell installer script.
 - 🐡 **BSD support** might happen
   - ⚠️ Requires using more advanced cross compilation
   - I have no ability to test these practically myself.
 
 ### 🔧 Management Features
-- 📦 **Individual agent installation**: Allow installing agents directly and simplify using them 
-  - with interaction scripts in shell (and later powershell)
-  - support generation of interaction scripts from the agent binary
-  - in windows_agent branch add a powershell script to install the agent and the generation of an interaction script
-  - add documentation for this
 - 🗑️ **Uninstalls**
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
