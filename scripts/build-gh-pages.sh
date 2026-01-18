@@ -6,7 +6,7 @@ set -ev
 
 export_dir="target/gh-pages"
 
-rm -rf $export_dir
+rm -rf "$export_dir"
 
 # Build and run demo service
 binary=""
@@ -46,10 +46,10 @@ mkdir -p $export_dir
 base_url=http://localhost:$port
 
 # Fetch demo HTML
-curl -s $base_url/ > $export_dir/index.html
+curl -s $base_url/ > "$export_dir/index.html"
 
 # Collect all internal pages to fetch
-pages=$(grep -Eo 'href="/[^"]*"' $export_dir/index.html | sed 's/href="//;s/"$//' | grep -v '^http' | sort | uniq)
+pages=$(grep -Eo 'href="/[^"]*"' "$export_dir/index.html" | sed 's/href="//;s/"$//' | grep -v '^http' | sort | uniq)
 
 # Fetch additional pages
 for page in $pages; do
@@ -60,14 +60,14 @@ for page in $pages; do
 done
 
 # Adjust links in HTML files for static hosting
-for html in $export_dir/*.html; do
+for html in "$export_dir"/*.html; do
     sed -i 's|href="/"|href="index.html"|g' "$html"
     sed -i 's|href="/\([^/][^"]*\)"|href="\1.html"|g' "$html"
     sed -i 's|src="/\([^/][^"]*\)"|src="\1"|g' "$html"
 done
 
 # Infer and fetch assets from demo server
-for html in $export_dir/*.html; do
+for html in "$export_dir"/*.html; do
     grep -Eo '(src|href)="[^"]+"' "$html" | \
         sed -E 's/^(src|href)="//;s/"$//' | \
         while read asset; do
