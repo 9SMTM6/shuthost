@@ -144,7 +144,7 @@ sqlx database drop
 sqlx database create
 sqlx migrate run --source coordinator/migrations
 
-cargo sqlx prepare --workspace
+cd coordinator && cargo sqlx prepare
 ```
 
 To add a new migration, run from the repository root:

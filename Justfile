@@ -63,7 +63,7 @@ db_create:
     cargo sqlx migrate run --source coordinator/migrations
 
 db_update_sqlx_cache:
-    cargo sqlx prepare --workspace
+    cd coordinator && cargo sqlx prepare
 
 db_add_migration name:
     cd coordinator && sqlx migrate add {{name}}
