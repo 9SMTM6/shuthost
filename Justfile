@@ -56,6 +56,7 @@ build_gh_pages +flags="":
     ./scripts/build-gh-pages.sh {{flags}}
 
 export DATABASE_URL := "sqlite:./shuthost.db"
+export SQLX_OFFLINE := "true"
 
 db_create:
     cargo sqlx database drop
