@@ -13,20 +13,15 @@ build_musl() {
         -v "$HOME/.cargo/git:/usr/local/cargo/git" \
         shuthost-builder sh -c "\
             set -e
-            mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug target/release target/debug
+            mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug/
             # build with coverage support
             eval \"\$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)\"
             cargo build --bin shuthost_host_agent
-            cp ./target/debug/shuthost_host_agent ./target/release/
-            cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/debug/
             # copy agent debug build to release path for inclusion in coordinator
             cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
             cargo build --bin shuthost_coordinator --features=include_linux_musl_x86_64_agent
-            cp ./target/debug/shuthost_coordinator ./target/release/
+            # copy coordinator debug build to paths where other scripts expect it
             cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/debug/
-            # copy coordinator debug build to release path for other scripts that expect the binary there
-            cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-musl/release/
-            chmod +x ./target/**/shuthost_*
         "
 }
 
@@ -35,21 +30,14 @@ build_gnu() {
     if cargo llvm-cov --help > /dev/null 2>&1; then
         eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
     fi
-    mkdir -p target/x86_64-unknown-linux-gnu/release target/x86_64-unknown-linux-gnu/debug target/release target/debug target/x86_64-unknown-linux-musl/release/
+    mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-gnu/release
 
     # Build the coordinator binary
     cargo build --bin shuthost_host_agent
-    cp ./target/debug/shuthost_host_agent ./target/release/
-    cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-gnu/debug/
-    # copy agent debug build to release path for inclusion in coordinator
+    # copy agent debug build to (musl) release path for inclusion in coordinator - some scripts default to musl installs
+    cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
     cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-gnu/release/
-    # also fake the musl agent, since some scripts only look for that...
-    cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/            
     cargo build --bin shuthost_coordinator --features include_linux_x86_64_agent,include_linux_musl_x86_64_agent
-    cp ./target/debug/shuthost_coordinator ./target/release/
-    cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-gnu/debug/
-    # copy coordinator debug build to release path for other scripts that expect the binary there
-    cp ./target/debug/shuthost_coordinator ./target/x86_64-unknown-linux-gnu/release/
 }
 
 elevate_privileges() {
