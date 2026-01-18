@@ -1,5 +1,5 @@
 frontend/package-lock.json
 Cargo.lock
 .sqlx/*.json
-install-file-snapshots
+tests/install-file-snapshots
 frontend/tests/aria-snapshots.spec.ts-snapshots

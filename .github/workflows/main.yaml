@@ -331,9 +331,9 @@ jobs:
 
       - name: Validate file snapshots
         run: |
-          if ! git diff --quiet ./install-file-snapshots/; then
+          if ! git diff --quiet ./tests/install-file-snapshots/; then
             echo "install file snapshots have changed!"
-            git diff ./install-file-snapshots/
+            git diff ./tests/install-file-snapshots/
             exit 1
           fi
 

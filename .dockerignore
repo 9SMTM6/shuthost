@@ -13,7 +13,7 @@ tls_key.pem
 *.db-shm
 
 ## Additional Docker ignores
-install-file-snapshots/
+tests/install-file-snapshots/
 *.tar
 
 # New entries

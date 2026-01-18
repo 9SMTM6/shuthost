@@ -11,7 +11,7 @@ CONTAINERFILE="scripts/snapshot_files/Containerfile.systemd"
 RESTART_CMD="systemctl restart shuthost_coordinator"
 STOP_CMD="systemctl stop shuthost_coordinator"
 BASE_IMAGE="shuthost-systemd"
-OUTPUT_DIR="./install-file-snapshots/systemd"
+OUTPUT_DIR="./tests/install-file-snapshots/systemd"
 
 if [ -n "$1" ]; then
     directory="./target/x86_64-unknown-linux-gnu/debug"

@@ -11,7 +11,7 @@ CONTAINERFILE="scripts/snapshot_files/Containerfile.openrc"
 RESTART_CMD="rc-service shuthost_coordinator restart"
 STOP_CMD="rc-service shuthost_coordinator stop"
 BASE_IMAGE="shuthost-openrc"
-OUTPUT_DIR="./install-file-snapshots/openrc"
+OUTPUT_DIR="./tests/install-file-snapshots/openrc"
 
 if [ -n "$1" ]; then
     directory="./target/x86_64-unknown-linux-musl/debug"
