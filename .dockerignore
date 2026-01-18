@@ -6,9 +6,6 @@ tls_cert.pem
 tls_key.pem
 .DS_Store
 .vscode
-coverage/
-
-gh-pages
 
 ## SQLite database files
 *.db

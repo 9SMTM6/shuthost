@@ -7,13 +7,10 @@ shuthost_coordinator.toml
 # Generated during test etc.
 tls_cert.pem
 tls_key.pem
-coverage/
 shuthost_direct_control
 shuthost_direct_control.ps1
 shuthost_host_agent
 shuthost_host_agent.ps1
-
-gh-pages
 
 # SQLite database files
 *.db

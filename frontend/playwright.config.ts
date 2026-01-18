@@ -5,6 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
     globalSetup: './tests/global-setup',
     testDir: './tests',
+    outputDir: '../target/playwright-test-results/',
     timeout: 30000,
     expect: {
         timeout: 5000,

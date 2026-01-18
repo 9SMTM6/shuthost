@@ -4,7 +4,9 @@
 
 set -ev
 
-rm -rf gh-pages
+export_dir="target/gh-pages"
+
+rm -rf $export_dir
 
 # Build and run demo service
 binary=""
@@ -39,33 +41,33 @@ DEMO_PID=$!
 sleep 2
 
 # Create output directory
-mkdir -p gh-pages
+mkdir -p $export_dir
 
 base_url=http://localhost:$port
 
 # Fetch demo HTML
-curl -s $base_url/ > gh-pages/index.html
+curl -s $base_url/ > $export_dir/index.html
 
 # Collect all internal pages to fetch
-pages=$(grep -Eo 'href="/[^"]*"' gh-pages/index.html | sed 's/href="//;s/"$//' | grep -v '^http' | sort | uniq)
+pages=$(grep -Eo 'href="/[^"]*"' $export_dir/index.html | sed 's/href="//;s/"$//' | grep -v '^http' | sort | uniq)
 
 # Fetch additional pages
 for page in $pages; do
     if [ "$page" != "/" ]; then
         filename="${page#/}.html"
-        curl -s "$base_url$page" > "gh-pages/$filename"
+        curl -s "$base_url$page" > "$export_dir/$filename"
     fi
 done
 
 # Adjust links in HTML files for static hosting
-for html in gh-pages/*.html; do
+for html in $export_dir/*.html; do
     sed -i 's|href="/"|href="index.html"|g' "$html"
     sed -i 's|href="/\([^/][^"]*\)"|href="\1.html"|g' "$html"
     sed -i 's|src="/\([^/][^"]*\)"|src="\1"|g' "$html"
 done
 
 # Infer and fetch assets from demo server
-for html in gh-pages/*.html; do
+for html in $export_dir/*.html; do
     grep -Eo '(src|href)="[^"]+"' "$html" | \
         sed -E 's/^(src|href)="//;s/"$//' | \
         while read asset; do
@@ -74,21 +76,21 @@ for html in gh-pages/*.html; do
                 ./*) ;;
                 *) continue;;
             esac
-            mkdir -p "gh-pages/$(dirname "$asset")"
-            curl -s "http://localhost:8090/$asset" -o "gh-pages/$asset"
+            mkdir -p "$export_dir/$(dirname "$asset")"
+            curl -s "http://localhost:8090/$asset" -o "$export_dir/$asset"
         done
 done
 
 # Fetch downloadable files (installers, scripts, binaries)
 echo "Fetching downloadable files..."
 
-agent_dir="gh-pages/download/host_agent"
+agent_dir="$export_dir/download/host_agent"
 mkdir -p $agent_dir
 
 # Function to fetch downloadable files
 fetch_download() {
     filename="$1"
-    curl -s "$base_url/download/$filename" -o "gh-pages/download/$filename"
+    curl -s "$base_url/download/$filename" -o "$export_dir/download/$filename"
 }
 
 # Installers and scripts
@@ -123,4 +125,4 @@ fetch_agent "windows/aarch64"
 # Stop demo service
 kill $DEMO_PID
 
-echo "Static demo prepared in ./gh-pages. Ready for GitHub Pages deployment."
+echo "Static demo prepared in $export_dir. Ready for GitHub Pages deployment."
