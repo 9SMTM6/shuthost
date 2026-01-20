@@ -179,7 +179,7 @@ sudo shuthost_host_agent generate-direct-control
 ```
 ```powershell
 # For Windows (PowerShell):
-curl.exe -fL -o shuthost_host_agent_installer.ps1 "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.ps1"
+curl.exe -fLO "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.ps1"
 powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_installer.ps1
 # Then generate direct-control script:
 shuthost_host_agent.exe generate-direct-control

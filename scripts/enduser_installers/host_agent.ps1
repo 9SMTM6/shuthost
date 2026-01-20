@@ -181,6 +181,9 @@ try {
     Write-Host "Installation complete!"
     Write-Host
 
+    # Clean up the installer script itself
+    Remove-Item -Path $MyInvocation.MyCommand.Path -ErrorAction SilentlyContinue
+
 } finally {
     Cleanup
 }
