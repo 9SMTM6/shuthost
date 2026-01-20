@@ -1063,9 +1063,14 @@ jobs:
           done
           # Create .tar.gz archives
           for file in release-assets/flat/*; do
-            inside_name="shuthost_host_agent"
-            if [[ "$file" == *.exe ]]; then
-              inside_name="shuthost_host_agent.exe"
+            base=$(basename "$file")
+            if [[ "$base" == shuthost_coordinator-* ]]; then
+              inside_name="shuthost_coordinator"
+            elif [[ "$base" == shuthost_host_agent-* ]]; then
+              inside_name="shuthost_host_agent"
+              if [[ "$file" == *.exe ]]; then
+                inside_name="shuthost_host_agent.exe"
+              fi
             fi
             tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform "s|.*|$inside_name|" "$(basename "$file")" && rm "$file"
           done

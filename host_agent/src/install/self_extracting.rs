@@ -118,7 +118,7 @@ $tempFile = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
 
 # Set correct extension on Windows
-if ($IsWindows) {{
+if ($tempFile.EndsWith('.tmp')) {{
     $exeFile = $tempFile -replace '\.tmp$', '.exe'
     Move-Item $tempFile $exeFile
     $tempFile = $exeFile
