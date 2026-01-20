@@ -8,6 +8,8 @@ use std::net::UdpSocket;
 
 use eyre::Context;
 
+const MAC_ADDRESS_LENGTH: usize = 6;
+
 #[cfg(not(coverage))]
 /// # Errors
 ///
@@ -18,14 +20,16 @@ use eyre::Context;
 )]
 pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::Result<()> {
     let mac_bytes = parse_mac(mac_address)?;
-    let mut packet = [0xFFu8; 102];
+    const MAC_REPETITIONS: usize = 16;
+    let mut packet = [0xFFu8; MAC_ADDRESS_LENGTH + MAC_REPETITIONS * MAC_ADDRESS_LENGTH];
 
-    for i in 0..16 {
+    for i in 0..MAC_REPETITIONS {
         #[expect(
             clippy::indexing_slicing,
             reason = "Should be fine with the provided numbers"
         )]
-        packet[(i + 1) * 6..(i + 2) * 6].copy_from_slice(&mac_bytes);
+        packet[(i + 1) * MAC_ADDRESS_LENGTH..(i + 2) * MAC_ADDRESS_LENGTH]
+            .copy_from_slice(&mac_bytes);
     }
 
     let socket = UdpSocket::bind("0.0.0.0:0").wrap_err("Failed to bind UDP socket")?;
@@ -40,8 +44,8 @@ pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::
     Ok(())
 }
 
-fn parse_mac(mac: &str) -> eyre::Result<[u8; 6]> {
-    let mut mac_bytes = [0u8; 6];
+fn parse_mac(mac: &str) -> eyre::Result<[u8; MAC_ADDRESS_LENGTH]> {
+    let mut mac_bytes = [0u8; MAC_ADDRESS_LENGTH];
     let mut parts = mac.split(':');
 
     for mac_byte in &mut mac_bytes {
