@@ -69,7 +69,7 @@ case "$ACTION" in
         printf "%s" "$FINAL_MESSAGE" | nc "$HOST_IP" "$PORT"
         ;;
     wake)
-        echo "WOL via this script is in testing and has not worked in some tests."
+        echo "WOL via this script is in testing and may not work reliable across all platforms. Please report issues."
         # Construct magic packet
         # 6 bytes of FF
         PACKET='\xff\xff\xff\xff\xff\xff'

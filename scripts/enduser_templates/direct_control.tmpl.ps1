@@ -80,7 +80,7 @@ switch ($Action) {
         }
     }
     "wake" {
-        Write-Host "WOL via this script is in testing and has not worked in some tests."
+        Write-Host "WOL via this script is in testing and may not work reliable across all platforms. Please report issues."
         # Construct magic packet
         $packet = [byte[]]::new(102)
         # 6 bytes of FF
