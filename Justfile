@@ -55,7 +55,7 @@ update_dependencies:
 build_gh_pages +flags="":
     ./scripts/build-gh-pages.sh {{flags}}
 
-export DATABASE_URL := "sqlite:./shuthost.db"
+export DATABASE_URL := "sqlite:" + justfile_directory() + "/shuthost.db"
 export SQLX_OFFLINE := "true"
 
 db_create:
