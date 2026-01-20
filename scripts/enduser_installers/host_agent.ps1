@@ -141,7 +141,8 @@ function Run-As-Elevated {
             exit 1
         }
     } else {
-        # Windows
+        # Windows - adjust path for cmd
+        $Command = $Command -replace '^./', '.\'
         $winIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
         $winPrincipal = New-Object Security.Principal.WindowsPrincipal($winIdentity)
         if ($winPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
