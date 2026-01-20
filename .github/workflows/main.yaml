@@ -1076,7 +1076,7 @@ jobs:
           # Add embedded installer scripts
           cp target/scripts/enduser_installers/coordinator.sh release-assets/flat/shuthost_coordinator_installer.sh
           cp target/scripts/enduser_installers/host_agent.sh release-assets/flat/shuthost_host_agent_installer.sh
-          cp target/scripts/enduser_installers/host_agent.ps1 release-assets/flat/shuthost_host_agent_installer.ps1
+          cp scripts/enduser_installers/host_agent.ps1 release-assets/flat/shuthost_host_agent_installer.ps1
 
       - *release_image_name
 
