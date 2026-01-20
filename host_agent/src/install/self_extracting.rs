@@ -117,6 +117,13 @@ $binaryBytes = [System.Convert]::FromBase64String($encodedBinary)
 $tempFile = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
 
+# Set correct extension on Windows
+if ($IsWindows) {{
+    $exeFile = $tempFile -replace '\.tmp$', '.exe'
+    Move-Item $tempFile $exeFile
+    $tempFile = $exeFile
+}}
+
 # Make executable on Unix-like systems
 if ($IsLinux -or $IsMacOS) {{
     & chmod +x $tempFile

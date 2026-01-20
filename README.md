@@ -181,8 +181,8 @@ sudo shuthost_host_agent generate-direct-control
 # For Windows (PowerShell):
 curl.exe -fLO "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.ps1"
 powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_installer.ps1
-# Then generate direct-control script:
-shuthost_host_agent.exe generate-direct-control
+# Then generate direct-control script from the self-extracting script:
+powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control
 ```
 ```bash
 # Move the script to the device you want to use as the controller (same LAN).

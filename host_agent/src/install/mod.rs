@@ -157,7 +157,8 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
-            if let Err(e) = std::process::Command::new(&target_script_path).output() {
+            let powershell_cmd = if cfg!(target_os = "windows") { "powershell.exe" } else { "pwsh" };
+            if let Err(e) = std::process::Command::new(powershell_cmd).arg("-File").arg(&target_script_path).output() {
                 eprintln!("Failed to start self-extracting PowerShell script: {e}");
             } else {
                 println!("Started self-extracting agent PowerShell script in background.");
