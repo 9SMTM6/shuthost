@@ -19,26 +19,30 @@ jobs:
       id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release' && !github.event.release.prerelease || github.event_name == 'workflow_run'
     steps:
     - name: Check if tag push
       if: github.event_name == 'workflow_run'
       run: |
-        if [[ "${{ github.event.workflow_run.head_ref }}" =~ ^refs/tags/ ]]; then
+        RUN_ID=${{ github.event.workflow_run.id }}
+        EVENT=$(gh run view $RUN_ID --json event -q .event)
+        HEAD_BRANCH=$(gh run view $RUN_ID --json headBranch -q .headBranch)
+        if [[ "$EVENT" == "push" && -z "$HEAD_BRANCH" ]]; then
           echo "Proceed with tag release deployment"
         else
           echo "Not a tag push, skipping"
           exit 1
         fi
+    - uses: actions/checkout@v6
+
     - name: Set tag
       run: |
         if [ "${{ github.event_name }}" = "release" ]; then
           echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
         elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-          TAG=$(echo "${{ github.event.workflow_run.head_ref }}" | sed 's|refs/tags/||')
+          TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }} | head -1)
           echo "TAG=$TAG" >> $GITHUB_ENV
         fi
-    - uses: actions/checkout@v6
 
     - name: Download coordinator binary
       run: |

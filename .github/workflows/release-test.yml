@@ -48,7 +48,10 @@ jobs:
       - name: Check if tag push
         if: github.event_name == 'workflow_run'
         run: |
-          if [[ "${{ github.event.workflow_run.head_ref }}" =~ ^refs/tags/ ]]; then
+          RUN_ID=${{ github.event.workflow_run.id }}
+          EVENT=$(gh run view $RUN_ID --json event -q .event)
+          HEAD_BRANCH=$(gh run view $RUN_ID --json headBranch -q .headBranch)
+          if [[ "$EVENT" == "push" && -z "$HEAD_BRANCH" ]]; then
             echo "Proceed with tag release test"
           else
             echo "Not a tag push, skipping"
@@ -59,7 +62,7 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-            TAG=$(echo "${{ github.event.workflow_run.head_ref }}" | sed 's|refs/tags/||')
+            TAG=$(gh release list --limit 1 --exclude-drafts --exclude-pre-releases --json tagName -q .[0].tagName)
             echo "TAG=$TAG" >> $GITHUB_ENV
           fi
       - name: Prepare Alpine
