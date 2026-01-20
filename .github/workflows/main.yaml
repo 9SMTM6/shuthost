@@ -1063,7 +1063,15 @@ jobs:
           done
           # Create .tar.gz archives
           for file in release-assets/flat/*; do
-            tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform "s|.*|$(basename "$file" | sed 's/-.*//')|" "$(basename "$file")" && rm "$file"
+            inside_name="shuthost_host_agent"
+            if [[ "$file" == *.exe ]]; then
+              inside_name="shuthost_host_agent.exe"
+            fi
+            tar -czf "$file.tar.gz" -C "$(dirname "$file")" --transform "s|.*|$inside_name|" "$(basename "$file")" && rm "$file"
+          done
+          # Rename Windows tars to remove .exe from name
+          for tarfile in release-assets/flat/*.exe.tar.gz; do
+            mv "$tarfile" "${tarfile%.exe.tar.gz}.tar.gz"
           done
           # Add embedded installer scripts
           cp target/scripts/enduser_installers/coordinator.sh release-assets/flat/shuthost_coordinator_installer.sh
