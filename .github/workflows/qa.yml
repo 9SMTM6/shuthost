@@ -185,6 +185,10 @@ jobs:
       - &install-host-agent
         run: |
           CI_MODE=true ./scripts/enduser_installers/host_agent.sh
+      - &generate-direct-control
+        name: Generate direct control script
+        run: |
+          if command -v doas >/dev/null; then doas shuthost_host_agent generate-direct-control; else sudo shuthost_host_agent generate-direct-control; fi
 
   host-agent-script-test-alpine:
     name: Test automated host agent install script on Alpine
@@ -194,3 +198,17 @@ jobs:
       - uses: *checkout
       - *prepare_alpine
       - *install-host-agent
+      - *generate-direct-control
+
+  host-agent-script-test-windows:
+    name: Test automated host agent install script on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: *checkout
+      - name: Install host agent
+        run: |
+          curl.exe -fLO "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.ps1"
+          powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_installer.ps1
+      - name: Generate direct control script
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control
