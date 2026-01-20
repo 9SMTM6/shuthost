@@ -1,6 +1,8 @@
 # ShutHost Host Agent Binary Installer (PowerShell)
 # Works on Windows and Unix systems with PowerShell Core
 
+$ErrorActionPreference = 'Stop'
+
 param(
     [Parameter(Mandatory=$false)]
     [string]$Tag,

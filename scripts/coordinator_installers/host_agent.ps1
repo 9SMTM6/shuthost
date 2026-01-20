@@ -1,6 +1,8 @@
 # ShutHost Host Agent Installer (PowerShell)
 # Installs the host agent by downloading from the coordinator
 
+$ErrorActionPreference = 'Stop'
+
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$RemoteUrl,

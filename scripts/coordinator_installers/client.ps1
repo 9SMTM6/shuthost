@@ -3,6 +3,8 @@
 # filling in the template, and installing it locally.
 # It connects the client to the coordinator it downloaded from.
 
+$ErrorActionPreference = 'Stop'
+
 param(
     [Parameter(Position=0)]
     [string]$RemoteUrl = "http://localhost:8080",
