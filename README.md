@@ -174,8 +174,15 @@ Install the released agent installer and generate a direct-control script:
 # Install the agent:
 curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.sh | sh
 # Generate a direct-control script (run on the machine where the agent binary is installed):
-# If the agent is in your PATH:
+# If the agent is in your PATH (it should be by default):
 sudo shuthost_host_agent generate-direct-control
+```
+```powershell
+# For Windows (PowerShell):
+curl.exe -fL -o shuthost_host_agent_installer.ps1 "https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.ps1"
+powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_installer.ps1
+# Then generate direct-control script:
+shuthost_host_agent.exe generate-direct-control
 ```
 ```bash
 # Move the script to the device you want to use as the controller (same LAN).
