@@ -173,12 +173,7 @@ try {
     Verify-Checksum
 
     # Extract the archive
-    if ($isUnix) {
-        & tar -xzf $FILENAME
-    } else {
-        # Windows - extract tar.gz
-        & tar -xzf $FILENAME
-    }
+    & tar -xzf $FILENAME
 
     # Run the installer
     Run-As-Elevated "./$BINARY_NAME install"
