@@ -25,8 +25,8 @@ jobs:
       if: github.event_name == 'workflow_run'
       run: |
         RUN_ID=${{ github.event.workflow_run.id }}
-        EVENT=$(gh run view $RUN_ID --json event -q .event)
-        HEAD_BRANCH=$(gh run view $RUN_ID --json headBranch -q .headBranch)
+        EVENT=$(gh run view $RUN_ID --repo ${{ github.repository }} --json event -q .event)
+        HEAD_BRANCH=$(gh run view $RUN_ID --repo ${{ github.repository }} --json headBranch -q .headBranch)
         if [[ "$EVENT" == "push" && -z "$HEAD_BRANCH" ]]; then
           echo "Proceed with tag release deployment"
         else
@@ -45,9 +45,19 @@ jobs:
         fi
 
     - name: Download coordinator binary
+      if: env.TAG != ''
       run: |
-        gh release download ${{ env.TAG || 'latest' }} --repo ${{ github.repository }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
+        gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
         tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
+        chmod +x shuthost_coordinator
+
+    - name: Build coordinator binary
+      if: env.TAG == ''
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source ~/.cargo/env
+        cargo build --release --bin shuthost_coordinator
+        cp target/release/shuthost_coordinator .
         chmod +x shuthost_coordinator
 
     - name: Build and snapshot demo

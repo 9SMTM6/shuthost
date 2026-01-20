@@ -49,8 +49,8 @@ jobs:
         if: github.event_name == 'workflow_run'
         run: |
           RUN_ID=${{ github.event.workflow_run.id }}
-          EVENT=$(gh run view $RUN_ID --json event -q .event)
-          HEAD_BRANCH=$(gh run view $RUN_ID --json headBranch -q .headBranch)
+          EVENT=$(gh run view $RUN_ID --repo ${{ github.repository }} --json event -q .event)
+          HEAD_BRANCH=$(gh run view $RUN_ID --repo ${{ github.repository }} --json headBranch -q .headBranch)
           if [[ "$EVENT" == "push" && -z "$HEAD_BRANCH" ]]; then
             echo "Proceed with tag release test"
           else
@@ -62,7 +62,7 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-            TAG=$(gh release list --limit 1 --exclude-drafts --exclude-pre-releases --json tagName -q .[0].tagName)
+            TAG=$(gh release list --repo ${{ github.repository }} --limit 1 --exclude-drafts --exclude-pre-releases --json tagName -q .[0].tagName)
             echo "TAG=$TAG" >> $GITHUB_ENV
           fi
       - name: Prepare Alpine
