@@ -98,8 +98,11 @@ switch ($Action) {
         # Send magic packet via UDP
         try {
             $udpClient = New-Object System.Net.Sockets.UdpClient
-            $udpClient.Connect($BROADCAST_IP, 9)
-            $udpClient.Send($packet, $packet.Length)
+            $udpClient.Client.SetSocketOption([System.Net.Sockets.SocketOptionLevel]::Socket, [System.Net.Sockets.SocketOptionName]::Broadcast, $true)
+            $endpoint = New-Object System.Net.IPEndPoint ([System.Net.IPAddress]::Parse($BROADCAST_IP), 9)
+            for ($i = 0; $i -lt 3; $i++) {
+                $udpClient.Send($packet, $packet.Length, $endpoint)
+            }
             $udpClient.Close()
         } catch {
             Write-Error "Failed to send UDP packet: $_"

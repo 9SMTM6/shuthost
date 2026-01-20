@@ -72,19 +72,34 @@ case "$ACTION" in
         echo "WOL via this script is in testing and has not worked in some tests."
         # Construct magic packet
         # 6 bytes of FF
-        PACKET=$(printf '\xff\xff\xff\xff\xff\xff')
+        PACKET='\xff\xff\xff\xff\xff\xff'
         # 16 repetitions of MAC address
         MAC_BYTES=$(printf '%s' "$MAC_ADDRESS" | sed 's/:/ /g')
         for _ in $(seq 1 16); do
             for byte in $MAC_BYTES; do
-                PACKET="${PACKET}$(printf '\\x%s' "$byte")"
+                PACKET="${PACKET}\\x${byte}"
             done
         done
 
         set -v
 
         # Send magic packet via UDP
-        printf '%b' "$PACKET" | nc -u -w1 "$BROADCAST_IP" 9
+        if [ "$(uname)" = "Darwin" ]; then
+            # macOS: use Python 3 for reliable broadcast
+            python3 -c "
+import socket
+packet = b'$PACKET'
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+for _ in range(3):
+    s.sendto(packet, ('$BROADCAST_IP', 9))
+"
+        else
+            # Linux: use nc with broadcast option
+            for i in 1 2 3; do
+                printf '%b' "$PACKET" | nc -u -b -w0 "$BROADCAST_IP" 9
+            done
+        fi
         ;;
     *)
         echo "Error: Invalid action '$ACTION'. Must be status, shutdown, or wake." >&2
