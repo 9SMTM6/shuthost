@@ -1,8 +1,6 @@
 # ShutHost Host Agent Installer (PowerShell)
 # Installs the host agent by downloading from the coordinator
 
-$ErrorActionPreference = 'Stop'
-
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$RemoteUrl,
@@ -15,6 +13,8 @@ param(
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
+
+$ErrorActionPreference = 'Stop'
 
 # Determine if we should accept self-signed certificates (for localhost/testing)
 $hostPart = $RemoteUrl -replace '^https?://', '' -replace '/.*$', '' -replace ':.*$', ''

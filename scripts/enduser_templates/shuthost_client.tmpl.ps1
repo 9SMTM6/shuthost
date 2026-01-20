@@ -3,8 +3,6 @@
 # This may be a template containing placeholders like {client_id}, {shared_secret}, and {embedded_remote_url}
 # that must be replaced with actual values before use.
 
-$ErrorActionPreference = 'Stop'
-
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [ValidateSet("take", "release")]
@@ -18,6 +16,8 @@ param(
 
     [switch]$Async
 )
+
+$ErrorActionPreference = 'Stop'
 
 $CLIENT_ID = "{client_id}"
 $SECRET = "{shared_secret}"

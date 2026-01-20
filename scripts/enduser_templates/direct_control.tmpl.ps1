@@ -3,13 +3,13 @@
 # This may be a template containing placeholders like {host_ip}, {port}, {shared_secret}, {mac_address}, and {hostname}
 # that must be replaced with actual values before use.
 
-$ErrorActionPreference = 'Stop'
-
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [ValidateSet("status", "shutdown", "wake")]
     [string]$Action
 )
+
+$ErrorActionPreference = 'Stop'
 
 $HOST_IP = "{host_ip}"
 $PORT = {port}
