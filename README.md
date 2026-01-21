@@ -5,7 +5,7 @@
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/main.yaml?label=build%20%26%20test)](https://github.com/9SMTM6/shuthost/actions/workflows/main.yaml)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/qa.yml?label=QA)](https://github.com/9SMTM6/shuthost/actions/workflows/qa.yml)
 
-A neat helper that manages the standby state of unix hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
+A neat helper that manages the standby state of unix and windows hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
 > Note: LARGE parts of this project were LLM generated. None were blindly committed, but it is what it is.
 
