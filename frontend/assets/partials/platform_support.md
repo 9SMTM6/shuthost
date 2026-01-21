@@ -21,20 +21,26 @@
                 <tr>
                     <td>Coordinator</td>
                     <td>✅ Binary<br>✅ Docker</td>
-                    <td>✅ Binary<br>❌ Docker<br>✅ Linux VM (bridged networking)</td>
-                    <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM (bridged networking)</td>
+                    <td>✅ Binary<br>❌ Docker<br>✅ Linux VM<br>(bridged networking)</td>
+                    <td>❌ Binary<br>❌ Docker<br>❌ WSL<br>✅ Linux VM<br>(bridged networking)</td>
                 </tr>
                 <tr>
                     <td>Host Agent</td>
                     <td>✅ Binary</td>
                     <td>✅ Binary</td>
-                    <td>✅ Self-extracting (manual service setup required)</td>
+                    <td>✅ Self-extracting<br>(manual service setup required)</td>
                 </tr>
                 <tr>
-                    <td>Client</td>
+                    <td>Client<br>(Script)</td>
                     <td>✅ Shell<br>✅ Docker</td>
                     <td>✅ Shell<br>✅ Docker</td>
                     <td>✅ PowerShell<br>✅ Docker<br>✅ WSL (Shell)</td>
+                </tr>
+                <tr>
+                    <td>Direct Control<br>(Script)</td>
+                    <td>✅ Shell</td>
+                    <td>✅ Shell</td>
+                    <td>✅ PowerShell</td>
                 </tr>
             </tbody>
         </table>

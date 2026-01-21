@@ -27,16 +27,18 @@ Note that the theme (light/dark) is selected based on your system preference.
 
 ## ✨ Features
 
-- Manage standby state of Unix hosts with Wake-On-Lan (WOL) and lightweight agents
-- Web-based GUI for easy management 
+- Manage standby state of Linux, MacOS and Windows hosts with Wake-On-Lan (WOL) and lightweight agents
+- Web-based GUI for easy management
   - Light/Dark theme are selected based on system preference (with CSS media queries)
   - installable as [PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Installing#installing_and_uninstalling_pwas)
     - this allows behavior similar to an native app on e.g. Android
 - API for machine-to-machine control (e.g. backups)
+- customizable, e.g. custom shutdown/sleep command per host
 - Should support extension (e.g. Home Assistant)
-- Docker and simple binary deployment options (Docker has some strict requirements though)
-- Convenience scripts for simple agent/client installation
-- An attempt at extensive documentation
+- Convenience scripts for simple installation of agents, clients and coordinator
+- Docker and simple binary deployment options for the coordinator (due to how Wake-on-LAN works that deployment only supports Linux though)
+- simplified agent-only deployment doesn't require a coordinator on an always-on host
+- security wasn't an afterthought
 
 ---
 
@@ -85,6 +87,7 @@ For simpler setups and keyword based explanation see: [Architecture](https://9sm
 ## 💿 Installation
 
 Choose either the binary or the container (Linux only) installation.
+Windows [isn't supported by the coordinator](frontend/assets/partials/platform_support.md); use a Linux VM or install the agent only (see [Agent-only Install](#-agent-only-install)).
 
 #### Binary
 - Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
