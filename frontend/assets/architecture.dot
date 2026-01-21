@@ -5,7 +5,8 @@ digraph HostLifecycle {
   edge [fontname="Inter"];
 
   webui [label="WebUI"];
-  client [label="Client\n1 per task (e.g. backup of different folders)"];
+  client [label="Client (Script)\n1 per task (e.g. backup of different folders)"];
+  direct_control [label="Direct Control\n(Script)"];
   coordinator [label="Coordinator"];
   host [label="Host"];
   agent [label="Agent\n1 per host"];
@@ -17,6 +18,10 @@ digraph HostLifecycle {
   // Lease interactions (combined arrow)
   client -> coordinator [label="request/release\nleases"];
   webui -> coordinator [label="request/release\nleases"];
+
+  // Direct control interactions (alternative path)
+  direct_control -> host [label="WOL\nstartup"];
+  direct_control -> agent [label="ask status/\nshutdown"];
 
   // Host lifecycle commands
   coordinator -> host [label="WOL startup\n(if ≥1 leases)"];

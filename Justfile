@@ -43,6 +43,7 @@ deploy_branch_on_metal:
 build_graphs:
     dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/generated/architecture.svg
     dot frontend/assets/architecture_simplified.dot -Tsvg -ofrontend/assets/generated/architecture_simplified.svg
+    dot frontend/assets/architecture_agent_only.dot -Tsvg -ofrontend/assets/generated/architecture_agent_only.svg
 
 clean:
     cargo clean && cargo fetch
