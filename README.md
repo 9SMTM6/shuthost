@@ -53,11 +53,8 @@ Extended documentation, examples, and additional resources to help you get the m
 - [❓ FAQ](docs/FAQ.md)
 - [📷 UI screenshots](#-ui-screenshots)
 - [🖥️ Platform Support](frontend/assets/partials/platform_support.md)
-- [🛜 WebUI Network Configuration](docs/examples/webui-network-config.md)
-- [⚙️ Full Configuration Example](docs/examples/example_config.toml)
 - [🏗️ Architecture](https://9smtm6.github.io/shuthost/#architecture)
 - [🚀 Potential Future Features](#-potential-future-features)
-- [📖 API Documentation](docs/API.md)
 - [🤝 Contributing](docs/CONTRIBUTING.md)
 
 ---
@@ -71,7 +68,7 @@ ShutHost addresses these challenges through three key design decisions:
 - **Privilege & init integration:** Performing a shutdown usually requires elevated privileges and must persist across reboots. ShutHost provides lightweight host agents that integrate with common service managers so the shutdown capability is available after restarts. Supported integrations include `systemd` (the dominant init on most mainstream Linux distributions), `openrc` (used by distributions like Alpine and Gentoo), and `launchd` (macOS). A "self-extracting" mode is also available for custom or manual setups where users handle init integration themselves (see [Deploying the Self-Extracting Agent on Unraid](docs/examples/unraid-self-extracting-agent-deployment.md) for an example).
 - **Network reachability & central control:** Wake-on-LAN only operates on the local broadcast domain. To manage hosts from outside the LAN, ShutHost includes a coordinator component: a single LAN-hosted coordinator provides a web GUI (installable as a PWA) and an API. The coordinator sends WOL packets to start machines locally and forwards authenticated shutdown requests to host agents over IP.
 
-Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone (see [Agent-only Installation](docs/examples/agent-installation.md)); its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-self-extracting-agent-deployment.md).
+Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone with direct control scripts (see [Agent-only Installation](docs/examples/agent-installation.md)); its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-self-extracting-agent-deployment.md).
 
 The coordinator glues the pieces together and provides usability features:
 
@@ -81,13 +78,15 @@ The coordinator glues the pieces together and provides usability features:
 - A lease system prevents hosts from being shut down while a client holds an active lease (for instance, while a backup job is running).
   > This safety depends on all starts and stops going through the coordinator (either the UI or a client using the coordinator API); actions performed outside the coordinator are outside its control.
 
-For a visual overview, see the architecture diagram: [Architecture](https://9smtm6.github.io/shuthost/#architecture)
+![Architecture Diagram](frontend/assets/generated/architecture.svg)
+
+For simpler setups and keyword based explanation see: [Architecture](https://9smtm6.github.io/shuthost/#architecture)
 
 ## 💿 Installation
 
-Choose either the binary (recommended for reliability and WOL support) or the container (Linux only) installation.
+Choose either the binary or the container (Linux only) installation.
 
-#### Binary (recommended)
+#### Binary
 - Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
   ```bash
   curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
