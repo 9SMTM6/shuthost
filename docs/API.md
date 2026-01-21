@@ -8,12 +8,16 @@ This documentation is intended to help with third-party integrations, including 
 
 > **⚠️ API Stability Notice**: An effort is taken to version breaking changes appropriately, but no guarantee is given. Only successful response status codes (2xx) are subject to stability efforts - error responses and message content may change without notice. APIs not covered in this documentation are not subject to any stability efforts.
 
+> **💡 Implementation Examples**: For concrete code examples, examine the source code of the provided convenience scripts (`shuthost_client`, `direct_control`) and the ShutHost coordinator/agent components.
+
 ## Table of Contents
 
 1. [Coordinator M2M API](#coordinator-m2m-api)
 2. [Agent Protocol](#agent-protocol)
 3. [Authentication & Security](#authentication--security)
 4. [Examples](#examples)
+   - [Client Scripts](#client-scripts)
+   - [Direct Control Scripts](#direct-control-scripts)
 
 ---
 
@@ -196,7 +200,9 @@ FINAL_MESSAGE="${TIMESTAMP}|${ACTION}|${SIGNATURE}"
 
 ## Examples
 
-### Client Script Usage
+### Client Scripts
+
+Convenience scripts are provided for M2M lease management via the coordinator API:
 
 ```bash
 # Take lease on host (synchronous)
@@ -211,6 +217,26 @@ FINAL_MESSAGE="${TIMESTAMP}|${ACTION}|${SIGNATURE}"
 # Take lease asynchronously with custom coordinator URL
 ./shuthost_client_myclient.sh take myhost https://coordinator.example.com --async
 ```
+
+### Direct Control Scripts
+
+For direct communication with host agents (bypassing the coordinator):
+
+```bash
+# Generate direct-control script (Linux/macOS)
+sudo shuthost_host_agent generate-direct-control
+./shuthost_direct_control_<hostname> status
+./shuthost_direct_control_<hostname> shutdown
+```
+
+```powershell
+# Generate direct-control script (Windows)
+powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control
+.\shuthost_direct_control_<hostname>.ps1 status
+.\shuthost_direct_control_<hostname>.ps1 shutdown
+```
+
+See [Agent-only Installation](docs/examples/agent-installation.md) for details.
 
 ### cURL Examples
 
