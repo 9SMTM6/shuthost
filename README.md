@@ -36,7 +36,7 @@ Note that the theme (light/dark) is selected based on your system preference.
 - customizable, e.g. custom shutdown/sleep command per host
 - Should support extension (e.g. Home Assistant)
 - Convenience scripts for simple installation of agents, clients and coordinator
-- Docker and simple binary deployment options for the coordinator (due to how Wake-on-LAN works that deployment only supports Linux though)
+- Docker and simple binary deployment options for the coordinator (due to how Wake-on-LAN works docker only supports Linux though)
 - simplified agent-only deployment doesn't require a coordinator on an always-on host
 - security wasn't an afterthought
 
