@@ -25,11 +25,16 @@
             - cell "✅ Binary"
             - cell "✅ Binary"
             - cell "✅ Self-extracting (manual service setup required)"
-          - row "Client ✅ Shell ✅ Docker ✅ Shell ✅ Docker ✅ PowerShell ✅ Docker ✅ WSL (Shell)":
-            - cell "Client"
+          - row "Client (Script) ✅ Shell ✅ Docker ✅ Shell ✅ Docker ✅ PowerShell ✅ Docker ✅ WSL (Shell)":
+            - cell "Client (Script)"
             - cell "✅ Shell ✅ Docker"
             - cell "✅ Shell ✅ Docker"
             - cell "✅ PowerShell ✅ Docker ✅ WSL (Shell)"
+          - row "Direct Control (Script) ✅ Shell ✅ Shell ✅ PowerShell":
+            - cell "Direct Control (Script)"
+            - cell "✅ Shell"
+            - cell "✅ Shell"
+            - cell "✅ PowerShell"
     - article:
       - heading "Architecture Documentation" [level=2]
       - paragraph: "ShutHost provides two different architectural views depending on your use case:"
