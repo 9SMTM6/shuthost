@@ -3,3 +3,5 @@ Cargo.lock
 .sqlx/*.json
 tests/install-file-snapshots
 frontend/tests/aria-snapshots.spec.ts-snapshots
+frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation.aria.yml
+frontend/assets/generated/architecture*.svg

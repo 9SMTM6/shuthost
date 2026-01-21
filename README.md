@@ -192,7 +192,7 @@ These are generated or validated automatically as part of the test suite, and th
   - ❓ Unclear how to deal with authorization:
     - Server secret?
 
-<!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service -->
+<!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service https://crates.io/crates/planif-->
 <!-- 
 TODO: actually add bare metal tests for windows variants, validate workflow triggers
 
