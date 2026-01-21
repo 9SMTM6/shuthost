@@ -40,13 +40,7 @@ On certain distributions (e.g., Ubuntu 22.04), the default binary may be incompa
 
 The install scripts cannot validate self-signed certificates without additional configuration.
 
-**Solution:** Either proxy your self-signed certificates through a trusted endpoint, or use certificates from a trusted provider like Let's Encrypt.
-
-### 🪪 OIDC login shows an error but works on the second try. Is this a bug?
-
-Yes, OIDC login occasionally fails to revalidate the session and shows a generic error. Clicking "Login with SSO" again typically succeeds.
-
-**Solution:** This issue is currently undiagnosed due to lack of data. As a workaround, simply click "Login with SSO" again to log in successfully. If you experience this issue, please consider reporting details to help us diagnose it.
+**Solution:** Either proxy your self-signed certificates through a trusted endpoint, or use certificates from a trusted provider like Let's Encrypt. For the agent specifically, you can also install the agent directly from GitHub  - see [Agent-only Installation](../examples/agent-installation.md), no need to generate the direct control script, just continue like with a normal install.
 
 ### 🌐 Must be served on a (sub)domain, not a subpath
 
