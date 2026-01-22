@@ -18,7 +18,7 @@ else
 fi
 
 # Configuration
-OUTPUT_DIR="./tests/install-file-snapshots/compose-and-self-extracting"
+OUTPUT_DIR="./scripts/snapshot_files/snapshots/compose-and-self-extracting"
 BASE_IMAGE="shuthost-compose"
 
 trap cleanup EXIT
@@ -97,4 +97,4 @@ podman rm --force -t 1 "temp-$BASE_IMAGE-container" >/dev/null 2>&1
 do_diff
 
 # Diff client files
-process_diff "$BASE_IMAGE-client-installed" "$BASE_IMAGE-direct-control-installed" "./tests/install-file-snapshots/client.toml"
+process_diff "$BASE_IMAGE-client-installed" "$BASE_IMAGE-direct-control-installed" "./scripts/snapshot_files/snapshots/client.toml"

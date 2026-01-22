@@ -116,7 +116,7 @@ To update the snapshots (e.g., when installation scripts change), run the snapsh
 ./scripts/snapshot_files/compose_and_self_extracting.sh
 ```
 
-These scripts will build the necessary binaries, run the installations in containers, and generate updated TOML files in the `tests/install-file-snapshots/` subdirectories.
+These scripts will build the necessary binaries, run the installations in containers, and generate updated TOML files in the `scripts/snapshot_files/snapshots/` subdirectories.
 
 Alternatively, use the `update_file_snapshots` task in the Justfile, which runs all snapshot scripts automatically.
 
