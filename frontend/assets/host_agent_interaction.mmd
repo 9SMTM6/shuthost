@@ -1,0 +1,24 @@
+flowchart LR
+    %% Host-Agent-Controller Interactions
+
+    %% Nodes
+    subgraph controller["Controller"]
+        direct@{ shape: docs, label: "Direct Control (Script)" }
+        coordinator@{ shape: div-proc, label: "Coordinator" }
+    end
+    subgraph host_unit["**Host**"]
+        host(["Actual Host"])
+        agent@{ shape: tag-proc, label: "**Agent**" }
+    end
+
+    %% Relationships
+    host --> |"starts <br>on *boot*"| agent
+    controller --> |"**shutdown** requests"| agent
+    controller --> |"**status** pings<br>(*host online*)"| agent
+    controller --> |"**WOL** startup"| host
+    agent --> |"executes<br>**shutdown**"| host
+
+    class controller controller
+    class direct direct
+    class host host
+    class agent agent

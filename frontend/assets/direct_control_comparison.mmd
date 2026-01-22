@@ -1,0 +1,26 @@
+flowchart LR
+    %% Direct Control vs WebUI+Coordinator Comparison
+
+    %% WebUI (works everywhere)
+    webui@{ shape: circle, label: "**WebUI**" }
+
+    %% LAN Components
+    subgraph lan["**LAN**"]
+        subgraph controller["Controller"]
+            direct_control@{ shape: docs, label: "Direct Control Script" }
+            coordinator@{ shape: div-proc, label: "Coordinator" }
+        end
+        host@{ shape: div-proc, label: "Host" }
+    end
+
+    %% Relationships
+    webui <--> |"serves/**controls**"| coordinator
+    controller --> |"**startup**"| host
+    controller --> |"**shutdown**"| host
+    webui -.-> |"controls *outside* of **LAN**"| host
+
+    class lan lan
+    class webui webui
+    class coordinator coordinator
+    class direct_control direct_control
+    class host host

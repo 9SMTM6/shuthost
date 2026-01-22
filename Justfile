@@ -41,9 +41,7 @@ deploy_branch_on_metal:
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
 build_graphs:
-    dot frontend/assets/architecture.dot -Tsvg -ofrontend/assets/generated/architecture.svg
-    dot frontend/assets/architecture_simplified.dot -Tsvg -ofrontend/assets/generated/architecture_simplified.svg
-    dot frontend/assets/architecture_agent_only.dot -Tsvg -ofrontend/assets/generated/architecture_agent_only.svg
+    cd frontend && for file in assets/*.mmd; do npx mmdc -i "$file" -o "assets/generated/$(basename "$file" .mmd).svg"; done
 
 clean:
     cargo clean && cargo fetch

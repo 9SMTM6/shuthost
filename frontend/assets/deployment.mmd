@@ -1,0 +1,34 @@
+flowchart TD
+    %% ShutHost Deployment Diagram
+
+    %% Source
+    github@{ shape: hexagon, label: "GitHub<br>Releases" }
+
+    coordinator@{ shape: div-proc, label: "Coordinator<br>(WebUI + API)" }
+
+    subgraph agent_only["Agent Only Install"]
+        host_agent@{ shape: tag-proc, label: "Host Agent<br>*per host*" }
+        direct_control@{ shape: docs, label: "Direct Control<br>Script" }
+    end
+
+    client@{ shape: docs, label: "Client<br>*per task*" }
+
+    %% Deployment Flows
+    github --> |"Installer (**binary**)<br>or **Docker**"| coordinator
+    github --> |"Installer"| host_agent
+    coordinator --> |"generates"| client
+    client --> |"register<br>manually"| coordinator
+    host_agent --> |"register<br>manually"| coordinator
+
+    %% Agent generates direct control script
+    host_agent --> |"generates"| direct_control
+
+    %% Usage Flows
+    coordinator --> |"Installer<br>*tests WOL connectivity*"| host_agent
+
+    class github github
+    class coordinator coordinator
+    class agent_only agent_only
+    class host_agent host_agent
+    class direct_control direct_control
+    class client client
