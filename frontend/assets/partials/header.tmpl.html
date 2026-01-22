@@ -16,19 +16,18 @@
                 </label>
                 <a href="/" class="flex items-center gap-4">
                     <img src="{ favicon }" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto">
-                    <span class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]" role="heading"
-                        aria-level="1">ShutHost</span>
+                    <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">ShutHost</h1>
                 </a>
             </div>
             <div class="flex items-center gap-2">
                 <nav class="nav-tabs" role="tablist" aria-label="Main tabs">
                     <!-- Tablist for navigation -->
-                    <button class="tab" data-tab-content="architecture" role="tab" aria-selected="false"
-                        aria-controls="architecture-tab" tabindex="0">Docs</button>
-                    <button class="tab active" data-tab-content="hosts" role="tab" aria-selected="true"
-                        aria-controls="hosts-tab" tabindex="0">Hosts</button>
-                    <button class="tab" data-tab-content="clients" role="tab" aria-selected="false"
-                        aria-controls="clients-tab" tabindex="0">Clients</button>
+                    <button type="button" class="tab" data-tab-content="architecture" role="tab" aria-selected="false"
+                        aria-controls="architecture-tab">Docs</button>
+                    <button type="button" class="tab active" data-tab-content="hosts" role="tab" aria-selected="true"
+                        aria-controls="hosts-tab">Hosts</button>
+                    <button type="button" class="tab" data-tab-content="clients" role="tab" aria-selected="false"
+                        aria-controls="clients-tab">Clients</button>
                 </nav>
                 { maybe_logout }
             </div>

@@ -22,7 +22,7 @@ test.describe('token login', () => {
         await page.waitForLoadState('networkidle');
         // Should redirect to login page
         await expect(page).toHaveURL(`https://127.0.0.1:${port}/login`);
-        await expect(page.locator('h1')).toHaveText('Sign in');
+        await expect(page.locator('#login-title')).toContainText('Sign in');
     });
 
     test('full login and logout', async ({ page }) => {
@@ -59,6 +59,6 @@ test.describe('OIDC login', () => {
         await page.waitForLoadState('networkidle');
         // Should redirect to login page
         await expect(page).toHaveURL(`https://127.0.0.1:${port}/login`);
-        await expect(page.locator('h1')).toHaveText('Sign in');
+        await expect(page.locator('#login-title')).toContainText('Sign in');
     });
 });
