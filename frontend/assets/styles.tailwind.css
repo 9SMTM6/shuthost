@@ -150,7 +150,33 @@ footer {
 
     /* Update actions cell styling */
     .actions-cell {
-        @apply py-1.5 flex flex-row sm:flex-row gap-1 sm:gap-4 justify-start items-center;
+        @apply py-1.5;
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: center;
+    }
+
+    /* Overlay both buttons in same grid cell */
+    .actions-cell > button {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    /* Hide/show buttons based on lease state */
+    .actions-cell .take-lease {
+        visibility: visible;
+    }
+
+    .actions-cell .release-lease {
+        visibility: hidden;
+    }
+
+    tr[data-has-lease="true"] .actions-cell .take-lease {
+        visibility: hidden;
+    }
+
+    tr[data-has-lease="true"] .actions-cell .release-lease {
+        visibility: visible;
     }
 
     /* Add these new styles */
