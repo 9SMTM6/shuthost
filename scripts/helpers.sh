@@ -5,15 +5,14 @@ set -e
 build_musl() {
     #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
     docker build --network host -t shuthost-builder -f scripts/build.Containerfile .
-    # Clean node_modules to avoid npm tar errors when mounting from host into container
+    mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug/
+        # --user "$(id -u):$(id -g)" \
     docker run --rm \
-        --user "$(id -u):$(id -g)" \
         -v "$(pwd):/src" \
         -v "$HOME/.cargo/registry:/usr/local/cargo/registry" \
         -v "$HOME/.cargo/git:/usr/local/cargo/git" \
         shuthost-builder sh -c "\
             set -e
-            mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug/
             # build with coverage support
             eval \"\$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)\"
             cargo build --bin shuthost_host_agent

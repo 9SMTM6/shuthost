@@ -121,10 +121,11 @@ patch_test_configs:
 update_file_snapshots:
     #!/usr/bin/env sh
     set -e
-    parallel :::\
-        ./scripts/snapshot_files/systemd.sh\
-        ./scripts/snapshot_files/openrc.sh\
-        ./scripts/snapshot_files/compose_and_self_extracting.sh
+    . ./scripts/helpers.sh && build_gnu
+    ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
+    . ./scripts/helpers.sh && build_musl
+    ./scripts/snapshot_files/openrc.sh ./target/debug/shuthost_coordinator
+    ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
 
 install_test_scripts:
     ./scripts/tests/enduser_install_scripts.sh
