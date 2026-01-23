@@ -1,0 +1,22 @@
+flowchart LR
+    %% Client-WebUI-Controller-Host Interactions
+
+    %% Nodes
+    subgraph clients["Clients"]
+        webui@{ shape: circle, label: "WebUI" }
+        client@{ shape: docs, label: "Client (Script)<br>one per *automated Task*" }
+    end
+    coordinator@{ shape: div-proc, label: "Coordinator" }
+    host@{ shape: div-proc, label: "**Host**" }
+
+    %% Relationships
+    clients --> |"request/release<br>**leases** on hosts"| coordinator
+    clients -.-> |"*indirectly* control"| host
+    coordinator --> |"**WOL** startup<br>(if **>=1 leases**)"| host
+    coordinator --> |"shutdown<br>(if **=0 leases**)"| host
+
+    class clients clients
+    class webui webui
+    class client client
+    class coordinator coordinator
+    class host host

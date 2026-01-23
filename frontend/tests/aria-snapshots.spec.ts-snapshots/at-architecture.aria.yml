@@ -37,92 +37,141 @@
             - cell "✅ PowerShell"
     - article:
       - heading "Architecture Documentation" [level=2]
-      - paragraph: "ShutHost provides two different architectural views depending on your use case:"
-      - region "Simplified Architecture":
-        - heading "Simplified Architecture" [level=3]
+      - paragraph: "ShutHost's architecture is built around three core components: the Coordinator, Host Agents, and optional Clients for programmatic control."
+      - region "Core Components & Interactions":
+        - heading "Core Components & Interactions" [level=3]
         - figure:
-          - img "Simplified Architecture Diagram"
-        - paragraph:
-          - strong: "When to use:"
-          - text: This architecture applies when you have
-          - strong: no clients defined
-          - text: in your configuration. In this scenario, only the WebUI interacts with hosts through the coordinator.
-        - note "How it works":
-          - heading "How it works" [level=4]
+          - img "Host-Agent-Coordinator Interaction Diagram"
+        - note "Component Roles":
+          - heading "Component Roles" [level=4]
           - list:
             - listitem:
-              - text: The
-              - strong: WebUI
-              - text: sends startup/shutdown requests directly to the
-              - strong: Coordinator
+              - strong: "Coordinator:"
+              - text: Central control point that serves the WebUI and API. Sends Wake-on-LAN packets to start hosts and forwards authenticated shutdown requests
             - listitem:
-              - text: The
-              - strong: Coordinator
-              - text: manages host lifecycle by sending Wake-on-LAN packets for startup and shutdown commands to agents
+              - strong: "Host Agent:"
+              - text: Lightweight service running on each managed host. Handles shutdown commands, responds to status pings, and integrates with the system's init system (systemd, openrc, launchd)
             - listitem:
-              - text: Each
-              - strong: Host
-              - text: runs an
-              - strong: Agent
-              - text: service that handles shutdown commands and reports status back to the coordinator
-            - listitem: Under the hood, this still uses the lease system, but it's transparent to the user
-      - region "Complete Architecture":
-        - heading "Complete Architecture" [level=3]
+              - strong: "Direct Control Script:"
+              - text: Optional standalone script for LAN-only control without a coordinator
+        - note "Communication Flow":
+          - heading "Communication Flow" [level=4]
+          - list:
+            - listitem:
+              - strong: "Startup:"
+              - text: Coordinator sends Wake-on-LAN (WOL) broadcast packets to power on hosts
+            - listitem:
+              - strong: "Shutdown:"
+              - text: Coordinator sends authenticated, timestamped shutdown requests to the agent, which executes the shutdown
+            - listitem:
+              - strong: "Status:"
+              - text: Coordinator periodically pings agents to verify host availability
+            - listitem:
+              - strong: "Agent Lifecycle:"
+              - text: The agent starts automatically on boot via the system's init service
+      - region "Lease System & Multi-Client Access":
+        - heading "Lease System & Multi-Client Access" [level=3]
         - figure:
-          - img "Complete Architecture Diagram"
+          - img "Client-Coordinator-Host Lease System Diagram"
         - paragraph:
-          - strong: "When to use:"
-          - text: This architecture applies when you have
+          - strong: "When leases matter:"
+          - text: When you have
           - strong: clients defined
-          - text: in your configuration. This enables programmatic access where multiple clients can access hosts concurrently.
+          - text: in your configuration or multiple entities (WebUI + scripts) accessing hosts, the lease system prevents conflicts and ensures hosts stay online while in use.
         - note "Lease System":
-          - heading "Lease System" [level=4]
-          - paragraph:
-            - text: With multiple clients potentially accessing hosts simultaneously, ShutHost introduces a
-            - strong: lease system
-            - text: "to coordinate access and prevent conflicts:"
+          - heading "How Leases Work" [level=4]
+          - paragraph: "The lease system coordinates access when multiple clients or the WebUI need to use hosts simultaneously:"
           - list:
             - listitem:
               - strong: "Lease Acquisition:"
-              - text: Both WebUI and Clients must request leases before using hosts
+              - text: Clients and WebUI request leases before accessing hosts
             - listitem:
               - strong: "Automatic Startup:"
-              - text: Hosts are automatically started when the first lease is acquired (≥1 leases)
+              - text: Hosts are automatically started when the first lease is acquired (lease count ≥1)
             - listitem:
               - strong: "Automatic Shutdown:"
-              - text: Hosts are automatically shut down when all leases are released (=0 leases)
+              - text: Hosts are automatically shut down when all leases are released (lease count = 0)
             - listitem:
               - strong: "Conflict Prevention:"
-              - text: The lease system ensures hosts aren't shut down while still in use by other clients
+              - text: Ensures hosts aren't shut down while still in use by other clients or the WebUI
+            - listitem:
+              - strong: "Transparent to Users:"
+              - text: When using only the WebUI without defined clients, the lease system operates automatically in the background
         - note "Client Use Cases":
           - heading "Client Use Cases" [level=4]
-          - paragraph: "Clients are typically used for:"
+          - paragraph: "Clients enable programmatic control for automated tasks:"
           - list:
             - listitem:
               - strong: "Automated Backups:"
-              - text: Scripts that need to wake up hosts, perform backups, then allow shutdown
+              - text: Scripts acquire a lease, wake the host, perform backups, then release the lease to allow shutdown
             - listitem:
               - strong: "Batch Processing:"
-              - text: Jobs that require access to specific hosts for processing tasks
+              - text: Jobs that need temporary access to specific hosts for processing tasks
             - listitem:
               - strong: "CI/CD Pipelines:"
-              - text: Build systems that need temporary access to powerful build machines
+              - text: Build systems that need on-demand access to powerful build machines
             - listitem:
               - strong: "Scheduled Maintenance:"
-              - text: Scripts that perform regular maintenance tasks on hosts
-      - region "💡 Key Points":
-        - note "Key Points":
-          - heading "💡 Key Points" [level=4]
+              - text: Scripts that perform regular maintenance while preventing other shutdowns
+      - region "Deployment Options":
+        - heading "Deployment Options" [level=3]
+        - figure:
+          - img "Deployment Options Diagram"
+        - note "Deployment Paths":
+          - heading "Installation Paths" [level=4]
           - list:
             - listitem:
-              - strong: Both architectures use leases internally
-              - text: "- the simplified view just hides this complexity"
+              - strong: "Full Deployment:"
+              - text: Install the coordinator (binary or Docker) on an always-on host, then use the WebUI to generate and install agents and clients
             - listitem:
-              - strong: Wake-on-LAN (WOL)
-              - text: is used for remote host startup in both cases
+              - strong: "Agent-Only:"
+              - text: Install only the host agent on each managed host and use generated direct-control scripts for local LAN control (no coordinator needed)
             - listitem:
-              - strong: Agents report status
-              - text: to keep the coordinator informed of host availability
+              - strong: "Manual Registration:"
+              - text: Agents and clients must be manually registered with the coordinator after installation
             - listitem:
-              - strong: The coordinator serves the WebUI
-              - text: and provides the API for both human and programmatic access
+              - strong: "WOL Testing:"
+              - text: The coordinator's installer includes connectivity tests to verify Wake-on-LAN functionality
+      - region "Direct Control vs. Coordinator":
+        - heading "Direct Control vs. Coordinator" [level=3]
+        - figure:
+          - img "Direct Control vs Coordinator Comparison Diagram"
+        - note "Network Limitations":
+          - heading "LAN Limitation" [level=4]
+          - paragraph:
+            - strong: "Direct Control Scripts:"
+            - text: Work only on the same LAN as the managed hosts because Wake-on-LAN requires local broadcast. These scripts cannot control hosts from outside your local network.
+        - note "Coordinator Benefits":
+          - heading "Coordinator Benefits" [level=4]
+          - list:
+            - listitem:
+              - strong: "Remote Access:"
+              - text: The WebUI can control hosts from anywhere when the coordinator is exposed via domain/tunnel
+            - listitem:
+              - strong: "Centralized Management:"
+              - text: Single interface for all hosts
+            - listitem:
+              - strong: "Multi-Client Coordination:"
+              - text: Lease system prevents conflicts
+            - listitem:
+              - strong: "Web-Based:"
+              - text: No local scripts needed, works from any device with a browser
+      - region "💡 Key Takeaways":
+        - note "Key Points":
+          - heading "💡 Key Takeaways" [level=4]
+          - list:
+            - listitem:
+              - strong: "Security-First Design:"
+              - text: Authenticated shutdown requests with HMAC signatures and timestamps prevent unauthorized access and replay attacks
+            - listitem:
+              - strong: "Minimal Agent:"
+              - text: Host agents are lightweight, run with necessary privileges, and integrate with system init services
+            - listitem:
+              - strong: "Flexible Deployment:"
+              - text: Choose between full coordinator deployment for remote access or agent-only for simple LAN control
+            - listitem:
+              - strong: "Wake-on-LAN Foundation:"
+              - text: Uses standard WOL for startup; adds secure shutdown capability that doesn't exist in standard protocols
+            - listitem:
+              - strong: "Optional Coordination:"
+              - text: Lease system activates when needed for multi-client scenarios, stays transparent for single-user WebUI usage

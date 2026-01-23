@@ -156,14 +156,25 @@ pub fn process() -> eyre::Result<()> {
         icon_hashes.insert(size, short_hash);
     }
 
-    let arch_simplified_svg =
-        fs::read_to_string("../frontend/assets/generated/architecture_simplified.svg")
-            .wrap_err("Failed to read generated architecture_simplified.svg")?;
-    let arch_simplified_short_hash = short_hash(arch_simplified_svg.as_bytes());
+    let host_agent_interaction_svg =
+        fs::read_to_string("../frontend/assets/generated/host_agent_interaction.svg")
+            .wrap_err("Failed to read generated host_agent_interaction.svg")?;
+    let host_agent_interaction_short_hash = short_hash(host_agent_interaction_svg.as_bytes());
 
-    let arch_complete_svg = fs::read_to_string("../frontend/assets/generated/architecture.svg")
-        .wrap_err("Failed to read generated architecture.svg")?;
-    let arch_complete_short_hash = short_hash(arch_complete_svg.as_bytes());
+    let client_controller_interaction_svg =
+        fs::read_to_string("../frontend/assets/generated/client_controller_interaction.svg")
+            .wrap_err("Failed to read generated client_controller_interaction.svg")?;
+    let client_controller_interaction_short_hash =
+        short_hash(client_controller_interaction_svg.as_bytes());
+
+    let deployment_svg = fs::read_to_string("../frontend/assets/generated/deployment.svg")
+        .wrap_err("Failed to read generated deployment.svg")?;
+    let deployment_short_hash = short_hash(deployment_svg.as_bytes());
+
+    let direct_control_comparison_svg =
+        fs::read_to_string("../frontend/assets/generated/direct_control_comparison.svg")
+            .wrap_err("Failed to read generated direct_control_comparison.svg")?;
+    let direct_control_comparison_short_hash = short_hash(direct_control_comparison_svg.as_bytes());
 
     println!(
         "cargo::rustc-env=ASSET_HASH_STYLES_CSS={}",
@@ -178,21 +189,37 @@ pub fn process() -> eyre::Result<()> {
         println!("cargo::rustc-env=ASSET_HASH_ICON_{}_PNG={}", size, hash);
     }
     println!(
-        "cargo::rustc-env=ASSET_HASH_ARCHITECTURE_SIMPLIFIED_SVG={}",
-        arch_simplified_short_hash
+        "cargo::rustc-env=ASSET_HASH_HOST_AGENT_INTERACTION_SVG={}",
+        host_agent_interaction_short_hash
     );
     println!(
-        "cargo::rustc-env=ASSET_HASH_ARCHITECTURE_SVG={}",
-        arch_complete_short_hash
+        "cargo::rustc-env=ASSET_HASH_CLIENT_CONTROLLER_INTERACTION_SVG={}",
+        client_controller_interaction_short_hash
+    );
+    println!(
+        "cargo::rustc-env=ASSET_HASH_DEPLOYMENT_SVG={}",
+        deployment_short_hash
+    );
+    println!(
+        "cargo::rustc-env=ASSET_HASH_DIRECT_CONTROL_COMPARISON_SVG={}",
+        direct_control_comparison_short_hash
     );
 
     let mut svg_hashes = HashMap::new();
     svg_hashes.insert("favicon".to_string(), favicon_short_hash);
     svg_hashes.insert(
-        "architecture_simplified".to_string(),
-        arch_simplified_short_hash,
+        "host_agent_interaction".to_string(),
+        host_agent_interaction_short_hash,
     );
-    svg_hashes.insert("architecture".to_string(), arch_complete_short_hash);
+    svg_hashes.insert(
+        "client_controller_interaction".to_string(),
+        client_controller_interaction_short_hash,
+    );
+    svg_hashes.insert("deployment".to_string(), deployment_short_hash);
+    svg_hashes.insert(
+        "direct_control_comparison".to_string(),
+        direct_control_comparison_short_hash,
+    );
 
     // Process manifest.tmpl.json
     let manifest_content = include_frontend_asset!("manifest.tmpl.json")

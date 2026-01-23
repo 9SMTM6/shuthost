@@ -18,9 +18,9 @@ A neat helper that manages the standby state of unix and windows hosts with Wake
 
 You can try a demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
 
-- [Live Demo](https://9SMTM6.github.io/shuthost/)
+<p style="text-align: center;"><a href="https://9SMTM6.github.io/shuthost/" style="display: inline-block; padding: 7px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">🚀 Live Demo</a></p>
 
-This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and features without installing anything.
+This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and some of the features without installing anything.
 Note that the theme (light/dark) is selected based on your system preference.
 
 ---
@@ -72,6 +72,8 @@ ShutHost addresses these challenges through three key design decisions:
 
 Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone with direct control scripts (see [Agent-only Installation](docs/examples/agent-installation.md)); its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-self-extracting-agent-deployment.md).
 
+![Host-Agent Interaction](frontend/assets/generated/host_agent_interaction.svg)
+
 The coordinator glues the pieces together and provides usability features:
 
 - A web UI and API make it easy to start/stop machines and integrate with other services.
@@ -80,9 +82,7 @@ The coordinator glues the pieces together and provides usability features:
 - A lease system prevents hosts from being shut down while a client holds an active lease (for instance, while a backup job is running).
   > This safety depends on all starts and stops going through the coordinator (either the UI or a client using the coordinator API); actions performed outside the coordinator are outside its control.
 
-![Architecture Diagram](frontend/assets/generated/architecture.svg)
-
-For simpler setups and keyword based explanation see: [Architecture](https://9smtm6.github.io/shuthost/#architecture)
+![Lease system explainer](frontend/assets/generated/client_controller_interaction.svg)
 
 ## 💿 Installation
 
@@ -120,6 +120,8 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
 - Notes:
   - Uses `network_mode: host` to reach the hosts with the Wake-on-LAN packet. This setting is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary on Mac or run on a Linux VM with bridged networking on Mac or Windows.
 
+![Deployment Possibilities](frontend/assets/generated/deployment.svg)
+
 ### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
 - To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
@@ -127,6 +129,8 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
 ## ⚡ Agent-only Install
 
 Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
+
+![Direct Control Comparison with LAN Limitation](frontend/assets/generated/direct_control_comparison.svg)
 
 > **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
 

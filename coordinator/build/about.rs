@@ -229,7 +229,10 @@ pub fn build_html() -> eyre::Result<()> {
             name,
             version,
             Ecosystem::Npm,
-            license_str,
+            license_str
+                .strip_suffix("*")
+                .unwrap_or(&license_str)
+                .to_string(), // remove trailing '*' if present, comes from license checker inferring the license
             if let &Some(ref publisher) = &info.publisher {
                 vec![Author {
                     name: publisher.clone(),

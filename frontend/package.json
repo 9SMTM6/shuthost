@@ -7,7 +7,8 @@
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
-        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json"
+        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
+        "build-diagrams": "node -e \"const fs=require('fs'); const {execSync}=require('child_process'); fs.readdirSync('assets').filter(f=>f.endsWith('.mmd')).forEach(f=>{const name=f.replace(/\\.mmd$/, ''); execSync('npx mmdc -i assets/' + f + ' -o assets/generated/' + name + '.svg', {stdio:'inherit'});});\""
     },
     "dependencies": {
         "@tailwindcss/cli": "^4.1.8",
@@ -16,6 +17,7 @@
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.10.2",
+        "@mermaid-js/mermaid-cli": "^11.12.0",
         "@playwright/test": "^1.43.0",
         "@types/node": "25.x",
         "license-checker-rseidelsohn": "^4.4.2"
