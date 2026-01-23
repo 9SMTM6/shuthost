@@ -335,18 +335,12 @@ const updateRowAttributes = (row: HTMLTableRowElement, hostname: string) => {
 
     const statusCell = row.querySelector<HTMLElement>('.status');
     const leaseCell = row.querySelector<HTMLElement>('.leases');
-    const takeLeaseButton = row.querySelector<HTMLButtonElement>('.take-lease');
-    const releaseLeaseButton = row.querySelector<HTMLButtonElement>('.release-lease');
 
     if (statusCell) statusCell.textContent = statusText;
     if (leaseCell) leaseCell.textContent = getFormattedLeases(hostname);
 
-    if (takeLeaseButton) {
-        takeLeaseButton.style.display = hasWebInterfaceLease ? 'none' : 'inline-block';
-    }
-    if (releaseLeaseButton) {
-        releaseLeaseButton.style.display = hasWebInterfaceLease ? 'inline-block' : 'none';
-    }
+    // Use data attribute to control button visibility via CSS
+    row.dataset['hasLease'] = String(hasWebInterfaceLease);
 };
 
 /**
