@@ -21,20 +21,8 @@ jobs:
       actions: read
     env:
       GH_TOKEN: ${{ github.token }}
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release' && !github.event.release.prerelease || github.event_name == 'workflow_run'
+    if: &cond github.event_name == 'workflow_dispatch' || github.event_name == 'release' && !github.event.release.prerelease || github.event_name == 'workflow_run'
     steps:
-    - name: Check if tag push
-      if: github.event_name == 'workflow_run'
-      run: |
-        RUN_ID=${{ github.event.workflow_run.id }}
-        EVENT=$(gh run view $RUN_ID --repo ${{ github.repository }} --json event -q .event)
-        HEAD_BRANCH=$(gh run view $RUN_ID --repo ${{ github.repository }} --json headBranch -q .headBranch)
-        if [[ "$EVENT" == "push" && -z "$HEAD_BRANCH" ]]; then
-          echo "Proceed with tag release deployment"
-        else
-          echo "Not a tag push, skipping"
-          exit 1
-        fi
     - uses: actions/checkout@v6
 
     - name: Debug
@@ -50,19 +38,9 @@ jobs:
         fi
 
     - name: Download coordinator binary
-      if: env.TAG != ''
       run: |
         gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
         tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
-        chmod +x shuthost_coordinator
-
-    - name: Build coordinator binary
-      if: env.TAG == ''
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        source ~/.cargo/env
-        cargo build --release --bin shuthost_coordinator
-        cp target/release/shuthost_coordinator .
         chmod +x shuthost_coordinator
 
     - name: Build and snapshot demo
@@ -80,7 +58,7 @@ jobs:
     name: Test live-demo client installer (shell)
     runs-on: ${{ matrix.os }}
     needs: deploy_gh_pages
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    if: *cond
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -93,7 +71,7 @@ jobs:
     name: Test live-demo client installer (powershell on Windows)
     runs-on: windows-latest
     needs: deploy_gh_pages
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    if: *cond
     steps:
       - name: Install client
         run: |
@@ -104,7 +82,7 @@ jobs:
     name: Test live-demo client installer (powershell on Unix)
     runs-on: ${{ matrix.os }}
     needs: deploy_gh_pages
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    if: *cond
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -118,7 +96,7 @@ jobs:
     name: Test live-demo host agent installer
     runs-on: ${{ matrix.os }}
     needs: deploy_gh_pages
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    if: *cond
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
