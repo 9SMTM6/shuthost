@@ -16,7 +16,7 @@ flowchart LR
     %% Deployment Flows
     github --> |"Installer (**binary**)<br>or **Docker**"| coordinator
     github --> |"Installer"| host_agent
-    coordinator --> |"generates"| client
+    coordinator --> |"Installer"| client
     client --> |"register<br>manually"| coordinator
     host_agent --> |"register<br>manually"| coordinator
 
