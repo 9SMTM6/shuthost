@@ -164,7 +164,8 @@ pub fn process() -> eyre::Result<()> {
     let client_controller_interaction_svg =
         fs::read_to_string("../frontend/assets/generated/client_controller_interaction.svg")
             .wrap_err("Failed to read generated client_controller_interaction.svg")?;
-    let client_controller_interaction_short_hash = short_hash(client_controller_interaction_svg.as_bytes());
+    let client_controller_interaction_short_hash =
+        short_hash(client_controller_interaction_svg.as_bytes());
 
     let deployment_svg = fs::read_to_string("../frontend/assets/generated/deployment.svg")
         .wrap_err("Failed to read generated deployment.svg")?;

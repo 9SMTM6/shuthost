@@ -112,11 +112,7 @@ pub(crate) fn routes() -> Router<AppState> {
             get(serve_client_controller_interaction),
         )
         .route(
-            concat!(
-                "/deployment.",
-                env!("ASSET_HASH_DEPLOYMENT_SVG"),
-                ".svg"
-            ),
+            concat!("/deployment.", env!("ASSET_HASH_DEPLOYMENT_SVG"), ".svg"),
             get(serve_deployment),
         )
         .route(
