@@ -1,5 +1,5 @@
 node_modules
 assets/generated/*
-!assets/generated/architecture*.svg
+!assets/generated/*.svg
 playwright-report
 test-results
