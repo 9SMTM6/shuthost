@@ -98,9 +98,8 @@ footer {
     }
 
     .architecture-diagram {
-        @apply h-auto bg-transparent rounded max-w-full;
-        width: auto;
-        max-height: 500px;
+        /* TODO: I cant seem to figure out how to scale the diagrams "naturally", so that the element size between the diagram contents remains consistent. It doesn't e.g. respect the viewport sizes at all*/
+        @apply h-auto w-auto bg-transparent rounded max-w-full;
     }
 
     .architecture-content {
