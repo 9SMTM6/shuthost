@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test-install-scripts:
-    name: Test ${{ matrix.component }} on ${{ matrix.name_suffix }}
+    name: Test ${{ matrix.component }} install script on ${{ matrix.name_suffix }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     env:
@@ -67,3 +67,27 @@ jobs:
       - name: Test ${{ matrix.component }} install script
         run: |
           CI_MODE=true ./install-scripts/shuthost_${{ matrix.component }}_installer.sh
+
+  test-windows-host-agent-install:
+    name: Test host_agent install script on Windows
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Set tag
+        shell: powershell
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "release") {
+            echo "TAG=${{ github.event.release.tag_name }}" >> $env:GITHUB_ENV
+          } elseif ($env:GITHUB_EVENT_NAME -eq "workflow_run") {
+            $TAG = git tag --points-at ${{ github.event.workflow_run.head_sha }} | Select-Object -First 1
+            echo "TAG=$TAG" >> $env:GITHUB_ENV
+          }
+      - name: Download install scripts
+        run: |
+          gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_host_agent_installer.ps1" --dir install-scripts
+      - name: Test host_agent install script
+        shell: powershell
+        run: |
+          $env:CI_MODE="true"
+          powershell -ExecutionPolicy Bypass -File .\install-scripts\shuthost_host_agent_installer.ps1
