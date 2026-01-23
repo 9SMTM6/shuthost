@@ -15,15 +15,16 @@ files.forEach((f) => {
     #diagram-${name} { fill: #e0e0e0; }
     #diagram-${name} .node rect, #diagram-${name} .node circle, #diagram-${name} .node ellipse, #diagram-${name} .node polygon, #diagram-${name} .node path { fill: #1a1a1a; stroke: #888; }
     #diagram-${name} .label, #diagram-${name} .label text, #diagram-${name} span { fill: #e0e0e0 !important; color: #e0e0e0 !important; }
-    #diagram-${name} .edgePath .path { stroke: #999; }
+    #diagram-${name} .edgePath .path { stroke: #bbb; stroke-width: 2.5px; }
+    #diagram-${name} .flowchart-link { stroke: #bbb; }
     #diagram-${name} .cluster rect { fill: #2a2a2a; stroke: #666; }
     #diagram-${name} .cluster text, #diagram-${name} .cluster span { fill: #e0e0e0 !important; color: #e0e0e0 !important; }
     #diagram-${name} .edgeLabel { background-color: rgba(26, 26, 26, 0.8) !important; }
     #diagram-${name} .edgeLabel rect { fill: rgba(26, 26, 26, 0.8) !important; background-color: rgba(26, 26, 26, 0.8) !important; }
     #diagram-${name} .edgeLabel p { background-color: rgba(26, 26, 26, 0.8) !important; }
     #diagram-${name} .labelBkg { background-color: rgba(26, 26, 26, 0.8) !important; }
-    #diagram-${name} .arrowheadPath { fill: #999; }
-    #diagram-${name} .marker { fill: #999; stroke: #999; }
+    #diagram-${name} .arrowheadPath { fill: #bbb; }
+    #diagram-${name} .marker { fill: #bbb; stroke: #bbb; }
 }
 `;
 
