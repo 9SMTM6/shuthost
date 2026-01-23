@@ -98,7 +98,7 @@ footer {
     }
 
     .architecture-diagram {
-        @apply h-auto bg-white rounded max-w-full;
+        @apply h-auto bg-transparent rounded max-w-full;
         width: auto;
         max-height: 500px;
     }
