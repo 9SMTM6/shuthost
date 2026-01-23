@@ -51,7 +51,7 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-            TAG=$(gh release list --repo ${{ github.repository }} --limit 1 --exclude-drafts --exclude-pre-releases --json tagName -q .[0].tagName)
+            TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }} | head -1)
             echo "TAG=$TAG" >> $GITHUB_ENV
           fi
       - name: Prepare Alpine
@@ -61,7 +61,7 @@ jobs:
           echo "permit nopass root" >> /etc/doas.conf
       - name: Download install scripts
         run: |
-          gh release download ${{ env.TAG || 'latest' }} --repo ${{ github.repository }} --pattern "shuthost_${{ matrix.component }}_installer.sh" --dir install-scripts
+          gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_${{ matrix.component }}_installer.sh" --dir install-scripts
       - name: Make scripts executable
         run: chmod +x install-scripts/*.sh
       - name: Test ${{ matrix.component }} install script
