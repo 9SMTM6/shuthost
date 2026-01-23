@@ -41,7 +41,7 @@ deploy_branch_on_metal:
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
 build_graphs:
-    cd frontend && for file in assets/*.mmd; do npx mmdc -i "$file" -o "assets/generated/$(basename "$file" .mmd).svg"; done
+    cd frontend && npm run build-diagrams
 
 clean:
     cargo clean && cargo fetch

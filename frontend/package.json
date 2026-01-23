@@ -7,7 +7,8 @@
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
-        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json"
+        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
+        "build-diagrams": "for file in assets/*.mmd; do npx mmdc -i \"$file\" -o \"assets/generated/$(basename \"$file\" .mmd).svg\"; done"
     },
     "dependencies": {
         "@tailwindcss/cli": "^4.1.8",
