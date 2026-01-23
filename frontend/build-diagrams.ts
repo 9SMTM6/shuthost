@@ -28,6 +28,12 @@ files.forEach((f) => {
 }
 `;
 
+    if (!svgContent.includes('</style>')) {
+        throw new Error(`Missing </style> in SVG for diagram ${name}`);
+    };
+    if (!svgContent.includes('background-color: white;')) {
+        throw new Error(`Missing background-color style in SVG for diagram ${name}`);
+    };
     svgContent = svgContent.replace('</style>', darkModeCSS + '</style>');
     svgContent = svgContent.replace('background-color: white;', 'background-color: transparent;');
 
