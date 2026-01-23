@@ -8,7 +8,7 @@
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
         "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
-        "build-diagrams": "node -e \"const fs=require('fs'); const {execSync}=require('child_process'); fs.readdirSync('assets').filter(f=>f.endsWith('.mmd')).forEach(f=>{const name=f.replace(/\\.mmd$/, ''); execSync('npx mmdc -i assets/' + f + ' -o assets/generated/' + name + '.svg', {stdio:'inherit'});});\""
+        "build-diagrams": "tsc --noEmit build-diagrams.ts && node build-diagrams.ts"
     },
     "dependencies": {
         "@tailwindcss/cli": "^4.1.8",
