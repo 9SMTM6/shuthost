@@ -131,12 +131,11 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         #[cfg(unix)]
         InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
-            crate::install::self_extracting::generate_self_extracting_script(
-                &[
-                    ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
-                    ("PORT", &arguments.port.to_string()),
-                    ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
-                ],
+            self_extracting::generate_self_extracting_script_from_template(
+                include_str!("shell_script.tmpl.sh"),
+                &arguments.shared_secret,
+                &arguments.port.to_string(),
+                &arguments.shutdown_command,
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
@@ -148,12 +147,11 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         }
         InitSystem::SelfExtractingPwsh => {
             let target_script_path = format!("./{name}_self_extracting.ps1");
-            crate::install::self_extracting::generate_self_extracting_ps1_script(
-                &[
-                    ("SHUTHOST_SHARED_SECRET", &arguments.shared_secret),
-                    ("PORT", &arguments.port.to_string()),
-                    ("SHUTDOWN_COMMAND", &arguments.shutdown_command),
-                ],
+            self_extracting::generate_self_extracting_script_from_template(
+                include_str!("powershell_script.tmpl.ps1"),
+                &arguments.shared_secret,
+                &arguments.port.to_string(),
+                &arguments.shutdown_command,
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
