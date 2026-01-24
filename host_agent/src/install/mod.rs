@@ -44,16 +44,16 @@ pub(crate) fn bind_template_replacements(
 /// Arguments for the `install` subcommand of host_agent.
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(long = "port", default_value_t = DEFAULT_PORT)]
+    #[arg(long = "port", short = 'p', default_value_t = DEFAULT_PORT)]
     pub port: u16,
 
-    #[arg(long = "shutdown-command", default_value_t = get_default_shutdown_command())]
+    #[arg(long = "shutdown-command", short = 'c', default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
 
-    #[arg(long = "shared-secret", default_value_t = generate_secret())]
+    #[arg(long = "shared-secret",  short = 's', default_value_t = generate_secret())]
     pub shared_secret: String,
 
-    #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
+    #[arg(long = "init-system", short = 'i', default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 }
 
@@ -66,10 +66,12 @@ pub enum InitSystem {
     /// OpenRC init system (Linux).
     #[cfg(target_os = "linux")]
     OpenRC,
-    /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    /// alias: **sh**. Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
     #[cfg(unix)]
+    #[clap(alias = "sh")]
     SelfExtractingShell,
-    /// Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    /// alias: **pwsh**. Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    #[clap(alias = "pwsh")]
     SelfExtractingPwsh,
     /// Launchd init system (macOS).
     #[cfg(target_os = "macos")]
