@@ -17,12 +17,13 @@ use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
 pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 #[cfg(any(target_os = "linux", test))]
 pub(crate) const SYSTEMD_SERVICE_FILE_TEMPLATE: &str =
-    include_str!("shuthost_host_agent.service.ini");
+    include_str!("shuthost_host_agent.service.tmpl.ini");
 #[cfg(any(target_os = "macos", test))]
 pub(crate) const LAUNCHD_SERVICE_FILE_TEMPLATE: &str =
-    include_str!("com.github_9smtm6.shuthost_host_agent.plist.xml");
+    include_str!("com.github_9smtm6.shuthost_host_agent.plist.tmpl.xml");
 #[cfg(any(target_os = "linux", test))]
-pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_host_agent.sh");
+pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str =
+    include_str!("openrc.shuthost_host_agent.tmpl.sh");
 
 /// Binds template placeholders with actual values.
 pub(crate) fn bind_template_replacements(

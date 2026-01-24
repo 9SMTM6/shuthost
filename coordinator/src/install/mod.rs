@@ -20,12 +20,12 @@ mod migration;
 use shuthost_common::{is_openrc, is_systemd};
 
 #[cfg(target_os = "linux")]
-const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.ini");
+const SERVICE_FILE_TEMPLATE: &str = include_str!("shuthost_coordinator.service.tmpl.ini");
 #[cfg(target_os = "macos")]
 const SERVICE_FILE_TEMPLATE: &str =
-    include_str!("com.github_9smtm6.shuthost_coordinator.plist.xml");
+    include_str!("com.github_9smtm6.shuthost_coordinator.plist.tmpl.xml");
 #[cfg(target_os = "linux")]
-const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.sh");
+const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.tmpl.sh");
 
 const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 
