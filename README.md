@@ -136,6 +136,7 @@ Lightweight option: install the host agent only (no coordinator). This does not 
 
 Install the released agent installer and generate a direct-control script:
 
+<!-- Note: If you update these invocations update the corresponding invocations in tests! See .github/workflows/main.yaml and scripts/tests/install-and-run-direct-control.sh -->
 ```bash
 # Install the agent:
 curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.sh | sh

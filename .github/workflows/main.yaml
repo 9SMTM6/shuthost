@@ -309,13 +309,13 @@ jobs:
         run: |
           $env:RUST_BACKTRACE = 1
           
-          & ./shuthost_host_agent.exe install --shutdown-command="New-Item -ItemType File -Path `$env:TEMP\shutdown_executed"
+          & ./shuthost_host_agent.exe install --init-system self-extracting-pwsh --shutdown-command="New-Item -ItemType File -Path `$env:TEMP\shutdown_executed" 
           
           Write-Host "Waiting for agent to be ready..."
           $i = 1
           while ($i -le 30) {
-            $process = Get-Process -Name "shuthost_host_agent" -ErrorAction SilentlyContinue
-            if ($process) {
+            $connection = Test-NetConnection -ComputerName localhost -Port 5757 -InformationLevel Quiet -ErrorAction SilentlyContinue
+            if ($connection) {
               Write-Host "Agent is ready!"
               break
             }
@@ -327,15 +327,8 @@ jobs:
             exit 1
           }
           
-          # Check if running
-          $running = Get-Process -Name "shuthost_host_agent" -ErrorAction SilentlyContinue
-          if (-not $running) {
-            Write-Host "Host agent service is not running"
-            exit 1
-          }
-          
-          # Generate direct control
-          & ./shuthost_host_agent.exe generate-direct-control --type=pwsh -o "shuthost_direct_control.ps1"
+          # Generate direct control (should be up to date with readme invocation)
+          powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control -o "shuthost_direct_control.ps1"
           
           # Test status command
           try {
