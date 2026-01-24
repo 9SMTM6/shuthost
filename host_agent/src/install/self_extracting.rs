@@ -114,15 +114,8 @@ $markerIndex = $content.IndexOf($marker)
 $binaryStart = $markerIndex + $marker.Length
 $encodedBinary = $content.Substring($binaryStart)
 $binaryBytes = [System.Convert]::FromBase64String($encodedBinary)
-$tempFile = [System.IO.Path]::GetTempFileName()
+$tempFile = [System.IO.Path]::GetTempFileName() + ".exe"
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
-
-# Set correct extension on Windows
-if ($tempFile.EndsWith('.tmp')) {{
-    $exeFile = $tempFile -replace '\.tmp$', '.exe'
-    Move-Item $tempFile $exeFile
-    $tempFile = $exeFile
-}}
 
 # Make executable on Unix-like systems
 if ($IsLinux -or $IsMacOS) {{
