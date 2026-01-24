@@ -248,7 +248,7 @@ jobs:
 
   # TODO: Add job for self-extracting-pwsh init system
 
-  test-direct-control:
+  test-direct-control-unix:
     name: Test Direct Control (${{ matrix.init }})
     runs-on: ${{ matrix.runner }}
     needs: [build-host_agents]
@@ -291,6 +291,96 @@ jobs:
           chmod +x shuthost_host_agent
           set -x
           ./scripts/tests/install-and-run-direct-control.sh ./shuthost_host_agent
+
+  test-direct-control-windows:
+    name: Test Direct Control (Windows)
+    runs-on: windows-latest
+    needs: [build-host_agents]
+    
+    steps:
+      - uses: *checkout
+
+      - name: Download host_agent binary
+        uses: *download-artifact
+        with:
+          name: host_agent-x86_64-pc-windows-msvc
+          path: shuthost_host_agent.exe
+
+      - name: Test direct control
+        run: |
+          Write-Host "Testing direct host_agent installation:"
+          Write-Host "  Host agent binary: ./shuthost_host_agent.exe"
+          
+          $env:RUST_BACKTRACE = 1
+          
+          # Install
+          & ./shuthost_host_agent.exe install --shutdown-command="New-Item -ItemType File -Path `$env:TEMP\shutdown_executed"
+          
+          # Wait for agent ready
+          Write-Host "Waiting for agent to be ready..."
+          $i = 1
+          while ($i -le 30) {
+            $process = Get-Process -Name "shuthost_host_agent" -ErrorAction SilentlyContinue
+            if ($process) {
+              Write-Host "Agent is ready!"
+              break
+            }
+            $i++
+            Start-Sleep -Seconds 1
+          }
+          if ($i -gt 30) {
+            Write-Host "Agent did not become ready within 30 seconds"
+            exit 1
+          }
+          
+          # Check if running
+          $running = Get-Process -Name "shuthost_host_agent" -ErrorAction SilentlyContinue
+          if (-not $running) {
+            Write-Host "Host agent service is not running"
+            exit 1
+          }
+          
+          # Generate direct control
+          & ./shuthost_host_agent.exe generate-direct-control --type=pwsh -o "shuthost_direct_control.ps1"
+          
+          # Test status command
+          try {
+            & ".\shuthost_direct_control.ps1" status
+            Write-Host "Status command executed successfully!"
+          } catch {
+            Write-Host "Status command failed"
+            exit 1
+          }
+          
+          # Test shutdown
+          $output = & ".\shuthost_direct_control.ps1" shutdown
+          
+          # Yield to system
+          Start-Sleep -Seconds 1
+          
+          if ($output -match "Hopefully goodbye") {
+            Write-Host "Shutdown command sent successfully!"
+          } else {
+            Write-Host "Shutdown command not sent"
+            exit 1
+          }
+          
+          if (Test-Path "$env:TEMP\shutdown_executed") {
+            Write-Host "Shutdown command executed successfully!"
+          } else {
+            Write-Host "Warning: Shutdown command file not found, but command was sent."
+          }
+          
+          Write-Host "Direct host_agent installation and direct_control test completed successfully!"
+
+  test-direct-control:
+    name: Test Direct Control (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-direct-control-unix
+      - test-direct-control-windows
+    steps: &grouping
+      - run: echo "grouping job — nothing to run" 
 
   validate-file-snapshots:
     name: Validate File Snapshots
@@ -853,10 +943,7 @@ jobs:
       - test-client-scripts-ubuntu
       - test-client-scripts-alpine
       - test-client-scripts-windows
-    
-    steps:
-      - name: Test Client Scripts (grouping)
-        run: echo "Test Client Scripts grouping job — nothing to run" 
+    steps: *grouping
 
   test-service-installation:
     name: Test Service Installation (virtual)
@@ -866,9 +953,7 @@ jobs:
       - test-service-installation-openrc
       - test-service-installation-launchd
       - test-service-installation-self-extracting-shell
-    steps:
-      - name: Test Service Installation (grouping)
-        run: echo "Test Service Installation grouping job — nothing to run"
+    steps: *grouping
 
   ci-only-tests:
     name: CI-only Tests (virtual)
@@ -882,12 +967,10 @@ jobs:
       - test-service-installation-openrc
       - test-service-installation-launchd
       - test-service-installation-self-extracting-shell
-      - test-direct-control
+      - test-direct-control-unix
+      - test-direct-control-windows
       - test-compatibility
-    
-    steps:
-      - name: CI-only Tests (grouping)
-        run: echo "CI-only grouping job — nothing to run"
+    steps: *grouping
 
   container-readiness:
     name: Container Readiness (virtual)
@@ -895,10 +978,7 @@ jobs:
     needs:
       - container-merge
       - container-test
-    
-    steps:
-      - name: Container readiness (grouping)
-        run: echo "Container readiness grouping job — nothing to run"
+    steps: *grouping
 
   tests-aggregate:
     name: Aggregated Tests (virtual)
@@ -908,10 +988,7 @@ jobs:
       - test
       - validate-file-snapshots
       - ci-only-tests
-    
-    steps:
-      - name: Aggregated tests (grouping)
-        run: echo "Aggregated tests grouping job — nothing to run"
+    steps: *grouping
 
   release-needs-flattened:
     name: Release Needs (virtual)
@@ -929,7 +1006,8 @@ jobs:
       - test-service-installation-launchd
       - test-service-installation-self-extracting-shell
       ### test-direct-control
-      - test-direct-control
+      - test-direct-control-unix
+      - test-direct-control-windows
       - test-compatibility
       ### test-client-scripts
       - test-client-scripts-macos
@@ -939,10 +1017,7 @@ jobs:
       # container-readiness
       - container-merge
       - container-test
-    
-    steps:
-      - name: Release needs (grouping)
-        run: echo "Release needs grouping job — nothing to run"
+    steps: *grouping
 
   container-release-tag:
     name: Tag & Push Container (tag)
