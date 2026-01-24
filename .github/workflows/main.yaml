@@ -311,11 +311,11 @@ jobs:
           
           & ./shuthost_host_agent.exe install --init-system self-extracting-pwsh --shutdown-command="New-Item -ItemType File -Path `$env:TEMP\shutdown_executed" 
           
-          Write-Host "Hoping for agent to be ready after 5s"
-          Start-Sleep -Seconds 5
-          
           # Generate direct control (should be up to date with readme invocation)
           powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control -o "shuthost_direct_control.ps1"
+          
+          Write-Host "Hoping for agent to be ready after 5s"
+          Start-Sleep -Seconds 5
           
           # Test status command
           try {
