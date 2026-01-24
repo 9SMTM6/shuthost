@@ -304,19 +304,14 @@ jobs:
         uses: *download-artifact
         with:
           name: host_agent-x86_64-pc-windows-msvc
-          path: shuthost_host_agent.exe
 
       - name: Test direct control
         run: |
-          Write-Host "Testing direct host_agent installation:"
-          Write-Host "  Host agent binary: ./shuthost_host_agent.exe"
-          
+          Move-Item .\shuthost_host_agent .\shuthost_host_agent.exe
           $env:RUST_BACKTRACE = 1
           
-          # Install
           & ./shuthost_host_agent.exe install --shutdown-command="New-Item -ItemType File -Path `$env:TEMP\shutdown_executed"
           
-          # Wait for agent ready
           Write-Host "Waiting for agent to be ready..."
           $i = 1
           while ($i -le 30) {
