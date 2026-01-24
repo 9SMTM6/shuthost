@@ -9,8 +9,25 @@ $env:SHUTDOWN_COMMAND = "{ shutdown_command }"
 # Extract and run the binary
 $encodedBinary = "{ encoded }"
 $binaryBytes = [System.Convert]::FromBase64String($encodedBinary)
-$tempFile = [System.IO.Path]::GetTempFileName() + ".exe"
+
+# Stable path on Windows, since Windows firewall rules are tied to the executable path
+if (-not ($IsLinux -or $IsMacOS)) {
+    $stableDir = Join-Path $env:APPDATA "shuthost"
+    if (-not (Test-Path $stableDir)) { New-Item -ItemType Directory -Path $stableDir | Out-Null }
+    $tempFile = Join-Path $stableDir "host_agent.exe"
+} else {
+    $tempFile = [System.IO.Path]::GetTempFileName() + ".exe"
+}
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
+
+# Add firewall rule on Windows only (requires admin)
+if (-not ($IsLinux -or $IsMacOS)) {
+    $ruleName = "ShutHost Host Agent"
+    $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
+    if (-not $existingRule) {
+        New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort $env:PORT -Program $tempFile -Action Allow -Profile Any
+    }
+}
 
 # Make executable on Unix-like systems
 if ($IsLinux -or $IsMacOS) {
@@ -25,7 +42,7 @@ if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
         & $tempFile $args
     }
 } else {
-    $argList = @("service", "--port=$env:PORT", "--shutdown-command=$env:SHUTDOWN_COMMAND") + $args
+    $argList = @("service", "--port=$env:PORT", "--shutdown-command=""$env:SHUTDOWN_COMMAND""") + $args
     Start-Process -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.err"
 }
 
