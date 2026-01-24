@@ -133,10 +133,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
             self_extracting::generate_self_extracting_script_from_template(
-                include_str!("shell_script.tmpl.sh"),
-                &arguments.shared_secret,
-                &arguments.port.to_string(),
-                &arguments.shutdown_command,
+                &bind_known_vals(include_str!("shell_script.tmpl.sh")),
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
@@ -149,10 +146,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::SelfExtractingPwsh => {
             let target_script_path = format!("./{name}_self_extracting.ps1");
             self_extracting::generate_self_extracting_script_from_template(
-                include_str!("powershell_script.tmpl.ps1"),
-                &arguments.shared_secret,
-                &arguments.port.to_string(),
-                &arguments.shutdown_command,
+                &bind_known_vals(include_str!("powershell_script.tmpl.ps1")),
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background

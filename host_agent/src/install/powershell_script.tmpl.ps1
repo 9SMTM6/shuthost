@@ -1,11 +1,13 @@
 #!/usr/bin/env pwsh
-# Set environment variables
-$env:SHUTHOST_SHARED_SECRET = "{shuthost_shared_secret}"
-$env:PORT = "{port}"
-$env:SHUTDOWN_COMMAND = "{shutdown_command}"
+
+# { description }
+
+$env:SHUTHOST_SHARED_SECRET = "{ secret }"
+$env:PORT = "{ port }"
+$env:SHUTDOWN_COMMAND = "{ shutdown_command }"
 
 # Extract and run the binary
-$encodedBinary = "{encoded}"
+$encodedBinary = "{ encoded }"
 $binaryBytes = [System.Convert]::FromBase64String($encodedBinary)
 $tempFile = [System.IO.Path]::GetTempFileName() + ".exe"
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)

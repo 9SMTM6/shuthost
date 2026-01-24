@@ -1,10 +1,13 @@
 #!/bin/sh
-export SHUTHOST_SHARED_SECRET="{shuthost_shared_secret}"
-export PORT="{port}"
-export SHUTDOWN_COMMAND="{shutdown_command}"
+
+# { description }
+
+export SHUTHOST_SHARED_SECRET="{ secret }"
+export PORT="{ port }"
+export SHUTDOWN_COMMAND="{ shutdown_command }"
 
 OUT=$(mktemp /tmp/selfbin.XXXXXX)
-BINARY_PAYLOAD="{encoded}"
+BINARY_PAYLOAD="{ encoded }"
 echo "$BINARY_PAYLOAD" | base64 -d > "$OUT"
 chmod +x "$OUT"
 if [ "$#" -gt 0 ] && [ "${1#-}" = "$1" ]; then
