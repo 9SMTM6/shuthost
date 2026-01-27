@@ -160,11 +160,14 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
 
             #[cfg(target_os = "windows")]
             {
-                if let Ok(exe_path) = env::current_exe() {
+                if let Ok(appdata) = std::env::var("APPDATA") {
+                    let exe_path = std::path::Path::new(&appdata)
+                        .join("shuthost")
+                        .join("host_agent.exe");
                     let exe_path_str = exe_path.to_string_lossy();
                     let ps_command = format!(
                         "$ruleName = \"ShutHost Host Agent\"; $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue; if (-not $existingRule) {{ New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort {} -Program \"{}\" -Action Allow -Profile Any }}",
-                        config.port,
+                        arguments.port,
                         exe_path_str.replace('\\', "\\\\").replace('"', "\\\"")
                     );
                     let _ = Command::new("powershell.exe")
