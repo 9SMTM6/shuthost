@@ -133,6 +133,8 @@ Lightweight option: install the host agent only (no coordinator). This does not 
 ![Direct Control Comparison with LAN Limitation](frontend/assets/generated/direct_control_comparison.svg)
 
 > **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
+>
+> ⚠️ **Warning:** Windows agents currently have known issues in most deployments, which are being debugged.
 
 Install the released agent installer and generate a direct-control script:
 

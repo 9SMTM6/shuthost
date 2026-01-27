@@ -44,5 +44,6 @@
                 </tr>
             </tbody>
         </table>
+        <p>⚠️ <strong>Warning:</strong> Windows agents currently have known issues in most deployments, which are being debugged.</p>
     </div>
 </section>
