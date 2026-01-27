@@ -170,10 +170,13 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                         arguments.port,
                         exe_path_str.replace('\\', "\\\\").replace('"', "\\\"")
                     );
-                    let _ = Command::new("powershell.exe")
+                    if let Err(e) = Command::new(powershell_cmd)
                         .arg("-Command")
                         .arg(&ps_command)
-                        .output();
+                        .output()
+                    {
+                        eprintln!("Failed to add Windows Firewall rule: {e}");
+                    }
                 }
             }
 
