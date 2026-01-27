@@ -33,8 +33,7 @@ if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
         & $tempFile $args
     }
 } else {
-    $argList = @("service", "--port=$env:PORT", "--shutdown-command=""$env:SHUTDOWN_COMMAND""") + $args
-    Start-Process -FilePath $tempFile -ArgumentList $argList -RedirectStandardOutput "$tempFile.log" -RedirectStandardError "$tempFile.err" -WindowStyle Hidden
+    & $tempFile service --port=$env:PORT --shutdown-command="$env:SHUTDOWN_COMMAND" @args > "$tempFile.log" 2>&1 &
 }
 
 exit 0
