@@ -33,7 +33,16 @@ if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
         & $tempFile $args
     }
 } else {
-    & $tempFile service --port=$env:PORT --shutdown-command="$env:SHUTDOWN_COMMAND" @args > "$tempFile.log" 2>&1 &
+    $argList = @("service", "--port=$env:PORT", "--shutdown-command=$env:SHUTDOWN_COMMAND") + $args
+    if ($IsLinux -or $IsMacOS) {
+        # On Unix, shell out to use nohup for proper backgrounding, matching the shell script behavior
+        $argString = ($argList + $args) -join ' '
+        $cmd = "nohup `"$tempFile`" $argString >`"$tempFile.log`" 2>&1 &"
+        & sh -c $cmd
+    } else {
+        # On Windows, use Start-Process with proper flags for backgrounding
+        $proc = Start-Process -FilePath $tempFile -ArgumentList $argList -WindowStyle Hidden -PassThru
+        # Immediately release the handle so the script can exit
+        $null = $proc
+    }
 }
-
-exit 0
