@@ -139,7 +139,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
-            if let Err(e) = std::process::Command::new(&target_script_path).output() {
+            if let Err(e) = Command::new(&target_script_path).output() {
                 eprintln!("Failed to start self-extracting script: {e}");
             } else {
                 println!("Started self-extracting agent script in background.");
@@ -157,7 +157,26 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             } else {
                 "pwsh"
             };
-            if let Err(e) = std::process::Command::new(powershell_cmd)
+
+            #[cfg(target_os = "windows")]
+            {
+                if let Ok(exe_path) = env::current_exe() {
+                    let exe_path_str = exe_path.to_string_lossy();
+                    let ps_command = format!(
+                        "$ruleName = \"ShutHost Host Agent\"; $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue; if (-not $existingRule) {{ New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort {} -Program \"{}\" -Action Allow -Profile Any }}",
+                        config.port,
+                        exe_path_str.replace('\\', "\\\\").replace('"', "\\\"")
+                    );
+                    let _ = Command::new("powershell.exe")
+                        .arg("-Command")
+                        .arg(&ps_command)
+                        .output();
+                }
+            }
+
+            if let Err(e) = Command::new(powershell_cmd)
+                .arg("-ExecutionPolicy")
+                .arg("Bypass")
                 .arg("-File")
                 .arg(&target_script_path)
                 .output()

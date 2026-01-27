@@ -20,15 +20,6 @@ if (-not ($IsLinux -or $IsMacOS)) {
 }
 [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
 
-# Add firewall rule on Windows only (requires admin)
-if (-not ($IsLinux -or $IsMacOS)) {
-    $ruleName = "ShutHost Host Agent"
-    $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
-    if (-not $existingRule) {
-        New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort $env:PORT -Program $tempFile -Action Allow -Profile Any
-    }
-}
-
 # Make executable on Unix-like systems
 if ($IsLinux -or $IsMacOS) {
     & chmod +x $tempFile
