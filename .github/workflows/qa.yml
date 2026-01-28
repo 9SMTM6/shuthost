@@ -59,7 +59,7 @@ jobs:
 
       - name: Check LFS availability
         run: |
-          if git lfs fetch --all 2>&1 | grep -q "over its data quota"; then
+          if git lfs fetch --all --exclude="docs/shuthost_live_demo_2x.webp" 2>&1 | grep -q "over its data quota"; then
             echo "LFS quota exceeded, skipping LFS-dependent tests"
             echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
           else
