@@ -59,7 +59,7 @@ jobs:
 
       - name: Check LFS availability
         run: |
-          git lfs fetch --exclude="docs/shuthost_live_demo_2x.webp"
+          git lfs fetch --exclude="*.webp" || true
           if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
             echo "LFS available"
             echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
@@ -239,7 +239,7 @@ jobs:
         run: |
           # Try to fetch a small LFS file to test if quota allows any LFS access
           # Using one of the smallest PNG files (~37 KB) to minimize bandwidth usage
-          git lfs fetch --include="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
+          git lfs fetch --include="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" || true
           if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
             echo "LFS is available"
           else
