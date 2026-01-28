@@ -870,9 +870,19 @@ jobs:
       - name: Check LFS availability
         run: |
           git lfs fetch --exclude="*.webp" || true
-          if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
-            echo "LFS available"
-            echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+          target="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
+          if [ -f "$target" ]; then
+            # Detect LFS pointer files (small text files) instead of actual binary
+            if head -n 5 "$target" | grep -qE 'version https://git-lfs.github.com/spec/v1|oid sha256:'; then
+              echo "LFS pointer present; object not downloaded"
+              echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
+            elif [ "$(wc -c < \"$target\")" -lt 1024 ]; then
+              echo "File exists but is suspiciously small; treating as pointer"
+              echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
+            else
+              echo "LFS available"
+              echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+            fi
           else
             echo "LFS quota exceeded or unavailable"
             echo "LFS_AVAILABLE=false" >> $GITHUB_ENV

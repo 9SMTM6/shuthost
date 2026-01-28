@@ -60,9 +60,19 @@ jobs:
       - name: Check LFS availability
         run: |
           git lfs fetch --exclude="*.webp" || true
-          if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
-            echo "LFS available"
-            echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+          target="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
+          if [ -f "$target" ]; then
+            # Detect LFS pointer files (small text files) instead of actual binary
+            if head -n 5 "$target" | grep -qE 'version https://git-lfs.github.com/spec/v1|oid sha256:'; then
+              echo "LFS pointer present; object not downloaded"
+              echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
+            elif [ "$(wc -c < \"$target\")" -lt 1024 ]; then
+              echo "File exists but is suspiciously small; treating as pointer"
+              echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
+            else
+              echo "LFS available"
+              echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+            fi
           else
             echo "LFS quota exceeded or unavailable"
             echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
@@ -239,9 +249,21 @@ jobs:
         run: |
           # Try to fetch a small LFS file to test if quota allows any LFS access
           # Using one of the smallest PNG files (~37 KB) to minimize bandwidth usage
-          git lfs fetch --include="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" || true
-          if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
-            echo "LFS is available"
+          target="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
+          git lfs fetch --include="$target" || true
+          if [ -f "$target" ]; then
+            # ensure it's not an LFS pointer (text file)
+            if head -n 5 "$target" | grep -qE 'version https://git-lfs.github.com/spec/v1|oid sha256:'; then
+              echo "LFS pointer present; actual object not downloaded"
+              echo "LFS bandwidth quota exceeded - CI functionality is limited"
+              exit 1
+            elif [ "$(wc -c < \"$target\")" -lt 1024 ]; then
+              echo "File exists but is suspiciously small; treating as pointer"
+              echo "LFS bandwidth quota exceeded - CI functionality is limited"
+              exit 1
+            else
+              echo "LFS is available"
+            fi
           else
             echo "LFS bandwidth quota exceeded - CI functionality is limited"
             echo "This test fails to highlight LFS availability issues"
