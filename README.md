@@ -99,7 +99,7 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
 - Or follow the [manual steps](docs/examples/manual_install.md).
 
 #### Docker (Linux only)
--  Download the [example_config.toml](docs/examples/example_config.toml) and [docker-compose.yml](docs/examples/docker-compose.yml) from Github and run the service:
+-  Download the [example_config.toml](docs/examples/example_config.toml) and [docker-compose.yaml](docs/examples/docker-compose.yaml) from Github and run the service:
     ```bash
     # Create config directory and download the example config from GitHub
     mkdir -p coordinator_config data
@@ -109,8 +109,8 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
     # Set restrictive permissions (readable/writable by owner only)
     chmod 600 coordinator_config/config.toml
     # Download the docker-compose file
-    curl -L -o docker-compose.yml \
-      https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yml
+    curl -L -o docker-compose.yaml \
+      https://raw.githubusercontent.com/9SMTM6/shuthost/main/docs/examples/docker-compose.yaml
     
     # Run the service in the background
     docker-compose up -d shuthost

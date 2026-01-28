@@ -29,7 +29,7 @@ perms = "600"
 type = "OpenSSH private key (no password)"
 
 [[files]]
-path = "/workspace/docker-compose.yml"
+path = "/workspace/docker-compose.yaml"
 perms = "644"
 type = "ASCII text"
 

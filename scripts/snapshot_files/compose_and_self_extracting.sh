@@ -43,9 +43,9 @@ exec_with_coverage sed -i 's/# \[server\.tls\]/[server.tls]/' coordinator_config
 exec_with_coverage chmod 600 coordinator_config/config.toml
 
 # Copy docker-compose file and modify it to build locally
-podman cp docs/examples/docker-compose.yml "temp-$BASE_IMAGE-container":/workspace/docker-compose.yml
-exec_with_coverage sed -i 's|image: ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest|build: .|' docker-compose.yml
-exec_with_coverage sed -i '/build: ./a \    env_file: /repo/scripts/tests/coverage.env' docker-compose.yml
+podman cp docs/examples/docker-compose.yaml "temp-$BASE_IMAGE-container":/workspace/docker-compose.yaml
+exec_with_coverage sed -i 's|image: ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest|build: .|' docker-compose.yaml
+exec_with_coverage sed -i '/build: ./a \    env_file: /repo/scripts/tests/coverage.env' docker-compose.yaml
 
 # Run podman-compose up
 exec_with_coverage sh -c "podman compose up -d"
