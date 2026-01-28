@@ -44,7 +44,8 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
                 .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected"),
         )
     });
-    let addr = format!("0.0.0.0:{}", config.port);
+    let port = config.port;
+    let addr = format!("0.0.0.0:{port}");
     let listener =
         TcpListener::bind(&addr).unwrap_or_else(|_| panic!("Failed to bind port {addr}"));
     println!("Listening on {addr}");

@@ -89,7 +89,7 @@ async fn test_coordinator_and_agent_online_status() {
 #[tokio::test]
 async fn test_lease_persistence_across_restarts() {
     let coord_port = get_free_port();
-    let db_path = std::env::temp_dir().join(format!("shuthost_test_{}.db", coord_port));
+    let db_path = std::env::temp_dir().join(format!("shuthost_test_{coord_port}.db"));
 
     // Ensure clean start
     drop(std::fs::remove_file(&db_path));

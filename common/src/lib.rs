@@ -26,7 +26,7 @@ pub trait ResultMapErrExt<T> {
 
 impl<T, E: std::fmt::Display> ResultMapErrExt<T> for Result<T, E> {
     fn map_err_to_string(self, prefix: &str) -> Result<T, String> {
-        self.map_err(|e| format!("{}: {}", prefix, e))
+        self.map_err(|e| format!("{prefix}: {e}"))
     }
 
     fn map_err_to_string_simple(self) -> Result<T, String> {

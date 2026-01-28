@@ -39,7 +39,7 @@ pub(crate) const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";
 
 // Helper function for login error redirects
 pub(crate) fn login_error_redirect(error: &str) -> Redirect {
-    Redirect::to(&format!("/login?error={}", error))
+    Redirect::to(&format!("/login?error={error}"))
 }
 
 pub(crate) struct Runtime {

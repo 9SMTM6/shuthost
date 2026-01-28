@@ -120,9 +120,11 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
             "Failed to create config file at {}",
             config_location.display()
         ))?;
+        let port = args.port;
+        let bind = args.bind;
         let config_content = include_str!("../../../docs/examples/example_config.toml")
-            .replace("port = 8080", &format!("port = {}", args.port))
-            .replace("bind = \"127.0.0.1\"", &format!("bind = \"{}\"", args.bind));
+            .replace("port = 8080", &format!("port = {port}"))
+            .replace("bind = \"127.0.0.1\"", &format!("bind = \"{bind}"));
         config_file
             .write_all(config_content.as_bytes())
             .wrap_err("Failed to write config file")?;
@@ -132,7 +134,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
         println!("Created config file at {config_location:?}");
         let user_info = User::from_name(&user)
             .wrap_err("Failed to get user info")?
-            .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
+            .ok_or_else(|| eyre::eyre!("User {user} not found"))?;
 
         // Chown the config directory if it was created
         if created_dir && let Some(parent_dir) = config_location.parent() {

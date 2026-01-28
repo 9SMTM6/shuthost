@@ -15,7 +15,7 @@ use crate::{ResultMapErrExt, is_superuser};
 
 /// Returns the launchd service file path for the given service name.
 pub fn get_service_path(name: &str) -> String {
-    format!("/Library/LaunchDaemons/com.github_9smtm6.{}.plist", name)
+    format!("/Library/LaunchDaemons/com.github_9smtm6.{name}.plist")
 }
 
 /// Installs the current binary as a launchd system service.

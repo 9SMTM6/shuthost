@@ -53,7 +53,7 @@ fn parse_mac(mac: &str) -> eyre::Result<[u8; MAC_ADDRESS_LENGTH]> {
             .next()
             .ok_or_else(|| eyre::eyre!("Invalid MAC address format: not enough parts"))?;
         *mac_byte =
-            u8::from_str_radix(part, 16).map_err(|_| eyre::eyre!("Invalid MAC byte: {}", part))?;
+            u8::from_str_radix(part, 16).map_err(|_| eyre::eyre!("Invalid MAC byte: {part}"))?;
     }
 
     // Ensure there are no extra parts

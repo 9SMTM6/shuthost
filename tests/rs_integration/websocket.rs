@@ -15,7 +15,7 @@ use crate::common::{
 async fn test_websocket_config_updates() {
     let port = get_free_port();
     let shared_secret = "secret";
-    let config_path = std::env::temp_dir().join(format!("ws_test_config_{}.toml", port));
+    let config_path = std::env::temp_dir().join(format!("ws_test_config_{port}.toml"));
     let initial_config = format!(
         r#"
         [server]

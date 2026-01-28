@@ -15,7 +15,7 @@ use crate::{ResultMapErrExt, is_superuser};
 
 /// Returns the OpenRC service file path for the given service name.
 pub fn get_service_path(name: &str) -> String {
-    format!("/etc/init.d/{}", name)
+    format!("/etc/init.d/{name}")
 }
 
 /// Installs the current binary as an OpenRC service init script.

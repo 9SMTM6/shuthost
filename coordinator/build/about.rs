@@ -75,7 +75,7 @@ where
 
 fn parse_url(should_be_url: Option<&str>) -> Result<Option<Url>, eyre::Error> {
     Ok(match should_be_url {
-        Some(r) => Some(Url::parse(r).map_err(|e| eyre::eyre!("invalid repository url {}", e))?),
+        Some(r) => Some(Url::parse(r).map_err(|e| eyre::eyre!("invalid repository url {e}"))?),
         None => None,
     })
 }
@@ -111,7 +111,7 @@ fn process_entry(
     // parse SPDX expression
     let expr: Expression = license_expr_str
         .parse()
-        .map_err(|e| eyre::eyre!("invalid SPDX expression for {}: {e}", name))?;
+        .map_err(|e| eyre::eyre!("invalid SPDX expression for {name}: {e}", name = name, e = e))?;
 
     let mut license_html = license_expr_str;
 
@@ -214,7 +214,7 @@ pub fn build_html() -> eyre::Result<()> {
         let license_str = info
             .licenses
             .or(info.license)
-            .ok_or_else(|| eyre::eyre!("npm package '{}' missing license", pkgkey))?;
+            .ok_or_else(|| eyre::eyre!("npm package '{pkgkey}' missing license"))?;
 
         // split pkgkey into name and version using last '@'
         let (name, version) = if let Some(idx) = pkgkey.rfind('@') {
@@ -270,7 +270,7 @@ pub fn build_html() -> eyre::Result<()> {
     });
     let html = hb
         .render_template(template, &data)
-        .map_err(|e| eyre::eyre!("Handlebars error: {}", e))?;
+        .map_err(|e| eyre::eyre!("Handlebars error: {e}"))?;
     std::fs::write("../frontend/assets/generated/about.tmpl.html", &html)?;
     Ok(())
 }

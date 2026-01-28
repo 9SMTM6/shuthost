@@ -30,7 +30,7 @@ use crate::{
 ///
 /// Panics if the TCP listener cannot be bound to the specified address.
 pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
-    let addr = format!("{}:{}", bind, port);
+    let addr = format!("{bind}:{port}");
     info!("Starting demo service on http://{}", addr);
 
     // Custom asset route for demo mode: inject disclaimer into HTML

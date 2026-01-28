@@ -78,7 +78,7 @@ pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Resul
 
             let user_info = User::from_name(user)
                 .wrap_err("Failed to get user info")?
-                .ok_or_else(|| eyre::eyre!("User {} not found", user))?;
+                .ok_or_else(|| eyre::eyre!("User {user} not found"))?;
             unix_fs::chown(
                 parent_dir,
                 Some(user_info.uid.into()),

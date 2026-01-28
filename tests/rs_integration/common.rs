@@ -68,7 +68,7 @@ impl Drop for KillOnDrop {
 /// Spawn the coordinator service from a given config string.
 /// Writes the config to a temp file and spawns the coordinator binary.
 pub(crate) fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> KillOnDrop {
-    let tmp = std::env::temp_dir().join(format!("integration_test_config_{}.toml", port));
+    let tmp = std::env::temp_dir().join(format!("integration_test_config_{port}.toml"));
     std::fs::write(&tmp, config_toml).expect("failed to write config");
 
     spawn_coordinator_with_config_file(&tmp)
@@ -145,7 +145,7 @@ pub(crate) async fn wait_for_agent_ready(
     timeout_secs: u64,
 ) {
     let start = Instant::now();
-    let addr = format!("127.0.0.1:{}", port);
+    let addr = format!("127.0.0.1:{port}");
 
     while start.elapsed() < Duration::from_secs(timeout_secs) {
         match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {

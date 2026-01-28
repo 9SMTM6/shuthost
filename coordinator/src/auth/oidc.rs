@@ -46,7 +46,7 @@ fn request_origin(headers: &HeaderMap) -> Option<String> {
         .get("x-forwarded-proto")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("http");
-    Some(format!("{}://{}", proto, host))
+    Some(format!("{proto}://{host}"))
 }
 
 fn build_redirect_url(headers: &HeaderMap) -> Result<RedirectUrl> {
