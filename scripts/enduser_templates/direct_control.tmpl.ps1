@@ -74,7 +74,7 @@ switch ($Action) {
             $writer.Flush()
             $reader = New-Object System.IO.StreamReader($stream)
             $response = $reader.ReadToEnd()
-            Write-Host $response
+            $response  # Output the response so it can be captured
             $tcpClient.Close()
         } catch {
             Write-Error "Failed to send TCP message: $_"

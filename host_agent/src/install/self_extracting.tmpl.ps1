@@ -24,7 +24,17 @@ if (-not ($IsLinux -or $IsMacOS)) {
 } else {
     $tempFile = [System.IO.Path]::GetTempFileName() + ".exe"
 }
-[System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
+
+# Try to write the binary, but warn if it fails due to file locking
+try {
+    [System.IO.File]::WriteAllBytes($tempFile, $binaryBytes)
+} catch {
+    if (-not ($IsLinux -or $IsMacOS) -and $tempFile -eq (Join-Path $env:APPDATA "shuthost\host_agent.exe")) {
+        Write-Warning "The host_agent executable at '$tempFile' is currently in use by a running process. The executable could not be updated and might be out of date."
+    } else {
+        throw  # Re-throw for other errors
+    }
+}
 
 # Make executable on Unix-like systems
 if ($IsLinux -or $IsMacOS) {
