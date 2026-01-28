@@ -124,7 +124,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
         let bind = args.bind;
         let config_content = include_str!("../../../docs/examples/example_config.toml")
             .replace("port = 8080", &format!("port = {port}"))
-            .replace("bind = \"127.0.0.1\"", &format!("bind = \"{bind}"));
+            .replace("bind = \"127.0.0.1\"", &format!("bind = \"{bind}\""));
         config_file
             .write_all(config_content.as_bytes())
             .wrap_err("Failed to write config file")?;
