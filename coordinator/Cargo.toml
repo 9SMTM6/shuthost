@@ -30,8 +30,6 @@ include_agents = [
     "include_windows_agents",
 ]
 include_linux_agents = [
-    "include_linux_aarch64_agent",
-    "include_linux_x86_64_agent",
     "include_linux_musl_aarch64_agent",
     "include_linux_musl_x86_64_agent",
 ]
@@ -43,8 +41,6 @@ include_windows_agents = [
     "include_windows_aarch64_agent",
     "include_windows_x86_64_agent",
 ]
-include_linux_aarch64_agent = []
-include_linux_x86_64_agent = []
 include_linux_musl_aarch64_agent = []
 include_linux_musl_x86_64_agent = []
 include_macos_aarch64_agent = []

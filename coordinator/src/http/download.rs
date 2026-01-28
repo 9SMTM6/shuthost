@@ -70,16 +70,6 @@ host_agent_handler!(
     feature = "include_macos_x86_64_agent"
 );
 host_agent_handler!(
-    fn host_agent_linux_x86_64,
-    target = "x86_64-unknown-linux-gnu",
-    feature = "include_linux_x86_64_agent"
-);
-host_agent_handler!(
-    fn host_agent_linux_aarch64,
-    target = "aarch64-unknown-linux-gnu",
-    feature = "include_linux_aarch64_agent"
-);
-host_agent_handler!(
     fn host_agent_linux_musl_x86_64,
     target = "x86_64-unknown-linux-musl",
     feature = "include_linux_musl_x86_64_agent"
@@ -125,8 +115,6 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/shuthost_client.ps1", get(download_client_script_ps1))
         .route("/host_agent/macos/aarch64", get(host_agent_macos_aarch64))
         .route("/host_agent/macos/x86_64", get(host_agent_macos_x86_64))
-        .route("/host_agent/linux/x86_64", get(host_agent_linux_x86_64))
-        .route("/host_agent/linux/aarch64", get(host_agent_linux_aarch64))
         .route(
             "/host_agent/linux-musl/x86_64",
             get(host_agent_linux_musl_x86_64),

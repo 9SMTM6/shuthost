@@ -31,6 +31,7 @@ The installer chooses the default network interface to determine the IP address,
 **Solution:** Manually override the network interface in the agent configuration file after installation.
 
 ### 🐧 The coordinator binary fails with a glibc version error. What's the issue?
+<!-- TODO: Slated for removal. The installer scripts default to musl binaries now for both coordinator and agent -->
 
 On certain distributions (e.g., Ubuntu 22.04), the default binary may be incompatible with your system's glibc version.
 

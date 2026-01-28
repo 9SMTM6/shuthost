@@ -9,14 +9,10 @@ pub fn emit() {
     }
 
     let missing_agents: [&str; _] = [
-        #[cfg(not(feature = "include_linux_x86_64_agent"))]
-        "linux_x86_64",
-        #[cfg(not(feature = "include_linux_aarch64_agent"))]
-        "linux_aarch64",
         #[cfg(not(feature = "include_linux_musl_x86_64_agent"))]
-        "linux_musl_x86_64",
+        "linux_x86_64",
         #[cfg(not(feature = "include_linux_musl_aarch64_agent"))]
-        "linux_musl_aarch64",
+        "linux_aarch64",
         #[cfg(not(feature = "include_macos_aarch64_agent"))]
         "macos_aarch64",
         #[cfg(not(feature = "include_macos_x86_64_agent"))]
