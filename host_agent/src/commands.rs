@@ -5,7 +5,7 @@
 
 use crate::server::ServiceOptions;
 
-/// Executes the configured shutdown command via the shell.
+/// Executes the configured shutdown command via the appropriate shell for the platform.
 ///
 /// # Arguments
 ///
@@ -16,10 +16,14 @@ use crate::server::ServiceOptions;
 /// Returns `Err` if spawning or waiting on the process fails.
 pub(crate) fn execute_shutdown(config: &ServiceOptions) -> Result<(), std::io::Error> {
     println!("Executing command: {}", &config.shutdown_command);
-    std::process::Command::new("sh")
-        .arg("-c")
+
+    const IS_WINDOWS: bool = cfg!(target_os = "windows");
+
+    std::process::Command::new(if IS_WINDOWS { "pwsh" } else { "sh" })
+        .arg(if IS_WINDOWS { "-Command" } else { "-c" })
         .arg(&config.shutdown_command)
         .spawn()?
         .wait()?;
+
     Ok(())
 }

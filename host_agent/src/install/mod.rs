@@ -182,7 +182,6 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             // Start the PowerShell script in the background
             // Unlike the shell script, the PowerShell script doesn't self-background,
             // so we need to background it here by spawning without waiting
-            
 
             if let Err(e) = Command::new(powershell_cmd)
                 .arg("-ExecutionPolicy")
