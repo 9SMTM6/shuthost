@@ -20,10 +20,6 @@ jobs:
             runner: macos-latest
           - target: x86_64-apple-darwin
             runner: macos-latest
-          - target: x86_64-unknown-linux-gnu
-            runner: ubuntu-latest
-          - target: aarch64-unknown-linux-gnu
-            runner: ubuntu-24.04-arm
           - target: x86_64-unknown-linux-musl
             runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
@@ -259,7 +255,7 @@ jobs:
         include:
           - init: systemd
             runner: ubuntu-latest
-            binary: host_agent-x86_64-unknown-linux-gnu
+            binary: host_agent-x86_64-unknown-linux-musl
           - init: openrc
             runner: ubuntu-latest
             binary: host_agent-x86_64-unknown-linux-musl
@@ -792,8 +788,8 @@ jobs:
         run: |
           docker run --rm ${{ steps.release_image_name.outputs.image_base }}:amd64-${{ github.sha }} shuthost_coordinator --help
 
-  test-compatibility:
-    name: Test Compatibility on Older OS Releases
+  test-coordinator-compatibility:
+    name: Test Coordinator Compatibility on Older OS Releases
     needs: build-coordinators
     runs-on: ${{ matrix.runner }}
 
@@ -809,19 +805,15 @@ jobs:
             runner: macos-15
           - rustc_target: aarch64-apple-darwin
             runner: macos-15
-            # this OS should get musl recommended instead
-          # - rustc_target: x86_64-unknown-linux-gnu
-          #   runner: ubuntu-22.04
-          # - rustc_target: aarch64-unknown-linux-gnu
-          #   runner: ubuntu-22.04-arm
-          - rustc_target: x86_64-unknown-linux-musl
-            runner: ubuntu-22.04
-          - rustc_target: aarch64-unknown-linux-musl
-            runner: ubuntu-22.04-arm
           - rustc_target: x86_64-unknown-linux-gnu
             runner: ubuntu-24.04
           - rustc_target: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
+            # this OS should get musl recommended instead
+          - rustc_target: x86_64-unknown-linux-musl
+            runner: ubuntu-22.04
+          - rustc_target: aarch64-unknown-linux-musl
+            runner: ubuntu-22.04-arm
           - rustc_target: x86_64-unknown-linux-musl
             runner: ubuntu-24.04
           - rustc_target: aarch64-unknown-linux-musl
@@ -835,21 +827,57 @@ jobs:
           name: coordinator-${{ matrix.rustc_target }}
           path: ./bin
 
+      - name: Test Coordinator Binary
+        run: |
+          chmod +x ./bin/shuthost_coordinator
+          ./bin/shuthost_coordinator --help
+
+  test-agent-compatibility:
+    name: Test Agent Compatibility on Older OS Releases
+    needs: build-host_agents
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rustc_target: x86_64-apple-darwin
+            runner: macos-14
+          - rustc_target: aarch64-apple-darwin
+            runner: macos-14
+          - rustc_target: x86_64-apple-darwin
+            runner: macos-15
+          - rustc_target: aarch64-apple-darwin
+            runner: macos-15
+          - rustc_target: x86_64-unknown-linux-musl
+            runner: ubuntu-22.04
+          - rustc_target: aarch64-unknown-linux-musl
+            runner: ubuntu-22.04-arm
+          - rustc_target: x86_64-unknown-linux-musl
+            runner: ubuntu-24.04
+          - rustc_target: aarch64-unknown-linux-musl
+            runner: ubuntu-24.04-arm
+          - rustc_target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - rustc_target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+    steps:
+      - uses: *checkout
+
       - name: Download host_agent binary
         uses: *download-artifact
         with:
           name: host_agent-${{ matrix.rustc_target }}
           path: ./bin
 
-      - name: Test Controller Binary
-        run: |
-          chmod +x ./bin/shuthost_coordinator
-          ./bin/shuthost_coordinator --help
-
       - name: Test Host Agent Binary
         run: |
-          chmod +x ./bin/shuthost_host_agent
-          ./bin/shuthost_host_agent --help
+          BINARY=./bin/shuthost_host_agent
+          if [[ -f ./bin/shuthost_host_agent.exe ]]; then
+            BINARY=./bin/shuthost_host_agent.exe
+          fi
+          chmod +x "$BINARY" || true
+          "$BINARY" --help
 
   playwright-tests:
     name: Run Playwright (Web GUI) tests
@@ -948,7 +976,8 @@ jobs:
       - test-service-installation-self-extracting-shell
       - test-direct-control-unix
       - test-direct-control-windows
-      - test-compatibility
+      - test-coordinator-compatibility
+      - test-agent-compatibility
     steps: *grouping
 
   container-readiness:
@@ -987,7 +1016,8 @@ jobs:
       ### test-direct-control
       - test-direct-control-unix
       - test-direct-control-windows
-      - test-compatibility
+      - test-coordinator-compatibility
+      - test-agent-compatibility
       ### test-client-scripts
       - test-client-scripts-macos
       - test-client-scripts-ubuntu
