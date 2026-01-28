@@ -1,6 +1,12 @@
 #!/usr/bin/env pwsh
 
 # { description }
+#
+# NOTE: Unlike the shell script version, this PowerShell script does NOT automatically
+# background the service process. When running the service, this script will attach to
+# the process. To run in the background, start THIS SCRIPT in the background instead:
+#   - Windows: Start-Process -WindowStyle Hidden -FilePath pwsh -ArgumentList "-File", "script.ps1"
+#   - Unix:    pwsh script.ps1 &
 
 $env:SHUTHOST_SHARED_SECRET = "{ secret }"
 $env:PORT = "{ port }"
@@ -33,16 +39,7 @@ if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
         & $tempFile $args
     }
 } else {
-    $argList = @("service", "--port=$env:PORT", "--shutdown-command=$env:SHUTDOWN_COMMAND") + $args
-    if ($IsLinux -or $IsMacOS) {
-        # On Unix, shell out to use nohup for proper backgrounding, matching the shell script behavior
-        $argString = ($argList + $args) -join ' '
-        $cmd = "nohup `"$tempFile`" $argString >`"$tempFile.log`" 2>&1 &"
-        & sh -c $cmd
-    } else {
-        # On Windows, use Start-Process with proper flags for backgrounding
-        $proc = Start-Process -FilePath $tempFile -ArgumentList $argList -WindowStyle Hidden -PassThru
-        # Immediately release the handle so the script can exit
-        $null = $proc
-    }
+    # Run the service attached to this script
+    # Unlike the shell script, we don't background here - the caller should background this script instead
+    & $tempFile service --port=$env:PORT --shutdown-command=$env:SHUTDOWN_COMMAND @args
 }

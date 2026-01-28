@@ -1,6 +1,10 @@
 #!/bin/sh
 
 # { description }
+#
+# NOTE: This script automatically backgrounds the service process using nohup.
+# The PowerShell version (.ps1) works differently - it attaches to the process,
+# and the script itself must be backgrounded by the caller.
 
 export SHUTHOST_SHARED_SECRET="{ secret }"
 export PORT="{ port }"

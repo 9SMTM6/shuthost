@@ -1,6 +1,6 @@
-# Deploying the Serviceless Agent on Unraid
+# Deploying the Self-Extracting Agent on Unraid
 
-This guide demonstrates how to deploy the ShutHost serviceless host agent on an Unraid NAS. The serviceless agent is designed for environments where traditional init systems (like systemd or openrc) are not available or desired, making it ideal for Unraid, which uses a custom init system.
+This guide demonstrates how to deploy the ShutHost self-extracting host agent on an Unraid NAS. The self-extracting agent is designed for environments where traditional init systems (like systemd or openrc) are not available or desired, making it ideal for Unraid, which uses a custom init system.
 
 ## Prerequisites
 

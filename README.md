@@ -135,6 +135,8 @@ Lightweight option: install the host agent only (no coordinator). This does not 
 > **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
 >
 > ⚠️ **Warning:** Windows agents currently have known issues in most deployments, which are being debugged.
+>
+> ⚠️ **Important behavioral difference:** The PowerShell self-extracting script (`self-extracting-pwsh`) runs attached to the service process, unlike the shell version which automatically backgrounds the process. To run the PowerShell script in the background, start the script itself in the background (e.g., `Start-Process -WindowStyle Hidden`).
 
 Install the released agent installer and generate a direct-control script:
 

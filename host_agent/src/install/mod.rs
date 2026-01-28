@@ -70,7 +70,7 @@ pub enum InitSystem {
     #[cfg(unix)]
     #[clap(alias = "sh")]
     SelfExtractingShell,
-    /// alias: **pwsh**. Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    /// alias: **pwsh**. Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the PowerShell script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background.
     #[clap(alias = "pwsh")]
     SelfExtractingPwsh,
     /// Launchd init system (macOS).
@@ -151,7 +151,6 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                 &bind_known_vals(include_str!("self_extracting.tmpl.ps1")),
                 &target_script_path,
             )?;
-            // Start the self-extracting script in the background
             let powershell_cmd = if cfg!(target_os = "windows") {
                 "powershell.exe"
             } else {
@@ -180,12 +179,17 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
                 }
             }
 
+            // Start the PowerShell script in the background
+            // Unlike the shell script, the PowerShell script doesn't self-background,
+            // so we need to background it here by spawning without waiting
+            
+
             if let Err(e) = Command::new(powershell_cmd)
                 .arg("-ExecutionPolicy")
                 .arg("Bypass")
                 .arg("-File")
                 .arg(&target_script_path)
-                .output()
+                .spawn()
             {
                 eprintln!("Failed to start self-extracting PowerShell script: {e}");
             } else {

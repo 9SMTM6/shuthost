@@ -24,7 +24,7 @@ The installer detects your platform, installs the agent binary and service unit 
 
 The agent can generate a small standalone control script that you can move to another machine on the same LAN to send wake/shutdown actions.
 
-Note: Generating the direct-control script is not supported for self-extracting ("serviceless") agent installations.
+> **Behavioral difference:** The PowerShell self-extracting script (`self-extracting-pwsh`) runs attached to the service process, unlike the shell version which automatically backgrounds it with `nohup`. To background the PowerShell script, start the script itself in the background (e.g., `Start-Process -WindowStyle Hidden` on Windows or `pwsh script.ps1 &` on Unix).
 
 Run this on the machine where the agent binary is installed:
 
