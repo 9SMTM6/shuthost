@@ -867,26 +867,16 @@ jobs:
           lfs: false
           fetch-depth: 0
 
+      - name: Fetch LFS objects (exclude webp)
+        run: |
+          # fetch LFS objects but exclude large webp files to save bandwidth
+          git lfs fetch --exclude="*.webp" || true
+
       - name: Check LFS availability
         run: |
-          git lfs fetch --exclude="*.webp" || true
-          target="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
-          if [ -f "$target" ]; then
-            # Detect LFS pointer files (small text files) instead of actual binary
-            if head -n 5 "$target" | grep -qE 'version https://git-lfs.github.com/spec/v1|oid sha256:'; then
-              echo "LFS pointer present; object not downloaded"
-              echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
-            elif [ "$(wc -c < \"$target\")" -lt 1024 ]; then
-              echo "File exists but is suspiciously small; treating as pointer"
-              echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
-            else
-              echo "LFS available"
-              echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
-            fi
-          else
-            echo "LFS quota exceeded or unavailable"
-            echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
-          fi
+          AVAIL=$(./scripts/check_lfs_fetched.sh "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png")
+          echo "LFS_AVAILABLE=$AVAIL" >> $GITHUB_ENV
+          echo "LFS availability: $AVAIL"
 
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
