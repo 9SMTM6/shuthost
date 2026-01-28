@@ -99,6 +99,8 @@ jobs:
           CI: true
           COVERAGE: 1
           SKIP_BUILD: 1
+          # fix EAGAIN errors due to process exhaustion in GitHub CI
+          CARGO_BUILD_JOBS: 1
         run: |
           set -e
           set -v
