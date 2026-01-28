@@ -146,7 +146,7 @@ playwright +flags="":
 playwright_report:
     cd frontend && npx playwright show-report
 
-release TYPE skip_coverage="false":
+release TYPE skip_coverage_and_file_snapshots="false":
     #!/usr/bin/env bash
     set -e
     git fetch
@@ -159,18 +159,18 @@ release TYPE skip_coverage="false":
         echo "Remote main has commits that are not in local main. Please pull first. Aborting."
         exit 1
     fi
-    echo "Starting {{TYPE}} release process..."
+    echo "Starting {{TYPE}} release process with skip_coverage_and_file_snapshots={{skip_coverage_and_file_snapshots}}..."
     just update_dependencies
     cargo fmt
     just update_test_config_diffs
     just patch_test_configs
-    just update_file_snapshots
     just ci_cargo_deny
     just db_update_sqlx_cache
-    if [ "{{skip_coverage}}" != "true" ]; then
+    if [[ "{{skip_coverage_and_file_snapshots}}" != "true" ]]; then
+        just update_file_snapshots
         just coverage
     else
-        echo "Skipping pre-release updates..."
+        echo "Skipping coverage and file snapshots..."
     fi
     CURRENT_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
     IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
