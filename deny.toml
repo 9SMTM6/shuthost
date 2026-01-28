@@ -19,12 +19,12 @@ multiple-versions = "warn"
 
 [licenses]
 allow = [
-    "GPL-2.0-only",
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "CC0-1.0",
     "CDLA-Permissive-2.0",
+    "GPL-2.0-only",
     "ISC",
     "MIT",
     "OpenSSL",

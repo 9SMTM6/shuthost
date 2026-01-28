@@ -16,21 +16,22 @@
                 <!-- Install Instructions Panel -->
                 <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
                     <details class="collapsible-details" aria-labelledby="host-install-title">
-                        <summary class="collapsible-header py-2" aria-controls="host-install-content" id="host-install-header">
+                        <summary class="collapsible-header py-2" aria-controls="host-install-content"
+                            id="host-install-header">
                             <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
                             <span class="collapsible-icon" aria-hidden="true"></span>
                         </summary>
                         <div id="host-install-content" class="collapsible-content" role="group"
                             aria-labelledby="host-install-title">
                             <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
-                            
+
                             <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
                             <div class="code-container py-2">
                                 <button class="copy-button" data-copy-target="#host-install-command-sh" type="button"
                                     aria-label="Copy install command">Copy</button>
                                 <code id="host-install-command-sh" class="code-block">Loading...</code>
                             </div>
-                            
+
                             <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
                             <div class="code-container py-2">
                                 <button class="copy-button" data-copy-target="#host-install-command-ps1" type="button"
@@ -88,37 +89,41 @@
                 <!-- Install Instructions Panel -->
                 <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
                     <details class="collapsible-details" aria-labelledby="client-install-title">
-                        <summary class="collapsible-header py-2" aria-controls="client-install-content" id="client-install-header">
+                        <summary class="collapsible-header py-2" aria-controls="client-install-content"
+                            id="client-install-header">
                             <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
                             <span class="collapsible-icon" aria-hidden="true"></span>
                         </summary>
                         <div id="client-install-content" class="collapsible-content" role="group"
                             aria-labelledby="client-install-title">
-                        <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
-                        
-                        <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
-                        <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#client-install-command-sh" type="button"
-                                aria-label="Copy install command">Copy</button>
-                            <code id="client-install-command-sh" class="code-block">Loading...</code>
-                        </div>
-                        
-                        <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
-                        <div class="code-container py-2">
-                            <button class="copy-button" data-copy-target="#client-install-command-ps1" type="button"
-                                aria-label="Copy install command">Copy</button>
-                            <code id="client-install-command-ps1" class="code-block">Loading...</code>
-                        </div>
-                        <p class="description-text text-xs">Optionally specify a custom base client ID as the second argument (otherwise random). The full client ID will include your hostname. <strong>Tip:</strong> Use separate clients for different use cases.</p>
-                        <p class="description-text text-xs">Then, add the output to the clients section of your config on the Coordinator Host:</p>
-                        <div class="code-container">
-                            <button class="copy-button" data-copy-target="#config-location" type="button"
-                                aria-label="Copy config location">Copy</button>
-                            <code id="config-location" class="code-block">{ coordinator_config }</code>
-                        </div>
+                            <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
 
-                        { client_install_requirements_gotchas }
-                    </div>
+                            <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
+                            <div class="code-container py-2">
+                                <button class="copy-button" data-copy-target="#client-install-command-sh" type="button"
+                                    aria-label="Copy install command">Copy</button>
+                                <code id="client-install-command-sh" class="code-block">Loading...</code>
+                            </div>
+
+                            <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
+                            <div class="code-container py-2">
+                                <button class="copy-button" data-copy-target="#client-install-command-ps1" type="button"
+                                    aria-label="Copy install command">Copy</button>
+                                <code id="client-install-command-ps1" class="code-block">Loading...</code>
+                            </div>
+                            <p class="description-text text-xs">Optionally specify a custom base client ID as the second
+                                argument (otherwise random). The full client ID will include your hostname.
+                                <strong>Tip:</strong> Use separate clients for different use cases.</p>
+                            <p class="description-text text-xs">Then, add the output to the clients section of your
+                                config on the Coordinator Host:</p>
+                            <div class="code-container">
+                                <button class="copy-button" data-copy-target="#config-location" type="button"
+                                    aria-label="Copy config location">Copy</button>
+                                <code id="config-location" class="code-block">{ coordinator_config }</code>
+                            </div>
+
+                            { client_install_requirements_gotchas }
+                        </div>
                     </details>
                 </section>
 

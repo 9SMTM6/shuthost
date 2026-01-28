@@ -19,97 +19,100 @@
     </div>
 
     <details class="collapsible-details" aria-labelledby="security-config-title">
-        <summary class="collapsible-header collapsed" aria-controls="security-config-content" id="security-config-header">
+        <summary class="collapsible-header collapsed" aria-controls="security-config-content"
+            id="security-config-header">
             <h2 class="section-title mb-0 text-base" id="security-config-title">🔒 Required Security Exceptions</h2>
             <span class="collapsible-icon" aria-hidden="true"></span>
         </summary>
         <div id="security-config-content" class="collapsible-content collapsed" role="region"
             aria-labelledby="security-config-title">
-        <div class="alert alert-info">
-            <div class="alert-title">Authentication Bypass Required</div>
-            <p>For the web app and installation scripts to work properly, these endpoints must be reachable without
-                authentication. If your reverse proxy enforces authentication (Authelia, NPM with auth, etc.), create
-                bypass rules for:</p>
-            <ul>
-                <li><code>/download/*</code> - Installation script and binary downloads</li>
-                <li><code>/api/m2m/*</code> - Machine-to-machine API communication used by agents/clients</li>
-                <li><code>/manifest.*.json</code> - PWA manifest required for webpage installability</li>
-                <li><code>/favicon.*.svg</code> - Favicon required for browser installability</li>
-            </ul>
-            <p class="text-xs mt-2"><em>These exceptions let installer scripts and the web UI fetch resources and allow
-                    agent clients to call machine-to-machine APIs without user login. The manifest and favicon
-                    entries are necessary for correct browser/PWA behaviour.</em></p>
-        </div>
-
-        <div class="alert alert-warning">
-            <div class="alert-title">Configuration Examples</div>
-            <p class="text-sm font-semibold mb-2">Authelia:</p>
-            <div class="code-container">
-                <button class="copy-button" data-copy-target="#authelia-config" type="button"
-                    aria-label="Copy Authelia config">Copy</button>
-                <code id="authelia-config" class="code-block">Loading...</code>
+            <div class="alert alert-info">
+                <div class="alert-title">Authentication Bypass Required</div>
+                <p>For the web app and installation scripts to work properly, these endpoints must be reachable without
+                    authentication. If your reverse proxy enforces authentication (Authelia, NPM with auth, etc.),
+                    create
+                    bypass rules for:</p>
+                <ul>
+                    <li><code>/download/*</code> - Installation script and binary downloads</li>
+                    <li><code>/api/m2m/*</code> - Machine-to-machine API communication used by agents/clients</li>
+                    <li><code>/manifest.*.json</code> - PWA manifest required for webpage installability</li>
+                    <li><code>/favicon.*.svg</code> - Favicon required for browser installability</li>
+                </ul>
+                <p class="text-xs mt-2"><em>These exceptions let installer scripts and the web UI fetch resources and
+                        allow
+                        agent clients to call machine-to-machine APIs without user login. The manifest and favicon
+                        entries are necessary for correct browser/PWA behaviour.</em></p>
             </div>
 
-            <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
-            <div class="code-container">
-                <button class="copy-button" data-copy-target="#nginx-config" type="button"
-                    aria-label="Copy Nginx config">Copy</button>
-                <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
+            <div class="alert alert-warning">
+                <div class="alert-title">Configuration Examples</div>
+                <p class="text-sm font-semibold mb-2">Authelia:</p>
+                <div class="code-container">
+                    <button class="copy-button" data-copy-target="#authelia-config" type="button"
+                        aria-label="Copy Authelia config">Copy</button>
+                    <code id="authelia-config" class="code-block">Loading...</code>
+                </div>
+
+                <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
+                <div class="code-container">
+                    <button class="copy-button" data-copy-target="#nginx-config" type="button"
+                        aria-label="Copy Nginx config">Copy</button>
+                    <code id="nginx-config" class="code-block"># In your proxy host's advanced configuration
 location ~ ^/(download|api/m2m|manifest\..*\.json|favicon\..*\.svg)$ {
     auth_basic off;
     proxy_pass http://your-shuthost-backend;
 }</code>
-            </div>
+                </div>
 
-            <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
-            <div class="code-container">
-                <button class="copy-button" data-copy-target="#traefik-config" type="button"
-                    aria-label="Copy Traefik config">Copy</button>
-                <code id="traefik-config" class="code-block">Loading...</code>
-            </div>
+                <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
+                <div class="code-container">
+                    <button class="copy-button" data-copy-target="#traefik-config" type="button"
+                        aria-label="Copy Traefik config">Copy</button>
+                    <code id="traefik-config" class="code-block">Loading...</code>
+                </div>
 
                 <p class="text-xs mt-2"><em>Replace backend references with your actual configuration
                         values. After configuring your proxy rules, set
                         <code>auth = {{ type = "external", exceptions_version = 1 }}</code>
                         in the coordinator config to acknowledge the exceptions. If this doesn't help, please raise an
                         issue</em></p>
+            </div>
         </div>
-    </div>
-    <script type="module">
-        /**
-         * Populate dynamic configuration snippets based on current origin.
-         * This keeps embedded strings in the UI in sync with where the page is served from.
-         */
-        const setupExclusionConfigs = () => {
-            const baseUrl = window.location.origin;
+        <script type="module">
+            /**
+             * Populate dynamic configuration snippets based on current origin.
+             * This keeps embedded strings in the UI in sync with where the page is served from.
+             */
+            const setupExclusionConfigs = () => {
+                const baseUrl = window.location.origin;
 
-            // Configuration examples with replaced domain/backend
-            const autheliaConfig = document.getElementById('authelia-config');
-            const traefikConfig = document.getElementById('traefik-config');
+                // Configuration examples with replaced domain/backend
+                const autheliaConfig = document.getElementById('authelia-config');
+                const traefikConfig = document.getElementById('traefik-config');
 
-            const domain = baseUrl.replace(/^https?:\/\//, '');
+                const domain = baseUrl.replace(/^https?:\/\//, '');
 
-            if (autheliaConfig) {
-                autheliaConfig.textContent = `- domain: ${domain}
+                if (autheliaConfig) {
+                    autheliaConfig.textContent = `- domain: ${domain}
     policy: bypass
     resources:
         - '^/download/(.*)'
         - '^/api/m2m/(.*)$'
         - '/manifest\..*\.json$'
         - '/favicon\..*\.svg$'`;
-            }
+                }
 
-            if (traefikConfig) {
-                traefikConfig.textContent = `# Add to your service labels
+                if (traefikConfig) {
+                    traefikConfig.textContent = `# Add to your service labels
 - "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || PathRegexp(\`/manifest\\..*\\.json\`) || PathRegexp(\`/favicon\\..*\\.svg\`))"
 - "traefik.http.routers.shuthost-bypass.priority=100"
 # Remove auth middleware for bypass routes`;
-            }
+                }
 
-            if (!autheliaConfig || !traefikConfig) {
-                console.info("No dynamic security exceptions found to be populated.")
+                if (!autheliaConfig || !traefikConfig) {
+                    console.info("No dynamic security exceptions found to be populated.")
+                }
             }
-        }
-        document.addEventListener('DOMContentLoaded', setupExclusionConfigs);
-    </script>
+            document.addEventListener('DOMContentLoaded', setupExclusionConfigs);
+        </script>
 </section>

@@ -14,27 +14,52 @@ build = "build/mod.rs"
 # If you add features, add them as features to the test in CI and Justfile.
 # We can't use --all-features in there, as that requires all agents to have been built.
 [features]
-default = ["compression-br", "compression-zstd", "compression-deflate", "compression-gzip"]
+default = [
+    "compression-br",
+    "compression-deflate",
+    "compression-gzip",
+    "compression-zstd",
+]
 compression-br = ["tower-http/compression-br", "reqwest/brotli"]
 compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
 compression-gzip = ["tower-http/compression-gzip", "reqwest/gzip"]
 compression-zstd = ["tower-http/compression-zstd", "reqwest/zstd"]
-include_agents = ["include_linux_agents", "include_macos_agents", "include_windows_agents"]
-include_linux_agents = ["include_linux_x86_64_agent", "include_linux_aarch64_agent", "include_linux_musl_x86_64_agent", "include_linux_musl_aarch64_agent"]
-include_macos_agents = ["include_macos_aarch64_agent", "include_macos_x86_64_agent"]
-include_windows_agents = ["include_windows_x86_64_agent", "include_windows_aarch64_agent"]
+include_agents = [
+    "include_linux_agents",
+    "include_macos_agents",
+    "include_windows_agents",
+]
+include_linux_agents = [
+    "include_linux_aarch64_agent",
+    "include_linux_x86_64_agent",
+    "include_linux_musl_aarch64_agent",
+    "include_linux_musl_x86_64_agent",
+]
+include_macos_agents = [
+    "include_macos_aarch64_agent",
+    "include_macos_x86_64_agent",
+]
+include_windows_agents = [
+    "include_windows_aarch64_agent",
+    "include_windows_x86_64_agent",
+]
 include_linux_aarch64_agent = []
 include_linux_x86_64_agent = []
 include_linux_musl_aarch64_agent = []
 include_linux_musl_x86_64_agent = []
 include_macos_aarch64_agent = []
 include_macos_x86_64_agent = []
-include_windows_x86_64_agent = []
 include_windows_aarch64_agent = []
+include_windows_x86_64_agent = []
 
 [dependencies]
 axum = { version = "0.8.3", features = ["macros", "ws"] }
-axum-extra = { version = "0.12", features = ["cookie", "cookie-signed", "tracing", "typed-header"] }
+axum-extra = { version = "0.12", features = [
+    "cookie",
+    "cookie-signed",
+    "tracing",
+    "typed-header",
+] }
 axum-server = { version = "0.8", features = ["tls-rustls"] }
 base64.workspace = true
 chrono = { version = "0.4", features = ["serde"] }
@@ -45,6 +70,7 @@ futures.workspace = true
 hex.workspace = true
 hmac.workspace = true
 hyper = "1.x"
+mime = "0.3.17"
 nix.workspace = true
 notify = "8.0.0"
 openidconnect = { version = "4.x", default-features = false, features = [
@@ -56,13 +82,19 @@ rcgen = "0.14.x"
 regex.workspace = true
 reqwest = { workspace = true, features = ["http2", "charset"] }
 rustls = "0.23.x"
+secrecy = { workspace = true, features = ["serde"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_plain = "1.0.2"
-secrecy = { workspace = true, features = ["serde"] }
 sha2.workspace = true
 shuthost_common.workspace = true
-sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "macros", "migrate", "chrono"] }
+sqlx = { version = "0.8", features = [
+    "chrono",
+    "macros",
+    "migrate",
+    "runtime-tokio",
+    "sqlite",
+] }
 tokio.workspace = true
 toml.workspace = true
 tower = "0.5"
@@ -76,7 +108,6 @@ tower-http = { version = "0.6", features = [
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
 tungstenite = "*"
-mime = "0.3.17"
 
 [lints]
 workspace = true
@@ -97,4 +128,4 @@ sha2.workspace = true
 spdx = { version = "0.13", features = ["text"] }
 tiny-skia = "0.11"
 toml.workspace = true
-url = { version = "2", features = ["serde"]}
+url = { version = "2", features = ["serde"] }
