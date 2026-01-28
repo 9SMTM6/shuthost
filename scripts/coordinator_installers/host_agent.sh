@@ -146,11 +146,7 @@ else
 OS="$(uname -s)"
 case "$OS" in
     Linux)
-        if getconf GNU_LIBC_VERSION >/dev/null 2>&1; then
-            PLATFORM="linux"
-        else
-                PLATFORM="linux-musl"
-        fi
+        PLATFORM="linux-musl"
         ;;
     Darwin)
         PLATFORM="macos"

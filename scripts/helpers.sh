@@ -33,10 +33,9 @@ build_gnu() {
 
     # Build the coordinator binary
     cargo build --bin shuthost_host_agent
-    # copy agent debug build to (musl) release path for inclusion in coordinator - some scripts default to musl installs
+    # copy agent debug build to (musl) release path for inclusion in coordinator.
     cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
-    cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-gnu/release/
-    cargo build --bin shuthost_coordinator --features include_linux_x86_64_agent,include_linux_musl_x86_64_agent
+    cargo build --bin shuthost_coordinator --features include_linux_musl_x86_64_agent
 }
 
 elevate_privileges() {

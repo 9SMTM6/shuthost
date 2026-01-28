@@ -56,11 +56,7 @@ function Detect-Platform {
             $os = uname -s
             switch ($os) {
                 "Linux" {
-                    if (getconf GNU_LIBC_VERSION 2>$null) {
-                        $script:PLATFORM = "linux"
-                    } else {
-                        $script:PLATFORM = "linux-musl"
-                    }
+                    $script:PLATFORM = "linux-musl"
                 }
                 "Darwin" {
                     $script:PLATFORM = "macos"
