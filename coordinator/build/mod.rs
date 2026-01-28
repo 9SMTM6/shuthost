@@ -39,26 +39,30 @@ fn main() -> eyre::Result<()> {
 
     npm::setup()?;
 
-    println!("cargo::rerun-if-changed=frontend/assets/styles.tailwind.css");
-    println!("cargo::rerun-if-changed=frontend/assets/app.ts");
-    println!("cargo::rerun-if-changed=frontend/assets/index.tmpl.html");
-    println!("cargo::rerun-if-changed=frontend/assets/login.tmpl.html");
-    println!("cargo::rerun-if-changed=frontend/assets/partials");
-    println!("cargo::rerun-if-changed=frontend/assets/about.tmpl.hbs");
-    npm::run("build")?;
+    const ON_ASSET_CHANGE: &str = "cargo::rerun-if-changed=frontend/assets";
 
     println!("cargo::rerun-if-changed=frontend/package.json");
+    println!("{ON_ASSET_CHANGE}/app.ts");
+    npm::run("build:tsc")?;
+
+    println!("{ON_ASSET_CHANGE}/styles.tailwind.css");
+    println!("{ON_ASSET_CHANGE}/index.tmpl.html");
+    println!("{ON_ASSET_CHANGE}/login.tmpl.html");
+    println!("{ON_ASSET_CHANGE}/partials");
+    println!("{ON_ASSET_CHANGE}/about.tmpl.hbs");
+    npm::run("build:tailwind")?;
+
+    println!("{ON_ASSET_CHANGE}/favicon.svg");
+    icons::generate_pngs()?;
+
     println!("cargo::rerun-if-changed=frontend/package-lock.json");
     println!("cargo::rerun-if-changed=deny.toml");
     npm::run("generate-npm-licenses")?;
     about::build_html()?;
 
-    println!("cargo::rerun-if-changed=frontend/assets/favicon.svg");
-    icons::generate_pngs()?;
-
-    println!("cargo::rerun-if-changed=frontend/assets/manifest.tmpl.json");
-    println!("cargo::rerun-if-changed=frontend/assets/client_install_requirements_gotchas.md");
-    println!("cargo::rerun-if-changed=frontend/assets/agent_install_requirements_gotchas.md");
+    println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
+    println!("{ON_ASSET_CHANGE}/client_install_requirements_gotchas.md");
+    println!("{ON_ASSET_CHANGE}/agent_install_requirements_gotchas.md");
     templates::process()?;
 
     csp::generate_hashes()?;
