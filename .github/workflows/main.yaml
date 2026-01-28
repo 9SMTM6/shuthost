@@ -869,12 +869,13 @@ jobs:
 
       - name: Check LFS availability
         run: |
-          if git lfs fetch --all --exclude="docs/shuthost_live_demo_2x.webp" 2>&1 | grep -q "over its data quota"; then
-            echo "LFS quota exceeded, skipping Playwright tests"
-            echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
-          else
+          git lfs fetch --all --exclude="docs/shuthost_live_demo_2x.webp"
+          if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
             echo "LFS available"
             echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+          else
+            echo "LFS quota exceeded or unavailable"
+            echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
           fi
 
       - name: Install test fonts (Inter & Cascadia Code)
