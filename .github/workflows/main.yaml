@@ -869,7 +869,7 @@ jobs:
 
       - name: Check LFS availability
         run: |
-          git lfs fetch --all --exclude="docs/shuthost_live_demo_2x.webp"
+          git lfs fetch --exclude="docs/shuthost_live_demo_2x.webp"
           if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
             echo "LFS available"
             echo "LFS_AVAILABLE=true" >> $GITHUB_ENV

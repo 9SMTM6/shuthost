@@ -59,7 +59,7 @@ jobs:
 
       - name: Check LFS availability
         run: |
-          git lfs fetch --all --exclude="docs/shuthost_live_demo_2x.webp"
+          git lfs fetch --exclude="docs/shuthost_live_demo_2x.webp"
           if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
             echo "LFS available"
             echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
@@ -229,7 +229,7 @@ jobs:
           powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control
 
   lfs-availability-test:
-    name: Test LFS Availability (Minimal Bandwidth)
+    name: Test LFS Availability
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
@@ -239,7 +239,7 @@ jobs:
         run: |
           # Try to fetch a small LFS file to test if quota allows any LFS access
           # Using one of the smallest PNG files (~37 KB) to minimize bandwidth usage
-          git lfs fetch --include="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" --exclude="docs/shuthost_live_demo_2x.webp"
+          git lfs fetch --include="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
           if [ -f "frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" ]; then
             echo "LFS is available"
           else
