@@ -1,19 +1,19 @@
-name: 'Rust Build'
-description: 'Builds a Rust binary for a specific target'
+name: "Rust Build"
+description: "Builds a Rust binary for a specific target"
 inputs:
   target:
-    description: 'The Rust target to build for (optional). If omitted, the host target will be used.'
+    description: "The Rust target to build for (optional). If omitted, the host target will be used."
     required: false
-    default: ''
+    default: ""
   bin-name:
-    description: 'The name of the binary to build'
+    description: "The name of the binary to build"
     required: true
   additional-flags:
     description: 'Optional additional flags to pass to cargo build (e.g. --features "foo")'
     required: false
-    default: ''
+    default: ""
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Ensure latest stable rustc
       shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}

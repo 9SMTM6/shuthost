@@ -23,36 +23,36 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     if: &cond github.event_name == 'workflow_dispatch' || github.event_name == 'release' && !github.event.release.prerelease || github.event_name == 'workflow_run'
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-    - name: Debug
-      run: echo "Job started for event ${{ github.event_name }}"
+      - name: Debug
+        run: echo "Job started for event ${{ github.event_name }}"
 
-    - name: Set tag
-      run: |
-        if [ "${{ github.event_name }}" = "release" ]; then
-          echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-        elif [ "${{ github.event_name }}" = "workflow_run" ]; then
-          TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }} | head -1)
-          echo "TAG=$TAG" >> $GITHUB_ENV
-        fi
+      - name: Set tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }} | head -1)
+            echo "TAG=$TAG" >> $GITHUB_ENV
+          fi
 
-    - name: Download coordinator binary
-      run: |
-        gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
-        tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
-        chmod +x shuthost_coordinator
+      - name: Download coordinator binary
+        run: |
+          gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz" --clobber
+          tar -xzf shuthost_coordinator-x86_64-unknown-linux-gnu.tar.gz
+          chmod +x shuthost_coordinator
 
-    - name: Build and snapshot demo
-      run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost --provided-binary=./shuthost_coordinator
+      - name: Build and snapshot demo
+        run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost --provided-binary=./shuthost_coordinator
 
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v4
-      with:
-        path: ./target/gh-pages
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./target/gh-pages
 
-    - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
   client-sh-installer-test:
     name: Test live-demo client installer (shell)

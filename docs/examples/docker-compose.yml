@@ -1,8 +1,7 @@
-version: "3.8"
 services:
   shuthost:
     image: ghcr.io/9smtm6/shuthost/shuthost-coordinator:latest
-    network_mode: "host"      # required for WOL
+    network_mode: "host" # required for WOL
     restart: unless-stopped
     volumes:
       - ./coordinator_config/:/config/

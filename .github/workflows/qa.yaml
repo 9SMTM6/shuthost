@@ -15,10 +15,10 @@ jobs:
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
-    - uses: *checkout
-    - uses: EmbarkStudios/cargo-deny-action@v2
-      with:
-        rust-version: stable
+      - uses: *checkout
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          rust-version: stable
   spell-check:
     runs-on: ubuntu-latest
     steps:
@@ -40,12 +40,8 @@ jobs:
     steps:
       - uses: *checkout
       - run: rustup update stable
-      - name: Install sqlx-cli (sqlite support)
-        run: |
-          cargo install sqlx-cli --no-default-features --features sqlite --locked
-      - name: Run sqlx prepare --check
-        run: |
-          cargo sqlx prepare --check --workspace
+      - run: cargo install sqlx-cli --no-default-features --features sqlite --locked
+      - run: cargo sqlx prepare --check --workspace
 
   coverage:
     name: Coverage report (llvm-cov)
@@ -94,7 +90,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       # running these in an individual step didn't work.
-      - name: Generate coverage reports based on playwright and Rust tests 
+      - name: Generate coverage reports based on playwright and Rust tests
         env:
           CI: true
           COVERAGE: 1
