@@ -52,11 +52,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code (with LFS because pngs for visual regression are saved there)
-        uses: *checkout
+      - uses: *checkout
         with:
-          lfs: true
+          lfs: false
           fetch-depth: 0
+
+      - name: Check LFS availability
+        run: |
+          if git lfs fetch --all 2>&1 | grep -q "over its data quota"; then
+            echo "LFS quota exceeded, skipping LFS-dependent tests"
+            echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
+          else
+            echo "LFS available"
+            echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+          fi
 
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
@@ -95,7 +104,11 @@ jobs:
           eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
           cargo llvm-cov clean --workspace
           . ./scripts/helpers.sh && build_gnu
-          cd frontend && npx playwright test && cd ..
+          if [ "$LFS_AVAILABLE" = "true" ]; then
+            cd frontend && npx playwright test && cd ..
+          else
+            echo "Skipping Playwright tests due to LFS quota"
+          fi
           ./scripts/build-gh-pages.sh --provided-binary=target/debug/shuthost_coordinator
           cargo test --workspace --all-targets
           ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
@@ -118,6 +131,7 @@ jobs:
             ./lcov.info
 
       - name: Check for excessive changes in lcov.info (its not really stable)
+        if: env.LFS_AVAILABLE == 'true'
         run: |
           if git diff --quiet lcov.info; then
             echo "lcov.info is unchanged."
@@ -212,3 +226,22 @@ jobs:
       - name: Generate direct control script
         run: |
           powershell -ExecutionPolicy Bypass -File .\shuthost_host_agent_self_extracting.ps1 generate-direct-control
+
+  lfs-availability-test:
+    name: Test LFS Availability (Minimal Bandwidth)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: *checkout
+        with:
+          lfs: false
+      - name: Test LFS availability with minimal bandwidth
+        run: |
+          # Try to fetch a small LFS file to test if quota allows any LFS access
+          # Using one of the smallest PNG files (~37 KB) to minimize bandwidth usage
+          if git lfs fetch --include="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png" 2>&1 | grep -q "over its data quota"; then
+            echo "LFS bandwidth quota exceeded - CI functionality is limited"
+            echo "This test fails to highlight LFS availability issues"
+            exit 1
+          else
+            echo "LFS is available"
+          fi

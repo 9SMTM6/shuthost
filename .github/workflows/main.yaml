@@ -862,11 +862,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code (with LFS because pngs for visual regression are saved there)
-        uses: *checkout
+      - uses: *checkout
         with:
-          lfs: true
+          lfs: false
           fetch-depth: 0
+
+      - name: Check LFS availability
+        run: |
+          if git lfs fetch --all 2>&1 | grep -q "over its data quota"; then
+            echo "LFS quota exceeded, skipping Playwright tests"
+            echo "LFS_AVAILABLE=false" >> $GITHUB_ENV
+          else
+            echo "LFS available"
+            echo "LFS_AVAILABLE=true" >> $GITHUB_ENV
+          fi
 
       - name: Install test fonts (Inter & Cascadia Code)
         run: |
@@ -893,6 +902,7 @@ jobs:
           bin-name: shuthost_coordinator
 
       - name: Run Playwright tests
+        if: env.LFS_AVAILABLE == 'true'
         env:
           CI: true
         run: |
