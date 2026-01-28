@@ -58,8 +58,8 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             stat::umask(stat::Mode::S_IRWXU.complement());
 
             let config = &args.config;
-            let config_path = fs::canonicalize(config)
-                .wrap_err(format!("Config file not found at: {config}"))?;
+            let config_path =
+                fs::canonicalize(config).wrap_err(format!("Config file not found at: {config}"))?;
 
             INIT_TRACING.call_once(|| {
                 let default_level = if std::env::var("SHUTHOST_INTEGRATION_TEST").is_ok() {

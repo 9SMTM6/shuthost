@@ -111,7 +111,7 @@ fn process_entry(
     // parse SPDX expression
     let expr: Expression = license_expr_str
         .parse()
-        .map_err(|e| eyre::eyre!("invalid SPDX expression for {name}: {e}", name = name, e = e))?;
+        .map_err(|e| eyre::eyre!("invalid SPDX expression for {name}: {e}"))?;
 
     let mut license_html = license_expr_str;
 
