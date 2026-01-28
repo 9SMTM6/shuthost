@@ -43,6 +43,11 @@ do_snapshot() {
     # Enable TLS in the config
     exec_with_coverage sed -i 's/# \[server\.tls\]/[server.tls]/' /home/root/.config/shuthost_coordinator/config.toml
 
+    # Reload systemd if modified
+    if [ "$BASE_IMAGE" = "shuthost-systemd" ]; then
+        exec_with_coverage systemctl daemon-reload
+    fi
+
     # Restart the service if restart_cmd provided
     if [ -n "$RESTART_CMD" ]; then
         exec_with_coverage sh -c "$RESTART_CMD" || true
