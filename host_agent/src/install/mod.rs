@@ -47,16 +47,16 @@ pub(crate) fn bind_template_replacements(
 /// Arguments for the `install` subcommand of host_agent.
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(long = "port", short = 'p', default_value_t = DEFAULT_PORT)]
+    #[arg(long, short, default_value_t = DEFAULT_PORT)]
     pub port: u16,
 
-    #[arg(long = "shutdown-command", short = 'c', default_value_t = get_default_shutdown_command())]
+    #[arg(long, short = 'c', default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
 
-    #[arg(long = "shared-secret",  short = 's', default_value_t = generate_secret())]
+    #[arg(long,  short, default_value_t = generate_secret())]
     pub shared_secret: String,
 
-    #[arg(long = "init-system", short = 'i', default_value_t = get_inferred_init_system())]
+    #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 }
 
@@ -68,12 +68,13 @@ pub enum InitSystem {
     Systemd,
     /// OpenRC init system (Linux).
     #[cfg(target_os = "linux")]
+    #[clap(name = "openrc")]
     OpenRC,
-    /// alias: **sh**. Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself.
+    /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself. [aliases: sh]
     #[cfg(unix)]
     #[clap(alias = "sh")]
     SelfExtractingShell,
-    /// alias: **pwsh**. Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the PowerShell script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background.
+    /// Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the PowerShell script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background. [aliases: pwsh]
     #[clap(alias = "pwsh")]
     SelfExtractingPwsh,
     /// Launchd init system (macOS).

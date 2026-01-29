@@ -24,11 +24,11 @@ fn parse_config_from_path(
 pub struct Args {
     /// The init system used by the host_agent installation.
     /// The service files will be parsed to extract the registration configuration.
-    #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
+    #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
     /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
-    #[arg(long = "script-path")]
+    #[arg(long, short = 'p')]
     pub script_path: Option<String>,
 }
 

@@ -1,6 +1,6 @@
 //! Shim binary that calls into the `host_agent`s library's `inner_main`.
 
-use clap::Parser;
+use clap::Parser as _;
 
 fn main() {
     // Parse CLI arguments

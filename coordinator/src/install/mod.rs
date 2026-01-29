@@ -32,16 +32,16 @@ const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 /// Arguments for the `install` subcommand of the coordinator.
 #[derive(Debug, Parser)]
 pub struct Args {
-    /// Username to own the generated config file (from $SUDO_USER).
+    /// Username to own the generated config file.
     #[arg(env = "SUDO_USER")]
     user: String,
 
     /// Port on which the coordinator HTTP server will listen.
-    #[arg(long = "port", default_value_t = 8080)]
+    #[arg(long, short, default_value_t = 8080)]
     port: u16,
 
     /// Bind address for the HTTP server (e.g., 127.0.0.1 or 0.0.0.0).
-    #[arg(long = "bind", default_value = "127.0.0.1")]
+    #[arg(long, short, default_value = "127.0.0.1")]
     bind: String,
 }
 

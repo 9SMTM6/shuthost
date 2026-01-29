@@ -36,9 +36,11 @@ pub struct ControlScriptValues {
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 pub enum ScriptType {
-    /// A .sh script for macOS/Linux/Unix hosts
+    /// A .sh script for macOS/Linux/Unix hosts [aliases: sh]
+    #[clap(alias = "sh")]
     UnixShell,
-    /// A .ps1 PowerShell script (should support all platforms with PowerShell installed)
+    /// A .ps1 PowerShell script (should support all platforms with PowerShell installed) [aliases: ps1]
+    #[clap(alias = "ps1")]
     Pwsh,
 }
 
@@ -85,19 +87,19 @@ fn get_default_output_path() -> LossyPath {
 pub struct Args {
     /// Output path for the generated control script.
     /// Powershell scripts will have a .ps1 extension automatically added.
-    #[arg(long = "output", short = 'o', default_value_t = get_default_output_path())]
+    #[arg(long, short, default_value_t = get_default_output_path())]
     pub output: LossyPath,
 
     /// The init system used by the host_agent installation.
-    #[arg(long = "init-system", default_value_t = get_inferred_init_system())]
+    #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
     /// Type of the script to generate.
-    #[arg(long = "type", default_value_t = get_default_script_type())]
+    #[arg(long = "type", short = 't', default_value_t = get_default_script_type())]
     pub script_type: ScriptType,
 
     /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
-    #[arg(long = "script-path")]
+    #[arg(long, short = 'p')]
     pub script_path: Option<String>,
 }
 

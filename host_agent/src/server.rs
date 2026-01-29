@@ -19,11 +19,11 @@ use crate::{
 #[derive(Debug, Parser, Clone)]
 pub struct ServiceOptions {
     /// TCP port to listen on for incoming HMAC-signed commands.
-    #[arg(long = "port", default_value_t = 9090)]
+    #[arg(long, short, default_value_t = 9090)]
     pub port: u16,
 
     /// Shell command used to perform shutdown when requested.
-    #[arg(long = "shutdown-command", default_value_t = get_default_shutdown_command())]
+    #[arg(long, short = 'c', default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
 
     /// Shared secret for validating incoming HMAC-signed requests.

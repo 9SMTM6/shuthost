@@ -10,7 +10,7 @@
     )
 )]
 
-use clap::Parser;
+use clap::Parser as _;
 use secrecy::SecretString;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;

@@ -41,7 +41,7 @@ pub enum Command {
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
         /// UDP port to listen on for WOL test packets.
-        #[arg(long = "port", default_value_t = DEFAULT_PORT + 1)]
+        #[arg(long, short, default_value_t = DEFAULT_PORT + 1)]
         port: u16,
     },
 
@@ -49,6 +49,7 @@ pub enum Command {
     Registration(registration::Args),
 
     /// Generate a shuthost_direct_control script for this host_agent.
+    #[clap(visible_alias = "gdc")]
     GenerateDirectControl(script_generator::Args),
 }
 
