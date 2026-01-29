@@ -248,7 +248,7 @@ jobs:
         run: |
           chmod +x shuthost_host_agent
           set -x
-          ./scripts/tests/install-and-run-direct-control.sh ./shuthost_host_agent --init-system ${{ matrix.init }}
+          ./scripts/tests/install-and-run-direct-control.sh ./shuthost_host_agent --init-system=${{ matrix.init }}
 
   test-direct-control-windows:
     name: Test Direct Control (Windows)
