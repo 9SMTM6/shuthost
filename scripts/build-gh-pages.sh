@@ -115,8 +115,6 @@ fetch_agent() {
 # Host agent binaries (only fetch if they exist)
 fetch_agent "macos/aarch64"
 fetch_agent "macos/x86_64"
-fetch_agent "linux/x86_64"
-fetch_agent "linux/aarch64"
 fetch_agent "linux-musl/x86_64"
 fetch_agent "linux-musl/aarch64"
 fetch_agent "windows/x86_64"
