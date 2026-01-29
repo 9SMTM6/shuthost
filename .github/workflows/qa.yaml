@@ -19,6 +19,7 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           rust-version: stable
+          arguments: --all-features
   spell-check:
     runs-on: ubuntu-latest
     steps:

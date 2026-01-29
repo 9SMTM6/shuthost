@@ -96,7 +96,7 @@ coverage:
     cargo llvm-cov report --html --output-dir target/coverage --ignore-filename-regex ".*cargo/registry/src/.*|tests/rs_integration/.*"
 
 ci_cargo_deny:
-    cargo +stable --locked deny check --hide-inclusion-graph
+    cargo +stable --locked deny --all-features check --hide-inclusion-graph
 
 update_test_config_diffs:
     #!/usr/bin/env sh
