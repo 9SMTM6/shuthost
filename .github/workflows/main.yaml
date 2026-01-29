@@ -871,6 +871,7 @@ jobs:
           path: ./bin
 
       - name: Test Host Agent Binary
+        shell: bash
         run: |
           BINARY=./bin/shuthost_host_agent
           if [[ -f ./bin/shuthost_host_agent.exe ]]; then
