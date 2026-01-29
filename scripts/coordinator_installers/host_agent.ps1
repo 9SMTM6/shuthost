@@ -5,10 +5,6 @@ param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$RemoteUrl,
     [Parameter(Mandatory=$false)]
-    [string]$Arch,
-    [Parameter(Mandatory=$false)]
-    [string]$Os,
-    [Parameter(Mandatory=$false)]
     [string]$Port = "5757",
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
@@ -31,44 +27,36 @@ function Cleanup {
 }
 
 function Detect-Platform {
-    # Detect architecture (allow override)
-    if ($Arch) {
-        $script:ARCH = $Arch
-    } else {
-        $arch = if ($isUnix) { uname -m } else { $env:PROCESSOR_ARCHITECTURE }
-        switch ($arch) {
-            "x86_64" { $script:ARCH = "x86_64" }
-            "AMD64" { $script:ARCH = "x86_64" }
-            "aarch64" { $script:ARCH = "aarch64" }
-            "arm64" { $script:ARCH = "aarch64" }
-            default {
-                Write-Error "Unsupported architecture: $arch"
-                exit 1
-            }
+    # Detect architecture
+    $arch = if ($isUnix) { uname -m } else { $env:PROCESSOR_ARCHITECTURE }
+    switch ($arch) {
+        "x86_64" { $script:ARCH = "x86_64" }
+        "AMD64" { $script:ARCH = "x86_64" }
+        "aarch64" { $script:ARCH = "aarch64" }
+        "arm64" { $script:ARCH = "aarch64" }
+        default {
+            Write-Error "Unsupported architecture: $arch"
+            exit 1
         }
     }
 
-    # Detect OS (allow override)
-    if ($Os) {
-        $script:PLATFORM = $Os
-    } else {
-        if ($isUnix) {
-            $os = uname -s
-            switch ($os) {
-                "Linux" {
-                    $script:PLATFORM = "linux-musl"
-                }
-                "Darwin" {
-                    $script:PLATFORM = "macos"
-                }
-                default {
-                    Write-Error "Unsupported OS: $os"
-                    exit 1
-                }
+    # Detect OS
+    if ($isUnix) {
+        $os = uname -s
+        switch ($os) {
+            "Linux" {
+                $script:PLATFORM = "linux-musl"
             }
-        } else {
-            $script:PLATFORM = "windows"
+            "Darwin" {
+                $script:PLATFORM = "macos"
+            }
+            default {
+                Write-Error "Unsupported OS: $os"
+                exit 1
+            }
         }
+    } else {
+        $script:PLATFORM = "windows"
     }
 
     # Set binary name

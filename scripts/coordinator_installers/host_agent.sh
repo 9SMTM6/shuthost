@@ -8,9 +8,7 @@ set -e
 
 # TODO: consider a way to embed the install options. Main issue outside of it being annoying: Different defaults between OSs (mostly shutdown argument)
 if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [--arch <arch>] [--os <os>] [shuthost_host_agent install options...]"
-  echo "  --arch <arch>   Override detected architecture (e.g. x86_64, aarch64)"
-  echo "  --os <os>       Override detected OS/platform (e.g. linux, linux-musl, macos)"
+  echo "Usage: $0 <remote_url> [shuthost_host_agent install options...]"
   exit 1
 fi
 
@@ -26,27 +24,11 @@ else
 fi
 
 DEFAULT_PORT="5757"
-USER_ARCH=""
-USER_OS=""
 INSTALLER_ARGS=""
 
-# Parse arguments for --arch and --os, and extract port
+# Parse arguments for port
 while [ $# -gt 0 ]; do
     case "$1" in
-        --arch=*)
-            USER_ARCH="${1#--arch=}"
-            ;;
-        --arch)
-            shift
-            USER_ARCH="$1"
-            ;;
-        --os=*)
-            USER_OS="${1#--os=}"
-            ;;
-        --os)
-            shift
-            USER_OS="$1"
-            ;;
         --port=*)
             DEFAULT_PORT="${1#--port=}"
             INSTALLER_ARGS="$INSTALLER_ARGS $1"
@@ -87,21 +69,6 @@ run_as_elevated() {
     fi
 }
 
-exit_on_glibc_error() {
-    if [ "$PLATFORM" = "linux" ]; then
-        if ! ./"$OUTFILE" --version >/dev/null 2>&1; then
-            ERROR_OUTPUT=$(./"$OUTFILE" --version 2>&1)
-            if echo "$ERROR_OUTPUT" | grep -q "version \`GLIBC_"; then
-                echo "Detected glibc-related linker error: $ERROR_OUTPUT"
-                echo "Recommendation: Use the 'linux-musl' version for better compatibility."
-                echo "To override the platform, use the following command:"
-                echo "curl -fsSL ${REMOTE_URL}/download/host_agent_installer.sh | sh -s ${REMOTE_URL} --os linux-musl $INSTALLER_ARGS"
-                exit 1
-            fi
-        fi
-    fi
-}
-
 test_wol_packet_reachability() {
     WOL_TEST_PORT=$((DEFAULT_PORT + 1))
 
@@ -124,10 +91,7 @@ test_wol_packet_reachability() {
     fi
 }
 
-# Detect architecture (allow override)
-if [ -n "$USER_ARCH" ]; then
-    ARCH="$USER_ARCH"
-else
+# Detect architecture
 ARCH="$(uname -m)"
 case "$ARCH" in
     x86_64) ARCH="x86_64" ;;
@@ -137,12 +101,8 @@ case "$ARCH" in
         exit 1
         ;;
 esac
-fi
 
-# Detect OS and MUSL (allow override)
-if [ -n "$USER_OS" ]; then
-    PLATFORM="$USER_OS"
-else
+# Detect OS
 OS="$(uname -s)"
 case "$OS" in
     Linux)
@@ -156,7 +116,6 @@ case "$OS" in
         exit 1
         ;;
 esac
-fi
 
 OUTFILE="shuthost_host_agent"
 
@@ -176,8 +135,6 @@ echo "$INSTALLER_ARGS"
 
 curl --compressed -fL $CURL_OPTS "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
-
-exit_on_glibc_error
 
 test_wol_packet_reachability
 
