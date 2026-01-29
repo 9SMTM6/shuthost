@@ -9,22 +9,41 @@ set -eu
 
 TYPE="sh"
 HOST_AGENT_BINARY="./shuthost_host_agent"
+INIT_SYSTEM=""
 
 while [ $# -gt 0 ]; do
   case $1 in
     --type=*) TYPE="${1#*=}" ;;
+    --init-system=*) INIT_SYSTEM="${1#*=}" ;;
     *) HOST_AGENT_BINARY="$1" ;;
   esac
   shift
 done
 
-printf 'Testing direct host_agent installation:\n  Host agent binary: %s\n  Type: %s\n' "$HOST_AGENT_BINARY" "$TYPE"
+# Set TYPE based on INIT_SYSTEM if self-extracting
+if [ "$INIT_SYSTEM" = "self-extracting-pwsh" ]; then
+  TYPE="pwsh"
+fi
+
+printf 'Testing direct host_agent installation:\n  Host agent binary: %s\n  Type: %s\n  Init system: %s\n' "$HOST_AGENT_BINARY" "$TYPE" "$INIT_SYSTEM"
 
 export RUST_BACKTRACE=1
 
 set -v
 
-run_as_elevated "$HOST_AGENT_BINARY install --shutdown-command=\"touch /tmp/shutdown_executed\""
+INSTALL_CMD="$HOST_AGENT_BINARY install --shutdown-command=\"touch /tmp/shutdown_executed\""
+if [ -n "$INIT_SYSTEM" ]; then
+  INSTALL_CMD="$INSTALL_CMD --init-system $INIT_SYSTEM"
+fi
+
+run_as_elevated "$INSTALL_CMD"
+
+# For self-extracting, the agent binary is the generated script
+if [ "$INIT_SYSTEM" = "self-extracting-shell" ]; then
+  HOST_AGENT_BINARY="./shuthost_host_agent_self_extracting"
+elif [ "$INIT_SYSTEM" = "self-extracting-pwsh" ]; then
+  HOST_AGENT_BINARY="./shuthost_host_agent_self_extracting.ps1"
+fi
 
 wait_for_agent_ready
 
