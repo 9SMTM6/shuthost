@@ -203,46 +203,6 @@ jobs:
         run: |
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
-  test-service-installation-self-extracting-shell:
-    name: Test Service Installation (self-extracting-shell)
-    runs-on: ubuntu-latest
-    needs: [build-host_agents, build-coordinators]
-
-    steps:
-      - uses: *checkout
-
-      - name: Download coordinator binary
-        uses: *download-artifact
-        with:
-          name: coordinator-x86_64-unknown-linux-gnu
-
-      - run: chmod +x shuthost_coordinator
-
-      - name: Test on Linux (self-extracting-shell)
-        run: |
-          set -x
-          # Start the coordinator in the background
-          sudo ./shuthost_coordinator install $(whoami) --port 8080 --bind 127.0.0.1
-          # Wait for coordinator to be ready (timeout 30s)
-          for i in $(seq 1 30); do
-            curl -fsSL http://localhost:8080/login && break || sleep 1
-          done
-
-          curl -fsSL http://localhost:8080/login || { echo "Coordinator service is not running"; exit 1; }
-          # Download and install host_agent with self-extracting-shell init system
-          curl -fsSL http://localhost:8080/download/host_agent_installer.sh | sh -s http://localhost:8080 --init-system self-extracting-shell
-          # Wait for the agent to start (timeout 30s) - check for listening port or process
-          for i in $(seq 1 30); do
-            sudo ss -ltnp | grep ':5757' >/dev/null 2>&1 || sudo lsof -i :5757 >/dev/null 2>&1 || sudo netstat -tlnp | grep ':5757' >/dev/null 2>&1 || sudo pgrep -af '/tmp/selfbin' >/dev/null 2>&1 && break || true
-            sleep 1
-          done
-          # Check if the port is in use (default 5757)
-          sudo ss -ltnp | grep ':5757' || sudo lsof -i :5757 || sudo netstat -tlnp | grep ':5757'
-          # Check for a fitting process in the process list
-          sudo pgrep -af '/tmp/selfbin' || sudo ps aux | grep '/tmp/selfbin'
-
-  # TODO: Add job for self-extracting-pwsh init system
-
   test-direct-control-unix:
     name: Test Direct Control (${{ matrix.init }})
     runs-on: ${{ matrix.runner }}
@@ -265,6 +225,9 @@ jobs:
           - init: launchd
             runner: macos-latest
             binary: host_agent-x86_64-apple-darwin
+          - init: self-extracting-shell
+            runner: ubuntu-latest
+            binary: host_agent-x86_64-unknown-linux-musl
 
     steps:
       - uses: *checkout
@@ -275,7 +238,7 @@ jobs:
           name: ${{ matrix.binary }}
 
       - name: Prepare
-        if: matrix.init == 'openrc'
+        if: matrix.container != null
         run: |
           apk update
           apk add --no-cache curl openssl doas
@@ -285,7 +248,7 @@ jobs:
         run: |
           chmod +x shuthost_host_agent
           set -x
-          ./scripts/tests/install-and-run-direct-control.sh ./shuthost_host_agent
+          ./scripts/tests/install-and-run-direct-control.sh ./shuthost_host_agent --init-system ${{ matrix.init }}
 
   test-direct-control-windows:
     name: Test Direct Control (Windows)
@@ -960,7 +923,6 @@ jobs:
       - test-service-installation-systemd
       - test-service-installation-openrc
       - test-service-installation-launchd
-      - test-service-installation-self-extracting-shell
     steps: *grouping
 
   ci-only-tests:
@@ -974,7 +936,6 @@ jobs:
       - test-service-installation-systemd
       - test-service-installation-openrc
       - test-service-installation-launchd
-      - test-service-installation-self-extracting-shell
       - test-direct-control-unix
       - test-direct-control-windows
       - test-coordinator-compatibility
@@ -1013,7 +974,6 @@ jobs:
       - test-service-installation-systemd
       - test-service-installation-openrc
       - test-service-installation-launchd
-      - test-service-installation-self-extracting-shell
       ### test-direct-control
       - test-direct-control-unix
       - test-direct-control-windows
