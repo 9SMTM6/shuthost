@@ -24,18 +24,21 @@ pub(crate) const LAUNCHD_SERVICE_FILE_TEMPLATE: &str =
 #[cfg(any(target_os = "linux", test))]
 pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str =
     include_str!("openrc.shuthost_host_agent.tmpl.sh");
+#[cfg(unix)]
+pub(crate) const SELF_EXTRACTING_SHELL_TEMPLATE: &str = include_str!("self_extracting.tmpl.sh");
+pub(crate) const SELF_EXTRACTING_PWSH_TEMPLATE: &str = include_str!("self_extracting.tmpl.ps1");
 
 /// Binds template placeholders with actual values.
 pub(crate) fn bind_template_replacements(
     template: &str,
     description: &str,
-    port: &str,
+    port: u16,
     shutdown_command: &str,
     secret: &str,
 ) -> String {
     template
         .replace("{ description }", description)
-        .replace("{ port }", port)
+        .replace("{ port }", &port.to_string())
         .replace("{ shutdown_command }", shutdown_command)
         .replace("{ secret }", secret)
         .replace("{ name }", BINARY_NAME)
@@ -108,7 +111,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         bind_template_replacements(
             arg,
             env!("CARGO_PKG_DESCRIPTION"),
-            &arguments.port.to_string(),
+            arguments.port,
             &arguments.shutdown_command,
             &arguments.shared_secret,
         )
@@ -135,7 +138,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::SelfExtractingShell => {
             let target_script_path = format!("./{name}_self_extracting");
             self_extracting::generate_self_extracting_script_from_template(
-                &bind_known_vals(include_str!("self_extracting.tmpl.sh")),
+                &bind_known_vals(SELF_EXTRACTING_SHELL_TEMPLATE),
                 &target_script_path,
             )?;
             // Start the self-extracting script in the background
@@ -148,7 +151,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::SelfExtractingPwsh => {
             let target_script_path = format!("./{name}_self_extracting.ps1");
             self_extracting::generate_self_extracting_script_from_template(
-                &bind_known_vals(include_str!("self_extracting.tmpl.ps1")),
+                &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),
                 &target_script_path,
             )?;
             let powershell_cmd = if cfg!(target_os = "windows") {

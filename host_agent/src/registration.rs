@@ -277,17 +277,14 @@ mod tests {
     use crate::install;
 
     fn test_parse_content(template: &str, parse_fn: fn(&str) -> Result<ServiceConfig, String>) {
-        let content = install::bind_template_replacements(
-            template,
-            "test desc",
-            "1234",
-            "test cmd",
-            "test_secret",
-        );
+        let secret = "test_secret";
+        let port = 1234;
+        let content =
+            install::bind_template_replacements(template, "test desc", port, "test cmd", secret);
 
         let config = parse_fn(&content).unwrap();
-        assert_eq!(config.secret, "test_secret");
-        assert_eq!(config.port, 1234);
+        assert_eq!(config.secret, secret);
+        assert_eq!(config.port, port);
     }
 
     #[test]
@@ -313,27 +310,17 @@ mod tests {
 
     #[test]
     fn test_parse_self_extracting_shell_content() {
-        let content = r#"
-export SHUTHOST_SHARED_SECRET="test_secret"
-export PORT="1234"
-export SHUTDOWN_COMMAND="test cmd"
-"#;
-
-        let config = parse_self_extracting_shell_content(content).unwrap();
-        assert_eq!(config.secret, "test_secret");
-        assert_eq!(config.port, 1234);
+        test_parse_content(
+            install::SELF_EXTRACTING_SHELL_TEMPLATE,
+            parse_self_extracting_shell_content,
+        );
     }
 
     #[test]
     fn test_parse_self_extracting_pwsh_content() {
-        let content = r#"
-$env:SHUTHOST_SHARED_SECRET = "test_secret"
-$env:PORT = "1234"
-$env:SHUTDOWN_COMMAND = "test cmd"
-"#;
-
-        let config = parse_self_extracting_pwsh_content(content).unwrap();
-        assert_eq!(config.secret, "test_secret");
-        assert_eq!(config.port, 1234);
+        test_parse_content(
+            install::SELF_EXTRACTING_PWSH_TEMPLATE,
+            parse_self_extracting_pwsh_content,
+        );
     }
 }
