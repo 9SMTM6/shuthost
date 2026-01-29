@@ -24,6 +24,10 @@ type WsMessage =
     | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
+
+/** Lease action enum */
+type LeaseAction = 'take' | 'release';
+
 let persistedHostsList: string[] = [];
 let persistedStatusMap: StatusMap = {};
 let persistedLeaseMap: Record<string, LeaseSource[]> = {};
@@ -419,7 +423,7 @@ const updateClientsTable = () => {
 /**
  * Send a lease action request to the backend.
  */
-const updateLease = async (host: string, action: 'take' | 'release') => {
+const updateLease = async (host: string, action: LeaseAction) => {
     if (DemoMode.isActive) {
         DemoMode.updateLease(host, action);
         return;
@@ -534,15 +538,24 @@ window.addEventListener('pagehide', (event) => {
 });
 
 // Global error handlers
-window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
-    showJSError(event.error?.message || 'An unknown error occurred');
-});
+const addGlobalErrorHandlers = () => {
+    window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+        showJSError(event.error?.message || 'An unknown error occurred');
+    });
 
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
-    showJSError(event.reason?.message || 'An unhandled promise rejection occurred');
-});
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+        showJSError(event.reason?.message || 'An unhandled promise rejection occurred');
+    });
+
+    window.addEventListener('securitypolicyviolation', (event) => {    
+        console.error('Security policy violation:', event);
+        showJSError('A security policy violation occurred');
+    });
+};
+
+addGlobalErrorHandlers();
 
 /**
  * This code is made to run in Github Pages demo mode, to simulate a backend
