@@ -4,7 +4,7 @@
 
 pub mod self_extracting;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -84,7 +84,13 @@ pub enum InitSystem {
 
 impl std::fmt::Display for InitSystem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(
+            f,
+            "{}",
+            self.to_possible_value()
+                .expect("No skipped variants")
+                .get_name()
+        )
     }
 }
 
