@@ -84,18 +84,7 @@ pub enum InitSystem {
 
 impl std::fmt::Display for InitSystem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match *self {
-            #[cfg(target_os = "linux")]
-            InitSystem::Systemd => "systemd",
-            #[cfg(target_os = "linux")]
-            InitSystem::OpenRC => "open-rc",
-            #[cfg(unix)]
-            InitSystem::SelfExtractingShell => "self-extracting-shell",
-            InitSystem::SelfExtractingPwsh => "self-extracting-pwsh",
-            #[cfg(target_os = "macos")]
-            InitSystem::Launchd => "launchd",
-        };
-        write!(f, "{s}")
+        write!(f, "{}", self.to_string())
     }
 }
 
