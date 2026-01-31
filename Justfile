@@ -1,7 +1,17 @@
 # this ensures that just running just give a list of commands
-_list:
+[private]
+list:
     just --list
 
+choose:
+    just --choose
+
+alias c := choose
+
+export RUST_BACKTRACE := "1"
+
+[macos]
+[group('setup')]
 install_cross_toolchains_on_apple_silicon:
     rustup target add x86_64-apple-darwin
 
@@ -19,6 +29,8 @@ install_cross_toolchains_on_apple_silicon:
     brew install aarch64-unknown-linux-musl
     rustup target add aarch64-unknown-linux-musl
 
+[linux]
+[group('setup')]
 build_linux_host_agents:
     # install cross compilation toolchains (e.g. from musl.cc)
     # running gnu linkers for musl targets generally works, and these are more widely available on distros. The reverse may also be true on musl based distros
@@ -26,50 +38,70 @@ build_linux_host_agents:
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc cargo build --release --bin shuthost_host_agent --target aarch64-unknown-linux-musl &
     wait
 
-build_all_host_agents_on_mac:
+[macos]
+[group('setup')]
+build_all_host_agents:
     cargo build --release --bin shuthost_host_agent --target aarch64-apple-darwin &
     cargo build --release --bin shuthost_host_agent --target x86_64-apple-darwin &
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-musl &
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_host_agent --target aarch64-unknown-linux-musl &
     wait
 
+[group('devops')]
 deploy_branch_on_metal:
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
+[group('projectmanagement')]
+[working-directory("frontend")]
 build_graphs:
-    cd frontend && npm run build-diagrams
+    npm run build:diagrams
 
+[group('devops')]
+[confirm]
 clean:
     cargo clean && cargo fetch
     cd frontend && rm -rf node_modules && npm ci
 
+[group('projectmanagement')]
 update_dependencies:
     cargo update --verbose
     cd frontend && npm update
 
+alias deps := update_dependencies
+
+[group('devops')]
 build_gh_pages +flags="":
     ./scripts/build-gh-pages.sh {{flags}}
 
 export DATABASE_URL := "sqlite:" + justfile_directory() + "/shuthost.db"
 export SQLX_OFFLINE := "true"
 
+[group('database')]
 db_create:
     cargo sqlx database drop
     cargo sqlx database create
     cargo sqlx migrate run --source coordinator/migrations
 
+[group('database')]
+[group('projectmanagement')]
+[working-directory("coordinator")]
 db_update_sqlx_cache:
-    cd coordinator && cargo sqlx prepare
+    cargo sqlx prepare
 
+[group('database')]
+[group('projectmanagement')]
+[working-directory("coordinator")]
 db_add_migration name:
-    cd coordinator && sqlx migrate add {{name}}
+    sqlx migrate add {{name}}
 
+[group('tests')]
 test_all:
     cargo test --workspace
 
+[script]
+[group('tests')]
+[group('projectmanagement')]
 coverage:
-    #!/usr/bin/env sh
-    set -e
     export COVERAGE=1
     export SKIP_BUILD=1
     eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
@@ -95,34 +127,36 @@ coverage:
     cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex ".*cargo/registry/src/.*|tests/rs_integration/.*"
     cargo llvm-cov report --html --output-dir target/coverage --ignore-filename-regex ".*cargo/registry/src/.*|tests/rs_integration/.*"
 
-ci_cargo_deny:
+[group('tests')]
+cargo_deny:
     cargo +stable --locked deny --all-features check --hide-inclusion-graph
 
+alias deny := cargo_deny
+
+[group('projectmanagement')]
+[working-directory("docs/examples")]
 update_test_config_diffs:
-    #!/usr/bin/env sh
-    set -e
-    cd docs/examples/
     diff -u example_config.toml example_config_with_client_and_host.toml > example_config_with_client_and_host.toml.patch || true
     diff -u example_config.toml example_config_oidc.toml > example_config_oidc.toml.patch || true
     diff -u example_config.toml example_config_external.toml > example_config_external.toml.patch || true
 
+[group('setup')]
+[working-directory("docs/examples")]
 patch_test_configs:
-    #!/usr/bin/env sh
-    set -e
-    cd docs/examples/
     patch example_config.toml -o example_config_with_client_and_host.toml < example_config_with_client_and_host.toml.patch 
     patch example_config.toml -o example_config_oidc.toml < example_config_oidc.toml.patch
     patch example_config.toml -o example_config_external.toml < example_config_external.toml.patch
 
+[script]
+[group('tests')]
 update_file_snapshots:
-    #!/usr/bin/env sh
-    set -e
     . ./scripts/helpers.sh && build_gnu
     ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
     . ./scripts/helpers.sh && build_musl
     ./scripts/snapshot_files/openrc.sh ./target/debug/shuthost_coordinator
     ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
 
+[group('tests')]
 install_test_scripts:
     ./scripts/tests/enduser_install_scripts.sh
     ./scripts/tests/direct-control-alpine.sh
@@ -131,20 +165,21 @@ install_test_scripts:
     ./scripts/tests/service-installation-openrc.sh
     ./scripts/tests/service-installation-systemd.sh
 
-alias deny := ci_cargo_deny
-
+[group('tests')]
 ci_typo:
     typos
 
+[group('tests')]
 playwright +flags="":
     cd frontend && npm ci && npx tsc --noEmit && npx playwright test {{flags}}
 
+[group('tests')]
 playwright_report:
     cd frontend && npx playwright show-report
 
+[group('projectmanagement')]
+[script('bash -eu')]
 release TYPE skip_coverage_and_file_snapshots="false":
-    #!/usr/bin/env bash
-    set -e
     git fetch
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" != "main" ]; then
@@ -160,7 +195,7 @@ release TYPE skip_coverage_and_file_snapshots="false":
     cargo fmt
     just update_test_config_diffs
     just patch_test_configs
-    just ci_cargo_deny
+    just cargo_deny
     just db_update_sqlx_cache
     if [[ "{{skip_coverage_and_file_snapshots}}" != "true" ]]; then
         just update_file_snapshots
