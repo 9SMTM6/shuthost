@@ -57,7 +57,7 @@ jobs:
       - name: Fetch LFS objects (exclude webp)
         run: |
           # fetch LFS objects but exclude large webp files to save bandwidth
-          git lfs fetch --exclude="*.webp" || true
+          git lfs pull --exclude="*.webp" || true
 
       - name: Check LFS availability
         run: |
@@ -239,7 +239,7 @@ jobs:
           # Try to fetch a small LFS file to test if quota allows any LFS access
           # Using one of the smallest PNG files (~37 KB) to minimize bandwidth usage
           target="frontend/tests/mobile-navigation.spec.ts-snapshots/mobile-navigation-Mobile-Dark.png"
-          git lfs fetch --include="$target" || true
+          git lfs pull --include="$target" || true
           AVAIL=$(./scripts/check_lfs_fetched.sh "$target")
           echo "LFS_AVAILABLE=$AVAIL" >> $GITHUB_ENV
           if [ "$AVAIL" != "true" ]; then

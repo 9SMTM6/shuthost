@@ -856,7 +856,7 @@ jobs:
       - name: Fetch LFS objects (exclude webp)
         run: |
           # fetch LFS objects but exclude large webp files to save bandwidth
-          git lfs fetch --exclude="*.webp" || true
+          git lfs pull --exclude="*.webp" || true
 
       - name: Check LFS availability
         run: |
