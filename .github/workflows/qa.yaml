@@ -96,11 +96,10 @@ jobs:
           CI: true
           COVERAGE: 1
           SKIP_BUILD: 1
-          # fix EAGAIN errors due to process exhaustion in GitHub CI
-          CARGO_BUILD_JOBS: 1
         run: |
           set -e
           set -v
+          ulimit -u 4096
           eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
           cargo llvm-cov clean --workspace
           . ./scripts/helpers.sh && build_gnu
