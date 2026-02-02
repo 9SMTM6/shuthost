@@ -6,21 +6,20 @@
         <style type="text/css"><![CDATA[
             /* Neutral default color with a light outline for contrast on light backgrounds */
             .fill {
-                fill: #2b2b2b;
+                fill: #e6e6e6;
                 /* thinner, subtle grey outline so it doesn't stick out */
-                stroke: rgba(200,200,200,0.6);
-                stroke-width: 2;
+                stroke: rgba(40,40,40,0.6);
+                stroke-width: 4;
                 stroke-linejoin: round;
                 stroke-linecap: round;
                 filter: url(#shadow);
             }
 
-            /* In dark mode, invert fill/stroke for good contrast */
-            @media (prefers-color-scheme: dark) {
+            /* In light mode, invert fill/stroke for good contrast */
+            @media (prefers-color-scheme: light) {
                 .fill {
-                    fill: #e6e6e6;
-                    /* dark-mode outline: slightly darker grey, subtle */
-                    stroke: rgba(40,40,40,0.6);
+                    fill: #2b2b2b;
+                    stroke: rgba(200,200,200,0.6);
                 }
             }
         ]]></style>
