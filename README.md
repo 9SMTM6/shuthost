@@ -14,14 +14,13 @@ A neat helper that manages the standby state of unix and windows hosts with Wake
 
 ⚠️ **Note**: the short demo clip shown above is slightly out of date with respect to theming and layout. Check the [live demo](https://9SMTM6.github.io/shuthost/) or [screenshots below](#-ui-screenshots) for the current UI.
 
-## 🌐 Live Demo
+## 🌐 [Live Demo](https://9SMTM6.github.io/shuthost/)
 
-You can try a demo of the ShutHost WebUI (no backend, simulated data) via GitHub Pages:
+[You can try a demo of the ShutHost WebUI via GitHub Pages.](https://9SMTM6.github.io/shuthost/)
 
-<p style="text-align: center;"><a href="https://9SMTM6.github.io/shuthost/" style="display: inline-block; padding: 7px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">🚀 Live Demo</a></p>
+This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and some of the features.
 
-This demo runs entirely in your browser and does not control any real hosts. It is useful for previewing the UI and some of the features without installing anything.
-Note that the theme (light/dark) is selected based on your system preference.
+Note that the theme (light/dark) of the WebUI is selected based on your system preference.
 
 ---
 
