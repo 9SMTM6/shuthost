@@ -12,11 +12,12 @@ If you don't configure a database or don't persist it between restarts, the coor
 
 **Solution:** Configure the `[db]` section in your config file and ensure the database file is persisted (e.g., keep the SQLite file on disk or mount the volume properly in Docker).
 
-### 🌐 I can't access the coordinator WebUI from other Docker containers. What should I do?
+### 🌐 I can't access the coordinator WebUI from (other, if deployed as container) Docker containers. What should I do?
 
-Docker networking requires specific configuration for the coordinator to be accessible from other containers. By default, the coordinator only binds to the local network interface (localhost/127.0.0.1) for security reasons, preventing access from other containers and other hosts on the LAN.
+Docker networking requires specific configuration for services bound to loopback (aka 127.0.0.1, not bound to 0.0.0.0 aka all interfaces) to be accessible from other containers. By default, the coordinator only binds to loopback for security reasons, preventing access from and other hosts on the LAN as well as containers.
+Because of the `network_mode: host` setting required by the container, this applies both to the binary as well as the docker deployment.
 
-**Solution:** See [WebUI Network Configuration](docs/examples/webui-network-config.md) for detailed setup instructions on configuring Docker networking to allow access from other containers.
+**Solution:** See [WebUI Network Configuration](./examples/webui-network-config.md) for detailed setup instructions on configuring Docker networking to allow access from other containers.
 
 ### 🌐 WOL signals aren't reaching their target hosts when running the coordinator in Docker. What should I do?
 
@@ -30,18 +31,11 @@ The installer chooses the default network interface to determine the IP address,
 
 **Solution:** Manually override the network interface in the agent configuration file after installation.
 
-### 🐧 The coordinator binary fails with a glibc version error. What's the issue?
-<!-- TODO: Slated for removal. The installer scripts default to musl binaries now for both coordinator and agent -->
-
-On certain distributions (e.g., Ubuntu 22.04), the default binary may be incompatible with your system's glibc version.
-
-**Solution:** Use the **musl binary** instead, or run the coordinator in a **container**. For the agent, the install script will automatically recommend the musl binary and the corresponding command line invocation if the default one fails.
-
 ### 🔏 The agent/client install script fails when I use self-signed certificates. Why?
 
 The install scripts cannot validate self-signed certificates without additional configuration.
 
-**Solution:** Either proxy your self-signed certificates through a trusted endpoint, or use certificates from a trusted provider like Let's Encrypt. For the agent specifically, you can also install the agent directly from GitHub  - see [Agent-only Installation](../examples/agent-installation.md), no need to generate the direct control script, just continue like with a normal install.
+**Solution:** Either proxy your self-signed certificates through a trusted endpoint, or use certificates from a trusted provider like Let's Encrypt. For the agent specifically, you can also install the agent directly from GitHub  - see [Agent-only Installation](./examples/agent-installation.md), no need to generate the direct control script, just continue like with a normal install.
 
 ### 🌐 Must be served on a (sub)domain, not a subpath
 
