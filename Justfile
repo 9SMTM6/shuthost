@@ -178,8 +178,9 @@ playwright_report:
     cd frontend && npx playwright show-report
 
 [group('projectmanagement')]
-[script('bash -eu')]
+[script('bash')]
 release TYPE skip_coverage_and_file_snapshots="false":
+    set -euo pipefail
     git fetch
     CURRENT_BRANCH=$(git branch --show-current)
     if [ "$CURRENT_BRANCH" != "main" ]; then
