@@ -62,13 +62,14 @@ This launch agent triggers the backup script daily at 2:00 PM. The `RunAtLoad` k
 
 ```bash
 #!/bin/sh
-
 set -ex
 
 # Configuration variables
 SHUTHOST_CLIENT="$HOME/.local/bin/shuthost_client_<unique_ident>"
 BACKUP_HOST="<kopia backup host>"
 KOPIA_PATH="/opt/homebrew/bin/kopia"
+# Timeout for the backup command, supports units: s (seconds), m (minutes), h (hours), d (days)
+BACKUP_TIMEOUT="${BACKUP_TIMEOUT:-1h}"
 
 # Function to send notification
 notify_fail() {
@@ -83,17 +84,33 @@ notify_success() {
     fi
 }
 
+# Wait for network for up to 60 seconds
+for i in $(seq 1 60); do
+    if ping -c1 1.1.1.1 >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+
+# If network is still down after 60s, exit with notification
+if ! ping -c1 1.1.1.1 >/dev/null 2>&1; then
+    notify_fail "Network not reachable"
+    exit 1
+fi
 
 # Run backup commands, exit on failure
 $SHUTHOST_CLIENT take $BACKUP_HOST
 trap "$SHUTHOST_CLIENT release $BACKUP_HOST" EXIT
 
-{
-    $KOPIA_PATH snapshot create --all
-} || {
-    notify_fail "Backup command failed"
+timeout $BACKUP_TIMEOUT $KOPIA_PATH snapshot create --all
+exit_code=$?
+if [ $exit_code -eq 124 ]; then
+    notify_fail "Backup timed out after $BACKUP_TIMEOUT"
     exit 1
-}
+elif [ $exit_code -ne 0 ]; then
+    notify_fail "Backup command failed with exit code $exit_code"
+    exit 1
+fi
 
 # Success: release and remove trap
 $SHUTHOST_CLIENT release $BACKUP_HOST

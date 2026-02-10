@@ -61,6 +61,8 @@ set -ex
 # Configuration variables
 SHUTHOST_CLIENT="$HOME/.local/bin/shuthost_client_<unique_ident>"
 BACKUP_HOST="<kopia backup host>"
+# Timeout for the backup command, supports units: s (seconds), m (minutes), h (hours), d (days)
+BACKUP_TIMEOUT="${BACKUP_TIMEOUT:-1h}"
 
 # Function to send notification
 notify_fail() {
@@ -89,12 +91,15 @@ fi
 $SHUTHOST_CLIENT take $BACKUP_HOST
 trap "$SHUTHOST_CLIENT release $BACKUP_HOST" EXIT
 
-{
-    kopia snapshot create --all
-} || {
-    notify_fail "Backup command failed"
+timeout $BACKUP_TIMEOUT kopia snapshot create --all
+exit_code=$?
+if [ $exit_code -eq 124 ]; then
+    notify_fail "Backup timed out after $BACKUP_TIMEOUT"
     exit 1
-}
+elif [ $exit_code -ne 0 ]; then
+    notify_fail "Backup command failed with exit code $exit_code"
+    exit 1
+fi
 
 # Success: release and remove trap
 $SHUTHOST_CLIENT release $BACKUP_HOST
