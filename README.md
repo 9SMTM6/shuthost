@@ -189,6 +189,8 @@ These are generated or validated automatically as part of the test suite, and th
 - 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
 - 🛡️ **Rate limiting of requests by shuthost clients**
+- Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
+  - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
 
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
