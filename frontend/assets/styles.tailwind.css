@@ -7,11 +7,12 @@ fonts by keeping sans-family fallbacks only. */
 :root {
     --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'Cascadia Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --header-height: calc(var(--spacing) * 14);
 }
 
 
 body {
-    @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen overflow-x-hidden;
+    @apply min-h-svh font-sans overflow-x-hidden bg-white dark:bg-[#181818] text-black dark:text-[#cccccc];
 
     /* Global layouting */
     display: grid;
@@ -20,7 +21,6 @@ body {
         "main"
         "footer";
     grid-template-rows: auto 1fr auto;
-    min-height: 100svh;
 
     header {
         grid-area: header;
@@ -354,11 +354,7 @@ body {
     /* Mobile: Position as side menu */
     @media (max-width: 767px) {
         .nav-tabs {
-            top: 3.5rem;
-            /* Below header (h-14 = 3.5rem) */
-            left: -100%;
             width: 250px;
-            height: calc(100vh - 3.5rem);
             @apply fixed flex-col p-4 gap-4 bg-white dark:bg-[#1e1e1e] shadow-lg;
             z-index: 1000;
             .tab {
@@ -373,6 +369,7 @@ body {
                     }
                 }
             }
+            left: -100%;
         }
         #mobile-menu-toggle:checked {
             &~header {
@@ -395,12 +392,12 @@ body {
                 display: block;
             }
         }
+        /* place nav tabs and backdrop below header */
+        .mobile-menu-backdrop, .nav-tabs {
+            @apply top-(--header-height) h-[calc(100lvh-var(--header-height))];
+        }
         .mobile-menu-backdrop {
-            @apply hidden fixed;
-            top: 3.5rem;
-            left: 0;
-            width: 100vw;
-            height: calc(100vh - 3.5rem);
+            @apply hidden fixed left-0 w-lvh;
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
