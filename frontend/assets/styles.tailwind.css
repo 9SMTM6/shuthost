@@ -11,6 +11,9 @@ fonts by keeping sans-family fallbacks only. */
 
 
 body {
+    @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen overflow-x-hidden;
+
+    /* Global layouting */
     display: grid;
     grid-template-areas:
         "header"
@@ -32,10 +35,6 @@ body {
 }
 
 @layer components {
-    .html-body {
-        @apply bg-white dark:bg-[#181818] text-black dark:text-[#cccccc] font-sans min-h-screen overflow-x-hidden;
-    }
-
     .section-container {
         @apply bg-white dark:bg-[#1e1e1e] shadow-md rounded-lg overflow-x-auto overflow-y-hidden;
     }
@@ -103,6 +102,7 @@ body {
         }
     }
 
+    /* table-wrapper makes tables horizontally scrollable if they're too large */
     .table-wrapper {
         @apply w-full overflow-x-auto;
         table {
@@ -155,10 +155,6 @@ body {
         @apply mt-4;
     }
 
-    .empty-state {
-        @apply text-[#616161] dark:text-[#9d9d9d] text-sm text-center py-4;
-    }
-
     /* Update tab styles */
     .tab {
         @apply px-4 py-4 text-sm font-medium text-[#616161] hover:text-black dark:text-[#a0a0a0] dark:hover:text-[#e0e0e0] border-b-2 border-transparent hover:border-[#e5e5e5] dark:hover:border-[#3e3e42] transition-colors focus:outline-none focus:text-black dark:focus:text-[#e0e0e0] focus:border-[#e5e5e5] dark:focus:border-[#3e3e42] cursor-pointer;
@@ -174,41 +170,19 @@ body {
         }
     }
 
-    .collapsible-header {
-        @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
-    }
-
-    .collapsible-content {
-        @apply px-4 py-2 border-t border-[#e5e5e5] dark:border-[#3e3e42];
-    }
-
-    .collapsible-icon {
-        @apply relative inline-block transition-transform dark:text-[#cccccc];
-        width: 20px;
-        height: 20px;
-        &::before {
-            @apply absolute origin-center;
-            content: '';
-            width: 8px;
-            height: 8px;
-            border-right: 2px solid currentColor;
-            border-bottom: 2px solid currentColor;
-            transition: transform 0.2s;
-            left: 6px;
-            top: 4px;
-            border-color: currentColor;
-            color: inherit;
-        }
-    }
     details {
         /* Hide the native details marker and ensure summary visuals match header */
         summary {
             &.collapsible-header {
-                @apply flex items-center justify-between cursor-pointer;
+                @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
                 &::marker {
                     @apply content-none;
                 }
             }
+        }
+
+        .collapsible-content {
+            @apply px-4 py-2 border-t border-[#e5e5e5] dark:border-[#3e3e42];
         }
 
         .collapsible-icon::before {
@@ -216,6 +190,25 @@ body {
         }
         &[open] .collapsible-icon::before {
             transform: rotate(-135deg);
+        }
+
+        .collapsible-icon {
+            @apply relative inline-block transition-transform dark:text-[#cccccc];
+            width: 20px;
+            height: 20px;
+            &::before {
+                @apply absolute origin-center;
+                content: '';
+                width: 8px;
+                height: 8px;
+                border-right: 2px solid currentColor;
+                border-bottom: 2px solid currentColor;
+                transition: transform 0.2s;
+                left: 6px;
+                top: 4px;
+                border-color: currentColor;
+                color: inherit;
+            }
         }
     }
 
@@ -272,6 +265,9 @@ body {
         li {
             @apply mb-1;
         }
+                .alert-title {
+            @apply font-semibold mb-1;
+        }
         &.alert-warning {
             @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
         }
@@ -281,9 +277,6 @@ body {
         &.alert-error {
             @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#8b0000] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
         }
-    }
-    .alert-title {
-        @apply font-semibold mb-1;
     }
 
     .license-title {
@@ -344,23 +337,15 @@ body {
     /* Mobile: Position as side menu */
     @media (max-width: 767px) {
         .nav-tabs {
-            position: fixed;
             top: 3.5rem;
             /* Below header (h-14 = 3.5rem) */
             left: -100%;
             width: 250px;
             height: calc(100vh - 3.5rem);
-            flex-direction: column;
-            @apply bg-white dark:bg-[#1e1e1e] shadow-lg;
+            @apply fixed flex-col p-4 gap-4 bg-white dark:bg-[#1e1e1e] shadow-lg;
             z-index: 1000;
-            padding: 1rem;
-            gap: 1rem;
             .tab {
-                width: 100%;
-                text-align: left;
-                @apply px-4 py-3 text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
-                border: none;
-                background: none;
+                @apply w-full px-4 py-3 text-left border-none bg-none text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
                 &.active {
                     @apply bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe];
                 }
