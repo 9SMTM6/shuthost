@@ -113,50 +113,51 @@ body {
     /* table-wrapper makes tables horizontally scrollable if they're too large */
     .table-wrapper {
         @apply w-full overflow-x-auto;
-        table {
-            @apply border-collapse w-full;
-            table-layout: auto;
-            .table-header {
-                @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
+    }
+
+    table.actions-table {
+        @apply border-collapse w-full;
+        table-layout: auto;
+        .table-header {
+            @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
+        }
+        .table-row {
+            @apply transition-colors;
+            &:hover {
+                @apply bg-[#f0f0f0] dark:bg-[#252526];
             }
-            .table-row {
-                @apply transition-colors;
-                &:hover {
-                    @apply bg-[#f0f0f0] dark:bg-[#252526];
-                }
-                th[scope="row"] {
-                    @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
-                    font-weight: 500;
-                    /* Slightly bolder than td, but not as bold as header */
-                }
+            th[scope="row"] {
+                @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
+                font-weight: 500;
+                /* Slightly bolder than td, but not as bold as header */
             }
-            .table-cell {
-                @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
+        }
+        .table-cell {
+            @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
+        }
+        .actions-cell {
+            @apply py-1.5;
+            display: grid;
+            grid-template-columns: 1fr;
+            align-items: center;
+            > button {
+                grid-column: 1;
+                grid-row: 1;
             }
+            .take-lease {
+                visibility: visible;
+            }
+            .release-lease {
+                visibility: hidden;
+            }
+        }
+        tr[data-has-lease="true"] {
             .actions-cell {
-                @apply py-1.5;
-                display: grid;
-                grid-template-columns: 1fr;
-                align-items: center;
-                > button {
-                    grid-column: 1;
-                    grid-row: 1;
-                }
                 .take-lease {
-                    visibility: visible;
-                }
-                .release-lease {
                     visibility: hidden;
                 }
-            }
-            tr[data-has-lease="true"] {
-                .actions-cell {
-                    .take-lease {
-                        visibility: hidden;
-                    }
-                    .release-lease {
-                        visibility: visible;
-                    }
+                .release-lease {
+                    visibility: visible;
                 }
             }
         }
@@ -236,44 +237,28 @@ body {
     }
 
     /* Platform support table */
-    .info-table {
-        @apply w-full text-sm border-separate border-spacing-0;
+    table.info-table {
+        @apply w-full text-sm border-separate border-spacing-0 rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42];
         thead {
             @apply bg-[#f3f3f3] dark:bg-[#252526];
-            tr:first-child {
-                th:first-child {
-                    border-top-left-radius: 0.5rem;
-                }
-                th:last-child {
-                    border-top-right-radius: 0.5rem;
-                }
-            }
         }
         th {
-            @apply px-4 py-3 text-left font-semibold text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42];
+            @apply px-4 py-3 text-left font-semibold text-black dark:text-[#cccccc] border-b border-[#e5e5e5] dark:border-[#3e3e42];
         }
         td {
-            @apply px-4 py-3 text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42] align-top;
+            @apply px-4 py-3 text-black dark:text-[#cccccc] border-b border-[#e5e5e5] dark:border-[#3e3e42] align-top;
+        }
+        tr:last-child td {
+            @apply border-b-0;
         }
         tbody {
             tr:hover {
                 @apply bg-[#f9f9f9] dark:bg-[#1e1e1e];
             }
-            tr:last-child {
-                td:first-child {
-                    border-bottom-left-radius: 0.5rem;
-                }
-                td:last-child {
-                    border-bottom-right-radius: 0.5rem;
-                }
-            }
-            tr + tr td {
-                border-top: none;
-            }
         }
         th + th,
         td + td {
-            border-left: none;
+            @apply border-l border-[#e5e5e5] dark:border-[#3e3e42];
         }
     }
 
