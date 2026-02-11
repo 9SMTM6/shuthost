@@ -54,7 +54,21 @@ test.describe('main page(s)', () => {
         // Wait for the error to be displayed
         await page.waitForSelector('#js-error', { state: 'visible' });
         await expect(page.locator('#js-error')).toBeVisible();
-        await expect(page.locator('body')).toHaveScreenshot('js_error_display.png');
+        await expect(page.locator('#js-error')).toHaveScreenshot('js_error_display.png');
+    });
+
+    test('license table header', async ({ page }) => {
+        await page.goto('/about');
+        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('#dependencies-title', { state: 'visible' });
+        await expect(page.locator('thead')).toHaveScreenshot(`license_table_header.png`);
+    });
+
+    test('GPL2 license display', async ({ page }) => {
+        await page.goto('/about');
+        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('#license-GPL-2\\.0-only', { state: 'visible' });
+        await expect(page.locator('#license-GPL-2\\.0-only').locator('..')).toHaveScreenshot(`gpl2_license_display.png`);
     });
 });
 
@@ -94,7 +108,7 @@ test.describe('token login', () => {
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');
         await expect(page.locator('#noscript-warning')).toBeVisible();
-        await expect(page.locator('body')).toHaveScreenshot('noscript_warning.png');
+        await expect(page.locator('#noscript-warning')).toHaveScreenshot('noscript_warning.png');
         await context.close();
     });
 });
