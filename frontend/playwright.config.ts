@@ -11,7 +11,7 @@ export default defineConfig({
         timeout: 5000,
         toHaveScreenshot: {
             // Note: A value of 0.03 was too lenient and passed a significant change, but if I specify 0.01 then playwright fails on macos. If someone raises an issue we can investigate further.
-            maxDiffPixelRatio: 0.01,
+            maxDiffPixelRatio: process.env['PIXELPEEP'] === '1' ? 0 : 0.01,
             // have nice hi-res screenshots that can double as images in Docs.
             scale: 'device',
             // Strip the platform from the file name,

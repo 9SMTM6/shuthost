@@ -174,6 +174,10 @@ playwright +flags="":
     cd frontend && npm ci && npx tsc --noEmit && npx playwright test {{flags}}
 
 [group('tests')]
+pixelpeep:
+    PIXELPEEP=1 just playwright
+
+[group('tests')]
 playwright_report:
     cd frontend && npx playwright show-report
 
