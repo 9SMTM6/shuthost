@@ -9,6 +9,7 @@ fonts by keeping sans-family fallbacks only. */
     --font-mono: 'Cascadia Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
+
 body {
     display: grid;
     grid-template-areas:
@@ -17,26 +18,17 @@ body {
         "footer";
     grid-template-rows: auto 1fr auto;
     min-height: 100svh;
-}
 
-header {
-    grid-area: header;
-}
-
-.main {
-    grid-area: main;
-    @apply overflow-x-hidden max-w-full;
-}
-
-footer {
-    grid-area: footer;
-}
-
-.collapsible-icon {
-    width: 20px;
-    height: 20px;
-    position: relative;
-    display: inline-block;
+    header {
+        grid-area: header;
+    }
+    .main {
+        grid-area: main;
+        @apply overflow-x-hidden max-w-full;
+    }
+    footer {
+        grid-area: footer;
+    }
 }
 
 @layer components {
@@ -54,18 +46,16 @@ footer {
 
     .code-container {
         @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative overflow-x-auto;
-    }
-
-    .copy-button {
-        /* vertically center the button inside the code container so it doesn't overlap wrapped text */
-        @apply absolute right-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .code-block {
-        /* add extra right padding so the copy button doesn't overlap wrapped content */
-        @apply block font-mono text-xs sm:text-sm wrap-break-word whitespace-pre-wrap max-w-full pr-12;
+        .copy-button {
+            /* vertically center the button inside the code container so it doesn't overlap wrapped text */
+            @apply absolute right-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .code-block {
+            /* add extra right padding so the copy button doesn't overlap wrapped content */
+            @apply block font-mono text-xs sm:text-sm wrap-break-word whitespace-pre-wrap max-w-full pr-12;
+        }
     }
 
     .description-text {
@@ -73,112 +63,94 @@ footer {
     }
 
     .btn {
-        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer disabled:cursor-not-allowed disabled:bg-[#e5e5e5] dark:disabled:bg-[#2d2d30] disabled:text-[#616161] dark:disabled:text-[#858585];
-    }
+        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer;
+        &.btn-green {
+            @apply bg-[#007a4d] hover:bg-[#006f3f] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
+        }
+        &.btn-red {
+            @apply bg-[#e04b4b] hover:bg-[#c13a3a] dark:bg-[#d36f78] dark:hover:bg-[#b85a62] text-white dark:text-black;
+        }
+        &:disabled {
+            @apply cursor-not-allowed bg-[#e5e5e5] dark:bg-[#2d2d30] text-[#616161] dark:text-[#858585];
+        }
 
-    .btn-green {
-        @apply bg-[#007a4d] hover:bg-[#006f3f] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
-    }
-
-    .btn-red {
-        @apply bg-[#e04b4b] hover:bg-[#c13a3a] dark:bg-[#d36f78] dark:hover:bg-[#b85a62] text-white dark:text-black;
     }
 
     /* Architecture documentation styles */
     .architecture-section {
         @apply mt-6;
+        .architecture-title {
+            @apply text-lg font-semibold text-black dark:text-[#cccccc] mb-3;
+        }
+        .architecture-diagram-container {
+            @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] flex justify-center;
+            .architecture-diagram {
+                /* TODO: I cant seem to figure out how to scale the diagrams "naturally", so that the element size between the diagram contents remains consistent. It doesn't e.g. respect the viewport sizes at all*/
+                @apply h-auto w-auto bg-transparent rounded max-w-full;
+            }
+        }
+        .architecture-content {
+            @apply mt-4 space-y-3;
+        }
+        .architecture-when-to-use {
+            @apply text-sm text-[#616161] dark:text-[#9d9d9d];
+        }
+        .architecture-separator {
+            @apply mt-8;
+        }
+        .architecture-key-points {
+            @apply mt-6;
+        }
     }
 
-    .architecture-title {
-        @apply text-lg font-semibold text-black dark:text-[#cccccc] mb-3;
-    }
-
-    .architecture-diagram-container {
-        @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] flex justify-center;
-    }
-
-    .architecture-diagram {
-        /* TODO: I cant seem to figure out how to scale the diagrams "naturally", so that the element size between the diagram contents remains consistent. It doesn't e.g. respect the viewport sizes at all*/
-        @apply h-auto w-auto bg-transparent rounded max-w-full;
-    }
-
-    .architecture-content {
-        @apply mt-4 space-y-3;
-    }
-
-    .architecture-when-to-use {
-        @apply text-sm text-[#616161] dark:text-[#9d9d9d];
-    }
-
-    .architecture-separator {
-        @apply mt-8;
-    }
-
-    .architecture-key-points {
-        @apply mt-6;
-    }
-
-    /* New mobile optimizations */
     .table-wrapper {
         @apply w-full overflow-x-auto;
+        table {
+            @apply border-collapse w-full;
+            table-layout: auto;
+            .table-header {
+                @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
+            }
+            .table-row {
+                @apply hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
+                th[scope="row"] {
+                    @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
+                    font-weight: 500;
+                    /* Slightly bolder than td, but not as bold as header */
+                }
+            }
+            .table-cell {
+                @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
+            }
+            .actions-cell {
+                @apply py-1.5;
+                display: grid;
+                grid-template-columns: 1fr;
+                align-items: center;
+                > button {
+                    grid-column: 1;
+                    grid-row: 1;
+                }
+                .take-lease {
+                    visibility: visible;
+                }
+                .release-lease {
+                    visibility: hidden;
+                }
+            }
+            tr[data-has-lease="true"] {
+                .actions-cell {
+                    .take-lease {
+                        visibility: hidden;
+                    }
+                    .release-lease {
+                        visibility: visible;
+                    }
+                }
+            }
+        }
     }
 
-    table {
-        @apply border-collapse w-full;
-        table-layout: auto;
-    }
-
-    .table-header {
-        @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
-    }
-
-    .table-row {
-        @apply hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
-    }
-
-    .table-row th[scope="row"] {
-        @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
-        font-weight: 500;
-        /* Slightly bolder than td, but not as bold as header */
-    }
-
-    /* Update table cell styling */
-    .table-cell {
-        @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
-    }
-
-    /* Update actions cell styling */
-    .actions-cell {
-        @apply py-1.5;
-        display: grid;
-        grid-template-columns: 1fr;
-        align-items: center;
-    }
-
-    /* Overlay both buttons in same grid cell */
-    .actions-cell > button {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    /* Hide/show buttons based on lease state */
-    .actions-cell .take-lease {
-        visibility: visible;
-    }
-
-    .actions-cell .release-lease {
-        visibility: hidden;
-    }
-
-    tr[data-has-lease="true"] .actions-cell .take-lease {
-        visibility: hidden;
-    }
-
-    tr[data-has-lease="true"] .actions-cell .release-lease {
-        visibility: visible;
-    }
-
-    /* Add these new styles */
     .client-table {
         @apply mt-4;
     }
@@ -190,19 +162,16 @@ footer {
     /* Update tab styles */
     .tab {
         @apply px-4 py-4 text-sm font-medium text-[#616161] hover:text-black dark:text-[#a0a0a0] dark:hover:text-[#e0e0e0] border-b-2 border-transparent hover:border-[#e5e5e5] dark:hover:border-[#3e3e42] transition-colors focus:outline-none focus:text-black dark:focus:text-[#e0e0e0] focus:border-[#e5e5e5] dark:focus:border-[#3e3e42] cursor-pointer;
+        &.active {
+            @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#3794ff] dark:border-[#0078d4] dark:hover:text-[#6fb6ff] dark:hover:border-[#006cbe];
+        }
     }
 
-    .tab.active {
-        @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#3794ff] dark:border-[#0078d4] dark:hover:text-[#6fb6ff] dark:hover:border-[#006cbe];
-    }
-
-    /* Remove .tabs-container since we moved tabs to header */
     .tab-content {
         @apply hidden;
-    }
-
-    .tab-content.active {
-        @apply block;
+        &.active {
+            @apply block;
+        }
     }
 
     .collapsible-header {
@@ -213,41 +182,41 @@ footer {
         @apply px-4 py-2 border-t border-[#e5e5e5] dark:border-[#3e3e42];
     }
 
-    .collapsible-icon::before {
-        @apply absolute origin-center;
-        content: '';
-        width: 8px;
-        height: 8px;
-        border-right: 2px solid currentColor;
-        border-bottom: 2px solid currentColor;
-        transition: transform 0.2s;
-        left: 6px;
-        top: 4px;
-        border-color: currentColor;
-        color: inherit;
-    }
-
-    details .collapsible-icon::before {
-        transform: rotate(45deg);
-    }
-
-    /* Stronger selector to guarantee the rotated state when details is open. */
-    details[open] .collapsible-icon::before {
-        transform: rotate(-135deg);
-    }
-
     .collapsible-icon {
-        @apply w-4 h-4 transition-transform dark:text-[#cccccc];
+        @apply relative inline-block transition-transform dark:text-[#cccccc];
+        width: 20px;
+        height: 20px;
+        &::before {
+            @apply absolute origin-center;
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transition: transform 0.2s;
+            left: 6px;
+            top: 4px;
+            border-color: currentColor;
+            color: inherit;
+        }
     }
+    details {
+        /* Hide the native details marker and ensure summary visuals match header */
+        summary {
+            &.collapsible-header {
+                @apply flex items-center justify-between cursor-pointer;
+                &::marker {
+                    @apply content-none;
+                }
+            }
+        }
 
-
-    /* Hide the native details marker and ensure summary visuals match header */
-    summary.collapsible-header {
-        @apply flex items-center justify-between cursor-pointer;
-    }
-
-    summary.collapsible-header::marker {
-        @apply content-none;
+        .collapsible-icon::before {
+            transform: rotate(45deg);
+        }
+        &[open] .collapsible-icon::before {
+            transform: rotate(-135deg);
+        }
     }
 
     /* Platform support table */
@@ -255,78 +224,66 @@ footer {
         @apply w-full text-sm;
         border-collapse: separate;
         border-spacing: 0;
-    }
-
-    .info-table thead {
-        @apply bg-[#f3f3f3] dark:bg-[#252526];
-    }
-
-    .info-table th {
-        @apply px-4 py-3 text-left font-semibold text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42];
-    }
-
-    .info-table td {
-        @apply px-4 py-3 text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42] align-top;
-    }
-
-    .info-table tbody tr:hover {
-        @apply bg-[#f9f9f9] dark:bg-[#1e1e1e];
-    }
-
-    /* Rounded corners for table */
-    .info-table thead tr:first-child th:first-child {
-        border-top-left-radius: 0.5rem;
-    }
-
-    .info-table thead tr:first-child th:last-child {
-        border-top-right-radius: 0.5rem;
-    }
-
-    .info-table tbody tr:last-child td:first-child {
-        border-bottom-left-radius: 0.5rem;
-    }
-
-    .info-table tbody tr:last-child td:last-child {
-        border-bottom-right-radius: 0.5rem;
-    }
-
-    /* Remove double borders */
-    .info-table th + th,
-    .info-table td + td {
-        border-left: none;
-    }
-
-    .info-table tbody tr + tr td {
-        border-top: none;
+        thead {
+            @apply bg-[#f3f3f3] dark:bg-[#252526];
+            tr:first-child {
+                th:first-child {
+                    border-top-left-radius: 0.5rem;
+                }
+                th:last-child {
+                    border-top-right-radius: 0.5rem;
+                }
+            }
+        }
+        th {
+            @apply px-4 py-3 text-left font-semibold text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42];
+        }
+        td {
+            @apply px-4 py-3 text-black dark:text-[#cccccc] border border-[#e5e5e5] dark:border-[#3e3e42] align-top;
+        }
+        tbody {
+            tr:hover {
+                @apply bg-[#f9f9f9] dark:bg-[#1e1e1e];
+            }
+            tr:last-child {
+                td:first-child {
+                    border-bottom-left-radius: 0.5rem;
+                }
+                td:last-child {
+                    border-bottom-right-radius: 0.5rem;
+                }
+            }
+            tr + tr td {
+                border-top: none;
+            }
+        }
+        th + th,
+        td + td {
+            border-left: none;
+        }
     }
 
     /* Alert styles */
     .alert {
         @apply rounded-lg p-3 my-3;
+        ul {
+            @apply my-2 pl-5;
+        }
+        li {
+            @apply mb-1;
+        }
+        &.alert-warning {
+            @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
+        }
+        &.alert-info {
+            @apply bg-[#d8f3ff] border-l-4 border-[#64b5f6] text-[#005fb8] dark:bg-[rgba(0,120,212,0.10)] dark:border-[#0078d4] dark:text-[#4fc3f7];
+        }
+        &.alert-error {
+            @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#8b0000] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
+        }
     }
-
-    .alert-warning {
-        @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
-    }
-
-    .alert-info {
-        @apply bg-[#d8f3ff] border-l-4 border-[#64b5f6] text-[#005fb8] dark:bg-[rgba(0,120,212,0.10)] dark:border-[#0078d4] dark:text-[#4fc3f7];
-    }
-
-    .alert-error {
-        @apply bg-[#ffdddd] border-l-4 border-[#ef5350] text-[#8b0000] dark:bg-[rgba(244,135,113,0.10)] dark:border-[#f48771] dark:text-[#ff9090];
-    }
-
     .alert-title {
         @apply font-semibold mb-1;
-    }
-
-    .alert ul {
-        @apply my-2 pl-5;
-    }
-
-    .alert li {
-        @apply mb-1;
     }
 
     .license-title {
@@ -350,36 +307,32 @@ footer {
         padding: 0.5rem;
         border-radius: 0.25rem;
         transition: background-color 0.2s;
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .hamburger-line {
+            width: 20px;
+            height: 2px;
+            background-color: currentColor;
+            margin: 2px 0;
+            transition: transform 0.3s, opacity 0.3s;
+        }
     }
 
-    .hamburger:hover {
-        background-color: rgba(0, 0, 0, 0.1);
-    }
-
-    .hamburger-line {
-        width: 20px;
-        height: 2px;
-        background-color: currentColor;
-        margin: 2px 0;
-        transition: transform 0.3s, opacity 0.3s;
-    }
-
-    /* Hide hamburger on login page but keep space */
-    .disable-nav .hamburger {
-        visibility: hidden;
-    }
-
-    .disable-nav .mobile-menu-backdrop {
-        display: none;
-    }
-
-    /* Hide nav-tabs and logout on login page but keep space */
-    .disable-nav .nav-tabs {
-        visibility: hidden;
-    }
-
-    .disable-nav .logout {
-        visibility: hidden;
+    .disable-nav {
+        /* Hide hamburger on login page but keep space */
+        .hamburger {
+            visibility: hidden;
+        }
+        .mobile-menu-backdrop {
+            display: none;
+        }
+        .nav-tabs {
+            visibility: hidden;
+        }
+        .logout {
+            visibility: hidden;
+        }
     }
 
     /* Mobile menu styles */
@@ -402,39 +355,38 @@ footer {
             z-index: 1000;
             padding: 1rem;
             gap: 1rem;
+            .tab {
+                width: 100%;
+                text-align: left;
+                @apply px-4 py-3 text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
+                border: none;
+                background: none;
+                &.active {
+                    @apply bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe];
+                }
+            }
         }
-
-        .nav-tabs .tab {
-            width: 100%;
-            text-align: left;
-            @apply px-4 py-3 text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
-            border: none;
-            background: none;
+        #mobile-menu-toggle:checked {
+            &~header {
+                .nav-tabs {
+                    left: 0;
+                }
+                .hamburger .hamburger-line {
+                    &:nth-child(1) {
+                        transform: translateY(6px) rotate(45deg);
+                    }
+                    &:nth-child(2) {
+                        opacity: 0;
+                    }
+                    &:nth-child(3) {
+                        transform: translateY(-6px) rotate(-45deg);
+                    }
+                }
+            }
+            ~.mobile-menu-backdrop {
+                display: block;
+            }
         }
-
-        .nav-tabs .tab.active {
-            @apply bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe];
-        }
-
-        /* Show menu when checkbox is checked */
-        #mobile-menu-toggle:checked~header .nav-tabs {
-            left: 0;
-        }
-
-        /* Animate hamburger to X */
-        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(1) {
-            transform: translateY(6px) rotate(45deg);
-        }
-
-        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(2) {
-            opacity: 0;
-        }
-
-        #mobile-menu-toggle:checked~header .hamburger .hamburger-line:nth-child(3) {
-            transform: translateY(-6px) rotate(-45deg);
-        }
-
-        /* Backdrop for tinting main page */
         .mobile-menu-backdrop {
             display: none;
             position: fixed;
@@ -444,10 +396,6 @@ footer {
             height: calc(100vh - 3.5rem);
             background: rgba(0, 0, 0, 0.5);
             z-index: 999;
-        }
-
-        #mobile-menu-toggle:checked~.mobile-menu-backdrop {
-            display: block;
         }
     }
 
@@ -462,12 +410,11 @@ footer {
             box-shadow: none;
             padding: 0;
             gap: 0;
-        }
-
-        .nav-tabs .tab {
-            width: auto;
-            text-align: center;
-            padding: 1rem;
+            .tab {
+                width: auto;
+                text-align: center;
+                padding: 1rem;
+            }
         }
     }
 }
