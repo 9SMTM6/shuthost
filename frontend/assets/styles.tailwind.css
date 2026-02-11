@@ -47,7 +47,10 @@ body {
         @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative overflow-x-auto;
         .copy-button {
             /* vertically center the button inside the code container so it doesn't overlap wrapped text */
-            @apply absolute right-2 bg-[#005fb8] hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95 hover:shadow-sm;
+            @apply absolute right-2 bg-[#005fb8] dark:bg-[#0078d4] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95;
+            &:hover {
+                @apply bg-[#004a94] dark:bg-[#006cbe] shadow-sm;
+            }
             top: 50%;
             transform: translateY(-50%);
         }
@@ -64,15 +67,20 @@ body {
     .btn {
         @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer;
         &.btn-green {
-            @apply bg-[#007a4d] hover:bg-[#006f3f] dark:bg-[rgba(46,193,100,0.85)] dark:text-black dark:hover:bg-[rgba(40,168,88,0.90)];
+            @apply bg-[#007a4d] dark:bg-[rgba(46,193,100,0.85)] dark:text-black;
+            &:hover {
+                @apply bg-[#006f3f] dark:bg-[rgba(40,168,88,0.90)];
+            }
         }
         &.btn-red {
-            @apply bg-[#e04b4b] hover:bg-[#c13a3a] dark:bg-[#d36f78] dark:hover:bg-[#b85a62] text-white dark:text-black;
+            @apply bg-[#e04b4b] dark:bg-[#d36f78] text-white dark:text-black;
+            &:hover {
+                @apply bg-[#c13a3a] dark:bg-[#b85a62];
+            }
         }
         &:disabled {
             @apply cursor-not-allowed bg-[#e5e5e5] dark:bg-[#2d2d30] text-[#616161] dark:text-[#858585];
         }
-
     }
 
     /* Architecture documentation styles */
@@ -112,7 +120,10 @@ body {
                 @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
             }
             .table-row {
-                @apply hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
+                @apply transition-colors;
+                &:hover {
+                    @apply bg-[#f0f0f0] dark:bg-[#252526];
+                }
                 th[scope="row"] {
                     @apply font-normal text-black dark:text-[#cccccc] bg-transparent px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-left;
                     font-weight: 500;
@@ -157,9 +168,18 @@ body {
 
     /* Update tab styles */
     .tab {
-        @apply px-4 py-4 text-sm font-medium text-[#616161] hover:text-black dark:text-[#a0a0a0] dark:hover:text-[#e0e0e0] border-b-2 border-transparent hover:border-[#e5e5e5] dark:hover:border-[#3e3e42] transition-colors focus:outline-none focus:text-black dark:focus:text-[#e0e0e0] focus:border-[#e5e5e5] dark:focus:border-[#3e3e42] cursor-pointer;
+        @apply px-4 py-4 text-sm font-medium text-[#616161] border-b-2 border-transparent transition-colors cursor-pointer dark:text-[#a0a0a0];
+        &:hover {
+            @apply text-black border-[#e5e5e5] dark:text-[#e0e0e0] dark:border-[#3e3e42];
+        }
+        &:focus {
+            @apply text-black border-[#e5e5e5] dark:text-[#e0e0e0] dark:border-[#3e3e42] outline-none;
+        }
         &.active {
-            @apply text-[#005fb8] border-[#005fb8] hover:text-[#004a94] hover:border-[#004a94] dark:text-[#3794ff] dark:border-[#0078d4] dark:hover:text-[#6fb6ff] dark:hover:border-[#006cbe];
+            @apply text-[#005fb8] border-[#005fb8] dark:text-[#3794ff] dark:border-[#0078d4];
+            &:hover {
+                @apply text-[#004a94] border-[#004a94] dark:text-[#6fb6ff] dark:border-[#006cbe];
+            }
         }
     }
 
@@ -174,7 +194,10 @@ body {
         /* Hide the native details marker and ensure summary visuals match header */
         summary {
             &.collapsible-header {
-                @apply flex items-center justify-between cursor-pointer px-4 py-2 hover:bg-[#f0f0f0] dark:hover:bg-[#252526] transition-colors;
+                @apply flex items-center justify-between cursor-pointer px-4 py-2 transition-colors;
+                &:hover {
+                    @apply bg-[#f0f0f0] dark:bg-[#252526];
+                }
                 &::marker {
                     @apply content-none;
                 }
@@ -214,9 +237,7 @@ body {
 
     /* Platform support table */
     .info-table {
-        @apply w-full text-sm;
-        border-collapse: separate;
-        border-spacing: 0;
+        @apply w-full text-sm border-separate border-spacing-0;
         thead {
             @apply bg-[#f3f3f3] dark:bg-[#252526];
             tr:first-child {
@@ -294,11 +315,7 @@ body {
 
     /* Hamburger menu styles */
     .hamburger {
-        display: flex;
-        flex-direction: column;
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 0.25rem;
+        @apply flex flex-col cursor-pointer p-2 rounded-sm;
         transition: background-color 0.2s;
         &:hover {
             background-color: rgba(0, 0, 0, 0.1);
@@ -345,9 +362,15 @@ body {
             @apply fixed flex-col p-4 gap-4 bg-white dark:bg-[#1e1e1e] shadow-lg;
             z-index: 1000;
             .tab {
-                @apply w-full px-4 py-3 text-left border-none bg-none text-black dark:text-[#cccccc] hover:bg-[#f0f0f0] dark:hover:bg-[#252526] rounded transition-colors;
+                @apply w-full px-4 py-3 text-left border-none bg-none text-black dark:text-[#cccccc] rounded transition-colors;
+                &:hover {
+                    @apply bg-[#f0f0f0] dark:bg-[#252526];
+                }
                 &.active {
-                    @apply bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe];
+                    @apply bg-[#005fb8] text-white dark:bg-[#0078d4];
+                    &:hover {
+                        @apply bg-[#004a94] dark:bg-[#006cbe];
+                    }
                 }
             }
         }
@@ -373,8 +396,7 @@ body {
             }
         }
         .mobile-menu-backdrop {
-            display: none;
-            position: fixed;
+            @apply hidden fixed;
             top: 3.5rem;
             left: 0;
             width: 100vw;
@@ -387,18 +409,9 @@ body {
     /* Desktop: Keep nav inline */
     @media (min-width: 768px) {
         .nav-tabs {
-            position: static;
-            width: auto;
-            height: auto;
-            flex-direction: row;
-            background: none;
-            box-shadow: none;
-            padding: 0;
-            gap: 0;
+            @apply static w-auto h-auto flex-row bg-none shadow-none p-0 gap-0;
             .tab {
-                width: auto;
-                text-align: center;
-                padding: 1rem;
+                @apply w-auto text-center p-4;
             }
         }
     }
