@@ -51,6 +51,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Prepare Alpine
+        if: matrix.prepare
+        run: |
+          apk add --no-cache curl doas github-cli git bash
+          echo "permit nopass root" >> /etc/doas.conf
       - &set_tag
         name: Set tag
         shell: bash
@@ -61,11 +66,6 @@ jobs:
             TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }} | head -1)
             echo "TAG=$TAG" >> $GITHUB_ENV
           fi
-      - name: Prepare Alpine
-        if: matrix.prepare
-        run: |
-          apk add --no-cache curl doas github-cli git
-          echo "permit nopass root" >> /etc/doas.conf
       - name: Download install scripts
         run: |
           gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_${{ matrix.component }}_installer.sh" --dir install-scripts
