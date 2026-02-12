@@ -97,10 +97,11 @@ Installation examples:
   brew install --cask font-inter font-cascadia-code
   ```
 
-## Additional Quality Checks
+## Additional Hints
 - This project uses [`cargo-deny`](https://github.com/EmbarkStudios/cargo-deny) for dependency and license checks.
 - It also uses [`typos-cli`](https://docs.rs/crate/typos-cli/latest) to catch spelling mistakes in code and documentation.
 - Applying a `cargo fmt` before submitting a PR is appreciated.
+- To avoid duplicate search results in VS Code due to symbolic links, consider setting `"search.followSymlinks": false` in your `.vscode/settings.json`.
 
 ### Install File Snapshots
 
