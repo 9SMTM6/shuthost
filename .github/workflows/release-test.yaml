@@ -46,7 +46,14 @@ jobs:
             prepare: true
             name_suffix: Alpine
     steps:
-      - name: Set tag
+      - &checkout
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - &set_tag
+        name: Set tag
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
@@ -74,15 +81,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Set tag
-        shell: powershell
-        run: |
-          if ($env:GITHUB_EVENT_NAME -eq "release") {
-            echo "TAG=${{ github.event.release.tag_name }}" >> $env:GITHUB_ENV
-          } elseif ($env:GITHUB_EVENT_NAME -eq "workflow_run") {
-            $TAG = git tag --points-at ${{ github.event.workflow_run.head_sha }} | Select-Object -First 1
-            echo "TAG=$TAG" >> $env:GITHUB_ENV
-          }
+      - *checkout
+      - *set_tag
       - name: Download install scripts
         run: |
           gh release download ${{ env.TAG }} --repo ${{ github.repository }} --pattern "shuthost_host_agent_installer.ps1" --dir install-scripts
