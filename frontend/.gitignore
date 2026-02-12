@@ -2,4 +2,3 @@ node_modules
 assets/generated/*
 !assets/generated/*.svg
 playwright-report
-test-results
