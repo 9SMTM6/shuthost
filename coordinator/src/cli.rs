@@ -5,6 +5,7 @@
 
 use std::env;
 
+#[cfg(unix)]
 use crate::install;
 use clap::{Parser, Subcommand};
 
