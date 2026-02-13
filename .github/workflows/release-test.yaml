@@ -51,6 +51,7 @@ jobs:
         if: github.event_name == 'workflow_run'
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha }}
       - name: Prepare Alpine
         if: matrix.prepare
