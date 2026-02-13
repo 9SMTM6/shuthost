@@ -122,9 +122,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::OpenRC => install_openrc(name, bind_known_vals)?,
         #[cfg(unix)]
         InitSystem::SelfExtractingShell => install_self_extracting_shell(name, bind_known_vals)?,
-        InitSystem::SelfExtractingPwsh => {
-            install_self_extracting_pwsh(name, arguments, bind_known_vals)?;
-        }
+        InitSystem::SelfExtractingPwsh => install_self_extracting_pwsh(name, arguments, bind_known_vals)?,
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => install_launchd(name, &bind_known_vals)?,
     }
@@ -184,7 +182,8 @@ fn install_self_extracting_shell(
 
 fn install_self_extracting_pwsh(
     name: &str,
-    _arguments: &Args,
+    #[cfg_attr(not(target_os = "windows"), expect(unused_variables, reason = "only unused on non-windows"))]
+    arguments: &Args,
     bind_known_vals: impl Fn(&str) -> String,
 ) -> Result<(), String> {
     let target_script_path = format!("./{name}_self_extracting.ps1");
