@@ -44,7 +44,7 @@ pub(crate) async fn update_lease_and_broadcast(
     lease_source: LeaseSource,
     action: LeaseAction,
     state: &AppState,
-) -> Result<LeaseSources, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<LeaseSources, Box<dyn core::error::Error + Send + Sync>> {
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.to_string()).or_default();
 

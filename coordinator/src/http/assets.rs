@@ -2,7 +2,7 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
-use std::time::Duration;
+use core::time::Duration;
 
 use axum::{
     Router,

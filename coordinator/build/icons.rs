@@ -16,7 +16,7 @@ pub fn generate_pngs() -> eyre::Result<()> {
         ..Default::default()
     };
     let rtree =
-        usvg::Tree::from_str(std::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
+        usvg::Tree::from_str(core::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 
     // sizes to emit: favicons, apple-touch, and PWA sizes
     let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];

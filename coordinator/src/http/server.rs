@@ -2,7 +2,9 @@
 //!
 //! Defines routes, state management, configuration watching, and server startup.
 
-use std::{collections::HashMap, net::IpAddr, path::Path, sync::Arc, time::Duration};
+use alloc::sync::Arc;
+use core::{net::IpAddr, time::Duration};
+use std::{collections::HashMap, path::Path};
 
 use axum::{
     Router,
@@ -156,7 +158,7 @@ async fn setup_tls_config(
     tls_cfg: &TlsConfig,
     config_path: &std::path::Path,
     listen_ip: IpAddr,
-    addr: std::net::SocketAddr,
+    addr: core::net::SocketAddr,
 ) -> eyre::Result<AxumRustlsConfig> {
     // Use provided certs when both files exist. Otherwise, if persist_self_signed is true
     // (default), generate and persist self-signed cert/key next to the config file.
@@ -354,7 +356,7 @@ async fn initialize_state(
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
-    let auth_runtime = std::sync::Arc::new(
+    let auth_runtime = alloc::sync::Arc::new(
         auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?,
     );
 
@@ -403,14 +405,14 @@ pub(crate) async fn shutdown_signal() {
 /// Start the HTTP server with optional TLS.
 async fn start_server(
     app_state: AppState,
-    listen_ip: std::net::IpAddr,
+    listen_ip: core::net::IpAddr,
     listen_port: u16,
     tls_opt: Option<&TlsConfig>,
     config_path: &std::path::Path,
 ) -> eyre::Result<()> {
     let app = create_app(app_state);
 
-    let addr = std::net::SocketAddr::from((listen_ip, listen_port));
+    let addr = core::net::SocketAddr::from((listen_ip, listen_port));
 
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
@@ -464,7 +466,7 @@ pub(crate) async fn start(
     let listen_port = port_override.unwrap_or(app_state.config_rx.borrow().server.port);
     let bind_str = bind_override.map_or_else(
         || app_state.config_rx.borrow().server.bind.clone(),
-        std::string::ToString::to_string,
+        alloc::string::ToString::to_string,
     );
 
     let listen_ip = bind_str.parse()?;

@@ -1,4 +1,5 @@
-use std::{fmt::Display, path::PathBuf, str::FromStr};
+use core::{fmt::Display, str::FromStr};
+use std::path::PathBuf;
 
 use crate::{
     install::{
@@ -20,7 +21,7 @@ impl FromStr for LossyPath {
 }
 
 impl Display for LossyPath {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0.to_string_lossy())
     }
 }
@@ -44,8 +45,8 @@ pub enum ScriptType {
     Pwsh,
 }
 
-impl std::fmt::Display for ScriptType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ScriptType {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match *self {
             ScriptType::UnixShell => write!(f, "unix-shell"),
             ScriptType::Pwsh => write!(f, "pwsh"),

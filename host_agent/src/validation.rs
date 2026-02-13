@@ -53,7 +53,7 @@ pub enum Action {
 /// ```
 #[must_use]
 pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -> (String, Action) {
-    let Ok(data_str) = std::str::from_utf8(data) else {
+    let Ok(data_str) = core::str::from_utf8(data) else {
         eprintln!("Invalid UTF-8 in request from {peer_addr}: {data:?}");
         return ("ERROR: Invalid UTF-8".to_string(), Action::None);
     };

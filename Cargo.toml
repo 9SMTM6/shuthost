@@ -106,6 +106,9 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(tokio_unstable, rust_analyzer, coverage, coverage_nightly)',
 ] }
 unsafe-op-in-unsafe-fn = "warn"
+unused_extern_crates = "allow"
+# Note: We import from core and alloc explicitly to clarify where names come from, which helps understand what they might do
+# Always importing the crates is the most elegant way to avoid autofix not properly working
 # unstable
 # must_not_suspend = "deny"
 
@@ -120,6 +123,7 @@ pedantic = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
 # restriction = { level = "warn", priority = -1 }
 # nursery = { level = "warn", priority = -1 }
+alloc_instead_of_core = "warn"
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 as_underscore = "warn"
@@ -169,6 +173,8 @@ shadow_unrelated = "warn"
 single_char_lifetime_names = "warn"
 single_match_else = "allow"               # Honestly I often prefer the readability of match with an else branch.
 single_option_map = "warn"
+std_instead_of_alloc = "warn"
+std_instead_of_core = "warn"
 struct_excessive_bools = "warn"
 tests_outside_test_module = "warn"
 todo = "warn"
@@ -181,3 +187,6 @@ unused_trait_names = "warn"
 unwrap_used = "warn"
 used_underscore_binding = "warn"
 wildcard_dependencies = "allow"  # It should be fine with how I use them...
+alloc_instead_of_core = "warn"
+std_instead_of_core = "warn"
+std_instead_of_alloc = "warn"

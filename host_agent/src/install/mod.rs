@@ -82,8 +82,8 @@ pub enum InitSystem {
     Launchd,
 }
 
-impl std::fmt::Display for InitSystem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InitSystem {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "{}",
@@ -337,7 +337,7 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
                 return line
                     .split_whitespace()
                     .nth(1)
-                    .map(std::string::ToString::to_string);
+                    .map(alloc::string::ToString::to_string);
             }
         }
         None

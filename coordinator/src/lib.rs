@@ -4,6 +4,9 @@
 //!
 //! Provides commands to install the service or launch the control web service.
 
+extern crate alloc;
+extern crate core;
+
 pub mod auth;
 pub mod cli;
 pub mod config;

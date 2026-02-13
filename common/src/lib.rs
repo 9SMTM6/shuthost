@@ -8,6 +8,9 @@
     reason = "The situation it maps to errors should be obvious."
 )]
 
+extern crate alloc;
+extern crate core;
+
 mod secrets;
 mod service_install;
 mod signing;
@@ -24,7 +27,7 @@ pub trait ResultMapErrExt<T> {
     fn map_err_to_string_simple(self) -> Result<T, String>;
 }
 
-impl<T, E: std::fmt::Display> ResultMapErrExt<T> for Result<T, E> {
+impl<T, E: core::fmt::Display> ResultMapErrExt<T> for Result<T, E> {
     fn map_err_to_string(self, prefix: &str) -> Result<T, String> {
         self.map_err(|e| format!("{prefix}: {e}"))
     }

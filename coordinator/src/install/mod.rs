@@ -2,10 +2,10 @@
 //!
 //! Supports systemd, `OpenRC`, and launchd based on target OS.
 
+use core::net::IpAddr;
 use std::{
     fs::File,
     io::Write as _,
-    net::IpAddr,
     os::unix::fs::{self, PermissionsExt as _},
     path::{Path, PathBuf},
 };

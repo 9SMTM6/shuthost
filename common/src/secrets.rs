@@ -12,7 +12,7 @@ use rand::Rng as _;
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
-    std::iter::repeat_with(|| rng.sample(rand::distr::Alphanumeric) as char)
+    core::iter::repeat_with(|| rng.sample(rand::distr::Alphanumeric) as char)
         .take(32)
         .collect()
 }

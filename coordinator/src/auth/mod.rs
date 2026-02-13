@@ -9,7 +9,7 @@ pub mod middleware;
 pub mod oidc;
 pub mod token;
 
-use std::sync::Arc;
+use alloc::sync::Arc;
 
 use axum::extract::FromRef;
 use axum::response::Redirect;

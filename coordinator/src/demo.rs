@@ -3,7 +3,8 @@
 //! This module provides a minimal demo mode that serves only static assets
 //! without any backend state or functionality.
 
-use std::{collections::HashMap, sync::Arc};
+use alloc::sync::Arc;
+use std::collections::HashMap;
 
 use axum::{Router, extract::State, http::Response, routing};
 use tokio::{

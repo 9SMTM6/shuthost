@@ -1,6 +1,8 @@
 //! Background polling tasks for the coordinator.
 
-use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
+use alloc::sync::Arc;
+use core::time::Duration;
+use std::{collections::HashMap, path::Path};
 
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},

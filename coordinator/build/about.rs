@@ -2,8 +2,9 @@ use handlebars::Handlebars;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
 use spdx::{LicenseItem, Licensee, expression::Expression};
+use alloc::collections::{BTreeMap, BTreeSet};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::HashMap,
     fs::read_to_string,
 };
 use url::Url;

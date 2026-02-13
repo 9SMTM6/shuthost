@@ -24,6 +24,9 @@
 //!
 //! The script informs Cargo to rerun the build if certain frontend asset files change, ensuring
 //! that modifications to templates, styles, or icons trigger a rebuild.
+extern crate alloc;
+extern crate core;
+
 mod about;
 mod csp;
 mod icons;

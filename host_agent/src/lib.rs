@@ -2,6 +2,9 @@
 //!
 //! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and `WoL` testing.
 
+extern crate alloc;
+extern crate core;
+
 mod commands;
 mod install;
 pub mod registration;

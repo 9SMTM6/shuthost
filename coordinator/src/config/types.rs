@@ -3,11 +3,10 @@
 //! This module contains all the data structures used for configuration,
 //! including host, client, server, TLS, and authentication settings.
 
+use alloc::sync::Arc;
 use std::{
     collections::HashMap,
-    path::Component,
-    path::{Path, PathBuf},
-    sync::Arc,
+    path::{Component, Path, PathBuf},
 };
 
 // TODO: consider using secrets crate or secure-types instead for their OS locks.
