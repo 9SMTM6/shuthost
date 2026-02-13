@@ -1,8 +1,7 @@
-#![expect(clippy::indexing_slicing, reason = "This is fine at build time")]
 use base64::{Engine as _, engine::general_purpose};
 use eyre::WrapErr;
 use sha2::{Digest, Sha256};
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::{Path, PathBuf}};
 
 macro_rules! include_frontend_asset {
     ($path:expr) => {
@@ -125,67 +124,59 @@ impl<T: AsRef<str>> TemplateExt for T {
 }
 
 pub fn process() -> eyre::Result<()> {
-    fn short_hash(content: &[u8]) -> String {
-        let hash = Sha256::digest(content);
-        let hash_hex = hex::encode(hash);
-        hash_hex[..8].to_string()
-    }
-
     let generated_dir = PathBuf::from("../frontend/assets/generated");
     fs::create_dir_all(&generated_dir)?;
 
+    let asset_hashes = hash_non_template_assets()?;
+    set_cargo_env_vars(&asset_hashes.styles_hash, &asset_hashes.icon_hashes, &asset_hashes.svg_hashes);
+    process_templates(generated_dir.as_path(), &asset_hashes.styles_hash, &asset_hashes.styles_integrity, &asset_hashes.icon_hashes, &asset_hashes.svg_hashes)?;
+
+    Ok(())
+}
+
+struct AssetHashes {
+    styles_hash: String,
+    styles_integrity: String,
+    icon_hashes: HashMap<u32, String>,
+    svg_hashes: HashMap<String, String>,
+}
+
+fn hash_non_template_assets() -> eyre::Result<AssetHashes> {
     let styles_css = fs::read_to_string("../frontend/assets/generated/styles.css")
         .wrap_err("Failed to read generated styles.css")?;
-    let styles_short_hash = short_hash(styles_css.as_bytes());
-    let styles_integrity = generate_encoded_hash(&styles_css);
+    let styles_hash = url_hash(styles_css.as_bytes());
+    let styles_integrity = integrity_hash(&styles_css);
 
-    let favicon_short_hash = short_hash(include_frontend_asset!("favicon.svg").as_bytes());
+    let favicon_short_hash = url_hash(include_frontend_asset!("favicon.svg").as_bytes());
 
     let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
     let mut icon_hashes = HashMap::new();
     for &size in &sizes {
         let png_path = format!("../frontend/assets/generated/icons/icon-{size}.png");
         let png = fs::read(&png_path)?;
-        let short_hash = short_hash(&png);
+        let short_hash = url_hash(&png);
         icon_hashes.insert(size, short_hash);
     }
 
     let host_agent_interaction_svg =
         fs::read_to_string("../frontend/assets/generated/host_agent_interaction.svg")
             .wrap_err("Failed to read generated host_agent_interaction.svg")?;
-    let host_agent_interaction_short_hash = short_hash(host_agent_interaction_svg.as_bytes());
+    let host_agent_interaction_short_hash = url_hash(host_agent_interaction_svg.as_bytes());
 
     let client_controller_interaction_svg =
         fs::read_to_string("../frontend/assets/generated/client_controller_interaction.svg")
             .wrap_err("Failed to read generated client_controller_interaction.svg")?;
     let client_controller_interaction_short_hash =
-        short_hash(client_controller_interaction_svg.as_bytes());
+        url_hash(client_controller_interaction_svg.as_bytes());
 
     let deployment_svg = fs::read_to_string("../frontend/assets/generated/deployment.svg")
         .wrap_err("Failed to read generated deployment.svg")?;
-    let deployment_short_hash = short_hash(deployment_svg.as_bytes());
+    let deployment_short_hash = url_hash(deployment_svg.as_bytes());
 
     let direct_control_comparison_svg =
         fs::read_to_string("../frontend/assets/generated/direct_control_comparison.svg")
             .wrap_err("Failed to read generated direct_control_comparison.svg")?;
-    let direct_control_comparison_short_hash = short_hash(direct_control_comparison_svg.as_bytes());
-
-    println!("cargo::rustc-env=ASSET_HASH_STYLES_CSS={styles_short_hash}");
-    println!("cargo::rustc-env=ASSET_HASH_FAVICON_SVG={favicon_short_hash}");
-    for &size in &sizes {
-        let hash = &icon_hashes[&size];
-        println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={hash}");
-    }
-    println!(
-        "cargo::rustc-env=ASSET_HASH_HOST_AGENT_INTERACTION_SVG={host_agent_interaction_short_hash}"
-    );
-    println!(
-        "cargo::rustc-env=ASSET_HASH_CLIENT_CONTROLLER_INTERACTION_SVG={client_controller_interaction_short_hash}"
-    );
-    println!("cargo::rustc-env=ASSET_HASH_DEPLOYMENT_SVG={deployment_short_hash}");
-    println!(
-        "cargo::rustc-env=ASSET_HASH_DIRECT_CONTROL_COMPARISON_SVG={direct_control_comparison_short_hash}"
-    );
+    let direct_control_comparison_short_hash = url_hash(direct_control_comparison_svg.as_bytes());
 
     let mut svg_hashes = HashMap::new();
     svg_hashes.insert("favicon".to_string(), favicon_short_hash);
@@ -203,24 +194,55 @@ pub fn process() -> eyre::Result<()> {
         direct_control_comparison_short_hash,
     );
 
+    Ok(AssetHashes {
+        styles_hash,
+        styles_integrity,
+        icon_hashes,
+        svg_hashes,
+    })
+}
+
+fn set_cargo_env_vars(
+    styles_hash: &str,
+    icon_hashes: &HashMap<u32, String>,
+    svg_hashes: &HashMap<String, String>,
+) {
+    println!("cargo::rustc-env=ASSET_HASH_STYLES_CSS={styles_hash}");
+    let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
+    for &size in &sizes {
+        let hash = &icon_hashes[&size];
+        println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={hash}");
+    }
+    for (asset, hash) in svg_hashes {
+        println!("cargo::rustc-env=ASSET_HASH_{}_SVG={}", asset.to_uppercase(), hash);
+    }
+}
+
+fn process_templates(
+    generated_dir: &Path,
+    styles_hash: &str,
+    styles_integrity: &str,
+    icon_hashes: &HashMap<u32, String>,
+    svg_hashes: &HashMap<String, String>,
+) -> eyre::Result<()> {
     // Process manifest.tmpl.json
     let manifest_content = include_frontend_asset!("manifest.tmpl.json")
-        .include_svgs(&svg_hashes)
-        .include_png_icons(&icon_hashes)
+        .include_svgs(svg_hashes)
+        .include_png_icons(icon_hashes)
         .insert_metadata();
-    let manifest_short_hash = short_hash(manifest_content.as_bytes());
+    let manifest_hash = url_hash(manifest_content.as_bytes());
     fs::write(generated_dir.join("manifest.json"), &manifest_content)?;
-    println!("cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={manifest_short_hash}");
+    println!("cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={manifest_hash}");
 
     // Process index.tmpl.html
     let content = include_frontend_asset!("index.tmpl.html")
         .insert_html_head(
             "ShutHost Coordinator",
-            &svg_hashes,
-            &manifest_short_hash,
-            &styles_short_hash,
-            &styles_integrity,
-            &icon_hashes,
+            svg_hashes,
+            &manifest_hash,
+            styles_hash,
+            styles_integrity,
+            icon_hashes,
         )
         .insert_js_warnings()
         .replace(
@@ -241,7 +263,7 @@ pub fn process() -> eyre::Result<()> {
         )
         .insert_header_tmpl()
         .insert_footer()
-        .include_svgs(&svg_hashes)
+        .include_svgs(svg_hashes)
         .replace(
             "{ js }",
             &fs::read_to_string("../frontend/assets/generated/app.js")
@@ -254,15 +276,15 @@ pub fn process() -> eyre::Result<()> {
     let login_content = include_frontend_asset!("login.tmpl.html")
         .insert_html_head(
             "Login • ShutHost",
-            &svg_hashes,
-            &manifest_short_hash,
-            &styles_short_hash,
-            &styles_integrity,
-            &icon_hashes,
+            svg_hashes,
+            &manifest_hash,
+            styles_hash,
+            styles_integrity,
+            icon_hashes,
         )
         .insert_js_warnings()
         .insert_header_not_main_page_tmpl()
-        .include_svgs(&svg_hashes)
+        .include_svgs(svg_hashes)
         .insert_footer()
         .insert_metadata();
     fs::write(generated_dir.join("login.html"), login_content)?;
@@ -271,14 +293,14 @@ pub fn process() -> eyre::Result<()> {
     let about_content = fs::read_to_string(generated_dir.join("about.tmpl.html"))?
         .insert_html_head(
             "Dependencies and Licenses",
-            &svg_hashes,
-            &manifest_short_hash,
-            &styles_short_hash,
-            &styles_integrity,
-            &icon_hashes,
+            svg_hashes,
+            &manifest_hash,
+            styles_hash,
+            styles_integrity,
+            icon_hashes,
         )
         .insert_header_not_main_page_tmpl()
-        .include_svgs(&svg_hashes)
+        .include_svgs(svg_hashes)
         .insert_footer()
         .insert_metadata();
     fs::write(generated_dir.join("about.html"), about_content)?;
@@ -286,8 +308,15 @@ pub fn process() -> eyre::Result<()> {
     Ok(())
 }
 
-fn generate_encoded_hash(content: impl AsRef<[u8]>) -> String {
+fn integrity_hash(content: impl AsRef<[u8]>) -> String {
     let hash = Sha256::digest(content);
     let hash_b64 = general_purpose::STANDARD.encode(hash);
     format!("sha256-{hash_b64}")
+}
+
+/// A short hash for the purpose of cache busting
+fn url_hash(content: &[u8]) -> String {
+    let hash = Sha256::digest(content);
+    let hash_hex = hex::encode(hash);
+    hash_hex[..8].to_string()
 }

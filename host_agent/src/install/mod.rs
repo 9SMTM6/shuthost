@@ -115,93 +115,14 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
 
     match arguments.init_system {
         #[cfg(target_os = "linux")]
-        InitSystem::Systemd => {
-            shuthost_common::systemd::install_self_as_service(
-                name,
-                &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE),
-            )?;
-            shuthost_common::systemd::start_and_enable_self_as_service(name)?;
-        }
+        InitSystem::Systemd => install_systemd(name, bind_known_vals)?,
         #[cfg(target_os = "linux")]
-        InitSystem::OpenRC => {
-            shuthost_common::openrc::install_self_as_service(
-                name,
-                &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE),
-            )?;
-            shuthost_common::openrc::start_and_enable_self_as_service(name)?;
-        }
+        InitSystem::OpenRC => install_openrc(name, bind_known_vals)?,
         #[cfg(unix)]
-        InitSystem::SelfExtractingShell => {
-            let target_script_path = format!("./{name}_self_extracting");
-            self_extracting::generate_self_extracting_script_from_template(
-                &bind_known_vals(SELF_EXTRACTING_SHELL_TEMPLATE),
-                &target_script_path,
-            )?;
-            // Start the self-extracting script in the background
-            if let Err(e) = Command::new(&target_script_path).output() {
-                eprintln!("Failed to start self-extracting script: {e}");
-            } else {
-                println!("Started self-extracting agent script in background.");
-            }
-        }
-        InitSystem::SelfExtractingPwsh => {
-            let target_script_path = format!("./{name}_self_extracting.ps1");
-            self_extracting::generate_self_extracting_script_from_template(
-                &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),
-                &target_script_path,
-            )?;
-            let powershell_cmd = if cfg!(target_os = "windows") {
-                "powershell.exe"
-            } else {
-                "pwsh"
-            };
-
-            #[cfg(target_os = "windows")]
-            {
-                if let Ok(appdata) = std::env::var("APPDATA") {
-                    let exe_path = std::path::Path::new(&appdata)
-                        .join("shuthost")
-                        .join("host_agent.exe");
-                    let exe_path_str = exe_path.to_string_lossy();
-                    let ps_command = format!(
-                        "$ruleName = \"ShutHost Host Agent\"; $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue; if (-not $existingRule) {{ New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort {} -Program \"{}\" -Action Allow -Profile Any }}",
-                        arguments.port,
-                        exe_path_str.replace('\\', "\\\\").replace('"', "\\\"")
-                    );
-                    if let Err(e) = Command::new(powershell_cmd)
-                        .arg("-Command")
-                        .arg(&ps_command)
-                        .output()
-                    {
-                        eprintln!("Failed to add Windows Firewall rule: {e}");
-                    }
-                }
-            }
-
-            // Start the PowerShell script in the background
-            // Unlike the shell script, the PowerShell script doesn't self-background,
-            // so we need to background it here by spawning without waiting
-
-            if let Err(e) = Command::new(powershell_cmd)
-                .arg("-ExecutionPolicy")
-                .arg("Bypass")
-                .arg("-File")
-                .arg(&target_script_path)
-                .spawn()
-            {
-                eprintln!("Failed to start self-extracting PowerShell script: {e}");
-            } else {
-                println!("Started self-extracting agent PowerShell script in background.");
-            }
-        }
+        InitSystem::SelfExtractingShell => install_self_extracting_shell(name, bind_known_vals)?,
+        InitSystem::SelfExtractingPwsh => install_self_extracting_pwsh(name, arguments, bind_known_vals)?,
         #[cfg(target_os = "macos")]
-        InitSystem::Launchd => {
-            shuthost_common::macos::install_self_as_service(
-                name,
-                &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE),
-            )?;
-            shuthost_common::macos::start_and_enable_self_as_service(name)?;
-        }
+        InitSystem::Launchd => install_launchd(name, &bind_known_vals)?,
     }
 
     let interface = &get_default_interface();
@@ -215,6 +136,104 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         port: arguments.port,
     });
 
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn install_systemd(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+    shuthost_common::systemd::install_self_as_service(
+        name,
+        &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE),
+    )?;
+    shuthost_common::systemd::start_and_enable_self_as_service(name)?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn install_openrc(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+    shuthost_common::openrc::install_self_as_service(
+        name,
+        &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE),
+    )?;
+    shuthost_common::openrc::start_and_enable_self_as_service(name)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn install_self_extracting_shell(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+    let target_script_path = format!("./{name}_self_extracting");
+    self_extracting::generate_self_extracting_script_from_template(
+        &bind_known_vals(SELF_EXTRACTING_SHELL_TEMPLATE),
+        &target_script_path,
+    )?;
+    // Start the self-extracting script in the background
+    if let Err(e) = Command::new(&target_script_path).output() {
+        eprintln!("Failed to start self-extracting script: {e}");
+    } else {
+        println!("Started self-extracting agent script in background.");
+    }
+    Ok(())
+}
+
+fn install_self_extracting_pwsh(name: &str, _arguments: &Args, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+    let target_script_path = format!("./{name}_self_extracting.ps1");
+    self_extracting::generate_self_extracting_script_from_template(
+        &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),
+        &target_script_path,
+    )?;
+    let powershell_cmd = if cfg!(target_os = "windows") {
+        "powershell.exe"
+    } else {
+        "pwsh"
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let exe_path = std::path::Path::new(&appdata)
+                .join("shuthost")
+                .join("host_agent.exe");
+            let exe_path_str = exe_path.to_string_lossy();
+            let ps_command = format!(
+                "$ruleName = \"ShutHost Host Agent\"; $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue; if (-not $existingRule) {{ New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort {} -Program \"{}\" -Action Allow -Profile Any }}",
+                arguments.port,
+                exe_path_str.replace('\\', "\\\\").replace('"', "\\\"")
+            );
+            if let Err(e) = Command::new(powershell_cmd)
+                .arg("-Command")
+                .arg(&ps_command)
+                .output()
+            {
+                eprintln!("Failed to add Windows Firewall rule: {e}");
+            }
+        }
+    }
+
+    // Start the PowerShell script in the background
+    // Unlike the shell script, the PowerShell script doesn't self-background,
+    // so we need to background it here by spawning without waiting
+
+    if let Err(e) = Command::new(powershell_cmd)
+        .arg("-ExecutionPolicy")
+        .arg("Bypass")
+        .arg("-File")
+        .arg(&target_script_path)
+        .spawn()
+    {
+        eprintln!("Failed to start self-extracting PowerShell script: {e}");
+    } else {
+        println!("Started self-extracting agent PowerShell script in background.");
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn install_launchd(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+    shuthost_common::macos::install_self_as_service(
+        name,
+        &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE),
+    )?;
+    shuthost_common::macos::start_and_enable_self_as_service(name)?;
     Ok(())
 }
 
