@@ -207,12 +207,5 @@ These are generated or validated automatically as part of the test suite, and th
 
 <!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service https://crates.io/crates/planif -->
 <!-- 
-TODO: actually add bare metal tests for windows variants, validate workflow triggers
-
-todo: add a bunch of pwsh scripts for windows agent
- * add tests to CI
- * consider running tests on metal generally and for windows specifically.
-
-
 * todo: port test-client-scripts to run locally as well
 -->

@@ -11,8 +11,7 @@ on:
     types: [completed]
 
 jobs:
-  # TODO: try to debug this with act
-  # TODO: doesnt work correctly, at least on manual triggers, IDK if the triggers do actually trigger
+  # TODO: doesnt work correctly. Currently it triggers too often.
   deploy_gh_pages:
     runs-on: ubuntu-latest
     permissions:

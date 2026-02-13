@@ -13,6 +13,7 @@ permissions:
   actions: read
 
 jobs:
+  # TODO: doesnt work correctly. Currently it triggers too often.
   test-install-scripts:
     name: Test ${{ matrix.component }} install script on ${{ matrix.name_suffix }}
     runs-on: ${{ matrix.os }}
