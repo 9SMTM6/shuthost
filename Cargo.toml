@@ -117,9 +117,9 @@ complexity = { level = "warn", priority = -1 }
 perf = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
 # restriction = { level = "warn", priority = -1 }
 # nursery = { level = "warn", priority = -1 }
-cargo = { level = "warn", priority = -1 }
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 branches_sharing_code = "warn"
@@ -131,6 +131,7 @@ expl_impl_clone_on_copy = "deny"
 float_cmp = "warn"
 fn_params_excessive_bools = "warn"
 indexing_slicing = "warn"
+items_after_statements = "allow"          # I often want to define inline consts in functions, and this flags them.
 manual_ok_or = "warn"
 missing_const_for_fn = "warn"
 missing_errors_doc = "warn"
@@ -147,9 +148,11 @@ redundant_type_annotations = "warn"
 semicolon_if_nothing_returned = "warn"
 separated_literal_suffix = "warn"
 shadow_unrelated = "warn"
+single_match_else = "allow"               # Honestly I often prefer the readability of match with an else branch.
 struct_excessive_bools = "warn"
 todo = "warn"
 undocumented_unsafe_blocks = "warn"
+unnecessary_debug_formatting = "allow"    # The main reason I don't care about this warning is that doing this with debug lets me define the variable name inline.
 unnested_or_patterns = "warn"
 unreadable_literal = "warn"
 unwrap_used = "warn"
