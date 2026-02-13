@@ -47,7 +47,8 @@ jobs:
   coverage:
     name: Coverage report (llvm-cov)
     runs-on: ubuntu-latest
-
+    # disabled for now, its broken in CI and I cant reproduce the issue locally, needs investigation in the branch fix_coverage_job
+    if: false 
     steps:
       - uses: *checkout
         with:
