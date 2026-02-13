@@ -8,8 +8,8 @@ use std::{
     sync::Arc,
 };
 
-use eyre::{Result, WrapErr};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use eyre::{Result, WrapErr as _};
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher as _};
 use tokio::sync::mpsc::unbounded_channel;
 use tracing::{error, info, warn};
 

@@ -5,13 +5,13 @@
 use std::{
     env,
     fs::{self, File},
-    io::Write,
-    os::unix::fs::PermissionsExt,
+    io::Write as _,
+    os::unix::fs::PermissionsExt as _,
     path::PathBuf,
     process::{Command, Stdio},
 };
 
-use crate::{ResultMapErrExt, is_superuser};
+use crate::{ResultMapErrExt as _, is_superuser};
 
 /// Returns the systemd service file path for the given service name.
 #[must_use]

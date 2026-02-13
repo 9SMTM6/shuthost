@@ -4,14 +4,14 @@
 
 use std::{
     fs::File,
-    io::Write,
+    io::Write as _,
     net::IpAddr,
-    os::unix::fs::{self, PermissionsExt},
+    os::unix::fs::{self, PermissionsExt as _},
     path::{Path, PathBuf},
 };
 
 use clap::Parser;
-use eyre::WrapErr;
+use eyre::WrapErr as _;
 use nix::unistd::User;
 
 mod migration;

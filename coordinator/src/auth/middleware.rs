@@ -5,7 +5,7 @@ use axum::{
     extract::State,
     http::{HeaderMap, Request, StatusCode},
     middleware::Next,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse as _, Redirect, Response},
 };
 use axum_extra::extract::cookie::SignedCookieJar;
 

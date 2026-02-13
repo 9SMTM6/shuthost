@@ -1,7 +1,7 @@
 use base64::{Engine as _, engine::general_purpose};
 use eyre::Ok;
 use regex::Regex;
-use sha2::{Digest, Sha256};
+use sha2::{Digest as _, Sha256};
 use std::fs;
 
 pub fn generate_hashes() -> eyre::Result<()> {

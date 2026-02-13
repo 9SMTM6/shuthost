@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::SignedCookieJar;
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 use crate::{

@@ -16,7 +16,7 @@ use openidconnect::{
     },
 };
 use reqwest::redirect::Policy;
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 use crate::{

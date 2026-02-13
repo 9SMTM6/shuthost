@@ -3,9 +3,9 @@
 use axum_extra::extract::{SignedCookieJar, cookie::Cookie};
 use cookie::{SameSite, time::Duration as CookieDuration};
 use rand::{Rng as _, distr::Alphanumeric};
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use sha2::{Digest as _, Sha256};
 use std::{
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
@@ -162,13 +162,13 @@ pub(crate) fn create_oidc_session_cookie(
 }
 
 pub(crate) fn get_oidc_session_from_cookie(jar: &SignedCookieJar) -> Option<OIDCSessionClaims> {
-    jar.get(COOKIE_OIDC_SESSION)
-        .and_then(|session| serde_json::from_str::<OIDCSessionClaims>(session.value()).ok())
+    let session = jar.get(COOKIE_OIDC_SESSION)?;
+    serde_json::from_str::<OIDCSessionClaims>(session.value()).ok()
 }
 
 pub(crate) fn get_token_session_from_cookie(jar: &SignedCookieJar) -> Option<TokenSessionClaims> {
-    jar.get(COOKIE_TOKEN_SESSION)
-        .and_then(|session| serde_json::from_str::<TokenSessionClaims>(session.value()).ok())
+    let session = jar.get(COOKIE_TOKEN_SESSION)?;
+    serde_json::from_str::<TokenSessionClaims>(session.value()).ok()
 }
 
 pub(crate) fn extract_return_to_and_remove_cookie(

@@ -1,4 +1,4 @@
-use eyre::{Ok, WrapErr, eyre};
+use eyre::{Ok, WrapErr as _, eyre};
 use resvg::usvg;
 use std::{fs, path::PathBuf};
 use tiny_skia::Pixmap;

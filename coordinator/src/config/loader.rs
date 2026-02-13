@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use eyre::WrapErr;
+use eyre::WrapErr as _;
 
 use crate::config::ControllerConfig;
 

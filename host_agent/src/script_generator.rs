@@ -6,7 +6,7 @@ use crate::{
     },
     registration::{self, parse_config},
 };
-use shuthost_common::{ResultMapErrExt, UnwrapToStringExt};
+use shuthost_common::{ResultMapErrExt as _, UnwrapToStringExt as _};
 
 #[derive(Debug, Clone)]
 pub struct LossyPath(PathBuf);
@@ -163,7 +163,7 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
     // Make executable
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
+        use std::os::unix::fs::PermissionsExt as _;
         let mut perms = std::fs::metadata(&output_path)
             .map_err_to_string("Failed to get metadata")?
             .permissions();

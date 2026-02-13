@@ -6,7 +6,7 @@
 
 use std::net::UdpSocket;
 
-use eyre::Context;
+use eyre::Context as _;
 
 const MAC_ADDRESS_LENGTH: usize = 6;
 

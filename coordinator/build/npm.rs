@@ -1,4 +1,4 @@
-use eyre::{Ok, WrapErr, bail};
+use eyre::{Ok, WrapErr as _, bail};
 use std::process;
 
 #[cfg(not(target_os = "windows"))]

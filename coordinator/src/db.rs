@@ -5,12 +5,12 @@
 use std::{collections::HashMap, path::Path};
 
 #[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::PermissionsExt as _;
 
 use chrono::{DateTime, Utc};
-use eyre::Context;
+use eyre::Context as _;
 use serde::{Deserialize, Serialize};
-use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase};
+use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase as _};
 use tracing::{error, warn};
 
 use crate::http::m2m::{LeaseMap, LeaseSource};

@@ -1,11 +1,11 @@
-use eyre::{ContextCompat, Ok};
+use eyre::{Ok, eyre};
 use std::path::PathBuf;
 
 pub fn set_root() -> eyre::Result<()> {
     let workspace_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let workspace_dir = workspace_dir
         .parent()
-        .wrap_err("expected absolute path in CARGO_MANIFEST_DIR")?;
+        .ok_or_else(|| eyre!("expected absolute path in CARGO_MANIFEST_DIR"))?;
     let mut path_str = workspace_dir.to_string_lossy().to_string();
     if cfg!(target_os = "windows") {
         path_str = path_str.replace('/', "\\");

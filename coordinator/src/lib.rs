@@ -23,7 +23,7 @@ pub use websocket::WsMessage;
 use std::fs;
 use std::sync::Once;
 
-use eyre::{Result, WrapErr};
+use eyre::{Result, WrapErr as _};
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 

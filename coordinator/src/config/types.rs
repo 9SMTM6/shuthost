@@ -11,7 +11,7 @@ use std::{
 };
 
 // TODO: consider using secrets crate or secure-types instead for their OS locks.
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 /// Represents a configured host entry with network and security parameters.

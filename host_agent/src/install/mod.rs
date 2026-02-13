@@ -4,7 +4,7 @@
 
 pub mod self_extracting;
 
-use clap::{Parser, ValueEnum};
+use clap::{Parser, ValueEnum as _};
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -120,7 +120,9 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         InitSystem::OpenRC => install_openrc(name, bind_known_vals)?,
         #[cfg(unix)]
         InitSystem::SelfExtractingShell => install_self_extracting_shell(name, bind_known_vals)?,
-        InitSystem::SelfExtractingPwsh => install_self_extracting_pwsh(name, arguments, bind_known_vals)?,
+        InitSystem::SelfExtractingPwsh => {
+            install_self_extracting_pwsh(name, arguments, bind_known_vals)?
+        }
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => install_launchd(name, &bind_known_vals)?,
     }
@@ -160,7 +162,10 @@ fn install_openrc(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Resul
 }
 
 #[cfg(unix)]
-fn install_self_extracting_shell(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+fn install_self_extracting_shell(
+    name: &str,
+    bind_known_vals: impl Fn(&str) -> String,
+) -> Result<(), String> {
     let target_script_path = format!("./{name}_self_extracting");
     self_extracting::generate_self_extracting_script_from_template(
         &bind_known_vals(SELF_EXTRACTING_SHELL_TEMPLATE),
@@ -175,7 +180,11 @@ fn install_self_extracting_shell(name: &str, bind_known_vals: impl Fn(&str) -> S
     Ok(())
 }
 
-fn install_self_extracting_pwsh(name: &str, _arguments: &Args, bind_known_vals: impl Fn(&str) -> String) -> Result<(), String> {
+fn install_self_extracting_pwsh(
+    name: &str,
+    _arguments: &Args,
+    bind_known_vals: impl Fn(&str) -> String,
+) -> Result<(), String> {
     let target_script_path = format!("./{name}_self_extracting.ps1");
     self_extracting::generate_self_extracting_script_from_template(
         &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),

@@ -14,9 +14,9 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
-use base64::{Engine, engine::general_purpose::STANDARD as base64_gp_STANDARD};
-use eyre::Context;
-use secrecy::{ExposeSecret, SecretString};
+use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDARD};
+use eyre::Context as _;
+use secrecy::{ExposeSecret as _, SecretString};
 use tracing::{info, warn};
 
 use crate::{

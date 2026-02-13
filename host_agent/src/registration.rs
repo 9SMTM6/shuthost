@@ -4,7 +4,7 @@ use crate::install::{
     BINARY_NAME, InitSystem, get_default_interface, get_hostname, get_inferred_init_system, get_ip,
     get_mac,
 };
-use shuthost_common::{ResultMapErrExt, UnwrapToStringExt};
+use shuthost_common::{ResultMapErrExt as _, UnwrapToStringExt as _};
 
 const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
@@ -179,15 +179,16 @@ fn parse_openrc_config() -> Result<ServiceConfig, String> {
 #[cfg(unix)]
 fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, String> {
     let Some(secret) = content.lines().find_map(|line| {
-        line.strip_prefix("export SHUTHOST_SHARED_SECRET=\"")
-            .and_then(|s| s.strip_suffix("\""))
+        let s = line.strip_prefix("export SHUTHOST_SHARED_SECRET=\"")?;
+        s.strip_suffix("\"")
     }) else {
         return Err("SHUTHOST_SHARED_SECRET not found in self-extracting script".to_string());
     };
     let Some(port) = content.lines().find_map(|line| {
-        line.strip_prefix("export PORT=\"")
-            .and_then(|s| s.strip_suffix("\""))
-            .and_then(|s| s.parse().ok())
+        let s = line
+            .strip_prefix("export PORT=\"")
+            .and_then(|s| s.strip_suffix("\""))?;
+        s.parse().ok()
     }) else {
         return Err("PORT not found in self-extracting script".to_string());
     };
@@ -208,17 +209,18 @@ fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, Strin
 
 fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, String> {
     let Some(secret) = content.lines().find_map(|line| {
-        line.strip_prefix("$env:SHUTHOST_SHARED_SECRET = \"")
-            .and_then(|s| s.strip_suffix("\""))
+        let s = line.strip_prefix("$env:SHUTHOST_SHARED_SECRET = \"")?;
+        s.strip_suffix("\"")
     }) else {
         return Err(
             "SHUTHOST_SHARED_SECRET not found in self-extracting PowerShell script".to_string(),
         );
     };
     let Some(port) = content.lines().find_map(|line| {
-        line.strip_prefix("$env:PORT = \"")
-            .and_then(|s| s.strip_suffix("\""))
-            .and_then(|s| s.parse().ok())
+        let s = line
+            .strip_prefix("$env:PORT = \"")
+            .and_then(|s| s.strip_suffix("\""))?;
+        s.parse().ok()
     }) else {
         return Err("PORT not found in self-extracting PowerShell script".to_string());
     };

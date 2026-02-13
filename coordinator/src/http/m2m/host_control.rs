@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use axum::http::StatusCode;
-use eyre::{Result, WrapErr};
+use eyre::{Result, WrapErr as _};
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,

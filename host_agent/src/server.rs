@@ -2,13 +2,13 @@
 
 use std::{
     env,
-    io::{Read, Write},
+    io::{Read as _, Write as _},
     net::{TcpListener, TcpStream},
 };
 
 use clap::Parser;
 use secrecy::SecretString;
-use shuthost_common::UnwrapToStringExt;
+use shuthost_common::UnwrapToStringExt as _;
 
 use crate::{
     commands::execute_shutdown,

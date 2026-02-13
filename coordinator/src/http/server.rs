@@ -16,9 +16,9 @@ use axum::{
     routing::{self, IntoMakeService, any, get},
 };
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
-use eyre::{ContextCompat, WrapErr};
+use eyre::{WrapErr as _, eyre};
 use hyper::StatusCode;
-use secrecy::{ExposeSecret, SecretBox};
+use secrecy::{ExposeSecret as _, SecretBox};
 use tokio::{
     fs, signal,
     sync::{broadcast, watch},
@@ -171,8 +171,10 @@ async fn setup_tls_config(
 
     let rustls_cfg = if cert_exists && key_exists {
         let rustls_cfg = AxumRustlsConfig::from_pem_file(
-            cert_path.to_str().wrap_err("Invalid Cert-Path")?,
-            key_path.to_str().wrap_err("Invalid Key-Path")?,
+            cert_path
+                .to_str()
+                .ok_or_else(|| eyre!("Invalid Cert-Path"))?,
+            key_path.to_str().ok_or_else(|| eyre!("Invalid Key-Path"))?,
         )
         .await
         .wrap_err(format!(
@@ -275,7 +277,7 @@ fn emit_startup_warnings(app_state: &AppState) {
     // Check config file permissions on Unix systems
     #[cfg(unix)]
     {
-        use std::os::unix::fs::PermissionsExt;
+        use std::os::unix::fs::PermissionsExt as _;
         if let Ok(metadata) = std::fs::metadata(&app_state.config_path) {
             let mode = metadata.permissions().mode();
             if mode & 0o077 != 0 {

@@ -3,8 +3,8 @@
 //! This module provides functions for creating HMAC signatures and
 //! formatting signed messages with timestamps.
 
-use hmac::{Hmac, Mac};
-use secrecy::ExposeSecret;
+use hmac::{Hmac, Mac as _};
+use secrecy::ExposeSecret as _;
 use sha2::Sha256;
 use std::time::{SystemTime, UNIX_EPOCH};
 

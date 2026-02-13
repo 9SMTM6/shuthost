@@ -3,7 +3,7 @@
 use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
 
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };

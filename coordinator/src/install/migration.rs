@@ -2,9 +2,9 @@ use std::path::Path;
 use std::path::PathBuf;
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-use std::os::unix::fs::{self as unix_fs, PermissionsExt};
+use std::os::unix::fs::{self as unix_fs, PermissionsExt as _};
 
-use eyre::WrapErr;
+use eyre::WrapErr as _;
 use nix::unistd::User;
 
 use crate::install::BINARY_NAME;

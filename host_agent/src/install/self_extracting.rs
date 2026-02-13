@@ -3,15 +3,15 @@
 //! Allows bundling the binary within a shell script with custom environment and execution.
 
 #[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::PermissionsExt as _;
 use std::{
     env,
     fs::{self, File},
-    io::Write,
+    io::Write as _,
 };
 
 use base64::{Engine as _, engine::general_purpose};
-use shuthost_common::ResultMapErrExt;
+use shuthost_common::ResultMapErrExt as _;
 
 /// Generates a self-extracting script from a template containing the current binary payload.
 ///

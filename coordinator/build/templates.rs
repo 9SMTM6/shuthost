@@ -1,7 +1,11 @@
 use base64::{Engine as _, engine::general_purpose};
-use eyre::WrapErr;
-use sha2::{Digest, Sha256};
-use std::{collections::HashMap, fs, path::{Path, PathBuf}};
+use eyre::WrapErr as _;
+use sha2::{Digest as _, Sha256};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 macro_rules! include_frontend_asset {
     ($path:expr) => {
@@ -128,8 +132,18 @@ pub fn process() -> eyre::Result<()> {
     fs::create_dir_all(&generated_dir)?;
 
     let asset_hashes = hash_non_template_assets()?;
-    set_cargo_env_vars(&asset_hashes.styles_hash, &asset_hashes.icon_hashes, &asset_hashes.svg_hashes);
-    process_templates(generated_dir.as_path(), &asset_hashes.styles_hash, &asset_hashes.styles_integrity, &asset_hashes.icon_hashes, &asset_hashes.svg_hashes)?;
+    set_cargo_env_vars(
+        &asset_hashes.styles_hash,
+        &asset_hashes.icon_hashes,
+        &asset_hashes.svg_hashes,
+    );
+    process_templates(
+        generated_dir.as_path(),
+        &asset_hashes.styles_hash,
+        &asset_hashes.styles_integrity,
+        &asset_hashes.icon_hashes,
+        &asset_hashes.svg_hashes,
+    )?;
 
     Ok(())
 }
@@ -214,7 +228,11 @@ fn set_cargo_env_vars(
         println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={hash}");
     }
     for (asset, hash) in svg_hashes {
-        println!("cargo::rustc-env=ASSET_HASH_{}_SVG={}", asset.to_uppercase(), hash);
+        println!(
+            "cargo::rustc-env=ASSET_HASH_{}_SVG={}",
+            asset.to_uppercase(),
+            hash
+        );
     }
 }
 
