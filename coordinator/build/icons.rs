@@ -1,3 +1,4 @@
+use core::str;
 use eyre::{Ok, WrapErr as _, eyre};
 use resvg::usvg;
 use std::{fs, path::PathBuf};
@@ -15,8 +16,7 @@ pub fn generate_pngs() -> eyre::Result<()> {
         resources_dir: Some(PathBuf::from("../frontend/assets/")),
         ..Default::default()
     };
-    let rtree =
-        usvg::Tree::from_str(core::str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
+    let rtree = usvg::Tree::from_str(str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 
     // sizes to emit: favicons, apple-touch, and PWA sizes
     let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];

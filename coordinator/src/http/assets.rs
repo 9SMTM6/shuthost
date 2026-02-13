@@ -3,6 +3,7 @@
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
 use core::time::Duration;
+use std::path;
 
 use axum::{
     Router,
@@ -164,7 +165,7 @@ macro_rules! static_png_download_handler {
 /// HTML rendering mode for the UI template
 pub(crate) enum UiMode<'params> {
     Normal {
-        config_path: &'params std::path::Path,
+        config_path: &'params path::Path,
         show_logout: bool,
         maybe_auth_warning: &'params str,
     },

@@ -1,3 +1,5 @@
+use std::fs;
+
 use clap::Parser;
 
 use crate::install::{
@@ -15,8 +17,7 @@ fn parse_config_from_path(
     parse_content_fn: fn(&str) -> Result<ServiceConfig, String>,
 ) -> Result<ServiceConfig, String> {
     let path = get_path_fn(BINARY_NAME);
-    let content =
-        std::fs::read_to_string(&path).map_err_to_string(&format!("Failed to read {path}"))?;
+    let content = fs::read_to_string(&path).map_err_to_string(&format!("Failed to read {path}"))?;
     parse_content_fn(&content)
 }
 
@@ -201,8 +202,7 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
 
 #[cfg(unix)]
 fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
-    let content =
-        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {path}"))?;
+    let content = fs::read_to_string(path).map_err_to_string(&format!("Failed to read {path}"))?;
 
     parse_self_extracting_shell_content(&content)
 }
@@ -232,8 +232,7 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
 }
 
 fn parse_self_extracting_pwsh_config(path: &str) -> Result<ServiceConfig, String> {
-    let content =
-        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {path}"))?;
+    let content = fs::read_to_string(path).map_err_to_string(&format!("Failed to read {path}"))?;
 
     parse_self_extracting_pwsh_content(&content)
 }

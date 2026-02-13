@@ -1,5 +1,5 @@
-use core::{fmt::Display, str::FromStr};
-use std::path::PathBuf;
+use core::{fmt, result::Result, str::FromStr};
+use std::{fs, path::PathBuf};
 
 use crate::{
     install::{
@@ -20,8 +20,8 @@ impl FromStr for LossyPath {
     }
 }
 
-impl Display for LossyPath {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for LossyPath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.to_string_lossy())
     }
 }
@@ -45,8 +45,8 @@ pub enum ScriptType {
     Pwsh,
 }
 
-impl core::fmt::Display for ScriptType {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for ScriptType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             ScriptType::UnixShell => write!(f, "unix-shell"),
             ScriptType::Pwsh => write!(f, "pwsh"),
@@ -156,7 +156,7 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
         output_path.set_extension("ps1");
     }
 
-    std::fs::write(&output_path, &script).map_err_to_string(&format!(
+    fs::write(&output_path, &script).map_err_to_string(&format!(
         "Failed to write script to {}",
         output_path.display()
     ))?;
@@ -165,12 +165,11 @@ pub(crate) fn write_control_script(args: &Args) -> Result<(), String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt as _;
-        let mut perms = std::fs::metadata(&output_path)
+        let mut perms = fs::metadata(&output_path)
             .map_err_to_string("Failed to get metadata")?
             .permissions();
         perms.set_mode(0o755);
-        std::fs::set_permissions(&output_path, perms)
-            .map_err_to_string("Failed to set permissions")?;
+        fs::set_permissions(&output_path, perms).map_err_to_string("Failed to set permissions")?;
     }
 
     println!("Control script generated at: {}", output_path.display());

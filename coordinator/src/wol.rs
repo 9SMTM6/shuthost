@@ -6,6 +6,7 @@
 
 use std::net::UdpSocket;
 
+use core::time::Duration;
 use eyre::Context as _;
 
 const MAC_ADDRESS_LENGTH: usize = 6;
@@ -71,7 +72,7 @@ fn parse_mac(mac: &str) -> eyre::Result<[u8; MAC_ADDRESS_LENGTH]> {
 pub(crate) fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
     let socket = UdpSocket::bind("0.0.0.0:0").wrap_err("Failed to bind socket")?;
     socket
-        .set_read_timeout(Some(core::time::Duration::from_secs(1)))
+        .set_read_timeout(Some(Duration::from_secs(1)))
         .wrap_err("Failed to set timeout")?;
 
     // Test broadcast

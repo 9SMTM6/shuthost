@@ -1,12 +1,12 @@
+use alloc::collections::{BTreeMap, BTreeSet};
+use cargo_about::licenses::config;
 use handlebars::Handlebars;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
+use spdx::text as spdx_text;
 use spdx::{LicenseItem, Licensee, expression::Expression};
-use alloc::collections::{BTreeMap, BTreeSet};
-use std::{
-    collections::HashMap,
-    fs::read_to_string,
-};
+use std::{collections::HashMap, fs};
+use toml::from_str as toml_from_str;
 use url::Url;
 
 #[derive(Deserialize)]
@@ -19,8 +19,8 @@ struct Licenses {
     allow: Vec<String>,
 }
 
-fn about_config() -> eyre::Result<cargo_about::licenses::config::Config> {
-    let deny: DenyConfig = toml::from_str(include_str!("../../deny.toml"))?;
+fn about_config() -> eyre::Result<config::Config> {
+    let deny: DenyConfig = toml_from_str(include_str!("../../deny.toml"))?;
     let accepted: Vec<Licensee> = deny
         .licenses
         .allow
@@ -28,7 +28,7 @@ fn about_config() -> eyre::Result<cargo_about::licenses::config::Config> {
         .map(|s| s.parse::<Licensee>().expect("valid license"))
         .collect();
 
-    Ok(cargo_about::licenses::config::Config {
+    Ok(config::Config {
         accepted,
         targets: vec![
             "x86_64-unknown-linux-gnu".to_string(),
@@ -145,7 +145,7 @@ fn process_entry(
 // We will fall back to reading license files where available.
 fn get_spdx_text(id: &str) -> Option<String> {
     // spdx::text exports LICENSE_TEXTS: &[(&str, &str)]
-    for &(k, v) in spdx::text::LICENSE_TEXTS {
+    for &(k, v) in spdx_text::LICENSE_TEXTS {
         if k == id {
             return Some(v.to_string());
         }
@@ -224,7 +224,7 @@ fn process_npm_packages(
         _other: HashMap<String, serde_json::Value>,
     }
 
-    let npm_map: HashMap<String, NpmInfo> = serde_json::from_str(&read_to_string(
+    let npm_map: HashMap<String, NpmInfo> = serde_json::from_str(&fs::read_to_string(
         "../frontend/assets/generated/npm-licenses.json",
     )?)?;
     for (pkgkey, info) in npm_map {
@@ -295,6 +295,6 @@ fn generate_about_html(
     let html = hb
         .render_template(template, &data)
         .map_err(|e| eyre::eyre!("Handlebars error: {e}"))?;
-    std::fs::write("../frontend/assets/generated/about.tmpl.html", &html)?;
+    fs::write("../frontend/assets/generated/about.tmpl.html", &html)?;
     Ok(())
 }

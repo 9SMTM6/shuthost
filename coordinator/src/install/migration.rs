@@ -1,5 +1,7 @@
-use std::path::Path;
-use std::path::PathBuf;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::os::unix::fs::{self as unix_fs, PermissionsExt as _};
@@ -36,10 +38,10 @@ pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Resul
         if let Some(parent_dir) = new_config_location.parent()
             && !parent_dir.exists()
         {
-            std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
+            fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
             created_new_dir = true;
         }
-        std::fs::rename(&old_config_location, new_config_location).wrap_err(format!(
+        fs::rename(&old_config_location, new_config_location).wrap_err(format!(
             "Failed to move config file from {} to {}",
             old_config_location.display(),
             new_config_location.display()
@@ -61,7 +63,7 @@ pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Resul
                 let old_file = old_dir.join(file_name);
                 let new_file = new_dir.join(file_name);
                 if old_file.exists() && !new_file.exists() {
-                    std::fs::rename(&old_file, &new_file).wrap_err(format!(
+                    fs::rename(&old_file, &new_file).wrap_err(format!(
                         "Failed to move {} from {} to {}",
                         file_name,
                         old_file.display(),
@@ -74,7 +76,7 @@ pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Resul
 
         // Chown the new directory if it was created
         if created_new_dir && let Some(parent_dir) = new_config_location.parent() {
-            std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
+            fs::set_permissions(parent_dir, fs::Permissions::from_mode(0o700))?;
 
             let user_info = User::from_name(user)
                 .wrap_err("Failed to get user info")?

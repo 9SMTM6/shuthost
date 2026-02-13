@@ -3,7 +3,8 @@
 //! This module provides functions for generating cryptographically
 //! secure random secrets suitable for use as HMAC keys.
 
-use rand::Rng as _;
+use core::iter;
+use rand::{Rng as _, distr, rng};
 
 /// Generates a random secret string suitable for use as an HMAC key.
 ///
@@ -11,8 +12,8 @@ use rand::Rng as _;
 #[must_use]
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
-    let mut rng = rand::rng();
-    core::iter::repeat_with(|| rng.sample(rand::distr::Alphanumeric) as char)
+    let mut rng = rng();
+    iter::repeat_with(|| rng.sample(distr::Alphanumeric) as char)
         .take(32)
         .collect()
 }

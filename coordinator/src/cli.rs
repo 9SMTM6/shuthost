@@ -5,6 +5,7 @@
 
 use std::env;
 
+use crate::install;
 use clap::{Parser, Subcommand};
 
 /// Top-level command-line interface definition.
@@ -25,7 +26,7 @@ pub enum Command {
 
     #[cfg(unix)]
     /// Install the coordinator service to start on boot.
-    Install(crate::install::Args),
+    Install(install::Args),
 
     /// Serve only static assets for demo mode (no backend, no state).
     DemoService {

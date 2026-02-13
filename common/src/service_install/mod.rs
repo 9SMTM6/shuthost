@@ -7,8 +7,14 @@ pub mod openrc;
 #[cfg(target_os = "linux")]
 pub mod systemd;
 
+use std::path;
+
 /// Returns `true` if the current process is running as superuser (root).
 #[cfg(unix)]
+#[expect(
+    clippy::absolute_paths,
+    reason = "we don't want to add a bunch of imports behind cfg attributes"
+)]
 #[must_use]
 pub fn is_superuser() -> bool {
     nix::unistd::geteuid().as_raw() == 0
@@ -17,5 +23,5 @@ pub fn is_superuser() -> bool {
 /// Returns `true` if the system uses `OpenRC` (checks `/run/openrc` or `/etc/init.d`).
 #[must_use]
 pub fn is_openrc() -> bool {
-    std::path::Path::new("/run/openrc").exists() || std::path::Path::new("/etc/init.d").exists()
+    path::Path::new("/run/openrc").exists() || path::Path::new("/etc/init.d").exists()
 }

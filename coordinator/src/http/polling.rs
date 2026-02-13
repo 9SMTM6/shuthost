@@ -4,6 +4,7 @@ use alloc::sync::Arc;
 use core::time::Duration;
 use std::{collections::HashMap, path::Path};
 
+use futures::future;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
@@ -180,7 +181,7 @@ async fn poll_host_statuses(config_rx: ConfigRx, hoststatus_tx: HostStatusTx) {
             }
         });
 
-        let results = futures::future::join_all(futures).await;
+        let results = future::join_all(futures).await;
         let status_map: HashMap<_, _> = results.into_iter().collect();
 
         let is_new = {

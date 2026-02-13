@@ -4,7 +4,9 @@
 
 pub mod self_extracting;
 
+use alloc::string;
 use clap::{Parser, ValueEnum as _};
+use core::fmt;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -82,8 +84,8 @@ pub enum InitSystem {
     Launchd,
 }
 
-impl core::fmt::Display for InitSystem {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for InitSystem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
@@ -337,7 +339,7 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
                 return line
                     .split_whitespace()
                     .nth(1)
-                    .map(alloc::string::ToString::to_string);
+                    .map(string::ToString::to_string);
             }
         }
         None

@@ -3,7 +3,7 @@
 use axum::{
     body::Body,
     extract::State,
-    http::{HeaderMap, Request, StatusCode},
+    http::{HeaderMap, Request, StatusCode, header},
     middleware::Next,
     response::{IntoResponse as _, Redirect, Response},
 };
@@ -92,7 +92,7 @@ fn redirect_with_return_to(
 /// Check if the request wants HTML content based on Accept header.
 fn wants_html(headers: &HeaderMap) -> bool {
     headers
-        .get(axum::http::header::ACCEPT)
+        .get(header::ACCEPT)
         .and_then(|v| v.to_str().ok())
         .is_some_and(|s| s.contains("text/html"))
 }

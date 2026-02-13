@@ -1,8 +1,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::{
-    extract::State,
-    http::HeaderMap,
+    extract::{self, State},
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
@@ -73,26 +73,26 @@ async fn build_client(
     client_id: &str,
     client_secret: &SecretString,
     headers: &HeaderMap,
-) -> Result<(OidcClientReady, reqwest::Client), axum::http::StatusCode> {
+) -> Result<(OidcClientReady, reqwest::Client), StatusCode> {
     // HTTP client for discovery and token exchange
     let http = reqwest::Client::builder()
         .redirect(Policy::limited(3))
         .build()
         .map_err(|e| {
             tracing::error!("failed to build HTTP client: {e}");
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+            StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
     // Discover provider
     let issuer = IssuerUrl::new(issuer.to_string()).map_err(|e| {
         tracing::error!("invalid issuer URL: {e}");
-        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
     let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http)
         .await
         .map_err(|e| {
             tracing::error!("OIDC discovery failed: {e}");
-            axum::http::StatusCode::BAD_GATEWAY
+            StatusCode::BAD_GATEWAY
         })?;
 
     // Construct client and set required endpoints
@@ -106,7 +106,7 @@ async fn build_client(
         client.set_token_uri(token_url)
     } else {
         tracing::error!("OIDC provider missing token endpoint");
-        return Err(axum::http::StatusCode::BAD_GATEWAY);
+        return Err(StatusCode::BAD_GATEWAY);
     };
 
     let client = match build_redirect_url(headers) {
@@ -116,7 +116,7 @@ async fn build_client(
         }
         Err(e) => {
             tracing::error!("invalid redirect URL: {e}");
-            return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
@@ -213,7 +213,7 @@ enum LoginFlowError {
     /// Redirect to login with a generic OIDC error message
     LoginRedirect,
     /// Return a `StatusCode` (expected to be in the 4XX range)
-    Status(axum::http::StatusCode),
+    Status(StatusCode),
 }
 
 fn login_error_response() -> Response {
@@ -313,7 +313,7 @@ async fn exchange_code_for_token(
         Ok(r) => Ok(r),
         Err(e) => {
             tracing::error!("Token exchange failed: {:#?}", e);
-            Err(LoginFlowError::Status(axum::http::StatusCode::BAD_GATEWAY))
+            Err(LoginFlowError::Status(StatusCode::BAD_GATEWAY))
         }
     }
 }
@@ -325,7 +325,7 @@ fn id_token_from_response(
         Some(id) => Ok(id.clone()),
         None => {
             tracing::warn!("No id_token in response; refusing login");
-            Err(LoginFlowError::Status(axum::http::StatusCode::BAD_REQUEST))
+            Err(LoginFlowError::Status(StatusCode::BAD_REQUEST))
         }
     }
 }
@@ -342,7 +342,7 @@ fn verify_id_token_and_build_session(
         Ok(c) => c,
         Err(e) => {
             tracing::error!("Invalid id token: {}", e);
-            return Err(LoginFlowError::Status(axum::http::StatusCode::UNAUTHORIZED));
+            return Err(LoginFlowError::Status(StatusCode::UNAUTHORIZED));
         }
     };
     let sub = claims.subject().to_string();
@@ -383,14 +383,14 @@ pub(crate) async fn callback(
     State(AppState { auth, .. }): State<AppState>,
     jar: SignedCookieJar,
     headers: HeaderMap,
-    axum::extract::Query(CallbackQueryParams {
+    extract::Query(CallbackQueryParams {
         code,
         state,
         error,
         error_description,
-    }): axum::extract::Query<CallbackQueryParams>,
+    }): extract::Query<CallbackQueryParams>,
 ) -> impl IntoResponse {
-    let crate::auth::Resolved::Oidc {
+    let auth::Resolved::Oidc {
         ref issuer,
         ref client_id,
         ref client_secret,

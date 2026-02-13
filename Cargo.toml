@@ -123,6 +123,7 @@ pedantic = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
 # restriction = { level = "warn", priority = -1 }
 # nursery = { level = "warn", priority = -1 }
+absolute_paths = "warn"
 alloc_instead_of_core = "warn"
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"

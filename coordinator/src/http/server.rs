@@ -2,27 +2,32 @@
 //!
 //! Defines routes, state management, configuration watching, and server startup.
 
-use alloc::sync::Arc;
-use core::{net::IpAddr, time::Duration};
-use std::{collections::HashMap, path::Path};
+use alloc::{string, sync::Arc};
+use core::{
+    net::{IpAddr, SocketAddr},
+    time::Duration,
+};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use axum::{
     Router,
     body::Body,
     http::{
-        HeaderValue, Request,
+        HeaderValue, Request, StatusCode,
         header::{AUTHORIZATION, COOKIE, HeaderName},
     },
-    middleware::Next,
+    middleware::{self as ax_middleware, Next},
     response::{Redirect, Response},
     routing::{self, IntoMakeService, any, get},
 };
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
 use eyre::{WrapErr as _, eyre};
-use hyper::StatusCode;
 use secrecy::{ExposeSecret as _, SecretBox};
 use tokio::{
-    fs, signal,
+    fs as t_fs, net, signal,
     sync::{broadcast, watch},
 };
 use tower::ServiceBuilder;
@@ -75,7 +80,7 @@ fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
         .nest("/api", api::routes())
         .route("/", get(serve_ui))
         .route("/ws", any(ws_handler))
-        .route_layer(axum::middleware::from_fn_with_state(
+        .route_layer(ax_middleware::from_fn_with_state(
             auth::LayerState {
                 auth: auth_runtime.clone(),
             },
@@ -97,7 +102,7 @@ pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 #[derive(Clone)]
 pub(crate) struct AppState {
     /// Path to the configuration file for template injection and reloads.
-    pub config_path: std::path::PathBuf,
+    pub config_path: PathBuf,
 
     /// Receiver for updated `ControllerConfig` when the file changes.
     pub config_rx: ConfigRx,
@@ -125,7 +130,7 @@ pub(crate) struct AppState {
 /// Initialize database pool based on configuration.
 async fn initialize_database(
     initial_config: &ControllerConfig,
-    config_path: &std::path::Path,
+    config_path: &Path,
 ) -> eyre::Result<Option<DbPool>> {
     // Initialize database. If a persistent DB is configured and enabled, open it
     // relative to the config file when appropriate. Otherwise DB persistence is
@@ -156,9 +161,9 @@ async fn initialize_database(
 /// Setup TLS configuration for HTTPS server.
 async fn setup_tls_config(
     tls_cfg: &TlsConfig,
-    config_path: &std::path::Path,
+    config_path: &Path,
     listen_ip: IpAddr,
-    addr: core::net::SocketAddr,
+    addr: SocketAddr,
 ) -> eyre::Result<AxumRustlsConfig> {
     // Use provided certs when both files exist. Otherwise, if persist_self_signed is true
     // (default), generate and persist self-signed cert/key next to the config file.
@@ -202,15 +207,15 @@ async fn setup_tls_config(
 
         // Ensure parent dir exists (typically same dir as config)
         let cfg_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
-        fs::create_dir_all(&cfg_dir).await.wrap_err(format!(
+        t_fs::create_dir_all(&cfg_dir).await.wrap_err(format!(
             "Failed to create certificate directory at: {}",
             cfg_dir.display()
         ))?;
 
         // Write cert/key files
         tokio::try_join!(
-            fs::write(&cert_path, cert_pem.as_bytes()),
-            fs::write(&key_path, key_pem.expose_secret())
+            t_fs::write(&cert_path, cert_pem.as_bytes()),
+            t_fs::write(&key_path, key_pem.expose_secret())
         )
         .wrap_err(format!(
             "Failed to write TLS certificates to cert: {}, key: {}",
@@ -255,7 +260,7 @@ fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(30),
         ))
-        .layer(axum::middleware::from_fn(secure_headers_middleware));
+        .layer(ax_middleware::from_fn(secure_headers_middleware));
 
     // Public routes (login, oidc callback, m2m endpoints, static assets such as PWA manifest, downloads for agent and client installs) must be reachable without auth
     // Private app routes protected by auth middleware
@@ -279,8 +284,9 @@ fn emit_startup_warnings(app_state: &AppState) {
     // Check config file permissions on Unix systems
     #[cfg(unix)]
     {
+        use std::fs;
         use std::os::unix::fs::PermissionsExt as _;
-        if let Ok(metadata) = std::fs::metadata(&app_state.config_path) {
+        if let Ok(metadata) = fs::metadata(&app_state.config_path) {
             let mode = metadata.permissions().mode();
             if mode & 0o077 != 0 {
                 warn!(
@@ -329,9 +335,7 @@ fn emit_startup_warnings(app_state: &AppState) {
 /// * `bind_override` - Optional bind address to override the config value.
 ///
 /// Initialize the application state and background services.
-async fn initialize_state(
-    config_path: &std::path::Path,
-) -> eyre::Result<(AppState, Option<TlsConfig>)> {
+async fn initialize_state(config_path: &Path) -> eyre::Result<(AppState, Option<TlsConfig>)> {
     let initial_config = Arc::new(load(config_path).await?);
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
@@ -356,9 +360,8 @@ async fn initialize_state(
     // Start background tasks
     polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
-    let auth_runtime = alloc::sync::Arc::new(
-        auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?,
-    );
+    let auth_runtime =
+        Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
 
     // Startup-time warning: if TLS is not enabled but authentication is active,
     // browsers will ignore cookies marked Secure. Warn operators so they can
@@ -405,14 +408,14 @@ pub(crate) async fn shutdown_signal() {
 /// Start the HTTP server with optional TLS.
 async fn start_server(
     app_state: AppState,
-    listen_ip: core::net::IpAddr,
+    listen_ip: IpAddr,
     listen_port: u16,
     tls_opt: Option<&TlsConfig>,
-    config_path: &std::path::Path,
+    config_path: &Path,
 ) -> eyre::Result<()> {
     let app = create_app(app_state);
 
-    let addr = core::net::SocketAddr::from((listen_ip, listen_port));
+    let addr = SocketAddr::from((listen_ip, listen_port));
 
     // Decide whether to serve plain HTTP or HTTPS depending on presence of config
     match tls_opt {
@@ -428,7 +431,7 @@ async fn start_server(
         }
         _ => {
             info!("Listening on http://{}", addr);
-            let listener = tokio::net::TcpListener::bind(addr).await?;
+            let listener = net::TcpListener::bind(addr).await?;
             let server = axum::serve(listener, app);
             tokio::select! {
                 res = server => res?,
@@ -454,7 +457,7 @@ async fn start_server(
 ///
 /// Panics if the certificate path cannot be converted to a string.
 pub(crate) async fn start(
-    config_path: &std::path::Path,
+    config_path: &Path,
     port_override: Option<u16>,
     bind_override: Option<&str>,
 ) -> eyre::Result<()> {
@@ -466,7 +469,7 @@ pub(crate) async fn start(
     let listen_port = port_override.unwrap_or(app_state.config_rx.borrow().server.port);
     let bind_str = bind_override.map_or_else(
         || app_state.config_rx.borrow().server.bind.clone(),
-        alloc::string::ToString::to_string,
+        string::ToString::to_string,
     );
 
     let listen_ip = bind_str.parse()?;
@@ -486,7 +489,7 @@ pub(crate) async fn start(
 /// This is less strict than possible.
 /// it avoids using CORS, X-Frame-Options: DENY and corresponding CSP attributes,
 /// since these might block some embedings etc.
-async fn secure_headers_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
+async fn secure_headers_middleware(req: Request<Body>, next: Next) -> Response {
     let mut response = next.run(req).await;
     response.headers_mut().insert(
         HeaderName::from_static("cross-origin-opener-policy"),

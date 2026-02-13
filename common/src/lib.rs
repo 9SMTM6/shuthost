@@ -11,6 +11,9 @@
 extern crate alloc;
 extern crate core;
 
+use core::fmt;
+use std::path;
+
 mod secrets;
 mod service_install;
 mod signing;
@@ -27,7 +30,7 @@ pub trait ResultMapErrExt<T> {
     fn map_err_to_string_simple(self) -> Result<T, String>;
 }
 
-impl<T, E: core::fmt::Display> ResultMapErrExt<T> for Result<T, E> {
+impl<T, E: fmt::Display> ResultMapErrExt<T> for Result<T, E> {
     fn map_err_to_string(self, prefix: &str) -> Result<T, String> {
         self.map_err(|e| format!("{prefix}: {e}"))
     }
@@ -56,5 +59,5 @@ impl<T: ToString, E> UnwrapToStringExt for Result<T, E> {
 /// Returns `true` if the system uses systemd (detects `/run/systemd/system`).
 #[must_use]
 pub fn is_systemd() -> bool {
-    std::path::Path::new("/run/systemd/system").exists()
+    path::Path::new("/run/systemd/system").exists()
 }

@@ -4,7 +4,10 @@
 //! for changes and automatically reloading them.
 
 use alloc::sync::Arc;
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use eyre::{Result, WrapErr as _};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher as _};
@@ -111,10 +114,9 @@ pub(crate) async fn watch_config_file(path: PathBuf, tx: ConfigTx) {
                     return true;
                 }
                 // Try canonicalized comparison (handles path format differences)
-                if let (Ok(canonical_event), Ok(canonical_config)) = (
-                    std::fs::canonicalize(event_path),
-                    std::fs::canonicalize(&path),
-                ) && canonical_event == canonical_config
+                if let (Ok(canonical_event), Ok(canonical_config)) =
+                    (fs::canonicalize(event_path), fs::canonicalize(&path))
+                    && canonical_event == canonical_config
                 {
                     return true;
                 }

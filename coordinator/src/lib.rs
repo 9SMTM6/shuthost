@@ -23,10 +23,12 @@ use nix::sys::stat;
 // for use in integration tests
 pub use websocket::WsMessage;
 
+use std::env;
 use std::fs;
 use std::sync::Once;
 
 use eyre::{Result, WrapErr as _};
+use rustls::crypto::aws_lc_rs;
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -65,7 +67,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                 fs::canonicalize(config).wrap_err(format!("Config file not found at: {config}"))?;
 
             INIT_TRACING.call_once(|| {
-                let default_level = if std::env::var("SHUTHOST_INTEGRATION_TEST").is_ok() {
+                let default_level = if env::var("SHUTHOST_INTEGRATION_TEST").is_ok() {
                     "error"
                 } else {
                     "info"
@@ -80,7 +82,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             });
 
             INIT_RUSTLS.call_once(|| {
-                rustls::crypto::aws_lc_rs::default_provider()
+                aws_lc_rs::default_provider()
                     .install_default()
                     .expect("failed to install default rustls provider");
             });

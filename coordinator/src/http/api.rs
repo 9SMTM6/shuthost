@@ -1,3 +1,5 @@
+use core::error;
+
 use axum::{
     Router,
     extract::{Path, State},
@@ -44,7 +46,7 @@ pub(crate) async fn update_lease_and_broadcast(
     lease_source: LeaseSource,
     action: LeaseAction,
     state: &AppState,
-) -> Result<LeaseSources, Box<dyn core::error::Error + Send + Sync>> {
+) -> Result<LeaseSources, Box<dyn error::Error + Send + Sync>> {
     let mut leases = state.leases.lock().await;
     let lease_set = leases.entry(hostname.to_string()).or_default();
 
@@ -124,7 +126,7 @@ async fn handle_reset_client_leases(
 
     // Remove all leases associated with the client from database when enabled
     if let Some(ref pool) = state.db_pool
-        && let Err(e) = crate::db::remove_client_leases(pool, &client_id).await
+        && let Err(e) = db::remove_client_leases(pool, &client_id).await
     {
         tracing::error!("Failed to remove client leases from database: {}", e);
     }

@@ -54,6 +54,10 @@ pub struct ClientStats {
 }
 
 #[cfg(unix)]
+#[expect(
+    clippy::absolute_paths,
+    reason = "we don't want to add a bunch of imports behind cfg attributes"
+)]
 fn check_file_permissions(path: &Path, expected_mode: u32) {
     if let Ok(metadata) = std::fs::metadata(path) {
         let mode = metadata.permissions().mode() & 0o777;

@@ -2,7 +2,7 @@
 
 use axum::{
     Router,
-    extract::State,
+    extract::{self, State},
     http::HeaderMap,
     response::{IntoResponse, Redirect},
     routing::{get, post},
@@ -35,8 +35,8 @@ pub(crate) fn routes() -> Router<AppState> {
 #[axum::debug_handler]
 pub(crate) async fn page(
     State(AppState { auth, .. }): State<AppState>,
-    headers: axum::http::HeaderMap,
-    axum::extract::Query(LoginQuery { error }): axum::extract::Query<LoginQuery>,
+    headers: HeaderMap,
+    extract::Query(LoginQuery { error }): extract::Query<LoginQuery>,
 ) -> impl IntoResponse {
     // Check if already authenticated
     type A = Resolved;

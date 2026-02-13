@@ -4,9 +4,10 @@
 
 use core::net::IpAddr;
 use std::{
+    fs,
     fs::File,
     io::Write as _,
-    os::unix::fs::{self, PermissionsExt as _},
+    os::unix::fs::{self as nix_fs, PermissionsExt as _},
     path::{Path, PathBuf},
 };
 
@@ -112,7 +113,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
         let created_dir = if let Some(parent_dir) = config_location.parent()
             && !parent_dir.exists()
         {
-            std::fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
+            fs::create_dir_all(parent_dir).wrap_err("Failed to create config directory")?;
             true
         } else {
             false
@@ -131,7 +132,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
             .write_all(config_content.as_bytes())
             .wrap_err("Failed to write config file")?;
 
-        std::fs::set_permissions(&config_location, std::fs::Permissions::from_mode(0o600))?;
+        fs::set_permissions(&config_location, fs::Permissions::from_mode(0o600))?;
 
         println!("Created config file at {config_location:?}");
         let user_info = User::from_name(&user)
@@ -140,8 +141,8 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
 
         // Chown the config directory if it was created
         if created_dir && let Some(parent_dir) = config_location.parent() {
-            std::fs::set_permissions(parent_dir, std::fs::Permissions::from_mode(0o700))?;
-            fs::chown(
+            fs::set_permissions(parent_dir, fs::Permissions::from_mode(0o700))?;
+            nix_fs::chown(
                 parent_dir,
                 Some(user_info.uid.into()),
                 Some(user_info.gid.into()),
@@ -150,7 +151,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
             println!("Chowned config directory at {parent_dir:?} for {user}",);
         }
 
-        fs::chown(
+        nix_fs::chown(
             &config_location,
             Some(user_info.uid.into()),
             Some(user_info.gid.into()),

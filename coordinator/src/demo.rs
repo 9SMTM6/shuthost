@@ -4,7 +4,7 @@
 //! without any backend state or functionality.
 
 use alloc::sync::Arc;
-use std::collections::HashMap;
+use std::{collections::HashMap, path};
 
 use axum::{Router, extract::State, http::Response, routing};
 use tokio::{
@@ -52,7 +52,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
     let (hoststatus_tx, hoststatus_rx) = watch::channel(Arc::new(HashMap::new()));
 
     let app_state = AppState {
-        config_path: std::path::PathBuf::from("demo"),
+        config_path: path::PathBuf::from("demo"),
         config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
         hoststatus_rx,
         hoststatus_tx,

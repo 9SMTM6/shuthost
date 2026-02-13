@@ -2,11 +2,11 @@ use base64::{Engine as _, engine::general_purpose};
 use eyre::Ok;
 use regex::Regex;
 use sha2::{Digest as _, Sha256};
-use std::fs;
+use std::{collections, fs};
 
 pub fn generate_hashes() -> eyre::Result<()> {
     let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;
-    let mut script_hashes = std::collections::HashSet::new();
+    let mut script_hashes = collections::HashSet::new();
 
     let served_html_files = [
         "../frontend/assets/generated/index.html",

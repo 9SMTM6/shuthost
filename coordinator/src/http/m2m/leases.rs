@@ -1,7 +1,7 @@
 //! Lease management types and utilities.
 
-use core::fmt::{self, Display};
 use alloc::sync::Arc;
+use core::fmt::{self, Display};
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;

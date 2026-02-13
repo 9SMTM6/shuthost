@@ -1,6 +1,6 @@
 //! HMAC validation and request parsing for M2M endpoints.
 
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use shuthost_common::validate_hmac_message;
 use tracing::{info, warn};
 
@@ -8,7 +8,7 @@ use crate::{http::AppState, http::api::LeaseAction};
 
 /// Validates M2M lease action request headers and returns (`client_id`, `LeaseAction`)
 pub(crate) fn validate_m2m_request(
-    headers: &axum::http::HeaderMap,
+    headers: &HeaderMap,
     state: &AppState,
     expected_action: LeaseAction,
 ) -> Result<String, (StatusCode, &'static str)> {

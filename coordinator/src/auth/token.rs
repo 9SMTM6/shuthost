@@ -1,9 +1,11 @@
 use axum::{
     Form,
     extract::State,
+    http,
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::cookie::SignedCookieJar;
+use cookie::time::Duration as CookieDuration;
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
@@ -34,7 +36,7 @@ pub(crate) async fn login_post(
         auth, tls_enabled, ..
     }): State<AppState>,
     jar: SignedCookieJar,
-    headers: axum::http::HeaderMap,
+    headers: http::HeaderMap,
     Form(LoginForm { token }): Form<LoginForm>,
 ) -> impl IntoResponse {
     // If the connection doesn't look secure, surface an error instead of setting Secure cookies
@@ -52,7 +54,7 @@ pub(crate) async fn login_post(
             let claims = TokenSessionClaims::new((*expected).expose_secret());
             let cookie = create_token_session_cookie(
                 &claims,
-                cookie::time::Duration::seconds(
+                CookieDuration::seconds(
                     (claims.exp - claims.iat)
                         .try_into()
                         .expect("session expiration is impossibly high"),

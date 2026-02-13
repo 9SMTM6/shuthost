@@ -8,6 +8,7 @@ use axum::{
     http::HeaderMap,
     response::IntoResponse,
 };
+use core::error::Error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tracing::{error, info, warn};
@@ -23,7 +24,7 @@ use crate::{
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
 fn is_websocket_closed(err: &axum::Error) -> bool {
-    let mut current: &(dyn core::error::Error + 'static) = err;
+    let mut current: &(dyn Error + 'static) = err;
     loop {
         // Try downcasting the current error trait object to a concrete tungstenite::Error
         if matches!(

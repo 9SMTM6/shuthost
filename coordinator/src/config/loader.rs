@@ -6,6 +6,7 @@
 use std::path::Path;
 
 use eyre::WrapErr as _;
+use tokio::fs;
 
 use crate::config::ControllerConfig;
 
@@ -20,7 +21,7 @@ use crate::config::ControllerConfig;
 /// Returns an error if the config file cannot be read or parsed.
 pub(crate) async fn load<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConfig> {
     let path_ref = path.as_ref();
-    let content = tokio::fs::read_to_string(&path).await.wrap_err(format!(
+    let content = fs::read_to_string(&path).await.wrap_err(format!(
         "Failed to read config file at: {}",
         path_ref.display()
     ))?;

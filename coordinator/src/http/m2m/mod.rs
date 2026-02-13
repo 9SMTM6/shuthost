@@ -12,7 +12,7 @@ mod validation;
 use axum::{
     Json,
     extract::{Path, Query, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::post,
 };
@@ -26,6 +26,7 @@ use crate::{
         AppState,
         api::{LeaseAction, update_lease_and_broadcast},
     },
+    wol,
 };
 
 // Re-export public API
@@ -46,7 +47,7 @@ pub(crate) struct WolTestQuery {
 #[cfg(not(coverage))]
 #[axum::debug_handler]
 async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
-    match crate::wol::test_wol_reachability(params.port) {
+    match wol::test_wol_reachability(params.port) {
         Ok(broadcast) => Ok(Json(json!({
             "broadcast": broadcast
         }))
@@ -93,7 +94,7 @@ pub(crate) struct LeaseActionQuery {
 #[axum::debug_handler]
 async fn handle_m2m_lease_action(
     Path((host, action)): Path<(String, LeaseAction)>,
-    headers: axum::http::HeaderMap,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Query(q): Query<LeaseActionQuery>,
 ) -> impl IntoResponse {
