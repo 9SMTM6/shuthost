@@ -80,7 +80,7 @@ impl OIDCSessionClaims {
 pub(crate) fn now_ts() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .expect("system time is before the UNIX epoch")
         .as_secs()
 }
 
@@ -136,33 +136,27 @@ pub(crate) fn create_return_to_cookie(return_to: String) -> Cookie<'static> {
 }
 
 /// Create a token cookie for authentication.
-///
-/// # Panics
-///
-/// Panics if the token data cannot be serialized to JSON.
 pub(crate) fn create_token_session_cookie(
     token_data: &TokenSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
     create_protected_cookie(
         COOKIE_TOKEN_SESSION,
-        serde_json::to_string(token_data).unwrap(),
+        serde_json::to_string(token_data)
+            .expect("failed to serialize token session claims to JSON; serialization is expected to be infallible for derived Serialize on simple fields"),
         session_max_age,
     )
 }
 
 /// Create a session cookie for OIDC authentication.
-///
-/// # Panics
-///
-/// Panics if the session data cannot be serialized to JSON.
 pub(crate) fn create_oidc_session_cookie(
     session_data: &OIDCSessionClaims,
     session_max_age: CookieDuration,
 ) -> Cookie<'static> {
     create_protected_cookie(
         COOKIE_OIDC_SESSION,
-        serde_json::to_string(session_data).unwrap(),
+        serde_json::to_string(session_data)
+            .expect("failed to serialize OIDC session claims to JSON; serialization is expected to be infallible for derived Serialize on simple fields"),
         session_max_age,
     )
 }

@@ -259,7 +259,7 @@ fn nonce_from_cookie(jar: &SignedCookieJar) -> Option<Nonce> {
 fn finalize_session_and_redirect(jar: SignedCookieJar, session: &OIDCSessionClaims) -> Response {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .expect("system time is before the UNIX epoch")
         .as_secs();
     let session_exp_seconds = session.exp.saturating_sub(now);
     let session_max_age =

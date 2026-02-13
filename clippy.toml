@@ -1,1 +1,2 @@
 cognitive-complexity-threshold = 50
+allow-unwrap-in-tests = true
