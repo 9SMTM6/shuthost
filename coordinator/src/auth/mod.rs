@@ -166,10 +166,10 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
         } => {
             info!("Auth mode: oidc, issuer={}", issuer);
             Ok(Resolved::Oidc {
-                issuer: issuer.to_string(),
-                client_id: client_id.to_string(),
+                issuer: issuer.clone(),
+                client_id: client_id.clone(),
                 client_secret: client_secret.clone(),
-                scopes: scopes.to_vec(),
+                scopes: scopes.clone(),
             })
         }
         AuthMode::External { exceptions_version } => {

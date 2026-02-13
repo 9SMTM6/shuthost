@@ -13,6 +13,6 @@ pub fn set_root() -> eyre::Result<()> {
     } else {
         path_str.push('/');
     }
-    println!("cargo::rustc-env=WORKSPACE_ROOT={}", path_str);
+    println!("cargo::rustc-env=WORKSPACE_ROOT={path_str}");
     Ok(())
 }

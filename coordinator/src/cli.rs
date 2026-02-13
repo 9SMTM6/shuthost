@@ -20,7 +20,7 @@ pub struct Cli {
 /// Available subcommands for the coordinator.
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Launch the control web service (WebUI) for managing hosts.
+    /// Launch the control web service (`WebUI`) for managing hosts.
     ControlService(ServiceArgs),
 
     #[cfg(unix)]

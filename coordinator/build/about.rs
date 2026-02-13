@@ -121,7 +121,7 @@ fn process_entry(
         .map(|req| req.req.license.clone())
         .collect();
     licenses_set.extend(requirements.iter().cloned());
-    for license in requirements.iter() {
+    for license in &requirements {
         let license_str = license.to_string();
         license_html = license_html.replace(
             &license_str,
@@ -144,7 +144,7 @@ fn process_entry(
 // We will fall back to reading license files where available.
 fn get_spdx_text(id: &str) -> Option<String> {
     // spdx::text exports LICENSE_TEXTS: &[(&str, &str)]
-    for &(k, v) in spdx::text::LICENSE_TEXTS.iter() {
+    for &(k, v) in spdx::text::LICENSE_TEXTS {
         if k == id {
             return Some(v.to_string());
         }
@@ -210,7 +210,7 @@ pub fn build_html() -> eyre::Result<()> {
     let npm_map: HashMap<String, NpmInfo> = serde_json::from_str(&read_to_string(
         "../frontend/assets/generated/npm-licenses.json",
     )?)?;
-    for (pkgkey, info) in npm_map.into_iter() {
+    for (pkgkey, info) in npm_map {
         let license_str = info
             .licenses
             .or(info.license)
@@ -222,7 +222,7 @@ pub fn build_html() -> eyre::Result<()> {
             // v starts with '@', drop it
             (n.to_string(), v[1..].to_string())
         } else {
-            (pkgkey.clone(), String::from(""))
+            (pkgkey.clone(), String::new())
         };
 
         combined.push(process_entry(

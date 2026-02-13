@@ -212,7 +212,7 @@ pub(crate) struct CallbackQueryParams {
 enum LoginFlowError {
     /// Redirect to login with a generic OIDC error message
     LoginRedirect,
-    /// Return a StatusCode (expected to be in the 4XX range)
+    /// Return a `StatusCode` (expected to be in the 4XX range)
     Status(axum::http::StatusCode),
 }
 
@@ -346,7 +346,7 @@ fn verify_id_token_and_build_session(
     Ok(OIDCSessionClaims { sub, exp })
 }
 
-/// Exchange code, verify id_token and build session
+/// Exchange code, verify `id_token` and build session
 async fn process_token_and_build_session(
     client: &OidcClientReady,
     http: &reqwest::Client,

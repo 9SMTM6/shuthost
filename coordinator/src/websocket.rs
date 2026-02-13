@@ -44,7 +44,7 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
 /// The set of lease sources for a single host
 pub(crate) type LeaseSources = HashSet<LeaseSource>;
 
-/// host_name => set of lease sources holding lease
+/// `host_name` => set of lease sources holding lease
 pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -52,7 +52,7 @@ pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 pub enum WsMessage {
     /// Gets sent on host status changes
     HostStatus(HostStatus),
-    /// We watch for select config changes and update the WebUI to immediately reflect additions to hosts or clients
+    /// We watch for select config changes and update the `WebUI` to immediately reflect additions to hosts or clients
     ConfigChanged {
         hosts: Vec<String>,
         clients: Vec<String>,
@@ -116,7 +116,7 @@ pub(crate) async fn ws_handler(
                 warn!("Failed to send initial state: {}", e);
                 return;
             }
-        };
+        }
         start_webui_ws_loop(socket, ws_tx.subscribe()).await;
     })
 }

@@ -1,4 +1,4 @@
-//! Build script for the ShutHost Coordinator.
+//! Build script for the `ShutHost` Coordinator.
 //!
 //! This build script performs several tasks to prepare the frontend assets and generate necessary files
 //! for the Rust application. It is responsible for:

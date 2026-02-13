@@ -1,4 +1,4 @@
-//! Installation and runtime utilities for the host_agent binary.
+//! Installation and runtime utilities for the `host_agent` binary.
 //!
 //! Handles subcommand parsing, agent installation across init systems, network interface discovery, and Wake-on-LAN testing.
 
@@ -44,7 +44,7 @@ pub(crate) fn bind_template_replacements(
         .replace("{ name }", BINARY_NAME)
 }
 
-/// Arguments for the `install` subcommand of host_agent.
+/// Arguments for the `install` subcommand of `host_agent`.
 #[derive(Debug, Parser)]
 pub struct Args {
     #[arg(long, short, default_value_t = DEFAULT_PORT)]
@@ -60,13 +60,13 @@ pub struct Args {
     pub init_system: InitSystem,
 }
 
-/// Supported init systems for installing the host_agent.
+/// Supported init systems for installing the `host_agent`.
 #[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq)]
 pub enum InitSystem {
     /// Systemd init system (Linux).
     #[cfg(target_os = "linux")]
     Systemd,
-    /// OpenRC init system (Linux).
+    /// `OpenRC` init system (Linux).
     #[cfg(target_os = "linux")]
     #[clap(name = "openrc")]
     OpenRC,
@@ -74,7 +74,7 @@ pub enum InitSystem {
     #[cfg(unix)]
     #[clap(alias = "sh")]
     SelfExtractingShell,
-    /// Generates a self-extracting PowerShell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the PowerShell script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background. [aliases: pwsh]
+    /// Generates a self-extracting `PowerShell` script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the `PowerShell` script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background. [aliases: pwsh]
     #[clap(alias = "pwsh")]
     SelfExtractingPwsh,
     /// Launchd init system (macOS).
@@ -94,7 +94,7 @@ impl std::fmt::Display for InitSystem {
     }
 }
 
-/// Performs host_agent installation based on provided arguments.
+/// Performs `host_agent` installation based on provided arguments.
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
 pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
@@ -306,7 +306,10 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             if line.contains("ether") {
-                return line.split_whitespace().nth(1).map(|s| s.to_string());
+                return line
+                    .split_whitespace()
+                    .nth(1)
+                    .map(std::string::ToString::to_string);
             }
         }
         None
@@ -353,7 +356,7 @@ pub(crate) fn get_ip(interface: &str) -> Option<String> {
                     .split_whitespace()
                     .nth(1)
                     .and_then(|s| s.split('/').next())
-                    .map(|s| s.to_string());
+                    .map(ToString::to_string);
             }
         }
         None
@@ -388,11 +391,11 @@ pub(crate) fn get_hostname() -> Option<String> {
 
     let hostname = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-    if !hostname.is_empty() {
+    if hostname.is_empty() {
+        None
+    } else {
         // Return only the subdomain (first part before dot), matching client_installer behavior
         Some(hostname.split('.').next().unwrap_or(&hostname).to_string())
-    } else {
-        None
     }
 }
 

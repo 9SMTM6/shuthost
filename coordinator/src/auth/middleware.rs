@@ -77,7 +77,7 @@ pub(crate) async fn require(
     }
 }
 
-/// Helper function to redirect with return_to cookie set.
+/// Helper function to redirect with `return_to` cookie set.
 fn redirect_with_return_to(
     jar: SignedCookieJar,
     req: &Request<Body>,
@@ -94,8 +94,7 @@ fn wants_html(headers: &HeaderMap) -> bool {
     headers
         .get(axum::http::header::ACCEPT)
         .and_then(|v| v.to_str().ok())
-        .map(|s| s.contains("text/html"))
-        .unwrap_or(false)
+        .is_some_and(|s| s.contains("text/html"))
 }
 
 /// Determine whether the incoming request should be considered secure.

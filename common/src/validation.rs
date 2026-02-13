@@ -33,6 +33,7 @@ use secrecy::SecretString;
 /// # Returns
 ///
 /// A `HmacValidationResult` indicating if the message is valid or why it failed.
+#[must_use]
 pub fn validate_hmac_message(data: &str, secret: &SecretString) -> HmacValidationResult {
     if let Some((timestamp, message, received_signature)) = parse_hmac_message(data) {
         if !is_timestamp_in_valid_range(timestamp) {
@@ -51,16 +52,19 @@ pub fn validate_hmac_message(data: &str, secret: &SecretString) -> HmacValidatio
 }
 
 /// Verifies an HMAC signature against a message.
+#[must_use]
 pub fn verify_hmac(message: &str, received_signature: &str, secret: &SecretString) -> bool {
     received_signature == sign_hmac(message, secret)
 }
 
 /// Checks if a timestamp is within the allowed time window.
+#[must_use]
 pub fn is_timestamp_in_valid_range(timestamp: u64) -> bool {
     unix_time_seconds().abs_diff(timestamp) <= ALLOWED_WINDOW
 }
 
 /// Parses an HMAC message into its components.
+#[must_use]
 pub fn parse_hmac_message(data: &str) -> Option<(u64, String, String)> {
     let parts: Vec<&str> = data.split('|').collect();
     let &[timestamp_str, message, signature] = parts.as_slice() else {

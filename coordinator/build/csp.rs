@@ -26,10 +26,7 @@ pub fn generate_hashes() -> eyre::Result<()> {
     let mut script_hash_list: Vec<_> = script_hashes.into_iter().collect();
     script_hash_list.sort();
     let script_hashes_str = script_hash_list.join(" ");
-    println!(
-        "cargo::rustc-env=CSP_INLINE_SCRIPTS_HASHES={}",
-        script_hashes_str
-    );
+    println!("cargo::rustc-env=CSP_INLINE_SCRIPTS_HASHES={script_hashes_str}");
 
     // // Generate CSP hash for manifest
     // let manifest_hash = generate_csp_hash_from_file("../frontend/assets/generated/manifest.json")?;
@@ -46,7 +43,7 @@ pub fn generate_hashes() -> eyre::Result<()> {
 pub fn generate_encoded_hash(content: impl AsRef<[u8]>) -> eyre::Result<String> {
     let hash = Sha256::digest(content);
     let hash_b64 = general_purpose::STANDARD.encode(hash);
-    Ok(format!("sha256-{}", hash_b64))
+    Ok(format!("sha256-{hash_b64}"))
 }
 
 // /// Generate a CSP-compatible SHA256 hash for a file

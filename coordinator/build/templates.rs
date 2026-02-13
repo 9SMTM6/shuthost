@@ -34,21 +34,18 @@ trait TemplateExt {
 impl<T: AsRef<str>> TemplateExt for T {
     fn include_svgs(&self, svg_hashes: &HashMap<String, String>) -> String {
         let mut result = self.as_ref().to_string();
-        for (asset, hash) in svg_hashes.iter() {
-            result = result.replace(
-                &format!("{{ {} }}", asset),
-                &format!("./{}.{}.svg", asset, hash),
-            );
+        for (asset, hash) in svg_hashes {
+            result = result.replace(&format!("{{ {asset} }}"), &format!("./{asset}.{hash}.svg"));
         }
         result
     }
 
     fn include_png_icons(&self, icon_hashes: &HashMap<u32, String>) -> String {
         let mut result = self.as_ref().to_string();
-        for (size, hash) in icon_hashes.iter() {
+        for (size, hash) in icon_hashes {
             result = result.replace(
-                &format!("{{ icon_{} }}", size),
-                &format!("./icons/icon-{}.{}.png", size, hash),
+                &format!("{{ icon_{size} }}"),
+                &format!("./icons/icon-{size}.{hash}.png"),
             );
         }
         result
@@ -117,11 +114,8 @@ impl<T: AsRef<str>> TemplateExt for T {
     ) -> String {
         let html_head_content = include_frontend_asset!("partials/html_head.tmpl.html")
             .include_svgs(svg_hashes)
-            .replace(
-                "{ manifest }",
-                &format!("./manifest.{}.json", manifest_hash),
-            )
-            .replace("{ styles }", &format!("./styles.{}.css", styles_hash))
+            .replace("{ manifest }", &format!("./manifest.{manifest_hash}.json"))
+            .replace("{ styles }", &format!("./styles.{styles_hash}.css"))
             .replace("{ styles_integrity }", styles_integrity)
             .include_png_icons(icon_hashes)
             .replace("{ title }", title);
@@ -176,33 +170,21 @@ pub fn process() -> eyre::Result<()> {
             .wrap_err("Failed to read generated direct_control_comparison.svg")?;
     let direct_control_comparison_short_hash = short_hash(direct_control_comparison_svg.as_bytes());
 
-    println!(
-        "cargo::rustc-env=ASSET_HASH_STYLES_CSS={}",
-        styles_short_hash
-    );
-    println!(
-        "cargo::rustc-env=ASSET_HASH_FAVICON_SVG={}",
-        favicon_short_hash
-    );
+    println!("cargo::rustc-env=ASSET_HASH_STYLES_CSS={styles_short_hash}");
+    println!("cargo::rustc-env=ASSET_HASH_FAVICON_SVG={favicon_short_hash}");
     for &size in &sizes {
         let hash = &icon_hashes[&size];
-        println!("cargo::rustc-env=ASSET_HASH_ICON_{}_PNG={}", size, hash);
+        println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={hash}");
     }
     println!(
-        "cargo::rustc-env=ASSET_HASH_HOST_AGENT_INTERACTION_SVG={}",
-        host_agent_interaction_short_hash
+        "cargo::rustc-env=ASSET_HASH_HOST_AGENT_INTERACTION_SVG={host_agent_interaction_short_hash}"
     );
     println!(
-        "cargo::rustc-env=ASSET_HASH_CLIENT_CONTROLLER_INTERACTION_SVG={}",
-        client_controller_interaction_short_hash
+        "cargo::rustc-env=ASSET_HASH_CLIENT_CONTROLLER_INTERACTION_SVG={client_controller_interaction_short_hash}"
     );
+    println!("cargo::rustc-env=ASSET_HASH_DEPLOYMENT_SVG={deployment_short_hash}");
     println!(
-        "cargo::rustc-env=ASSET_HASH_DEPLOYMENT_SVG={}",
-        deployment_short_hash
-    );
-    println!(
-        "cargo::rustc-env=ASSET_HASH_DIRECT_CONTROL_COMPARISON_SVG={}",
-        direct_control_comparison_short_hash
+        "cargo::rustc-env=ASSET_HASH_DIRECT_CONTROL_COMPARISON_SVG={direct_control_comparison_short_hash}"
     );
 
     let mut svg_hashes = HashMap::new();
@@ -228,10 +210,7 @@ pub fn process() -> eyre::Result<()> {
         .insert_metadata();
     let manifest_short_hash = short_hash(manifest_content.as_bytes());
     fs::write(generated_dir.join("manifest.json"), &manifest_content)?;
-    println!(
-        "cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={}",
-        manifest_short_hash
-    );
+    println!("cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={manifest_short_hash}");
 
     // Process index.tmpl.html
     let content = include_frontend_asset!("index.tmpl.html")
@@ -310,5 +289,5 @@ pub fn process() -> eyre::Result<()> {
 fn generate_encoded_hash(content: impl AsRef<[u8]>) -> eyre::Result<String> {
     let hash = Sha256::digest(content);
     let hash_b64 = general_purpose::STANDARD.encode(hash);
-    Ok(format!("sha256-{}", hash_b64))
+    Ok(format!("sha256-{hash_b64}"))
 }

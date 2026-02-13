@@ -15,7 +15,7 @@ use crate::{
     validation::{Action, validate_request},
 };
 
-/// Configuration options for running the host_agent service.
+/// Configuration options for running the `host_agent` service.
 #[derive(Debug, Parser, Clone)]
 pub struct ServiceOptions {
     /// TCP port to listen on for incoming HMAC-signed commands.
@@ -36,7 +36,7 @@ pub struct ServiceOptions {
 ///
 /// # Panics
 ///
-/// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set (and the value wasn't smuggled into ServiceArgs).
+/// Panics if the `SHUTHOST_SHARED_SECRET` environment variable is not set (and the value wasn't smuggled into `ServiceArgs`).
 pub(crate) fn start_host_agent(mut config: ServiceOptions) {
     config.shared_secret.get_or_insert_with(|| {
         SecretString::from(

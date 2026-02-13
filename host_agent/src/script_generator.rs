@@ -39,7 +39,7 @@ pub enum ScriptType {
     /// A .sh script for macOS/Linux/Unix hosts [aliases: sh]
     #[clap(alias = "sh")]
     UnixShell,
-    /// A .ps1 PowerShell script (should support all platforms with PowerShell installed) [aliases: ps1]
+    /// A .ps1 `PowerShell` script (should support all platforms with `PowerShell` installed) [aliases: ps1]
     #[clap(alias = "ps1")]
     Pwsh,
 }
@@ -64,6 +64,7 @@ const fn get_default_script_type() -> ScriptType {
     }
 }
 
+#[must_use]
 pub fn generate_control_script_from_values(
     raw: &'static str,
     values: &ControlScriptValues,
@@ -77,10 +78,7 @@ pub fn generate_control_script_from_values(
 
 fn get_default_output_path() -> LossyPath {
     let hostname = get_hostname().unwrap_or_to_string("unknown");
-    LossyPath(PathBuf::from(format!(
-        "shuthost_direct_control_{}",
-        hostname
-    )))
+    LossyPath(PathBuf::from(format!("shuthost_direct_control_{hostname}")))
 }
 
 #[derive(Debug, clap::Parser)]
@@ -90,7 +88,7 @@ pub struct Args {
     #[arg(long, short, default_value_t = get_default_output_path())]
     pub output: LossyPath,
 
-    /// The init system used by the host_agent installation.
+    /// The init system used by the `host_agent` installation.
     #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
@@ -110,7 +108,7 @@ pub(crate) fn generate_control_script(
 ) -> Result<String, String> {
     let config = parse_config(&registration::Args {
         init_system,
-        script_path: script_path.map(|s| s.to_string()),
+        script_path: script_path.map(ToString::to_string),
     })?;
 
     let (ip, mac) = if let Some(interface) = get_default_interface() {

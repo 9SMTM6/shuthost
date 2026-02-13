@@ -9,7 +9,7 @@ use crate::server::ServiceOptions;
 ///
 /// # Arguments
 ///
-/// * `config` - ServiceArgs holding the `shutdown_command` to execute.
+/// * `config` - `ServiceArgs` holding the `shutdown_command` to execute.
 ///
 /// # Errors
 ///

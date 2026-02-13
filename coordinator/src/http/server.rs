@@ -417,7 +417,7 @@ async fn start_server(
             let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app);
             tokio::select! {
                 res = server => res?,
-                _ = shutdown_signal() => {
+                () = shutdown_signal() => {
                     info!("Received shutdown, shutting down");
                 }
             }
@@ -428,12 +428,12 @@ async fn start_server(
             let server = axum::serve(listener, app);
             tokio::select! {
                 res = server => res?,
-                _ = shutdown_signal() => {
+                () = shutdown_signal() => {
                     info!("Received shutdown, shutting down");
                 }
             }
         }
-    };
+    }
 
     Ok(())
 }
@@ -460,9 +460,10 @@ pub(crate) async fn start(
 
     // Apply optional overrides from CLI/tests
     let listen_port = port_override.unwrap_or(app_state.config_rx.borrow().server.port);
-    let bind_str = bind_override
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| app_state.config_rx.borrow().server.bind.clone());
+    let bind_str = bind_override.map_or_else(
+        || app_state.config_rx.borrow().server.bind.clone(),
+        std::string::ToString::to_string,
+    );
 
     let listen_ip = bind_str.parse()?;
 

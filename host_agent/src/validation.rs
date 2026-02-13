@@ -51,6 +51,7 @@ pub enum Action {
 /// assert_eq!(resp, "OK: status");
 /// assert_eq!(action, Action::None);
 /// ```
+#[must_use]
 pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -> (String, Action) {
     let data_str = match std::str::from_utf8(data) {
         Ok(s) => s,

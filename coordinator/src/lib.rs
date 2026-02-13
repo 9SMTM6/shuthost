@@ -82,7 +82,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                     .expect("failed to install default rustls provider");
             });
 
-            for warning in env!("BUILD_WARNINGS").split(";") {
+            for warning in env!("BUILD_WARNINGS").split(';') {
                 warn!(warning);
             }
 

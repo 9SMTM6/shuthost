@@ -24,7 +24,7 @@ pub(crate) async fn poll_host_status(
     port: u16,
     shared_secret: &secrecy::SecretString,
 ) -> bool {
-    let addr = format!("{}:{}", ip, port);
+    let addr = format!("{ip}:{port}");
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
             let signed_message = create_signed_message("status", shared_secret);
@@ -51,7 +51,7 @@ pub(crate) async fn poll_host_status(
     }
 }
 
-/// Poll a host until its state matches desired_state or timeout is reached. Updates global state.
+/// Poll a host until its state matches `desired_state` or timeout is reached. Updates global state.
 ///
 /// # Errors
 ///
@@ -72,7 +72,7 @@ pub(crate) async fn poll_until_host_state(
             let config = config_rx.borrow();
             match config.hosts.get(host_name) {
                 Some(h) => h.clone(),
-                None => return Err(format!("No configuration found for host '{}'.", host_name)),
+                None => return Err(format!("No configuration found for host '{host_name}'.")),
             }
         };
         let poll_fut =

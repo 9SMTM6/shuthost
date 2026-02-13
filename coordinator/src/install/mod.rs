@@ -1,6 +1,6 @@
 //! Coordinator installer: sets up the service to run the web control interface on boot.
 //!
-//! Supports systemd, OpenRC, and launchd based on target OS.
+//! Supports systemd, `OpenRC`, and launchd based on target OS.
 
 use std::{
     fs::File,
@@ -106,7 +106,9 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
     shuthost_common::macos::install_self_as_service(name, &bind_known_vals(SERVICE_FILE_TEMPLATE))
         .map_err(eyre::Report::msg)?;
 
-    if !Path::new(&config_location).exists() {
+    if Path::new(&config_location).exists() {
+        println!("Config file already exists at {config_location:?}, not overwriting.");
+    } else {
         let created_dir = if let Some(parent_dir) = config_location.parent()
             && !parent_dir.exists()
         {
@@ -155,8 +157,6 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
         )?;
 
         println!("Chowned config file at {config_location:?} for {user}",);
-    } else {
-        println!("Config file already exists at {config_location:?}, not overwriting.");
     }
 
     #[cfg(target_os = "macos")]

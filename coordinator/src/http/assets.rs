@@ -1,4 +1,4 @@
-//! Static asset serving for the coordinator WebUI.
+//! Static asset serving for the coordinator `WebUI`.
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
@@ -125,7 +125,7 @@ pub(crate) fn routes() -> Router<AppState> {
         )
 }
 
-/// Macro to define a static SVG download handler using include_bytes!
+/// Macro to define a static SVG download handler using `include_bytes`!
 macro_rules! static_svg_download_handler {
     (fn $name:ident, file=$file:expr) => {
         #[axum::debug_handler]
@@ -192,7 +192,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             // frontend demo code can adapt links and installer commands.
             include_utf8_asset!("partials/demo_disclaimer.html").replace("{ subpath }", subpath)
         }
-        _ => "".to_string(),
+        _ => String::new(),
     };
     let maybe_auth_warning = match *mode {
         UiMode::Normal {

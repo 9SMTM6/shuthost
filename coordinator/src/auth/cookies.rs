@@ -61,7 +61,7 @@ impl TokenSessionClaims {
 pub(crate) struct OIDCSessionClaims {
     /// The sub claim, a unique user identifier
     pub sub: String,
-    /// The expiry as provided by the IdP, after which shuthost should reject the session. Unix second timestamp
+    /// The expiry as provided by the `IdP`, after which shuthost should reject the session. Unix second timestamp
     pub exp: u64,
 }
 
@@ -176,8 +176,7 @@ pub(crate) fn extract_return_to_and_remove_cookie(
 ) -> (String, SignedCookieJar) {
     let return_to = jar
         .get(COOKIE_RETURN_TO)
-        .map(|c| c.value().to_string())
-        .unwrap_or_else(|| "/".to_string());
+        .map_or_else(|| "/".to_string(), |c| c.value().to_string());
     let jar = jar.remove(Cookie::build(COOKIE_RETURN_TO).path("/").build());
     (return_to, jar)
 }

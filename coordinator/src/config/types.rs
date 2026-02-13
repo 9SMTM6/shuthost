@@ -102,10 +102,10 @@ impl Default for TlsConfig {
     }
 }
 
-/// Configuration for an optional local SQLite database.
+/// Configuration for an optional local `SQLite` database.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub(crate) struct DbConfig {
-    /// Path to the SQLite database file. Relative paths are resolved relative to the config file.
+    /// Path to the `SQLite` database file. Relative paths are resolved relative to the config file.
     #[serde(default = "default_db_path")]
     pub path: String,
     /// Whether the local DB is enabled. When false the coordinator will act as if
@@ -172,8 +172,7 @@ pub fn resolve_config_relative_paths(config_path: &Path, relative_path: &str) ->
     } else {
         config_path
             .parent()
-            .map(|d| d.join(path))
-            .unwrap_or_else(|| path.to_path_buf())
+            .map_or_else(|| path.to_path_buf(), |d| d.join(path))
     };
 
     // Normalize the path to remove redundant ./ components
@@ -214,7 +213,7 @@ pub(crate) enum AuthMode {
     /// The token persists across restarts when a database is configured, otherwise it's regenerated each startup.
     /// For security, the token is only logged during initial generation, not when loaded from database.
     Token { token: Option<Arc<SecretString>> },
-    /// OpenID Connect login via authorization code flow
+    /// `OpenID` Connect login via authorization code flow
     Oidc {
         issuer: String,
         #[serde(default = "default_oidc_client_id")]

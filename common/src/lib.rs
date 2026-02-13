@@ -51,6 +51,7 @@ impl<T: ToString, E> UnwrapToStringExt for Result<T, E> {
 }
 
 /// Returns `true` if the system uses systemd (detects `/run/systemd/system`).
+#[must_use]
 pub fn is_systemd() -> bool {
     std::path::Path::new("/run/systemd/system").exists()
 }

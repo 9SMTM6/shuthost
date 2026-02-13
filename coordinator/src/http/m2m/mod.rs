@@ -140,7 +140,7 @@ async fn handle_m2m_lease_action(
             &state.hoststatus_tx,
         )
         .await?;
-    };
+    }
     Ok(match (action, is_async) {
         (LA::Take, true) => "Lease taken (async)",
         (LA::Take, false) => "Lease taken, host is online",

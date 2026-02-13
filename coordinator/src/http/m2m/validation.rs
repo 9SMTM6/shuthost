@@ -6,7 +6,7 @@ use tracing::{info, warn};
 
 use crate::{http::AppState, http::api::LeaseAction};
 
-/// Validates M2M lease action request headers and returns (client_id, LeaseAction)
+/// Validates M2M lease action request headers and returns (`client_id`, `LeaseAction`)
 pub(crate) fn validate_m2m_request(
     headers: &axum::http::HeaderMap,
     state: &AppState,

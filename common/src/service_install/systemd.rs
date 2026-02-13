@@ -14,6 +14,7 @@ use std::{
 use crate::{ResultMapErrExt, is_superuser};
 
 /// Returns the systemd service file path for the given service name.
+#[must_use]
 pub fn get_service_path(name: &str) -> String {
     format!("/etc/systemd/system/{name}.service")
 }

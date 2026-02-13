@@ -1,6 +1,6 @@
 //! Fake library entry for the `host_agent` crate.
 //!
-//! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and WoL testing.
+//! Houses the command-line interface for the `host_agent` binary, handling install, service launch, and `WoL` testing.
 
 mod commands;
 mod install;
@@ -15,7 +15,7 @@ use clap::{Parser, Subcommand};
 
 use server::ServiceOptions;
 
-/// Top-level CLI parser for host_agent.
+/// Top-level CLI parser for `host_agent`.
 #[derive(Debug, Parser)]
 #[command(name = env!("CARGO_PKG_NAME"))]
 #[command(version = env!("CARGO_PKG_VERSION"))]
@@ -26,16 +26,16 @@ pub struct Cli {
     pub command: Command,
 }
 
-/// Default UDP port on which the host_agent listens for commands.
+/// Default UDP port on which the `host_agent` listens for commands.
 pub const DEFAULT_PORT: u16 = 5757;
 
-/// Subcommands available for host_agent execution.
+/// Subcommands available for `host_agent` execution.
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Start the host_agent as a background service.
+    /// Start the `host_agent` as a background service.
     Service(ServiceOptions),
 
-    /// Install the host_agent on the system.
+    /// Install the `host_agent` on the system.
     Install(install::Args),
 
     /// Test Wake-on-LAN packet reachability on a given port.
@@ -48,7 +48,7 @@ pub enum Command {
     /// Print the registration configuration for the installed agent.
     Registration(registration::Args),
 
-    /// Generate a shuthost_direct_control script for this host_agent.
+    /// Generate a `shuthost_direct_control` script for this `host_agent`.
     #[clap(visible_alias = "gdc")]
     GenerateDirectControl(script_generator::Args),
 }
@@ -56,14 +56,14 @@ pub enum Command {
 pub fn inner_main(invocation: Cli) {
     match invocation.command {
         Command::Install(args) => match install::install_host_agent(&args) {
-            Ok(_) => println!("Agent installed successfully!"),
+            Ok(()) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),
         },
         Command::Service(args) => {
             server::start_host_agent(args);
         }
         Command::TestWol { port } => match install::test_wol_reachability(port) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(e) => eprintln!("Error during WoL test: {e}"),
         },
         Command::Registration(args) => match registration::parse_config(&args) {
@@ -74,7 +74,7 @@ pub fn inner_main(invocation: Cli) {
         },
         Command::GenerateDirectControl(args) => {
             match script_generator::write_control_script(&args) {
-                Ok(_) => (),
+                Ok(()) => (),
                 Err(e) => eprintln!("Error generating direct control script: {e}"),
             }
         }

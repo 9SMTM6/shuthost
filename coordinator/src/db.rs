@@ -1,6 +1,6 @@
 //! Database operations for persisting application state.
 //!
-//! This module handles SQLite database operations for persisting leases and other state.
+//! This module handles `SQLite` database operations for persisting leases and other state.
 
 use std::{collections::HashMap, path::Path};
 
@@ -70,11 +70,11 @@ fn check_file_permissions(path: &Path, expected_mode: u32) {
     }
 }
 
-/// Creates or opens the SQLite database and runs migrations.
+/// Creates or opens the `SQLite` database and runs migrations.
 ///
 /// # Arguments
 ///
-/// * `db_path` - Path to the SQLite database file.
+/// * `db_path` - Path to the `SQLite` database file.
 ///
 /// # Returns
 ///
@@ -387,7 +387,7 @@ pub(crate) async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
 ///
 /// # Returns
 ///
-/// A map of client_id to ClientStats.
+/// A map of `client_id` to `ClientStats`.
 ///
 /// # Errors
 ///
@@ -446,7 +446,7 @@ pub(crate) async fn get_client_stats(
     }))
 }
 
-/// Updates the last_used timestamp for a client.
+/// Updates the `last_used` timestamp for a client.
 ///
 /// # Arguments
 ///

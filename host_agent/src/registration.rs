@@ -16,13 +16,13 @@ fn parse_config_from_path(
 ) -> Result<ServiceConfig, String> {
     let path = get_path_fn(BINARY_NAME);
     let content =
-        std::fs::read_to_string(&path).map_err_to_string(&format!("Failed to read {}", path))?;
+        std::fs::read_to_string(&path).map_err_to_string(&format!("Failed to read {path}"))?;
     parse_content_fn(&content)
 }
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    /// The init system used by the host_agent installation.
+    /// The init system used by the `host_agent` installation.
     /// The service files will be parsed to extract the registration configuration.
     #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
@@ -43,17 +43,17 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::SelfExtractingPwsh => args
             .script_path
             .clone()
-            .unwrap_or_to_string(&format!("{}_self_extracting.ps1", BINARY_NAME)),
+            .unwrap_or_to_string(&format!("{BINARY_NAME}_self_extracting.ps1")),
         #[cfg(unix)]
         InitSystem::SelfExtractingShell => args
             .script_path
             .clone()
-            .unwrap_or_to_string(&format!("{}_self_extracting.sh", BINARY_NAME)),
+            .unwrap_or_to_string(&format!("{BINARY_NAME}_self_extracting.sh")),
         _ => {
             if args.script_path.is_some() {
                 return Err("Script path is only valid for SelfExtracting* init system".to_string());
             }
-            "".to_string()
+            String::new()
         }
     };
 
@@ -201,7 +201,7 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
 #[cfg(unix)]
 fn parse_self_extracting_shell_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
-        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {}", path))?;
+        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {path}"))?;
 
     parse_self_extracting_shell_content(&content)
 }
@@ -231,7 +231,7 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
 
 fn parse_self_extracting_pwsh_config(path: &str) -> Result<ServiceConfig, String> {
     let content =
-        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {}", path))?;
+        std::fs::read_to_string(path).map_err_to_string(&format!("Failed to read {path}"))?;
 
     parse_self_extracting_pwsh_content(&content)
 }

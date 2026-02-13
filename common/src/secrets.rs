@@ -8,6 +8,7 @@ use rand::Rng;
 /// Generates a random secret string suitable for use as an HMAC key.
 ///
 /// Returns a 32-character alphanumeric string.
+#[must_use]
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
