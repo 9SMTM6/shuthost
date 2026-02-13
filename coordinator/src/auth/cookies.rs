@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum_extra::extract::{SignedCookieJar, cookie::Cookie};
 use cookie::{SameSite, time::Duration as CookieDuration};
-use rand::{Rng as _, distr::Alphanumeric};
+use rand::{RngExt as _, distr::Alphanumeric};
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};

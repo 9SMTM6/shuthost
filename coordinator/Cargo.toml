@@ -117,12 +117,12 @@ handlebars = "6.3.2"
 hex.workspace = true
 krates = "0.20.0"
 regex.workspace = true
-resvg = "0.46.0"
+resvg = "0.47"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2.workspace = true
 spdx = { version = "0.13", features = ["text"] }
 # stuck at outdated because of resvg
-tiny-skia = "0.11"
+tiny-skia = "0.12"
 toml.workspace = true
 url = { version = "2", features = ["serde"] }

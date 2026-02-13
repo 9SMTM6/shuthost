@@ -4,7 +4,7 @@
 //! secure random secrets suitable for use as HMAC keys.
 
 use core::iter;
-use rand::{Rng as _, distr, rng};
+use rand::{RngExt as _, distr, rng};
 
 /// Generates a random secret string suitable for use as an HMAC key.
 ///

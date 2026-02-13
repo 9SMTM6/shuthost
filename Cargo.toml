@@ -84,7 +84,7 @@ futures = "0.3.31"
 hex = "0.4.3"
 hmac = "0.12.1"
 nix = { version = "0.31", features = ["user", "fs"] }
-rand = "0.9.x"
+rand = "0.10.x"
 regex = "1.11.1"
 reqwest = { version = "0.12", default-features = false, features = [
     "rustls-tls",
@@ -95,7 +95,7 @@ shuthost_common = { path = "./common" }
 shuthost_coordinator = { path = "./coordinator" }
 shuthost_host_agent = { path = "./host_agent" }
 tokio = { version = "1.44.2", features = ["full"] }
-toml = "0.9.x"
+toml = "1.x"
 
 [workspace.lints.rust]
 edition_2024_expr_fragment_specifier = "allow"
