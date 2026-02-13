@@ -47,17 +47,17 @@ jobs:
             prepare: true
             name_suffix: Alpine
     steps:
+      - name: Prepare Alpine
+        if: matrix.prepare
+        run: |
+          apk add --no-cache curl doas github-cli git bash
+          echo "permit nopass root" >> /etc/doas.conf
       - &checkout
         if: github.event_name == 'workflow_run'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha }}
-      - name: Prepare Alpine
-        if: matrix.prepare
-        run: |
-          apk add --no-cache curl doas github-cli git bash
-          echo "permit nopass root" >> /etc/doas.conf
       - &set_tag
         name: Set tag
         shell: bash
