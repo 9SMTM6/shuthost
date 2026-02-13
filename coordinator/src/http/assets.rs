@@ -162,14 +162,14 @@ macro_rules! static_png_download_handler {
 }
 
 /// HTML rendering mode for the UI template
-pub(crate) enum UiMode<'a> {
+pub(crate) enum UiMode<'params> {
     Normal {
-        config_path: &'a std::path::Path,
+        config_path: &'params std::path::Path,
         show_logout: bool,
-        maybe_auth_warning: &'a str,
+        maybe_auth_warning: &'params str,
     },
     Demo {
-        subpath: &'a str,
+        subpath: &'params str,
     },
 }
 

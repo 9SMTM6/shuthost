@@ -12,8 +12,8 @@ use rand::Rng as _;
 pub fn generate_secret() -> String {
     // Simple random secret generation: 32 characters
     let mut rng = rand::rng();
-    (0..32)
-        .map(|_| rng.sample(rand::distr::Alphanumeric) as char)
+    std::iter::repeat_with(|| rng.sample(rand::distr::Alphanumeric) as char)
+        .take(32)
         .collect()
 }
 

@@ -227,16 +227,16 @@ pub(crate) struct LayerState {
 }
 
 impl FromRef<AppState> for LayerState {
-    fn from_ref(state: &AppState) -> Self {
+    fn from_ref(input: &AppState) -> Self {
         Self {
-            auth: state.auth.clone(),
+            auth: input.auth.clone(),
         }
     }
 }
 
 impl FromRef<AppState> for Key {
-    fn from_ref(state: &AppState) -> Self {
-        state.auth.cookie_key.clone()
+    fn from_ref(input: &AppState) -> Self {
+        input.auth.cookie_key.clone()
     }
 }
 

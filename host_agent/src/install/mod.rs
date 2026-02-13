@@ -61,7 +61,7 @@ pub struct Args {
 }
 
 /// Supported init systems for installing the `host_agent`.
-#[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq)]
+#[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq, Eq)]
 pub enum InitSystem {
     /// Systemd init system (Linux).
     #[cfg(target_os = "linux")]
@@ -121,7 +121,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         #[cfg(unix)]
         InitSystem::SelfExtractingShell => install_self_extracting_shell(name, bind_known_vals)?,
         InitSystem::SelfExtractingPwsh => {
-            install_self_extracting_pwsh(name, arguments, bind_known_vals)?
+            install_self_extracting_pwsh(name, arguments, bind_known_vals)?;
         }
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => install_launchd(name, &bind_known_vals)?,

@@ -9,7 +9,7 @@ use crate::signing::{sign_hmac, unix_time_seconds};
 pub const ALLOWED_WINDOW: u64 = 30; // Seconds
 
 /// Result of validating an HMAC-signed message.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum HmacValidationResult {
     /// The HMAC and timestamp are valid; contains the original message.
     Valid(String),

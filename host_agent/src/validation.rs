@@ -7,7 +7,7 @@ use crate::server::ServiceOptions;
 use shuthost_common::validate_hmac_message;
 
 /// Possible actions the agent can take after validating a request.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Action {
     /// No special action; just respond.
     None,
