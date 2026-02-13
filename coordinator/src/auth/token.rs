@@ -52,7 +52,11 @@ pub(crate) async fn login_post(
             let claims = TokenSessionClaims::new((*expected).expose_secret());
             let cookie = create_token_session_cookie(
                 &claims,
-                cookie::time::Duration::seconds((claims.exp - claims.iat) as i64),
+                cookie::time::Duration::seconds(
+                    (claims.exp - claims.iat)
+                        .try_into()
+                        .expect("session expiration is impossibly high"),
+                ),
             );
             let jar = jar.add(cookie);
             let (return_to, jar) = extract_return_to_and_remove_cookie(jar);

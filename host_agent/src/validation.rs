@@ -53,12 +53,9 @@ pub enum Action {
 /// ```
 #[must_use]
 pub fn validate_request(data: &[u8], config: &ServiceOptions, peer_addr: &str) -> (String, Action) {
-    let data_str = match std::str::from_utf8(data) {
-        Ok(s) => s,
-        Err(_) => {
-            eprintln!("Invalid UTF-8 in request from {peer_addr}: {data:?}");
-            return ("ERROR: Invalid UTF-8".to_string(), Action::None);
-        }
+    let Ok(data_str) = std::str::from_utf8(data) else {
+        eprintln!("Invalid UTF-8 in request from {peer_addr}: {data:?}");
+        return ("ERROR: Invalid UTF-8".to_string(), Action::None);
     };
 
     match validate_hmac_message(

@@ -20,6 +20,10 @@ pub fn generate_pngs() -> eyre::Result<()> {
 
     // sizes to emit: favicons, apple-touch, and PWA sizes
     let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "scaling factor does not need to be exact"
+    )]
     let scaling_sizes = sizes.map(|it| it as f32 / 400.0);
 
     for (&size, scaling) in sizes.iter().zip(scaling_sizes) {

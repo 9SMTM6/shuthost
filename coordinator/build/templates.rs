@@ -137,7 +137,7 @@ pub fn process() -> eyre::Result<()> {
     let styles_css = fs::read_to_string("../frontend/assets/generated/styles.css")
         .wrap_err("Failed to read generated styles.css")?;
     let styles_short_hash = short_hash(styles_css.as_bytes());
-    let styles_integrity = generate_encoded_hash(&styles_css)?;
+    let styles_integrity = generate_encoded_hash(&styles_css);
 
     let favicon_short_hash = short_hash(include_frontend_asset!("favicon.svg").as_bytes());
 
@@ -286,8 +286,8 @@ pub fn process() -> eyre::Result<()> {
     Ok(())
 }
 
-fn generate_encoded_hash(content: impl AsRef<[u8]>) -> eyre::Result<String> {
+fn generate_encoded_hash(content: impl AsRef<[u8]>) -> String {
     let hash = Sha256::digest(content);
     let hash_b64 = general_purpose::STANDARD.encode(hash);
-    Ok(format!("sha256-{hash_b64}"))
+    format!("sha256-{hash_b64}")
 }

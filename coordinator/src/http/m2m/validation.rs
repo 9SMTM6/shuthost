@@ -10,7 +10,7 @@ use crate::{http::AppState, http::api::LeaseAction};
 pub(crate) fn validate_m2m_request(
     headers: &axum::http::HeaderMap,
     state: &AppState,
-    expected_action: &LeaseAction,
+    expected_action: LeaseAction,
 ) -> Result<String, (StatusCode, &'static str)> {
     let client_id = headers
         .get("X-Client-ID")
@@ -59,7 +59,7 @@ pub(crate) fn validate_m2m_request(
     let command_action: LeaseAction = serde_plain::from_str(&command)
         .map_err(|_| (StatusCode::BAD_REQUEST, "Invalid action in X-Request"))?;
 
-    if &command_action != expected_action {
+    if command_action != expected_action {
         return Err((StatusCode::BAD_REQUEST, "Action mismatch"));
     }
 

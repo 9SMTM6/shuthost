@@ -229,13 +229,13 @@ fn clear_oidc_ephemeral_cookies(jar: SignedCookieJar) -> SignedCookieJar {
 /// Verify state (present in query params and matches cookies)
 fn validate_state_or_redirect(
     jar: &SignedCookieJar,
-    state_param: &Option<String>,
+    state_param: Option<&String>,
 ) -> Option<Response> {
     let Some(state_cookie) = jar.get(COOKIE_STATE) else {
         tracing::warn!("OIDC callback missing state cookie");
         return Some(login_error_response());
     };
-    let Some(state_param) = state_param.as_deref() else {
+    let Some(state_param) = state_param else {
         tracing::warn!("OIDC callback missing state param");
         return Some(login_error_response());
     };
@@ -262,8 +262,12 @@ fn finalize_session_and_redirect(jar: SignedCookieJar, session: &OIDCSessionClai
         .expect("system time is before the UNIX epoch")
         .as_secs();
     let session_exp_seconds = session.exp.saturating_sub(now);
-    let session_max_age =
-        CookieDuration::seconds(session_exp_seconds as i64).min(CookieDuration::days(7));
+    let session_max_age = CookieDuration::seconds(
+        session_exp_seconds
+            .try_into()
+            .expect("session expiration is impossibly high"),
+    )
+    .min(CookieDuration::days(7));
     let jar =
         clear_oidc_ephemeral_cookies(jar).add(create_oidc_session_cookie(session, session_max_age));
 
@@ -274,7 +278,7 @@ fn finalize_session_and_redirect(jar: SignedCookieJar, session: &OIDCSessionClai
 /// If provider returned an error, bounce back to login with message
 fn handle_provider_error(
     error: Option<String>,
-    error_description: &Option<String>,
+    error_description: Option<&String>,
     jar: SignedCookieJar,
 ) -> Option<Response> {
     if let Some(err) = error {
@@ -342,7 +346,11 @@ fn verify_id_token_and_build_session(
         }
     };
     let sub = claims.subject().to_string();
-    let exp = claims.expiration().timestamp() as u64;
+    let exp = claims
+        .expiration()
+        .timestamp()
+        .try_into()
+        .expect("time should not move backwards");
     Ok(OIDCSessionClaims { sub, exp })
 }
 
@@ -392,11 +400,11 @@ pub(crate) async fn callback(
         return Redirect::to("/").into_response();
     };
 
-    if let Some(resp) = validate_state_or_redirect(&jar, &state) {
+    if let Some(resp) = validate_state_or_redirect(&jar, state.as_ref()) {
         return resp;
     }
 
-    if let Some(resp) = handle_provider_error(error, &error_description, jar.clone()) {
+    if let Some(resp) = handle_provider_error(error, error_description.as_ref(), jar.clone()) {
         return resp;
     }
 
@@ -435,7 +443,7 @@ mod tests {
         let jar = SignedCookieJar::new(key);
         let jar = jar.add(Cookie::new(COOKIE_STATE, "different_state"));
         let state_param = Some("test_state".to_string());
-        let result = validate_state_or_redirect(&jar, &state_param);
+        let result = validate_state_or_redirect(&jar, state_param.as_ref());
         assert!(result.is_some());
     }
 
@@ -445,7 +453,7 @@ mod tests {
         let jar = SignedCookieJar::new(key);
         let error = Some("access_denied".to_string());
         let error_description = Some("User denied access".to_string());
-        let result = handle_provider_error(error, &error_description, jar);
+        let result = handle_provider_error(error, error_description.as_ref(), jar);
         assert!(result.is_some());
     }
 
@@ -455,7 +463,7 @@ mod tests {
         let jar = SignedCookieJar::new(key);
         let error = None;
         let error_description = None;
-        let result = handle_provider_error(error, &error_description, jar);
+        let result = handle_provider_error(error, error_description.as_ref(), jar);
         assert!(result.is_none());
     }
 

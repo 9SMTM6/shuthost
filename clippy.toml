@@ -1,2 +1,4 @@
 cognitive-complexity-threshold = 50
 allow-unwrap-in-tests = true
+# we're not publishing this code as crates
+avoid-breaking-exported-api = false

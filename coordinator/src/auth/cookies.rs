@@ -30,10 +30,10 @@ pub(crate) struct TokenSessionClaims {
 impl TokenSessionClaims {
     pub(crate) fn new(token: &str) -> Self {
         let now = now_ts();
-        let exp_duration: i64 = 60 * 60 * 8; // 8 hours expiry
+        let exp_duration = 60 * 60 * 8; // 8 hours expiry
         Self {
             iat: now,
-            exp: now + exp_duration as u64,
+            exp: now + exp_duration,
             token_hash: {
                 let mut hasher = Sha256::new();
                 hasher.update(token.as_bytes());

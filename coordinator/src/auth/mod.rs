@@ -121,7 +121,7 @@ impl Runtime {
         cfg: &AuthConfig,
         db_pool: Option<&DbPool>,
     ) -> eyre::Result<Self> {
-        let cookie_key = setup_cookie_key(&cfg.cookie_secret, db_pool).await?;
+        let cookie_key = setup_cookie_key(cfg.cookie_secret.as_ref(), db_pool).await?;
         let mode = resolve_auth_mode(&cfg.mode, db_pool).await?;
 
         Ok(Self { mode, cookie_key })
@@ -130,10 +130,10 @@ impl Runtime {
 
 /// Set up the cookie key from config or database.
 async fn setup_cookie_key(
-    cookie_secret: &Option<Arc<SecretString>>,
+    cookie_secret: Option<&Arc<SecretString>>,
     db_pool: Option<&DbPool>,
 ) -> eyre::Result<Key> {
-    if let &Some(ref cookie_secret_val) = cookie_secret {
+    if let Some(cookie_secret_val) = cookie_secret {
         // Configured cookie secret - remove any stored value to avoid confusion
         if let Some(pool) = db_pool {
             info!(
@@ -157,7 +157,7 @@ async fn setup_cookie_key(
 async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::Result<Resolved> {
     match *mode {
         AuthMode::None => Ok(Resolved::Disabled),
-        AuthMode::Token { ref token } => resolve_token_auth(token, db_pool).await,
+        AuthMode::Token { ref token } => resolve_token_auth(token.as_ref(), db_pool).await,
         AuthMode::Oidc {
             ref issuer,
             ref client_id,
@@ -181,10 +181,10 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
 
 /// Resolve token authentication mode.
 async fn resolve_token_auth(
-    config_token: &Option<Arc<SecretString>>,
+    config_token: Option<&Arc<SecretString>>,
     db_pool: Option<&DbPool>,
 ) -> eyre::Result<Resolved> {
-    let token = if let &Some(ref cfg_token) = config_token {
+    let token = if let Some(cfg_token) = config_token {
         // Configured token - remove any stored value to avoid confusion
         if let Some(pool) = db_pool {
             delete_kv(pool, KV_AUTH_TOKEN).await?;

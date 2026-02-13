@@ -192,7 +192,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             // frontend demo code can adapt links and installer commands.
             include_utf8_asset!("partials/demo_disclaimer.html").replace("{ subpath }", subpath)
         }
-        _ => String::new(),
+        UiMode::Normal { .. } => String::new(),
     };
     let maybe_auth_warning = match *mode {
         UiMode::Normal {
