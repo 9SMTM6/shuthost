@@ -5,7 +5,7 @@
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/main.yaml?label=build%20%26%20test)](https://github.com/9SMTM6/shuthost/actions/workflows/main.yaml)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/qa.yaml?label=QA)](https://github.com/9SMTM6/shuthost/actions/workflows/qa.yaml)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/release-test.yaml?label=release%20test)](https://github.com/9SMTM6/shuthost/actions/workflows/release-test.yaml)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/pages-deployment.yaml?label=demo%20deployment)](https://9SMTM6.github.io/shuthost/)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/9SMTM6/shuthost/pages-deployment.yaml?label=demo%20tests)](https://github.com/9SMTM6/shuthost/actions/workflows/pages-deployment.yaml)
 
 A neat helper that manages the standby state of unix and windows hosts with Wake-On-Lan (WOL) configured, with Web-GUI.
 
