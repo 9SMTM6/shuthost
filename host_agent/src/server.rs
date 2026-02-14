@@ -82,7 +82,7 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
 
 fn broadcast_startup(config: &ServiceOptions, port: u16) {
     let signed_message = create_signed_message(&format!("{}:online", config.hostname), config.shared_secret.as_ref().unwrap());
-    match create_broadcast_socket(0) {
+    match shuthost_common::create_broadcast_socket(0) {
         Ok(socket) => {
             let broadcast_addr = format!("255.255.255.255:{}", port);
             if let Err(e) = socket.send_to(signed_message.as_bytes(), &broadcast_addr) {
@@ -134,16 +134,4 @@ pub(crate) fn get_default_shutdown_command() -> String {
     return "shutdown -h now".to_string();
     #[cfg(target_os = "windows")]
     return "shutdown /s /t 0".to_string();
-}
-
-/// Creates a UDP socket configured for broadcasting on the specified port.
-///
-/// Binds to the given port on all interfaces and enables broadcasting.
-/// Returns the socket if successful, or an error message if binding or setting broadcast fails.
-pub(crate) fn create_broadcast_socket(port: u16) -> Result<std::net::UdpSocket, String> {
-    let socket = std::net::UdpSocket::bind(format!("0.0.0.0:{port}"))
-        .map_err(|e| format!("Failed to bind socket on port {port}: {e}"))?;
-    socket.set_broadcast(true)
-        .map_err(|e| format!("Failed to set broadcast on socket: {e}"))?;
-    Ok(socket)
 }

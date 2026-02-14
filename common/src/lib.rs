@@ -12,6 +12,7 @@ extern crate alloc;
 extern crate core;
 
 use core::fmt;
+use std::net::UdpSocket;
 use std::path;
 
 mod secrets;
@@ -54,6 +55,25 @@ impl<T: ToString, E> UnwrapToStringExt for Result<T, E> {
     fn unwrap_or_to_string(self, default: &str) -> String {
         self.map(|t| t.to_string()).unwrap_or(default.to_string())
     }
+}
+
+/// Creates a UDP socket configured for broadcasting on the specified port.
+///
+/// Binds to the given port on all interfaces and enables broadcasting.
+/// If port is 0, binds to any available port.
+/// Returns the socket if successful, or an error message if binding or setting broadcast fails.
+pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
+    let addr = if port == 0 {
+        "0.0.0.0:0".to_string()
+    } else {
+        format!("0.0.0.0:{port}")
+    };
+    let socket = UdpSocket::bind(&addr)
+        .map_err(|e| format!("Failed to bind socket on {addr}: {e}"))?;
+    socket
+        .set_broadcast(true)
+        .map_err(|e| format!("Failed to set broadcast on socket: {e}"))?;
+    Ok(socket)
 }
 
 /// Returns `true` if the system uses systemd (detects `/run/systemd/system`).

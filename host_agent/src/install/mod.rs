@@ -446,7 +446,7 @@ pub(crate) fn default_hostname() -> String {
 
 /// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
 pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
-    let socket = crate::server::create_broadcast_socket(port)?;
+    let socket = shuthost_common::create_broadcast_socket(port)?;
 
     println!("Listening for WOL test packets on port {port}...");
 

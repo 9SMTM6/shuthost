@@ -4,8 +4,6 @@
     expect(dead_code, reason = "For some reason clippy sets coverage cfg?")
 )]
 
-use std::net::UdpSocket;
-
 use core::time::Duration;
 use eyre::Context as _;
 
@@ -33,10 +31,8 @@ pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::
             .copy_from_slice(&mac_bytes);
     }
 
-    let socket = UdpSocket::bind("0.0.0.0:0").wrap_err("Failed to bind UDP socket")?;
-    socket
-        .set_broadcast(true)
-        .wrap_err("Failed to set broadcast on socket")?;
+    let socket = shuthost_common::create_broadcast_socket(0)
+        .map_err(|e| eyre::eyre!("Failed to create broadcast socket: {e}"))?;
 
     socket
         .send_to(&packet, format!("{broadcast_ip}:9"))
@@ -70,15 +66,11 @@ fn parse_mac(mac: &str) -> eyre::Result<[u8; MAC_ADDRESS_LENGTH]> {
 ///
 /// Returns an error if the socket cannot be bound or configured.
 pub(crate) fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
-    let socket = UdpSocket::bind("0.0.0.0:0").wrap_err("Failed to bind socket")?;
+    let socket = shuthost_common::create_broadcast_socket(0)
+        .map_err(|e| eyre::eyre!("Failed to create broadcast socket: {e}"))?;
     socket
         .set_read_timeout(Some(Duration::from_secs(1)))
         .wrap_err("Failed to set timeout")?;
-
-    // Test broadcast
-    socket
-        .set_broadcast(true)
-        .wrap_err("Failed to set broadcast")?;
 
     let test_message = b"SHUTHOST_WOL_TEST_BROADCAST";
     socket
