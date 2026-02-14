@@ -47,7 +47,7 @@ pub enum Action {
 /// # use secrecy::SecretString;
 ///
 /// let secret = SecretString::from("secret");
-/// # let args = ServiceOptions { port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.clone()) };
+/// # let args = ServiceOptions { port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.clone()), hostname: "test".to_string() };
 /// let signed = create_signed_message("status", &secret);
 /// let (resp, action) = validate_request(signed.as_bytes(), &args, "peer");
 /// assert_eq!(resp, "OK: status");
@@ -109,6 +109,7 @@ mod tests {
             port: 0,
             shutdown_command: "shutdown_cmd".to_string(),
             shared_secret: Some(secret),
+            hostname: "test_hostname".to_string(),
         }
     }
 

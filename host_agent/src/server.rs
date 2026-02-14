@@ -12,6 +12,7 @@ use shuthost_common::{create_signed_message, UnwrapToStringExt as _};
 
 use crate::{
     commands::execute_shutdown,
+    install::default_hostname,
     validation::{Action, validate_request},
 };
 
@@ -30,6 +31,10 @@ pub struct ServiceOptions {
     /// Usually set from environment variables, after parsing.
     #[clap(skip)]
     pub shared_secret: Option<SecretString>,
+
+    /// Hostname of this machine.
+    #[arg(long, short, default_value_t = default_hostname())]
+    pub hostname: String,
 }
 
 /// Starts the TCP listener and handles incoming client connections in sequence.
@@ -76,7 +81,7 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
 }
 
 fn broadcast_startup(config: &ServiceOptions, port: u16) {
-    let signed_message = create_signed_message("TBD needs some stable reference to the host, probably needs config update", config.shared_secret.as_ref().unwrap());
+    let signed_message = create_signed_message(&format!("{}:online", config.hostname), config.shared_secret.as_ref().unwrap());
     match create_broadcast_socket(0) {
         Ok(socket) => {
             let broadcast_addr = format!("255.255.255.255:{}", port);

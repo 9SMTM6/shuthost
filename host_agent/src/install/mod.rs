@@ -36,6 +36,7 @@ pub(crate) fn bind_template_replacements(
     port: u16,
     shutdown_command: &str,
     secret: &str,
+    hostname: &str,
 ) -> String {
     template
         .replace("{ description }", description)
@@ -43,6 +44,7 @@ pub(crate) fn bind_template_replacements(
         .replace("{ shutdown_command }", shutdown_command)
         .replace("{ secret }", secret)
         .replace("{ name }", BINARY_NAME)
+        .replace("{ hostname }", hostname)
 }
 
 /// Arguments for the `install` subcommand of `host_agent`.
@@ -59,6 +61,9 @@ pub struct Args {
 
     #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
+
+    #[arg(long, short, default_value_t = default_hostname())]
+    pub hostname: String,
 }
 
 /// Supported init systems for installing the `host_agent`.
@@ -111,6 +116,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             arguments.port,
             &arguments.shutdown_command,
             &arguments.shared_secret,
+            &arguments.hostname,
         )
     };
 
@@ -137,6 +143,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     registration::print_registration_config(&registration::ServiceConfig {
         secret: arguments.shared_secret.clone(),
         port: arguments.port,
+        hostname: arguments.hostname.clone(),
     });
 
     Ok(())
@@ -430,6 +437,11 @@ pub(crate) fn get_hostname() -> Option<String> {
         // Return only the subdomain (first part before dot), matching client_installer behavior
         Some(hostname.split('.').next().unwrap_or(&hostname).to_string())
     }
+}
+
+/// Returns the default hostname, using the system hostname if available, otherwise "unknown".
+pub(crate) fn default_hostname() -> String {
+    get_hostname().unwrap_or_else(|| "unknown".to_string())
 }
 
 /// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
