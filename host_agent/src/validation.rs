@@ -3,8 +3,7 @@
 //! This module provides functions for parsing and validating
 //! incoming HMAC-signed requests from the coordinator.
 
-use core::str;
-use std::str::FromStr;
+use core::str::{self, FromStr as _};
 
 use crate::server::ServiceOptions;
 use shuthost_common::{CoordinatorMessage, validate_hmac_message};
@@ -20,7 +19,10 @@ use shuthost_common::{CoordinatorMessage, validate_hmac_message};
 /// # Returns
 ///
 /// `Ok(action)` where `action` is `Some(CoordinatorMessage)` if an action is required, or `None` for status.
-/// `Err(message)` for validation or parsing errors.
+///
+/// # Errors
+///
+/// For validation or parsing errors.
 ///
 /// # Panics
 ///
@@ -42,7 +44,6 @@ use shuthost_common::{CoordinatorMessage, validate_hmac_message};
 /// let result = validate_request(signed.as_bytes(), &args);
 /// assert_eq!(result, Ok(CoordinatorMessage::Status));
 /// ```
-#[must_use]
 pub fn validate_request(
     data: &[u8],
     config: &ServiceOptions,

@@ -7,10 +7,18 @@ use std::{
 };
 
 use clap::Parser;
+use miniserde::json;
 use secrecy::SecretString;
-use shuthost_common::{CoordinatorMessage, UnwrapToStringExt as _, create_signed_message, protocol::StartupBroadcast};
+use shuthost_common::{
+    CoordinatorMessage, UnwrapToStringExt as _, create_signed_message, protocol::StartupBroadcast,
+};
 
-use crate::{commands::execute_shutdown, install::default_hostname, validation::validate_request, install::{get_default_interface, get_ip, get_mac}};
+use crate::{
+    commands::execute_shutdown,
+    install::default_hostname,
+    install::{get_default_interface, get_ip, get_mac},
+    validation::validate_request,
+};
 
 /// Configuration options for running the `host_agent` service.
 #[derive(Debug, Parser, Clone)]
@@ -97,7 +105,7 @@ fn broadcast_startup(config: &ServiceOptions, port: u16) {
         ip_address,
         timestamp,
     };
-    let message = miniserde::json::to_string(&broadcast);
+    let message = json::to_string(&broadcast);
     let signed_message = create_signed_message(
         &message,
         config
@@ -151,7 +159,7 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Option<Coord
             };
             if let Err(e) = stream.write_all(&response_bytes) {
                 eprintln!("Failed to write response to stream ({peer_addr}): {e}");
-            };
+            }
             action
         }
         Err(e) => {

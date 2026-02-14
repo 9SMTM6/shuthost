@@ -1,9 +1,8 @@
 //! Protocol types for agent-coordinator communication.
 //!
 //! - Agent-to-coordinator messages use miniserde for serialization (agent) and serde for deserialization (coordinator).
-//! - Coordinator-to-agent messages use miniserde for deserialization (agent) and serde for serialization (coordinator).
 
-use std::str::FromStr;
+use core::str::FromStr;
 
 #[cfg(feature = "agent")]
 use miniserde::Serialize as MiniSerialize;
@@ -44,10 +43,10 @@ macro_rules! define_enum_with_str {
             )*
         }
 
-        impl ToString for $name {
-            fn to_string(&self) -> String {
-                match self {
-                    $($name::$variant => $str.to_string(),)*
+        impl core::fmt::Display for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                match *self {
+                    $($name::$variant => write!(f, "{}", $str),)*
                 }
             }
         }
