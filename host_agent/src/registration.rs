@@ -3,8 +3,7 @@ use std::fs;
 use clap::Parser;
 
 use crate::install::{
-    BINARY_NAME, InitSystem, get_default_interface, get_inferred_init_system, get_ip,
-    get_mac,
+    BINARY_NAME, InitSystem, get_default_interface, get_inferred_init_system, get_ip, get_mac,
 };
 use shuthost_common::{ResultMapErrExt as _, UnwrapToStringExt as _};
 
@@ -12,12 +11,12 @@ const CONFIG_ENTRY: &str =
     r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
 
 /// Helper function to find and extract flag values from service file lines.
-/// 
+///
 /// # Arguments
 /// * `line` - The line to search in
 /// * `flag` - The flag name (without --)
 /// * `delimiter` - The delimiter string to stop at
-/// 
+///
 /// Returns the extracted value with quotes trimmed, or None if not found.
 fn find_flag_value(line: &str, flag: &str, delimiter: &str) -> Option<String> {
     let pattern = format!("--{flag}=");
@@ -142,8 +141,14 @@ fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
     }
 
     match (secret, port, hostname) {
-        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig { secret: s, port: p, hostname: h }),
-        _ => Err("Failed to parse secret, port, and hostname from systemd service file".to_string()),
+        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
+            secret: s,
+            port: p,
+            hostname: h,
+        }),
+        _ => {
+            Err("Failed to parse secret, port, and hostname from systemd service file".to_string())
+        }
     }
 }
 
@@ -180,7 +185,11 @@ fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
     }
 
     match (secret, port, hostname) {
-        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig { secret: s, port: p, hostname: h }),
+        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
+            secret: s,
+            port: p,
+            hostname: h,
+        }),
         _ => Err("Failed to parse secret, port, and hostname from openrc service file".to_string()),
     }
 }
@@ -243,9 +252,7 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
         let s = line.strip_prefix("$env:SHUTHOST_HOSTNAME = \"")?;
         s.strip_suffix("\"")
     }) else {
-        return Err(
-            "SHUTHOST_HOSTNAME not found in self-extracting PowerShell script".to_string(),
-        );
+        return Err("SHUTHOST_HOSTNAME not found in self-extracting PowerShell script".to_string());
     };
     let Some(port) = content.lines().find_map(|line| {
         let s = line
@@ -296,7 +303,11 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
     }
 
     match (secret, port, hostname) {
-        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig { secret: s, port: p, hostname: h }),
+        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
+            secret: s,
+            port: p,
+            hostname: h,
+        }),
         _ => Err("Failed to parse secret, port, and hostname from launchd plist file".to_string()),
     }
 }

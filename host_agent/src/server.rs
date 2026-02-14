@@ -8,7 +8,7 @@ use std::{
 
 use clap::Parser;
 use secrecy::SecretString;
-use shuthost_common::{create_signed_message, UnwrapToStringExt as _};
+use shuthost_common::{UnwrapToStringExt as _, create_signed_message};
 
 use crate::{
     commands::execute_shutdown,
@@ -81,10 +81,16 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
 }
 
 fn broadcast_startup(config: &ServiceOptions, port: u16) {
-    let signed_message = create_signed_message(&format!("{}:online", config.hostname), config.shared_secret.as_ref().unwrap());
+    let signed_message = create_signed_message(
+        &format!("{}:online", config.hostname),
+        config
+            .shared_secret
+            .as_ref()
+            .expect("Shared secret should be set by now"),
+    );
     match shuthost_common::create_broadcast_socket(0) {
         Ok(socket) => {
-            let broadcast_addr = format!("255.255.255.255:{}", port);
+            let broadcast_addr = format!("255.255.255.255:{port}");
             if let Err(e) = socket.send_to(signed_message.as_bytes(), &broadcast_addr) {
                 eprintln!("Failed to send startup broadcast: {e}");
             } else {

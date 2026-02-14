@@ -66,8 +66,8 @@ pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
     } else {
         format!("0.0.0.0:{port}")
     };
-    let socket = UdpSocket::bind(&addr)
-        .map_err(|e| format!("Failed to bind socket on {addr}: {e}"))?;
+    let socket =
+        UdpSocket::bind(&addr).map_err(|e| format!("Failed to bind socket on {addr}: {e}"))?;
     socket
         .set_broadcast(true)
         .map_err(|e| format!("Failed to set broadcast on socket: {e}"))?;
