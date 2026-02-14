@@ -12,6 +12,7 @@
 
 use clap::Parser as _;
 use secrecy::SecretString;
+use shuthost_common::CoordinatorMessage;
 use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;
 use std::io::Write;
@@ -54,7 +55,10 @@ impl Drop for KillOnDrop {
             } => {
                 // Send abort command to the agent
                 if let Ok(mut stream) = std::net::TcpStream::connect(("127.0.0.1", *port)) {
-                    let signed_message = shuthost_common::create_signed_message("abort", &secret);
+                    let signed_message = shuthost_common::create_signed_message(
+                        &CoordinatorMessage::Abort.to_string(),
+                        secret,
+                    );
                     drop(stream.write_all(signed_message.as_bytes()));
                 }
                 if let Some(handle) = thread.take() {
@@ -151,8 +155,10 @@ pub(crate) async fn wait_for_agent_ready(
         match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
             Ok(Ok(mut stream)) => {
                 // Send a proper status request like the coordinator does
-                let signed_message =
-                    shuthost_common::create_signed_message("status", shared_secret);
+                let signed_message = shuthost_common::create_signed_message(
+                    &CoordinatorMessage::Status.to_string(),
+                    shared_secret,
+                );
                 if stream.write_all(signed_message.as_bytes()).await.is_err() {
                     tokio::time::sleep(Duration::from_millis(100)).await;
                     continue;

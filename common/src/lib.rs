@@ -12,6 +12,7 @@ extern crate alloc;
 extern crate core;
 
 mod map_to_str;
+pub mod protocol;
 mod service_install;
 mod signing;
 mod validation;
@@ -19,6 +20,7 @@ mod validation;
 use std::{net::UdpSocket, path};
 
 pub use map_to_str::*;
+pub use protocol::*;
 pub use service_install::*;
 pub use signing::*;
 pub use validation::*;

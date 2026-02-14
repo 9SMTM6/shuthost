@@ -31,15 +31,15 @@ pub fn sign_hmac(message: &str, secret: &secrecy::SecretString) -> String {
 ///
 /// # Arguments
 ///
-/// * `command` - The command to sign.
+/// * `msg` - The message to sign.
 /// * `secret` - The secret key used for HMAC.
 ///
 /// # Returns
 ///
-/// A string of the form "timestamp|command|signature".
+/// A string of the form "timestamp|message|signature".
 #[must_use]
-pub fn create_signed_message(command: &str, secret: &secrecy::SecretString) -> String {
-    let message = format!("{}|{}", unix_time_seconds(), command);
+pub fn create_signed_message(msg: &str, secret: &secrecy::SecretString) -> String {
+    let message = format!("{}|{}", unix_time_seconds(), msg);
     format!("{}|{}", message, sign_hmac(&message, secret))
 }
 

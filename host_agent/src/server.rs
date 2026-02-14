@@ -8,13 +8,9 @@ use std::{
 
 use clap::Parser;
 use secrecy::SecretString;
-use shuthost_common::{UnwrapToStringExt as _, create_signed_message};
+use shuthost_common::{CoordinatorMessage, UnwrapToStringExt as _, create_signed_message};
 
-use crate::{
-    commands::execute_shutdown,
-    install::default_hostname,
-    validation::{Action, validate_request},
-};
+use crate::{commands::execute_shutdown, install::default_hostname, validation::validate_request};
 
 /// Configuration options for running the `host_agent` service.
 #[derive(Debug, Parser, Clone)]
@@ -62,15 +58,20 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
         match stream {
             Ok(stream) => {
                 let action = handle_client(stream, &config);
+                use CoordinatorMessage as M;
                 match action {
-                    Action::Shutdown => {
+                    Some(M::Shutdown) => {
+                        print!(
+                            "Shutdown requested. Executing shutdown command {}... ",
+                            config.shutdown_command
+                        );
                         execute_shutdown(&config).expect("failed to execute shutdown command");
                     }
-                    Action::Abort => {
+                    Some(M::Abort) => {
                         println!("Abort requested. Stopping host_agent service.");
                         break;
                     }
-                    Action::None => {}
+                    _ => {}
                 }
             }
             Err(e) => {
@@ -103,7 +104,7 @@ fn broadcast_startup(config: &ServiceOptions, port: u16) {
 
 /// Handles a client connection: reads data, invokes handler, writes response, and triggers shutdown if needed.
 /// Returns the action to take after handling the request.
-fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Action {
+fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Option<CoordinatorMessage> {
     let mut buffer = [0u8; 1024];
     let peer_addr = stream
         .peer_addr()
@@ -114,15 +115,32 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Action {
             let Some(data) = buffer.get(..size) else {
                 unreachable!("Read data size should always be valid, as its >= buffer size");
             };
-            let (response, action) = validate_request(data, config, &peer_addr);
-            if let Err(e) = stream.write_all(response.as_bytes()) {
+            use CoordinatorMessage as M;
+            let result = validate_request(data, config);
+            let (response_bytes, action) = match result {
+                Ok(M::Status) => (b"OK: status".to_vec(), None),
+                Ok(M::Shutdown) => (
+                    format!(
+                        "Now executing command: {}. Hopefully goodbye.",
+                        config.shutdown_command
+                    )
+                    .into_bytes(),
+                    Some(M::Shutdown),
+                ),
+                Ok(M::Abort) => (b"OK: aborting service".to_vec(), Some(M::Abort)),
+                Err(msg) => {
+                    eprintln!("Validation error from {peer_addr}: {msg}");
+                    (msg.as_bytes().to_vec(), None)
+                }
+            };
+            if let Err(e) = stream.write_all(&response_bytes) {
                 eprintln!("Failed to write response to stream ({peer_addr}): {e}");
-            }
+            };
             action
         }
         Err(e) => {
             eprintln!("Failed to read from stream ({peer_addr}): {e}");
-            Action::None
+            None
         }
     }
 }
