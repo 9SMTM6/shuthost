@@ -3,10 +3,6 @@
 //! This crate provides:
 //! - Timestamped HMAC message signing and validation
 //! - OS-specific service installation helpers
-#![expect(
-    clippy::missing_errors_doc,
-    reason = "The situation it maps to errors should be obvious."
-)]
 
 extern crate alloc;
 extern crate core;
@@ -30,6 +26,9 @@ pub use validation::*;
 /// Binds to the given port on all interfaces and enables broadcasting.
 /// If port is 0, binds to any available port.
 /// Returns the socket if successful, or an error message if binding or setting broadcast fails.
+/// 
+/// # Errors
+/// Returns `Err` if the socket cannot be bound or broadcast cannot be enabled.
 pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
     let addr = if port == 0 {
         "0.0.0.0:0".to_string()

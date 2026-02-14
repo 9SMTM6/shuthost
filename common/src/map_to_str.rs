@@ -1,3 +1,8 @@
+#![expect(
+    clippy::missing_errors_doc,
+    reason = "The situations these helper functions map to errors should be obvious."
+)]
+
 //! This module provides ext functions that avoid bloat of mapper functions at every call site that (IMO) artificially suppress function coverage.
 use core::fmt;
 
