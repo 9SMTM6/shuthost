@@ -10,7 +10,6 @@ use core::fmt;
 use shuthost_common::generate_secret;
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
-use std::net::UdpSocket;
 use std::process::Command;
 
 use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
@@ -435,12 +434,7 @@ pub(crate) fn get_hostname() -> Option<String> {
 
 /// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
 pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
-    let socket = UdpSocket::bind(format!("0.0.0.0:{port}"))
-        .map_err(|e| format!("Failed to bind test socket: {e}"))?;
-
-    socket
-        .set_broadcast(true)
-        .map_err(|e| format!("Failed to set broadcast: {e}"))?;
+    let socket = crate::server::create_broadcast_socket(port)?;
 
     println!("Listening for WOL test packets on port {port}...");
 
