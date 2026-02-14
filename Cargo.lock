@@ -3384,7 +3384,6 @@ dependencies = [
  "hex",
  "hmac",
  "nix",
- "rand 0.10.0",
  "secrecy",
  "sha2",
 ]
@@ -3443,6 +3442,7 @@ version = "1.5.11"
 dependencies = [
  "base64 0.22.1",
  "clap",
+ "rand 0.10.0",
  "secrecy",
  "shuthost_common",
 ]

@@ -5,12 +5,15 @@
 pub mod self_extracting;
 
 use alloc::string;
+use core::iter;
+use std::process::Command;
+
 use clap::{Parser, ValueEnum as _};
 use core::fmt;
-use shuthost_common::generate_secret;
+use rand::{RngExt as _, distr, rng};
+
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
-use std::process::Command;
 
 use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
 
@@ -28,6 +31,18 @@ pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str =
 #[cfg(unix)]
 pub(crate) const SELF_EXTRACTING_SHELL_TEMPLATE: &str = include_str!("self_extracting.tmpl.sh");
 pub(crate) const SELF_EXTRACTING_PWSH_TEMPLATE: &str = include_str!("self_extracting.tmpl.ps1");
+
+/// Generates a random secret string suitable for use as an HMAC key.
+///
+/// Returns a 32-character alphanumeric string.
+#[must_use]
+pub fn generate_secret() -> String {
+    // Simple random secret generation: 32 characters
+    let mut rng = rng();
+    iter::repeat_with(|| rng.sample(distr::Alphanumeric) as char)
+        .take(32)
+        .collect()
+}
 
 /// Binds template placeholders with actual values.
 pub(crate) fn bind_template_replacements(
@@ -462,4 +477,15 @@ pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_secret() {
+        let secret = generate_secret();
+        assert_eq!(secret.len(), 32);
+    }
 }

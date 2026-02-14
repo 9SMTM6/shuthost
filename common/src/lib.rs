@@ -15,12 +15,10 @@ use core::fmt;
 use std::net::UdpSocket;
 use std::path;
 
-mod secrets;
 mod service_install;
 mod signing;
 mod validation;
 
-pub use secrets::*;
 pub use service_install::*;
 pub use signing::*;
 pub use validation::*;
