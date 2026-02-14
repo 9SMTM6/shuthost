@@ -30,11 +30,7 @@ pub use validation::*;
 /// # Errors
 /// Returns `Err` if the socket cannot be bound or broadcast cannot be enabled.
 pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
-    let addr = if port == 0 {
-        "0.0.0.0:0".to_string()
-    } else {
-        format!("0.0.0.0:{port}")
-    };
+    let addr = format!("0.0.0.0:{port}");
     let socket =
         UdpSocket::bind(&addr).map_err(|e| format!("Failed to bind socket on {addr}: {e}"))?;
     socket
