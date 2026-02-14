@@ -58,6 +58,9 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Configure Git safe directory
+        if: github.event_name == 'workflow_run'
+        run: git config --global --add safe.directory /__w/shuthost/shuthost
       - &set_tag
         name: Set tag
         shell: bash
