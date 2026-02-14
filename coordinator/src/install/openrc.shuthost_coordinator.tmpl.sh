@@ -1,4 +1,5 @@
 #!/sbin/openrc-run
+# shellcheck disable=SC1008,SC2034
 
 supervisor=supervise-daemon
 name="{ name }"
