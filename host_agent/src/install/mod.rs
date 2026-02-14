@@ -62,7 +62,7 @@ pub struct Args {
     #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
-    #[arg(long, short, default_value_t = default_hostname())]
+    #[arg(long, short = 'n', default_value_t = default_hostname())]
     pub hostname: String,
 }
 

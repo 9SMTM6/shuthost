@@ -29,11 +29,11 @@ pub struct ServiceOptions {
 
     /// Shared secret for validating incoming HMAC-signed requests.
     /// Usually set from environment variables, after parsing.
-    #[clap(skip)]
+    #[arg(skip)]
     pub shared_secret: Option<SecretString>,
 
     /// Hostname of this machine.
-    #[arg(long, short, default_value_t = default_hostname())]
+    #[arg(long, short = 'n', default_value_t = default_hostname())]
     pub hostname: String,
 }
 
