@@ -10,15 +10,18 @@ use miniserde::Serialize as MiniSerialize;
 #[cfg(feature = "coordinator")]
 use serde::{Deserialize, Serialize};
 
-/// Message sent from agent to coordinator.
+/// Message sent from agent to coordinator on startup.
 #[derive(Debug, Clone, PartialEq, Eq)]
 // miniserde serialization for agent
 #[cfg_attr(feature = "agent", derive(MiniSerialize))]
 // serde deserialization for coordinator
 #[cfg_attr(feature = "coordinator", derive(Deserialize, Serialize))]
-pub struct AgentMessage {
+pub struct StartupBroadcast {
     pub hostname: String,
-    pub status: String,
+    pub agent_version: String,
+    pub port: u16,
+    pub mac_address: String,
+    pub ip_address: String,
     pub timestamp: u64,
 }
 

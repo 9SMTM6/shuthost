@@ -8,9 +8,9 @@ use std::{
 
 use clap::Parser;
 use secrecy::SecretString;
-use shuthost_common::{CoordinatorMessage, UnwrapToStringExt as _, create_signed_message};
+use shuthost_common::{CoordinatorMessage, UnwrapToStringExt as _, create_signed_message, protocol::StartupBroadcast};
 
-use crate::{commands::execute_shutdown, install::default_hostname, validation::validate_request};
+use crate::{commands::execute_shutdown, install::default_hostname, validation::validate_request, install::{get_default_interface, get_ip, get_mac}};
 
 /// Configuration options for running the `host_agent` service.
 #[derive(Debug, Parser, Clone)]
@@ -51,6 +51,8 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
         TcpListener::bind(&addr).unwrap_or_else(|_| panic!("Failed to bind port {addr}"));
     println!("Listening on {addr}");
 
+    // TODO: We need to actually separate between the port we send the broadcast on (and where the coordinator listens for them) and the port the agent listens on.
+    // This likely means we need to add this as config option on the coordinator, and add THAT port to the installation commands for agents.
     // Send UDP broadcast with signed announcement message
     broadcast_startup(&config, port);
 
@@ -82,8 +84,22 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
 }
 
 fn broadcast_startup(config: &ServiceOptions, port: u16) {
+    let interface = get_default_interface().unwrap_or_else(|| "unknown".to_string());
+    let ip_address = get_ip(&interface).unwrap_or_else(|| "unknown".to_string());
+    let mac_address = get_mac(&interface).unwrap_or_else(|| "unknown".to_string());
+    let agent_version = env!("CARGO_PKG_VERSION").to_string();
+    let timestamp = shuthost_common::unix_time_seconds();
+    let broadcast = StartupBroadcast {
+        hostname: config.hostname.clone(),
+        agent_version,
+        port: config.port,
+        mac_address,
+        ip_address,
+        timestamp,
+    };
+    let message = miniserde::json::to_string(&broadcast);
     let signed_message = create_signed_message(
-        &format!("{}:online", config.hostname),
+        &message,
         config
             .shared_secret
             .as_ref()
