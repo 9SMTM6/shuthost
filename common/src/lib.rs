@@ -11,7 +11,8 @@
 extern crate alloc;
 extern crate core;
 
-use std::{net::UdpSocket, path};
+use core::fmt;
+use std::path;
 
 mod secrets;
 mod service_install;
@@ -23,22 +24,36 @@ pub use service_install::*;
 pub use signing::*;
 pub use validation::*;
 
-/// Creates a UDP socket configured for broadcasting on the specified port.
-///
-/// Binds to the given port on all interfaces and enables broadcasting.
-/// If port is 0, binds to any available port.
-/// Returns the socket if successful, or an error message if binding or setting broadcast fails.
-///
-/// # Errors
-/// Returns `Err` if the socket cannot be bound or broadcast cannot be enabled.
-pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
-    let addr = format!("0.0.0.0:{port}");
-    let socket =
-        UdpSocket::bind(&addr).map_err(|e| format!("Failed to bind socket on {addr}: {e}"))?;
-    socket
-        .set_broadcast(true)
-        .map_err(|e| format!("Failed to set broadcast on socket: {e}"))?;
-    Ok(socket)
+/// Extension traits for error handling to improve code coverage.
+pub trait ResultMapErrExt<T> {
+    fn map_err_to_string(self, prefix: &str) -> Result<T, String>;
+    fn map_err_to_string_simple(self) -> Result<T, String>;
+}
+
+impl<T, E: fmt::Display> ResultMapErrExt<T> for Result<T, E> {
+    fn map_err_to_string(self, prefix: &str) -> Result<T, String> {
+        self.map_err(|e| format!("{prefix}: {e}"))
+    }
+
+    fn map_err_to_string_simple(self) -> Result<T, String> {
+        self.map_err(|e| e.to_string())
+    }
+}
+
+pub trait UnwrapToStringExt {
+    fn unwrap_or_to_string(self, default: &str) -> String;
+}
+
+impl<T: ToString> UnwrapToStringExt for Option<T> {
+    fn unwrap_or_to_string(self, default: &str) -> String {
+        self.map(|t| t.to_string()).unwrap_or(default.to_string())
+    }
+}
+
+impl<T: ToString, E> UnwrapToStringExt for Result<T, E> {
+    fn unwrap_or_to_string(self, default: &str) -> String {
+        self.map(|t| t.to_string()).unwrap_or(default.to_string())
+    }
 }
 
 /// Returns `true` if the system uses systemd (detects `/run/systemd/system`).
