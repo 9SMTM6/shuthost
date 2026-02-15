@@ -67,11 +67,10 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
 - **WOL Setup**: `ethtool -s eth0 wol g` enables WOL on the network interface. This is necessary for the coordinator to wake the Unraid server.
 - **Process Cleanup**: The `pkill` commands ensure no conflicting agent processes are running.
 - **Installer Download**: Downloads the host agent installer from your coordinator and runs it with specific parameters:
-  - `--os=linux-musl`: Specifies the OS variant for compatibility (Unraid uses a severely outdated glibc).
   - `--port=5757`: Sets the port for agent-coordinator communication.
   - `--shared-secret=<secret>`: Authenticates the agent with the coordinator.
   - `--shutdown-command="echo -n mem > /sys/power/state"`: Uses a custom shutdown command to put the system into sleep (S3) state instead of full power-off, as required for WOL compatibility on many systems.
-  - `--init-system=serviceless`: Configures the agent to run without relying on traditional init systems.
+  - `--init-system=self-extracting-shell`: Configures the agent to run without relying on traditional init systems.
 - **Agent Execution**: Runs the downloaded self-extracting binary to start the agent.
 
 ## Troubleshooting
