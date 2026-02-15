@@ -26,7 +26,7 @@ pub use validation::*;
 /// Binds to the given port on all interfaces and enables broadcasting.
 /// If port is 0, binds to any available port.
 /// Returns the socket if successful, or an error message if binding or setting broadcast fails.
-/// 
+///
 /// # Errors
 /// Returns `Err` if the socket cannot be bound or broadcast cannot be enabled.
 pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
