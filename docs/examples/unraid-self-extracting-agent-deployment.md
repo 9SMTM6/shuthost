@@ -48,7 +48,7 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
      # Download and run the installer with serviceless mode
      # Replace 'https://shuthost.example.com' with your coordinator URL
      # Replace '<secret>' with your actual shared secret
-     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com --os=linux-musl --port=5757 --shared-secret=<secret> --shutdown-command="echo -n mem > /sys/power/state" --init-system=self-extracting-shell
+     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com --port=5757 --shared-secret=<secret> --shutdown-command="echo -n mem > /sys/power/state" --init-system=self-extracting-shell
 
      # Run the self-extracting agent binary
      ./shuthost_host_agent_self_extracting
