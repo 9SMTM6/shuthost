@@ -41,7 +41,11 @@ while [ $# -gt 0 ]; do
         *)
             # Escape any embedded double quotes
             ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
-            INSTALLER_ARGS="$INSTALLER_ARGS $ESCAPED_ARG"
+            if printf '%s' "$ESCAPED_ARG" | grep -q '[[:space:]]'; then
+                INSTALLER_ARGS="$INSTALLER_ARGS \"$ESCAPED_ARG\""
+            else
+                INSTALLER_ARGS="$INSTALLER_ARGS $ESCAPED_ARG"
+            fi
             ;;
     esac
     shift
