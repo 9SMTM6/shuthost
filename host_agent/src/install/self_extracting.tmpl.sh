@@ -10,7 +10,7 @@ export SHUTHOST_SHARED_SECRET="{ secret }"
 export PORT="{ port }"
 export SHUTDOWN_COMMAND="{ shutdown_command }"
 
-OUT=$(mktemp /tmp/selfbin.XXXXXX)
+OUT=$(mktemp /tmp/selfbin.shuthost_host_agent.XXXXXX)
 BINARY_PAYLOAD="{ encoded }"
 echo "$BINARY_PAYLOAD" | base64 -d > "$OUT"
 chmod +x "$OUT"

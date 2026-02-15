@@ -42,8 +42,7 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
      ethtool -s eth0 wol g
 
      # Kill any existing agent processes to prevent conflicts
-     pkill -f /usr/sbin/shuthost_agent
-     pkill -f /usr/local/bin/shuthost_host_agent
+     pkill selfbin.shuthost_host_agent
 
      # Download and run the installer with serviceless mode
      # Replace 'https://shuthost.example.com' with your coordinator URL
