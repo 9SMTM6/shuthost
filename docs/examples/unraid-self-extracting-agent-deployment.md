@@ -36,7 +36,7 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
      # ShutHost Serviceless Agent Startup Script for Unraid
 
      # Change to a directory with write permissions (e.g., Downloads share)
-     cd /mnt/user/Downloads
+     cd /tmp/
 
      # Enable Wake-on-LAN on the network interface (adjust 'eth0' if your interface differs)
      ethtool -s eth0 wol g
