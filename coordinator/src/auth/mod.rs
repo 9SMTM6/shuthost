@@ -11,6 +11,7 @@ pub mod token;
 
 use alloc::sync::Arc;
 
+use crate::auth::oidc::{OidcClientReady, build_client};
 use axum::extract::FromRef;
 use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
@@ -54,9 +55,7 @@ pub(crate) enum Resolved {
         token: Arc<SecretString>,
     },
     Oidc {
-        issuer: String,
-        client_id: String,
-        client_secret: Arc<SecretString>,
+        client: Box<OidcClientReady>,
         scopes: Vec<String>,
     },
     /// External auth (reverse proxy / external provider) acknowledged by operator.
@@ -165,10 +164,11 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
             ref scopes,
         } => {
             info!("Auth mode: oidc, issuer={}", issuer);
+            let client = build_client(issuer, client_id, client_secret)
+                .await
+                .wrap_err("Failed to build OIDC client")?;
             Ok(Resolved::Oidc {
-                issuer: issuer.clone(),
-                client_id: client_id.clone(),
-                client_secret: client_secret.clone(),
+                client,
                 scopes: scopes.clone(),
             })
         }
