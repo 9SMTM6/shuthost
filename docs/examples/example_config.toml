@@ -76,7 +76,8 @@ bind = "127.0.0.1"
 # cookie_secret = "base64-encoded-32-byte-key-here"
 
 # # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
-# # OIDC authentication using authorization code flow with PKCE.
+# # OIDC authentication using authorization code flow with PKCE as a confidential client.
+# # The OIDC provider must support both PKCE and OIDC discovery.
 # # See https://github.com/9SMTM6/shuthost/blob/main/docs/examples/oidc-kanidm.md for an example setup with Kanidm.
 # # This allows integration with identity providers like Keycloak, Auth0, Google, etc.
 # # Requires TLS to be enabled (either here or via reverse proxy).
