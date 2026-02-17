@@ -8,6 +8,7 @@ use axum::{
 use axum_extra::extract::cookie::{Cookie, SignedCookieJar};
 use cookie::time::Duration as CookieDuration;
 use eyre::{Result, WrapErr as _, eyre};
+use oauth2_reqwest::ReqwestClient;
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
     EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
@@ -110,7 +111,7 @@ pub(crate) async fn build_client(
 
     // Discover provider
     let issuer = IssuerUrl::new(issuer.to_string()).wrap_err("invalid issuer URL")?;
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer, &http)
+    let provider_metadata = CoreProviderMetadata::discover_async(issuer, &ReqwestClient::from(&http))
         .await
         .wrap_err("OIDC discovery failed")?;
 
@@ -320,7 +321,7 @@ async fn exchange_code_for_token(
     if let Some(v) = pkce_verifier {
         req = req.set_pkce_verifier(v);
     }
-    match req.request_async(&http).await {
+    match req.request_async(&ReqwestClient::from(&http)).await {
         Ok(r) => Ok(r),
         Err(e) => {
             tracing::error!("Token exchange failed: {:#?}", e);
