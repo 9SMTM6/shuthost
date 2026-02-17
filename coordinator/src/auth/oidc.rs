@@ -89,9 +89,21 @@ pub(crate) async fn build_client(
     client_id: &str,
     client_secret: &SecretString,
 ) -> eyre::Result<Box<OidcClientReady>> {
-    // HTTP client for discovery and token exchange
     let http = reqwest::Client::builder()
         .redirect(Policy::limited(3))
+        .danger_accept_invalid_certs({
+            // Allow disabling TLS verification for discovery at compile time by
+            // defining OIDC_DANGER_ACCEPT_INVALID_CERTS at compile time. Example:
+            //
+            // OIDC_DANGER_ACCEPT_INVALID_CERTS=1 cargo build -p shuthost_coordinator
+            let enabled = option_env!("OIDC_DANGER_ACCEPT_INVALID_CERTS").is_some();
+            if enabled {
+                tracing::warn!(
+                    "OIDC discovery: accepting invalid TLS certificates (compile-time cfg enabled)"
+                );
+            }
+            enabled
+        })
         .build()
         .wrap_err("failed to build HTTP client")?;
 
