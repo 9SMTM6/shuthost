@@ -3,7 +3,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-    globalSetup: './tests/global-setup',
     testDir: './tests',
     outputDir: '../target/playwright-test-results/',
     timeout: 30000,
@@ -39,24 +38,32 @@ export default defineConfig({
     },
     projects: [
         {
+            name: 'Global Setup',
+            testMatch: ['global-setup.*'],
+        },
+        {
             name: 'Desktop Dark',
             testIgnore: ["mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
+            dependencies: ['Global Setup'],
         },
         {
             name: 'Desktop Light',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*", "mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
+            dependencies: ['Global Setup'],
         },
         {
             name: 'Mobile Dark',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'dark' },
+            dependencies: ['Global Setup'],
         },
         {
             name: 'Mobile Light',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
+            dependencies: ['Global Setup'],
         },
     ],
 });

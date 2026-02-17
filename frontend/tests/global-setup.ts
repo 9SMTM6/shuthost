@@ -1,6 +1,7 @@
+import { test as setup } from '@playwright/test';
 import { execSync } from 'node:child_process';
 
-const globalSetup = async () => {
+const buildCoordinator = () => {
     if (process.env['SKIP_BUILD']) {
         console.log('SKIP_BUILD set — skipping coordinator build');
         return;
@@ -12,4 +13,4 @@ const globalSetup = async () => {
     execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env: process.env });
 }
 
-export default globalSetup;
+setup("Compile coordinator before tests", buildCoordinator)
