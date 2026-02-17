@@ -205,7 +205,11 @@ These are generated or validated automatically as part of the test suite, and th
   - ❓ Unclear how to deal with authorization:
     - Server secret?
 
-<!-- see https://crates.io/crates/ceviche https://crates.io/crates/windows-service https://crates.io/crates/planif -->
-<!-- 
-* todo: port test-client-scripts to run locally as well
+<!-- TODO:
+* consider using one of these crates to support services on windows:
+  * https://crates.io/crates/ceviche
+  * https://crates.io/crates/windows-service
+  * https://crates.io/crates/planif
+* port test-client-scripts to run locally as well
+* add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik
 -->
