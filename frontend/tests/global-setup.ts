@@ -10,7 +10,8 @@ const buildCoordinator = () => {
     const flags = process.env['COVERAGE'] ? "" : "--release"
 
     console.log(`Global setup: building coordinator (${flags})`);
-    execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env: process.env });
+    const env = { ...process.env, OIDC_DANGER_ACCEPT_INVALID_CERTS: '1' };
+    execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env });
 }
 
 setup("Compile coordinator before tests", buildCoordinator)
