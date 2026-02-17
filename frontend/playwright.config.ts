@@ -65,5 +65,10 @@ export default defineConfig({
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
             dependencies: ['Global Setup'],
         },
+        {
+            name: 'Global Teardown',
+            testMatch: ['global-teardown.*'],
+            dependencies: ['Desktop Dark', 'Desktop Light', 'Mobile Dark', 'Mobile Light'],
+        },
     ],
 });
