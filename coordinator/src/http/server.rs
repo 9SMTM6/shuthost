@@ -31,6 +31,7 @@ use tokio::{
     sync::{broadcast, watch},
 };
 use tower::ServiceBuilder;
+use tower_http::trace as tower_tracing;
 use tower_http::{
     ServiceBuilderExt as _,
     classify::ServerErrorsFailureClass,
@@ -251,23 +252,23 @@ fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         forward_to_default: F,
     }
 
-    impl tower_http::trace::OnFailure<ServerErrorsFailureClass>
+    impl tower_tracing::OnFailure<ServerErrorsFailureClass>
         for LevelAdjustingOnFailure<DefaultOnFailure>
     {
         fn on_failure(
             &mut self,
-            failure: ServerErrorsFailureClass,
-            latency: std::time::Duration,
-            _span: &tracing::Span,
+            failure_classification: ServerErrorsFailureClass,
+            latency: Duration,
+            span: &tracing::Span,
         ) {
             use ServerErrorsFailureClass as S;
 
-            match failure {
+            match failure_classification {
                 S::StatusCode(StatusCode::SERVICE_UNAVAILABLE) => {
                     tracing::info!(classification = %S::StatusCode(StatusCode::SERVICE_UNAVAILABLE), latency = %format!("{} ms", latency.as_millis()), "response failed (downgraded)");
                 }
                 value => {
-                    self.forward_to_default.on_failure(value, latency, _span);
+                    self.forward_to_default.on_failure(value, latency, span);
                 }
             }
         }
