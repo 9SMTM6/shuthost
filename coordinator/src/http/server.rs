@@ -246,7 +246,7 @@ async fn setup_tls_config(
 
 fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
     #[derive(Clone, Copy)]
-    /// custom failure handling: downgrade 503-related failures to INFO
+    /// Custom failure handling: downgrade 503-related failures to INFO
     struct LevelAdjustingOnFailure<F: OnFailure<ServerErrorsFailureClass>> {
         forward_to_default: F,
     }
