@@ -28,7 +28,6 @@ use std::fs;
 use std::sync::Once;
 
 use eyre::{Result, WrapErr as _};
-use rustls::crypto::aws_lc_rs;
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -49,7 +48,7 @@ static INIT_RUSTLS: Once = Once::new();
 ///
 /// # Panics
 ///
-/// Panics if the AWS LC crypto provider cannot be installed.
+/// Panics if the OpenSSL crypto provider cannot be installed.
 pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
         #[cfg(unix)]
@@ -82,7 +81,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             });
 
             INIT_RUSTLS.call_once(|| {
-                aws_lc_rs::default_provider()
+                rustls_openssl::default_provider()
                     .install_default()
                     .expect("failed to install default rustls provider");
             });
