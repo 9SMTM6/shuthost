@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort } from './test-utils';
+import { startBackend, stopBackend, configs, expand_and_sanitize_host_install, getTestPort, startStaticServer, stopStaticServer } from './test-utils';
 import { ChildProcess } from 'node:child_process';
+import https from 'https';
 
 test.describe('main page(s)', () => {
     let backendProcess: ChildProcess | undefined;
@@ -115,18 +116,23 @@ test.describe('token login', () => {
 
 test.describe('OIDC login', () => {
     let backendProcess: ChildProcess | undefined;
+    let staticServer: https.Server | undefined;
 
     test.beforeAll(async () => {
+        staticServer = await startStaticServer();
         backendProcess = await startBackend(configs["auth-oidc"], true);
     });
 
     test.afterAll(async () => {
         stopBackend(backendProcess);
         backendProcess = undefined;
+        stopStaticServer(staticServer);
+        staticServer = undefined;
     });
 
     test('login page', async ({ page }) => {
         // Use HTTPS for TLS-enabled configs
+        await new Promise((_resolve) => {});
         const port = getTestPort();
         await page.goto(`https://127.0.0.1:${port}/login`);
         await page.waitForLoadState('networkidle');

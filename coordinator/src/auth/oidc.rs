@@ -104,6 +104,7 @@ pub(crate) async fn build_client(
             }
             enabled
         })
+        .use_rustls_tls()
         .build()
         .wrap_err("failed to build HTTP client")?;
 
