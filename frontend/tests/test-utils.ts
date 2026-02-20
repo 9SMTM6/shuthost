@@ -91,7 +91,7 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
       });
       return sanitized;
     };
-    function isHTMLElement(node: Node): node is HTMLElement {
+    const isHTMLElement = (node: Node): node is HTMLElement => {
       return node.nodeType === Node.ELEMENT_NODE;
     }
 
@@ -125,7 +125,7 @@ export const expand_and_sanitize_host_install = async (
   await sanitizeEnvironmentDependents(page);
 }
 
-export async function startStaticServer() {
+export const startStaticServer = async () => {
   // Create a temporary directory for the generated cert/key
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mock-oidc-'));
   staticTmpDir = tmpDir;
@@ -188,9 +188,9 @@ export async function startStaticServer() {
     });
     staticServer!.on('error', (err) => reject(err));
   });
-}
+};
 
-export async function stopStaticServer(_param: any) {
+export const stopStaticServer = async (_param: any) => {
   // disabled check during testing
     // if (staticServer) {
         // staticServer!.close(() => {
@@ -206,4 +206,4 @@ export async function stopStaticServer(_param: any) {
     }
     staticTmpDir = undefined;
   }
-}
+};

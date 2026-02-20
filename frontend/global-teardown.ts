@@ -1,6 +1,6 @@
 import { ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsListeningOnPort, validatePidIsExpected, killPidGracefully } from './tests/backend-utils';
 
-export default async function globalTeardown() {
+const globalTeardown = async () => {
     console.log('Playwright global teardown: stopping backend processes');
     const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
 
@@ -25,4 +25,6 @@ export default async function globalTeardown() {
     // no special demo logic required – ALL_CONFIG_KEYS includes it
 
     await Promise.all(tasks);
-}
+};
+
+export default globalTeardown;

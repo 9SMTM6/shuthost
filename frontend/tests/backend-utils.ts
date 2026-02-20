@@ -38,7 +38,7 @@ export const DEMO_PORT = BASE_PORT + Object.values(configs).length;
  * - any other value falls back to a per-worker port (for compatibility with
  *   manual usages but should not happen in normal tests)
  */
-export function assignedPortForConfig(configKey: ConfigKey): number {
+export const assignedPortForConfig = (configKey: ConfigKey): number => {
     // demo mode uses the dedicated port
     if (configKey === 'demo') {
         return DEMO_PORT;
@@ -58,7 +58,7 @@ export function assignedPortForConfig(configKey: ConfigKey): number {
         '0'
     );
     return BASE_PORT + parallelIndex;
-}
+};
 
 // ---------------------------------------------------------------------------
 // port / process helpers
@@ -71,7 +71,7 @@ export function assignedPortForConfig(configKey: ConfigKey): number {
  * If the lookup fails we return an empty array (caller will treat the port as
  * free).
  */
-export function getPidsListeningOnPort(port: number): number[] {
+export const getPidsListeningOnPort = (port: number): number[] => {
     try {
         if (os.platform() === 'win32') {
             const out = spawnSync('netstat', ['-ano'], { encoding: 'utf8' }).stdout;
@@ -95,12 +95,12 @@ export function getPidsListeningOnPort(port: number): number[] {
     } catch {
         return [];
     }
-}
+};
 
 /**
  * Return the full command line for a PID, or null if it can't be determined.
  */
-export function pidCommandLine(pid: number): string | null {
+export const pidCommandLine = (pid: number): string | null => {
     try {
         if (os.platform() === 'linux') {
             const content = fs.readFileSync(`/proc/${pid}/cmdline`, { encoding: 'utf8' });
@@ -112,24 +112,24 @@ export function pidCommandLine(pid: number): string | null {
     } catch {
         return null;
     }
-}
+};
 
 /**
  * Return true if the given PID's command line contains the expected substring.
  * Used to make sure we only kill processes that look like our coordinator
  * binary.
  */
-export function validatePidIsExpected(pid: number, expectedCmdSubstr: string): boolean {
+export const validatePidIsExpected = (pid: number, expectedCmdSubstr: string): boolean => {
     const cmd = pidCommandLine(pid);
     if (!cmd) return false;
     return cmd.includes(expectedCmdSubstr);
-}
+};
 
 /**
  * Kill a process gracefully via SIGTERM, then SIGKILL if necessary. Returns
  * true if the process is no longer running after the call.
  */
-export async function killPidGracefully(pid: number, timeoutMs = 5000): Promise<boolean> {
+export const killPidGracefully = async (pid: number, timeoutMs = 5000): Promise<boolean> => {
     try {
         process.kill(pid, 'SIGTERM');
     } catch {
@@ -160,4 +160,4 @@ export async function killPidGracefully(pid: number, timeoutMs = 5000): Promise<
         };
         check();
     });
-}
+};

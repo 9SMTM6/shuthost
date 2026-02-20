@@ -3,7 +3,7 @@ import { configs, ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsList
 import net from 'net';
 
 // Create a small helper that resolves when a port is free (or errors after timeout)
-function waitForPortFree(port: number, timeoutMs = 10000): Promise<void> {
+const waitForPortFree = (port: number, timeoutMs = 10000): Promise<void> => {
     return new Promise((resolve, reject) => {
         const start = Date.now();
         const tryBind = () => {
@@ -25,9 +25,9 @@ function waitForPortFree(port: number, timeoutMs = 10000): Promise<void> {
         };
         tryBind();
     });
-}
+};
 
-export default async function globalSetup() {
+const globalSetup = async () => {
     console.log('Playwright global setup: starting backend processes');
     const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
 
@@ -77,4 +77,6 @@ export default async function globalSetup() {
 
     await Promise.all(tasks);
     console.log('all backends started');
-}
+};
+
+export default globalSetup;
