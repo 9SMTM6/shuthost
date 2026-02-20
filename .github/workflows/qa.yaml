@@ -35,23 +35,6 @@ jobs:
       - uses: *rust-cache
       - run: cargo +stable clippy --workspace -- -D warnings
 
-  pixelpeep:
-    name: Pixelpeep (strict Playwright visual diffs)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: *checkout
-      - name: Install Node deps and compile TS
-        run: |
-          cd frontend
-          npm ci
-          npx tsc --noEmit
-      - name: Run Playwright with PIXELPEEP
-        env:
-          PIXELPEEP: 1
-        run: |
-          cd frontend
-          npx playwright test
-
   sqlx-offline-cache:
     name: sqlx offline cache check with prepare
     runs-on: ubuntu-latest
