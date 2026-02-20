@@ -1,18 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { startBackend, stopBackend, configs } from './test-utils';
-import { ChildProcess } from 'node:child_process';
-
-let backendProcess: ChildProcess | undefined;
+import { configs, getBaseUrl } from './test-utils';
 
 // This test is mobile-specific. Desktop projects should ignore this file via Playwright config.
 test.describe('mobile navigation', () => {
-    test.beforeAll(async () => {
-        // Use the hosts-and-clients config which shows the full navigation
-        backendProcess = await startBackend(configs['nada']);
-    });
+    const cfg = configs['nada'];
 
     test('mobile navigation opens and shows backdrop', async ({ page }) => {
-        await page.goto('/');
+        await page.goto(getBaseUrl(cfg) + '/');
         // Click the visible hamburger label (aria-label="Toggle menu")
         await page.waitForSelector('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
         await page.click('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
@@ -25,7 +19,7 @@ test.describe('mobile navigation', () => {
 
     test('ARIA snapshot for mobile navigation', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'Mobile Light', "Theme doesn't show in ARIA snapshots");
-        await page.goto('/');
+        await page.goto(getBaseUrl(cfg) + '/');
         // Click the visible hamburger label (aria-label="Toggle menu")
         await page.waitForSelector('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
         await page.click('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
@@ -42,10 +36,5 @@ test.describe('mobile navigation', () => {
         });
 
         await expect(page.locator('body')).toMatchAriaSnapshot({ name: 'mobile-navigation.aria.yml' });
-    });
-
-    test.afterAll(async () => {
-        stopBackend(backendProcess);
-        backendProcess = undefined;
     });
 });

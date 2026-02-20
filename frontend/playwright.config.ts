@@ -3,6 +3,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
+    // Playwright will resolve these paths relative to the config file.
+    globalSetup: './global-setup.ts',
+    globalTeardown: './global-teardown.ts',
     testDir: './tests',
     outputDir: '../target/playwright-test-results/',
     timeout: 30000,
@@ -28,8 +31,10 @@ export default defineConfig({
     // HTML report to have easy access to the traces
     reporter: [[process.env['CI'] ? 'github' : 'list'], ['html']],
     use: {
-        // Compute a per-worker baseURL so multiple workers can run parallel backends.
-        baseURL: `http://127.0.0.1:${8081 + Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0')}`,
+        // baseURL is intentionally left generic; tests construct full URLs
+        // themselves via helper functions so they can target the correct
+        // port assigned in globalSetup.
+        baseURL: 'http://127.0.0.1',
         trace: 'on',
         ignoreHTTPSErrors: true,
         // Explicitly use Playwright's Chromium browser so projects don't try to use a system Chrome
@@ -38,32 +43,24 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'Global Setup',
-            testMatch: ['global-setup.*'],
-        },
-        {
             name: 'Desktop Dark',
             testIgnore: ["mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
-            dependencies: ['Global Setup'],
         },
         {
             name: 'Desktop Light',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*", "mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
-            dependencies: ['Global Setup'],
         },
         {
             name: 'Mobile Dark',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'dark' },
-            dependencies: ['Global Setup'],
         },
         {
             name: 'Mobile Light',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
-            dependencies: ['Global Setup'],
         },
     ],
 });

@@ -1,17 +1,11 @@
 // filepath: frontend/tests/pwa-installability.spec.ts
 import { test, expect } from '@playwright/test';
-import { configs, startBackend, stopBackend } from './test-utils';
-import { ChildProcess } from 'child_process';
+import { configs, getBaseUrl } from './test-utils';
 
-let backendProcess: ChildProcess | undefined;
 
-test.beforeAll(async () => {
-    backendProcess = await startBackend(configs["hosts-and-clients"]);
-});
-
-test('PWA install prompt is available', async ({ page }) => {
+ test('PWA install prompt is available', async ({ page }) => {
     test.skip(true, "TODO, this doesnt seem to work correctly.");
-    await page.goto('/');
+    await page.goto(getBaseUrl(configs["hosts-and-clients"]) + '/');
     const installPromptFired = page.evaluate(() => {
         return new Promise<boolean>((resolve) => {
             window.addEventListener('beforeinstallprompt', () => resolve(true), { once: true });
@@ -24,12 +18,12 @@ test('PWA install prompt is available', async ({ page }) => {
     expect(isInstallable).toBe(true);
 });
 
-test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
+ test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
     // Heuristics taken from https://web.dev/articles/install-criteria, 
     // and from my experience (regarding image purpose)
 
     // Navigate to the app root so relative URLs resolve correctly
-    await page.goto('/');
+    await page.goto(getBaseUrl(configs["hosts-and-clients"]) + '/');
 
     // Find manifest link
     const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
@@ -105,7 +99,3 @@ test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
     expect(has512).toBe(true);
 });
 
-test.afterAll(async () => {
-    stopBackend(backendProcess);
-    backendProcess = undefined;
-});

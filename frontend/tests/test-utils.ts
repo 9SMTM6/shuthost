@@ -1,33 +1,30 @@
 /// <reference lib="dom" />
 
 import { Page } from '@playwright/test';
-import { spawn, ChildProcess } from 'node:child_process';
-import https from 'https';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { execSync } from 'child_process';
-import { Server } from 'node:https';
+// child_process functions removed; not needed now
+export {
+  configs,
+} from './backend-utils';
+import {
+  assignedPortForConfig,
+} from './backend-utils';
+import https, { Server } from 'node:https';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 // let staticServer: https.Server | undefined;
 let staticTmpDir: string | undefined;
 
-export const configs = {
-  "hosts-only": './tests/configs/hosts-only.toml',
-  "hosts-and-clients": './tests/configs/hosts-and-clients.toml',
-  "nada": './tests/configs/nada.toml',
-  "auth-none": './tests/configs/auth-none.toml',
-  "auth-token": './tests/configs/auth-token.toml',
-  "auth-oidc": './tests/configs/auth-oidc.toml',
-  "auth-outdated-exceptions": './tests/configs/auth-outdated-exceptions.toml',
-  "no-db": './tests/configs/no-db.toml',
-}
-
-// Get the test port for parallel workers to avoid conflicts.
-export const getTestPort = (): number => {
-  const parallelIndex = Number(process.env['TEST_PARALLEL_INDEX'] ?? process.env['TEST_WORKER_INDEX'] ?? '0');
-  return 8081 + parallelIndex;
-}
+// Return a complete base URL (including protocol and port) for a given config
+// path. `useTls` controls whether https:// is used; some configs (auth-token,
+// auth-oidc) run TLS.
+export const getBaseUrl = (configPath?: string, useTls = false): string => {
+  const port = assignedPortForConfig(configPath);
+  const protocol = useTls ? 'https' : 'http';
+  return `${protocol}://127.0.0.1:${port}`;
+};
 
 // Mock OIDC server host/port and base URL (DRY these values)
 const OIDC_HOST = '127.0.0.1';
@@ -60,58 +57,6 @@ export const waitForServerReady = async (port: number, useTls = false, timeout =
     }
   }
   throw new Error(`Timed out waiting for server at 127.0.0.1:${port}`);
-}
-
-export const startBackend = async (configPath?: string, useTls = false, command = 'control-service') => {
-  // Spawn the backend with provided config (if any). Build is performed in globalSetup.
-  const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
-  // Determine per-worker port to allow parallel test workers.
-  // fall back to 0 for single-worker runs.
-  const port = getTestPort();
-  const args = [command, '--port', String(port)];
-  if (configPath) {
-    args.push(`--config=${configPath}`);
-  }
-  // Propagate environment and enable runtime acceptance of invalid OIDC certs
-  // when using the `auth-oidc` test config so the coordinator trusts the test
-  // self-signed certificate without requiring a rebuild.
-  const childEnv: any = { RUST_LOG: "error", ...process.env };
-  if (configPath && configPath.includes('auth-oidc')) {
-    childEnv['OIDC_DANGER_ACCEPT_INVALID_CERTS'] = '1';
-  }
-  const proc = spawn(
-    backendBin,
-    args,
-    { stdio: 'inherit', env: childEnv }
-  );
-  await waitForServerReady(port, useTls, 30000);
-  return proc;
-}
-
-export const stopBackend = async (proc?: ChildProcess) => {
-  if (!proc) return;
-
-  // Try a graceful shutdown first
-  try {
-    // Send SIGTERM instead of SIGKILL
-    proc.kill('SIGTERM');
-  } catch (_) {
-    return;
-  }
-
-  // Wait a bit for the process to exit and flush coverage data
-  await new Promise<void>(resolve => {
-    const timeout = setTimeout(() => {
-      // If it’s still hanging, force kill it
-      try { proc.kill('SIGKILL'); } catch { }
-      resolve();
-    }, 3000);
-
-    proc.on('exit', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
-  });
 }
 
 /** Replaces environment-dependent values like URLs and config paths with placeholders for generic snapshots */
@@ -161,8 +106,11 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
   });
 }
 
-export const expand_and_sanitize_host_install = async (page: Page) => {
-  await page.goto('#hosts');
+export const expand_and_sanitize_host_install = async (
+  page: Page,
+  configPath: string
+) => {
+  await page.goto(getBaseUrl(configPath) + '#hosts');
   // Open the collapsible by checking the toggle input
   // The checkbox input is hidden (CSS); click the visible header/label instead.
   await page.waitForSelector('#host-install-header');

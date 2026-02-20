@@ -1,17 +1,14 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright'; // 1
-import { startBackend, stopBackend, configs, expand_and_sanitize_host_install } from './test-utils';
-import { ChildProcess } from 'node:child_process';
+import { configs, expand_and_sanitize_host_install, getBaseUrl } from './test-utils';
 
-let backendProcess: ChildProcess | undefined;
 
-test.beforeAll(async () => {
-    backendProcess = await startBackend(configs["hosts-and-clients"]);
-});
 
 test.describe('main page(s)', () => {
     test('hosts page should not have any automatically detectable accessibility issues', async ({ page }) => {
-        await expand_and_sanitize_host_install(page);
+        const cfg = configs['hosts-and-clients'];
+        await page.goto(getBaseUrl(cfg) + '#hosts');
+        await expand_and_sanitize_host_install(page, configs['hosts-and-clients']);
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
 
@@ -19,7 +16,8 @@ test.describe('main page(s)', () => {
     });
 
     test('clients page should not have any automatically detectable accessibility issues', async ({ page }) => {
-        await page.goto('#clients');
+        const cfg = configs['hosts-and-clients'];
+        await page.goto(getBaseUrl(cfg) + '#clients');
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
 
@@ -27,7 +25,8 @@ test.describe('main page(s)', () => {
     });
 
     test('docs page should not have any automatically detectable accessibility issues', async ({ page }) => {
-        await page.goto('#architecture');
+        const cfg = configs['hosts-and-clients'];
+        await page.goto(getBaseUrl(cfg) + '#architecture');
 
         const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
 
@@ -35,7 +34,3 @@ test.describe('main page(s)', () => {
     });
 });
 
-test.afterAll(async () => {
-    stopBackend(backendProcess);
-    backendProcess = undefined;
-});
