@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { configs, ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsListeningOnPort, validatePidIsExpected, killPidGracefully } from './tests/backend-utils';
+import { startOidcMockServer } from './tests/test-utils';
 import net from 'net';
 
 // Create a small helper that resolves when a port is free (or errors after timeout)
@@ -62,6 +63,12 @@ const globalSetup = async () => {
     };
 
     const tasks: Promise<void>[] = [];
+    // start mock OIDC server if any config needs it and we're not skipping
+    if (process.env['SKIP_OIDC'] !== '1') {
+        console.log('global-setup: starting mock OIDC server');
+        tasks.push(startOidcMockServer().then(() => undefined));
+    }
+
     for (const key of ALL_CONFIG_KEYS) {
         if (key === 'demo') {
             tasks.push(startOne('demo'));

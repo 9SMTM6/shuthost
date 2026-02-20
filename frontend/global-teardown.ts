@@ -1,4 +1,5 @@
 import { ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsListeningOnPort, validatePidIsExpected, killPidGracefully } from './tests/backend-utils';
+import { stopOidcMockServer } from './tests/test-utils';
 
 const globalTeardown = async () => {
     console.log('Playwright global teardown: stopping backend processes');
@@ -20,6 +21,12 @@ const globalTeardown = async () => {
     const tasks: Promise<void>[] = [];
     for (const key of ALL_CONFIG_KEYS) {
         tasks.push(killOne(key));
+    }
+
+    // stop mock OIDC server if we started it
+    if (process.env['SKIP_OIDC'] !== '1') {
+        console.log('global-teardown: stopping mock OIDC server');
+        tasks.push(stopOidcMockServer(undefined).then(() => undefined));
     }
 
     // no special demo logic required – ALL_CONFIG_KEYS includes it

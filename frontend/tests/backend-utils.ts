@@ -25,9 +25,10 @@ export const ALL_CONFIG_KEYS = ([
 export type ConfigKey = typeof ALL_CONFIG_KEYS[number];
 
 export const BASE_PORT = 8081;
+export const OIDC_PORT = BASE_PORT;
 
 // demo mode always uses the port immediately following all named configs.
-export const DEMO_PORT = BASE_PORT + Object.values(configs).length;
+export const DEMO_PORT = BASE_PORT + 1 + Object.values(configs).length;
 
 /**
  * Return the deterministic port number used by a given coordinator configuration.
@@ -48,16 +49,9 @@ export const assignedPortForConfig = (configKey: ConfigKey): number => {
     const keys = Object.keys(configs);
     const idx = keys.indexOf(configKey);
     if (idx !== -1) {
-        return BASE_PORT + idx;
+        return BASE_PORT + 1 + idx;
     }
-
-    // fallback per-worker port
-    const parallelIndex = Number(
-        process.env['TEST_PARALLEL_INDEX'] ||
-        process.env['TEST_WORKER_INDEX'] ||
-        '0'
-    );
-    return BASE_PORT + parallelIndex;
+    throw new Error(`Unknown config key: ${configKey}`);
 };
 
 // ---------------------------------------------------------------------------

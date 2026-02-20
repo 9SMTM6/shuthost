@@ -7,6 +7,7 @@ export {
 } from './backend-utils';
 import {
   assignedPortForConfig,
+  OIDC_PORT,
 } from './backend-utils';
 import https, { Server } from 'node:https';
 import fs from 'node:fs';
@@ -14,8 +15,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-// let staticServer: https.Server | undefined;
-let staticTmpDir: string | undefined;
+// let oidcServer: https.Server | undefined;
+let oidcTmpDir: string | undefined;
 
 // Return a complete base URL (including protocol and port) for a given
 // coordinator identifier.  `configKey` should be one of the keys from
@@ -31,9 +32,10 @@ export const getBaseUrl = (configKey: ConfigKey, useTls = false): string => {
   return `${protocol}://127.0.0.1:${port}`;
 };
 
-// Mock OIDC server host/port and base URL (DRY these values)
+// Mock OIDC server host/port and base URL (DRY these values).  The port is
+// coordinated with the auth-oidc backend so parallel workers pick unique
+// ports; see `assignedOidcPort` in backend-utils.ts.
 const OIDC_HOST = '127.0.0.1';
-const OIDC_PORT = 8443;
 export const OIDC_BASE_URL = `https://${OIDC_HOST}:${OIDC_PORT}`;
 
 // Utilities to build, start, wait for, and stop the Rust backend used by Playwright tests.
@@ -125,10 +127,10 @@ export const expand_and_sanitize_host_install = async (
   await sanitizeEnvironmentDependents(page);
 }
 
-export const startStaticServer = async () => {
+export const startOidcMockServer = async () => {
   // Create a temporary directory for the generated cert/key
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mock-oidc-'));
-  staticTmpDir = tmpDir;
+  oidcTmpDir = tmpDir;
 
   const keyPath = path.join(tmpDir, 'key.pem');
   const certPath = path.join(tmpDir, 'cert.pem');
@@ -164,11 +166,17 @@ export const startStaticServer = async () => {
     authorization_endpoint: `${OIDC_BASE_URL}/authorize`,
     token_endpoint: `${OIDC_BASE_URL}/token`,
     jwks_uri: `${OIDC_BASE_URL}/jwks.json`,
+    // tests (and coordinator) expect at least one supported response type.
+    response_types_supported: ['code', 'id_token', 'token id_token'],
+    // adding minimal fields for compatibility
+    grant_types_supported: ['authorization_code', 'refresh_token'],
+    subject_types_supported: ['public'],
+    id_token_signing_alg_values_supported: ['RS256'],
   };
 
   const serverOptions = { key, cert };
 
-  let staticServer = https.createServer(serverOptions, (req, res) => {
+  let oidcServer = https.createServer(serverOptions, (req, res) => {
     if (req.url === '/.well-known/openid-configuration') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(discovery));
@@ -182,28 +190,28 @@ export const startStaticServer = async () => {
   });
   return await new Promise<Server>((resolve, reject) => {
     // Bind explicitly to IPv4 loopback to avoid IPv6/IPv4 dual-stack issues.
-    staticServer!.listen(OIDC_PORT, OIDC_HOST, () => {
-      console.log(`Static Mock OIDC server running at ${OIDC_BASE_URL}`);
-      resolve(staticServer);
+    oidcServer!.listen(OIDC_PORT, OIDC_HOST, () => {
+      console.log(`OIDC mock server running at ${OIDC_BASE_URL}`);
+      resolve(oidcServer);
     });
-    staticServer!.on('error', (err) => reject(err));
+    oidcServer!.on('error', (err) => reject(err));
   });
 };
 
-export const stopStaticServer = async (_param: any) => {
+export const stopOidcMockServer = async (_param: any) => {
   // disabled check during testing
-    // if (staticServer) {
-        // staticServer!.close(() => {
-        //     console.log('Static Mock OIDC server stopped.');
+    // if (oidcServer) {
+        // oidcServer!.close(() => {
+        //     console.log('OIDC mock server stopped.');
         // });
-        // staticServer = undefined;
+        // oidcServer = undefined;
     // }
-  if (staticTmpDir) {
+  if (oidcTmpDir) {
     try {
-      fs.rmSync(staticTmpDir, { recursive: true, force: true });
+      fs.rmSync(oidcTmpDir, { recursive: true, force: true });
     } catch (e) {
       // ignore cleanup errors
     }
-    staticTmpDir = undefined;
+    oidcTmpDir = undefined;
   }
 };
