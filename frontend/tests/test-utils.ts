@@ -17,11 +17,16 @@ import { execSync } from 'node:child_process';
 // let staticServer: https.Server | undefined;
 let staticTmpDir: string | undefined;
 
-// Return a complete base URL (including protocol and port) for a given config
-// path. `useTls` controls whether https:// is used; some configs (auth-token,
-// auth-oidc) run TLS.
-export const getBaseUrl = (configPath?: string, useTls = false): string => {
-  const port = assignedPortForConfig(configPath);
+// Return a complete base URL (including protocol and port) for a given
+// coordinator identifier.  `configKey` should be one of the keys from
+// `configs` (e.g. "hosts-only", "auth-token"), or the literal string
+// `'demo'` for the special demo‑mode backend.  If omitted a per‑worker
+// fallback port is used (only expected in legacy code).  `useTls` controls
+// whether https:// is used; some configs (auth-token, auth-oidc) run TLS.
+import { ConfigKey } from './backend-utils';
+
+export const getBaseUrl = (configKey: ConfigKey, useTls = false): string => {
+  const port = assignedPortForConfig(configKey);
   const protocol = useTls ? 'https' : 'http';
   return `${protocol}://127.0.0.1:${port}`;
 };
@@ -108,9 +113,9 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
 
 export const expand_and_sanitize_host_install = async (
   page: Page,
-  configPath: string
+  configKey: ConfigKey
 ) => {
-  await page.goto(getBaseUrl(configPath) + '#hosts');
+  await page.goto(getBaseUrl(configKey) + '#hosts');
   // Open the collapsible by checking the toggle input
   // The checkbox input is hidden (CSS); click the visible header/label instead.
   await page.waitForSelector('#host-install-header');

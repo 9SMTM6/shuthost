@@ -1,11 +1,12 @@
 // filepath: frontend/tests/pwa-installability.spec.ts
 import { test, expect } from '@playwright/test';
-import { configs, getBaseUrl } from './test-utils';
+import { getBaseUrl } from './test-utils';
 
+const base = getBaseUrl('hosts-and-clients');
 
  test('PWA install prompt is available', async ({ page }) => {
     test.skip(true, "TODO, this doesnt seem to work correctly.");
-    await page.goto(getBaseUrl(configs["hosts-and-clients"]) + '/');
+    await page.goto(base + '/');
     const installPromptFired = page.evaluate(() => {
         return new Promise<boolean>((resolve) => {
             window.addEventListener('beforeinstallprompt', () => resolve(true), { once: true });
@@ -23,7 +24,7 @@ import { configs, getBaseUrl } from './test-utils';
     // and from my experience (regarding image purpose)
 
     // Navigate to the app root so relative URLs resolve correctly
-    await page.goto(getBaseUrl(configs["hosts-and-clients"]) + '/');
+    await page.goto(base + '/');
 
     // Find manifest link
     const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
