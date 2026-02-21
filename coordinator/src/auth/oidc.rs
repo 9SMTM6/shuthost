@@ -28,7 +28,7 @@ use crate::{
             create_oidc_session_cookie, create_protected_cookie,
             extract_return_to_and_remove_cookie,
         },
-        login_error_redirect, request_is_secure,
+        login_error_redirect, request_is_secure, SharedOidcClient,
     },
     http::AppState,
 };
@@ -89,7 +89,7 @@ pub(crate) async fn build_client(
     issuer: &str,
     client_id: &str,
     client_secret: &SecretString,
-) -> eyre::Result<Box<OidcClientReady>> {
+) -> eyre::Result<OidcClientReady> {
     let http = reqwest::Client::builder()
         .redirect(Policy::limited(3))
         .danger_accept_invalid_certs({
@@ -124,12 +124,33 @@ pub(crate) async fn build_client(
     )
     .set_auth_uri(provider_metadata.authorization_endpoint().clone());
     let client = if let Some(token_url) = provider_metadata.token_endpoint().cloned() {
-        Box::new(client.set_token_uri(token_url))
+        client.set_token_uri(token_url)
     } else {
         return Err(eyre!("OIDC provider missing token endpoint"));
     };
 
     Ok(client)
+}
+
+
+/// Refresh the client stored in `shared` using the original configuration.
+///
+/// Currently we don’t have a unit test for this flow; an integration or
+/// component test should exercise both the initial client build and a
+/// subsequent refresh when discovery/JWKS data changes.
+/// TODO: add tests targeting `refresh_oidc_client` once network-mocking is
+/// available (#TODO issue)
+pub(crate) async fn refresh_oidc_client(
+    shared: &SharedOidcClient,
+    cfg: &crate::config::OidcConfig,
+) -> eyre::Result<()> {
+    tracing::info!(issuer=%cfg.issuer, "refreshing OIDC client from config");
+    let new_client = build_client(&cfg.issuer, &cfg.client_id, &cfg.client_secret)
+        .await
+        .wrap_err("Failed to build refreshed OIDC client")?;
+    let mut guard = shared.write().await;
+    *guard = new_client;
+    Ok(())
 }
 
 /// Initiate OIDC login.
@@ -143,11 +164,12 @@ pub(crate) async fn login(
 ) -> impl IntoResponse {
     let auth::Resolved::Oidc {
         ref client,
-        ref scopes,
+        ref config,
     } = auth.mode
     else {
         return Redirect::to("/").into_response();
     };
+    let scopes = &config.scopes;
     // Refuse to start OIDC flow if request doesn't appear secure, because we
     // rely on Secure cookies for the OIDC state/nonce/pkce exchange.
     if !request_is_secure(&headers, tls_enabled) {
@@ -162,7 +184,12 @@ pub(crate) async fn login(
         tracing::info!(return_to = %return_to, "oidc_login: existing session, redirecting to return_to");
         return (jar, Redirect::to(&return_to)).into_response();
     }
-    let client = match set_redirect_uri(client, &headers) {
+    // Grab a clone of the current client for URL computation
+    let client = {
+        let guard = client.read().await;
+        guard.clone()
+    };
+    let client = match set_redirect_uri(&client, &headers) {
         Ok(c) => c,
         Err(sc) => return sc.into_response(),
     };
@@ -307,10 +334,15 @@ fn extract_authorization_code(code: Option<String>) -> Result<String, LoginFlowE
 }
 
 async fn exchange_code_for_token(
-    client: &OidcClientReady,
+    client_lock: &SharedOidcClient,
     code: String,
     pkce_verifier: Option<PkceCodeVerifier>,
 ) -> Result<CoreTokenResponse, LoginFlowError> {
+    let client = {
+        let guard = client_lock.read().await;
+        guard.clone()
+    };
+
     let http = reqwest::Client::builder()
         .redirect(Policy::none())
         .build()
@@ -343,33 +375,60 @@ fn id_token_from_response(
     }
 }
 
-fn verify_id_token_and_build_session(
-    client: &OidcClientReady,
+async fn verify_id_token_and_build_session(
+    client_lock: &SharedOidcClient,
+    cfg: &crate::config::OidcConfig,
     id_token: &CoreIdToken,
     nonce_cookie: Option<&Nonce>,
 ) -> Result<OIDCSessionClaims, LoginFlowError> {
-    let claims = match id_token.claims(
-        &client.id_token_verifier(),
-        nonce_cookie.unwrap_or(&Nonce::new(String::new())),
-    ) {
-        Ok(c) => c,
-        Err(e) => {
-            tracing::error!("Invalid id token: {}", e);
-            return Err(LoginFlowError::Status(StatusCode::UNAUTHORIZED));
+    async fn do_verify(
+        client: &OidcClientReady,
+        id_token: &CoreIdToken,
+        nonce_cookie: Option<&Nonce>,
+    ) -> Result<OIDCSessionClaims, LoginFlowError> {
+        let claims = match id_token.claims(
+            &client.id_token_verifier(),
+            nonce_cookie.unwrap_or(&Nonce::new(String::new())),
+        ) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!("Invalid id token: {}", e);
+                return Err(LoginFlowError::Status(StatusCode::UNAUTHORIZED));
+            }
+        };
+        let sub = claims.subject().to_string();
+        let exp = claims
+            .expiration()
+            .timestamp()
+            .try_into()
+            .expect("time should not move backwards");
+        Ok(OIDCSessionClaims { sub, exp })
+    }
+
+    // first attempt using the current client
+    {
+        let client = client_lock.read().await;
+        if let Ok(claims) = do_verify(&*client, id_token, nonce_cookie).await {
+            return Ok(claims);
         }
-    };
-    let sub = claims.subject().to_string();
-    let exp = claims
-        .expiration()
-        .timestamp()
-        .try_into()
-        .expect("time should not move backwards");
-    Ok(OIDCSessionClaims { sub, exp })
+    }
+
+    // verification failed; try refreshing the client once
+    tracing::info!("verification failed, refreshing OIDC client");
+    if let Err(e) = refresh_oidc_client(client_lock, cfg).await {
+        tracing::error!("failed to refresh OIDC client: {e}");
+        return Err(LoginFlowError::Status(StatusCode::UNAUTHORIZED));
+    }
+
+    // retry with refreshed client
+    let client = client_lock.read().await;
+    do_verify(&*client, id_token, nonce_cookie).await
 }
 
 /// Exchange code, verify `id_token` and build session
 async fn process_token_and_build_session(
-    client: &OidcClientReady,
+    client_lock: &SharedOidcClient,
+    cfg: &crate::config::OidcConfig,
     jar: &SignedCookieJar,
     code: Option<String>,
 ) -> Result<OIDCSessionClaims, LoginFlowError> {
@@ -383,10 +442,10 @@ async fn process_token_and_build_session(
         pkce_present = pkce_verifier.is_some(),
         "PKCE verifier present in cookie"
     );
-    let token_response = exchange_code_for_token(client, code, pkce_verifier).await?;
+    let token_response = exchange_code_for_token(client_lock, code, pkce_verifier).await?;
     let id_token = id_token_from_response(&token_response)?;
     let nonce_cookie = nonce_from_cookie(jar);
-    verify_id_token_and_build_session(client, &id_token, nonce_cookie.as_ref())
+    verify_id_token_and_build_session(client_lock, cfg, &id_token, nonce_cookie.as_ref()).await
 }
 
 /// OIDC callback handler
@@ -404,7 +463,7 @@ pub(crate) async fn callback(
 ) -> impl IntoResponse {
     let auth::Resolved::Oidc {
         ref client,
-        scopes: _,
+        ref config,
     } = auth.mode
     else {
         return Redirect::to("/").into_response();
@@ -418,15 +477,21 @@ pub(crate) async fn callback(
         return resp;
     }
 
-    let client = match set_redirect_uri(client, &headers) {
+    // Need a temporary owned copy for redirect URI computation;
+    // keep the shared lock for later token exchange.
+    let client_for_redirect = {
+        let guard = client.read().await;
+        guard.clone()
+    };
+    let client_for_redirect = match set_redirect_uri(&client_for_redirect, &headers) {
         Ok(c) => c,
         Err(sc) => return sc.into_response(),
     };
 
     // Log useful debug info to diagnose token exchange issues
-    tracing::debug!(redirect_uri = %client.redirect_uri().expect("Should be set now").as_str(), "OIDC callback computed redirect URI");
+    tracing::debug!(redirect_uri = %client_for_redirect.redirect_uri().expect("Should be set now").as_str(), "OIDC callback computed redirect URI");
 
-    let session = match process_token_and_build_session(&client, &jar, code).await {
+    let session = match process_token_and_build_session(client, config, &jar, code).await {
         Ok(s) => {
             if s.is_expired() {
                 return login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED).into_response();
@@ -485,4 +550,5 @@ mod tests {
             LoginFlowError::Status(_) => panic!("Expected LoginRedirect"),
         }
     }
+
 }

@@ -201,6 +201,18 @@ fn normalize_path(path: &Path) -> PathBuf {
     result
 }
 
+/// Stored OIDC configuration. Keeping this around allows the runtime to
+/// rebuild the client if discovery needs to be retried - e.g. on JWKS failure.
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct OidcConfig {
+    pub issuer: String,
+    #[serde(default = "default_oidc_client_id")]
+    pub client_id: String,
+    pub client_secret: Arc<SecretString>,
+    #[serde(default = "default_oidc_scopes")]
+    pub scopes: Vec<String>,
+}
+
 /// Supported authentication modes for the Web UI
 #[derive(Debug, Deserialize, Clone, Default)]
 #[serde(rename_all = "lowercase")]
@@ -213,14 +225,7 @@ pub(crate) enum AuthMode {
     /// For security, the token is only logged during initial generation, not when loaded from database.
     Token { token: Option<Arc<SecretString>> },
     /// `OpenID` Connect login via authorization code flow
-    Oidc {
-        issuer: String,
-        #[serde(default = "default_oidc_client_id")]
-        client_id: String,
-        client_secret: Arc<SecretString>,
-        #[serde(default = "default_oidc_scopes")]
-        scopes: Vec<String>,
-    },
+    Oidc(OidcConfig),
     /// External auth was configured (reverse proxy / external provider). The
     /// `exceptions_version` is used to record which set/level of exceptions the
     /// operator acknowledged; the UI will show a warning when this doesn't
@@ -240,19 +245,14 @@ impl PartialEq for AuthMode {
                 _ => false,
             },
             (
-                &AM::Oidc {
-                    issuer: ref i1,
-                    client_id: ref c1,
-                    client_secret: ref s1,
-                    scopes: ref sc1,
-                },
-                &AM::Oidc {
-                    issuer: ref i2,
-                    client_id: ref c2,
-                    client_secret: ref s2,
-                    scopes: ref sc2,
-                },
-            ) => i1 == i2 && c1 == c2 && s1.expose_secret() == s2.expose_secret() && sc1 == sc2,
+                &AM::Oidc(ref cfg1),
+                &AM::Oidc(ref cfg2),
+            ) => {
+                cfg1.issuer == cfg2.issuer
+                    && cfg1.client_id == cfg2.client_id
+                    && cfg1.client_secret.expose_secret() == cfg2.client_secret.expose_secret()
+                    && cfg1.scopes == cfg2.scopes
+            }
             (
                 &AM::External {
                     exceptions_version: v1,

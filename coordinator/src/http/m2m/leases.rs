@@ -13,6 +13,7 @@ use crate::{
 };
 
 /// See [`LeaseMapRaw`]
+/// TODO: Consider switching to Rwlock or to dashmap
 pub(crate) type LeaseMap = Arc<Mutex<LeaseMapRaw>>;
 
 /// Represents a source that holds a lease on a host.
