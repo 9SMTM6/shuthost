@@ -23,13 +23,14 @@ use serde::Deserialize;
 use crate::{
     auth::{
         self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, LOGIN_ERROR_INSECURE,
-        LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims,
+        LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims, SharedOidcClient,
         cookies::{
             create_oidc_session_cookie, create_protected_cookie,
             extract_return_to_and_remove_cookie,
         },
-        login_error_redirect, request_is_secure, SharedOidcClient,
+        login_error_redirect, request_is_secure,
     },
+    config::OidcConfig,
     http::AppState,
 };
 
@@ -132,7 +133,6 @@ pub(crate) async fn build_client(
     Ok(client)
 }
 
-
 /// Refresh the client stored in `shared` using the original configuration.
 ///
 /// Currently we don’t have a unit test for this flow; an integration or
@@ -142,7 +142,7 @@ pub(crate) async fn build_client(
 /// available (#TODO issue)
 pub(crate) async fn refresh_oidc_client(
     shared: &SharedOidcClient,
-    cfg: &crate::config::OidcConfig,
+    cfg: &OidcConfig,
 ) -> eyre::Result<()> {
     tracing::info!(issuer=%cfg.issuer, "refreshing OIDC client from config");
     let new_client = build_client(&cfg.issuer, &cfg.client_id, &cfg.client_secret)
@@ -377,11 +377,11 @@ fn id_token_from_response(
 
 async fn verify_id_token_and_build_session(
     client_lock: &SharedOidcClient,
-    cfg: &crate::config::OidcConfig,
+    cfg: &OidcConfig,
     id_token: &CoreIdToken,
     nonce_cookie: Option<&Nonce>,
 ) -> Result<OIDCSessionClaims, LoginFlowError> {
-    async fn do_verify(
+    fn do_verify(
         client: &OidcClientReady,
         id_token: &CoreIdToken,
         nonce_cookie: Option<&Nonce>,
@@ -408,7 +408,7 @@ async fn verify_id_token_and_build_session(
     // first attempt using the current client
     {
         let client = client_lock.read().await;
-        if let Ok(claims) = do_verify(&*client, id_token, nonce_cookie).await {
+        if let Ok(claims) = do_verify(&client, id_token, nonce_cookie) {
             return Ok(claims);
         }
     }
@@ -422,13 +422,13 @@ async fn verify_id_token_and_build_session(
 
     // retry with refreshed client
     let client = client_lock.read().await;
-    do_verify(&*client, id_token, nonce_cookie).await
+    do_verify(&client, id_token, nonce_cookie)
 }
 
 /// Exchange code, verify `id_token` and build session
 async fn process_token_and_build_session(
     client_lock: &SharedOidcClient,
-    cfg: &crate::config::OidcConfig,
+    cfg: &OidcConfig,
     jar: &SignedCookieJar,
     code: Option<String>,
 ) -> Result<OIDCSessionClaims, LoginFlowError> {
@@ -550,5 +550,4 @@ mod tests {
             LoginFlowError::Status(_) => panic!("Expected LoginRedirect"),
         }
     }
-
 }

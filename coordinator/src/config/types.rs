@@ -244,10 +244,7 @@ impl PartialEq for AuthMode {
                 (&None, &None) => true,
                 _ => false,
             },
-            (
-                &AM::Oidc(ref cfg1),
-                &AM::Oidc(ref cfg2),
-            ) => {
+            (&AM::Oidc(ref cfg1), &AM::Oidc(ref cfg2)) => {
                 cfg1.issuer == cfg2.issuer
                     && cfg1.client_id == cfg2.client_id
                     && cfg1.client_secret.expose_secret() == cfg2.client_secret.expose_secret()

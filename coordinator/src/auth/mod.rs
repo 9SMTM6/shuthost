@@ -11,14 +11,17 @@ pub mod token;
 
 use alloc::sync::Arc;
 
-use crate::{auth::oidc::{OidcClientReady, build_client}, config::OidcConfig};
-use tokio::sync::RwLock;
+use crate::{
+    auth::oidc::{OidcClientReady, build_client},
+    config::OidcConfig,
+};
 use axum::extract::FromRef;
 use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
 use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 use crate::{
@@ -167,9 +170,13 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
         AuthMode::Token { ref token } => resolve_token_auth(token.as_ref(), db_pool).await,
         AuthMode::Oidc(ref oidc_cfg) => {
             info!("Auth mode: oidc, issuer={}", oidc_cfg.issuer);
-            let client_inner = build_client(&oidc_cfg.issuer, &oidc_cfg.client_id, &oidc_cfg.client_secret)
-                .await
-                .wrap_err("Failed to build OIDC client")?;
+            let client_inner = build_client(
+                &oidc_cfg.issuer,
+                &oidc_cfg.client_id,
+                &oidc_cfg.client_secret,
+            )
+            .await
+            .wrap_err("Failed to build OIDC client")?;
             let client = Arc::new(RwLock::new(client_inner));
             Ok(Resolved::Oidc {
                 client,
