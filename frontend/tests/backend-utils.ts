@@ -3,9 +3,7 @@ import os from 'node:os';
 import https, { Server } from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
-
-let oidcTmpDir: string | undefined;
+import { createPublicKey } from 'node:crypto';
 
 // --- configuration --------------------------------------------------------
 // canonical list of known configuration keys; kept in a fixed order so
@@ -194,35 +192,24 @@ const killPidGracefully = async (pid: number, timeoutMs = 5000) => {
 };
 
 export const startOidcMockServer = async () => {
-    // Create a temporary directory for the generated cert/key
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mock-oidc-'));
-    oidcTmpDir = tmpDir;
+    // Reuse the static TLS certificate/key that the backend already uses
+    // during tests.  This removes the runtime dependency on openssl and
+    // avoids creating temporary files.
+    const thisDir = path.dirname(new URL(import.meta.url).pathname);
+    const certPath = path.resolve(thisDir, 'configs', 'tls_cert.pem');
+    const keyPath = path.resolve(thisDir, 'configs', 'tls_key.pem');
 
-    const keyPath = path.join(tmpDir, 'key.pem');
-    const certPath = path.join(tmpDir, 'cert.pem');
-    const pubPath = path.join(tmpDir, 'pub.pem');
-
-    // Generate key + self-signed cert using openssl (simple form). This is
-    // the earlier, more permissive invocation that OpenSSL generated for us
-    // previously and may be accepted by the test coordinator setup.
-    execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout ${keyPath} -out ${certPath} -days 1 -subj "/CN=127.0.0.1"`);
-    // Extract public key in PEM form
-    execSync(`openssl rsa -in ${keyPath} -pubout -out ${pubPath}`);
-
-    const key = fs.readFileSync(keyPath, 'utf8');
     const cert = fs.readFileSync(certPath, 'utf8');
-    const pubPem = fs.readFileSync(pubPath, 'utf8');
+    const key = fs.readFileSync(keyPath, 'utf8');
 
-    const publicKeyBase64 = pubPem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\n/g, '');
-
+    // derive a JWK from the public key embedded in the cert
+    const jwk = createPublicKey(cert).export({ format: 'jwk' });
     const jwks = {
         keys: [
             {
-                kty: 'RSA',
+                ...jwk,
                 use: 'sig',
                 kid: 'test-key',
-                n: publicKeyBase64,
-                e: 'AQAB',
             },
         ],
     };
@@ -232,9 +219,7 @@ export const startOidcMockServer = async () => {
         authorization_endpoint: `${OIDC_BASE_URL}/authorize`,
         token_endpoint: `${OIDC_BASE_URL}/token`,
         jwks_uri: `${OIDC_BASE_URL}/jwks.json`,
-        // tests (and coordinator) expect at least one supported response type.
         response_types_supported: ['code', 'id_token', 'token id_token'],
-        // adding minimal fields for compatibility
         grant_types_supported: ['authorization_code', 'refresh_token'],
         subject_types_supported: ['public'],
         id_token_signing_alg_values_supported: ['RS256'],
@@ -262,15 +247,4 @@ export const startOidcMockServer = async () => {
         });
         oidcServer!.on('error', (err) => reject(err));
     });
-};
-
-export const cleanupOidcMockServer = async () => {
-    if (oidcTmpDir) {
-        try {
-            fs.rmSync(oidcTmpDir, { recursive: true, force: true });
-        } catch (e) {
-            // ignore cleanup errors
-        }
-        oidcTmpDir = undefined;
-    }
 };
