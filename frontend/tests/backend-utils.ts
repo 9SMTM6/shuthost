@@ -1,6 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import fs from 'fs';
-import os from 'os';
+import os from 'node:os';
+import https, { Server } from 'node:https';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
+
+let oidcTmpDir: string | undefined;
 
 // --- configuration --------------------------------------------------------
 export const configs = {
@@ -13,6 +18,8 @@ export const configs = {
     "auth-outdated-exceptions": './tests/configs/auth-outdated-exceptions.toml',
     "no-db": './tests/configs/no-db.toml',
 };
+
+export const BACKEND_PATH = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
 
 // canonical list of all backend keys including the special demo entry.  Using
 // a single array ensures loops in setup/teardown stay in sync and provides a
@@ -29,6 +36,37 @@ export const OIDC_PORT = BASE_PORT;
 
 // demo mode always uses the port immediately following all named configs.
 export const DEMO_PORT = BASE_PORT + 1 + Object.values(configs).length;
+
+// Mock OIDC server host/port and base URL (DRY these values).  The port is
+// coordinated with the auth-oidc backend so parallel workers pick unique
+// ports; see `assignedOidcPort` in backend-utils.ts.
+const OIDC_HOST = '127.0.0.1';
+export const OIDC_BASE_URL = `https://${OIDC_HOST}:${OIDC_PORT}`;
+
+/**
+ * Kill any coordinator process listening for the given configuration key.
+ *
+ * This finds the deterministic port for `key`, enumerates PIDs listening on
+ * that port, validates that each PID looks like our coordinator binary and
+ * attempts a graceful shutdown.
+ */
+export const killTestBackendProcess = async (key: ConfigKey) => {
+    const port = assignedPortForConfig(key);
+    const pids = getPidsListeningOnPort(port);
+    if (pids.length === 0) {
+        console.log(`no processes found for config ${key} on port ${port}`);
+        return;
+    }
+    for (const pid of pids) {
+        const isExpected = validatePidIsExpected(pid, BACKEND_PATH);
+        if (isExpected) {
+            console.log(`terminating coordinator pid ${pid} for config ${key} on port ${port}`);
+            await killPidGracefully(pid);
+        } else {
+            console.warn(`leaving pid ${pid} for config ${key} on port ${port} (not coordinator)`);
+        }
+    }
+};
 
 /**
  * Return the deterministic port number used by a given coordinator configuration.
@@ -96,9 +134,9 @@ export const getPidsListeningOnPort = (port: number) => {
  */
 const pidCommandLine = (pid: number) => {
     try {
-        if (os.platform() === 'linux') {
-            const content = fs.readFileSync(`/proc/${pid}/cmdline`, { encoding: 'utf8' });
-            return content.replace(/\0/g, ' ').trim();
+        if (os.platform() === 'win32') {
+            const out = spawnSync('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object -ExpandProperty CommandLine`], { encoding: 'utf8' }).stdout.trim();
+            return out || null;
         } else {
             const out = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8' }).stdout.trim();
             return out || null;
@@ -113,7 +151,7 @@ const pidCommandLine = (pid: number) => {
  * Used to make sure we only kill processes that look like our coordinator
  * binary.
  */
-export const validatePidIsExpected = (pid: number, expectedCmdSubstr: string) => {
+const validatePidIsExpected = (pid: number, expectedCmdSubstr: string) => {
     const cmd = pidCommandLine(pid);
     if (!cmd) return false;
     return cmd.includes(expectedCmdSubstr);
@@ -123,7 +161,7 @@ export const validatePidIsExpected = (pid: number, expectedCmdSubstr: string) =>
  * Kill a process gracefully via SIGTERM, then SIGKILL if necessary. Returns
  * true if the process is no longer running after the call.
  */
-export const killPidGracefully = async (pid: number, timeoutMs = 5000) => {
+const killPidGracefully = async (pid: number, timeoutMs = 5000) => {
     try {
         process.kill(pid, 'SIGTERM');
     } catch {
@@ -154,4 +192,86 @@ export const killPidGracefully = async (pid: number, timeoutMs = 5000) => {
         };
         check();
     });
+};
+
+export const startOidcMockServer = async () => {
+    // Create a temporary directory for the generated cert/key
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mock-oidc-'));
+    oidcTmpDir = tmpDir;
+
+    const keyPath = path.join(tmpDir, 'key.pem');
+    const certPath = path.join(tmpDir, 'cert.pem');
+    const pubPath = path.join(tmpDir, 'pub.pem');
+
+    // Generate key + self-signed cert using openssl (simple form). This is
+    // the earlier, more permissive invocation that OpenSSL generated for us
+    // previously and may be accepted by the test coordinator setup.
+    execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout ${keyPath} -out ${certPath} -days 1 -subj "/CN=127.0.0.1"`);
+    // Extract public key in PEM form
+    execSync(`openssl rsa -in ${keyPath} -pubout -out ${pubPath}`);
+
+    const key = fs.readFileSync(keyPath, 'utf8');
+    const cert = fs.readFileSync(certPath, 'utf8');
+    const pubPem = fs.readFileSync(pubPath, 'utf8');
+
+    const publicKeyBase64 = pubPem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\n/g, '');
+
+    const jwks = {
+        keys: [
+            {
+                kty: 'RSA',
+                use: 'sig',
+                kid: 'test-key',
+                n: publicKeyBase64,
+                e: 'AQAB',
+            },
+        ],
+    };
+
+    const discovery = {
+        issuer: OIDC_BASE_URL,
+        authorization_endpoint: `${OIDC_BASE_URL}/authorize`,
+        token_endpoint: `${OIDC_BASE_URL}/token`,
+        jwks_uri: `${OIDC_BASE_URL}/jwks.json`,
+        // tests (and coordinator) expect at least one supported response type.
+        response_types_supported: ['code', 'id_token', 'token id_token'],
+        // adding minimal fields for compatibility
+        grant_types_supported: ['authorization_code', 'refresh_token'],
+        subject_types_supported: ['public'],
+        id_token_signing_alg_values_supported: ['RS256'],
+    };
+
+    const serverOptions = { key, cert };
+
+    let oidcServer = https.createServer(serverOptions, (req, res) => {
+        if (req.url === '/.well-known/openid-configuration') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(discovery));
+        } else if (req.url === '/jwks.json') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(jwks));
+        } else {
+            res.writeHead(404);
+            res.end();
+        }
+    });
+    return await new Promise<Server>((resolve, reject) => {
+        // Bind explicitly to IPv4 loopback to avoid IPv6/IPv4 dual-stack issues.
+        oidcServer!.listen(OIDC_PORT, OIDC_HOST, () => {
+            console.log(`OIDC mock server running at ${OIDC_BASE_URL}`);
+            resolve(oidcServer);
+        });
+        oidcServer!.on('error', (err) => reject(err));
+    });
+};
+
+export const cleanupOidcMockServer = async () => {
+    if (oidcTmpDir) {
+        try {
+            fs.rmSync(oidcTmpDir, { recursive: true, force: true });
+        } catch (e) {
+            // ignore cleanup errors
+        }
+        oidcTmpDir = undefined;
+    }
 };

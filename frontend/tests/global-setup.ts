@@ -1,51 +1,17 @@
 import { spawn } from 'child_process';
-import { configs, ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsListeningOnPort, validatePidIsExpected, killPidGracefully } from './backend-utils';
-import { startOidcMockServer } from './test-utils';
-import net from 'net';
-
-// Create a small helper that resolves when a port is free (or errors after timeout)
-const waitForPortFree = (port: number, timeoutMs = 10000) => {
-    return new Promise<void>((resolve, reject) => {
-        const start = Date.now();
-        const tryBind = () => {
-            const srv = net.createServer().once('error', (err: any) => {
-                srv.close();
-                if (err.code === 'EADDRINUSE') {
-                    if (Date.now() - start > timeoutMs) {
-                        reject(new Error(`port ${port} still in use after ${timeoutMs}ms`));
-                    } else {
-                        setTimeout(tryBind, 100);
-                    }
-                } else {
-                    reject(err);
-                }
-            }).once('listening', () => {
-                srv.close();
-                resolve();
-            }).listen(port);
-        };
-        tryBind();
-    });
-};
-
-export const getBackendPath = () => process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
+import { configs, ALL_CONFIG_KEYS, ConfigKey, killTestBackendProcess, assignedPortForConfig, getPidsListeningOnPort, BACKEND_PATH, startOidcMockServer } from './backend-utils';
 
 const globalSetup = async () => {
     console.log('Playwright global setup: starting backend processes');
-    const backendBin = getBackendPath();
+    const backendBin = BACKEND_PATH;
+
+    // start mock OIDC server for any config that needs it
+    console.log('global-setup: starting mock OIDC server');
+    await startOidcMockServer().then(() => undefined);
 
     const startOne = async (key: ConfigKey, configPath?: string) => {
         const port = assignedPortForConfig(key);
-        const pids = getPidsListeningOnPort(port);
-        for (const pid of pids) {
-            if (validatePidIsExpected(pid, backendBin)) {
-                console.log(`killing stale coordinator pid ${pid} on port ${port}`);
-                await killPidGracefully(pid);
-            } else {
-                throw new Error(`port ${port} is already in use by pid ${pid} which does not appear to be the coordinator`);
-            }
-        }
-        await waitForPortFree(port, 5000);
+        await killTestBackendProcess(key);
 
         const args = configPath
             ? ['control-service', '--port', String(port), `--config=${configPath}`]
@@ -65,19 +31,10 @@ const globalSetup = async () => {
     };
 
     const tasks: Promise<void>[] = [];
-    // start mock OIDC server if any config needs it and we're not skipping
-    if (process.env['SKIP_OIDC'] !== '1') {
-        console.log('global-setup: starting mock OIDC server');
-        tasks.push(startOidcMockServer().then(() => undefined));
-    }
 
     for (const key of ALL_CONFIG_KEYS) {
         if (key === 'demo') {
             tasks.push(startOne('demo'));
-            continue;
-        }
-        if (process.env['SKIP_OIDC'] === '1' && key === 'auth-oidc') {
-            console.log('global-setup: skipping OIDC config');
             continue;
         }
         // key is guaranteed to be one of configs at this point; cast for index

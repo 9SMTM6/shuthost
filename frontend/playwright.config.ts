@@ -4,8 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
     // Playwright will resolve these paths relative to the config file.
-    globalSetup: './global-setup.ts',
-    globalTeardown: './global-teardown.ts',
+    globalSetup: './tests/global-setup.ts',
+    globalTeardown: './tests/global-teardown.ts',
     testDir: './tests',
     outputDir: '../target/playwright-test-results/',
     timeout: 30000,
