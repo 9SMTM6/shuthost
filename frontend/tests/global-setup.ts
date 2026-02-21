@@ -1,11 +1,11 @@
 import { spawn } from 'child_process';
-import { configs, ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsListeningOnPort, validatePidIsExpected, killPidGracefully } from './tests/backend-utils';
-import { startOidcMockServer } from './tests/test-utils';
+import { configs, ALL_CONFIG_KEYS, ConfigKey, assignedPortForConfig, getPidsListeningOnPort, validatePidIsExpected, killPidGracefully } from './backend-utils';
+import { startOidcMockServer } from './test-utils';
 import net from 'net';
 
 // Create a small helper that resolves when a port is free (or errors after timeout)
-const waitForPortFree = (port: number, timeoutMs = 10000): Promise<void> => {
-    return new Promise((resolve, reject) => {
+const waitForPortFree = (port: number, timeoutMs = 10000) => {
+    return new Promise<void>((resolve, reject) => {
         const start = Date.now();
         const tryBind = () => {
             const srv = net.createServer().once('error', (err: any) => {
@@ -28,9 +28,11 @@ const waitForPortFree = (port: number, timeoutMs = 10000): Promise<void> => {
     });
 };
 
+export const getBackendPath = () => process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
+
 const globalSetup = async () => {
     console.log('Playwright global setup: starting backend processes');
-    const backendBin = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
+    const backendBin = getBackendPath();
 
     const startOne = async (key: ConfigKey, configPath?: string) => {
         const port = assignedPortForConfig(key);

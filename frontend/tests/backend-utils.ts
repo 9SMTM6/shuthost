@@ -39,7 +39,7 @@ export const DEMO_PORT = BASE_PORT + 1 + Object.values(configs).length;
  * - any other value falls back to a per-worker port (for compatibility with
  *   manual usages but should not happen in normal tests)
  */
-export const assignedPortForConfig = (configKey: ConfigKey): number => {
+export const assignedPortForConfig = (configKey: ConfigKey) => {
     // demo mode uses the dedicated port
     if (configKey === 'demo') {
         return DEMO_PORT;
@@ -65,7 +65,7 @@ export const assignedPortForConfig = (configKey: ConfigKey): number => {
  * If the lookup fails we return an empty array (caller will treat the port as
  * free).
  */
-export const getPidsListeningOnPort = (port: number): number[] => {
+export const getPidsListeningOnPort = (port: number) => {
     try {
         if (os.platform() === 'win32') {
             const out = spawnSync('netstat', ['-ano'], { encoding: 'utf8' }).stdout;
@@ -94,7 +94,7 @@ export const getPidsListeningOnPort = (port: number): number[] => {
 /**
  * Return the full command line for a PID, or null if it can't be determined.
  */
-export const pidCommandLine = (pid: number): string | null => {
+const pidCommandLine = (pid: number) => {
     try {
         if (os.platform() === 'linux') {
             const content = fs.readFileSync(`/proc/${pid}/cmdline`, { encoding: 'utf8' });
@@ -113,7 +113,7 @@ export const pidCommandLine = (pid: number): string | null => {
  * Used to make sure we only kill processes that look like our coordinator
  * binary.
  */
-export const validatePidIsExpected = (pid: number, expectedCmdSubstr: string): boolean => {
+export const validatePidIsExpected = (pid: number, expectedCmdSubstr: string) => {
     const cmd = pidCommandLine(pid);
     if (!cmd) return false;
     return cmd.includes(expectedCmdSubstr);
@@ -123,7 +123,7 @@ export const validatePidIsExpected = (pid: number, expectedCmdSubstr: string): b
  * Kill a process gracefully via SIGTERM, then SIGKILL if necessary. Returns
  * true if the process is no longer running after the call.
  */
-export const killPidGracefully = async (pid: number, timeoutMs = 5000): Promise<boolean> => {
+export const killPidGracefully = async (pid: number, timeoutMs = 5000) => {
     try {
         process.kill(pid, 'SIGTERM');
     } catch {
