@@ -8,34 +8,40 @@ import { execSync } from 'node:child_process';
 let oidcTmpDir: string | undefined;
 
 // --- configuration --------------------------------------------------------
-export const configs = {
-    "hosts-only": './tests/configs/hosts-only.toml',
-    "hosts-and-clients": './tests/configs/hosts-and-clients.toml',
-    "nada": './tests/configs/nada.toml',
-    "auth-none": './tests/configs/auth-none.toml',
-    "auth-token": './tests/configs/auth-token.toml',
-    "auth-oidc": './tests/configs/auth-oidc.toml',
-    "auth-outdated-exceptions": './tests/configs/auth-outdated-exceptions.toml',
-    "no-db": './tests/configs/no-db.toml',
-};
+// canonical list of known configuration keys; kept in a fixed order so
+// ports assigned by `assignedPortForConfig` remain deterministic.
+export const CONFIG_KEYS = [
+    'hosts-only',
+    'hosts-and-clients',
+    'nada',
+    'auth-none',
+    'auth-token',
+    'auth-oidc',
+    'auth-outdated-exceptions',
+    'no-db',
+] as const;
+
+// helper that builds the config file path for a given key.  demo mode does
+// not have a configuration file, so callers should special-case it.
+export const configPathForKey = (key: typeof CONFIG_KEYS[number]) => `./tests/configs/${key}.toml`;
 
 export const BACKEND_PATH = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
 
 // canonical list of all backend keys including the special demo entry.  Using
 // a single array ensures loops in setup/teardown stay in sync and provides a
 // convenient typed union.
-export const ALL_CONFIG_KEYS = ([
-    ...Object.keys(configs),
+// comprehensive list including the special `demo` entry.  having a
+// separate array makes it easy to iterate through all possible backends
+// during setup/teardown.
+export const ALL_CONFIG_KEYS = [
+    ...CONFIG_KEYS,
     'demo',
-] as Array<"demo" | keyof typeof configs>);
+] as const;
 
 export type ConfigKey = typeof ALL_CONFIG_KEYS[number];
 
 export const BASE_PORT = 8081;
 export const OIDC_PORT = BASE_PORT;
-
-// demo mode always uses the port immediately following all named configs.
-export const DEMO_PORT = BASE_PORT + 1 + Object.values(configs).length;
 
 // Mock OIDC server host/port and base URL (DRY these values).  The port is
 // coordinated with the auth-oidc backend so parallel workers pick unique
@@ -78,14 +84,7 @@ export const killTestBackendProcess = async (key: ConfigKey) => {
  *   manual usages but should not happen in normal tests)
  */
 export const assignedPortForConfig = (configKey: ConfigKey) => {
-    // demo mode uses the dedicated port
-    if (configKey === 'demo') {
-        return DEMO_PORT;
-    }
-
-    // normal entries from `configs` (caller must supply one of the known keys or 'demo')
-    const keys = Object.keys(configs);
-    const idx = keys.indexOf(configKey);
+    const idx = ALL_CONFIG_KEYS.indexOf(configKey);
     if (idx !== -1) {
         return BASE_PORT + 1 + idx;
     }

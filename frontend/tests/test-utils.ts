@@ -1,18 +1,8 @@
 /// <reference lib="dom" />
 
 import { Page } from '@playwright/test';
-// child_process functions removed; not needed now
-export {
-  configs,
-} from './backend-utils';
 import { assignedPortForConfig} from './backend-utils';
 
-// Return a complete base URL (including protocol and port) for a given
-// coordinator identifier.  `configKey` should be one of the keys from
-// `configs` (e.g. "hosts-only", "auth-token"), or the literal string
-// `'demo'` for the special demo‑mode backend.  If omitted a per‑worker
-// fallback port is used (only expected in legacy code).  `useTls` controls
-// whether https:// is used; some configs (auth-token, auth-oidc) run TLS.
 import { ConfigKey } from './backend-utils';
 
 export const getBaseUrl = (configKey: ConfigKey, useTls = false): string => {

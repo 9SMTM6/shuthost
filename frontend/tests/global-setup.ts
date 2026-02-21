@@ -1,5 +1,14 @@
 import { spawn } from 'child_process';
-import { configs, ALL_CONFIG_KEYS, ConfigKey, killTestBackendProcess, assignedPortForConfig, getPidsListeningOnPort, BACKEND_PATH, startOidcMockServer } from './backend-utils';
+import {
+    ALL_CONFIG_KEYS,
+    ConfigKey,
+    configPathForKey,
+    killTestBackendProcess,
+    assignedPortForConfig,
+    getPidsListeningOnPort,
+    BACKEND_PATH,
+    startOidcMockServer,
+} from './backend-utils';
 
 const globalSetup = async () => {
     console.log('Playwright global setup: starting backend processes');
@@ -9,14 +18,14 @@ const globalSetup = async () => {
     console.log('global-setup: starting mock OIDC server');
     await startOidcMockServer().then(() => undefined);
 
-    const startOne = async (key: ConfigKey, configPath?: string) => {
+    const startOne = async (key: ConfigKey) => {
         const port = assignedPortForConfig(key);
         await killTestBackendProcess(key);
 
-        const args = configPath
-            ? ['control-service', '--port', String(port), `--config=${configPath}`]
-            : ['demo-service', '--port', String(port)];
-        console.log(`spawning ${configPath ?? 'demo coordinator'} on port ${port}`);
+        const args = key === 'demo'
+            ? ['demo-service', '--port', String(port)]
+            : ['control-service', '--port', String(port), `--config=${configPathForKey(key)}`];
+        console.log(`spawning ${key} coordinator on port ${port}`);
         spawn(backendBin, args, { stdio: 'inherit', env: { RUST_LOG: 'error', ...process.env } });
 
         await new Promise<void>((resolve, reject) => {
@@ -37,8 +46,7 @@ const globalSetup = async () => {
             tasks.push(startOne('demo'));
             continue;
         }
-        // key is guaranteed to be one of configs at this point; cast for index
-        tasks.push(startOne(key, configs[key]));
+        tasks.push(startOne(key));
     }
 
     await Promise.all(tasks);
