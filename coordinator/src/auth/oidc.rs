@@ -111,9 +111,10 @@ pub(crate) async fn build_client(
 
     // Discover provider
     let issuer = IssuerUrl::new(issuer.to_string()).wrap_err("invalid issuer URL")?;
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer, &ReqwestClient::from(&http))
-        .await
-        .wrap_err("OIDC discovery failed")?;
+    let provider_metadata =
+        CoreProviderMetadata::discover_async(issuer, &ReqwestClient::from(http))
+            .await
+            .wrap_err("OIDC discovery failed")?;
 
     // Construct client and set required endpoints
     let client = CoreClient::from_provider_metadata(
@@ -321,7 +322,7 @@ async fn exchange_code_for_token(
     if let Some(v) = pkce_verifier {
         req = req.set_pkce_verifier(v);
     }
-    match req.request_async(&ReqwestClient::from(&http)).await {
+    match req.request_async(&ReqwestClient::from(http)).await {
         Ok(r) => Ok(r),
         Err(e) => {
             tracing::error!("Token exchange failed: {:#?}", e);
