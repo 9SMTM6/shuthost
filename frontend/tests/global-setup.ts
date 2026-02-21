@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -12,8 +12,22 @@ import {
     startOidcMockServer,
 } from './backend-utils';
 
+const buildCoordinator = () => {
+    if (process.env['SKIP_BUILD']) {
+        console.log('SKIP_BUILD set — skipping coordinator build');
+        return;
+    }
+
+    const flags = process.env['COVERAGE'] ? "" : "--release"
+
+    console.log(`Global setup: building coordinator (${flags})`);
+    const env = { ...process.env, OIDC_DANGER_ACCEPT_INVALID_CERTS: '1' };
+    execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env });
+}
+
 const globalSetup = async () => {
-    console.log('Playwright global setup: starting backend processes');
+    console.log('Playwright global setup');
+    buildCoordinator();
     // helper for starting a single backend (used for normal startup and
     // earlier during cert bootstrapping).
     const startOne = async (key: ConfigKey) => {
