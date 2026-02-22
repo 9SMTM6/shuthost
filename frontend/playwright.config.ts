@@ -43,37 +43,24 @@ export default defineConfig({
     },
     projects: [
         {
-            name: 'Global Setup',
-            testMatch: ['global-setup.*'],
-        },
-        {
             name: 'Desktop Dark',
             testIgnore: ["mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
-            dependencies: ['Global Setup'],
         },
         {
             name: 'Desktop Light',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*", "mobile-navigation.spec.*"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
-            dependencies: ['Global Setup'],
         },
         {
             name: 'Mobile Dark',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'dark' },
-            dependencies: ['Global Setup'],
         },
         {
             name: 'Mobile Light',
             testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
-            dependencies: ['Global Setup'],
-        },
-        {
-            name: 'Global Teardown',
-            testMatch: ['global-teardown.*'],
-            dependencies: ['Desktop Dark', 'Desktop Light', 'Mobile Dark', 'Mobile Light'],
         },
     ],
 });
