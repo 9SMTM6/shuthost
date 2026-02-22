@@ -1,10 +1,11 @@
 //! Integration tests for lease endpoints (API and M2M)
 
-use std::time::Duration;
+use core::time::Duration;
 
 use reqwest::Client;
 use secrecy::SecretString;
 use shuthost_common::create_signed_message;
+use tokio::time;
 
 use crate::common::{
     get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
@@ -12,7 +13,7 @@ use crate::common::{
 };
 
 #[tokio::test]
-async fn test_m2m_lease_take_and_release() {
+async fn m2m_lease_take_and_release() {
     let coord_port = get_free_port();
 
     let client_id = "test-client-123";
@@ -64,7 +65,7 @@ async fn test_m2m_lease_take_and_release() {
                 .text()
                 .await
                 .unwrap_or_else(|_| String::from("(no body)"));
-            panic!("Lease take failed with status {}: {}", status, body);
+            panic!("Lease take failed with status {status}: {body}");
         }
     });
 
@@ -101,13 +102,13 @@ async fn test_m2m_lease_take_and_release() {
                 .text()
                 .await
                 .unwrap_or_else(|_| String::from("(no body)"));
-            panic!("Lease release failed with status {}: {}", status, body);
+            panic!("Lease release failed with status {status}: {body}");
         }
     });
 
     // without sleeping here it seems to fail
     // maybe the scheduler doesn't finish the request before the agent was killed.
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    time::sleep(Duration::from_millis(100)).await;
 
     // Simulate shutdown by killing the agent
     drop(agent_guard);
@@ -117,7 +118,7 @@ async fn test_m2m_lease_take_and_release() {
 }
 
 #[tokio::test]
-async fn test_m2m_lease_async_take_and_release() {
+async fn m2m_lease_async_take_and_release() {
     let coord_port = get_free_port();
 
     let client_id = "test-client-123";
@@ -169,7 +170,7 @@ async fn test_m2m_lease_async_take_and_release() {
             .text()
             .await
             .unwrap_or_else(|_| String::from("(no body)"));
-        panic!("Lease take failed with status {}: {}", status, body);
+        panic!("Lease take failed with status {status}: {body}");
     }
 
     // Bring host online by starting the agent, to blockade the release request
@@ -202,13 +203,13 @@ async fn test_m2m_lease_async_take_and_release() {
             .text()
             .await
             .unwrap_or_else(|_| String::from("(no body)"));
-        panic!("Lease release failed with status {}: {}", status, body);
+        panic!("Lease release failed with status {status}: {body}");
     }
 }
 
 #[tokio::test]
 // known spurious deadlocks: 1
-async fn test_api_reset_client_leases() {
+async fn api_reset_client_leases() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
     let client_id = "test-client-reset";
@@ -278,10 +279,7 @@ async fn test_api_reset_client_leases() {
                 .text()
                 .await
                 .unwrap_or_else(|_| String::from("(no body)"));
-            panic!(
-                "Releasing all client leases failed with status {}: {}",
-                status, body
-            );
+            panic!("Releasing all client leases failed with status {status}: {body}");
         }
     });
 
@@ -289,14 +287,14 @@ async fn test_api_reset_client_leases() {
     drop(agent_guard);
 
     // Give the reset request time to finish
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    time::sleep(Duration::from_millis(100)).await;
 
     // Wait for reset to complete
-    reset_task.await.unwrap()
+    reset_task.await.unwrap();
 }
 
 #[tokio::test]
-async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
+async fn m2m_lease_sync_take_timeout_when_host_offline() {
     let coord_port = get_free_port();
 
     let client_id = "test-client-sync-timeout";
@@ -347,16 +345,13 @@ async fn test_m2m_lease_sync_take_timeout_when_host_offline() {
             .text()
             .await
             .unwrap_or_else(|_| String::from("(no body)"));
-        panic!(
-            "Taking client lease succeeded unexpectedly with status {}: {}",
-            status, body
-        );
+        panic!("Taking client lease succeeded unexpectedly with status {status}: {body}");
     }
 }
 
 #[tokio::test]
 // known spurious deadlocks: 1
-async fn test_m2m_lease_sync_release_timeout_when_host_online() {
+async fn m2m_lease_sync_release_timeout_when_host_online() {
     let coord_port = get_free_port();
 
     let client_id = "test-client-sync-release-timeout";
@@ -408,7 +403,7 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
             online = true;
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        time::sleep(Duration::from_millis(300)).await;
     }
     assert!(online, "Host should be online before triggering shutdown");
 
@@ -432,9 +427,6 @@ async fn test_m2m_lease_sync_release_timeout_when_host_online() {
             .text()
             .await
             .unwrap_or_else(|_| String::from("(no body)"));
-        panic!(
-            "Releasing nonexistent lease succeeded unexpectedly with status {}: {}",
-            status, body
-        );
+        panic!("Releasing nonexistent lease succeeded unexpectedly with status {status}: {body}");
     }
 }

@@ -1,4 +1,4 @@
-use reqwest::Client;
+use reqwest::{Client, header, redirect};
 
 use crate::common::{KillOnDrop, get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
@@ -16,9 +16,7 @@ pub(crate) fn spawn_coordinator_with_token(port: u16, token: &str) -> KillOnDrop
     [hosts]
 
     [clients]
-        "#,
-        port = port,
-        token = token
+        "#
     );
     spawn_coordinator_with_config(port, &config)
 }
@@ -31,7 +29,7 @@ async fn insecure_post_redirects_with_insecure_error() {
     wait_for_listening(port, 10).await;
 
     let client = Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(redirect::Policy::none())
         .build()
         .unwrap();
 
@@ -46,14 +44,13 @@ async fn insecure_post_redirects_with_insecure_error() {
     assert!(resp.status().is_redirection());
     let loc = resp
         .headers()
-        .get(reqwest::header::LOCATION)
+        .get(header::LOCATION)
         .unwrap()
         .to_str()
         .unwrap();
     assert!(
         loc.contains("error=insecure"),
-        "location did not contain insecure error: {}",
-        loc
+        "location did not contain insecure error: {loc}"
     );
 }
 
@@ -65,7 +62,7 @@ async fn invalid_token_redirects_with_token_error() {
     wait_for_listening(port, 10).await;
 
     let client = Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(redirect::Policy::none())
         .build()
         .unwrap();
 
@@ -81,13 +78,12 @@ async fn invalid_token_redirects_with_token_error() {
     assert!(resp.status().is_redirection());
     let loc = resp
         .headers()
-        .get(reqwest::header::LOCATION)
+        .get(header::LOCATION)
         .unwrap()
         .to_str()
         .unwrap();
     assert!(
         loc.contains("error=token"),
-        "location did not contain token error: {}",
-        loc
+        "location did not contain token error: {loc}"
     );
 }

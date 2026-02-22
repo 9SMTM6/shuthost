@@ -129,7 +129,7 @@ coverage:
 
 [group('tests')]
 cargo_deny:
-    cargo +stable --locked deny --all-features check --hide-inclusion-graph
+    cargo --locked deny --all-features check --hide-inclusion-graph
 
 alias deny := cargo_deny
 
@@ -166,8 +166,23 @@ install_test_scripts:
     ./scripts/tests/service-installation-systemd.sh
 
 [group('tests')]
-ci_typo:
+typos:
     typos
+
+alias typo := typos
+
+[group('tests')]
+cargo_clippy +flags="":
+    cargo clippy --workspace --all-targets {{flags}}
+
+alias clippy := cargo_clippy
+
+[group('projectmanagement')]
+rustfix_yolo:
+    __CARGO_FIX_YOLO=1 cargo clippy --fix --workspace --all-targets --allow-dirty
+    cargo fmt
+
+alias yolo := rustfix_yolo
 
 [group('tests')]
 playwright +flags="":

@@ -34,16 +34,16 @@ pub(crate) async fn load<P: AsRef<Path>>(path: P) -> eyre::Result<ControllerConf
 
 #[cfg(test)]
 mod tests {
-    use crate::config::AuthMode;
-    use secrecy::{ExposeSecret, SecretString};
-    use std::fs;
-    use std::process::Command;
-    use std::sync::Arc;
+    use alloc::sync::Arc;
+    use std::{env, fs, process::Command};
+
+    use secrecy::{ExposeSecret as _, SecretString};
 
     use super::*;
+    use crate::config::{AuthMode, DbConfig};
 
     #[tokio::test]
-    async fn test_load_coordinator_config_file() {
+    async fn load_coordinator_config_file() {
         let toml_str = r#"
             [server]
             port = 9090
@@ -58,8 +58,8 @@ mod tests {
             [clients.bar]
             shared_secret = "s2"
         "#;
-        let tmp = std::env::temp_dir().join("test_config.toml");
-        std::fs::write(&tmp, toml_str).unwrap();
+        let tmp = env::temp_dir().join("test_config.toml");
+        fs::write(&tmp, toml_str).unwrap();
         let cfg = load(&tmp).await.unwrap();
         assert_eq!(cfg.server.port, 9090);
         assert_eq!(cfg.server.bind, "0.0.0.0");
@@ -73,22 +73,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_load_coordinator_config_missing_file() {
-        let tmp = std::env::temp_dir().join("does_not_exist.toml");
+    async fn load_coordinator_config_missing_file() {
+        let tmp = env::temp_dir().join("does_not_exist.toml");
         let res = load(&tmp).await;
         assert!(res.is_err(), "Expected error for missing file");
     }
 
     #[tokio::test]
-    async fn test_load_coordinator_config_invalid_toml() {
-        let tmp = std::env::temp_dir().join("invalid.toml");
-        std::fs::write(&tmp, "not valid toml").unwrap();
+    async fn load_coordinator_config_invalid_toml() {
+        let tmp = env::temp_dir().join("invalid.toml");
+        fs::write(&tmp, "not valid toml").unwrap();
         let res = load(&tmp).await;
         assert!(res.is_err(), "Expected error for invalid TOML");
     }
 
     #[tokio::test]
-    async fn test_tls_absent_field_results_in_none() {
+    async fn tls_absent_field_results_in_none() {
         let toml_str = r#"
             [server]
             port = 8081
@@ -98,8 +98,8 @@ mod tests {
 
             [clients]
         "#;
-        let tmp = std::env::temp_dir().join("test_config_no_tls.toml");
-        std::fs::write(&tmp, toml_str).unwrap();
+        let tmp = env::temp_dir().join("test_config_no_tls.toml");
+        fs::write(&tmp, toml_str).unwrap();
         let cfg = load(&tmp).await.unwrap();
         assert!(
             cfg.server.tls.is_none(),
@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_tls_empty_table_uses_defaults() {
+    async fn tls_empty_table_uses_defaults() {
         let toml_str = r#"
             [server]
             port = 8082
@@ -120,8 +120,8 @@ mod tests {
 
             [clients]
         "#;
-        let tmp = std::env::temp_dir().join("test_config_tls_defaults.toml");
-        std::fs::write(&tmp, toml_str).unwrap();
+        let tmp = env::temp_dir().join("test_config_tls_defaults.toml");
+        fs::write(&tmp, toml_str).unwrap();
         let cfg = load(&tmp).await.unwrap();
         let tls = cfg
             .server
@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tls_custom_values_deserialize() {
+    fn tls_custom_values_deserialize() {
         let toml_str = r#"
             [server]
             port = 8083
@@ -151,8 +151,7 @@ mod tests {
 
             [clients]
         "#;
-        let cfg: crate::config::ControllerConfig =
-            toml::from_str(toml_str).expect("Failed to parse TOML");
+        let cfg: ControllerConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
         let tls = cfg.server.tls.expect("tls should be present");
         assert_eq!(tls.cert_path, "certs/mycert.pem");
         assert_eq!(tls.key_path, "certs/mykey.pem");
@@ -160,21 +159,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_load_example_config() {
-        let temp_file = std::env::temp_dir().join("test_example_config.toml");
+    async fn load_example_config() {
+        let temp_file = env::temp_dir().join("test_example_config.toml");
         fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config.toml");
         assert_eq!(cfg.server.port, 8080);
         assert_eq!(cfg.server.bind, "127.0.0.1");
-        assert_eq!(cfg.db, Some(Default::default()));
+        assert_eq!(cfg.db, Some(DbConfig::default()));
         assert!(matches!(cfg.server.auth.mode, AuthMode::Token { .. }));
     }
 
     #[tokio::test]
-    async fn test_load_example_config_with_client_and_host() {
-        let temp_file = std::env::temp_dir().join("test_example_config_with_client_and_host.toml");
+    async fn load_example_config_with_client_and_host() {
+        let temp_file = env::temp_dir().join("test_example_config_with_client_and_host.toml");
         fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
         Command::new("patch")
             .arg("-i")
@@ -190,8 +189,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_load_example_config_external() {
-        let temp_file = std::env::temp_dir().join("test_example_config_external.toml");
+    async fn load_example_config_external() {
+        let temp_file = env::temp_dir().join("test_example_config_external.toml");
         fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
         Command::new("patch")
             .arg("-i")
@@ -211,8 +210,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_load_example_config_oidc() {
-        let temp_file = std::env::temp_dir().join("test_example_config_oidc.toml");
+    async fn load_example_config_oidc() {
+        let temp_file = env::temp_dir().join("test_example_config_oidc.toml");
         fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
         Command::new("patch")
             .arg("-i")

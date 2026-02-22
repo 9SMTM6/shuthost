@@ -98,21 +98,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_mac_valid() {
+    fn parse_mac_valid() {
         let mac_str = "01:23:45:67:89:ab";
         let bytes = parse_mac(mac_str).expect("Should parse valid MAC");
         assert_eq!(bytes, [0x01, 0x23, 0x45, 0x67, 0x89, 0xab]);
     }
 
     #[test]
-    fn test_parse_mac_invalid_format() {
+    fn parse_mac_invalid_format() {
         let mac_str = "01:23:45:67:89";
         let err = parse_mac(mac_str).unwrap_err();
         assert!(err.to_string().contains("not enough parts"));
     }
 
     #[test]
-    fn test_parse_mac_invalid_byte() {
+    fn parse_mac_invalid_byte() {
         let mac_str = "01:23:45:67:89:zz";
         let err = parse_mac(mac_str).unwrap_err();
         assert!(err.to_string().contains("Invalid MAC byte"));

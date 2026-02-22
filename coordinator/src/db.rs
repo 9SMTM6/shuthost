@@ -480,18 +480,18 @@ pub(crate) async fn update_client_last_used(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::Row;
+    use alloc::sync::Arc;
+    use sqlx::Row as _;
     use std::collections::HashMap;
     use std::collections::HashSet;
-    use std::sync::Arc;
     use tokio::sync::Mutex;
 
     async fn setup_test_db() -> eyre::Result<DbPool> {
-        init(std::path::Path::new(":memory:")).await
+        init(Path::new(":memory:")).await
     }
 
     #[tokio::test]
-    async fn test_init_db_creates_database() {
+    async fn init_db_creates_database() {
         let pool = setup_test_db().await.unwrap();
 
         // Verify we can query the database
@@ -509,7 +509,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_add_and_load_leases() {
+    async fn add_and_load_leases() {
         let pool = setup_test_db().await.unwrap();
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
@@ -541,7 +541,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_remove_lease() {
+    async fn remove_lease_works() {
         let pool = setup_test_db().await.unwrap();
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
@@ -568,7 +568,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_remove_client_leases() {
+    async fn remove_client_leases_works() {
         let pool = setup_test_db().await.unwrap();
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
@@ -595,7 +595,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_duplicate_leases_ignored() {
+    async fn duplicate_leases_ignored() {
         let pool = setup_test_db().await.unwrap();
         let leases: LeaseMap = Arc::new(Mutex::new(HashMap::new()));
 
@@ -617,7 +617,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_store_and_get_kv() {
+    async fn store_and_get_kv() {
         let pool = setup_test_db().await.unwrap();
 
         // Store a value
@@ -643,7 +643,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_client_stats() {
+    async fn client_stats() {
         let pool = setup_test_db().await.unwrap();
 
         // Initially no stats

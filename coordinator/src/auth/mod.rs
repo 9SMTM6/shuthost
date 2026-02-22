@@ -252,7 +252,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_removes_db_values_when_configured() {
+    async fn removes_db_values_when_configured() {
         let pool = setup_db().await.unwrap();
 
         // store values in DB
@@ -291,7 +291,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_invalid_configured_cookie_secret_fails() {
+    async fn invalid_configured_cookie_secret_fails() {
         let pool = setup_db().await.unwrap();
 
         // invalid base64 value in config

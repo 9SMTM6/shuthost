@@ -3,6 +3,10 @@
 //! Exposes `inner_main` so a workspace-level shim binary can call into the coordinator logic.
 //!
 //! Provides commands to install the service or launch the control web service.
+#![cfg_attr(
+    test,
+    expect(clippy::indexing_slicing, reason = "This is not problematic in tests",)
+)]
 
 extern crate alloc;
 extern crate core;

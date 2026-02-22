@@ -438,7 +438,7 @@ mod tests {
     use cookie::Key;
 
     #[test]
-    fn test_validate_state_or_redirect_mismatch() {
+    fn validate_state_or_redirect_mismatch() {
         let key = Key::generate();
         let jar = SignedCookieJar::new(key);
         let jar = jar.add(Cookie::new(COOKIE_STATE, "different_state"));
@@ -448,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_provider_error_with_error() {
+    fn handle_provider_error_with_error() {
         let key = Key::generate();
         let jar = SignedCookieJar::new(key);
         let error = Some("access_denied".to_string());
@@ -458,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_provider_error_no_error() {
+    fn handle_provider_error_no_error() {
         let key = Key::generate();
         let jar = SignedCookieJar::new(key);
         let error = None;
@@ -468,13 +468,13 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_authorization_code_missing() {
+    fn extract_authorization_code_missing() {
         let code = None;
         let result = extract_authorization_code(code);
         assert!(result.is_err());
         match result.unwrap_err() {
             LoginFlowError::LoginRedirect => {}
-            _ => panic!("Expected LoginRedirect"),
+            LoginFlowError::Status(_) => panic!("Expected LoginRedirect"),
         }
     }
 }

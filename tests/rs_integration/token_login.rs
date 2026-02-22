@@ -1,4 +1,4 @@
-use reqwest::Client;
+use reqwest::{Client, header, redirect};
 
 use crate::common::{get_free_port, spawn_coordinator_with_config, wait_for_listening};
 
@@ -26,7 +26,7 @@ async fn token_login_flow() {
     wait_for_listening(port, 20).await;
 
     let client = Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(redirect::Policy::none())
         .danger_accept_invalid_certs(true)
         .build()
         .unwrap();
@@ -46,9 +46,9 @@ async fn token_login_flow() {
     // Extract cookies from set-cookie headers
     let cookies: Vec<String> = resp
         .headers()
-        .get_all(reqwest::header::SET_COOKIE)
+        .get_all(header::SET_COOKIE)
         .iter()
-        .filter_map(|v| v.to_str().ok().map(|s| s.to_string()))
+        .filter_map(|v| v.to_str().ok().map(ToString::to_string))
         .collect();
     assert!(!cookies.is_empty(), "no Set-Cookie headers present");
 
@@ -57,7 +57,7 @@ async fn token_login_flow() {
     let protected = format!("https://127.0.0.1:{port}/api/hosts_status");
     let resp2 = client
         .get(&protected)
-        .header(reqwest::header::COOKIE, cookies_header)
+        .header(header::COOKIE, cookies_header)
         .send()
         .await
         .expect("failed to GET protected");
