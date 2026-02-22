@@ -295,10 +295,10 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
         if let Some(value) = find_flag_value(line, "port", "</string>") {
             port = value.parse().ok();
         }
-        if line.contains("--hostname") {
-            if let Some(value) = find_flag_value(line, "hostname", "</string>") {
-                hostname = Some(value);
-            }
+        if line.contains("--hostname")
+            && let Some(value) = find_flag_value(line, "hostname", "</string>")
+        {
+            hostname = Some(value);
         }
     }
 

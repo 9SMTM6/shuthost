@@ -77,10 +77,11 @@ define_enum_with_str! {
     }
 }
 
+#[cfg(test)]
 mod tests {
     #[cfg(feature = "coordinator")]
     #[test]
-    fn test_coordinator_message_serialization() {
+    fn coordinator_message_serialization() {
         let msg = super::CoordinatorMessage::Shutdown;
         let serialized = msg.to_string();
         assert_eq!(serialized, "shutdown");
@@ -88,11 +89,11 @@ mod tests {
 
     #[cfg(feature = "agent")]
     #[test]
-    fn test_agent_message_deserialization() {
-        use std::str::FromStr;
+    fn agent_message_deserialization() {
+        use core::str::FromStr as _;
 
         let message = "shutdown";
-        let deserialized = super::CoordinatorMessage::from_str(&message).unwrap();
+        let deserialized = super::CoordinatorMessage::from_str(message).unwrap();
         assert_eq!(deserialized, super::CoordinatorMessage::Shutdown);
     }
 }
