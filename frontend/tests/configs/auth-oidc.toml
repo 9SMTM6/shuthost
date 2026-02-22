@@ -3,7 +3,7 @@ port = 0
 bind = "127.0.0.1"
 
 [server.auth.oidc]
-issuer = "https://your-oidc-provider.com"
+issuer = "https://127.0.0.1:8081"
 client_id = "your-client-id"
 client_secret = "your-client-secret"
 

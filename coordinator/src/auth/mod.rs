@@ -11,12 +11,17 @@ pub mod token;
 
 use alloc::sync::Arc;
 
+use crate::{
+    auth::oidc::{OidcClientReady, build_client},
+    config::OidcConfig,
+};
 use axum::extract::FromRef;
 use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
 use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 use crate::{
@@ -47,17 +52,22 @@ pub(crate) struct Runtime {
     pub cookie_key: Key,
 }
 
+/// Shared (async) lock around the runtime OIDC client so it can be rebuilt on the fly when
+/// discovery or key material changes.
+pub(crate) type SharedOidcClient = Arc<RwLock<OidcClientReady>>;
+
 #[derive(Debug)]
 pub(crate) enum Resolved {
     Disabled,
     Token {
         token: Arc<SecretString>,
     },
+    /// Resolved OIDC mode. The `config` field retains the original values from
+    /// configuration so the client can be rebuilt on demand (e.g. when a
+    /// discovery failure triggers a refresh).
     Oidc {
-        issuer: String,
-        client_id: String,
-        client_secret: Arc<SecretString>,
-        scopes: Vec<String>,
+        client: SharedOidcClient,
+        config: OidcConfig,
     },
     /// External auth (reverse proxy / external provider) acknowledged by operator.
     External {
@@ -158,18 +168,19 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
     match *mode {
         AuthMode::None => Ok(Resolved::Disabled),
         AuthMode::Token { ref token } => resolve_token_auth(token.as_ref(), db_pool).await,
-        AuthMode::Oidc {
-            ref issuer,
-            ref client_id,
-            ref client_secret,
-            ref scopes,
-        } => {
-            info!("Auth mode: oidc, issuer={}", issuer);
+        AuthMode::Oidc(ref oidc_cfg) => {
+            info!("Auth mode: oidc, issuer={}", oidc_cfg.issuer);
+            let client_inner = build_client(
+                &oidc_cfg.issuer,
+                &oidc_cfg.client_id,
+                &oidc_cfg.client_secret,
+            )
+            .await
+            .wrap_err("Failed to build OIDC client")?;
+            let client = Arc::new(RwLock::new(client_inner));
             Ok(Resolved::Oidc {
-                issuer: issuer.clone(),
-                client_id: client_id.clone(),
-                client_secret: client_secret.clone(),
-                scopes: scopes.clone(),
+                client,
+                config: oidc_cfg.clone(),
             })
         }
         AuthMode::External { exceptions_version } => {

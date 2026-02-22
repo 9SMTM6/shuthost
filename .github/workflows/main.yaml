@@ -884,10 +884,6 @@ jobs:
 
       - uses: *rust-cache
 
-      - uses: ./.github/actions/rust-build
-        with:
-          bin-name: shuthost_coordinator
-
       - name: Run Playwright tests
         if: env.LFS_AVAILABLE == 'true'
         env:
