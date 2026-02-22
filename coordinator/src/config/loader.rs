@@ -40,7 +40,7 @@ mod tests {
     use secrecy::{ExposeSecret as _, SecretString};
 
     use super::*;
-    use crate::config::{AuthMode, DbConfig};
+    use crate::config::{AuthMode, DbConfig, OidcConfig};
 
     #[tokio::test]
     async fn load_coordinator_config_file() {
@@ -224,12 +224,12 @@ mod tests {
             .expect("Failed to load example_config_oidc.toml");
         assert_eq!(
             cfg.server.auth.mode,
-            AuthMode::Oidc {
+            AuthMode::Oidc(OidcConfig {
                 issuer: "https://your-oidc-provider.com/realms/your-realm".to_string(),
                 client_id: "shuthost".to_string(),
                 client_secret: Arc::new(SecretString::from("your-client-secret")),
                 scopes: vec!["openid".to_string(), "profile".to_string()]
-            }
+            })
         );
     }
 }
