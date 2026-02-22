@@ -5,7 +5,10 @@
 use core::str::FromStr;
 
 #[cfg(feature = "agent")]
-use miniserde::Serialize as MiniSerialize;
+use alloc::borrow::Cow;
+
+#[cfg(feature = "agent")]
+use miniserde::{Serialize as MiniSerialize, ser};
 #[cfg(feature = "coordinator")]
 use serde::{Deserialize, Serialize};
 
@@ -34,9 +37,44 @@ pub struct StartupBroadcast {
 #[derive(Debug, Clone, PartialEq, Eq)]
 // serde deserialization for coordinator
 #[cfg_attr(feature = "coordinator", derive(Deserialize, Serialize))]
+#[serde(tag = "type", content = "payload")]
 pub enum BroadcastMessage {
     /// Agent startup announcement
     AgentStartup(StartupBroadcast),
+}
+
+/// Manual miniserde serialization needed.
+/// Miniserdes derive doesnt support enums.
+/// This mirrors the `#[serde(tag = "type", content = "payload")]` representation.
+#[cfg(feature = "agent")]
+impl MiniSerialize for BroadcastMessage {
+    fn begin(&self) -> ser::Fragment<'_> {
+        match self {
+            &BroadcastMessage::AgentStartup(ref inner) => {
+                // build a small map with two entries
+                struct BMsgMap<'payload> {
+                    payload: &'payload StartupBroadcast,
+                    parse_step: usize,
+                }
+
+                impl ser::Map for BMsgMap<'_> {
+                    fn next(&mut self) -> Option<(Cow<'_, str>, &dyn MiniSerialize)> {
+                        self.parse_step += 1;
+                        match self.parse_step {
+                            1 => Some((Cow::Borrowed("type"), &"AgentStartup")),
+                            2 => Some((Cow::Borrowed("payload"), self.payload)),
+                            _ => None,
+                        }
+                    }
+                }
+
+                ser::Fragment::Map(Box::new(BMsgMap {
+                    payload: inner,
+                    parse_step: 0,
+                }))
+            }
+        }
+    }
 }
 
 // Macro to define the enum from variant => string mappings
@@ -94,10 +132,14 @@ define_enum_with_str! {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    #[cfg(feature = "agent")]
+    use miniserde::json;
+
     #[cfg(feature = "coordinator")]
     #[test]
     fn coordinator_message_serialization() {
-        let msg = super::CoordinatorMessage::Shutdown;
+        let msg = CoordinatorMessage::Shutdown;
         let serialized = msg.to_string();
         assert_eq!(serialized, "shutdown");
     }
@@ -108,7 +150,35 @@ mod tests {
         use core::str::FromStr as _;
 
         let message = "shutdown";
-        let deserialized = super::CoordinatorMessage::from_str(message).unwrap();
-        assert_eq!(deserialized, super::CoordinatorMessage::Shutdown);
+        let deserialized = CoordinatorMessage::from_str(message).unwrap();
+        assert_eq!(deserialized, CoordinatorMessage::Shutdown);
+    }
+
+    #[cfg(feature = "agent")]
+    #[test]
+    fn broadcast_message_serialization() {
+        let startup = StartupBroadcast {
+            hostname: "h".into(),
+            agent_version: "v".into(),
+            port: 1234,
+            mac_address: "aa:bb".into(),
+            ip_address: "1.2.3.4".into(),
+            timestamp: 0,
+        };
+        let msg = BroadcastMessage::AgentStartup(startup.clone());
+        let serialized = json::to_string(&msg);
+        // should contain the correct tag and some payload fields
+        assert!(serialized.contains("\"type\":\"AgentStartup\""));
+        assert!(serialized.contains("\"hostname\":\"h\""));
+    }
+
+    #[cfg(feature = "coordinator")]
+    #[test]
+    fn broadcast_message_deserialization() {
+        let json = r#"{"type":"AgentStartup","payload":{"hostname":"h","agent_version":"v","port":1234,"mac_address":"aa:bb","ip_address":"1.2.3.4","timestamp":0}}"#;
+        let msg: BroadcastMessage = serde_json::from_str(json).unwrap();
+        let BroadcastMessage::AgentStartup(s) = msg;
+        assert_eq!(s.hostname, "h");
+        assert_eq!(s.port, 1234);
     }
 }
