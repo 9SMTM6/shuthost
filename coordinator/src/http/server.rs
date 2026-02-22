@@ -274,7 +274,6 @@ fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         }
     }
 
-    // TODO: figure out rate limiting
     let trace_layer = TraceLayer::new_for_http()
         // keep default spans
         .make_span_with(DefaultMakeSpan::new())

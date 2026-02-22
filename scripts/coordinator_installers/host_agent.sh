@@ -6,9 +6,8 @@
 
 set -e
 
-# TODO: consider a way to embed the install options. Main issue outside of it being annoying: Different defaults between OSs (mostly shutdown argument)
 if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [shuthost_host_agent install options...]"
+  echo "Usage: $0 <remote_url> [shuthost_host_agent install options..., get them by passing --help to the installer script]"
   exit 1
 fi
 

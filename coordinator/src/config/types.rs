@@ -9,7 +9,6 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-// TODO: consider using secrets crate or secure-types instead for their OS locks.
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 

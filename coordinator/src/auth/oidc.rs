@@ -137,8 +137,7 @@ pub(crate) async fn build_client(
 /// Currently we don’t have a unit test for this flow; an integration or
 /// component test should exercise both the initial client build and a
 /// subsequent refresh when discovery/JWKS data changes.
-/// TODO: add tests targeting `refresh_oidc_client` once network-mocking is
-/// available (#TODO issue)
+/// TODO: add tests targeting `refresh_oidc_client`
 pub(crate) async fn refresh_oidc_client(
     shared: &SharedOidcClient,
     cfg: &OidcConfig,

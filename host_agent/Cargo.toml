@@ -11,8 +11,6 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-# TODO: This is used to serialize the binary into the self-extracting scripts. 
-# Consider using the same commands that the shell script uses to deserialize instead, that would drop this dependency.
 base64.workspace = true
 clap.workspace = true
 rand.workspace = true

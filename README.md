@@ -193,6 +193,7 @@ These are generated or validated automatically as part of the test suite, and th
 - 🛡️ **Rate limiting of requests by shuthost clients**
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
+- the install scripts for host agents dorectly from github currently don't support passing options to the agents. Remedy that - Note that the installer from the coordinator does support passing arguments.
 
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
@@ -212,4 +213,8 @@ These are generated or validated automatically as part of the test suite, and th
   * https://crates.io/crates/planif
 * port test-client-scripts to run locally as well
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik
+* add tests for OIDC refresh flow
+* pages-deployment and release-test workflows currently trigger too often, its just very annoying to debug, but perhaps I can get that solved some day
+* consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
+* consider switching LeaseMap to use RwLock or dashmap. That will likely require some refactoring though.
 -->
