@@ -41,9 +41,6 @@ export type ConfigKey = typeof ALL_CONFIG_KEYS[number];
 export const BASE_PORT = 8081;
 export const OIDC_PORT = BASE_PORT;
 
-// Mock OIDC server host/port and base URL (DRY these values).  The port is
-// coordinated with the auth-oidc backend so parallel workers pick unique
-// ports; see `assignedOidcPort` in backend-utils.ts.
 const OIDC_HOST = '127.0.0.1';
 export const OIDC_BASE_URL = `https://${OIDC_HOST}:${OIDC_PORT}`;
 
