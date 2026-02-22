@@ -66,8 +66,7 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
         TcpListener::bind(&addr).unwrap_or_else(|_| panic!("Failed to bind port {addr}"));
     println!("Listening on {addr}");
 
-    // TODO: 
-    // * The broadcast currently uses a value enum, that doesnt work with miniserde, I'll need another approach I guess. Maybe manual union with a valueless enum type field and value type, thats manually combined into different structs for the different message types, and a constructor with private field that sets the correct type.
+    // TODO:
     // * the code that listens for this on the coordinator is still not implemented.
     broadcast_startup(&config);
 
@@ -197,13 +196,15 @@ pub(crate) fn get_default_shutdown_command() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clap::Parser;
 
     #[test]
     fn service_options_default_ports() {
         let opts = ServiceOptions::parse_from(["shuthost_host_agent"]);
         assert_eq!(opts.port, shuthost_common::DEFAULT_AGENT_TCP_PORT);
-        assert_eq!(opts.broadcast_port, shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT);
+        assert_eq!(
+            opts.broadcast_port,
+            shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
+        );
         // shutdown_command and hostname have reasonable defaults but we don't assert them here.
     }
 

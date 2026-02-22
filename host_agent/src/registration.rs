@@ -154,7 +154,8 @@ fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
         (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
             secret: s,
             port: p,
-            broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
+            broadcast_port: broadcast_port
+                .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
         }),
         _ => {
@@ -203,7 +204,8 @@ fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
         (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
             secret: s,
             port: p,
-            broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
+            broadcast_port: broadcast_port
+                .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
         }),
         _ => Err("Failed to parse secret, port, and hostname from openrc service file".to_string()),
@@ -250,7 +252,8 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
     Ok(ServiceConfig {
         secret: secret.to_string(),
         port,
-        broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
+        broadcast_port: broadcast_port
+            .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
         hostname: hostname.to_string(),
     })
 }
@@ -340,7 +343,8 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
         (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
             secret: s,
             port: p,
-            broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
+            broadcast_port: broadcast_port
+                .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
         }),
         _ => Err("Failed to parse secret, port, and hostname from launchd plist file".to_string()),
@@ -405,7 +409,6 @@ mod tests {
             parse_launchd_content,
         );
     }
-
 
     #[test]
     fn parse_self_extracting_shell_content_works() {

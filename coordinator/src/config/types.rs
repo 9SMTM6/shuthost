@@ -68,7 +68,7 @@ pub(crate) struct ServerConfig {
     pub auth: AuthConfig,
 }
 
-fn default_broadcast_port() -> u16 {
+const fn default_broadcast_port() -> u16 {
     shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
 }
 
