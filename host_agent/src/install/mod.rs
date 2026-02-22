@@ -15,7 +15,7 @@ use rand::{RngExt as _, distr, rng};
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
 
-use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
+use crate::{registration, server::get_default_shutdown_command};
 
 /// The binary name, derived from the Cargo package name.
 pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
@@ -49,6 +49,7 @@ pub(crate) fn bind_template_replacements(
     template: &str,
     description: &str,
     port: u16,
+    broadcast_port: u16,
     shutdown_command: &str,
     secret: &str,
     hostname: &str,
@@ -56,6 +57,7 @@ pub(crate) fn bind_template_replacements(
     template
         .replace("{ description }", description)
         .replace("{ port }", &port.to_string())
+        .replace("{ broadcast_port }", &broadcast_port.to_string())
         .replace("{ shutdown_command }", shutdown_command)
         .replace("{ secret }", secret)
         .replace("{ name }", BINARY_NAME)
@@ -65,8 +67,11 @@ pub(crate) fn bind_template_replacements(
 /// Arguments for the `install` subcommand of `host_agent`.
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(long, short, default_value_t = DEFAULT_PORT)]
+    #[arg(long, short, default_value_t = shuthost_common::DEFAULT_AGENT_TCP_PORT)]
     pub port: u16,
+
+    #[arg(long, short = 'b', default_value_t = shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT)]
+    pub broadcast_port: u16,
 
     #[arg(long, short = 'c', default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
@@ -129,6 +134,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             arg,
             env!("CARGO_PKG_DESCRIPTION"),
             arguments.port,
+            arguments.broadcast_port,
             &arguments.shutdown_command,
             &arguments.shared_secret,
             &arguments.hostname,
@@ -158,6 +164,7 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     registration::print_registration_config(&registration::ServiceConfig {
         secret: arguments.shared_secret.clone(),
         port: arguments.port,
+        broadcast_port: arguments.broadcast_port,
         hostname: arguments.hostname.clone(),
     });
 

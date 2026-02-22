@@ -1,6 +1,8 @@
 [server]
 port = 0
 bind = "127.0.0.1"
+# exercise a non-default broadcast port so the UI can display it
+broadcast_port = 4242
 
 [server.auth.external]
 exceptions_version = 2

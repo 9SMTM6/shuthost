@@ -107,13 +107,21 @@ pub(crate) fn spawn_coordinator_with_config_file(config_path: &Path) -> KillOnDr
     KillOnDrop::Coordinator(handle)
 }
 
-/// Spawn the host agent in a separate thread with the given secret, port, and shutdown command.
-pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) -> KillOnDrop {
+/// Spawn the host agent in a separate thread with the given secret, listen port,
+/// broadcast port, and shutdown command.
+pub(crate) fn spawn_host_agent(
+    secret: &str,
+    port: u16,
+    broadcast_port: u16,
+    shutdown_command: &str,
+) -> KillOnDrop {
     let cli = AgentCli::parse_from([
         "shuthost_host_agent",
         "service",
         "--port",
         &port.to_string(),
+        "--broadcast-port",
+        &broadcast_port.to_string(),
         "--shutdown-command",
         shutdown_command,
     ]);
@@ -135,8 +143,11 @@ pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) 
 }
 
 /// Spawn a test host agent with the given secret and port.
-pub(crate) fn spawn_host_agent_default(secret: &str, port: u16) -> KillOnDrop {
-    spawn_host_agent(secret, port, "")
+pub(crate) fn spawn_host_agent_default(secret: &str, port: u16) -> (KillOnDrop, u16) {
+    // choose a broadcast port that won't collide with the listen port; return
+    // it so callers can include it in coordinator config entries.
+    let bcast = get_free_port();
+    (spawn_host_agent(secret, port, bcast, ""), bcast)
 }
 
 /// Block until a TCP listener is accepting on `127.0.0.1:port` or timeout.

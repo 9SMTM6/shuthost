@@ -39,7 +39,7 @@ use shuthost_common::{CoordinatorMessage, validate_hmac_message};
 /// # use secrecy::SecretString;
 ///
 /// let secret = SecretString::from("secret");
-/// # let args = ServiceOptions { port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.clone()), hostname: "test".to_string() };
+/// # let args = ServiceOptions { port: 0, broadcast_port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.clone()), hostname: "test".to_string() };
 /// let signed = create_signed_message("status", &secret);
 /// let result = validate_request(signed.as_bytes(), &args);
 /// assert_eq!(result, Ok(CoordinatorMessage::Status));
@@ -79,6 +79,7 @@ mod tests {
     fn make_args(secret: SecretString) -> ServiceOptions {
         ServiceOptions {
             port: 0,
+            broadcast_port: 0,
             shutdown_command: "shutdown_cmd".to_string(),
             shared_secret: Some(secret),
             hostname: "test_hostname".to_string(),

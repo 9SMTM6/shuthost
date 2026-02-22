@@ -57,6 +57,7 @@ pub struct Args {
 pub(crate) struct ServiceConfig {
     pub secret: String,
     pub port: u16,
+    pub broadcast_port: u16,
     pub hostname: String,
 }
 
@@ -120,12 +121,18 @@ pub(crate) fn print_registration_config(config: &ServiceConfig) {
             .replace("{port}", &config.port.to_string())
             .replace("{secret}", &config.secret)
     );
+    println!(
+        "Ensure the coordinator sets `broadcast_port` to {} for this host (defaults to {}).",
+        config.broadcast_port,
+        shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
+    );
 }
 
 #[cfg(any(target_os = "linux", test))]
 fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
+    let mut broadcast_port = None;
     let mut hostname = None;
 
     for line in content.lines() {
@@ -134,6 +141,9 @@ fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
         }
         if let Some(value) = find_flag_value(line, "port", " ") {
             port = value.parse().ok();
+        }
+        if let Some(value) = find_flag_value(line, "broadcast-port", " ") {
+            broadcast_port = value.parse().ok();
         }
         if let Some(value) = find_flag_value(line, "hostname", " ") {
             hostname = Some(value);
@@ -144,6 +154,7 @@ fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
         (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
             secret: s,
             port: p,
+            broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
         }),
         _ => {
@@ -164,6 +175,7 @@ fn parse_systemd_config() -> Result<ServiceConfig, String> {
 fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
+    let mut broadcast_port = None;
     let mut hostname = None;
 
     for line in content.lines() {
@@ -179,6 +191,9 @@ fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
         if let Some(value) = find_flag_value(line, "port", " ") {
             port = value.parse().ok();
         }
+        if let Some(value) = find_flag_value(line, "broadcast-port", " ") {
+            broadcast_port = value.parse().ok();
+        }
         if let Some(value) = find_flag_value(line, "hostname", " ") {
             hostname = Some(value);
         }
@@ -188,6 +203,7 @@ fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
         (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
             secret: s,
             port: p,
+            broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
         }),
         _ => Err("Failed to parse secret, port, and hostname from openrc service file".to_string()),
@@ -224,10 +240,17 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
     }) else {
         return Err("PORT not found in self-extracting script".to_string());
     };
+    let broadcast_port = content.lines().find_map(|line| {
+        let s = line
+            .strip_prefix("export BROADCAST_PORT=\"")
+            .and_then(|s| s.strip_suffix("\""))?;
+        s.parse().ok()
+    });
 
     Ok(ServiceConfig {
         secret: secret.to_string(),
         port,
+        broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
         hostname: hostname.to_string(),
     })
 }
@@ -262,10 +285,17 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
     }) else {
         return Err("PORT not found in self-extracting PowerShell script".to_string());
     };
+    let broadcast_port = content.lines().find_map(|line| {
+        let s = line.strip_prefix("$env:BROADCAST_PORT = \"")?;
+        s.strip_suffix("\"")
+    });
 
     Ok(ServiceConfig {
         secret: secret.to_string(),
         port,
+        broadcast_port: broadcast_port
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
         hostname: hostname.to_string(),
     })
 }
@@ -280,6 +310,7 @@ fn parse_self_extracting_pwsh_config(path: &str) -> Result<ServiceConfig, String
 fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
     let mut secret = None;
     let mut port = None;
+    let mut broadcast_port = None;
     let mut hostname = None;
     let mut in_secret = false;
 
@@ -295,6 +326,9 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
         if let Some(value) = find_flag_value(line, "port", "</string>") {
             port = value.parse().ok();
         }
+        if let Some(value) = find_flag_value(line, "broadcast-port", "</string>") {
+            broadcast_port = value.parse().ok();
+        }
         if line.contains("--hostname")
             && let Some(value) = find_flag_value(line, "hostname", "</string>")
         {
@@ -306,6 +340,7 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
         (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
             secret: s,
             port: p,
+            broadcast_port: broadcast_port.unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
         }),
         _ => Err("Failed to parse secret, port, and hostname from launchd plist file".to_string()),
@@ -333,6 +368,7 @@ mod tests {
             template,
             "test desc",
             port,
+            /* broadcast_port */ port,
             "test cmd",
             secret,
             hostname,
@@ -341,7 +377,12 @@ mod tests {
         let config = parse_fn(&content).unwrap();
         assert_eq!(config.secret, secret);
         assert_eq!(config.port, port);
+        assert_eq!(config.broadcast_port, port);
         assert_eq!(config.hostname, hostname);
+        // ensure the generated template no longer contains the placeholder and that
+        // the broadcast port value made it through as well.
+        assert!(!content.contains("{ broadcast_port }"));
+        assert!(content.contains(&port.to_string()));
     }
 
     #[test]
@@ -364,6 +405,7 @@ mod tests {
             parse_launchd_content,
         );
     }
+
 
     #[test]
     fn parse_self_extracting_shell_content_works() {

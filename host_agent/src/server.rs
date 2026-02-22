@@ -24,8 +24,15 @@ use crate::{
 #[derive(Debug, Parser, Clone)]
 pub struct ServiceOptions {
     /// TCP port to listen on for incoming HMAC-signed commands.
-    #[arg(long, short, default_value_t = 9090)]
+    #[arg(long, short, default_value_t = shuthost_common::DEFAULT_AGENT_TCP_PORT)]
     pub port: u16,
+
+    /// UDP port to send startup broadcasts on (where the coordinator will
+    /// listen).  This is configured by the coordinator and embedded in the
+    /// install command shown in the web UI, so agents start with the right
+    /// value even when it differs from the default.
+    #[arg(long, default_value_t = shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT)]
+    pub broadcast_port: u16,
 
     /// Shell command used to perform shutdown when requested.
     #[arg(long, short = 'c', default_value_t = get_default_shutdown_command())]
@@ -59,10 +66,10 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
         TcpListener::bind(&addr).unwrap_or_else(|_| panic!("Failed to bind port {addr}"));
     println!("Listening on {addr}");
 
-    // TODO: We need to actually separate between the port we send the broadcast on (and where the coordinator listens for them) and the port the agent listens on.
-    // This likely means we need to add this as config option on the coordinator, and add THAT port to the installation commands for agents.
-    // Send UDP broadcast with signed announcement message
-    broadcast_startup(&config, port);
+    // TODO: 
+    // * The broadcast currently uses a value enum, that doesnt work with miniserde, I'll need another approach I guess. Maybe manual union with a valueless enum type field and value type, thats manually combined into different structs for the different message types, and a constructor with private field that sets the correct type.
+    // * the code that listens for this on the coordinator is still not implemented.
+    broadcast_startup(&config);
 
     for stream in listener.incoming() {
         match stream {
@@ -91,7 +98,7 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
     }
 }
 
-fn broadcast_startup(config: &ServiceOptions, port: u16) {
+fn broadcast_startup(config: &ServiceOptions) {
     let interface = get_default_interface().unwrap_or_else(|| "unknown".to_string());
     let ip_address = get_ip(&interface).unwrap_or_else(|| "unknown".to_string());
     let mac_address = get_mac(&interface).unwrap_or_else(|| "unknown".to_string());
@@ -105,6 +112,9 @@ fn broadcast_startup(config: &ServiceOptions, port: u16) {
         ip_address,
         timestamp,
     };
+    // today we only send the raw startup structure; the enum exists for future
+    // expansion but is not serialized directly because the JSON format hasn't
+    // been defined yet.
     let message = json::to_string(&broadcast);
     let signed_message = create_signed_message(
         &message,
@@ -115,7 +125,7 @@ fn broadcast_startup(config: &ServiceOptions, port: u16) {
     );
     match shuthost_common::create_broadcast_socket(0) {
         Ok(socket) => {
-            let broadcast_addr = format!("255.255.255.255:{port}");
+            let broadcast_addr = format!("255.255.255.255:{}", config.broadcast_port);
             if let Err(e) = socket.send_to(signed_message.as_bytes(), &broadcast_addr) {
                 eprintln!("Failed to send startup broadcast: {e}");
             } else {
@@ -182,4 +192,31 @@ pub(crate) fn get_default_shutdown_command() -> String {
     return "shutdown -h now".to_string();
     #[cfg(target_os = "windows")]
     return "shutdown /s /t 0".to_string();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn service_options_default_ports() {
+        let opts = ServiceOptions::parse_from(["shuthost_host_agent"]);
+        assert_eq!(opts.port, shuthost_common::DEFAULT_AGENT_TCP_PORT);
+        assert_eq!(opts.broadcast_port, shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT);
+        // shutdown_command and hostname have reasonable defaults but we don't assert them here.
+    }
+
+    #[test]
+    fn service_options_custom_ports() {
+        let opts = ServiceOptions::parse_from([
+            "shuthost_host_agent",
+            "--port",
+            "1234",
+            "--broadcast-port",
+            "4321",
+        ]);
+        assert_eq!(opts.port, 1234);
+        assert_eq!(opts.broadcast_port, 4321);
+    }
 }

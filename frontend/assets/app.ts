@@ -4,6 +4,13 @@
 // Types & State
 // ==========================
 
+// Current broadcast port as configured on the coordinator.  The install
+// commands shown in the UI will include this value so a host agent can
+// immediately register with a non‑default port.  It is only sent once during
+// the initial handshake; the coordinator does not change it at runtime.
+let coordinatorBroadcastPort: number | undefined;
+
+
 /** Map of host name -> online status. */
 type StatusMap = Record<string, boolean>;
 
@@ -20,8 +27,8 @@ type ClientStats = {
 /** WebSocket message types exchanged with the coordinator backend. */
 type WsMessage =
     | { type: 'HostStatus'; payload: Record<string, boolean> }
-    | { type: 'ConfigChanged'; payload: { hosts: string[], clients: string[] } }
-    | { type: 'Initial'; payload: { hosts: string[]; clients: string[], status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
+    | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
+    | { type: 'Initial'; payload: { hosts: string[]; clients: string[]; status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null; broadcast_port: number } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 
@@ -124,6 +131,8 @@ const handleMessage = (message: WsMessage) => {
             persistedClientList = message.payload.clients;
             persistedHostsList = message.payload.hosts;
             persistedClientStats = message.payload.client_stats;
+            coordinatorBroadcastPort = message.payload.broadcast_port;
+            setupInstallerCommands();
             updateHostsTable();
             updateClientsTable();
             break;
@@ -470,8 +479,15 @@ const setupCopyButtons = () => {
 };
 
 /**
- * Populate installer commands based on current origin.
- * This keeps embedded strings in the UI in sync with where the page is served from.
+ * Populate installer commands based on current origin and current
+ * coordinator configuration.  The coordinator emits its configured
+ * `broadcast_port` over the websocket so the UI can show a copy/pasteable
+ * install command that includes the correct value instead of relying on the
+ * default of 5757.  The agent listen port is always the default in these
+ * commands since the coordinator doesn't track per-host port overrides.
+ *
+ * This keeps embedded strings in the UI in sync with where the page is
+ * served from and with the coordinator settings.
  */
 const setupInstallerCommands = () => {
     const baseUrl = window.location.origin + DemoMode.subpath;
@@ -486,8 +502,13 @@ const setupInstallerCommands = () => {
         throw new Error('Missing required install command elements');
     }
 
-    hostInstallCommandSh.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --port 5757`;
-    hostInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} --port 5757`;
+    // the TCP listen port is always the default (5757) and therefore not
+    // explicitly included here; showing the broadcast port is enough to
+    // illustrate that flags can be passed through the installer.
+    // include broadcast-port only if we have a value from the backend
+    const bpArg = coordinatorBroadcastPort !== undefined ? ` --broadcast-port ${coordinatorBroadcastPort}` : '';
+    hostInstallCommandSh.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl}${bpArg}`;
+    hostInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl}${bpArg}`;
     clientInstallCommandSh.textContent = `curl -sSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;
     clientInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 ${baseUrl}`;
 }
@@ -580,7 +601,8 @@ namespace DemoMode {
                     clients: [],
                     status: { tarbean: false, archive: false },
                     leases: { archive: [] },
-                    client_stats: {}
+                    client_stats: {},
+                    broadcast_port: 5757,
                 }
             });
         }, 500);

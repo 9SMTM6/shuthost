@@ -21,6 +21,20 @@ pub use service_install::*;
 pub use signing::*;
 pub use validation::*;
 
+/// Default UDP port that agents use to announce themselves via broadcast.
+///
+/// The coordinator listens on this port for incoming broadcasts.  If this value
+/// is changed the shell installers (see `scripts/coordinator_installers/…`)
+/// must be updated as they hard‑code the constant when invoking the agent.
+pub const DEFAULT_COORDINATOR_BROADCAST_PORT: u16 = 5757;
+
+/// Default TCP port on which an agent listens for control commands.
+///
+/// This is used both as the default for CLI parsing inside `host_agent` and in
+/// the various installer templates.  Again, installers must be manually updated
+/// if this value changes.
+pub const DEFAULT_AGENT_TCP_PORT: u16 = 5757;
+
 /// Creates a UDP socket configured for broadcasting on the specified port.
 ///
 /// Binds to the given port on all interfaces and enables broadcasting.

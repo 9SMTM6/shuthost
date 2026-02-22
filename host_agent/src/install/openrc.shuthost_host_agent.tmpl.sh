@@ -5,7 +5,7 @@ supervisor=supervise-daemon
 name="{ name }"
 description="{ description }"
 command="{ name }"
-command_args="service --port={ port } --shutdown-command=\"{ shutdown_command }\" --hostname={ hostname }"
+command_args="service --port={ port } --broadcast-port={ broadcast_port } --shutdown-command=\"{ shutdown_command }\" --hostname={ hostname }"
 command_user="root"
 pidfile="/run/${RC_SVCNAME}.pid"
 

@@ -29,9 +29,6 @@ pub struct Cli {
     pub command: Command,
 }
 
-/// Default UDP port on which the `host_agent` listens for commands.
-pub const DEFAULT_PORT: u16 = 5757;
-
 /// Subcommands available for `host_agent` execution.
 #[derive(Debug, Subcommand)]
 pub enum Command {
@@ -44,7 +41,7 @@ pub enum Command {
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
         /// UDP port to listen on for WOL test packets.
-        #[arg(long, short, default_value_t = DEFAULT_PORT + 1)]
+        #[arg(long, short, default_value_t = shuthost_common::DEFAULT_AGENT_TCP_PORT + 1)]
         port: u16,
     },
 

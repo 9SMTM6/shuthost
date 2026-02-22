@@ -9,7 +9,10 @@ use miniserde::Serialize as MiniSerialize;
 #[cfg(feature = "coordinator")]
 use serde::{Deserialize, Serialize};
 
-/// Message sent from agent to coordinator on startup.
+/// Data carried in a startup announcement from an agent.
+///
+/// Kept separate so that the surrounding enum can carry an explicit message
+/// type tag when we support additional broadcast kinds in the future.
 #[derive(Debug, Clone, PartialEq, Eq)]
 // miniserde serialization for agent
 #[cfg_attr(feature = "agent", derive(MiniSerialize))]
@@ -22,6 +25,18 @@ pub struct StartupBroadcast {
     pub mac_address: String,
     pub ip_address: String,
     pub timestamp: u64,
+}
+
+/// Message sent from agent to coordinator over the UDP broadcast channel.
+///
+/// Currently only a single agent-startup packet is defined, but the enum
+/// wrapper makes future extensions (e.g. heartbeat, shutdown notice) easier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+// serde deserialization for coordinator
+#[cfg_attr(feature = "coordinator", derive(Deserialize, Serialize))]
+pub enum BroadcastMessage {
+    /// Agent startup announcement
+    AgentStartup(StartupBroadcast),
 }
 
 // Macro to define the enum from variant => string mappings

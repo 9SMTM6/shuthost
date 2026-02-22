@@ -22,6 +22,7 @@ async fn m2m_lease_take_and_release() {
     let agent_port = get_free_port();
     let agent_id = "testhost";
     let agent_secret = "testsecret";
+    let agent_bcast = get_free_port();
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
@@ -71,7 +72,10 @@ async fn m2m_lease_take_and_release() {
 
     // simulate the WOL request by starting the agent
     let agent_guard = {
-        let agent = spawn_host_agent_default(agent_secret, agent_port);
+        let (agent, bcast_actual) = spawn_host_agent_default(agent_secret, agent_port);
+
+        // ensure broadcast port matches what we configured above
+        assert_eq!(bcast_actual, agent_bcast);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
@@ -175,7 +179,7 @@ async fn m2m_lease_async_take_and_release() {
 
     // Bring host online by starting the agent, to blockade the release request
     let _agent_guard = {
-        let agent = spawn_host_agent_default(agent_secret, agent_port);
+        let (agent, _bcast) = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
@@ -216,6 +220,7 @@ async fn api_reset_client_leases() {
     let client_secret = "clientsecret";
     let agent_secret = "testsecret";
     let agent_id = "testhost";
+    let agent_bcast = get_free_port();
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
@@ -257,8 +262,8 @@ async fn api_reset_client_leases() {
 
     // simulate the online host
     let agent_guard = {
-        let agent = spawn_host_agent_default(agent_secret, agent_port);
-
+        let (agent, bcast_actual) = spawn_host_agent_default(agent_secret, agent_port);
+        assert_eq!(bcast_actual, agent_bcast);
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;
         agent
@@ -384,7 +389,7 @@ async fn m2m_lease_sync_release_timeout_when_host_online() {
 
     // Start the agent first (host is online)
     let _agent_guard = {
-        let agent = spawn_host_agent_default(agent_secret, agent_port);
+        let (agent, _bcast) = spawn_host_agent_default(agent_secret, agent_port);
 
         // Wait for agent to be listening
         wait_for_agent_ready(agent_port, &SecretString::from(agent_secret), 5).await;

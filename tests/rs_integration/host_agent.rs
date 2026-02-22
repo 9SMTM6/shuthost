@@ -51,6 +51,8 @@ async fn shutdown_command_execution() {
     let _agent = spawn_host_agent(
         shared_secret,
         agent_port,
+        // default broadcast port used here (unused by coordinator)
+        shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
         &format!("echo SHUTDOWN > {}", shutdown_file.to_string_lossy()),
     );
 

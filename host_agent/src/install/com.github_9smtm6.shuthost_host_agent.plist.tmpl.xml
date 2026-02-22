@@ -14,6 +14,7 @@
       <string>/usr/local/bin/{ name }</string>
       <string>service</string>
       <string>--port={ port }</string>
+      <string>--broadcast-port={ broadcast_port }</string>
       <string>--shutdown-command="{ shutdown_command }"</string>
       <string>--hostname={ hostname }</string>
     </array>
