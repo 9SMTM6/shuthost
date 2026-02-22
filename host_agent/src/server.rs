@@ -10,7 +10,8 @@ use clap::Parser;
 use miniserde::json;
 use secrecy::SecretString;
 use shuthost_common::{
-    CoordinatorMessage, UnwrapToStringExt as _, create_signed_message, protocol::StartupBroadcast,
+    CoordinatorMessage, UnwrapToStringExt as _, create_signed_message,
+    protocol::{BroadcastMessage, StartupBroadcast},
 };
 
 use crate::{
@@ -103,14 +104,14 @@ fn broadcast_startup(config: &ServiceOptions) {
     let mac_address = get_mac(&interface).unwrap_or_else(|| "unknown".to_string());
     let agent_version = env!("CARGO_PKG_VERSION").to_string();
     let timestamp = shuthost_common::unix_time_seconds();
-    let broadcast = StartupBroadcast {
+    let broadcast = BroadcastMessage::AgentStartup(StartupBroadcast {
         hostname: config.hostname.clone(),
         agent_version,
         port: config.port,
         mac_address,
         ip_address,
         timestamp,
-    };
+    });
     // today we only send the raw startup structure; the enum exists for future
     // expansion but is not serialized directly because the JSON format hasn't
     // been defined yet.
