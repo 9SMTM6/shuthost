@@ -32,7 +32,7 @@ pub struct ServiceOptions {
     /// listen).  This is configured by the coordinator and embedded in the
     /// install command shown in the web UI, so agents start with the right
     /// value even when it differs from the default.
-    #[arg(long, default_value_t = shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT)]
+    #[arg(long, short = 'b', default_value_t = shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT)]
     pub broadcast_port: u16,
 
     /// Shell command used to perform shutdown when requested.

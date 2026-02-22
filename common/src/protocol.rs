@@ -50,7 +50,7 @@ pub enum BroadcastMessage {
 impl MiniSerialize for BroadcastMessage {
     fn begin(&self) -> ser::Fragment<'_> {
         match self {
-            &BroadcastMessage::AgentStartup(ref inner) => {
+            &BroadcastMessage::AgentStartup(ref payload) => {
                 // build a small map with two entries
                 struct BMsgMap<'payload> {
                     payload: &'payload StartupBroadcast,
@@ -69,7 +69,7 @@ impl MiniSerialize for BroadcastMessage {
                 }
 
                 ser::Fragment::Map(Box::new(BMsgMap {
-                    payload: inner,
+                    payload,
                     parse_step: 0,
                 }))
             }
