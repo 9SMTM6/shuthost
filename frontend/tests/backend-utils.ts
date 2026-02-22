@@ -28,9 +28,6 @@ export const BACKEND_PATH = process.env['COVERAGE'] ? '../target/debug/shuthost_
 // canonical list of all backend keys including the special demo entry.  Using
 // a single array ensures loops in setup/teardown stay in sync and provides a
 // convenient typed union.
-// comprehensive list including the special `demo` entry.  having a
-// separate array makes it easy to iterate through all possible backends
-// during setup/teardown.
 export const ALL_CONFIG_KEYS = [
     ...CONFIG_KEYS,
     'demo',
