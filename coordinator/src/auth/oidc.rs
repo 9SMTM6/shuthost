@@ -80,7 +80,7 @@ fn set_redirect_uri(
             Ok(client.clone().set_redirect_uri(u))
         }
         Err(e) => {
-            tracing::error!("invalid redirect URL: {e}");
+            tracing::error!(%e, "invalid redirect URL");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -316,7 +316,7 @@ fn handle_provider_error(
     jar: SignedCookieJar,
 ) -> Option<Response> {
     if let Some(err) = error {
-        tracing::warn!("OIDC error from provider: {} {:?}", err, error_description);
+        tracing::warn!(%err, "OIDC error from provider: {error_description}", error_description = error_description.map_or("No Description", String::as_str));
         let jar = clear_oidc_ephemeral_cookies(jar);
         return Some((jar, login_error_response()).into_response());
     }
@@ -347,7 +347,7 @@ async fn exchange_code_for_token(
         .redirect(Policy::none())
         .build()
         .map_err(|e| {
-            tracing::error!("failed to build HTTP client: {e}");
+            tracing::error!(%e, "failed to build HTTP client");
             LoginFlowError::Status(StatusCode::INTERNAL_SERVER_ERROR)
         })?;
     let mut req = client.exchange_code(AuthorizationCode::new(code));
@@ -357,7 +357,7 @@ async fn exchange_code_for_token(
     match req.request_async(&ReqwestClient::from(http)).await {
         Ok(r) => Ok(r),
         Err(e) => {
-            tracing::error!("Token exchange failed: {:#?}", e);
+            tracing::error!(%e, "Token exchange failed");
             Err(LoginFlowError::Status(StatusCode::BAD_GATEWAY))
         }
     }
@@ -392,7 +392,7 @@ async fn verify_id_token_and_build_session(
         ) {
             Ok(c) => c,
             Err(e) => {
-                tracing::error!("Invalid id token: {}", e);
+                tracing::error!(%e, "Invalid id token");
                 return Err(LoginFlowError::Status(StatusCode::UNAUTHORIZED));
             }
         };
@@ -416,7 +416,7 @@ async fn verify_id_token_and_build_session(
     // verification failed; try refreshing the client once
     tracing::info!("verification failed, refreshing OIDC client");
     if let Err(e) = refresh_oidc_client(client_lock, cfg).await {
-        tracing::error!("failed to refresh OIDC client: {e}");
+        tracing::error!(%e, "failed to refresh OIDC client");
         return Err(LoginFlowError::Status(StatusCode::UNAUTHORIZED));
     }
 

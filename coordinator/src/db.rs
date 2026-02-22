@@ -202,8 +202,7 @@ pub(crate) async fn add_lease(
             .await
             .map_err(|e| {
                 error!(
-                    "Failed to persist web interface lease for host '{}': {}",
-                    hostname, e
+                    %e, hostname, "Failed to persist web interface lease"
                 );
                 e
             })?;
@@ -218,8 +217,7 @@ pub(crate) async fn add_lease(
             .await
             .map_err(|e| {
                 error!(
-                    "Failed to persist client lease for host '{}' and client '{}': {}",
-                    hostname, client_id, e
+                    %e, hostname, client_id, "Failed to persist client lease"
                 );
                 e
             })?;
@@ -254,8 +252,7 @@ pub(crate) async fn remove_lease(
             .await
             .map_err(|e| {
                 error!(
-                    "Failed to remove web interface lease for host '{}': {}",
-                    hostname, e
+                    %e, hostname, "Failed to remove web interface lease"
                 );
                 e
             })?;
@@ -270,8 +267,7 @@ pub(crate) async fn remove_lease(
             .await
             .map_err(|e| {
                 error!(
-                    "Failed to remove client lease for host '{}' and client '{}': {}",
-                    hostname, client_id, e
+                    %e, hostname, client_id, "Failed to remove client lease"
                 );
                 e
             })?;
@@ -296,8 +292,7 @@ pub(crate) async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre
         .await
         .map_err(|e| {
             error!(
-                "Failed to remove client leases for client '{}': {}",
-                client_id, e
+                %e, client_id, "Failed to remove client leases"
             );
             e
         })?;
@@ -326,8 +321,7 @@ pub(crate) async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Res
     .await
     .map_err(|e| {
         error!(
-            "Failed to store key-value pair '{}'='{}': {}",
-            key, value, e
+            %e, key, value, "Failed to store key-value pair"
         );
         e
     })?;
@@ -354,7 +348,7 @@ pub(crate) async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<Stri
         .fetch_optional(pool)
         .await
         .map_err(|e| {
-            error!("Failed to retrieve key-value pair for key '{}': {}", key, e);
+            error!(%e, key, "Failed to retrieve key-value pair");
             e
         })?;
 
@@ -376,7 +370,7 @@ pub(crate) async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
         .execute(pool)
         .await
         .map_err(|e| {
-            error!("Failed to delete key-value pair for key '{}': {}", key, e);
+            error!(%e, key, "Failed to delete key-value pair");
             e
         })?;
 
@@ -404,7 +398,11 @@ pub(crate) async fn get_all_client_stats(
         "SELECT client_id, last_used FROM client_stats"
     )
     .fetch_all(pool)
-    .await?;
+    .await
+    .map_err(|e| {
+        error!(%e, "Failed to retrieve client stats");
+        e
+    })?;
 
     Ok(records
         .into_iter()
@@ -441,7 +439,11 @@ pub(crate) async fn get_client_stats(
         client_id
     )
     .fetch_optional(pool)
-    .await?;
+    .await
+    .map_err(|e| {
+        error!(%e, client_id, "Failed to retrieve client stats");
+        e
+    })?;
 
     Ok(result.map(|r| ClientStats {
         last_used: r
@@ -472,7 +474,13 @@ pub(crate) async fn update_client_last_used(
         last_used
     )
     .execute(pool)
-    .await?;
+    .await
+    .map_err(|e| {
+        error!(
+            %e, client_id, %last_used, "Failed to update client last used timestamp"
+        );
+        e
+    })?;
 
     Ok(())
 }

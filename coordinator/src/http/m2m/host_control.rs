@@ -153,7 +153,7 @@ async fn poll_until_host_state_wrapped(
     poll_until_host_state(host, desired_state, 60, 200, config_rx, hoststatus_tx)
         .await
         .map_err(|e| {
-            warn!("{e}");
+            warn!(%e, "Host '{}' did not reach desired state '{}' within timeout", host, desired_state);
             (StatusCode::GATEWAY_TIMEOUT, e)
         })
 }
