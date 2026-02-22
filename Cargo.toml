@@ -65,7 +65,7 @@ path = "host_agent/src/main.rs"
 [dev-dependencies]
 futures-util = "0.3"
 futures.workspace = true
-reqwest = { workspace = true, features = ["json", "blocking"] }
+reqwest = { workspace = true, features = ["json", "form"] }
 secrecy.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -87,8 +87,8 @@ miniserde = "0.1"
 nix = { version = "0.31", features = ["user", "fs"] }
 rand = "0.10.x"
 regex = "1.11.1"
-reqwest = { version = "0.12", default-features = false, features = [
-    "rustls-tls",
+reqwest = { version = "0.13", default-features = false, features = [
+    "rustls-no-provider",
 ] }
 secrecy = "0.10"
 serde = { version = "1.0.219", features = ["derive"] }

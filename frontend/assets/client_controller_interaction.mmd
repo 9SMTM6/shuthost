@@ -3,8 +3,11 @@ flowchart LR
 
     %% Nodes
     subgraph clients["Clients"]
+        direction TB
         webui@{ shape: circle, label: "WebUI" }
         client@{ shape: docs, label: "Client (Script)<br>one per *automated Task*" }
+        %% Invisible link, otherwise direction doesn't do anything... mermaid is kinda a mess
+        webui ~~~ client
     end
     coordinator@{ shape: div-proc, label: "Coordinator" }
     host@{ shape: div-proc, label: "**Host**" }

@@ -1,8 +1,13 @@
 flowchart LR
     %% Direct Control vs WebUI+Coordinator Comparison
 
-    %% WebUI (works everywhere)
-    webui@{ shape: circle, label: "**WebUI**" }
+    %% Clients (work everywhere)
+    subgraph clients["Clients"]
+        webui@{ shape: circle, label: "**WebUI**" }
+        client@{ shape: docs, label: "Client (Script)" }  
+        %% Invisible link, otherwise direction doesn't do anything... mermaid is kinda a mess
+        webui ~~~ client
+    end
 
     %% LAN Components
     subgraph lan["**LAN**"]
@@ -14,10 +19,10 @@ flowchart LR
     end
 
     %% Relationships
-    webui <--> |"serves/**controls**"| coordinator
+    clients --> |"**control**"| coordinator
     controller --> |"**startup**"| host
     controller --> |"**shutdown**"| host
-    webui -.-> |"controls *outside* of **LAN**"| host
+    clients -.-> |"control *outside* of **LAN**"| host
 
     class lan lan
     class webui webui

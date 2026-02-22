@@ -86,7 +86,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_invalid_utf8() {
+    fn handle_invalid_utf8() {
         let args = make_args(SecretString::from("s"));
         let data = [0xff, 0xfe, 0xfd];
         let result = validate_request(&data, &args);
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_status() {
+    fn handle_status() {
         let secret = SecretString::from("sec");
         let args = make_args(secret.clone());
         // create valid status command
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_shutdown() {
+    fn handle_shutdown() {
         let secret = SecretString::from("sec");
         let args = make_args(secret.clone());
         let signed = shuthost_common::create_signed_message("shutdown", &secret);
@@ -113,7 +113,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_abort() {
+    fn handle_abort() {
         let secret = SecretString::from("sec");
         let args = make_args(secret.clone());
         let signed = shuthost_common::create_signed_message("abort", &secret);
@@ -122,7 +122,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_invalid_timestamp() {
+    fn handle_invalid_timestamp() {
         let secret = SecretString::from("s");
         let args = make_args(secret);
         let data = "0|cmd|signature".to_string();
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_invalid_hmac() {
+    fn handle_invalid_hmac() {
         let secret = SecretString::from("s");
         let args = make_args(secret.clone());
         let signed = shuthost_common::create_signed_message("cmd", &secret) + "x";
@@ -140,7 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_malformed() {
+    fn handle_malformed() {
         let secret = SecretString::from("s");
         let args = make_args(secret);
         let data = "no separators";

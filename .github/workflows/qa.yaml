@@ -33,7 +33,7 @@ jobs:
       - run: rustup update stable
       - run: rustup component add clippy
       - uses: *rust-cache
-      - run: cargo +stable clippy --workspace -- -D warnings
+      - run: cargo +stable clippy --workspace --all-targets -- -D warnings
 
   sqlx-offline-cache:
     name: sqlx offline cache check with prepare

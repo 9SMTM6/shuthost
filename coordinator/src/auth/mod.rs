@@ -11,13 +11,17 @@ pub mod token;
 
 use alloc::sync::Arc;
 
-use crate::auth::oidc::{OidcClientReady, build_client};
+use crate::{
+    auth::oidc::{OidcClientReady, build_client},
+    config::OidcConfig,
+};
 use axum::extract::FromRef;
 use axum::response::Redirect;
 use axum_extra::extract::cookie::Key;
 use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 use crate::{
@@ -48,15 +52,22 @@ pub(crate) struct Runtime {
     pub cookie_key: Key,
 }
 
+/// Shared (async) lock around the runtime OIDC client so it can be rebuilt on the fly when
+/// discovery or key material changes.
+pub(crate) type SharedOidcClient = Arc<RwLock<OidcClientReady>>;
+
 #[derive(Debug)]
 pub(crate) enum Resolved {
     Disabled,
     Token {
         token: Arc<SecretString>,
     },
+    /// Resolved OIDC mode. The `config` field retains the original values from
+    /// configuration so the client can be rebuilt on demand (e.g. when a
+    /// discovery failure triggers a refresh).
     Oidc {
-        client: Box<OidcClientReady>,
-        scopes: Vec<String>,
+        client: SharedOidcClient,
+        config: OidcConfig,
     },
     /// External auth (reverse proxy / external provider) acknowledged by operator.
     External {
@@ -157,19 +168,19 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
     match *mode {
         AuthMode::None => Ok(Resolved::Disabled),
         AuthMode::Token { ref token } => resolve_token_auth(token.as_ref(), db_pool).await,
-        AuthMode::Oidc {
-            ref issuer,
-            ref client_id,
-            ref client_secret,
-            ref scopes,
-        } => {
-            info!("Auth mode: oidc, issuer={}", issuer);
-            let client = build_client(issuer, client_id, client_secret)
-                .await
-                .wrap_err("Failed to build OIDC client")?;
+        AuthMode::Oidc(ref oidc_cfg) => {
+            info!("Auth mode: oidc, issuer={}", oidc_cfg.issuer);
+            let client_inner = build_client(
+                &oidc_cfg.issuer,
+                &oidc_cfg.client_id,
+                &oidc_cfg.client_secret,
+            )
+            .await
+            .wrap_err("Failed to build OIDC client")?;
+            let client = Arc::new(RwLock::new(client_inner));
             Ok(Resolved::Oidc {
                 client,
-                scopes: scopes.clone(),
+                config: oidc_cfg.clone(),
             })
         }
         AuthMode::External { exceptions_version } => {
@@ -252,7 +263,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_removes_db_values_when_configured() {
+    async fn removes_db_values_when_configured() {
         let pool = setup_db().await.unwrap();
 
         // store values in DB
@@ -291,7 +302,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_invalid_configured_cookie_secret_fails() {
+    async fn invalid_configured_cookie_secret_fails() {
         let pool = setup_db().await.unwrap();
 
         // invalid base64 value in config

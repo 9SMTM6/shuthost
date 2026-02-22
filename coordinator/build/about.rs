@@ -1,11 +1,13 @@
 use alloc::collections::{BTreeMap, BTreeSet};
+use std::{collections::HashMap, fs};
+
 use cargo_about::licenses::config;
+use eyre::Context as _;
 use handlebars::Handlebars;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
 use spdx::text as spdx_text;
 use spdx::{LicenseItem, Licensee, expression::Expression};
-use std::{collections::HashMap, fs};
 use toml::from_str as toml_from_str;
 use url::Url;
 
@@ -76,7 +78,7 @@ where
 
 fn parse_url(should_be_url: Option<&str>) -> Result<Option<Url>, eyre::Error> {
     Ok(match should_be_url {
-        Some(r) => Some(Url::parse(r).map_err(|e| eyre::eyre!("invalid repository url {e}"))?),
+        Some(r) => Some(Url::parse(r).wrap_err("invalid repository url")?),
         None => None,
     })
 }
@@ -112,7 +114,7 @@ fn process_entry(
     // parse SPDX expression
     let expr: Expression = license_expr_str
         .parse()
-        .map_err(|e| eyre::eyre!("invalid SPDX expression for {name}: {e}"))?;
+        .wrap_err(format!("invalid SPDX expression for {name}"))?;
 
     let mut license_html = license_expr_str;
 
@@ -185,7 +187,8 @@ fn process_rust_crates(
         &cfg,
         &[], // target
     )
-    .map_err(|e| eyre::eyre!("{e}"))?;
+    .map_err(eyre::Report::msg)
+    .wrap_err("failed to get crate information")?;
 
     for k in krates.krates() {
         let license_str = k
@@ -294,7 +297,7 @@ fn generate_about_html(
     });
     let html = hb
         .render_template(template, &data)
-        .map_err(|e| eyre::eyre!("Handlebars error: {e}"))?;
+        .wrap_err("Handlebars failed to render template")?;
     fs::write("../frontend/assets/generated/about.tmpl.html", &html)?;
     Ok(())
 }

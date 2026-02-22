@@ -345,7 +345,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_systemd_content() {
+    fn parse_systemd_content_works() {
         test_parse_content(
             install::SYSTEMD_SERVICE_FILE_TEMPLATE,
             parse_systemd_content,
@@ -353,12 +353,12 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_openrc_content() {
+    fn parse_openrc_content_works() {
         test_parse_content(install::OPENRC_SERVICE_FILE_TEMPLATE, parse_openrc_content);
     }
 
     #[test]
-    fn test_parse_launchd_content() {
+    fn parse_launchd_content_works() {
         test_parse_content(
             install::LAUNCHD_SERVICE_FILE_TEMPLATE,
             parse_launchd_content,
@@ -366,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_self_extracting_shell_content() {
+    fn parse_self_extracting_shell_content_works() {
         test_parse_content(
             install::SELF_EXTRACTING_SHELL_TEMPLATE,
             parse_self_extracting_shell_content,
@@ -374,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_self_extracting_pwsh_content() {
+    fn parse_self_extracting_pwsh_content_works() {
         test_parse_content(
             install::SELF_EXTRACTING_PWSH_TEMPLATE,
             parse_self_extracting_pwsh_content,

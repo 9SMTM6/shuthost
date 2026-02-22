@@ -484,7 +484,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_generate_secret() {
+    fn generate_secret_works() {
         let secret = generate_secret();
         assert_eq!(secret.len(), 32);
     }

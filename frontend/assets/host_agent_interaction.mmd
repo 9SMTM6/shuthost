@@ -3,8 +3,11 @@ flowchart LR
 
     %% Nodes
     subgraph controller["Controller"]
+        direction TB
         direct@{ shape: docs, label: "Direct Control (Script)" }
         coordinator@{ shape: div-proc, label: "Coordinator" }
+        %% Invisible link, otherwise direction doesn't do anything... mermaid is kinda a mess
+        direct ~~~ coordinator
     end
     subgraph host_unit["**Host**"]
         host(["Actual Host"])

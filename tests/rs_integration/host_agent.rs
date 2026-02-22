@@ -1,17 +1,19 @@
-//! Integration tests for host_agent functionality
+//! Integration tests for `host_agent` functionality
 
-use std::process;
+use core::time::Duration;
+use std::{env, fs as fs_sync, process};
 
 use crate::common::{
     get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent,
     wait_for_agent_ready, wait_for_listening,
 };
 use secrecy::SecretString;
+use tokio::{fs, time};
 
 #[test]
-fn test_host_agent_binary_runs() {
+fn host_agent_binary_runs() {
     let mut child = process::Command::new(host_agent_bin_path())
-        .args(&["--help"])
+        .args(["--help"])
         .stdout(process::Stdio::null())
         .spawn()
         .expect("failed to spawn host_agent binary");
@@ -20,8 +22,8 @@ fn test_host_agent_binary_runs() {
 }
 
 #[tokio::test]
-async fn test_shutdown_command_execution() {
-    let shutdown_file = std::env::temp_dir().join("shuthost_shutdown_test");
+async fn shutdown_command_execution() {
+    let shutdown_file = env::temp_dir().join("shuthost_shutdown_test");
     let coord_port = get_free_port();
     let agent_port = get_free_port();
     let shared_secret = "testsecret";
@@ -67,7 +69,7 @@ async fn test_shutdown_command_execution() {
             online = true;
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        time::sleep(Duration::from_millis(300)).await;
     }
     assert!(online, "Host should be online before triggering shutdown");
 
@@ -79,18 +81,18 @@ async fn test_shutdown_command_execution() {
         .expect("failed to send shutdown lease");
     assert!(resp.status().is_success());
 
-    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    time::sleep(Duration::from_millis(100)).await;
     assert!(
         shutdown_file.exists(),
         "Shutdown file should exist after shutdown command"
     );
-    let contents = std::fs::read_to_string(&shutdown_file).unwrap_or_default();
+    let contents = fs::read_to_string(&shutdown_file).await.unwrap_or_default();
     assert_eq!(
         contents.trim(),
         "SHUTDOWN",
         "Shutdown file should contain 'SHUTDOWN'"
     );
-    drop(std::fs::remove_file(shutdown_file)); // Clean up after test
+    drop(fs::remove_file(shutdown_file).await); // Clean up after test
 }
 
 #[cfg(unix)]
@@ -104,16 +106,16 @@ const SELF_EXTRACTING_SCRIPT_NAME: &str = "shuthost_host_agent_self_extracting";
 const SELF_EXTRACTING_SCRIPT_NAME: &str = "shuthost_host_agent_self_extracting.ps1";
 
 #[test]
-fn test_self_extracting_install_and_registration() {
-    let temp_dir = std::env::temp_dir().join(format!("shuthost_test_{}", process::id()));
-    std::fs::create_dir(&temp_dir).expect("failed to create temp dir");
+fn self_extracting_install_and_registration() {
+    let temp_dir = env::temp_dir().join(format!("shuthost_test_{}", process::id()));
+    fs_sync::create_dir(&temp_dir).expect("failed to create temp dir");
 
     let secret = "testsecret123";
     let port = get_free_port();
 
     // Run install
     let status = process::Command::new(host_agent_bin_path())
-        .args(&[
+        .args([
             "install",
             "--init-system",
             SELF_EXTRACTING_SCRIPT,
@@ -146,15 +148,13 @@ fn test_self_extracting_install_and_registration() {
     // Verify output contains secret and port
     assert!(
         stdout.contains(secret),
-        "output should contain secret: {}",
-        stdout
+        "output should contain secret: {stdout}"
     );
     assert!(
         stdout.contains(&port.to_string()),
-        "output should contain port: {}",
-        stdout
+        "output should contain port: {stdout}"
     );
 
     // Clean up
-    std::fs::remove_dir_all(&temp_dir).ok();
+    drop(fs_sync::remove_dir_all(&temp_dir));
 }

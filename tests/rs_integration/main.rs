@@ -1,6 +1,16 @@
 //! Uses the single integration test approach.
 //!
 //! This improves parallelism when running the tests, and reduces the number of binaries that have to be built (and linked)
+#![expect(
+    clippy::tests_outside_test_module,
+    reason = "This is the integration test binary, so it's expected that tests are outside of a test module"
+)]
+#![expect(clippy::shadow_unrelated, reason = "This is a common pattern in tests")]
+#![expect(clippy::indexing_slicing, reason = "This is not problematic in tests")]
+#![expect(clippy::unwrap_used, reason = "Using unwrap in tests is fine")]
+
+extern crate alloc;
+extern crate core;
 
 mod common;
 mod host_agent;
@@ -8,6 +18,9 @@ mod leases;
 mod login_error_redirects;
 mod token_login;
 mod websocket;
+
+use core::time::Duration;
+use std::{env, fs};
 
 use secrecy::SecretString;
 
@@ -17,9 +30,10 @@ use common::{
     get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
     wait_for_listening,
 };
+use tokio::time;
 
 #[tokio::test]
-async fn test_coordinator_config_loads() {
+async fn coordinator_config_loads() {
     let port = get_free_port();
     let _child = spawn_coordinator_with_config(
         port,
@@ -39,7 +53,7 @@ async fn test_coordinator_config_loads() {
 }
 
 #[tokio::test]
-async fn test_coordinator_and_agent_online_status() {
+async fn coordinator_and_agent_online_status() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
     let shared_secret = "testsecret";
@@ -81,18 +95,18 @@ async fn test_coordinator_and_agent_online_status() {
             online = true;
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        time::sleep(Duration::from_millis(300)).await;
     }
     assert!(online, "Host should be online");
 }
 
 #[tokio::test]
-async fn test_lease_persistence_across_restarts() {
+async fn lease_persistence_across_restarts() {
     let coord_port = get_free_port();
-    let db_path = std::env::temp_dir().join(format!("shuthost_test_{coord_port}.db"));
+    let db_path = env::temp_dir().join(format!("shuthost_test_{coord_port}.db"));
 
     // Ensure clean start
-    drop(std::fs::remove_file(&db_path));
+    drop(fs::remove_file(&db_path));
 
     let config = format!(
         r#"
@@ -125,7 +139,7 @@ async fn test_lease_persistence_across_restarts() {
 
     // Kill coordinator
     drop(coordinator_child);
-    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    time::sleep(Duration::from_secs(1)).await;
 
     // Start coordinator again with same db
     let _coordinator_child2 = spawn_coordinator_with_config(coord_port, &config);
@@ -144,5 +158,5 @@ async fn test_lease_persistence_across_restarts() {
     );
 
     // Clean up
-    drop(std::fs::remove_file(&db_path));
+    drop(fs::remove_file(&db_path));
 }

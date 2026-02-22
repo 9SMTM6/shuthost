@@ -79,7 +79,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_invalid_hmac() {
+    fn invalid_hmac_fails() {
         let secret = SecretString::from("mysecret");
         let mut signed = crate::create_signed_message("hello", &secret);
         signed.push_str("tampered");
@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_hmac_message() {
+    fn parse_hmac_message_works() {
         let data = "123|msg|sig";
         let parsed = parse_hmac_message(data);
         assert_eq!(parsed, Some((123, "msg".to_string(), "sig".to_string())));
