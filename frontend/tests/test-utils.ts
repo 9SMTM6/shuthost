@@ -40,7 +40,7 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
     };
     const isHTMLElement = (node: Node): node is HTMLElement => {
       return node.nodeType === Node.ELEMENT_NODE;
-    }
+    };
 
     /** Recursively walk the DOM and sanitize all text nodes. */
     const walk = (node: Node): void => {
