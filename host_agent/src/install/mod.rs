@@ -4,7 +4,6 @@
 
 pub mod self_extracting;
 
-use alloc::string;
 use core::iter;
 use std::process::Command;
 
@@ -371,7 +370,7 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
                 return line
                     .split_whitespace()
                     .nth(1)
-                    .map(string::ToString::to_string);
+                    .map(ToString::to_string);
             }
         }
         None

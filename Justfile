@@ -196,6 +196,13 @@ pixelpeep:
 playwright_report:
     cd frontend && npx playwright show-report
 
+[group('tests')]
+cargo_tests +flags="":
+    cargo test --workspace {{flags}}
+
+alias ct := cargo_tests
+alias ctests := cargo_tests
+
 [group('projectmanagement')]
 [script('bash')]
 release TYPE skip_coverage_and_file_snapshots="false":
