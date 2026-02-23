@@ -18,7 +18,7 @@ use shuthost_common::{CoordinatorMessage, validate_hmac_message};
 ///
 /// # Returns
 ///
-/// `Ok(action)` where `action` is `Some(CoordinatorMessage)` if an action is required, or `None` for status.
+/// `Some(CoordinatorMessage)` if an action is required, otherwise None.
 ///
 /// # Errors
 ///
