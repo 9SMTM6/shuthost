@@ -502,10 +502,6 @@ const setupInstallerCommands = () => {
         throw new Error('Missing required install command elements');
     }
 
-    // the TCP listen port is always the default (5757) and therefore not
-    // explicitly included here; showing the broadcast port is enough to
-    // illustrate that flags can be passed through the installer.
-    // include broadcast-port only if we have a value from the backend
     const bpArg = coordinatorBroadcastPort !== undefined ? ` --broadcast-port ${coordinatorBroadcastPort}` : '';
     hostInstallCommandSh.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl}${bpArg}`;
     hostInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl}${bpArg}`;

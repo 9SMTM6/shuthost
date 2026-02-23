@@ -71,8 +71,8 @@ The host agent accepts TCP connections for status checks and shutdown commands. 
 ### Protocol Details
 
 **Transport:** TCP  
-**Port:** Configurable per host (default: 9090, `shuthost_common::DEFAULT_AGENT_TCP_PORT`).
-The agent also emits a UDP startup broadcast; that port defaults to `shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT` (5757) and may be set separately with `--broadcast-port`.
+**Port:** Configurable per host (default: `shuthost_common::DEFAULT_AGENT_TCP_PORT`).
+The agent also emits a UDP startup broadcast; that port defaults to `shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT` and may be set separately with `--broadcast-port`.
 
 > **Note:** When you copy the host‑agent install command from the coordinator web UI, it
 > will automatically include `--broadcast-port <value>` reflecting the port

@@ -33,7 +33,7 @@ pub const DEFAULT_COORDINATOR_BROADCAST_PORT: u16 = 5757;
 /// This is used both as the default for CLI parsing inside `host_agent` and in
 /// the various installer templates.  Again, installers must be manually updated
 /// if this value changes.
-pub const DEFAULT_AGENT_TCP_PORT: u16 = 5757;
+pub const DEFAULT_AGENT_TCP_PORT: u16 = 9090;
 
 /// Creates a UDP socket configured for broadcasting on the specified port.
 ///

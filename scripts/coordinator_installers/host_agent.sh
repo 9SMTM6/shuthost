@@ -22,7 +22,7 @@ else
     CURL_OPTS=""
 fi
 
-DEFAULT_PORT="5757"
+DEFAULT_PORT="9090"
 INSTALLER_ARGS=""
 
 # Parse arguments for port

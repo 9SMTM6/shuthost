@@ -101,4 +101,4 @@ jobs:
     steps:
       - name: Install host agent
         run: |
-          curl -fsSL https://9smtm6.github.io/shuthost/download/host_agent_installer.sh | sh -s https://9smtm6.github.io/shuthost --port 5757
+          curl -fsSL https://9smtm6.github.io/shuthost/download/host_agent_installer.sh | sh -s https://9smtm6.github.io/shuthost --broadcast-port 5757

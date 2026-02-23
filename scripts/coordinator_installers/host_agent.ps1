@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$RemoteUrl,
     [Parameter(Mandatory=$false)]
-    [string]$Port = "5757",
+    [string]$Port = "9090",
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
