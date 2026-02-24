@@ -53,7 +53,8 @@ pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 pub enum WsMessage {
     /// Gets sent on host status changes
     HostStatus(HostStatus),
-    /// We watch for select config changes and update the `WebUI` to immediately reflect additions to hosts or clients
+    /// We watch for select config changes and update the `WebUI` to immediately
+    /// reflect additions to hosts/clients.
     ConfigChanged {
         hosts: Vec<String>,
         clients: Vec<String>,
@@ -65,6 +66,8 @@ pub enum WsMessage {
         status: HostStatus,
         leases: LeaseMapRaw,
         client_stats: Option<HashMap<String, ClientStats>>,
+        /// Broadcast port configured for the coordinator.
+        broadcast_port: u16,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
@@ -198,6 +201,7 @@ async fn send_startup_msg(
         status: current_state.as_ref().clone(),
         leases,
         client_stats,
+        broadcast_port: config.server.broadcast_port,
     };
 
     send_ws_message(socket, &initial_msg).await

@@ -27,6 +27,21 @@ test.describe('token login', () => {
         await page.waitForLoadState('networkidle');
         await expect(page).toHaveURL(`${base}/login`);
     });
+
+    // verify that the broadcast port from the coordinator configuration is
+    // reflected in the copy/paste install command
+    test('host install command includes broadcast port', async ({ page }) => {
+        const cfgBase = getBaseUrl('nada');
+        await page.goto(cfgBase + '#hosts');
+        await page.waitForSelector('#host-install-header');
+        await page.click('#host-install-header');
+        await page.waitForSelector('#host-install-content', { state: 'visible' });
+        const cmd = await page.textContent('#host-install-command-sh');
+        expect(cmd).toBeTruthy();
+        expect(cmd).toContain('--broadcast-port');
+        expect(cmd).toContain('4242');
+        expect(cmd).not.toContain('--port');
+    });
 });
 
 test.describe('OIDC login', () => {

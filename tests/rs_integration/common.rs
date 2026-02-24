@@ -20,6 +20,7 @@ use std::{
 
 use clap::Parser as _;
 use secrecy::SecretString;
+use shuthost_common::CoordinatorMessage;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
@@ -63,7 +64,10 @@ impl Drop for KillOnDrop {
             } => {
                 // Send abort command to the agent
                 if let Ok(mut stream) = StdTcpStream::connect(("127.0.0.1", port)) {
-                    let signed_message = shuthost_common::create_signed_message("abort", secret);
+                    let signed_message = shuthost_common::create_signed_message(
+                        &CoordinatorMessage::Abort.to_string(),
+                        secret,
+                    );
                     drop(stream.write_all(signed_message.as_bytes()));
                 }
                 if let Some(handle) = thread.take() {
@@ -103,13 +107,21 @@ pub(crate) fn spawn_coordinator_with_config_file(config_path: &Path) -> KillOnDr
     KillOnDrop::Coordinator(handle)
 }
 
-/// Spawn the host agent in a separate thread with the given secret, port, and shutdown command.
-pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) -> KillOnDrop {
+/// Spawn the host agent in a separate thread with the given secret, listen port,
+/// broadcast port, and shutdown command.
+pub(crate) fn spawn_host_agent(
+    secret: &str,
+    port: u16,
+    broadcast_port: u16,
+    shutdown_command: &str,
+) -> KillOnDrop {
     let cli = AgentCli::parse_from([
         "shuthost_host_agent",
         "service",
         "--port",
         &port.to_string(),
+        "--broadcast-port",
+        &broadcast_port.to_string(),
         "--shutdown-command",
         shutdown_command,
     ]);
@@ -132,7 +144,7 @@ pub(crate) fn spawn_host_agent(secret: &str, port: u16, shutdown_command: &str) 
 
 /// Spawn a test host agent with the given secret and port.
 pub(crate) fn spawn_host_agent_default(secret: &str, port: u16) -> KillOnDrop {
-    spawn_host_agent(secret, port, "")
+    spawn_host_agent(secret, port, port, "")
 }
 
 /// Block until a TCP listener is accepting on `127.0.0.1:port` or timeout.

@@ -8,11 +8,11 @@
             - paragraph: "Run one of the following commands in your terminal:"
             - paragraph: "For Linux/macOS:"
             - button "Copy install command"
-            - code: /curl -fsSL <protocol:\/\/base_url>\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s <protocol:\/\/base_url> --port \d+/
+            - code: /curl -fsSL <protocol:\/\/base_url>\/download\/host_agent_installer[\d,.]+[hmsp]+ \| sh -s <protocol:\/\/base_url> --broadcast-port \d+/
             - paragraph: "For Windows (PowerShell):"
             - button "Copy install command"
-            - code: /curl\.exe -sSLO '<protocol:\/\/base_url>\/download\/host_agent_installer\.ps1'; powershell -ExecutionPolicy Bypass -File \.\\host_agent_installer\.ps1 <protocol:\/\/base_url> --port \d+/
-            - paragraph: "Adjust options as needed. Add the output to the hosts section of your config on the Coordinator Host:"
+            - code: /curl\.exe -sSLO '<protocol:\/\/base_url>\/download\/host_agent_installer\.ps1'; powershell -ExecutionPolicy Bypass -File \.\\host_agent_installer\.ps1 <protocol:\/\/base_url> --broadcast-port \d+/
+            - paragraph: "Adjust options as needed. The command will already include the configured broadcast port, so no manual change is required. Add the output to the hosts section of your config on the Coordinator Host:"
             - button "Copy config location"
             - code: <coordinator_config_location>
             - note "Agent Installation Requirements":

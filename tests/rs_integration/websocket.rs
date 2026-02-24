@@ -47,9 +47,19 @@ async fn websocket_config_updates() {
     let initial_msg = read.next().await.unwrap().unwrap();
     let initial: WsMessage = serde_json::from_str(&initial_msg.to_string()).unwrap();
     match initial {
-        WsMessage::Initial { hosts, clients, .. } => {
+        WsMessage::Initial {
+            hosts,
+            clients,
+            broadcast_port,
+            ..
+        } => {
             assert!(hosts.is_empty());
             assert!(clients.is_empty());
+            // default initial config should use the coordinator default port
+            assert_eq!(
+                broadcast_port,
+                shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
+            );
         }
         _ => panic!("Expected Initial message"),
     }

@@ -122,7 +122,7 @@ pub(crate) fn generate_control_script(
         );
         ("127.0.0.1".to_string(), "00:00:00:00:00:00".to_string())
     };
-    let hostname = get_hostname().unwrap_or_to_string("unknown");
+    let hostname = config.hostname.clone();
 
     let values = ControlScriptValues {
         host_ip: ip,

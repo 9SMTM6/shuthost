@@ -13,10 +13,20 @@ categories.workspace = true
 [dependencies]
 hex.workspace = true
 hmac.workspace = true
+miniserde = { workspace = true, optional = true }
 nix.workspace = true
-rand.workspace = true
 secrecy.workspace = true
+serde = { workspace = true, optional = true }
 sha2.workspace = true
+
+[features]
+# Feature for agent builds (miniserde only)
+agent = ["miniserde"]
+# Feature for coordinator builds (serde only)
+coordinator = ["serde"]
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [lints]
 workspace = true

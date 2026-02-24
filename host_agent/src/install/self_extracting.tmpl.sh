@@ -7,7 +7,9 @@
 # and the script itself must be backgrounded by the caller.
 
 export SHUTHOST_SHARED_SECRET="{ secret }"
+export SHUTHOST_HOSTNAME="{ hostname }"
 export PORT="{ port }"
+export BROADCAST_PORT="{ broadcast_port }"
 export SHUTDOWN_COMMAND="{ shutdown_command }"
 
 OUT=$(mktemp /tmp/selfbin.shuthost_host_agent.XXXXXX)
@@ -21,6 +23,6 @@ if [ "$#" -gt 0 ] && [ "${1#-}" = "$1" ]; then
         "$OUT" "$@"
     fi
 else
-    nohup "$OUT" service --port="$PORT" --shutdown-command="$SHUTDOWN_COMMAND" "$@" >"$OUT.log" 2>&1 &
+    nohup "$OUT" service --port="$PORT" --broadcast-port="$BROADCAST_PORT" --shutdown-command="$SHUTDOWN_COMMAND" --hostname="$SHUTHOST_HOSTNAME" "$@" >"$OUT.log" 2>&1 &
 fi
 exit 0

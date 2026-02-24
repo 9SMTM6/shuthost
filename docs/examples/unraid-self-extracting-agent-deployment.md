@@ -29,7 +29,9 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
    - Set the script to run "At Startup of Array" to ensure it executes when the array starts.
 
 4. **Configure the Script**:
-   - Paste the following script into the script editor. Replace `<secret>` with the shared secret you noted in step 2, and adjust the coordinator URL and port as needed:
+   - Paste the following script into the script editor. Replace `<secret>` with the shared secret you noted in step 2, and adjust the coordinator URL and port as needed.  The
+     broadcast port should match the one from your `coordinator_config.toml`, also shown in the
+     install command displayed in the web UI (the default is `5757`):
 
      ```bash
      #!/bin/bash
@@ -47,7 +49,8 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
      # Download and run the installer with serviceless mode
      # Replace 'https://shuthost.example.com' with your coordinator URL
      # Replace '<secret>' with your actual shared secret
-     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com --port=5757 --shared-secret=<secret> --shutdown-command="echo -n mem > /sys/power/state" --init-system=self-extracting-shell
+     # Be sure the --broadcast-port value matches your coordinator's setting
+     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com --broadcast-port=5757 --shared-secret=<secret> --shutdown-command="echo -n mem > /sys/power/state" --init-system=self-extracting-shell
 
      # Run the self-extracting agent binary
      ./shuthost_host_agent_self_extracting
@@ -66,7 +69,10 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
 - **WOL Setup**: `ethtool -s eth0 wol g` enables WOL on the network interface. This is necessary for the coordinator to wake the Unraid server.
 - **Process Cleanup**: The `pkill` commands ensure no conflicting agent processes are running.
 - **Installer Download**: Downloads the host agent installer from your coordinator and runs it with specific parameters:
-  - `--port=5757`: Sets the port for agent-coordinator communication.
+  - `--broadcast-port=5757`: Sets the port for agent-to-coordinator broadcast on startup.  Update
+    this value to whatever your coordinator configuration specifies; you can copy it
+    from the `broadcast_port` field in `coordinator_config.toml` or from the sample
+    install command shown for hosts in the web UI.
   - `--shared-secret=<secret>`: Authenticates the agent with the coordinator.
   - `--shutdown-command="echo -n mem > /sys/power/state"`: Uses a custom shutdown command to put the system into sleep (S3) state instead of full power-off, as required for WOL compatibility on many systems.
   - `--init-system=self-extracting-shell`: Configures the agent to run without relying on traditional init systems.

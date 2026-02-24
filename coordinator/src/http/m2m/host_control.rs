@@ -11,7 +11,7 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
-use shuthost_common::create_signed_message;
+use shuthost_common::{CoordinatorMessage, create_signed_message};
 
 #[cfg(not(any(coverage, test)))]
 use crate::wol::send_magic_packet;
@@ -216,7 +216,7 @@ pub(crate) async fn send_shutdown_to_address(
         .wrap_err(format!("Connection to {addr} timed out"))?
         .wrap_err(format!("TCP connect error to {addr}"))?;
 
-    let signed_message = create_signed_message("shutdown", secret);
+    let signed_message = create_signed_message(&CoordinatorMessage::Shutdown.to_string(), secret);
 
     let mut buf = vec![0; 1024];
     let n = execute_tcp_shutdown_request(&mut stream, signed_message.as_bytes(), &mut buf).await?;

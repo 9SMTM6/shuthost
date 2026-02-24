@@ -55,6 +55,9 @@ impl PartialEq for Client {
 pub(crate) struct ServerConfig {
     /// TCP port for the web control service.
     pub port: u16,
+    /// UDP port the coordinator listens on for agent startup broadcasts.
+    #[serde(default = "default_broadcast_port")]
+    pub broadcast_port: u16,
     /// Bind address for the HTTP listener.
     pub bind: String,
     /// Optional TLS configuration for serving HTTPS.
@@ -63,6 +66,10 @@ pub(crate) struct ServerConfig {
     /// Authentication configuration (defaults to no auth when omitted)
     #[serde(default)]
     pub auth: AuthConfig,
+}
+
+const fn default_broadcast_port() -> u16 {
+    shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
 }
 
 /// TLS configuration for the HTTP server.

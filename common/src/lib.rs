@@ -3,57 +3,54 @@
 //! This crate provides:
 //! - Timestamped HMAC message signing and validation
 //! - OS-specific service installation helpers
-#![expect(
-    clippy::missing_errors_doc,
-    reason = "The situation it maps to errors should be obvious."
-)]
 
 extern crate alloc;
 extern crate core;
 
-use core::fmt;
-use std::path;
-
-mod secrets;
+mod map_to_str;
+pub mod protocol;
 mod service_install;
 mod signing;
 mod validation;
 
-pub use secrets::*;
+use std::{net::UdpSocket, path};
+
+pub use map_to_str::*;
+pub use protocol::*;
 pub use service_install::*;
 pub use signing::*;
 pub use validation::*;
 
-/// Extension traits for error handling to improve code coverage.
-pub trait ResultMapErrExt<T> {
-    fn map_err_to_string(self, prefix: &str) -> Result<T, String>;
-    fn map_err_to_string_simple(self) -> Result<T, String>;
-}
+/// Default UDP port that agents use to announce themselves via broadcast.
+///
+/// The coordinator listens on this port for incoming broadcasts.  If this value
+/// is changed the shell installers (see `scripts/coordinator_installers/…`)
+/// must be updated as they hard‑code the constant when invoking the agent.
+pub const DEFAULT_COORDINATOR_BROADCAST_PORT: u16 = 5757;
 
-impl<T, E: fmt::Display> ResultMapErrExt<T> for Result<T, E> {
-    fn map_err_to_string(self, prefix: &str) -> Result<T, String> {
-        self.map_err(|e| format!("{prefix}: {e}"))
-    }
+/// Default TCP port on which an agent listens for control commands.
+///
+/// This is used both as the default for CLI parsing inside `host_agent` and in
+/// the various installer templates.  Again, installers must be manually updated
+/// if this value changes.
+pub const DEFAULT_AGENT_TCP_PORT: u16 = 9090;
 
-    fn map_err_to_string_simple(self) -> Result<T, String> {
-        self.map_err(|e| e.to_string())
-    }
-}
-
-pub trait UnwrapToStringExt {
-    fn unwrap_or_to_string(self, default: &str) -> String;
-}
-
-impl<T: ToString> UnwrapToStringExt for Option<T> {
-    fn unwrap_or_to_string(self, default: &str) -> String {
-        self.map(|t| t.to_string()).unwrap_or(default.to_string())
-    }
-}
-
-impl<T: ToString, E> UnwrapToStringExt for Result<T, E> {
-    fn unwrap_or_to_string(self, default: &str) -> String {
-        self.map(|t| t.to_string()).unwrap_or(default.to_string())
-    }
+/// Creates a UDP socket configured for broadcasting on the specified port.
+///
+/// Binds to the given port on all interfaces and enables broadcasting.
+/// If port is 0, binds to any available port.
+/// Returns the socket if successful, or an error message if binding or setting broadcast fails.
+///
+/// # Errors
+/// Returns `Err` if the socket cannot be bound or broadcast cannot be enabled.
+pub fn create_broadcast_socket(port: u16) -> Result<UdpSocket, String> {
+    let addr = format!("0.0.0.0:{port}");
+    let socket =
+        UdpSocket::bind(&addr).map_err(|e| format!("Failed to bind socket on {addr}: {e}"))?;
+    socket
+        .set_broadcast(true)
+        .map_err(|e| format!("Failed to set broadcast on socket: {e}"))?;
+    Ok(socket)
 }
 
 /// Returns `true` if the system uses systemd (detects `/run/systemd/system`).

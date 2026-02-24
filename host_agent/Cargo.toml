@@ -13,8 +13,10 @@ categories.workspace = true
 [dependencies]
 base64.workspace = true
 clap.workspace = true
+rand.workspace = true
 secrecy.workspace = true
-shuthost_common.workspace = true
+miniserde.workspace = true
+shuthost_common = { workspace = true, features = ["agent"] }
 
 [lints]
 workspace = true

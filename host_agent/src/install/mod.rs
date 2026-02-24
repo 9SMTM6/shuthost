@@ -4,16 +4,17 @@
 
 pub mod self_extracting;
 
-use alloc::string;
-use clap::{Parser, ValueEnum as _};
-use core::fmt;
-use shuthost_common::generate_secret;
-#[cfg(target_os = "linux")]
-use shuthost_common::{is_openrc, is_systemd};
-use std::net::UdpSocket;
+use core::iter;
 use std::process::Command;
 
-use crate::{DEFAULT_PORT, registration, server::get_default_shutdown_command};
+use clap::{Parser, ValueEnum as _};
+use core::fmt;
+use rand::{RngExt as _, distr, rng};
+
+#[cfg(target_os = "linux")]
+use shuthost_common::{is_openrc, is_systemd};
+
+use crate::{registration, server::get_default_shutdown_command};
 
 /// The binary name, derived from the Cargo package name.
 pub(super) const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
@@ -30,27 +31,46 @@ pub(crate) const OPENRC_SERVICE_FILE_TEMPLATE: &str =
 pub(crate) const SELF_EXTRACTING_SHELL_TEMPLATE: &str = include_str!("self_extracting.tmpl.sh");
 pub(crate) const SELF_EXTRACTING_PWSH_TEMPLATE: &str = include_str!("self_extracting.tmpl.ps1");
 
+/// Generates a random secret string suitable for use as an HMAC key.
+///
+/// Returns a 32-character alphanumeric string.
+#[must_use]
+pub fn generate_secret() -> String {
+    // Simple random secret generation: 32 characters
+    let mut rng = rng();
+    iter::repeat_with(|| rng.sample(distr::Alphanumeric) as char)
+        .take(32)
+        .collect()
+}
+
 /// Binds template placeholders with actual values.
 pub(crate) fn bind_template_replacements(
     template: &str,
     description: &str,
     port: u16,
+    broadcast_port: u16,
     shutdown_command: &str,
     secret: &str,
+    hostname: &str,
 ) -> String {
     template
         .replace("{ description }", description)
         .replace("{ port }", &port.to_string())
+        .replace("{ broadcast_port }", &broadcast_port.to_string())
         .replace("{ shutdown_command }", shutdown_command)
         .replace("{ secret }", secret)
         .replace("{ name }", BINARY_NAME)
+        .replace("{ hostname }", hostname)
 }
 
 /// Arguments for the `install` subcommand of `host_agent`.
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(long, short, default_value_t = DEFAULT_PORT)]
+    #[arg(long, short, default_value_t = shuthost_common::DEFAULT_AGENT_TCP_PORT)]
     pub port: u16,
+
+    #[arg(long, short = 'b', default_value_t = shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT)]
+    pub broadcast_port: u16,
 
     #[arg(long, short = 'c', default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
@@ -60,6 +80,9 @@ pub struct Args {
 
     #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
+
+    #[arg(long, short = 'n', default_value_t = default_hostname())]
+    pub hostname: String,
 }
 
 /// Supported init systems for installing the `host_agent`.
@@ -110,8 +133,10 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
             arg,
             env!("CARGO_PKG_DESCRIPTION"),
             arguments.port,
+            arguments.broadcast_port,
             &arguments.shutdown_command,
             &arguments.shared_secret,
+            &arguments.hostname,
         )
     };
 
@@ -138,6 +163,8 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     registration::print_registration_config(&registration::ServiceConfig {
         secret: arguments.shared_secret.clone(),
         port: arguments.port,
+        broadcast_port: arguments.broadcast_port,
+        hostname: arguments.hostname.clone(),
     });
 
     Ok(())
@@ -340,10 +367,7 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             if line.contains("ether") {
-                return line
-                    .split_whitespace()
-                    .nth(1)
-                    .map(string::ToString::to_string);
+                return line.split_whitespace().nth(1).map(ToString::to_string);
             }
         }
         None
@@ -433,14 +457,14 @@ pub(crate) fn get_hostname() -> Option<String> {
     }
 }
 
+/// Returns the default hostname, using the system hostname if available, otherwise "unknown".
+pub(crate) fn default_hostname() -> String {
+    get_hostname().unwrap_or_else(|| "unknown".to_string())
+}
+
 /// Tests Wake-on-LAN packet reachability by listening and echoing back packets.
 pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
-    let socket = UdpSocket::bind(format!("0.0.0.0:{port}"))
-        .map_err(|e| format!("Failed to bind test socket: {e}"))?;
-
-    socket
-        .set_broadcast(true)
-        .map_err(|e| format!("Failed to set broadcast: {e}"))?;
+    let socket = shuthost_common::create_broadcast_socket(port)?;
 
     println!("Listening for WOL test packets on port {port}...");
 
@@ -456,4 +480,15 @@ pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_secret_works() {
+        let secret = generate_secret();
+        assert_eq!(secret.len(), 32);
+    }
 }

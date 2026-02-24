@@ -62,6 +62,10 @@ mod tests {
         fs::write(&tmp, toml_str).unwrap();
         let cfg = load(&tmp).await.unwrap();
         assert_eq!(cfg.server.port, 9090);
+        assert_eq!(
+            cfg.server.broadcast_port,
+            shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
+        );
         assert_eq!(cfg.server.bind, "0.0.0.0");
         let host = cfg.hosts.get("foo").unwrap();
         assert_eq!(host.ip, "1.2.3.4");
@@ -92,6 +96,7 @@ mod tests {
         let toml_str = r#"
             [server]
             port = 8081
+            broadcast_port = 4242
             bind = "127.0.0.1"
 
             [hosts]
@@ -112,6 +117,7 @@ mod tests {
         let toml_str = r#"
             [server]
             port = 8082
+            broadcast_port = 4242
             bind = "0.0.0.0"
 
             [server.tls]

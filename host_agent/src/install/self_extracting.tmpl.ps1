@@ -9,7 +9,9 @@
 #   - Unix:    pwsh script.ps1 &
 
 $env:SHUTHOST_SHARED_SECRET = "{ secret }"
+$env:SHUTHOST_HOSTNAME = "{ hostname }"
 $env:PORT = "{ port }"
+$env:BROADCAST_PORT = "{ broadcast_port }"
 $env:SHUTDOWN_COMMAND = "{ shutdown_command }"
 
 # Extract and run the binary
@@ -51,5 +53,5 @@ if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
 } else {
     # Run the service attached to this script
     # Unlike the shell script, we don't background here - the caller should background this script instead
-    & $tempFile service --port=$env:PORT --shutdown-command=$env:SHUTDOWN_COMMAND @args
+    & $tempFile service --port=$env:PORT --broadcast-port=$env:BROADCAST_PORT --shutdown-command=$env:SHUTDOWN_COMMAND --hostname=$env:SHUTHOST_HOSTNAME @args
 }

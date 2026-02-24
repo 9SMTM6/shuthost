@@ -138,8 +138,8 @@ bind = "127.0.0.1"
 #     mac = "AA:BB:CC:DD:EE:FF"
 #     # TCP port the host agent listens on.
 #     # This must match the port configured in the host agent's config.
-#     # Default agent port is 5757, but can be changed.
-#     port = 5757
+#     # Default agent port is 9090, but can be changed.
+#     port = 9090
 #     # Shared secret for HMAC authentication between coordinator and agent.
 #     # This must match the secret in the host agent's config.
 #     # The installer generates one of these.
