@@ -367,10 +367,7 @@ pub(crate) fn get_mac(interface: &str) -> Option<String> {
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             if line.contains("ether") {
-                return line
-                    .split_whitespace()
-                    .nth(1)
-                    .map(ToString::to_string);
+                return line.split_whitespace().nth(1).map(ToString::to_string);
             }
         }
         None
