@@ -37,7 +37,7 @@ use tower_http::{
     classify::ServerErrorsFailureClass,
     request_id::MakeRequestUuid,
     timeout::TimeoutLayer,
-    trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, OnFailure, TraceLayer},
+    trace::{DefaultOnFailure, TraceLayer},
 };
 use tracing::{info, warn};
 
@@ -66,6 +66,49 @@ use crate::{
 /// accessibility may depend on this version when handling external authentication modes.
 /// When routes get added to public routes, this needs to be bumped.
 pub(crate) const EXPECTED_AUTH_EXCEPTIONS_VERSION: u32 = 2;
+
+#[macro_export]
+macro_rules! cfg_if_expr {
+    (
+        #[cfg($condition: meta)]
+        $true_block: expr,
+        #[cfg(not)]
+        $false_block: expr,
+    ) => {
+        {
+        #[cfg($condition)]
+        let _return = $true_block;
+        #[cfg(not($condition))]
+        let _return = $false_block;
+        _return
+        }
+    };
+}
+
+/// Custom failure handling for the trace layer. 503 responses are logged
+/// at `INFO` instead of `ERROR` so they don't fill the error log.
+#[derive(Clone, Copy)]
+struct LevelAdjustingOnFailure;
+
+impl tower_tracing::OnFailure<ServerErrorsFailureClass> for LevelAdjustingOnFailure {
+    fn on_failure(
+        &mut self,
+        failure_classification: ServerErrorsFailureClass,
+        latency: Duration,
+        span: &tracing::Span,
+    ) {
+        use ServerErrorsFailureClass as S;
+
+        match failure_classification {
+            S::StatusCode(StatusCode::SERVICE_UNAVAILABLE) => {
+                tracing::info!(classification = %S::StatusCode(StatusCode::SERVICE_UNAVAILABLE), latency = %format!("{} ms", latency.as_millis()), "response failed (downgraded)");
+            }
+            value => {
+                DefaultOnFailure::default().on_failure(value, latency, span);
+            }
+        }
+    }
+}
 
 /// Creates the main application router by merging public and private routes.
 ///
@@ -246,59 +289,27 @@ async fn setup_tls_config(
 }
 
 fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
-    #[derive(Clone, Copy)]
-    /// Custom failure handling: downgrade 503-related failures to INFO
-    struct LevelAdjustingOnFailure<F: OnFailure<ServerErrorsFailureClass>> {
-        forward_to_default: F,
-    }
-
-    impl tower_tracing::OnFailure<ServerErrorsFailureClass>
-        for LevelAdjustingOnFailure<DefaultOnFailure>
-    {
-        fn on_failure(
-            &mut self,
-            failure_classification: ServerErrorsFailureClass,
-            latency: Duration,
-            span: &tracing::Span,
-        ) {
-            use ServerErrorsFailureClass as S;
-
-            match failure_classification {
-                S::StatusCode(StatusCode::SERVICE_UNAVAILABLE) => {
-                    tracing::info!(classification = %S::StatusCode(StatusCode::SERVICE_UNAVAILABLE), latency = %format!("{} ms", latency.as_millis()), "response failed (downgraded)");
-                }
-                value => {
-                    self.forward_to_default.on_failure(value, latency, span);
-                }
-            }
-        }
-    }
-
-    let trace_layer = TraceLayer::new_for_http()
-        // keep default spans
-        .make_span_with(DefaultMakeSpan::new())
-        // default behavior for successful responses
-        .on_response(DefaultOnResponse::new())
-        .on_failure(LevelAdjustingOnFailure {
-            forward_to_default: DefaultOnFailure::new(),
-        });
-
+    #[expect(
+        clippy::absolute_paths,
+        reason = "I dont want conditional imports",
+    )]
     let middleware_stack = ServiceBuilder::new()
         .sensitive_headers([AUTHORIZATION, COOKIE])
         .set_x_request_id(MakeRequestUuid)
         .propagate_x_request_id()
-        // must be after request-id
-        .layer(trace_layer);
-
-    #[cfg(any(
-        feature = "compression-br",
-        feature = "compression-deflate",
-        feature = "compression-gzip",
-        feature = "compression-zstd",
-    ))]
-    let middleware_stack = middleware_stack.compression();
-
-    let middleware_stack = middleware_stack
+        // TraceLayer must be after request-id
+        .layer(TraceLayer::new_for_http().on_failure(LevelAdjustingOnFailure))
+        .layer(cfg_if_expr!(
+            #[cfg(any(
+                feature = "compression-br",
+                feature = "compression-deflate",
+                feature = "compression-gzip",
+                feature = "compression-zstd",
+            ))]
+            tower_http::compression::CompressionLayer::new(),
+            #[cfg(not)]
+            tower::layer::util::Identity::new(),
+        ))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(30),
@@ -565,4 +576,21 @@ async fn secure_headers_middleware(req: Request<Body>, next: Next) -> Response {
         HeaderValue::from_static("nosniff"),
     );
     response
+}
+
+#[expect(
+    unused,
+    clippy::missing_const_for_fn,
+    reason = "used as compilation test"
+)]
+fn test() {
+    let var = cfg_if_expr!(
+        #[cfg(target_arch = "wasm32")]
+        {
+            let inner = 4;
+            4
+        },
+        #[cfg(not)]
+        {5},
+    );
 }
