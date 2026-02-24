@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 use tracing::debug;
 
 use crate::{
-    http::WsTx,
+    state::WsTx,
     websocket::{LeaseMapRaw, LeaseSources, WsMessage},
 };
 

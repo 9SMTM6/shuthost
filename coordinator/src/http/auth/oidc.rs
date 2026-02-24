@@ -21,7 +21,8 @@ use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 use crate::{
-    auth::{
+    config::OidcConfig,
+    http::auth::{
         self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, LOGIN_ERROR_INSECURE,
         LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, OIDCSessionClaims, SharedOidcClient,
         cookies::{
@@ -30,8 +31,7 @@ use crate::{
         },
         login_error_redirect, request_is_secure,
     },
-    config::OidcConfig,
-    http::AppState,
+    state::AppState,
 };
 
 // Fixed redirect path used by the application for OIDC callbacks

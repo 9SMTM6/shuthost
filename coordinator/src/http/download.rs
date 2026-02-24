@@ -4,7 +4,7 @@ use axum_extra::{
     headers::{ContentLength, ContentType},
 };
 
-use crate::http::AppState;
+use crate::state::AppState;
 
 /// Macro to define a download handler function for a static plain text document
 macro_rules! static_text_download_handler {

@@ -14,15 +14,15 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    auth,
     config::{AuthConfig, ControllerConfig},
+    http::auth,
     http::{
-        AppState,
         assets::{self, UiMode, render_ui_html},
         download,
         m2m::LeaseMap,
-        server::shutdown_signal,
     },
+    run::shutdown_signal,
+    state::AppState,
 };
 
 /// Run the demo service on the specified port and bind address.

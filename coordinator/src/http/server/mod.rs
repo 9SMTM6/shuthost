@@ -35,14 +35,7 @@ macro_rules! cfg_if_expr {
 
 pub mod middleware;
 pub mod router;
-pub mod run;
-#[allow(clippy::module_inception)]
-pub mod state;
 pub mod tls;
-
-pub(crate) use run::{shutdown_signal, start};
-pub(crate) use state::AppState;
-pub(crate) use state::{ConfigRx, ConfigTx, HostStatus, HostStatusRx, HostStatusTx, WsTx};
 
 #[expect(clippy::missing_const_for_fn, reason = "used as compilation test")]
 fn _test_cfg_if_expr() {

@@ -11,15 +11,15 @@ use axum_extra::{TypedHeader, extract::cookie::SignedCookieJar, headers::Content
 use reqwest::StatusCode;
 
 use crate::{
-    auth::{
+    http::auth::{
         LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, LOGIN_ERROR_TOKEN,
         LOGIN_ERROR_UNKNOWN, Resolved,
         cookies::{self, get_oidc_session_from_cookie, get_token_session_from_cookie},
         oidc,
         token::{self, LoginQuery},
     },
-    http::AppState,
     include_utf8_asset,
+    state::AppState,
 };
 
 /// Returns a router with all authentication-related routes.

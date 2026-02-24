@@ -5,15 +5,13 @@ use std::{
 };
 
 use eyre::WrapErr as _;
-use tokio::sync::watch;
+use tokio::sync::{broadcast, watch};
 use tracing::info;
 
 use crate::{
-    auth,
-    config::{ControllerConfig, DbConfig, load, resolve_config_relative_paths},
+    config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
     db::{self, DbPool},
-    http::m2m::LeaseMap,
-    http::polling,
+    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap, polling},
     websocket::WsMessage,
 };
 
@@ -23,7 +21,7 @@ pub(crate) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
 pub(crate) type HostStatus = HashMap<String, bool>;
 pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
 pub(crate) type HostStatusTx = watch::Sender<Arc<HostStatus>>;
-pub(crate) type WsTx = tokio::sync::broadcast::Sender<WsMessage>;
+pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 
 /// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
@@ -105,7 +103,7 @@ pub(crate) fn emit_startup_warnings(app_state: &AppState) {
 
     if !app_state.tls_enabled {
         match &app_state.auth.mode {
-            &crate::auth::Resolved::Disabled => {}
+            &auth::Resolved::Disabled => {}
             _ => {
                 tracing::warn!(
                     "TLS appears disabled but authentication is enabled. Authentication cookies are set with Secure=true and will not be sent by browsers over plain HTTP. Enable TLS or run behind an HTTPS reverse proxy (ensure it sets X-Forwarded-Proto: https)."
@@ -115,23 +113,22 @@ pub(crate) fn emit_startup_warnings(app_state: &AppState) {
     }
 
     match &app_state.auth.mode {
-        &crate::auth::Resolved::External { exceptions_version }
-            if exceptions_version != crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION =>
+        &auth::Resolved::External { exceptions_version }
+            if exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION =>
         {
             tracing::warn!(
                 "External authentication is configured with an outdated exceptions version ({exceptions_version}, current {}).",
-                crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION
+                EXPECTED_AUTH_EXCEPTIONS_VERSION
             );
         }
         _ => {}
     }
 }
 
-
 /// Initialize application state and start background tasks.
 pub(crate) async fn initialize_state(
     config_path: &Path,
-) -> eyre::Result<(AppState, Option<crate::config::TlsConfig>)> {
+) -> eyre::Result<(AppState, Option<TlsConfig>)> {
     let initial_config = Arc::new(load(config_path).await?);
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
@@ -139,14 +136,14 @@ pub(crate) async fn initialize_state(
     let initial_status = Arc::new(HashMap::<String, bool>::new());
     let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
 
-    let (ws_tx, _) = tokio::sync::broadcast::channel(32);
+    let (ws_tx, _) = broadcast::channel(32);
 
     let db_pool = initialize_database(&initial_config, config_path).await?;
 
     let leases = LeaseMap::default();
 
     if let Some(ref pool) = db_pool {
-        crate::db::load_leases(pool, &leases).await?;
+        db::load_leases(pool, &leases).await?;
         info!("Loaded leases from database");
     } else {
         info!("Skipping lease load: DB persistence disabled");
@@ -159,7 +156,7 @@ pub(crate) async fn initialize_state(
         Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
 
     let tls_opt = match initial_config.server.tls {
-        Some(ref tls_cfg @ crate::config::TlsConfig { enable: true, .. }) => Some(tls_cfg.clone()),
+        Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg.clone()),
         _ => None,
     };
 

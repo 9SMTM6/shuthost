@@ -4,6 +4,7 @@
 
 pub mod api;
 pub mod assets;
+pub mod auth;
 pub mod download;
 pub mod login;
 pub mod m2m;

@@ -22,10 +22,8 @@ use tracing::error;
 
 use crate::{
     db,
-    http::{
-        AppState,
-        api::{LeaseAction, update_lease_and_broadcast},
-    },
+    http::api::{LeaseAction, update_lease_and_broadcast},
+    state::AppState,
     wol,
 };
 

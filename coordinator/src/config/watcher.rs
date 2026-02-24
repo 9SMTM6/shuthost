@@ -16,7 +16,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     config::{self, ControllerConfig},
-    http::{ConfigRx, ConfigTx},
+    state::{ConfigRx, ConfigTx},
 };
 
 /// Handles the logic for reloading the configuration file and updating the application state.

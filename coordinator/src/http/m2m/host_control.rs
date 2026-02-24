@@ -17,10 +17,8 @@ use shuthost_common::{CoordinatorMessage, create_signed_message};
 use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
-    http::{
-        polling::poll_until_host_state,
-        server::{AppState, ConfigRx, HostStatusRx, HostStatusTx},
-    },
+    http::polling::poll_until_host_state,
+    state::{AppState, ConfigRx, HostStatusRx, HostStatusTx},
     websocket::LeaseSources,
 };
 

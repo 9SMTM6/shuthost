@@ -9,7 +9,7 @@ use axum::{
 };
 use axum_extra::extract::cookie::SignedCookieJar;
 
-use crate::auth::{
+use crate::http::auth::{
     LOGIN_ERROR_SESSION_EXPIRED, LayerState, Resolved,
     cookies::{
         create_return_to_cookie, get_oidc_session_from_cookie, get_token_session_from_cookie,

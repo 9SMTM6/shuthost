@@ -12,8 +12,9 @@ pub mod token;
 use alloc::sync::Arc;
 
 use crate::{
-    auth::oidc::{OidcClientReady, build_client},
     config::OidcConfig,
+    http::auth::oidc::{OidcClientReady, build_client},
+    state::AppState,
 };
 use axum::extract::FromRef;
 use axum::response::Redirect;
@@ -27,7 +28,6 @@ use tracing::{info, warn};
 use crate::{
     config::{AuthConfig, AuthMode},
     db::{DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET, delete_kv, get_kv, store_kv},
-    http::AppState,
 };
 
 pub(crate) use cookies::{

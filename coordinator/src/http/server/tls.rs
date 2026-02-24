@@ -1,4 +1,4 @@
-use core::net::SocketAddr;
+use core::net::{IpAddr, SocketAddr};
 use std::path::Path;
 
 use axum_server::tls_rustls::RustlsConfig as AxumRustlsConfig;
@@ -6,7 +6,7 @@ use eyre::{WrapErr as _, eyre};
 use secrecy::{ExposeSecret as _, SecretBox};
 use tokio::fs as t_fs;
 
-use crate::config::TlsConfig;
+use crate::config::{TlsConfig, resolve_config_relative_paths};
 
 /// Setup TLS configuration for HTTPS server.
 ///
@@ -15,14 +15,14 @@ use crate::config::TlsConfig;
 pub(crate) async fn setup_tls_config(
     tls_cfg: &TlsConfig,
     config_path: &Path,
-    listen_ip: std::net::IpAddr,
+    listen_ip: IpAddr,
     addr: SocketAddr,
 ) -> eyre::Result<AxumRustlsConfig> {
     let cert_path_cfg = tls_cfg.cert_path.as_str();
     let key_path_cfg = tls_cfg.key_path.as_str();
 
-    let cert_path = crate::config::resolve_config_relative_paths(config_path, cert_path_cfg);
-    let key_path = crate::config::resolve_config_relative_paths(config_path, key_path_cfg);
+    let cert_path = resolve_config_relative_paths(config_path, cert_path_cfg);
+    let key_path = resolve_config_relative_paths(config_path, key_path_cfg);
 
     let cert_exists = cert_path.exists();
     let key_exists = key_path.exists();

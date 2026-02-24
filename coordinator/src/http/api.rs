@@ -12,10 +12,8 @@ use tracing::{error, info};
 
 use crate::{
     db,
-    http::{
-        AppState,
-        m2m::{broadcast_lease_update, spawn_handle_host_state},
-    },
+    http::m2m::{broadcast_lease_update, spawn_handle_host_state},
+    state::AppState,
     websocket::LeaseSources,
 };
 

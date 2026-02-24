@@ -18,8 +18,9 @@ use tower_http::{
 };
 
 use crate::{
-    auth,
-    http::{middleware::LevelAdjustingOnFailure, server::AppState},
+    http::{auth, middleware::LevelAdjustingOnFailure},
+    state::AppState,
+    websocket,
 };
 
 use crate::http::{api, assets, download, login, m2m};
@@ -33,7 +34,7 @@ use crate::http::server::middleware::secure_headers_middleware;
 /// Private routes include the main UI, API endpoints, and WebSocket handler, protected by auth middleware.
 ///
 /// When routes get added to public routes, [`crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION`] needs to be bumped.
-pub(crate) fn create_app_router(auth_runtime: &Arc<crate::auth::Runtime>) -> Router<AppState> {
+pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
     let public = Router::new()
         .merge(login::routes())
         .merge(assets::routes())
@@ -42,8 +43,8 @@ pub(crate) fn create_app_router(auth_runtime: &Arc<crate::auth::Runtime>) -> Rou
 
     let private = Router::new()
         .nest("/api", api::routes())
-        .route("/", get(crate::http::assets::serve_ui))
-        .route("/ws", any(crate::websocket::ws_handler))
+        .route("/", get(assets::serve_ui))
+        .route("/ws", any(websocket::ws_handler))
         .route_layer(ax_middleware::from_fn_with_state(
             auth::LayerState {
                 auth: auth_runtime.clone(),

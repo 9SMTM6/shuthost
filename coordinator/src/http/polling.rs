@@ -16,7 +16,7 @@ use shuthost_common::create_signed_message;
 
 use crate::{
     config::watch_config_file,
-    http::{ConfigRx, ConfigTx, HostStatusTx, WsTx},
+    state::{ConfigRx, ConfigTx, HostStatusTx, WsTx},
     websocket::WsMessage,
 };
 
