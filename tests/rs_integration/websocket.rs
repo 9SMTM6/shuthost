@@ -152,7 +152,8 @@ async fn websocket_host_status_changes() {
     }
 
     // Start the host agent
-    let (agent, _bcast_port) = spawn_host_agent_default(shared_secret, agent_port);
+    let agent = spawn_host_agent_default(shared_secret, agent_port);
+
 
     // Wait for host to come online
     let mut online_received = false;

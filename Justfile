@@ -69,6 +69,10 @@ update_dependencies:
 
 alias deps := update_dependencies
 
+[group('projectmanagement')]
+show_test_blocking_processes:
+    ss -lptn 'sport >= :10000 and sport <= :10100'
+
 [group('devops')]
 build_gh_pages +flags="":
     ./scripts/build-gh-pages.sh {{flags}}
@@ -173,7 +177,7 @@ alias typo := typos
 
 [group('tests')]
 cargo_clippy +flags="":
-    cargo clippy --workspace --all-targets {{flags}}
+    RUST_BACKTRACE=0 cargo clippy --workspace --all-targets {{flags}}
 
 alias clippy := cargo_clippy
 

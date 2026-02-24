@@ -78,7 +78,7 @@ async fn coordinator_and_agent_online_status() {
     );
     wait_for_listening(coord_port, 5).await;
 
-    let (_agent, _bcast_port) = spawn_host_agent_default(shared_secret, agent_port);
+    let _agent = spawn_host_agent_default(shared_secret, agent_port);
 
     // Wait for agent to be ready
     wait_for_agent_ready(agent_port, &SecretString::from(shared_secret), 5).await;

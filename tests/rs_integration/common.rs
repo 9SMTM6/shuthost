@@ -143,11 +143,8 @@ pub(crate) fn spawn_host_agent(
 }
 
 /// Spawn a test host agent with the given secret and port.
-pub(crate) fn spawn_host_agent_default(secret: &str, port: u16) -> (KillOnDrop, u16) {
-    // choose a broadcast port that won't collide with the listen port; return
-    // it so callers can include it in coordinator config entries.
-    let bcast = get_free_port();
-    (spawn_host_agent(secret, port, bcast, ""), bcast)
+pub(crate) fn spawn_host_agent_default(secret: &str, port: u16) -> KillOnDrop {
+    spawn_host_agent(secret, port, port, "")
 }
 
 /// Block until a TCP listener is accepting on `127.0.0.1:port` or timeout.
