@@ -26,7 +26,7 @@ pub(crate) async fn shutdown_signal() {
 }
 
 /// Start the HTTP server with optional TLS.
-#[tracing::instrument(skip(app_state, tls_opt, config_path))]
+#[tracing::instrument(skip(app_state, config_path))]
 pub(crate) async fn start_server(
     app_state: AppState,
     listen_ip: IpAddr,
@@ -53,7 +53,7 @@ pub(crate) async fn start_server(
         }
         _ => {
             tracing::info!("Listening on http://{}", addr);
-            let listener = net::TcpListener::bind(addr).await?;
+            let listener = net::TcpListener::bind(addr).in_current_span().await?;
             let server = axum::serve(listener, app);
             tokio::select! {
                 res = server => res?,

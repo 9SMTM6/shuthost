@@ -10,7 +10,7 @@ use tokio::{
     net::TcpStream,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
-use tracing::{Level, debug, info};
+use tracing::{Instrument, Level, debug, info};
 
 use shuthost_common::create_signed_message;
 
@@ -118,7 +118,7 @@ pub(crate) fn start_background_tasks(
         let hoststatus_tx = hoststatus_tx.clone();
         tokio::spawn(async move {
             poll_host_statuses(config_rx, hoststatus_tx).await;
-        });
+        }.in_current_span());
     }
 
     // Start config file watcher
@@ -127,7 +127,7 @@ pub(crate) fn start_background_tasks(
         let config_tx = config_tx.clone();
         tokio::spawn(async move {
             watch_config_file(path, config_tx).await;
-        });
+        }.in_current_span());
     }
 
     // Forwards host status updates to the websocket client loops
@@ -141,7 +141,7 @@ pub(crate) fn start_background_tasks(
                     debug!("No Websocket Subscribers");
                 }
             }
-        });
+        }.in_current_span());
     }
 
     // Forwards config changes to the websocket client loops
@@ -158,7 +158,7 @@ pub(crate) fn start_background_tasks(
                     debug!("No Websocket Subscribers");
                 }
             }
-        });
+        }.in_current_span());
     }
 }
 
