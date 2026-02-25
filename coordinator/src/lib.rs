@@ -35,9 +35,9 @@ use std::sync::Once;
 
 use eyre::{Result, WrapErr as _};
 use tracing::{info, warn};
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{EnvFilter, fmt::time::ChronoLocal};
 
-use cli::{Cli, Command};
+use cli::{Cli, Command, LogFormat};
 use demo::run_demo_service;
 
 use crate::run::start;
@@ -72,19 +72,25 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             let config_path =
                 fs::canonicalize(config).wrap_err(format!("Config file not found at: {config}"))?;
 
-            INIT_TRACING.call_once(|| {
+            INIT_TRACING.call_once(move || {
                 let default_level = if env::var("SHUTHOST_INTEGRATION_TEST").is_ok() {
                     "error"
                 } else {
                     "info"
                 };
-                tracing_subscriber::fmt()
+
+                let builder = tracing_subscriber::fmt()
                     .with_env_filter(
                         EnvFilter::try_from_default_env()
                             .unwrap_or_else(|_| EnvFilter::new(default_level)),
                     )
-                    .pretty()
-                    .init(); // Initialize logging
+                    .with_timer(ChronoLocal::rfc_3339());
+
+                match args.log_format {
+                    LogFormat::Compact => builder.compact().init(),
+                    LogFormat::Json => builder.json().init(),
+                    LogFormat::Pretty => builder.pretty().init(),
+                }
             });
 
             // Create a startup span that holds the resolved config path for the lifetime
@@ -105,7 +111,9 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             info!("Starting coordinator");
 
             // Pass through optional port/bind overrides from CLI
-            start(&config_path, args.port, args.bind.as_deref()).in_current_span().await?;
+            start(&config_path, args.port, args.bind.as_deref())
+                .in_current_span()
+                .await?;
             Ok(())
         }
         Command::DemoService {

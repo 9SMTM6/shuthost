@@ -116,49 +116,61 @@ pub(crate) fn start_background_tasks(
     {
         let config_rx = config_rx.clone();
         let hoststatus_tx = hoststatus_tx.clone();
-        tokio::spawn(async move {
-            poll_host_statuses(config_rx, hoststatus_tx).await;
-        }.in_current_span());
+        tokio::spawn(
+            async move {
+                poll_host_statuses(config_rx, hoststatus_tx).await;
+            }
+            .in_current_span(),
+        );
     }
 
     // Start config file watcher
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
-        tokio::spawn(async move {
-            watch_config_file(path, config_tx).await;
-        }.in_current_span());
+        tokio::spawn(
+            async move {
+                watch_config_file(path, config_tx).await;
+            }
+            .in_current_span(),
+        );
     }
 
     // Forwards host status updates to the websocket client loops
     {
         let ws_tx = ws_tx.clone();
         let mut hoststatus_rx = hoststatus_tx.subscribe();
-        tokio::spawn(async move {
-            while hoststatus_rx.changed().await.is_ok() {
-                let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
-                if ws_tx.send(msg).is_err() {
-                    debug!("No Websocket Subscribers");
+        tokio::spawn(
+            async move {
+                while hoststatus_rx.changed().await.is_ok() {
+                    let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
+                    if ws_tx.send(msg).is_err() {
+                        debug!("No Websocket Subscribers");
+                    }
                 }
             }
-        }.in_current_span());
+            .in_current_span(),
+        );
     }
 
     // Forwards config changes to the websocket client loops
     {
         let ws_tx = ws_tx.clone();
         let mut config_rx = config_rx.clone();
-        tokio::spawn(async move {
-            while config_rx.changed().await.is_ok() {
-                let config = config_rx.borrow();
-                let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
-                let clients = config.clients.keys().cloned().collect::<Vec<_>>();
-                let msg = WsMessage::ConfigChanged { hosts, clients };
-                if ws_tx.send(msg).is_err() {
-                    debug!("No Websocket Subscribers");
+        tokio::spawn(
+            async move {
+                while config_rx.changed().await.is_ok() {
+                    let config = config_rx.borrow();
+                    let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
+                    let clients = config.clients.keys().cloned().collect::<Vec<_>>();
+                    let msg = WsMessage::ConfigChanged { hosts, clients };
+                    if ws_tx.send(msg).is_err() {
+                        debug!("No Websocket Subscribers");
+                    }
                 }
             }
-        }.in_current_span());
+            .in_current_span(),
+        );
     }
 }
 

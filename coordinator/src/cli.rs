@@ -7,7 +7,7 @@ use std::env;
 
 #[cfg(unix)]
 use crate::install;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
@@ -60,4 +60,16 @@ pub struct ServiceArgs {
     /// Optional override for the bind address (overrides bind in config)
     #[arg(long)]
     pub bind: Option<String>,
+    /// Logging format
+    #[arg(long, value_enum, default_value_t = LogFormat::default())]
+    pub log_format: LogFormat,
+}
+
+/// Available logging formats for console output.
+#[derive(Clone, Copy, Debug, ValueEnum, Default)]
+pub enum LogFormat {
+    #[default]
+    Compact,
+    Json,
+    Pretty,
 }
