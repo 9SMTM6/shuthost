@@ -25,7 +25,7 @@ pub mod wol;
 
 #[cfg(unix)]
 use nix::sys::stat;
-use tracing_log::LogTracer;
+use tracing::Instrument;
 // for use in integration tests
 pub use websocket::WsMessage;
 
@@ -72,11 +72,6 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             let config_path =
                 fs::canonicalize(config).wrap_err(format!("Config file not found at: {config}"))?;
 
-            // Create a startup span that holds the resolved config path for the lifetime
-            // of the coordinator initialization phase.
-            let startup_span = tracing::info_span!("coord.startup", ?config_path);
-            let _startup_enter = startup_span.enter();
-
             INIT_TRACING.call_once(|| {
                 let default_level = if env::var("SHUTHOST_INTEGRATION_TEST").is_ok() {
                     "error"
@@ -90,9 +85,12 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                     )
                     .pretty()
                     .init(); // Initialize logging
-
-                LogTracer::init().expect("failed to initialize log redirection");
             });
+
+            // Create a startup span that holds the resolved config path for the lifetime
+            // of the coordinator initialization phase.
+            let startup_span = tracing::info_span!("coord.startup", ?config_path, pid=?std::process::id(), version = env!("CARGO_PKG_VERSION"));
+            let _startup_enter = startup_span.enter();
 
             INIT_RUSTLS.call_once(|| {
                 rustls_openssl::default_provider()
@@ -107,7 +105,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             info!("Starting coordinator");
 
             // Pass through optional port/bind overrides from CLI
-            start(&config_path, args.port, args.bind.as_deref()).await?;
+            start(&config_path, args.port, args.bind.as_deref()).in_current_span().await?;
             Ok(())
         }
         Command::DemoService {

@@ -57,7 +57,7 @@ pub(crate) struct AppState {
 /// Initialize database. If a persistent DB is configured and enabled, open it
 /// relative to the config file when appropriate. Otherwise DB persistence is
 /// disabled and `db_pool` will be None.
-#[tracing::instrument(skip(initial_config))]
+#[tracing::instrument(skip_all)]
 pub(crate) async fn initialize_database(
     initial_config: &ControllerConfig,
     config_path: &Path,

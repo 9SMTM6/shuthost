@@ -23,7 +23,7 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDAR
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{Instrument, info, warn};
 
 use crate::{
     config::{AuthConfig, AuthMode},
@@ -139,6 +139,7 @@ impl Runtime {
 }
 
 /// Set up the cookie key from config or database.
+#[tracing::instrument(skip_all)]
 async fn setup_cookie_key(
     cookie_secret: Option<&Arc<SecretString>>,
     db_pool: Option<&DbPool>,
@@ -164,17 +165,22 @@ async fn setup_cookie_key(
 }
 
 /// Resolve the authentication mode from configuration.
+#[tracing::instrument(skip(db_pool), ret)]
 async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::Result<Resolved> {
     match *mode {
         AuthMode::None => Ok(Resolved::Disabled),
-        AuthMode::Token { ref token } => resolve_token_auth(token.as_ref(), db_pool).await,
+        AuthMode::Token { ref token } => {
+            resolve_token_auth(token.as_ref(), db_pool)
+                .in_current_span()
+                .await
+        }
         AuthMode::Oidc(ref oidc_cfg) => {
-            info!("Auth mode: oidc, issuer={}", oidc_cfg.issuer);
             let client_inner = build_client(
                 &oidc_cfg.issuer,
                 &oidc_cfg.client_id,
                 &oidc_cfg.client_secret,
             )
+            .in_current_span()
             .await
             .wrap_err("Failed to build OIDC client")?;
             let client = Arc::new(RwLock::new(client_inner));
@@ -183,10 +189,7 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
                 config: oidc_cfg.clone(),
             })
         }
-        AuthMode::External { exceptions_version } => {
-            info!("Auth mode: external (reverse proxy)");
-            Ok(Resolved::External { exceptions_version })
-        }
+        AuthMode::External { exceptions_version } => Ok(Resolved::External { exceptions_version }),
     }
 }
 
@@ -200,10 +203,9 @@ async fn resolve_token_auth(
         if let Some(pool) = db_pool {
             delete_kv(pool, KV_AUTH_TOKEN).await?;
         }
-        info!("Auth mode: token (configured)");
         cfg_token.clone()
     } else {
-        resolve_auto_token(db_pool).await?
+        resolve_auto_token(db_pool).in_current_span().await?
     };
 
     Ok(Resolved::Token { token })
