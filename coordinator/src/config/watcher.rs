@@ -130,7 +130,7 @@ pub(crate) async fn watch_config_file(path: PathBuf, tx: ConfigTx) {
             });
 
             if matches_config && let Err(e) = process_config_change(&path, &tx, &rx).await {
-                error!("Failed to process config change: {}", e);
+                error!(?e, "Failed to process config change");
                 break;
             }
         }

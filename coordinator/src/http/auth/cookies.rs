@@ -88,7 +88,7 @@ pub(crate) fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
     // Log what cookies we saw when logout was invoked so we can ensure the path is hit
     let had_session_oidc = jar.get(COOKIE_OIDC_SESSION).is_some();
     let had_session_token = jar.get(COOKIE_TOKEN_SESSION).is_some();
-    tracing::info!(
+    tracing::debug!(
         had_session_oidc,
         had_session_token,
         "logout: received request"
@@ -98,7 +98,7 @@ pub(crate) fn invalidate_session(jar: SignedCookieJar) -> SignedCookieJar {
         .remove(Cookie::build(COOKIE_TOKEN_SESSION).path("/").build())
         .remove(Cookie::build(COOKIE_OIDC_SESSION).path("/").build());
 
-    tracing::info!("logout: removed session cookies");
+    tracing::debug!("logout: removed session cookies");
     jar
 }
 

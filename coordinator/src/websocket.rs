@@ -11,7 +11,7 @@ use axum::{
 use core::error::Error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
-use tracing::{Instrument as _, error, info, warn};
+use tracing::{Instrument as _, error, info, warn, debug};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::{
@@ -89,7 +89,7 @@ pub(crate) async fn ws_handler(
     // Log incoming headers so we can verify whether the Upgrade/Connection
     // and other WebSocket-related headers reach the backend (useful when
     // Traefik or another proxy is in front).
-    info!(?headers, "Incoming WebSocket upgrade headers");
+    debug!(?headers, "Incoming WebSocket upgrade headers");
 
     // Defer reading current state until inside the startup sender so we get the
     // freshest values at the moment of sending. Clone the receivers/leases to
@@ -101,10 +101,10 @@ pub(crate) async fn ws_handler(
 
     // Log that we're returning an on_upgrade responder; the actual upgrade
     // happens asynchronously when the client completes the handshake.
-    info!("Registering WebSocket upgrade handler");
+    debug!("Registering WebSocket upgrade handler");
 
     ws.on_upgrade(async move |mut socket| {
-        info!("WebSocket upgrade completed; starting event loop");
+        debug!("WebSocket upgrade completed; starting event loop");
         match send_startup_msg(
             &mut socket,
             hoststatus_rx,
@@ -148,7 +148,7 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                         if let Err(e) = send_ws_message(&mut socket, &msg).await {
                             let closed = is_websocket_closed(&e);
                             if closed {
-                                info!("WebSocket connection closed");
+                                debug!("WebSocket connection closed");
                             } else {
                                 warn!("Failed to send message, closing connection: {}", e);
                             }
@@ -156,7 +156,7 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                         }
                     }
                     Err(_) => {
-                        warn!("Broadcast channel closed, stopping WebSocket handler");
+                        info!("Broadcast channel closed, stopping WebSocket handler");
                         break;
                     }
                 }
@@ -164,7 +164,7 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
             // Detect when the WebSocket is closed
             // Note that this doesn't seem to be catching all (or even any) closed connections.
             None = socket.recv() => {
-                info!("WebSocket connection closed");
+                debug!("WebSocket connection closed");
                 break;
             }
         }
