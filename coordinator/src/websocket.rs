@@ -11,7 +11,7 @@ use axum::{
 use core::error::Error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
-use tracing::{error, info, warn};
+use tracing::{Instrument as _, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::{
@@ -73,6 +73,7 @@ pub enum WsMessage {
 
 /// Gets called for every new web client and spins up an event loop
 #[axum::debug_handler]
+#[tracing::instrument(skip_all)]
 pub(crate) async fn ws_handler(
     ws: WebSocketUpgrade,
     headers: HeaderMap,
@@ -123,17 +124,19 @@ pub(crate) async fn ws_handler(
     })
 }
 
+#[tracing::instrument(level = "debug", skip_all)]
 async fn send_ws_message(socket: &mut WebSocket, msg: &WsMessage) -> Result<(), axum::Error> {
     match serde_json::to_string(msg) {
         Ok(json) => socket.send(Message::Text(json.into())).await,
         Err(e) => {
-            warn!("Failed to serialize websocket message: {}", e);
+            warn!(%e, "Failed to serialize websocket message");
             Err(axum::Error::new(e))
         }
     }
 }
 
 /// We start one event loop per client
+#[tracing::instrument(level = "debug", skip_all)]
 async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<WsMessage>) {
     // Handle broadcast messages
     loop {
@@ -168,6 +171,7 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
     }
 }
 
+#[tracing::instrument(skip_all)]
 async fn send_startup_msg(
     socket: &mut WebSocket,
     hoststatus_rx: HostStatusRx,
@@ -186,7 +190,7 @@ async fn send_startup_msg(
         match db::get_all_client_stats(pool).await {
             Ok(stats) => Some(stats),
             Err(e) => {
-                error!("Failed to get client stats: {}", e);
+                error!(%e, "Failed to get client stats");
                 None
             }
         }
@@ -202,5 +206,7 @@ async fn send_startup_msg(
         broadcast_port: config.server.broadcast_port,
     };
 
-    send_ws_message(socket, &initial_msg).await
+    send_ws_message(socket, &initial_msg)
+        .in_current_span()
+        .await
 }

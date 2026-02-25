@@ -12,6 +12,7 @@ use crate::config::{TlsConfig, resolve_config_relative_paths};
 ///
 /// Use provided certs when both files exist. Otherwise, if `persist_self_signed` is true
 /// (default), generate and persist self-signed cert/key next to the config file.
+#[tracing::instrument]
 pub(crate) async fn setup_tls_config(
     tls_cfg: &TlsConfig,
     config_path: &Path,

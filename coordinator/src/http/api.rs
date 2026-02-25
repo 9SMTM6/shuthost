@@ -30,7 +30,7 @@ pub(crate) fn routes() -> Router<AppState> {
 }
 
 /// Lease action for lease endpoints (shared between web and m2m)
-#[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum LeaseAction {
     Take,
@@ -39,6 +39,7 @@ pub(crate) enum LeaseAction {
 
 /// Updates the lease set for a host, persists to database if available, and broadcasts the update.
 /// Returns the updated lease set.
+#[tracing::instrument(skip(state))]
 pub(crate) async fn update_lease_and_broadcast(
     hostname: &str,
     lease_source: LeaseSource,
@@ -53,14 +54,14 @@ pub(crate) async fn update_lease_and_broadcast(
     match action {
         LA::Take => {
             lease_set.insert(lease_source.clone());
-            info!("{} took lease on '{}'", lease_source, hostname);
+            info!(%lease_source, "Lease taken");
             if let Some(ref pool) = state.db_pool {
                 db::add_lease(pool, hostname, &lease_source).await?;
             }
         }
         LA::Release => {
             lease_set.remove(&lease_source);
-            info!("{} released lease on '{}'", lease_source, hostname);
+            info!(%lease_source, "Lease released");
             if let Some(ref pool) = state.db_pool {
                 db::remove_lease(pool, hostname, &lease_source).await?;
             }
@@ -82,6 +83,7 @@ pub(crate) async fn update_lease_and_broadcast(
 /// Use this for user-initiated actions from the web dashboard. For programmatic or
 /// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
 #[axum::debug_handler]
+#[tracing::instrument(skip(state))]
 async fn handle_web_lease_action(
     Path((hostname, action)): Path<(String, LeaseAction)>,
     State(state): State<AppState>,
@@ -111,6 +113,7 @@ async fn handle_web_lease_action(
 /// This function is used by the web UI to reset all leases associated with a client.
 /// It does not require any client authentication or HMAC signature.
 #[axum::debug_handler]
+#[tracing::instrument(skip(state))]
 async fn handle_reset_client_leases(
     Path(client_id): Path<String>,
     State(state): State<AppState>,

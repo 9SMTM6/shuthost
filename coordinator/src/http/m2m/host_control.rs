@@ -9,7 +9,8 @@ use tokio::{
     net::TcpStream,
     time::timeout,
 };
-use tracing::{debug, error, info, warn};
+use tracing::Instrument as _;
+use tracing::{Level, debug, error, info, warn};
 
 use shuthost_common::{CoordinatorMessage, create_signed_message};
 
@@ -17,7 +18,7 @@ use shuthost_common::{CoordinatorMessage, create_signed_message};
 use crate::wol::send_magic_packet;
 use crate::{
     config::Host,
-    http::polling::poll_until_host_state,
+    http::runtime::poll_until_host_state,
     state::{AppState, ConfigRx, HostStatusRx, HostStatusTx},
     websocket::LeaseSources,
 };
@@ -33,6 +34,7 @@ pub(crate) const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
 /// - Waking up the host fails (e.g., network issues, invalid configuration)
 /// - Shutting down the host fails (e.g., network issues, invalid configuration)
 /// - The host fails to reach the desired state within the timeout period (60 seconds)
+#[tracing::instrument(skip_all, fields(host = %host))]
 pub(crate) async fn handle_host_state(
     host: &str,
     lease_set: &LeaseSources,
@@ -69,6 +71,7 @@ pub(crate) async fn handle_host_state(
 }
 
 /// Wake up a host if WOL is enabled, and poll until online.
+#[tracing::instrument(skip_all, fields(host = %host))]
 async fn wake_up_host(
     host: &str,
     lease_set: &LeaseSources,
@@ -104,6 +107,7 @@ async fn wake_up_host(
 }
 
 /// Shut down a host and poll until offline.
+#[tracing::instrument(skip_all, fields(host = %host))]
 async fn shutdown_host_action(
     host: &str,
     config_rx: &ConfigRx,
@@ -119,6 +123,7 @@ async fn shutdown_host_action(
 
 /// Helper function to spawn an async task that handles host state changes.
 /// This clones the necessary state fields and spawns a background task to handle the host state change.
+#[tracing::instrument(skip(state))]
 pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, state: &AppState) {
     let host = host.to_string();
     let lease_set = lease_set.clone();
@@ -126,18 +131,22 @@ pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, stat
     let config_rx = state.config_rx.clone();
     let hoststatus_tx = state.hoststatus_tx.clone();
 
-    tokio::spawn(async move {
-        drop(
-            handle_host_state(
-                &host,
-                &lease_set,
-                &hoststatus_rx,
-                &config_rx,
-                &hoststatus_tx,
-            )
-            .await,
-        );
-    });
+    tokio::spawn(
+        async move {
+            drop(
+                handle_host_state(
+                    &host,
+                    &lease_set,
+                    &hoststatus_rx,
+                    &config_rx,
+                    &hoststatus_tx,
+                )
+                .in_current_span()
+                .await,
+            );
+        }
+        .in_current_span(),
+    );
 }
 
 /// Poll until a host reaches the desired state, mapping polling errors to
@@ -150,30 +159,19 @@ async fn poll_until_host_state_wrapped(
 ) -> Result<(), (StatusCode, String)> {
     poll_until_host_state(host, desired_state, 60, 200, config_rx, hoststatus_tx)
         .await
-        .map_err(|e| {
-            warn!(%e, "Host '{}' did not reach desired state '{}' within timeout", host, desired_state);
-            (StatusCode::GATEWAY_TIMEOUT, e)
-        })
+        .map_err(|e| (StatusCode::GATEWAY_TIMEOUT, e))
 }
 
 /// Get host configuration from the current config.
+#[tracing::instrument(skip(config_rx), ret(level = Level::DEBUG), err(Debug, level = Level::WARN))]
 pub(crate) fn get_host_config(
     host_name: &str,
     config_rx: &ConfigRx,
 ) -> Result<Host, (StatusCode, &'static str)> {
     let config = config_rx.borrow();
     match config.hosts.get(host_name) {
-        Some(host) => {
-            debug!(
-                "Found configuration for host '{}': ip={}, mac={}",
-                host_name, host.ip, host.mac
-            );
-            Ok(host.clone())
-        }
-        None => {
-            warn!("No configuration found for host '{}'", host_name);
-            Err((StatusCode::NOT_FOUND, "Unknown host"))
-        }
+        Some(host) => Ok(host.clone()),
+        None => Err((StatusCode::NOT_FOUND, "Unknown host")),
     }
 }
 
@@ -201,7 +199,9 @@ async fn execute_tcp_shutdown_request(
 }
 
 /// Send a shutdown command to a host via TCP.
+#[tracing::instrument(err(level = Level::WARN))]
 pub(crate) async fn send_shutdown_to_address(
+    host: &str,
     ip: &str,
     port: u16,
     secret: &secrecy::SecretString,
@@ -226,6 +226,7 @@ pub(crate) async fn send_shutdown_to_address(
 }
 
 /// Send a shutdown command to a host.
+#[tracing::instrument(skip(config_rx), ret)]
 async fn send_shutdown_to_host(
     host: &str,
     config_rx: &ConfigRx,
@@ -239,6 +240,7 @@ async fn send_shutdown_to_host(
         host, host_config.ip, host_config.port
     );
     send_shutdown_to_address(
+        host,
         &host_config.ip,
         host_config.port,
         host_config.shared_secret.as_ref(),
@@ -251,7 +253,5 @@ async fn send_shutdown_to_host(
             "Failed to send shutdown command",
         )
     })?;
-
-    info!("Successfully sent shutdown command to '{}'", host);
     Ok(())
 }

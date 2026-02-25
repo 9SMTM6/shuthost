@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 use eyre::Context as _;
 use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase as _};
-use tracing::{error, warn};
+use tracing::warn;
 
 use crate::http::m2m::{LeaseMap, LeaseSource};
 
@@ -132,6 +132,7 @@ pub(crate) async fn init(db_path: &Path) -> eyre::Result<DbPool> {
 /// # Errors
 ///
 /// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool, leases), err)]
 pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Result<()> {
     let mut leases_guard = leases.lock().await;
 
@@ -144,11 +145,7 @@ pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Resul
         "SELECT hostname, lease_source_type, lease_source_value FROM leases"
     )
     .fetch_all(pool)
-    .await
-    .map_err(|e| {
-        error!("Failed to load leases from database: {}", e);
-        e
-    })?;
+    .await?;
 
     for row in lease_records {
         let hostname = row.hostname;
@@ -187,6 +184,7 @@ pub(crate) async fn load_leases(pool: &DbPool, leases: &LeaseMap) -> eyre::Resul
 /// # Errors
 ///
 /// Returns an error if the database operation fails.
+#[tracing::instrument(level = "debug", skip(pool, lease_source), err)]
 pub(crate) async fn add_lease(
     pool: &DbPool,
     hostname: &str,
@@ -199,13 +197,7 @@ pub(crate) async fn add_lease(
                 hostname
             )
             .execute(pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    %e, hostname, "Failed to persist web interface lease"
-                );
-                e
-            })?;
+            .await?;
         }
         LeaseSource::Client(ref client_id) => {
             sqlx::query!(
@@ -214,13 +206,7 @@ pub(crate) async fn add_lease(
                 client_id
             )
             .execute(pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    %e, hostname, client_id, "Failed to persist client lease"
-                );
-                e
-            })?;
+            .await?;
         }
     }
     Ok(())
@@ -237,6 +223,7 @@ pub(crate) async fn add_lease(
 /// # Errors
 ///
 /// This function will return an error if the database operation fails.
+#[tracing::instrument(err)]
 pub(crate) async fn remove_lease(
     pool: &DbPool,
     hostname: &str,
@@ -249,13 +236,7 @@ pub(crate) async fn remove_lease(
                 hostname
             )
             .execute(pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    %e, hostname, "Failed to remove web interface lease"
-                );
-                e
-            })?;
+            .await?;
         }
         LeaseSource::Client(ref client_id) => {
             sqlx::query!(
@@ -264,13 +245,7 @@ pub(crate) async fn remove_lease(
                 client_id
             )
             .execute(pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    %e, hostname, client_id, "Failed to remove client lease"
-                );
-                e
-            })?;
+            .await?;
         }
     }
     Ok(())
@@ -286,16 +261,11 @@ pub(crate) async fn remove_lease(
 /// # Errors
 ///
 /// Returns an error if the database operation fails.
+#[tracing::instrument(err)]
 pub(crate) async fn remove_client_leases(pool: &DbPool, client_id: &str) -> eyre::Result<()> {
     sqlx::query!("DELETE FROM client_leases WHERE client_id = ?", client_id)
         .execute(pool)
-        .await
-        .map_err(|e| {
-            error!(
-                %e, client_id, "Failed to remove client leases"
-            );
-            e
-        })?;
+        .await?;
 
     Ok(())
 }
@@ -318,13 +288,7 @@ pub(crate) async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Res
         value
     )
     .execute(pool)
-    .await
-    .map_err(|e| {
-        error!(
-            %e, key, value, "Failed to store key-value pair"
-        );
-        e
-    })?;
+    .await?;
 
     Ok(())
 }
@@ -343,14 +307,11 @@ pub(crate) async fn store_kv(pool: &DbPool, key: &str, value: &str) -> eyre::Res
 /// # Errors
 ///
 /// Returns an error if the database query fails.
+#[tracing::instrument(err)]
 pub(crate) async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<String>> {
     let result = sqlx::query_as!(KvRecord, "SELECT value FROM kv_store WHERE key = ?", key)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| {
-            error!(%e, key, "Failed to retrieve key-value pair");
-            e
-        })?;
+        .await?;
 
     Ok(result.map(|r| r.value))
 }
@@ -365,14 +326,11 @@ pub(crate) async fn get_kv(pool: &DbPool, key: &str) -> eyre::Result<Option<Stri
 /// # Errors
 ///
 /// Returns an error if the database operation fails.
+#[tracing::instrument(err)]
 pub(crate) async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
     sqlx::query!("DELETE FROM kv_store WHERE key = ?", key)
         .execute(pool)
-        .await
-        .map_err(|e| {
-            error!(%e, key, "Failed to delete key-value pair");
-            e
-        })?;
+        .await?;
 
     Ok(())
 }
@@ -390,6 +348,7 @@ pub(crate) async fn delete_kv(pool: &DbPool, key: &str) -> eyre::Result<()> {
 /// # Errors
 ///
 /// Returns an error if the database query fails.
+#[tracing::instrument(level = "debug", skip(pool), err)]
 pub(crate) async fn get_all_client_stats(
     pool: &DbPool,
 ) -> eyre::Result<HashMap<String, ClientStats>> {
@@ -398,11 +357,7 @@ pub(crate) async fn get_all_client_stats(
         "SELECT client_id, last_used FROM client_stats"
     )
     .fetch_all(pool)
-    .await
-    .map_err(|e| {
-        error!(%e, "Failed to retrieve client stats");
-        e
-    })?;
+    .await?;
 
     Ok(records
         .into_iter()
@@ -429,6 +384,7 @@ pub(crate) async fn get_all_client_stats(
     not(test),
     expect(dead_code, reason = "This function is only used in tests.")
 )]
+#[tracing::instrument(err)]
 pub(crate) async fn get_client_stats(
     pool: &DbPool,
     client_id: &str,
@@ -439,11 +395,7 @@ pub(crate) async fn get_client_stats(
         client_id
     )
     .fetch_optional(pool)
-    .await
-    .map_err(|e| {
-        error!(%e, client_id, "Failed to retrieve client stats");
-        e
-    })?;
+    .await?;
 
     Ok(result.map(|r| ClientStats {
         last_used: r
@@ -463,6 +415,7 @@ pub(crate) async fn get_client_stats(
 /// # Errors
 ///
 /// Returns an error if the database operation fails.
+#[tracing::instrument(err)]
 pub(crate) async fn update_client_last_used(
     pool: &DbPool,
     client_id: &str,
@@ -474,13 +427,7 @@ pub(crate) async fn update_client_last_used(
         last_used
     )
     .execute(pool)
-    .await
-    .map_err(|e| {
-        error!(
-            %e, client_id, %last_used, "Failed to update client last used timestamp"
-        );
-        e
-    })?;
+    .await?;
 
     Ok(())
 }
