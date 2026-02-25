@@ -199,7 +199,7 @@ async fn execute_tcp_shutdown_request(
 }
 
 /// Send a shutdown command to a host via TCP.
-#[tracing::instrument(err(level = Level::WARN))]
+#[tracing::instrument(skip(secret), err(level = Level::WARN))]
 pub(crate) async fn send_shutdown_to_address(
     host: &str,
     ip: &str,
