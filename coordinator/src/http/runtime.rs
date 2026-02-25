@@ -10,7 +10,7 @@ use tokio::{
     net::TcpStream,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
-use tracing::{debug, info};
+use tracing::{Level, debug, info};
 
 use shuthost_common::create_signed_message;
 
@@ -59,6 +59,7 @@ pub(crate) async fn poll_host_status(
 /// # Errors
 ///
 /// Returns an error if the polling times out or if there are issues with the host configuration.
+#[tracing::instrument(skip(config_rx, hoststatus_tx), err(level = Level::WARN))]
 pub(crate) async fn poll_until_host_state(
     host_name: &str,
     desired_state: bool,

@@ -1,6 +1,7 @@
 use alloc::string;
 use core::net::{IpAddr, SocketAddr};
 use std::path::Path;
+use tracing::Instrument as _;
 
 use tokio::{net, signal};
 
@@ -25,6 +26,7 @@ pub(crate) async fn shutdown_signal() {
 }
 
 /// Start the HTTP server with optional TLS.
+#[tracing::instrument(skip(app_state, tls_opt, config_path))]
 pub(crate) async fn start_server(
     app_state: AppState,
     listen_ip: IpAddr,
@@ -38,7 +40,9 @@ pub(crate) async fn start_server(
 
     match tls_opt {
         Some(tls_cfg) => {
-            let rustls_cfg = setup_tls_config(tls_cfg, config_path, listen_ip, addr).await?;
+            let rustls_cfg = setup_tls_config(tls_cfg, config_path, listen_ip, addr)
+                .in_current_span()
+                .await?;
             let server = axum_server::bind_rustls(addr, rustls_cfg).serve(app);
             tokio::select! {
                 res = server => res?,
@@ -74,6 +78,7 @@ pub(crate) async fn start_server(
 /// # Panics
 ///
 /// Panics if the certificate path cannot be converted to a string.
+#[tracing::instrument(skip(config_path))]
 pub(crate) async fn start(
     config_path: &Path,
     port_override: Option<u16>,

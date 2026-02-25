@@ -11,7 +11,7 @@ use tracing::info;
 use crate::{
     config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
     db::{self, DbPool},
-    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap, polling},
+    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap, runtime},
     websocket::WsMessage,
 };
 
@@ -57,6 +57,7 @@ pub(crate) struct AppState {
 /// Initialize database. If a persistent DB is configured and enabled, open it
 /// relative to the config file when appropriate. Otherwise DB persistence is
 /// disabled and `db_pool` will be None.
+#[tracing::instrument(skip(initial_config))]
 pub(crate) async fn initialize_database(
     initial_config: &ControllerConfig,
     config_path: &Path,
@@ -126,6 +127,7 @@ pub(crate) fn emit_startup_warnings(app_state: &AppState) {
 }
 
 /// Initialize application state and start background tasks.
+#[tracing::instrument]
 pub(crate) async fn initialize_state(
     config_path: &Path,
 ) -> eyre::Result<(AppState, Option<TlsConfig>)> {
@@ -150,7 +152,7 @@ pub(crate) async fn initialize_state(
     }
 
     // Start background tasks
-    polling::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
+    runtime::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
     let auth_runtime =
         Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);

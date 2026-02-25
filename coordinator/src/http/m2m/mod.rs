@@ -90,16 +90,19 @@ pub(crate) struct LeaseActionQuery {
 /// This is distinct from the web interface lease endpoints, which do not require authentication and are used for
 /// user-initiated actions from the web UI. Use this endpoint for secure, automated lease management by trusted clients.
 #[axum::debug_handler]
+#[tracing::instrument(skip(headers, state, query))]
 async fn handle_m2m_lease_action(
     Path((host, action)): Path<(String, LeaseAction)>,
     headers: HeaderMap,
     State(state): State<AppState>,
-    Query(q): Query<LeaseActionQuery>,
+    Query(query): Query<LeaseActionQuery>,
 ) -> impl IntoResponse {
     let client_id = match validation::validate_m2m_request(&headers, &state, action) {
         Ok(res) => res,
         Err((sc, err)) => return Err((sc, err.to_owned())),
     };
+
+    tracing::info!(client_id = %client_id, "Accepted m2m request");
 
     // Update client's last used timestamp
     if let Some(ref pool) = state.db_pool
@@ -110,7 +113,7 @@ async fn handle_m2m_lease_action(
 
     let lease_source = leases::LeaseSource::Client(client_id);
 
-    let is_async = q.r#async.unwrap_or(false);
+    let is_async = query.r#async.unwrap_or(false);
 
     let lease_set = match update_lease_and_broadcast(&host, lease_source, action, &state).await {
         Ok(set) => set,
