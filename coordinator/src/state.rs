@@ -127,7 +127,7 @@ pub(crate) fn emit_startup_warnings(app_state: &AppState) {
 }
 
 /// Initialize application state and start background tasks.
-#[tracing::instrument]
+#[tracing::instrument(skip_all)]
 pub(crate) async fn initialize_state(
     config_path: &Path,
 ) -> eyre::Result<(AppState, Option<TlsConfig>)> {

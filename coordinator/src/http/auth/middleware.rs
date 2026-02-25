@@ -84,7 +84,7 @@ fn redirect_with_return_to(
     redirect: Redirect,
 ) -> Response {
     let return_to = req.uri().to_string();
-    tracing::info!(return_to = %return_to, "setting return_to cookie");
+    tracing::debug!(return_to = %return_to, "setting return_to cookie");
     let jar = jar.add(create_return_to_cookie(return_to));
     (jar, redirect).into_response()
 }
