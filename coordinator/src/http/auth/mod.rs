@@ -23,7 +23,7 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDAR
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
 use tokio::sync::RwLock;
-use tracing::{Instrument, info, warn};
+use tracing::{Instrument as _, info, warn};
 
 use crate::{
     config::{AuthConfig, AuthMode},
