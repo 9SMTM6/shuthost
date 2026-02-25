@@ -25,6 +25,7 @@ pub mod wol;
 
 #[cfg(unix)]
 use nix::sys::stat;
+use tracing_log::LogTracer;
 // for use in integration tests
 pub use websocket::WsMessage;
 
@@ -84,6 +85,8 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
                     )
                     .pretty()
                     .init(); // Initialize logging
+
+                LogTracer::init().expect("failed to initialize log redirection");
             });
 
             INIT_RUSTLS.call_once(|| {

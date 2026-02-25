@@ -21,7 +21,7 @@ default = [
     "compression-zstd",
     "vendored-openssl",
 ]
-compression-br = ["tower-http/compression-br", "reqwest/brotli"]
+compression-br = ["tower-http/compression-br", "reqwest/brotli", "rustls/brotli"]
 compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
 compression-gzip = ["tower-http/compression-gzip", "reqwest/gzip"]
 compression-zstd = ["tower-http/compression-zstd", "reqwest/zstd"]
@@ -98,7 +98,10 @@ sqlx = { version = "0.8", features = [
     "runtime-tokio",
     "sqlite",
 ] }
-tokio.workspace = true
+tokio = { workspace = true, features = [
+    # requires RUSTFLAGS="--cfg tokio_unstable", which we don't currently ship as part of this project
+    # "tracing",
+]}
 toml.workspace = true
 tower = "0.5"
 tower-http = { version = "0.6", features = [
@@ -109,6 +112,7 @@ tower-http = { version = "0.6", features = [
     "util",
 ] }
 tracing = "0.1.41"
+tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3.x", features = ["env-filter"] }
 tungstenite = "*"
 
