@@ -113,9 +113,10 @@ tower-http = { version = "0.6", features = [
 ] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.x", features = [
+    "chrono", 
     "env-filter",
-    # default:
-    "tracing-log",
+    "json",
+    "tracing-log", # default
 ] }
 tungstenite = "*"
 

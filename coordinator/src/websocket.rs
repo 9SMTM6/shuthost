@@ -11,7 +11,7 @@ use axum::{
 use core::error::Error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
-use tracing::{Instrument as _, error, info, warn, debug};
+use tracing::{Instrument as _, debug, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::{
