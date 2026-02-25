@@ -25,12 +25,13 @@ pub mod wol;
 
 #[cfg(unix)]
 use nix::sys::stat;
-use tracing::Instrument;
+use tracing::Instrument as _;
 // for use in integration tests
 pub use websocket::WsMessage;
 
 use std::env;
 use std::fs;
+use std::process;
 use std::sync::Once;
 
 use eyre::{Result, WrapErr as _};
@@ -95,7 +96,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
 
             // Create a startup span that holds the resolved config path for the lifetime
             // of the coordinator initialization phase.
-            let startup_span = tracing::info_span!("coord.startup", ?config_path, pid=?std::process::id(), version = env!("CARGO_PKG_VERSION"));
+            let startup_span = tracing::info_span!("coord.startup", ?config_path, pid=?process::id(), version = env!("CARGO_PKG_VERSION"));
             let _startup_enter = startup_span.enter();
 
             INIT_RUSTLS.call_once(|| {

@@ -10,7 +10,7 @@ use tokio::{
     net::TcpStream,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
-use tracing::{Instrument, Level, debug, info};
+use tracing::{Instrument as _, Level, debug, info};
 
 use shuthost_common::create_signed_message;
 
