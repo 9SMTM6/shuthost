@@ -17,10 +17,7 @@ use shuthost_common::{CoordinatorMessage, create_signed_message};
 #[cfg(not(any(coverage, test)))]
 use crate::wol::send_magic_packet;
 use crate::{
-    app::{
-        runtime::poll_until_host_state,
-        state::{AppState, ConfigRx, HostStatusRx, HostStatusTx},
-    },
+    app::{AppState, ConfigRx, HostStatusRx, HostStatusTx, poll_until_host_state},
     config::Host,
     websocket::LeaseSources,
 };

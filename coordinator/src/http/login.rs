@@ -11,7 +11,7 @@ use axum_extra::{TypedHeader, extract::cookie::SignedCookieJar, headers::Content
 use reqwest::StatusCode;
 
 use crate::{
-    app::state::AppState,
+    app::AppState,
     http::auth::{
         LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, LOGIN_ERROR_TOKEN,
         LOGIN_ERROR_UNKNOWN, Resolved,

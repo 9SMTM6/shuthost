@@ -5,8 +5,8 @@ use tracing::Instrument as _;
 
 use tokio::{net, signal};
 
+use super::state::{self, AppState};
 use crate::{
-    app::state::{self, AppState},
     config::TlsConfig,
     http::{router, tls::setup_tls_config},
 };
@@ -27,7 +27,7 @@ pub(crate) async fn shutdown_signal() {
 
 /// Start the HTTP server with optional TLS.
 #[tracing::instrument(skip(app_state, config_path))]
-pub(crate) async fn start_server(
+async fn start_server(
     app_state: AppState,
     listen_ip: IpAddr,
     listen_port: u16,

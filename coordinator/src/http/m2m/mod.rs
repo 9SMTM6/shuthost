@@ -21,7 +21,7 @@ use serde_json::json;
 use tracing::error;
 
 use crate::{
-    app::{db, state::AppState},
+    app::{AppState, db},
     http::api::{LeaseAction, update_lease_and_broadcast},
     wol,
 };

@@ -16,8 +16,8 @@ use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::{
     app::{
-        db::{self, ClientStats, DbPool},
-        state::{AppState, ConfigRx, HostStatus, HostStatusRx},
+        AppState, ConfigRx, DbPool, HostStatus, HostStatusRx,
+        db::{self, ClientStats},
     },
     http::m2m::{LeaseMap, LeaseSource},
 };
