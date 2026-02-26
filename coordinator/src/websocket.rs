@@ -15,9 +15,11 @@ use tracing::{Instrument as _, debug, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::{
-    db::{self, ClientStats, DbPool},
+    app::{
+        db::{self, ClientStats, DbPool},
+        state::{AppState, ConfigRx, HostStatus, HostStatusRx},
+    },
     http::m2m::{LeaseMap, LeaseSource},
-    state::{AppState, ConfigRx, HostStatus, HostStatusRx},
 };
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.

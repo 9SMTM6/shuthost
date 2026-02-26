@@ -10,6 +10,7 @@ use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 use crate::{
+    app::state::AppState,
     http::auth::{
         LOGIN_ERROR_INSECURE, LOGIN_ERROR_TOKEN, Resolved,
         cookies::{
@@ -17,7 +18,6 @@ use crate::{
         },
         login_error_redirect, request_is_secure,
     },
-    state::AppState,
 };
 
 #[derive(Deserialize)]

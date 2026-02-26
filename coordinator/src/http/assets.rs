@@ -17,7 +17,7 @@ use axum_extra::{
 };
 use mime::{IMAGE_SVG, TEXT_CSS};
 
-use crate::{http::EXPECTED_AUTH_EXCEPTIONS_VERSION, http::auth::Resolved, state::AppState};
+use crate::{app::state::AppState, http::EXPECTED_AUTH_EXCEPTIONS_VERSION, http::auth::Resolved};
 
 #[expect(
     nonstandard_style,

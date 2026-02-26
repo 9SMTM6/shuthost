@@ -15,8 +15,10 @@ use tracing::{Instrument as _, Level, debug, info};
 use shuthost_common::create_signed_message;
 
 use crate::{
-    config::watch_config_file,
-    state::{ConfigRx, ConfigTx, HostStatusTx, WsTx},
+    app::{
+        config_watcher::watch_config_file,
+        state::{ConfigRx, ConfigTx, HostStatusTx, WsTx},
+    },
     websocket::WsMessage,
 };
 

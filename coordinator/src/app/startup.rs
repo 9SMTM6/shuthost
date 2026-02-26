@@ -6,9 +6,9 @@ use tracing::Instrument as _;
 use tokio::{net, signal};
 
 use crate::{
+    app::state::{self, AppState},
     config::TlsConfig,
     http::{router, tls::setup_tls_config},
-    state::{self, AppState},
 };
 
 /// Creates a future that resolves when a shutdown signal is received.

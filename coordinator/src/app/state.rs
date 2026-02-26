@@ -9,9 +9,12 @@ use tokio::sync::{broadcast, watch};
 use tracing::info;
 
 use crate::{
+    app::{
+        db::{self, DbPool},
+        runtime,
+    },
     config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
-    db::{self, DbPool},
-    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap, runtime},
+    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap},
     websocket::WsMessage,
 };
 
