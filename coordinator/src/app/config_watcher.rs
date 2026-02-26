@@ -14,10 +14,8 @@ use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher as _};
 use tokio::sync::mpsc::unbounded_channel;
 use tracing::{error, info, warn};
 
-use crate::{
-    app::state::{ConfigRx, ConfigTx},
-    config::{self, ControllerConfig},
-};
+use super::state::{ConfigRx, ConfigTx};
+use crate::config::{self, ControllerConfig};
 
 /// Handles the logic for reloading the configuration file and updating the application state.
 ///
@@ -76,7 +74,7 @@ async fn process_config_change(path: &Path, tx: &ConfigTx, rx: &ConfigRx) -> Res
 /// # Panics
 ///
 /// Panics if the file watcher cannot be created or if the config file doesnt have a parent directory.
-pub(crate) async fn watch_config_file(path: PathBuf, tx: ConfigTx) {
+pub(super) async fn watch_config_file(path: PathBuf, tx: ConfigTx) {
     let (raw_tx, mut raw_rx) = unbounded_channel::<Event>();
 
     let mut watcher = RecommendedWatcher::new(

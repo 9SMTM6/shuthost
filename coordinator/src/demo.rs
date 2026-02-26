@@ -14,7 +14,7 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    app::{startup::shutdown_signal, state::AppState},
+    app::{AppState, shutdown_signal},
     config::{AuthConfig, ControllerConfig},
     http::auth,
     http::{

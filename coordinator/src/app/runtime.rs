@@ -14,16 +14,11 @@ use tracing::{Instrument as _, Level, debug, info};
 
 use shuthost_common::create_signed_message;
 
-use crate::{
-    app::{
-        config_watcher::watch_config_file,
-        state::{ConfigRx, ConfigTx, HostStatusTx, WsTx},
-    },
-    websocket::WsMessage,
-};
+use super::state::{ConfigRx, ConfigTx, HostStatusTx, WsTx};
+use crate::{app::config_watcher::watch_config_file, websocket::WsMessage};
 
 /// Poll a single host for its online status.
-pub(crate) async fn poll_host_status(
+async fn poll_host_status(
     name: &str,
     ip: &str,
     port: u16,
@@ -107,7 +102,7 @@ pub(crate) async fn poll_until_host_state(
 }
 
 /// Start all background tasks for the HTTP server.
-pub(crate) fn start_background_tasks(
+pub(super) fn start_background_tasks(
     config_rx: &ConfigRx,
     hoststatus_tx: &HostStatusTx,
     ws_tx: &WsTx,

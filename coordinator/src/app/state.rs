@@ -11,7 +11,7 @@ use tracing::info;
 use crate::{
     app::{
         db::{self, DbPool},
-        runtime,
+        runtime::start_background_tasks,
     },
     config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
     http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap},
@@ -19,7 +19,7 @@ use crate::{
 };
 
 pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
-pub(crate) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
+pub(super) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
 /// Maps hostname to online status (true=online, false=offline)
 pub(crate) type HostStatus = HashMap<String, bool>;
 pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
@@ -61,7 +61,7 @@ pub(crate) struct AppState {
 /// relative to the config file when appropriate. Otherwise DB persistence is
 /// disabled and `db_pool` will be None.
 #[tracing::instrument(skip_all)]
-pub(crate) async fn initialize_database(
+async fn initialize_database(
     initial_config: &ControllerConfig,
     config_path: &Path,
 ) -> eyre::Result<Option<DbPool>> {
@@ -89,7 +89,7 @@ pub(crate) async fn initialize_database(
 }
 
 /// Emit startup warnings based on configuration and runtime state.
-pub(crate) fn emit_startup_warnings(app_state: &AppState) {
+fn emit_startup_warnings(app_state: &AppState) {
     #[cfg(unix)]
     {
         use std::fs;
@@ -131,7 +131,7 @@ pub(crate) fn emit_startup_warnings(app_state: &AppState) {
 
 /// Initialize application state and start background tasks.
 #[tracing::instrument(skip_all)]
-pub(crate) async fn initialize_state(
+pub(super) async fn initialize_state(
     config_path: &Path,
 ) -> eyre::Result<(AppState, Option<TlsConfig>)> {
     let initial_config = Arc::new(load(config_path).await?);
@@ -155,7 +155,7 @@ pub(crate) async fn initialize_state(
     }
 
     // Start background tasks
-    runtime::start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
+    start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
 
     let auth_runtime =
         Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);

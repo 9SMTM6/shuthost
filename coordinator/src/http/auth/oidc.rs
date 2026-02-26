@@ -21,7 +21,7 @@ use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
 use crate::{
-    app::state::AppState,
+    app::AppState,
     config::OidcConfig,
     http::auth::{
         self, COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, LOGIN_ERROR_INSECURE,

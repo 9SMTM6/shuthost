@@ -39,7 +39,7 @@ use tracing_subscriber::{EnvFilter, fmt::time::ChronoLocal};
 use cli::{Cli, Command, LogFormat};
 use demo::run_demo_service;
 
-use app::startup::start;
+use app::start;
 
 static INIT_TRACING: Once = Once::new();
 static INIT_RUSTLS: Once = Once::new();

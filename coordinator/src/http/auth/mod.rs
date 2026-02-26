@@ -12,7 +12,10 @@ pub mod token;
 use alloc::sync::Arc;
 
 use crate::{
-    app::state::AppState,
+    app::{
+        AppState,
+        db::{KV_AUTH_TOKEN, KV_COOKIE_SECRET},
+    },
     config::OidcConfig,
     http::auth::oidc::{OidcClientReady, build_client},
 };
@@ -26,7 +29,7 @@ use tokio::sync::RwLock;
 use tracing::{Instrument as _, info, warn};
 
 use crate::{
-    app::db::{DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET, delete_kv, get_kv, store_kv},
+    app::{DbPool, db},
     config::{AuthConfig, AuthMode},
 };
 
@@ -80,13 +83,13 @@ async fn get_or_generate_cookie_key(db_pool: Option<&DbPool>) -> eyre::Result<Ke
     async fn gen_and_store_key(pool: &DbPool) -> eyre::Result<Key> {
         let generated = Key::generate();
         let encoded = base64_gp_STANDARD.encode(generated.master());
-        store_kv(pool, KV_COOKIE_SECRET, &encoded).await?;
+        db::store_kv(pool, KV_COOKIE_SECRET, &encoded).await?;
         Ok(generated)
     }
 
     // No configured secret - try database, then generate
     Ok(if let Some(pool) = db_pool {
-        if let Some(stored_secret) = get_kv(pool, KV_COOKIE_SECRET).await? {
+        if let Some(stored_secret) = db::get_kv(pool, KV_COOKIE_SECRET).await? {
             // Try to decode stored secret
             match base64_gp_STANDARD.decode(&stored_secret) {
                 Ok(bytes) => match Key::try_from(bytes.as_slice()) {
@@ -95,7 +98,7 @@ async fn get_or_generate_cookie_key(db_pool: Option<&DbPool>) -> eyre::Result<Ke
                         warn!(
                             "Found corrupted cookie key in DB (wrong length); removing and regenerating"
                         );
-                        delete_kv(pool, KV_COOKIE_SECRET).await?;
+                        db::delete_kv(pool, KV_COOKIE_SECRET).await?;
                         gen_and_store_key(pool).await?
                     }
                 },
@@ -103,7 +106,7 @@ async fn get_or_generate_cookie_key(db_pool: Option<&DbPool>) -> eyre::Result<Ke
                     warn!(
                         "Found corrupted cookie key in DB (invalid base64); removing and regenerating"
                     );
-                    delete_kv(pool, KV_COOKIE_SECRET).await?;
+                    db::delete_kv(pool, KV_COOKIE_SECRET).await?;
                     gen_and_store_key(pool).await?
                 }
             }
@@ -150,7 +153,7 @@ async fn setup_cookie_key(
             info!(
                 "Configured cookie_secret present in config; removing any stored cookie_secret from DB to avoid confusion"
             );
-            delete_kv(pool, KV_COOKIE_SECRET).await?;
+            db::delete_kv(pool, KV_COOKIE_SECRET).await?;
         }
 
         // Try to decode the configured secret
@@ -201,7 +204,7 @@ async fn resolve_token_auth(
     let token = if let Some(cfg_token) = config_token {
         // Configured token - remove any stored value to avoid confusion
         if let Some(pool) = db_pool {
-            delete_kv(pool, KV_AUTH_TOKEN).await?;
+            db::delete_kv(pool, KV_AUTH_TOKEN).await?;
         }
         cfg_token.clone()
     } else {
@@ -214,12 +217,12 @@ async fn resolve_token_auth(
 /// Resolve token when not configured (try DB, then generate).
 async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<Arc<SecretString>> {
     if let Some(pool) = db_pool {
-        if let Some(stored_token) = get_kv(pool, KV_AUTH_TOKEN).await? {
+        if let Some(stored_token) = db::get_kv(pool, KV_AUTH_TOKEN).await? {
             info!("Auth mode: token (from database)");
             Ok(Arc::new(SecretString::from(stored_token)))
         } else {
             let generated = cookies::generate_token();
-            store_kv(pool, KV_AUTH_TOKEN, generated.expose_secret()).await?;
+            db::store_kv(pool, KV_AUTH_TOKEN, generated.expose_secret()).await?;
             info!("Auth mode: token (auto generated, stored in db)");
             // We expose the generated token in logs once for operator use
             info!("Token: {}", generated.expose_secret());
@@ -256,7 +259,6 @@ impl FromRef<AppState> for Key {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::db;
     use crate::config::AuthConfig;
     use std::path::Path;
 

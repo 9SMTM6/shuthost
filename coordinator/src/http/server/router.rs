@@ -18,7 +18,7 @@ use tower_http::{
 };
 
 use crate::{
-    app::state::AppState,
+    app::AppState,
     http::{auth, middleware::LevelAdjustingOnFailure},
     websocket,
 };
