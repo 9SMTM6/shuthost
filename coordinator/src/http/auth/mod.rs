@@ -12,9 +12,9 @@ pub mod token;
 use alloc::sync::Arc;
 
 use crate::{
+    app::state::AppState,
     config::OidcConfig,
     http::auth::oidc::{OidcClientReady, build_client},
-    state::AppState,
 };
 use axum::extract::FromRef;
 use axum::response::Redirect;
@@ -26,8 +26,8 @@ use tokio::sync::RwLock;
 use tracing::{Instrument as _, info, warn};
 
 use crate::{
+    app::db::{DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET, delete_kv, get_kv, store_kv},
     config::{AuthConfig, AuthMode},
-    db::{DbPool, KV_AUTH_TOKEN, KV_COOKIE_SECRET, delete_kv, get_kv, store_kv},
 };
 
 pub(crate) use cookies::{
@@ -256,8 +256,8 @@ impl FromRef<AppState> for Key {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::app::db;
     use crate::config::AuthConfig;
-    use crate::db;
     use std::path::Path;
 
     async fn setup_db() -> eyre::Result<DbPool> {

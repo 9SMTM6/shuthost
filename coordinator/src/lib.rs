@@ -11,15 +11,13 @@
 extern crate alloc;
 extern crate core;
 
+pub mod app;
 pub mod cli;
 pub mod config;
-pub mod db;
 pub mod demo;
 pub mod http;
 #[cfg(unix)]
 pub mod install;
-pub mod run;
-pub mod state;
 pub mod websocket;
 pub mod wol;
 
@@ -41,7 +39,7 @@ use tracing_subscriber::{EnvFilter, fmt::time::ChronoLocal};
 use cli::{Cli, Command, LogFormat};
 use demo::run_demo_service;
 
-use crate::run::start;
+use app::startup::start;
 
 static INIT_TRACING: Once = Once::new();
 static INIT_RUSTLS: Once = Once::new();

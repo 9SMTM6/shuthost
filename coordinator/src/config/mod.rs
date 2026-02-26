@@ -5,8 +5,6 @@
 
 mod loader;
 mod types;
-mod watcher;
 
 pub(crate) use loader::*;
 pub(crate) use types::*;
-pub(crate) use watcher::*;

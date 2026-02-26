@@ -14,6 +14,7 @@ use tokio::{
 use tracing::info;
 
 use crate::{
+    app::{startup::shutdown_signal, state::AppState},
     config::{AuthConfig, ControllerConfig},
     http::auth,
     http::{
@@ -21,8 +22,6 @@ use crate::{
         download,
         m2m::LeaseMap,
     },
-    run::shutdown_signal,
-    state::AppState,
 };
 
 /// Run the demo service on the specified port and bind address.
