@@ -21,6 +21,8 @@ use std::{
 use clap::Parser as _;
 use secrecy::SecretString;
 use shuthost_common::CoordinatorMessage;
+use shuthost_coordinator::cli::Cli as CoordinatorCli;
+use shuthost_host_agent::Cli as AgentCli;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
@@ -28,8 +30,7 @@ use tokio::{
     time::{self, timeout},
 };
 
-use shuthost_coordinator::cli::Cli as CoordinatorCli;
-use shuthost_host_agent::Cli as AgentCli;
+use shuthost_coordinator::app::{HostState, HostStatus};
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(10000);
 
@@ -196,4 +197,28 @@ pub(crate) async fn wait_for_agent_ready(
         time::sleep(Duration::from_millis(100)).await;
     }
     panic!("agent on port {port} did not become ready within timeout");
+}
+
+/// Wait until the coordinator reports the specified host in the expected state.
+/// Polls the /api/hosts_status endpoint until the host reaches the desired state or timeout.
+pub(crate) async fn wait_for_host_state(
+    coord_port: u16,
+    host_name: &str,
+    expected_state: HostState,
+    max_attempts: usize,
+) -> bool {
+    let client = reqwest::Client::new();
+    let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
+
+    for _ in 0..max_attempts {
+        let resp = client.get(&status_url).send().await;
+        if let Ok(resp) = resp
+            && let Ok(json) = resp.json::<HostStatus>().await
+            && json.get(host_name) == Some(&expected_state)
+        {
+            return true;
+        }
+        time::sleep(Duration::from_millis(300)).await;
+    }
+    false
 }

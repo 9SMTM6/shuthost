@@ -5,11 +5,12 @@ use core::time::Duration;
 use reqwest::Client;
 use secrecy::SecretString;
 use shuthost_common::create_signed_message;
+use shuthost_coordinator::app::HostState;
 use tokio::time;
 
 use crate::common::{
     get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
-    wait_for_listening,
+    wait_for_host_state, wait_for_listening,
 };
 
 #[tokio::test]
@@ -391,21 +392,10 @@ async fn m2m_lease_sync_release_timeout_when_host_online() {
         agent
     };
 
-    let client = reqwest::Client::new();
-    let status_url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
-    let mut online = false;
-    for _ in 0..10 {
-        let resp = client.get(&status_url).send().await;
-        if let Ok(resp) = resp
-            && let Ok(json) = resp.json::<serde_json::Value>().await
-            && json["testhost"] == true
-        {
-            online = true;
-            break;
-        }
-        time::sleep(Duration::from_millis(300)).await;
-    }
-    assert!(online, "Host should be online before triggering shutdown");
+    assert!(
+        wait_for_host_state(coord_port, "testhost", HostState::Online, 10).await,
+        "Host should be online before triggering shutdown"
+    );
 
     // Try to release a lease synchronously when host is online but no lease exists
     let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release",);

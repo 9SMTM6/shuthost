@@ -4,7 +4,7 @@ use core::time::Duration;
 use std::env;
 
 use futures_util::StreamExt as _;
-use shuthost_coordinator::WsMessage;
+use shuthost_coordinator::{WsMessage, app::HostState};
 use tokio::{fs, time};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
@@ -146,7 +146,7 @@ async fn websocket_host_status_changes() {
     match initial {
         WsMessage::Initial { status, .. } => {
             // Initially, host should be offline
-            assert_eq!(status.get("testhost"), Some(&false));
+            assert_eq!(status.get("testhost"), Some(&HostState::Offline));
         }
         _ => panic!("Expected Initial message"),
     }
@@ -162,7 +162,7 @@ async fn websocket_host_status_changes() {
             if let Message::Text(text) = msg {
                 let ws_msg: WsMessage = serde_json::from_str(&text).unwrap();
                 if let WsMessage::HostStatus(status) = ws_msg
-                    && status.get("testhost") == Some(&true)
+                    && status.get("testhost") == Some(&HostState::Online)
                 {
                     online_received = true;
                     break;
@@ -187,7 +187,7 @@ async fn websocket_host_status_changes() {
             if let Message::Text(text) = msg {
                 let ws_msg: WsMessage = serde_json::from_str(&text).unwrap();
                 if let WsMessage::HostStatus(status) = ws_msg
-                    && status.get("testhost") == Some(&false)
+                    && status.get("testhost") == Some(&HostState::Offline)
                 {
                     offline_received = true;
                     break;
