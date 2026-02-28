@@ -119,6 +119,7 @@ tracing-subscriber = { version = "0.3.x", features = [
     "tracing-log", # default
 ] }
 tungstenite = "*"
+thiserror = "2.0"
 
 [lints]
 workspace = true

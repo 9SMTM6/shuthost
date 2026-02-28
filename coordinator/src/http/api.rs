@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::{
-    app::{AppState, db},
-    http::m2m::{broadcast_lease_update, spawn_handle_host_state},
+    app::{AppState, db, spawn_handle_host_state},
+    http::m2m::broadcast_lease_update,
     websocket::LeaseSources,
 };
 

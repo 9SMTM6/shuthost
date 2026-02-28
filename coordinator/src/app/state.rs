@@ -5,6 +5,7 @@ use std::{
 };
 
 use eyre::WrapErr as _;
+use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, watch};
 use tracing::info;
 
@@ -18,10 +19,17 @@ use crate::{
     websocket::WsMessage,
 };
 
+/// Host online/offline state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HostState {
+    Online,
+    Offline,
+}
+
 pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
 pub(super) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
-/// Maps hostname to online status (true=online, false=offline)
-pub(crate) type HostStatus = HashMap<String, bool>;
+pub type HostStatus = HashMap<String, HostState>;
 pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
 pub(crate) type HostStatusTx = watch::Sender<Arc<HostStatus>>;
 pub(crate) type WsTx = broadcast::Sender<WsMessage>;
@@ -138,7 +146,7 @@ pub(super) async fn initialize_state(
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
-    let initial_status = Arc::new(HashMap::<String, bool>::new());
+    let initial_status = Arc::new(HostStatus::new());
     let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
 
     let (ws_tx, _) = broadcast::channel(32);
