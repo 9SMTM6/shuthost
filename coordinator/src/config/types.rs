@@ -26,6 +26,12 @@ pub(crate) struct Host {
     pub port: u16,
     /// Shared secret for HMAC authentication.
     pub shared_secret: Arc<SecretString>,
+    // TODO: update config example and docs
+    /// When `true`, the coordinator will periodically enforce the desired host state
+    /// (derived from the current lease set) by sending wake or shutdown commands even
+    /// if no lease change occurred.  Defaults to `false` (edge-triggered only).
+    #[serde(default)]
+    pub enforce_state: bool,
 }
 
 impl PartialEq for Host {
@@ -33,6 +39,7 @@ impl PartialEq for Host {
         self.ip == other.ip
             && self.mac == other.mac
             && self.port == other.port
+            && self.enforce_state == other.enforce_state
             && self.shared_secret.expose_secret() == other.shared_secret.expose_secret()
     }
 }
