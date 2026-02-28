@@ -5,7 +5,6 @@
     expect(dead_code, reason = "For some reason clippy sets coverage cfg?")
 )]
 
-mod host_control;
 mod leases;
 mod validation;
 
@@ -21,13 +20,12 @@ use serde_json::json;
 use tracing::error;
 
 use crate::{
-    app::{AppState, db},
+    app::{AppState, HostControlError, db, handle_host_state, spawn_handle_host_state},
     http::api::{LeaseAction, update_lease_and_broadcast},
     wol,
 };
 
 // Re-export public API
-pub(crate) use host_control::{handle_host_state, spawn_handle_host_state};
 pub(crate) use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
 pub(crate) fn routes() -> axum::Router<AppState> {
@@ -133,14 +131,27 @@ async fn handle_m2m_lease_action(
         spawn_handle_host_state(&host, &lease_set, &state);
     } else {
         // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
-        handle_host_state(
+        use HostControlError as HCE;
+        match handle_host_state(
             &host,
             &lease_set,
             &state.hoststatus_rx,
             &state.config_rx,
             &state.hoststatus_tx,
         )
-        .await?;
+        .await
+        {
+            Ok(()) => {}
+            Err(err) => {
+                return Err(match err {
+                    HCE::NotFound => (StatusCode::NOT_FOUND, HCE::NotFound.to_string()),
+                    HCE::Timeout(source) => (StatusCode::GATEWAY_TIMEOUT, source.to_string()),
+                    HCE::OperationFailed(_, source) => {
+                        (StatusCode::INTERNAL_SERVER_ERROR, source.to_string())
+                    }
+                });
+            }
+        };
     }
     Ok(match (action, is_async) {
         (LA::Take, true) => "Lease taken (async)",

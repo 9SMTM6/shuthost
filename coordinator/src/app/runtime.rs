@@ -10,11 +10,12 @@ use tokio::{
     net::TcpStream,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
-use tracing::{Instrument as _, Level, debug, info};
+use tracing::{Instrument as _, debug, info};
+use thiserror::Error as ThisError;
 
 use shuthost_common::create_signed_message;
 
-use super::state::{ConfigRx, ConfigTx, HostStatusTx, WsTx};
+use super::state::{ConfigRx, ConfigTx, HostState, HostStatusTx, WsTx};
 use crate::{app::config_watcher::watch_config_file, websocket::WsMessage};
 
 /// Poll a single host for its online status.
@@ -23,14 +24,14 @@ async fn poll_host_status(
     ip: &str,
     port: u16,
     shared_secret: &secrecy::SecretString,
-) -> bool {
+) -> HostState {
     let addr = format!("{ip}:{port}");
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
             let signed_message = create_signed_message("status", shared_secret);
             if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
                 debug!("Failed to write to {}: {}", name, e);
-                return false;
+                return HostState::Offline;
             }
             let mut buf = vec![0u8; 256];
             match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
@@ -42,12 +43,16 @@ async fn poll_host_status(
                     };
                     let resp = String::from_utf8_lossy(data);
                     // Accept any non-error response as online
-                    !resp.contains("ERROR")
+                    if resp.contains("ERROR") {
+                        HostState::Offline
+                    } else {
+                        HostState::Online
+                    }
                 }
-                _ => false,
+                _ => HostState::Offline,
             }
         }
-        _ => false,
+        _ => HostState::Offline,
     }
 }
 
@@ -56,15 +61,27 @@ async fn poll_host_status(
 /// # Errors
 ///
 /// Returns an error if the polling times out or if there are issues with the host configuration.
-#[tracing::instrument(skip(config_rx, hoststatus_tx), err(level = Level::WARN))]
-pub(crate) async fn poll_until_host_state(
+#[derive(Debug, ThisError)]
+pub(super) enum PollError {
+    #[error("No configuration found for host")]
+    NotFound,
+    #[error("Timeout waiting for host '{host_name}' to become {desired_state:?}")]
+    Timeout{
+        host_name: String,
+        desired_state: HostState,
+    },
+    #[error("Coordinator shutting down")]
+    CoordinatorShuttingDown,
+}
+
+pub(super) async fn poll_until_host_state(
     host_name: &str,
-    desired_state: bool,
+    desired_state: HostState,
     timeout_secs: u64,
     poll_interval_ms: u64,
     config_rx: &ConfigRx,
     hoststatus_tx: &HostStatusTx,
-) -> Result<(), String> {
+) -> Result<(), PollError> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     let start = Instant::now();
@@ -73,30 +90,30 @@ pub(crate) async fn poll_until_host_state(
             let config = config_rx.borrow();
             match config.hosts.get(host_name) {
                 Some(h) => h.clone(),
-                None => return Err(format!("No configuration found for host '{host_name}'.")),
+                None => return Err(PollError::NotFound),
             }
         };
         let poll_fut =
             poll_host_status(host_name, &host.ip, host.port, host.shared_secret.as_ref());
         let tick_fut = ticker.tick();
-        let (is_online, _) = tokio::join!(poll_fut, tick_fut);
+        let (current_state, _) = tokio::join!(poll_fut, tick_fut);
         // Update global state
         let mut status_map = hoststatus_tx.borrow().as_ref().clone();
-        if status_map.get(host_name) != Some(&is_online) {
-            status_map.insert(host_name.to_string(), is_online);
+        if status_map.get(host_name) != Some(&current_state) {
+            status_map.insert(host_name.to_string(), current_state);
             if hoststatus_tx.send(Arc::new(status_map)).is_err() {
                 debug!("Host status receiver dropped, stopping polling");
-                return Err("Coordinator shutting down".to_string());
+                return Err(PollError::CoordinatorShuttingDown);
             }
         }
-        if is_online == desired_state {
+        if current_state == desired_state {
             return Ok(());
         }
         if start.elapsed().as_secs() >= timeout_secs {
-            return Err(format!(
-                "Timeout waiting for host '{host_name}' to become {}.",
-                if desired_state { "online" } else { "offline" }
-            ));
+            return Err(PollError::Timeout{
+                host_name: host_name.to_string(),
+                desired_state,
+            });
         }
     }
 }
@@ -185,14 +202,14 @@ async fn poll_host_statuses(config_rx: ConfigRx, hoststatus_tx: HostStatusTx) {
             let port = host.port;
             let shared_secret = host.shared_secret.clone();
             async move {
-                let is_online = poll_host_status(&name, &ip, port, shared_secret.as_ref()).await;
-                debug!("Polled {} at {}:{} - online: {}", name, ip, port, is_online);
-                (name, is_online)
+                let state = poll_host_status(&name, &ip, port, shared_secret.as_ref()).await;
+                debug!("Polled {} at {}:{} - state: {:?}", name, ip, port, state);
+                (name, state)
             }
         });
 
         let results = future::join_all(futures).await;
-        let status_map: HashMap<_, _> = results.into_iter().collect();
+        let status_map: HashMap<String, HostState> = results.into_iter().collect();
 
         let is_new = {
             let old_status_map = hoststatus_tx.borrow();
