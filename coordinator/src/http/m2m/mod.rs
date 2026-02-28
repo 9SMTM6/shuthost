@@ -127,10 +127,10 @@ async fn handle_m2m_lease_action(
 
     if is_async {
         // In async mode, the host state change is triggered in the background and the response returns immediately.
-        // The host may still be transitioning to the offline state when the client receives the response.
+        // The host may still be transitioning to the desired state when the client receives the response.
         spawn_handle_host_state(&host, &lease_set, &state);
     } else {
-        // In sync mode, the request waits for the host to reach the offline state (or timeout) before returning.
+        // In sync mode, the request waits for the host to reach the desired state (or timeout) before returning.
         use HostControlError as HCE;
         match handle_host_state(
             &host,
@@ -143,13 +143,14 @@ async fn handle_m2m_lease_action(
         {
             Ok(()) => {}
             Err(err) => {
-                return Err(match err {
-                    HCE::NotFound => (StatusCode::NOT_FOUND, HCE::NotFound.to_string()),
-                    HCE::Timeout(source) => (StatusCode::GATEWAY_TIMEOUT, source.to_string()),
-                    HCE::OperationFailed(_, source) => {
-                        (StatusCode::INTERNAL_SERVER_ERROR, source.to_string())
-                    }
-                });
+                return Err((
+                    match err {
+                        HCE::NotFound(_) => StatusCode::NOT_FOUND,
+                        HCE::Timeout(_) => StatusCode::GATEWAY_TIMEOUT,
+                        HCE::OperationFailed(_, _) => StatusCode::INTERNAL_SERVER_ERROR,
+                    },
+                    err.to_string(),
+                ));
             }
         }
     }

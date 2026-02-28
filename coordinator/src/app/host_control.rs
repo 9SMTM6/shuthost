@@ -1,11 +1,10 @@
 //! Host control application logic (non-HTTP). This module contains the core
-//! operations for waking/shutting hosts and polling their state. HTTP-specific
-//! response mapping lives in `http/m2m/host_control.rs`.
+//! operations for waking/shutting hosts and polling their state.
 
 use core::time::Duration;
 
+use eyre::Context as _;
 use eyre::Report;
-use eyre::eyre;
 use thiserror::Error as ThisError;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
@@ -14,15 +13,13 @@ use tracing::{debug, info};
 
 use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 
+use crate::app::runtime::PollError;
 use crate::app::{AppState, runtime::poll_until_host_state, state::HostState};
 
 #[cfg(not(any(coverage, test)))]
 use crate::wol;
 use crate::{
-    app::{
-        runtime,
-        state::{ConfigRx, HostStatusRx, HostStatusTx},
-    },
+    app::state::{ConfigRx, HostStatusRx, HostStatusTx},
     config::Host,
     websocket::LeaseSources,
 };
@@ -34,10 +31,10 @@ const DEFAULT_POLL_INTERVAL_MS: u64 = 200;
 /// Errors returned by high-level host control operations.
 #[derive(Debug, ThisError)]
 pub(crate) enum HostControlError {
-    #[error("Unknown host")]
-    NotFound,
-    #[error("Timeout")]
-    Timeout(#[source] Report),
+    #[error("No configuration found for host {0}")]
+    NotFound(String),
+    #[error(transparent)]
+    Timeout(Report),
     #[error("Operation failed")]
     OperationFailed(HostState, #[source] Report),
 }
@@ -75,13 +72,13 @@ pub(crate) async fn handle_host_state(
     let cfg_snapshot = config_rx.borrow().clone();
     let host_cfg = match cfg_snapshot.hosts.get(host) {
         Some(h) => h.clone(),
-        None => return Err(HostControlError::NotFound),
+        None => return Err(HostControlError::NotFound(host.to_string())),
     };
 
     if should_be_running && current_state == HostState::Offline {
-        wake_host_and_wait(host, &host_cfg, config_rx, &hoststatus_tx).await
+        wake_host_and_wait(host, &host_cfg, &hoststatus_tx).await
     } else if !should_be_running && current_state == HostState::Online {
-        shutdown_host_and_wait(host, &host_cfg, config_rx, &hoststatus_tx).await
+        shutdown_host_and_wait(host, &host_cfg, &hoststatus_tx).await
     } else {
         Ok(())
     }
@@ -128,8 +125,8 @@ async fn send_shutdown_to_address(
     let conn = timeout(Duration::from_secs(2), TcpStream::connect(&addr)).await;
     let mut stream = match conn {
         Ok(Ok(s)) => s,
-        Ok(Err(e)) => return Err(eyre!(format!("TCP connect error to {addr}: {}", e))),
-        Err(_) => return Err(eyre!(format!("Connection to {addr} timed out"))),
+        Ok(e @ Err(_)) => e.wrap_err(format!("TCP connect error for {addr}"))?,
+        Err(elapsed) => Err(elapsed).wrap_err(format!("Connection to {addr} timed out"))?,
     };
 
     let signed_message = shuthost_common::create_signed_message(
@@ -145,16 +142,16 @@ async fn send_shutdown_to_address(
     .await
     {
         Ok(Ok(())) => {}
-        Ok(Err(e)) => return Err(eyre!(format!("Failed to write request to stream: {}", e))),
-        Err(_) => return Err(eyre!("Timeout writing request to stream")),
+        Ok(e @ Err(_)) => e.wrap_err("Failed to write request to stream")?,
+        Err(elapsed) => Err(elapsed).wrap_err("Timeout writing request to stream")?,
     }
 
     // Read with timeout
     let mut buf = vec![0u8; 1024];
     let n = match timeout(Duration::from_secs(2), stream.read(&mut buf)).await {
         Ok(Ok(n)) => n,
-        Ok(Err(e)) => return Err(eyre!(format!("Failed to read response from stream: {}", e))),
-        Err(_) => return Err(eyre!("Timeout reading response from stream")),
+        Ok(e @ Err(_)) => e.wrap_err("Failed to read response from stream")?,
+        Err(elapsed) => Err(elapsed).wrap_err("Timeout reading response from stream")?,
     };
 
     let Some(data) = buf.get(..n) else {
@@ -169,7 +166,6 @@ async fn send_shutdown_to_address(
 async fn wake_host_and_wait(
     host_name: &str,
     host_cfg: &Host,
-    config_rx: &ConfigRx,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     if host_cfg.mac.eq_ignore_ascii_case("disablewol") {
@@ -183,18 +179,17 @@ async fn wake_host_and_wait(
     if let Err(e) = wol::send_magic_packet(&host_cfg.mac, "255.255.255.255") {
         return Err(HostControlError::OperationFailed(
             HostState::Online,
-            eyre!(format!("Failed to send WoL packet: {}", e)),
+            e.wrap_err("Failed to send WoL packet"),
         ));
     }
 
-    poll_and_wait(host_name, config_rx, hoststatus_tx, HostState::Online).await
+    poll_and_wait(host_name, host_cfg, hoststatus_tx, HostState::Online).await
 }
 
 /// Send shutdown command to host and wait until offline.
 async fn shutdown_host_and_wait(
     host_name: &str,
     host_cfg: &Host,
-    config_rx: &ConfigRx,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     // Send shutdown to the address
@@ -209,31 +204,30 @@ async fn shutdown_host_and_wait(
         Err(e) => return Err(HostControlError::OperationFailed(HostState::Offline, e)),
     };
 
-    poll_and_wait(host_name, config_rx, hoststatus_tx, HostState::Offline).await
+    poll_and_wait(host_name, host_cfg, hoststatus_tx, HostState::Offline).await
 }
 
 /// Poll for the desired host state and handle errors uniformly.
 async fn poll_and_wait(
     host_name: &str,
-    config_rx: &ConfigRx,
+    host_cfg: &Host,
     hoststatus_tx: &HostStatusTx,
     desired_state: HostState,
 ) -> Result<(), HostControlError> {
     match poll_until_host_state(
         host_name,
+        host_cfg,
         desired_state,
         DEFAULT_POLL_TIMEOUT_SECS,
         DEFAULT_POLL_INTERVAL_MS,
-        config_rx,
         hoststatus_tx,
     )
     .await
     {
         Ok(()) => Ok(()),
         Err(e) => match e {
-            runtime::PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
-            runtime::PollError::NotFound => Err(HostControlError::NotFound),
-            runtime::PollError::CoordinatorShuttingDown => {
+            PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
+            PollError::CoordinatorShuttingDown => {
                 Err(HostControlError::OperationFailed(desired_state, e.into()))
             }
         },
