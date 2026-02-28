@@ -28,8 +28,9 @@ use reqwest::Client;
 
 use common::{
     get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
-    wait_for_listening,
+    wait_for_host_state, wait_for_listening,
 };
+use shuthost_coordinator::app::HostState;
 use tokio::time;
 
 #[tokio::test]
@@ -83,21 +84,10 @@ async fn coordinator_and_agent_online_status() {
     // Wait for agent to be ready
     wait_for_agent_ready(agent_port, &SecretString::from(shared_secret), 5).await;
 
-    let client = Client::new();
-    let url = format!("http://127.0.0.1:{coord_port}/api/hosts_status");
-    let mut online = false;
-    for _ in 0..10 {
-        let resp = client.get(&url).send().await;
-        if let Ok(resp) = resp
-            && let Ok(json) = resp.json::<serde_json::Value>().await
-            && json["testhost"] == true
-        {
-            online = true;
-            break;
-        }
-        time::sleep(Duration::from_millis(300)).await;
-    }
-    assert!(online, "Host should be online");
+    assert!(
+        wait_for_host_state(coord_port, "testhost", HostState::Online, 10).await,
+        "Host should be online"
+    );
 }
 
 #[tokio::test]
