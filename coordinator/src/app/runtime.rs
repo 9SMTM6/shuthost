@@ -16,7 +16,7 @@ use tracing::{Instrument as _, debug, info};
 use shuthost_common::create_signed_message;
 
 use super::state::{ConfigRx, ConfigTx, HostState, HostStatusTx, WsTx};
-use crate::{app::config_watcher::watch_config_file, websocket::WsMessage};
+use crate::{app::config_watcher::watch_config_file, config::Host, websocket::WsMessage};
 
 /// Poll a single host for its online status.
 async fn poll_host_status(
@@ -63,8 +63,6 @@ async fn poll_host_status(
 /// Returns an error if the polling times out or if there are issues with the host configuration.
 #[derive(Debug, ThisError)]
 pub(super) enum PollError {
-    #[error("No configuration found for host")]
-    NotFound,
     #[error("Timeout waiting for host '{host_name}' to become {desired_state:?}")]
     Timeout {
         host_name: String,
@@ -76,23 +74,16 @@ pub(super) enum PollError {
 
 pub(super) async fn poll_until_host_state(
     host_name: &str,
+    host: &Host,
     desired_state: HostState,
     timeout_secs: u64,
     poll_interval_ms: u64,
-    config_rx: &ConfigRx,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), PollError> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     let start = Instant::now();
     loop {
-        let host = {
-            let config = config_rx.borrow();
-            match config.hosts.get(host_name) {
-                Some(h) => h.clone(),
-                None => return Err(PollError::NotFound),
-            }
-        };
         let poll_fut =
             poll_host_status(host_name, &host.ip, host.port, host.shared_secret.as_ref());
         let tick_fut = ticker.tick();
