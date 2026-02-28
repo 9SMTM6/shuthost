@@ -122,6 +122,7 @@ pub(crate) async fn handle_host_state(
         ref config_rx,
         ref hoststatus_rx,
         ref hoststatus_tx,
+        ref host_overrides,
         ..
     }: &AppState,
     lease_set: &LeaseSources,
@@ -143,12 +144,19 @@ pub(crate) async fn handle_host_state(
 
     debug!("Current state for host '{}': {:?}", host, current_state);
 
-    // Lookup host config
+    // Lookup host config, applying any persisted IP/port override.
     let cfg_snapshot = config_rx.borrow().clone();
-    let host_cfg = match cfg_snapshot.hosts.get(host) {
+    let mut host_cfg = match cfg_snapshot.hosts.get(host) {
         Some(h) => h.clone(),
         None => return Err(HostControlError::NotFound(host.to_string())),
     };
+    {
+        let overrides = host_overrides.read().await;
+        if let Some(o) = overrides.get(host) {
+            host_cfg.ip = o.ip.clone();
+            host_cfg.port = o.port;
+        }
+    }
 
     if should_be_running && current_state == HostState::Offline {
         wake_host_and_wait(host, &host_cfg, hoststatus_tx).await

@@ -67,8 +67,6 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
         TcpListener::bind(&addr).unwrap_or_else(|_| panic!("Failed to bind port {addr}"));
     println!("Listening on {addr}");
 
-    // TODO:
-    // * the code that listens for this on the coordinator is still not implemented.
     broadcast_startup(&config);
 
     for stream in listener.incoming() {

@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT hostname, ip, port FROM host_ip_overrides",
+  "describe": {
+    "columns": [
+      {
+        "name": "hostname",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "ip",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "port",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "06eb34679c62d2a698d53680ce02e97e118b5c86843018a786cd2cb928f2867c"
+}

@@ -6,7 +6,7 @@ use std::{
 
 use eyre::WrapErr as _;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, watch};
+use tokio::sync::{RwLock, broadcast, watch};
 use tracing::info;
 
 use crate::{
@@ -54,6 +54,10 @@ pub(crate) struct AppState {
 
     /// In-memory map of current leases for hosts (write-serialized, watch-observable).
     pub leases: Arc<LeaseState>,
+
+    /// Runtime IP/port overrides for hosts whose address differs from the static config.
+    /// Populated from the DB on startup and updated live when agent startup broadcasts arrive.
+    pub host_overrides: Arc<RwLock<HashMap<String, db::HostOverride>>>,
 
     /// Authentication runtime (mode and secrets)
     pub auth: Arc<auth::Runtime>,
@@ -165,6 +169,25 @@ pub(super) async fn initialize_state(
 
     let (leases, _) = LeaseState::new(initial_leases);
 
+    let host_overrides = if let Some(ref pool) = db_pool {
+        let overrides = db::load_host_ip_overrides(pool).await?;
+        // Warn for every override that differs from the current config.
+        for (name, o) in &overrides {
+            if let Some(h) = initial_config.hosts.get(name) {
+                if h.ip != o.ip || h.port != o.port {
+                    tracing::warn!(
+                        "Host '{name}' has a stored IP/port override: config={}:{}, stored={}:{}",
+                        h.ip, h.port, o.ip, o.port
+                    );
+                }
+            }
+        }
+        overrides
+    } else {
+        HashMap::new()
+    };
+    let host_overrides = Arc::new(RwLock::new(host_overrides));
+
     let auth_runtime =
         Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
 
@@ -180,6 +203,7 @@ pub(super) async fn initialize_state(
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases,
+        host_overrides,
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
         db_pool,

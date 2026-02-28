@@ -11,12 +11,15 @@ use futures::future;
 use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
-    net::TcpStream,
+    net::{TcpStream, UdpSocket},
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
-use tracing::{Instrument as _, debug, info};
+use tracing::{Instrument as _, debug, error, info, warn};
 
-use shuthost_common::create_signed_message;
+use shuthost_common::{
+    BroadcastMessage, HmacValidationResult, create_signed_message, parse_hmac_message,
+    validate_hmac_message,
+};
 
 use super::state::{ConfigTx, HostState, HostStatusTx};
 use crate::{
@@ -208,6 +211,17 @@ pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, con
             .in_current_span(),
         );
     }
+
+    // Listens for UDP startup broadcasts from agents and persists IP overrides.
+    {
+        let state = state.clone();
+        tokio::spawn(
+            async move {
+                listen_for_agent_startup(state).await;
+            }
+            .in_current_span(),
+        );
+    }
 }
 
 /// Determine whether the given host configuration and observed runtime state
@@ -257,10 +271,22 @@ async fn poll_host_statuses(state: AppState) {
         let poll_start = Instant::now();
         let config = state.config_rx.borrow().clone();
 
+        // Read IP/port overrides once per poll cycle into an owned map so the
+        // read-guard is dropped before the async join_all below.
+        let ip_overrides: HashMap<String, (String, u16)> = {
+            let overrides = state.host_overrides.read().await;
+            overrides
+                .iter()
+                .map(|(k, v)| (k.clone(), (v.ip.clone(), v.port)))
+                .collect()
+        };
+
         let futures = config.hosts.iter().map(|(name, host)| {
             let name = name.clone();
-            let ip = host.ip.clone();
-            let port = host.port;
+            let (ip, port) = ip_overrides
+                .get(name.as_str())
+                .map(|(ip, port)| (ip.clone(), *port))
+                .unwrap_or_else(|| (host.ip.clone(), host.port));
             let shared_secret = host.shared_secret.clone();
             async move {
                 let polled = poll_host_status(&name, &ip, port, shared_secret.as_ref()).await;
@@ -388,6 +414,142 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
         }
 
         prev_desired_online = new_desired_online;
+    }
+}
+
+/// Background task: listens on the configured UDP broadcast port for agent startup announcements.
+/// When a valid signed broadcast is received, the host is immediately marked Online and any
+/// IP/port differences are persisted as overrides.
+async fn listen_for_agent_startup(state: AppState) {
+    let mut config_rx = state.config_rx.clone();
+    loop {
+        let broadcast_port = config_rx.borrow_and_update().server.broadcast_port;
+        let addr = format!("0.0.0.0:{broadcast_port}");
+        let socket = match UdpSocket::bind(&addr).await {
+            Ok(s) => {
+                info!("Listening for agent startup broadcasts on {addr}");
+                s
+            }
+            Err(e) => {
+                error!("Failed to bind UDP broadcast socket on {addr}: {e}");
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                continue;
+            }
+        };
+
+        let mut buf = vec![0u8; 4096];
+        loop {
+            tokio::select! {
+                result = socket.recv_from(&mut buf) => {
+                    match result {
+                        Ok((n, peer_addr)) => {
+                            let data = buf[..n].to_vec();
+                            handle_startup_packet(&data, peer_addr, &state).await;
+                        }
+                        Err(e) => {
+                            error!("UDP receive error on port {broadcast_port}: {e}");
+                            break;
+                        }
+                    }
+                }
+                _ = config_rx.changed() => {
+                    let new_port = config_rx.borrow().server.broadcast_port;
+                    if new_port != broadcast_port {
+                        info!("Broadcast port changed from {broadcast_port} to {new_port}, rebinding");
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Process a single UDP packet received on the broadcast port.
+async fn handle_startup_packet(
+    data: &[u8],
+    peer_addr: std::net::SocketAddr,
+    state: &AppState,
+) {
+    let raw = match core::str::from_utf8(data) {
+        Ok(s) => s,
+        Err(_) => {
+            debug!("Received non-UTF-8 startup packet from {peer_addr}, ignoring");
+            return;
+        }
+    };
+
+    // The signed message format is "timestamp|{json}|signature".
+    // We extract the JSON so we can look up the host's secret before doing full HMAC validation.
+    let Some((_, json_payload, _)) = parse_hmac_message(raw) else {
+        debug!("Malformed startup packet from {peer_addr}");
+        return;
+    };
+
+    let broadcast: BroadcastMessage = match serde_json::from_str(&json_payload) {
+        Ok(b) => b,
+        Err(e) => {
+            debug!("Failed to parse startup broadcast JSON from {peer_addr}: {e}");
+            return;
+        }
+    };
+
+    let BroadcastMessage::AgentStartup(ref startup) = broadcast;
+    let hostname = &startup.hostname;
+
+    let config = state.config_rx.borrow().clone();
+    let Some(host_cfg) = config.hosts.get(hostname).cloned() else {
+        debug!("Startup broadcast for unknown host '{hostname}' from {peer_addr}, ignoring");
+        return;
+    };
+
+    // Full HMAC + timestamp validation using the host's shared secret.
+    if !matches!(
+        validate_hmac_message(raw, &host_cfg.shared_secret),
+        HmacValidationResult::Valid(_)
+    ) {
+        warn!("Invalid HMAC on startup broadcast from {peer_addr} claiming to be '{hostname}'");
+        return;
+    }
+
+    info!("Received valid startup broadcast from host '{hostname}' at {peer_addr}");
+
+    // Immediately mark host Online to avoid waiting for the next poll cycle.
+    {
+        let mut status_map = state.hoststatus_tx.borrow().as_ref().clone();
+        if status_map.get(hostname.as_str()) != Some(&HostState::Online) {
+            status_map.insert(hostname.clone(), HostState::Online);
+            if state.hoststatus_tx.send(Arc::new(status_map)).is_err() {
+                debug!("Host status channel closed");
+            }
+        }
+    }
+
+    // If the agent's IP/port differs from the config, persist an override.
+    let agent_ip = &startup.ip_address;
+    let agent_port = startup.port;
+    if agent_ip != &host_cfg.ip || agent_port != host_cfg.port {
+        warn!(
+            "Host '{hostname}' address differs from config: config={}:{}, agent={}:{}; storing override",
+            host_cfg.ip, host_cfg.port, agent_ip, agent_port
+        );
+        {
+            let mut overrides = state.host_overrides.write().await;
+            overrides.insert(
+                hostname.clone(),
+                crate::app::db::HostOverride {
+                    ip: agent_ip.clone(),
+                    port: agent_port,
+                },
+            );
+        }
+        if let Some(ref pool) = state.db_pool {
+            if let Err(e) =
+                crate::app::db::upsert_host_ip_override(pool, hostname, agent_ip, agent_port)
+                    .await
+            {
+                error!("Failed to persist IP override for '{hostname}': {e}");
+            }
+        }
     }
 }
 

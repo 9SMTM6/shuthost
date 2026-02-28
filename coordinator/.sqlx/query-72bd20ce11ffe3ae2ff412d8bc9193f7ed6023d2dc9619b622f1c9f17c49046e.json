@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO host_ip_overrides (hostname, ip, port) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "72bd20ce11ffe3ae2ff412d8bc9193f7ed6023d2dc9619b622f1c9f17c49046e"
+}
