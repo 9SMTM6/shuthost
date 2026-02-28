@@ -190,10 +190,13 @@ These are generated or validated automatically as part of the test suite, and th
 - 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
 - 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
+- 🔄 **State Synchronization / Enforcement**: Add support for state synchronization or state enforcement, where the coordinator keeps sending shutdown or WOL commands to hosts if their actual state does not match the desired state. This helps ensure hosts remain in their intended state (on or off) even if manual intervention or unexpected changes occur.
+  - This will likely require the database to be enabled, to avoid unintended effects after coordinator restarts.
+  - It will likely be configurable per host (either opt-in or opt-out, TBD).
 - 🛡️ **Rate limiting of requests by shuthost clients**
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
-- the install scripts for host agents dorectly from github currently don't support passing options to the agents. Remedy that - Note that the installer from the coordinator does support passing arguments.
+- the install scripts for host agents directly from github currently don't support passing options to the agents. Remedy that - Note that the installer from the coordinator does support passing arguments.
 
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
