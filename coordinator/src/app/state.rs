@@ -11,7 +11,7 @@ use tracing::info;
 
 use crate::{
     app::{
-        LeaseMap,
+        LeaseMapRaw, LeaseState,
         db::{self, DbPool},
         runtime::start_background_tasks,
     },
@@ -52,8 +52,8 @@ pub(crate) struct AppState {
     /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: WsTx,
 
-    /// In-memory map of current leases for hosts.
-    pub leases: LeaseMap,
+    /// In-memory map of current leases for hosts (write-serialized, watch-observable).
+    pub leases: Arc<LeaseState>,
 
     /// Authentication runtime (mode and secrets)
     pub auth: Arc<auth::Runtime>,
@@ -154,17 +154,16 @@ pub(super) async fn initialize_state(
 
     let db_pool = initialize_database(&initial_config, config_path).await?;
 
-    let leases = LeaseMap::default();
+    let mut initial_leases = LeaseMapRaw::default();
 
     if let Some(ref pool) = db_pool {
-        db::load_leases(pool, &leases).await?;
+        db::load_leases(pool, &mut initial_leases).await?;
         info!("Loaded leases from database");
     } else {
         info!("Skipping lease load: DB persistence disabled");
     }
 
-    // Start background tasks
-    start_background_tasks(&config_rx, &hoststatus_tx, &ws_tx, &config_tx, config_path);
+    let (leases, _) = LeaseState::new(initial_leases);
 
     let auth_runtime =
         Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
@@ -185,6 +184,9 @@ pub(super) async fn initialize_state(
         tls_enabled: tls_opt.is_some(),
         db_pool,
     };
+
+    // Start background tasks now that the full AppState is available.
+    start_background_tasks(&app_state, &config_tx, config_path);
 
     emit_startup_warnings(&app_state);
 

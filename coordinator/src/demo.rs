@@ -14,7 +14,7 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    app::{AppState, LeaseMap, shutdown_signal},
+    app::{AppState, LeaseMapRaw, LeaseState, shutdown_signal},
     config::{AuthConfig, ControllerConfig},
     http::{
         assets::{self, UiMode, render_ui_html},
@@ -54,7 +54,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         hoststatus_rx,
         hoststatus_tx,
         ws_tx: broadcast::channel(1).0,
-        leases: LeaseMap::default(),
+        leases: LeaseState::new(LeaseMapRaw::default()).0,
         auth: Arc::new(
             auth::Runtime::from_config(&AuthConfig::default(), None)
                 .await

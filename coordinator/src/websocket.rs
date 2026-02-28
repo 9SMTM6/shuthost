@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use std::collections::HashMap;
 
 use axum::{
@@ -15,7 +16,7 @@ use tracing::{Instrument as _, debug, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
-    AppState, ConfigRx, DbPool, HostStatus, HostStatusRx, LeaseMap, LeaseMapRaw, LeaseSources,
+    AppState, ConfigRx, DbPool, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources, LeaseState,
     db::{self, ClientStats},
 };
 
@@ -169,7 +170,7 @@ async fn send_startup_msg(
     socket: &mut WebSocket,
     hoststatus_rx: HostStatusRx,
     config_rx: ConfigRx,
-    current_leases: LeaseMap,
+    current_leases: Arc<LeaseState>,
     db_pool: Option<&DbPool>,
 ) -> Result<(), axum::Error> {
     // Read freshest values from the receivers just before sending.
@@ -178,7 +179,7 @@ async fn send_startup_msg(
 
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
-    let leases = { current_leases.lock().await.clone() };
+    let leases = current_leases.borrow().as_ref().clone();
     let client_stats = if let Some(pool) = db_pool {
         match db::get_all_client_stats(pool).await {
             Ok(stats) => Some(stats),

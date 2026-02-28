@@ -1,3 +1,4 @@
+use core::convert::Infallible;
 use core::{
     error,
     fmt::{self, Display},
@@ -11,12 +12,9 @@ use axum::{
 };
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
-use crate::{
-    WsMessage,
-    app::{AppState, LeaseSource, LeaseSources, WsTx, db, spawn_handle_host_state},
-};
+use crate::app::{AppState, LeaseSource, LeaseSources, db};
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
@@ -45,50 +43,49 @@ impl Display for LeaseSource {
     }
 }
 
-/// Broadcast a lease update to WebSocket clients.
-fn broadcast_lease_update(host: &str, leases: &LeaseSources, ws_tx: &WsTx) {
-    let msg = WsMessage::LeaseUpdate {
-        host: host.to_string(),
-        leases: leases.clone(),
-    };
-    if ws_tx.send(msg).is_err() {
-        debug!("No Websocket Subscribers");
-    }
-}
-
-/// Updates the lease set for a host, persists to database if available, and broadcasts the update.
+/// Updates the lease set for a host and persists to database if available.
 /// Returns the updated lease set.
 #[tracing::instrument(skip(state))]
-pub(crate) async fn update_lease_and_broadcast(
+pub(crate) async fn update_lease(
     hostname: &str,
     lease_source: LeaseSource,
     action: LeaseAction,
     state: &AppState,
 ) -> Result<LeaseSources, Box<dyn error::Error + Send + Sync>> {
-    let mut leases = state.leases.lock().await;
-    let lease_set = leases.entry(hostname.to_string()).or_default();
+    let db_pool = state.db_pool.clone();
+    let hostname = hostname.to_string();
 
-    use LeaseAction as LA;
+    let snapshot = state
+        .leases
+        .update(|map| {
+            let hostname = hostname.clone();
+            let lease_source = lease_source.clone();
+            let db_pool = db_pool.clone();
+            Box::pin(async move {
+                let lease_set = map.entry(hostname.clone()).or_default();
+                use LeaseAction as LA;
+                match action {
+                    LA::Take => {
+                        lease_set.insert(lease_source.clone());
+                        info!(%lease_source, "Lease taken");
+                        if let Some(ref pool) = db_pool {
+                            db::add_lease(pool, &hostname, &lease_source).await?;
+                        }
+                    }
+                    LA::Release => {
+                        lease_set.remove(&lease_source);
+                        info!(%lease_source, "Lease released");
+                        if let Some(ref pool) = db_pool {
+                            db::remove_lease(pool, &hostname, &lease_source).await?;
+                        }
+                    }
+                }
+                Ok::<(), Box<dyn error::Error + Send + Sync>>(())
+            })
+        })
+        .await?;
 
-    match action {
-        LA::Take => {
-            lease_set.insert(lease_source.clone());
-            info!(%lease_source, "Lease taken");
-            if let Some(ref pool) = state.db_pool {
-                db::add_lease(pool, hostname, &lease_source).await?;
-            }
-        }
-        LA::Release => {
-            lease_set.remove(&lease_source);
-            info!(%lease_source, "Lease released");
-            if let Some(ref pool) = state.db_pool {
-                db::remove_lease(pool, hostname, &lease_source).await?;
-            }
-        }
-    }
-
-    let lease_set = lease_set.clone();
-    broadcast_lease_update(hostname, &lease_set, &state.ws_tx);
+    let lease_set = snapshot.get(&hostname).cloned().unwrap_or_default();
 
     Ok(lease_set)
 }
@@ -108,58 +105,56 @@ async fn handle_web_lease_action(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let lease_source = LeaseSource::WebInterface;
-    let lease_set = match update_lease_and_broadcast(&hostname, lease_source, action, &state).await
-    {
-        Ok(set) => set,
-        Err(e) => {
-            error!("Failed to update lease: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
-
-    // Handle host state after lease change
-    spawn_handle_host_state(&hostname, &lease_set, &state);
-
+    if let Err(e) = update_lease(&hostname, lease_source, action, &state).await {
+        error!("Failed to update lease: {}", e);
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+    // Reconciler task handles the host control action.
     match action {
         LeaseAction::Take => "Lease taken (async)".into_response(),
         LeaseAction::Release => "Lease released (async)".into_response(),
     }
 }
 
-// TODO: this aint pretty. Maybe invert client/host relationship in LeaseMap.
-// TODO: also clean up when a client gets removed from config
-// TODO: This fix-all-state approach leads to an eventual sync of host state to leases. Consider making this regular behavior.
 /// This function is used by the web UI to reset all leases associated with a client.
 /// It does not require any client authentication or HMAC signature.
+/// The reconciler background task will handle bringing affected hosts to the correct state.
 #[axum::debug_handler]
 #[tracing::instrument(skip(state))]
 async fn handle_reset_client_leases(
     Path(client_id): Path<String>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let mut leases = state.leases.lock().await;
+    let db_pool = state.db_pool.clone();
 
-    // Remove all leases associated with the client from memory
-    for lease_set in leases.values_mut() {
-        lease_set.retain(|lease| !matches!(lease, LeaseSource::Client(id) if id == &client_id));
-    }
-
-    // Remove all leases associated with the client from database when enabled
-    if let Some(ref pool) = state.db_pool
-        && let Err(e) = db::remove_client_leases(pool, &client_id).await
-    {
-        tracing::error!("Failed to remove client leases from database: {}", e);
-    }
+    state
+        .leases
+        .update(|map| {
+            let client_id = client_id.clone();
+            let db_pool = db_pool.clone();
+            Box::pin(async move {
+                // Remove all leases associated with the client from memory (atomically)
+                for lease_set in map.values_mut() {
+                    lease_set.retain(
+                        |lease| !matches!(lease, LeaseSource::Client(id) if id == &client_id),
+                    );
+                }
+                // Persist the removal
+                if let Some(ref pool) = db_pool
+                    && let Err(e) = db::remove_client_leases(pool, &client_id).await
+                {
+                    tracing::error!("Failed to remove client leases from database: {}", e);
+                }
+                Ok::<(), Infallible>(())
+            })
+        })
+        .await
+        .unwrap_or_else(|e| match e {});
 
     // Broadcast updated lease information to WebSocket clients
-    for (host, lease_set) in leases.iter() {
-        broadcast_lease_update(host, lease_set, &state.ws_tx);
-    }
+    // (the broadcast_lease_updates background task handles this via the LeaseRx watch channel)
 
-    // Handle host state after lease changes
-    for (host, lease_set) in leases.iter() {
-        spawn_handle_host_state(host, lease_set, &state);
-    }
+    // Reconciler will handle host control for any newly unleased hosts.
 
     format!("All leases for client '{client_id}' have been reset.").into_response()
 }

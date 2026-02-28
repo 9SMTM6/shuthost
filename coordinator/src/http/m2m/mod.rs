@@ -19,10 +19,8 @@ use serde_json::json;
 use tracing::error;
 
 use crate::{
-    app::{
-        AppState, HostControlError, LeaseSource, db, handle_host_state, spawn_handle_host_state,
-    },
-    http::api::{LeaseAction, update_lease_and_broadcast},
+    app::{AppState, HostControlError, LeaseSource, db, handle_host_state},
+    http::api::{LeaseAction, update_lease},
     wol,
 };
 
@@ -110,7 +108,7 @@ async fn handle_m2m_lease_action(
 
     let is_async = query.r#async.unwrap_or(false);
 
-    let lease_set = match update_lease_and_broadcast(&host, lease_source, action, &state).await {
+    let lease_set = match update_lease(&host, lease_source, action, &state).await {
         Ok(set) => set,
         Err(e) => {
             error!("Failed to update lease: {}", e);
@@ -123,11 +121,7 @@ async fn handle_m2m_lease_action(
 
     use LeaseAction as LA;
 
-    if is_async {
-        // In async mode, the host state change is triggered in the background and the response returns immediately.
-        // The host may still be transitioning to the desired state when the client receives the response.
-        spawn_handle_host_state(&host, &lease_set, &state);
-    } else {
+    if !is_async {
         // In sync mode, the request waits for the host to reach the desired state (or timeout) before returning.
         use HostControlError as HCE;
         match handle_host_state(&host, &state, &lease_set).await {
@@ -144,6 +138,8 @@ async fn handle_m2m_lease_action(
             }
         }
     }
+    // In async mode, the lease map update already published a watch event;
+    // the reconciler background task will handle the host control action.
     Ok(match (action, is_async) {
         (LA::Take, true) => "Lease taken (async)",
         (LA::Take, false) => "Lease taken, host is online",

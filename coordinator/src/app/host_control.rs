@@ -7,11 +7,12 @@ use std::collections::{HashMap, HashSet};
 
 use eyre::Context as _;
 use eyre::Report;
+use futures::future::BoxFuture;
 use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error as ThisError;
 use tokio::net::TcpStream;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, watch};
 use tokio::time::timeout;
 use tracing::Instrument as _;
 use tracing::{debug, info};
@@ -31,8 +32,63 @@ pub(crate) type LeaseSources = HashSet<LeaseSource>;
 /// `host_name` => set of lease sources holding lease
 pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 
-/// See [`LeaseMapRaw`]
-pub(crate) type LeaseMap = Arc<Mutex<LeaseMapRaw>>;
+/// Watch channel sender for the lease map.
+pub(crate) type LeaseTx = watch::Sender<Arc<LeaseMapRaw>>;
+/// Watch channel receiver for the lease map.
+pub(crate) type LeaseRx = watch::Receiver<Arc<LeaseMapRaw>>;
+
+/// Serialized lease map state: writes are serialized via a [`Mutex`], and all
+/// mutations are published to a [`watch`] channel so background tasks can
+/// subscribe to changes.
+pub(crate) struct LeaseState {
+    inner: Mutex<LeaseMapRaw>,
+    tx: LeaseTx,
+}
+
+impl LeaseState {
+    /// Create a new `LeaseState` from an initial map.
+    /// Returns an `Arc<LeaseState>` and an initial [`LeaseRx`] receiver.
+    pub(crate) fn new(initial: LeaseMapRaw) -> (Arc<Self>, LeaseRx) {
+        let (tx, rx) = watch::channel(Arc::new(initial.clone()));
+        (
+            Arc::new(Self {
+                inner: Mutex::new(initial),
+                tx,
+            }),
+            rx,
+        )
+    }
+
+    // TODO: Consider the need for these abstractions, BoxFuture, higher order lifetimes etc.
+    /// Lock the map, run `f` against the mutable map (may do async work such as
+    /// DB writes), then publish the new snapshot and return it.
+    ///
+    /// If `f` returns an error the map is not published and the error is forwarded.
+    pub(crate) async fn update<F, E>(&self, f: F) -> Result<Arc<LeaseMapRaw>, E>
+    where
+        F: for<'future_life> FnOnce(
+            &'future_life mut LeaseMapRaw,
+        ) -> BoxFuture<'future_life, Result<(), E>>,
+    {
+        let mut guard = self.inner.lock().await;
+        f(&mut guard).await?;
+        let snapshot = Arc::new(guard.clone());
+        drop(guard);
+        // Ignore send error: it means all receivers were dropped (e.g. during shutdown).
+        drop(self.tx.send(snapshot.clone()));
+        Ok(snapshot)
+    }
+
+    /// Read the current snapshot cheaply without acquiring the write mutex.
+    pub(crate) fn borrow(&self) -> watch::Ref<'_, Arc<LeaseMapRaw>> {
+        self.tx.borrow()
+    }
+
+    /// Subscribe to future changes of the lease map.
+    pub(crate) fn subscribe(&self) -> LeaseRx {
+        self.tx.subscribe()
+    }
+}
 
 /// Represents a source that holds a lease on a host.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
