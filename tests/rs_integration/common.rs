@@ -200,7 +200,7 @@ pub(crate) async fn wait_for_agent_ready(
 }
 
 /// Wait until the coordinator reports the specified host in the expected state.
-/// Polls the /api/hosts_status endpoint until the host reaches the desired state or timeout.
+/// Polls the /`api/hosts_status` endpoint until the host reaches the desired state or timeout.
 pub(crate) async fn wait_for_host_state(
     coord_port: u16,
     host_name: &str,

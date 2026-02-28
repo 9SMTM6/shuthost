@@ -151,7 +151,7 @@ async fn handle_m2m_lease_action(
                     }
                 });
             }
-        };
+        }
     }
     Ok(match (action, is_async) {
         (LA::Take, true) => "Lease taken (async)",

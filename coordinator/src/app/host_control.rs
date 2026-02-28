@@ -2,21 +2,19 @@
 //! operations for waking/shutting hosts and polling their state. HTTP-specific
 //! response mapping lives in `http/m2m/host_control.rs`.
 
-use std::time::Duration;
+use core::time::Duration;
 
-use tracing::Instrument;
-use tracing::{debug, info};
-use thiserror::Error as ThisError;
 use eyre::Report;
 use eyre::eyre;
+use thiserror::Error as ThisError;
+use tokio::net::TcpStream;
+use tokio::time::timeout;
+use tracing::Instrument as _;
+use tracing::{debug, info};
 
 use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 
-use crate::app::AppState;
-use crate::app::{
-    runtime::poll_until_host_state,
-    state::{HostState},
-};
+use crate::app::{AppState, runtime::poll_until_host_state, state::HostState};
 
 #[cfg(not(any(coverage, test)))]
 use crate::wol;
@@ -63,7 +61,10 @@ pub(crate) async fn handle_host_state(
 
     let current_state = {
         let hoststatus_rx = hoststatus_rx.borrow();
-        hoststatus_rx.get(host).copied().unwrap_or(HostState::Offline)
+        hoststatus_rx
+            .get(host)
+            .copied()
+            .unwrap_or(HostState::Offline)
     };
 
     let hoststatus_tx = hoststatus_tx.clone();
@@ -120,11 +121,11 @@ async fn send_shutdown_to_address(
     port: u16,
     secret: &secrecy::SecretString,
 ) -> Result<String, Report> {
-    let addr = format!("{}:{}", ip, port);
+    let addr = format!("{ip}:{port}");
     debug!(%addr, "Connecting to host for shutdown");
 
     // Connect with timeout
-    let conn = tokio::time::timeout(Duration::from_secs(2), tokio::net::TcpStream::connect(&addr)).await;
+    let conn = timeout(Duration::from_secs(2), TcpStream::connect(&addr)).await;
     let mut stream = match conn {
         Ok(Ok(s)) => s,
         Ok(Err(e)) => return Err(eyre!(format!("TCP connect error to {addr}: {}", e))),
@@ -137,32 +138,40 @@ async fn send_shutdown_to_address(
     );
 
     // Write with timeout
-    match tokio::time::timeout(Duration::from_secs(2), stream.write_all(signed_message.as_bytes())).await {
-        Ok(Ok(_)) => {}
+    match timeout(
+        Duration::from_secs(2),
+        stream.write_all(signed_message.as_bytes()),
+    )
+    .await
+    {
+        Ok(Ok(())) => {}
         Ok(Err(e)) => return Err(eyre!(format!("Failed to write request to stream: {}", e))),
         Err(_) => return Err(eyre!("Timeout writing request to stream")),
     }
 
     // Read with timeout
     let mut buf = vec![0u8; 1024];
-    let n = match tokio::time::timeout(Duration::from_secs(2), stream.read(&mut buf)).await {
+    let n = match timeout(Duration::from_secs(2), stream.read(&mut buf)).await {
         Ok(Ok(n)) => n,
         Ok(Err(e)) => return Err(eyre!(format!("Failed to read response from stream: {}", e))),
         Err(_) => return Err(eyre!("Timeout reading response from stream")),
     };
 
-    let data = &buf[..n];
+    let Some(data) = buf.get(..n) else {
+        unreachable!("Read data size should always be valid, as its <= buffer size");
+    };
+
     Ok(String::from_utf8_lossy(data).to_string())
 }
 
-/// Send a WoL packet (via crate-level `wol` helper) and then wait until the
+/// Send a `WoL` packet (via crate-level `wol` helper) and then wait until the
 /// host becomes online by polling runtime state.
 async fn wake_host_and_wait(
     host_name: &str,
     host_cfg: &Host,
     config_rx: &ConfigRx,
     hoststatus_tx: &HostStatusTx,
-)-> Result<(), HostControlError> {
+) -> Result<(), HostControlError> {
     if host_cfg.mac.eq_ignore_ascii_case("disablewol") {
         info!(host = %host_name, "WOL disabled for host");
         return Ok(());
@@ -172,7 +181,10 @@ async fn wake_host_and_wait(
     // send_magic_packet is behind cfg flags in some builds; call the wrapper
     #[cfg(not(any(coverage, test)))]
     if let Err(e) = wol::send_magic_packet(&host_cfg.mac, "255.255.255.255") {
-        return Err(HostControlError::OperationFailed(HostState::Online, eyre!(format!("Failed to send WoL packet: {}", e))));
+        return Err(HostControlError::OperationFailed(
+            HostState::Online,
+            eyre!(format!("Failed to send WoL packet: {}", e)),
+        ));
     }
 
     poll_and_wait(host_name, config_rx, hoststatus_tx, HostState::Online).await
@@ -186,7 +198,13 @@ async fn shutdown_host_and_wait(
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     // Send shutdown to the address
-    let _resp = match send_shutdown_to_address(&host_cfg.ip, host_cfg.port, host_cfg.shared_secret.as_ref()).await {
+    let _resp = match send_shutdown_to_address(
+        &host_cfg.ip,
+        host_cfg.port,
+        host_cfg.shared_secret.as_ref(),
+    )
+    .await
+    {
         Ok(r) => r,
         Err(e) => return Err(HostControlError::OperationFailed(HostState::Offline, e)),
     };
@@ -213,10 +231,11 @@ async fn poll_and_wait(
     {
         Ok(()) => Ok(()),
         Err(e) => match e {
-            runtime::PollError::Timeout{..} => Err(HostControlError::Timeout(e.into())),
+            runtime::PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
             runtime::PollError::NotFound => Err(HostControlError::NotFound),
-            _ => Err(HostControlError::OperationFailed(desired_state, e.into())),
+            runtime::PollError::CoordinatorShuttingDown => {
+                Err(HostControlError::OperationFailed(desired_state, e.into()))
+            }
         },
     }
 }
-
