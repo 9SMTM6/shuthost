@@ -12,7 +12,7 @@ let coordinatorBroadcastPort: number | undefined;
 
 
 /** Map of host name -> online status. */
-type StatusMap = Record<string, boolean>;
+type StatusMap = Record<string, 'online' | 'offline'>;
 
 /** Represents the source of a lease. */
 type LeaseSource =
@@ -26,9 +26,9 @@ type ClientStats = {
 
 /** WebSocket message types exchanged with the coordinator backend. */
 type WsMessage =
-    | { type: 'HostStatus'; payload: Record<string, boolean> }
+    | { type: 'HostStatus'; payload: StatusMap }
     | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
-    | { type: 'Initial'; payload: { hosts: string[]; clients: string[]; status: Record<string, boolean>; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null; broadcast_port: number } }
+    | { type: 'Initial'; payload: { hosts: string[]; clients: string[]; status: StatusMap; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null; broadcast_port: number } }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 
@@ -174,7 +174,7 @@ const handleWebSocketMessage = (event: MessageEvent) => {
 const getHostStatus = (hostName: string) => {
     const status = persistedStatusMap[hostName];
     return {
-        statusText: status === undefined ? 'Loading...' : (status ? 'online' : 'offline')
+        statusText: status === undefined ? 'Loading...' : status
     };
 };
 
@@ -595,7 +595,7 @@ namespace DemoMode {
                 payload: {
                     hosts: ["archive", "tarbean"],
                     clients: [],
-                    status: { tarbean: false, archive: false },
+                    status: { tarbean: 'offline', archive: 'offline' },
                     leases: { archive: [] },
                     client_stats: {},
                     broadcast_port: 5757,
@@ -614,7 +614,7 @@ namespace DemoMode {
             // HostStatus: archive online
             if (statusTimeout) clearTimeout(statusTimeout);
             statusTimeout = setTimeout(() => {
-                handleMessage({ type: "HostStatus", payload: { tarbean: false, archive: true } });
+                handleMessage({ type: "HostStatus", payload: { tarbean: 'offline', archive: 'online' } });
             }, 1200);
         } else if (action === "release") {
             // LeaseUpdate: no leases
@@ -625,7 +625,7 @@ namespace DemoMode {
             // HostStatus: archive offline
             if (statusTimeout) clearTimeout(statusTimeout);
             statusTimeout = setTimeout(() => {
-                handleMessage({ type: "HostStatus", payload: { tarbean: false, archive: false } });
+                handleMessage({ type: "HostStatus", payload: { tarbean: 'offline', archive: 'offline' } });
             }, 1200);
         }
     }
