@@ -134,10 +134,8 @@ async fn handle_m2m_lease_action(
         use HostControlError as HCE;
         match handle_host_state(
             &host,
+            &state,
             &lease_set,
-            &state.hoststatus_rx,
-            &state.config_rx,
-            &state.hoststatus_tx,
         )
         .await
         {

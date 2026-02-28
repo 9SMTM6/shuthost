@@ -18,11 +18,7 @@ use crate::app::{AppState, runtime::poll_until_host_state, state::HostState};
 
 #[cfg(not(any(coverage, test)))]
 use crate::wol;
-use crate::{
-    app::state::{ConfigRx, HostStatusRx, HostStatusTx},
-    config::Host,
-    websocket::LeaseSources,
-};
+use crate::{app::state::HostStatusTx, config::Host, websocket::LeaseSources};
 
 /// Poll timeout used by wrappers that wait for a host to reach a desired state.
 const DEFAULT_POLL_TIMEOUT_SECS: u64 = 60;
@@ -44,10 +40,13 @@ pub(crate) enum HostControlError {
 #[tracing::instrument(skip_all, err(Debug))]
 pub(crate) async fn handle_host_state(
     host: &str,
+    AppState {
+        config_rx,
+        hoststatus_rx,
+        hoststatus_tx,
+        ..
+    }: &AppState,
     lease_set: &LeaseSources,
-    hoststatus_rx: &HostStatusRx,
-    config_rx: &ConfigRx,
-    hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     let should_be_running = !lease_set.is_empty();
 
@@ -90,22 +89,14 @@ pub(crate) async fn handle_host_state(
 pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, state: &AppState) {
     let host = host.to_string();
     let lease_set = lease_set.clone();
-    let hoststatus_rx = state.hoststatus_rx.clone();
-    let config_rx = state.config_rx.clone();
-    let hoststatus_tx = state.hoststatus_tx.clone();
+    let state = state.clone();
 
     tokio::spawn(
         async move {
             drop(
-                handle_host_state(
-                    &host,
-                    &lease_set,
-                    &hoststatus_rx,
-                    &config_rx,
-                    &hoststatus_tx,
-                )
-                .in_current_span()
-                .await,
+                handle_host_state(&host, &state, &lease_set)
+                    .in_current_span()
+                    .await,
             );
         }
         .in_current_span(),
