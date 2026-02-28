@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use axum::{
     extract::{
@@ -14,12 +14,9 @@ use tokio::sync::broadcast;
 use tracing::{Instrument as _, debug, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
-use crate::{
-    app::{
-        AppState, ConfigRx, DbPool, HostStatus, HostStatusRx,
-        db::{self, ClientStats},
-    },
-    http::m2m::{LeaseMap, LeaseSource},
+use crate::app::{
+    AppState, ConfigRx, DbPool, HostStatus, HostStatusRx, LeaseMap, LeaseMapRaw, LeaseSources,
+    db::{self, ClientStats},
 };
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
@@ -41,12 +38,6 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
     }
     false
 }
-
-/// The set of lease sources for a single host
-pub(crate) type LeaseSources = HashSet<LeaseSource>;
-
-/// `host_name` => set of lease sources holding lease
-pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]

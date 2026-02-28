@@ -5,7 +5,6 @@
     expect(dead_code, reason = "For some reason clippy sets coverage cfg?")
 )]
 
-mod leases;
 mod validation;
 
 use axum::{
@@ -20,13 +19,12 @@ use serde_json::json;
 use tracing::error;
 
 use crate::{
-    app::{AppState, HostControlError, db, handle_host_state, spawn_handle_host_state},
+    app::{
+        AppState, HostControlError, LeaseSource, db, handle_host_state, spawn_handle_host_state,
+    },
     http::api::{LeaseAction, update_lease_and_broadcast},
     wol,
 };
-
-// Re-export public API
-pub(crate) use leases::{LeaseMap, LeaseSource, broadcast_lease_update};
 
 pub(crate) fn routes() -> axum::Router<AppState> {
     axum::Router::new()
@@ -108,7 +106,7 @@ async fn handle_m2m_lease_action(
         tracing::error!("Failed to update client last used: {}", e);
     }
 
-    let lease_source = leases::LeaseSource::Client(client_id);
+    let lease_source = LeaseSource::Client(client_id);
 
     let is_async = query.r#async.unwrap_or(false);
 
@@ -132,13 +130,7 @@ async fn handle_m2m_lease_action(
     } else {
         // In sync mode, the request waits for the host to reach the desired state (or timeout) before returning.
         use HostControlError as HCE;
-        match handle_host_state(
-            &host,
-            &state,
-            &lease_set,
-        )
-        .await
-        {
+        match handle_host_state(&host, &state, &lease_set).await {
             Ok(()) => {}
             Err(err) => {
                 return Err((

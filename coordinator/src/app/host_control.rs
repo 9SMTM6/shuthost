@@ -1,12 +1,17 @@
 //! Host control application logic (non-HTTP). This module contains the core
 //! operations for waking/shutting hosts and polling their state.
 
+use alloc::sync::Arc;
 use core::time::Duration;
+use std::collections::{HashMap, HashSet};
 
 use eyre::Context as _;
 use eyre::Report;
+use serde::Deserialize;
+use serde::Serialize;
 use thiserror::Error as ThisError;
 use tokio::net::TcpStream;
+use tokio::sync::Mutex;
 use tokio::time::timeout;
 use tracing::Instrument as _;
 use tracing::{debug, info};
@@ -18,7 +23,26 @@ use crate::app::{AppState, runtime::poll_until_host_state, state::HostState};
 
 #[cfg(not(any(coverage, test)))]
 use crate::wol;
-use crate::{app::state::HostStatusTx, config::Host, websocket::LeaseSources};
+use crate::{app::state::HostStatusTx, config::Host};
+
+/// The set of lease sources for a single host
+pub(crate) type LeaseSources = HashSet<LeaseSource>;
+
+/// `host_name` => set of lease sources holding lease
+pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
+
+/// See [`LeaseMapRaw`]
+pub(crate) type LeaseMap = Arc<Mutex<LeaseMapRaw>>;
+
+/// Represents a source that holds a lease on a host.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(tag = "type", content = "value")]
+pub enum LeaseSource {
+    /// Lease held by the web interface
+    WebInterface,
+    /// Lease held by a specific client
+    Client(String),
+}
 
 /// Poll timeout used by wrappers that wait for a host to reach a desired state.
 const DEFAULT_POLL_TIMEOUT_SECS: u64 = 60;
@@ -40,10 +64,10 @@ pub(crate) enum HostControlError {
 #[tracing::instrument(skip_all, err(Debug))]
 pub(crate) async fn handle_host_state(
     host: &str,
-    AppState {
-        config_rx,
-        hoststatus_rx,
-        hoststatus_tx,
+    &AppState {
+        ref config_rx,
+        ref hoststatus_rx,
+        ref hoststatus_tx,
         ..
     }: &AppState,
     lease_set: &LeaseSources,
@@ -63,8 +87,6 @@ pub(crate) async fn handle_host_state(
             .unwrap_or(HostState::Offline)
     };
 
-    let hoststatus_tx = hoststatus_tx.clone();
-
     debug!("Current state for host '{}': {:?}", host, current_state);
 
     // Lookup host config
@@ -75,9 +97,9 @@ pub(crate) async fn handle_host_state(
     };
 
     if should_be_running && current_state == HostState::Offline {
-        wake_host_and_wait(host, &host_cfg, &hoststatus_tx).await
+        wake_host_and_wait(host, &host_cfg, hoststatus_tx).await
     } else if !should_be_running && current_state == HostState::Online {
-        shutdown_host_and_wait(host, &host_cfg, &hoststatus_tx).await
+        shutdown_host_and_wait(host, &host_cfg, hoststatus_tx).await
     } else {
         Ok(())
     }

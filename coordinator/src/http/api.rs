@@ -1,4 +1,7 @@
-use core::error;
+use core::{
+    error,
+    fmt::{self, Display},
+};
 
 use axum::{
     Router,
@@ -8,15 +11,12 @@ use axum::{
 };
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use crate::{
-    app::{AppState, db, spawn_handle_host_state},
-    http::m2m::broadcast_lease_update,
-    websocket::LeaseSources,
+    WsMessage,
+    app::{AppState, LeaseSource, LeaseSources, WsTx, db, spawn_handle_host_state},
 };
-
-pub(crate) use super::m2m::LeaseSource;
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
@@ -34,6 +34,26 @@ pub(crate) fn routes() -> Router<AppState> {
 pub(crate) enum LeaseAction {
     Take,
     Release,
+}
+
+impl Display for LeaseSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        match *self {
+            LeaseSource::WebInterface => write!(f, "web-interface"),
+            LeaseSource::Client(ref id) => write!(f, "client-{id}"),
+        }
+    }
+}
+
+/// Broadcast a lease update to WebSocket clients.
+fn broadcast_lease_update(host: &str, leases: &LeaseSources, ws_tx: &WsTx) {
+    let msg = WsMessage::LeaseUpdate {
+        host: host.to_string(),
+        leases: leases.clone(),
+    };
+    if ws_tx.send(msg).is_err() {
+        debug!("No Websocket Subscribers");
+    }
 }
 
 /// Updates the lease set for a host, persists to database if available, and broadcasts the update.
@@ -68,7 +88,7 @@ pub(crate) async fn update_lease_and_broadcast(
     }
 
     let lease_set = lease_set.clone();
-    broadcast_lease_update(hostname, &lease_set, &state.ws_tx).await;
+    broadcast_lease_update(hostname, &lease_set, &state.ws_tx);
 
     Ok(lease_set)
 }
@@ -133,7 +153,7 @@ async fn handle_reset_client_leases(
 
     // Broadcast updated lease information to WebSocket clients
     for (host, lease_set) in leases.iter() {
-        broadcast_lease_update(host, lease_set, &state.ws_tx).await;
+        broadcast_lease_update(host, lease_set, &state.ws_tx);
     }
 
     // Handle host state after lease changes

@@ -7,7 +7,10 @@ mod state;
 
 // Re-export a curated crate-visible surface for consumers of `crate::app`
 pub(crate) use db::DbPool;
-pub(crate) use host_control::{HostControlError, handle_host_state, spawn_handle_host_state};
+pub(crate) use host_control::{
+    HostControlError, LeaseMap, LeaseMapRaw, LeaseSource, LeaseSources, handle_host_state,
+    spawn_handle_host_state,
+};
 pub(crate) use startup::{shutdown_signal, start};
 pub(crate) use state::{AppState, ConfigRx, HostStatusRx, WsTx};
 

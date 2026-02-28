@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase as _};
 use tracing::warn;
 
-use crate::http::m2m::{LeaseMap, LeaseSource};
+use crate::app::{LeaseMap, LeaseSource};
 
 /// Database connection pool type alias.
 // This lint seems to have false negatives with pub(crate)

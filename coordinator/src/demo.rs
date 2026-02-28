@@ -14,13 +14,11 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    app::{AppState, shutdown_signal},
+    app::{AppState, LeaseMap, shutdown_signal},
     config::{AuthConfig, ControllerConfig},
-    http::auth,
     http::{
         assets::{self, UiMode, render_ui_html},
-        download,
-        m2m::LeaseMap,
+        auth, download,
     },
 };
 

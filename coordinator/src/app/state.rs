@@ -11,11 +11,12 @@ use tracing::info;
 
 use crate::{
     app::{
+        LeaseMap,
         db::{self, DbPool},
         runtime::start_background_tasks,
     },
     config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
-    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth, m2m::LeaseMap},
+    http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth},
     websocket::WsMessage,
 };
 
