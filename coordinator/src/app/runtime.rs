@@ -5,13 +5,13 @@ use core::time::Duration;
 use std::{collections::HashMap, path::Path};
 
 use futures::future;
+use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
 use tracing::{Instrument as _, debug, info};
-use thiserror::Error as ThisError;
 
 use shuthost_common::create_signed_message;
 
@@ -66,7 +66,7 @@ pub(super) enum PollError {
     #[error("No configuration found for host")]
     NotFound,
     #[error("Timeout waiting for host '{host_name}' to become {desired_state:?}")]
-    Timeout{
+    Timeout {
         host_name: String,
         desired_state: HostState,
     },
@@ -110,7 +110,7 @@ pub(super) async fn poll_until_host_state(
             return Ok(());
         }
         if start.elapsed().as_secs() >= timeout_secs {
-            return Err(PollError::Timeout{
+            return Err(PollError::Timeout {
                 host_name: host_name.to_string(),
                 desired_state,
             });
