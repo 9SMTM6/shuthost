@@ -145,6 +145,11 @@ bind = "127.0.0.1"
 #     # The installer generates one of these.
 #     # Could be generated yourself with e.g., openssl rand -hex 32.
 #     shared_secret = "your-generated-secret"
+#     # When `true`, the coordinator will periodically enforce the desired host state
+#     # (derived from the current lease set) by sending wake or shutdown commands even
+#     # if no lease change occurred. Defaults to `false` (edge-triggered only).
+#     # For more details on the `enforce_state` field, see the [enforce_state behavior example](https://github.com/9SMTM6/shuthost/blob/main/docs/examples/enforce_state_behavior.md).
+#     enforce_state = false
 
 # =============================================================================
 # CLIENT CONFIGURATION
