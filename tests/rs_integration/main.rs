@@ -13,12 +13,12 @@ extern crate alloc;
 extern crate core;
 
 mod common;
+mod enforce_state;
 mod host_agent;
 mod leases;
 mod login_error_redirects;
 mod token_login;
 mod websocket;
-mod enforce_state;
 
 use core::time::Duration;
 use std::{env, fs};

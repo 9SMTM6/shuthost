@@ -5,7 +5,8 @@
 //! Provides commands to install the service or launch the control web service.
 #![cfg_attr(
     test,
-    expect(clippy::indexing_slicing, reason = "This is not problematic in tests",)
+    expect(clippy::indexing_slicing, reason = "This is not problematic in tests"),
+    expect(clippy::shadow_unrelated, reason = "This is a common pattern in tests")
 )]
 
 extern crate alloc;

@@ -11,8 +11,8 @@ pub(crate) use host_control::{
     HostControlError, LeaseMapRaw, LeaseRx, LeaseSource, LeaseSources, LeaseState,
     handle_host_state,
 };
+pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
 pub(crate) use startup::{shutdown_signal, start};
 pub(crate) use state::{AppState, ConfigRx, HostStatusRx, WsTx};
-pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
 
 pub use state::{HostState, HostStatus};

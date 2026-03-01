@@ -28,7 +28,6 @@ use crate::{
     websocket::WsMessage,
 };
 
-
 /// How long a diverged enforced-host state must be stable before the enforcer
 /// re-triggers a wake / shutdown (prevents hammering during transitions).
 pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
@@ -393,10 +392,10 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::app::host_control::{LeaseSource, LeaseSources};
     use alloc::sync::Arc;
+    use core::time::Duration;
     use std::collections::HashSet;
-    use std::time::Duration;
-    use crate::app::host_control::{LeaseSources, LeaseSource};
 
     fn make_host(enforce: bool) -> Host {
         Host {
@@ -414,14 +413,29 @@ mod tests {
         let lease_set: LeaseSources = HashSet::new();
 
         // enforce_state disabled -> never trigger
-        assert!(!should_enforce_action(&cfg, &lease_set, HostState::Offline, Duration::ZERO));
+        assert!(!should_enforce_action(
+            &cfg,
+            &lease_set,
+            HostState::Offline,
+            Duration::ZERO
+        ));
 
         let cfg = make_host(true);
         // no mismatch: both offline
-        assert!(!should_enforce_action(&cfg, &lease_set, HostState::Offline, Duration::from_secs(100)));
+        assert!(!should_enforce_action(
+            &cfg,
+            &lease_set,
+            HostState::Offline,
+            Duration::from_secs(100)
+        ));
         // mismatch but short stable time
         let lease_set: LeaseSources = vec![LeaseSource::WebInterface].into_iter().collect();
-        assert!(!should_enforce_action(&cfg, &lease_set, HostState::Online, Duration::from_secs(1)));
+        assert!(!should_enforce_action(
+            &cfg,
+            &lease_set,
+            HostState::Online,
+            Duration::from_secs(1)
+        ));
     }
 
     #[test]
@@ -429,7 +443,19 @@ mod tests {
         let cfg = make_host(true);
         let lease_set: LeaseSources = vec![LeaseSource::WebInterface].into_iter().collect();
         let current = HostState::Offline;
-        assert!(!should_enforce_action(&cfg, &lease_set, current, ENFORCE_STABILIZATION_THRESHOLD - Duration::from_secs(1)));
-        assert!(should_enforce_action(&cfg, &lease_set, current, ENFORCE_STABILIZATION_THRESHOLD));
+        assert!(!should_enforce_action(
+            &cfg,
+            &lease_set,
+            current,
+            ENFORCE_STABILIZATION_THRESHOLD
+                .checked_sub(Duration::from_secs(1))
+                .unwrap()
+        ));
+        assert!(should_enforce_action(
+            &cfg,
+            &lease_set,
+            current,
+            ENFORCE_STABILIZATION_THRESHOLD
+        ));
     }
 }
