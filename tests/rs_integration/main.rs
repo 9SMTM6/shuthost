@@ -18,6 +18,7 @@ mod leases;
 mod login_error_redirects;
 mod token_login;
 mod websocket;
+mod enforce_state;
 
 use core::time::Duration;
 use std::{env, fs};

@@ -28,9 +28,10 @@ use crate::{
     websocket::WsMessage,
 };
 
+
 /// How long a diverged enforced-host state must be stable before the enforcer
 /// re-triggers a wake / shutdown (prevents hammering during transitions).
-const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
+pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
 
 /// Poll a single host for its online status.
 async fn poll_host_status(
@@ -210,9 +211,42 @@ pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, con
     }
 }
 
+/// Determine whether the given host configuration and observed runtime state
+/// warrant spawning a control task to enforce the desired state.
+///
+/// * `host_cfg` - the configuration for the host, which contains the
+///   `enforce_state` flag.
+/// * `lease_set` - the set of active lease holders for the host; non-empty means
+///   the host should be running.
+/// * `current_state` - the most recently observed state of the host.
+/// * `stable_for` - how long the last state transition has been stable.
+///
+/// Returns `true` if an action should be spawned. Note that callers are
+/// responsible for applying the stabilization threshold and actually spawning a
+/// task.
+fn should_enforce_action(
+    host_cfg: &Host,
+    lease_set: &super::host_control::LeaseSources,
+    current_state: HostState,
+    stable_for: Duration,
+) -> bool {
+    if !host_cfg.enforce_state {
+        return false;
+    }
+
+    let desired_running = !lease_set.is_empty();
+    let is_running = current_state == HostState::Online;
+    let needs_action = (desired_running && !is_running) || (!desired_running && is_running);
+
+    needs_action && stable_for >= ENFORCE_STABILIZATION_THRESHOLD
+}
+
 /// Background task: periodically polls each host for status by attempting a TCP connection and HMAC ping.
 /// For hosts with `enforce_state = true`, also re-triggers control if the actual state diverges from
 /// the lease-implied desired state (after a stabilization delay).
+///
+/// The logic determining whether an enforcement action should be triggered is
+/// factored into `should_enforce_action` which makes it easy to unit test.
 async fn poll_host_statuses(state: AppState) {
     let poll_interval = Duration::from_secs(2);
     let mut ticker = interval(poll_interval);
@@ -265,27 +299,18 @@ async fn poll_host_statuses(state: AppState) {
         let current_status = state.hoststatus_tx.borrow().clone();
         let leases_snapshot = state.leases.borrow().clone();
         for (host_name, host_cfg) in &config.hosts {
-            if !host_cfg.enforce_state {
-                continue;
-            }
             let lease_set = leases_snapshot.get(host_name).cloned().unwrap_or_default();
-            let desired_running = !lease_set.is_empty();
             let current_state = current_status
                 .get(host_name)
                 .copied()
                 .unwrap_or(HostState::Offline);
 
-            let is_running = current_state == HostState::Online;
+            let stable_for = state_timestamps
+                .get(host_name)
+                .map_or(ENFORCE_STABILIZATION_THRESHOLD, Instant::elapsed);
 
-            let needs_action = (desired_running && !is_running) || (!desired_running && is_running);
-
-            if needs_action {
-                let stable_for = state_timestamps
-                    .get(host_name)
-                    .map_or(ENFORCE_STABILIZATION_THRESHOLD, Instant::elapsed);
-                if stable_for >= ENFORCE_STABILIZATION_THRESHOLD {
-                    spawn_handle_host_state(host_name, &lease_set, &state);
-                }
+            if should_enforce_action(host_cfg, &lease_set, current_state, stable_for) {
+                spawn_handle_host_state(host_name, &lease_set, &state);
             }
         }
 
@@ -358,5 +383,53 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
         }
 
         prev_leases = new_leases;
+    }
+}
+
+// -------------------------------------------------------------
+// Unit tests for enforcement-related code
+// -------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::sync::Arc;
+    use std::collections::HashSet;
+    use std::time::Duration;
+    use crate::app::host_control::{LeaseSources, LeaseSource};
+
+    fn make_host(enforce: bool) -> Host {
+        Host {
+            ip: String::new(),
+            mac: String::new(),
+            port: 0,
+            shared_secret: Arc::new(secrecy::SecretString::new(String::new().into())),
+            enforce_state: enforce,
+        }
+    }
+
+    #[test]
+    fn should_enforce_respects_flag_and_state() {
+        let cfg = make_host(false);
+        let lease_set: LeaseSources = HashSet::new();
+
+        // enforce_state disabled -> never trigger
+        assert!(!should_enforce_action(&cfg, &lease_set, HostState::Offline, Duration::ZERO));
+
+        let cfg = make_host(true);
+        // no mismatch: both offline
+        assert!(!should_enforce_action(&cfg, &lease_set, HostState::Offline, Duration::from_secs(100)));
+        // mismatch but short stable time
+        let lease_set: LeaseSources = vec![LeaseSource::WebInterface].into_iter().collect();
+        assert!(!should_enforce_action(&cfg, &lease_set, HostState::Online, Duration::from_secs(1)));
+    }
+
+    #[test]
+    fn should_enforce_checks_threshold() {
+        let cfg = make_host(true);
+        let lease_set: LeaseSources = vec![LeaseSource::WebInterface].into_iter().collect();
+        let current = HostState::Offline;
+        assert!(!should_enforce_action(&cfg, &lease_set, current, ENFORCE_STABILIZATION_THRESHOLD - Duration::from_secs(1)));
+        assert!(should_enforce_action(&cfg, &lease_set, current, ENFORCE_STABILIZATION_THRESHOLD));
     }
 }
