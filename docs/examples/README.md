@@ -14,3 +14,4 @@ This directory contains examples and guides for using ShutHost in various scenar
 - **[Deploying the Self-Extracting Agent on Unraid](./unraid-self-extracting-agent-deployment.md)**: Instructions for deploying the ShutHost agent on Unraid using the self-extracting method.
 - **[Agent-only Installation](./agent-installation.md)**: Guide for installing only the host agent without the coordinator.
 - **[Manual Installation](./manual_install.md)**: Step-by-step manual installation instructions for the ShutHost coordinator.
+- **[Understanding the `enforce_state` Behavior](./enforce_state_behavior.md)**: More detailed explanation of the `enforce_state` field and its impact on host state management.

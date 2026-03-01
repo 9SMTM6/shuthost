@@ -1,6 +1,6 @@
---- example_config.toml	2026-02-17 10:20:14.118930733 +0100
-+++ example_config_with_client_and_host.toml	2026-02-17 10:20:08.098901481 +0100
-@@ -129,22 +129,22 @@
+--- example_config.toml	2026-03-01 13:16:09.258618367 +0100
++++ example_config_with_client_and_host.toml	2026-03-01 13:17:11.988617759 +0100
+@@ -129,27 +129,28 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [hosts]
@@ -20,6 +20,11 @@
 -#     # The installer generates one of these.
 -#     # Could be generated yourself with e.g., openssl rand -hex 32.
 -#     shared_secret = "your-generated-secret"
+-#     # When `true`, the coordinator will periodically enforce the desired host state
+-#     # (derived from the current lease set) by sending wake or shutdown commands even
+-#     # if no lease change occurred. Defaults to `false` (edge-triggered only).
+-#     # For more details on the `enforce_state` field, see the [enforce_state behavior example](https://github.com/9SMTM6/shuthost/blob/main/docs/examples/enforce_state_behavior.md).
+-#     enforce_state = false
 +[hosts.my-host-name] 
 +    # IP address of the host where the agent is running.
 +    # This should be reachable from the coordinator.
@@ -36,10 +41,16 @@
 +    # The installer generates one of these.
 +    # Could be generated yourself with e.g., openssl rand -hex 32.
 +    shared_secret = "your-generated-secret"
++    # When `true`, the coordinator will periodically enforce the desired host state
++    # (derived from the current lease set) by sending wake or shutdown commands even
++    # if no lease change occurred. Defaults to `false` (edge-triggered only).
++    # For more details on the `enforce_state` field, see the [enforce_state behavior example](https://github.com/9SMTM6/shuthost/blob/main/docs/examples/enforce_state_behavior.md).
++    enforce_state = false
++
  
  # =============================================================================
  # CLIENT CONFIGURATION
-@@ -155,9 +155,9 @@
+@@ -160,9 +161,9 @@
  # The client installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [clients]

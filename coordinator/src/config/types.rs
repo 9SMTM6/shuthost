@@ -26,7 +26,6 @@ pub(crate) struct Host {
     pub port: u16,
     /// Shared secret for HMAC authentication.
     pub shared_secret: Arc<SecretString>,
-    // TODO: update config example and docs
     /// When `true`, the coordinator will periodically enforce the desired host state
     /// (derived from the current lease set) by sending wake or shutdown commands even
     /// if no lease change occurred.  Defaults to `false` (edge-triggered only).
