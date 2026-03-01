@@ -350,38 +350,43 @@ async fn broadcast_lease_updates(mut leases_rx: LeaseRx, ws_tx: WsTx) {
 
 /// Background task: reconcile host control on every lease-map change (edge-triggered, all hosts).
 async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
-    // Start from the current snapshot so we diff correctly on the first change.
-    let mut prev_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
+    fn get_hosts_desired_online(leases: &LeaseMapRaw) -> HashSet<String> {
+        leases
+            .iter()
+            .filter_map(|(host, lease_set)| lease_set.is_empty().then(|| host.clone()))
+            .collect()
+    }
+
+    let mut prev_desired_online = get_hosts_desired_online(&leases_rx.borrow_and_update());
 
     while leases_rx.changed().await.is_ok() {
-        let new_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
-        let config = state.config_rx.borrow().clone();
-        let hoststatus = state.hoststatus_tx.borrow().clone();
+        let new_leases = leases_rx.borrow_and_update();
+        let new_desired_online = get_hosts_desired_online(&new_leases);
+        let hoststatus = state.hoststatus_tx.borrow();
 
-        // TODO: consider directly chmparing the length only
-        // Collect hosts whose lease set changed (only those known to the config).
-        let touched: HashSet<&str> = config
-            .hosts
-            .keys()
-            .filter(|h| prev_leases.get(*h) != new_leases.get(*h))
-            .map(String::as_str)
+        let changed_desired_state: HashSet<_> = prev_desired_online
+            .symmetric_difference(&new_desired_online)
             .collect();
 
-        for host in &touched {
-            let lease_set = new_leases.get(*host).cloned().unwrap_or_default();
-            let desired_running = !lease_set.is_empty();
-            let current_state = hoststatus.get(*host).copied().unwrap_or(HostState::Offline);
+        for host_name in changed_desired_state {
+            let empty = HashSet::new();
+
+            let lease_set = new_leases.get(host_name).unwrap_or(&empty);
+
+            let desired_running = !new_desired_online.contains(host_name);
+
+            let current_state = *hoststatus.get(host_name).unwrap_or(&HostState::Offline);
 
             let is_running = current_state == HostState::Online;
 
-            let needs_action = (desired_running && !is_running) || (!desired_running && is_running);
+            let needs_action = desired_running != is_running;
 
             if needs_action {
-                spawn_handle_host_state(host, &lease_set, &state);
+                spawn_handle_host_state(host_name, lease_set, &state);
             }
         }
 
-        prev_leases = new_leases;
+        prev_desired_online = new_desired_online;
     }
 }
 
