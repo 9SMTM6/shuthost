@@ -353,7 +353,8 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
     fn get_hosts_desired_online(leases: &LeaseMapRaw) -> HashSet<String> {
         leases
             .iter()
-            .filter_map(|(host, lease_set)| lease_set.is_empty().then(|| host.clone()))
+            .filter(|&(_, lease_set)| lease_set.is_empty())
+            .map(|(host, _)| host.clone())
             .collect()
     }
 
@@ -438,7 +439,7 @@ mod tests {
         assert!(!should_enforce_action(
             &cfg,
             &lease_set,
-            HostState::Online,
+            HostState::Offline,
             Duration::from_secs(1)
         ));
     }
