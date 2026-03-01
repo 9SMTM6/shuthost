@@ -1,7 +1,7 @@
 //! Background polling tasks for the coordinator.
 
 use alloc::sync::Arc;
-use core::time::Duration;
+use core::{net::SocketAddr, time::Duration};
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
@@ -12,7 +12,7 @@ use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpStream, UdpSocket},
-    time::{Instant, MissedTickBehavior, interval, timeout},
+    time::{Instant, MissedTickBehavior, interval, sleep, timeout},
 };
 use tracing::{Instrument as _, debug, error, info, warn};
 
@@ -24,7 +24,7 @@ use shuthost_common::{
 use super::state::{ConfigTx, HostState, HostStatusTx};
 use crate::{
     app::{
-        AppState, LeaseMapRaw, LeaseRx, WsTx, config_watcher::watch_config_file,
+        AppState, LeaseMapRaw, LeaseRx, WsTx, config_watcher::watch_config_file, db,
         host_control::spawn_handle_host_state,
     },
     config::Host,
@@ -283,10 +283,10 @@ async fn poll_host_statuses(state: AppState) {
 
         let futures = config.hosts.iter().map(|(name, host)| {
             let name = name.clone();
-            let (ip, port) = ip_overrides
-                .get(name.as_str())
-                .map(|(ip, port)| (ip.clone(), *port))
-                .unwrap_or_else(|| (host.ip.clone(), host.port));
+            let (ip, port) = ip_overrides.get(name.as_str()).map_or_else(
+                || (host.ip.clone(), host.port),
+                |&(ref ip, port)| (ip.clone(), port),
+            );
             let shared_secret = host.shared_secret.clone();
             async move {
                 let polled = poll_host_status(&name, &ip, port, shared_secret.as_ref()).await;
@@ -432,7 +432,7 @@ async fn listen_for_agent_startup(state: AppState) {
             }
             Err(e) => {
                 error!("Failed to bind UDP broadcast socket on {addr}: {e}");
-                tokio::time::sleep(Duration::from_secs(5)).await;
+                sleep(Duration::from_secs(5)).await;
                 continue;
             }
         };
@@ -443,7 +443,7 @@ async fn listen_for_agent_startup(state: AppState) {
                 result = socket.recv_from(&mut buf) => {
                     match result {
                         Ok((n, peer_addr)) => {
-                            let data = buf[..n].to_vec();
+                            let data = buf.get(..n).expect("n should be <= buf.size by definition").to_vec();
                             handle_startup_packet(&data, peer_addr, &state).await;
                         }
                         Err(e) => {
@@ -465,17 +465,10 @@ async fn listen_for_agent_startup(state: AppState) {
 }
 
 /// Process a single UDP packet received on the broadcast port.
-async fn handle_startup_packet(
-    data: &[u8],
-    peer_addr: std::net::SocketAddr,
-    state: &AppState,
-) {
-    let raw = match core::str::from_utf8(data) {
-        Ok(s) => s,
-        Err(_) => {
-            debug!("Received non-UTF-8 startup packet from {peer_addr}, ignoring");
-            return;
-        }
+async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppState) {
+    let Ok(raw) = str::from_utf8(data) else {
+        debug!("Received non-UTF-8 startup packet from {peer_addr}, ignoring");
+        return;
     };
 
     // The signed message format is "timestamp|{json}|signature".
@@ -536,19 +529,16 @@ async fn handle_startup_packet(
             let mut overrides = state.host_overrides.write().await;
             overrides.insert(
                 hostname.clone(),
-                crate::app::db::HostOverride {
+                db::HostOverride {
                     ip: agent_ip.clone(),
                     port: agent_port,
                 },
             );
         }
-        if let Some(ref pool) = state.db_pool {
-            if let Err(e) =
-                crate::app::db::upsert_host_ip_override(pool, hostname, agent_ip, agent_port)
-                    .await
-            {
-                error!("Failed to persist IP override for '{hostname}': {e}");
-            }
+        if let Some(ref pool) = state.db_pool
+            && let Err(e) = db::upsert_host_ip_override(pool, hostname, agent_ip, agent_port).await
+        {
+            error!("Failed to persist IP override for '{hostname}': {e}");
         }
     }
 }
