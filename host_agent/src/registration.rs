@@ -7,8 +7,7 @@ use crate::install::{
 };
 use shuthost_common::{ResultMapErrExt as _, UnwrapToStringExt as _};
 
-const CONFIG_ENTRY: &str =
-    r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}" }"#;
+const CONFIG_ENTRY: &str = r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}", enforce_state = false }"#;
 
 /// Helper function to find and extract flag values from service file lines.
 ///
