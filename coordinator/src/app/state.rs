@@ -173,13 +173,16 @@ pub(super) async fn initialize_state(
         let overrides = db::load_host_ip_overrides(pool).await?;
         // Warn for every override that differs from the current config.
         for (name, o) in &overrides {
-            if let Some(h) = initial_config.hosts.get(name) {
-                if h.ip != o.ip || h.port != o.port {
-                    tracing::warn!(
-                        "Host '{name}' has a stored IP/port override: config={}:{}, stored={}:{}",
-                        h.ip, h.port, o.ip, o.port
-                    );
-                }
+            if let Some(h) = initial_config.hosts.get(name)
+                && (h.ip != o.ip || h.port != o.port)
+            {
+                tracing::warn!(
+                    "Host '{name}' has a stored IP/port override: config={}:{}, stored={}:{}",
+                    h.ip,
+                    h.port,
+                    o.ip,
+                    o.port
+                );
             }
         }
         overrides
