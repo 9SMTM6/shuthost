@@ -7,7 +7,6 @@ use std::collections::{HashMap, HashSet};
 
 use eyre::Context as _;
 use eyre::Report;
-use futures::future::BoxFuture;
 use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error as ThisError;
@@ -59,16 +58,13 @@ impl LeaseState {
         )
     }
 
-    // TODO: Consider the need for these abstractions, BoxFuture, higher order lifetimes etc.
     /// Lock the map, run `f` against the mutable map (may do async work such as
     /// DB writes), then publish the new snapshot and return it.
     ///
     /// If `f` returns an error the map is not published and the error is forwarded.
     pub(crate) async fn update<F, E>(&self, f: F) -> Result<Arc<LeaseMapRaw>, E>
     where
-        F: for<'future_life> FnOnce(
-            &'future_life mut LeaseMapRaw,
-        ) -> BoxFuture<'future_life, Result<(), E>>,
+        F: AsyncFnOnce(&mut LeaseMapRaw) -> Result<(), E>,
     {
         let mut guard = self.inner.lock().await;
         f(&mut guard).await?;

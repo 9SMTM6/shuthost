@@ -52,16 +52,13 @@ pub(crate) async fn update_lease(
     action: LeaseAction,
     state: &AppState,
 ) -> Result<LeaseSources, Box<dyn error::Error + Send + Sync>> {
-    let db_pool = state.db_pool.clone();
-    let hostname = hostname.to_string();
-
     let snapshot = state
         .leases
-        .update(|map| {
-            let hostname = hostname.clone();
+        .update::<_, Box<dyn error::Error + Send + Sync>>({
+            let hostname = hostname.to_string();
             let lease_source = lease_source.clone();
-            let db_pool = db_pool.clone();
-            Box::pin(async move {
+            let db_pool = state.db_pool.clone();
+            async move |map| {
                 let lease_set = map.entry(hostname.clone()).or_default();
                 use LeaseAction as LA;
                 match action {
@@ -80,12 +77,12 @@ pub(crate) async fn update_lease(
                         }
                     }
                 }
-                Ok::<(), Box<dyn error::Error + Send + Sync>>(())
-            })
+                Ok(())
+            }
         })
         .await?;
 
-    let lease_set = snapshot.get(&hostname).cloned().unwrap_or_default();
+    let lease_set = snapshot.get(hostname).cloned().unwrap_or_default();
 
     Ok(lease_set)
 }
@@ -125,14 +122,12 @@ async fn handle_reset_client_leases(
     Path(client_id): Path<String>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let db_pool = state.db_pool.clone();
-
     state
         .leases
-        .update(|map| {
+        .update({
             let client_id = client_id.clone();
-            let db_pool = db_pool.clone();
-            Box::pin(async move {
+            let db_pool = state.db_pool.clone();
+            async move |map| {
                 // Remove all leases associated with the client from memory (atomically)
                 for lease_set in map.values_mut() {
                     lease_set.retain(
@@ -146,7 +141,7 @@ async fn handle_reset_client_leases(
                     tracing::error!("Failed to remove client leases from database: {}", e);
                 }
                 Ok::<(), Infallible>(())
-            })
+            }
         })
         .await
         .unwrap_or_else(|e| match e {});
