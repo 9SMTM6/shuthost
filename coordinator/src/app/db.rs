@@ -161,7 +161,7 @@ pub(crate) async fn load_host_ip_overrides(
                 r.hostname,
                 HostOverride {
                     ip: r.ip,
-                    port: r.port as u16,
+                    port: u16::try_from(r.port).expect("Invalid port value in database"),
                 },
             )
         })
