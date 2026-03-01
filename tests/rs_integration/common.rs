@@ -93,6 +93,8 @@ pub(crate) fn spawn_coordinator_with_config_file(config_path: &Path) -> KillOnDr
     let cli = CoordinatorCli::parse_from([
         "shuthost_coordinator",
         "control-service",
+        "--log-format",
+        "pretty",
         "--config",
         config_path.to_str().unwrap(),
     ]);

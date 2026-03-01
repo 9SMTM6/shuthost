@@ -9,6 +9,7 @@ choose:
 alias c := choose
 
 export RUST_BACKTRACE := "1"
+export LOG_FORMAT := "pretty"
 
 [macos]
 [group('setup')]
