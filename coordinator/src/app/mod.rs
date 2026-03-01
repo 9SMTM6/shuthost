@@ -13,5 +13,6 @@ pub(crate) use host_control::{
 };
 pub(crate) use startup::{shutdown_signal, start};
 pub(crate) use state::{AppState, ConfigRx, HostStatusRx, WsTx};
+pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
 
 pub use state::{HostState, HostStatus};
