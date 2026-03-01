@@ -67,9 +67,11 @@ impl LeaseState {
         F: AsyncFnOnce(&mut LeaseMapRaw) -> Result<(), E>,
     {
         let mut guard = self.inner.lock().await;
-        f(&mut guard).await?;
-        let snapshot = Arc::new(guard.clone());
+        let mut snapshot = guard.clone();
+        f(&mut snapshot).await?;
+        guard.clone_from(&snapshot);
         drop(guard);
+        let snapshot = Arc::new(snapshot);
         // Ignore send error: it means all receivers were dropped (e.g. during shutdown).
         drop(self.tx.send(snapshot.clone()));
         Ok(snapshot)
