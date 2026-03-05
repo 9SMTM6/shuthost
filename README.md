@@ -221,4 +221,6 @@ These are generated or validated automatically as part of the test suite, and th
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
 * consider switching LeaseMap to use RwLock or dashmap. That will likely require some refactoring though.
 * reconciler doesn't seem to properly handle state changes after startup.
+* cargo test leaves leftover processes during failures, investigate cleanup.
+* oidc appears to be currently broken, and fixing this will take time. I'll need to fix this and finally introduce OIDC tests to avoid drifts like this in the future
 -->
