@@ -165,6 +165,26 @@ pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, con
         );
     }
 
+    // Log host state transitions.
+    {
+        let mut hoststatus_rx = state.hoststatus_tx.subscribe();
+        tokio::spawn(
+            async move {
+                let mut prev = hoststatus_rx.borrow().clone();
+                while hoststatus_rx.changed().await.is_ok() {
+                    let current = hoststatus_rx.borrow().clone();
+                    for (host, state) in current.iter() {
+                        if prev.get(host) != Some(state) {
+                            info!(host = %host, state = ?state, "Host status changed");
+                        }
+                    }
+                    prev = current;
+                }
+            }
+            .in_current_span(),
+        );
+    }
+
     // Forwards config changes to the websocket client loops
     {
         let ws_tx = state.ws_tx.clone();
@@ -285,7 +305,6 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         if any_changed {
-            info!("Host status changed: {:?}", new_status);
             if state.hoststatus_tx.send(Arc::new(new_status)).is_err() {
                 debug!("Host status receiver dropped, stopping polling");
                 break;
