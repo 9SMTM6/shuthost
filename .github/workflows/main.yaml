@@ -698,6 +698,8 @@ jobs:
           repo_lowercase=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
           image_base="ghcr.io/$repo_lowercase/shuthost-coordinator"
           echo "image_base=$image_base" >> $GITHUB_OUTPUT
+          safe_ref=$(echo "$GITHUB_REF_NAME" | tr '/' '-')
+          echo "safe_ref=$safe_ref" >> $GITHUB_OUTPUT
 
       - name: Build & Push Multi-Arch Alpine Image (SHA only)
         uses: docker/build-push-action@v6
@@ -1007,7 +1009,7 @@ jobs:
       - name: Retag multi-arch image with tag name
         run: |
           docker buildx imagetools create \
-            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }} \
+            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ steps.release_image_name.outputs.safe_ref }} \
             ${{ steps.release_image_name.outputs.image_base }}:${{ github.sha }}
 
       - name: Retag multi-arch image as latest
@@ -1038,7 +1040,7 @@ jobs:
       - name: Retag multi-arch image with branch name (nightly)
         run: |
           docker buildx imagetools create \
-            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ github.ref_name }} \
+            --tag ${{ steps.release_image_name.outputs.image_base }}:${{ steps.release_image_name.outputs.safe_ref }} \
             ${{ steps.release_image_name.outputs.image_base }}:${{ github.sha }}
 
   release-tag:
@@ -1187,7 +1189,7 @@ jobs:
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*
-          tag_name: nightly_release_${{ github.ref_name }}
+          tag_name: nightly_release_${{ steps.release_image_name.outputs.safe_ref }}
           prerelease: true
           generate_release_notes: true
           body: |
