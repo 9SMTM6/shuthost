@@ -14,7 +14,7 @@ use tokio::{
     net::{TcpStream, UdpSocket},
     time::{Instant, MissedTickBehavior, interval, sleep, timeout},
 };
-use tracing::{Instrument as _, debug, error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use shuthost_common::{
     BroadcastMessage, HmacValidationResult, create_signed_message, parse_hmac_message,
@@ -131,116 +131,92 @@ pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, con
     // Start host status polling task
     {
         let state = state.clone();
-        tokio::spawn(
-            async move {
-                poll_host_statuses(state).await;
-            }
-            .in_current_span(),
-        );
+        tokio::spawn(async move {
+            poll_host_statuses(state).await;
+        });
     }
 
     // Start config file watcher
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
-        tokio::spawn(
-            async move {
-                watch_config_file(path, config_tx).await;
-            }
-            .in_current_span(),
-        );
+        tokio::spawn(async move {
+            watch_config_file(path, config_tx).await;
+        });
     }
 
     // Forwards host status updates to the websocket client loops
     {
         let ws_tx = state.ws_tx.clone();
         let mut hoststatus_rx = state.hoststatus_tx.subscribe();
-        tokio::spawn(
-            async move {
-                while hoststatus_rx.changed().await.is_ok() {
-                    let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
-                    if ws_tx.send(msg).is_err() {
-                        debug!("No Websocket Subscribers");
-                    }
+        tokio::spawn(async move {
+            while hoststatus_rx.changed().await.is_ok() {
+                let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
+                if ws_tx.send(msg).is_err() {
+                    debug!("No Websocket Subscribers");
                 }
             }
-            .in_current_span(),
-        );
+        });
     }
 
     // Log host state transitions.
     {
         let mut hoststatus_rx = state.hoststatus_tx.subscribe();
-        tokio::spawn(
-            async move {
-                let mut prev = hoststatus_rx.borrow().clone();
-                while hoststatus_rx.changed().await.is_ok() {
-                    let current = hoststatus_rx.borrow().clone();
-                    for (host, h_state) in current.iter() {
-                        if prev.get(host) != Some(h_state) {
-                            info!(host = %host, state = ?h_state, "Host status changed");
-                        }
+        tokio::spawn(async move {
+            let mut prev = hoststatus_rx.borrow().clone();
+            while hoststatus_rx.changed().await.is_ok() {
+                let current = hoststatus_rx.borrow().clone();
+                for (host, h_state) in current.iter() {
+                    if prev.get(host) != Some(h_state) {
+                        info!(host = %host, state = ?h_state, "Host status changed");
                     }
-                    prev = current;
                 }
+                prev = current;
             }
-            .in_current_span(),
-        );
+        });
     }
 
     // Forwards config changes to the websocket client loops
     {
         let ws_tx = state.ws_tx.clone();
         let mut config_rx = state.config_rx.clone();
-        tokio::spawn(
-            async move {
-                while config_rx.changed().await.is_ok() {
-                    let config = config_rx.borrow();
-                    let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
-                    let clients = config.clients.keys().cloned().collect::<Vec<_>>();
-                    let msg = WsMessage::ConfigChanged { hosts, clients };
-                    if ws_tx.send(msg).is_err() {
-                        debug!("No Websocket Subscribers");
-                    }
+        tokio::spawn(async move {
+            while config_rx.changed().await.is_ok() {
+                let config = config_rx.borrow();
+                let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
+                let clients = config.clients.keys().cloned().collect::<Vec<_>>();
+                let msg = WsMessage::ConfigChanged { hosts, clients };
+                if ws_tx.send(msg).is_err() {
+                    debug!("No Websocket Subscribers");
                 }
             }
-            .in_current_span(),
-        );
+        });
     }
 
     // Reconcile host state on lease changes (edge-triggered, all hosts)
     {
         let leases_rx = state.leases.subscribe();
         let state = state.clone();
-        tokio::spawn(
-            async move {
-                reconcile_on_lease_change(leases_rx, state).await;
-            }
-            .in_current_span(),
-        );
+        tokio::spawn(async move {
+            reconcile_on_lease_change(leases_rx, state).await;
+        });
     }
 
     // Forwards per-host lease changes to the websocket client loops
     {
         let leases_rx = state.leases.subscribe();
         let ws_tx = state.ws_tx.clone();
-        tokio::spawn(
-            async move {
-                broadcast_lease_updates(leases_rx, ws_tx).await;
-            }
-            .in_current_span(),
-        );
+        tokio::spawn(async move {
+            broadcast_lease_updates(leases_rx, ws_tx).await;
+        });
     }
 
     // Listens for UDP startup broadcasts from agents and persists IP overrides.
     {
         let state = state.clone();
-        tokio::spawn(
-            async move {
-                listen_for_agent_startup(state).await;
-            }
-            .in_current_span(),
-        );
+        tokio::spawn(async move {
+            listen_for_agent_startup(state).await;
+        });
     }
 }
 
