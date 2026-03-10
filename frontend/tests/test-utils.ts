@@ -58,6 +58,13 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
   });
 }
 
+export const sanitizeVersion = async (page: Page) => {
+  await page.evaluate(() => {
+    const footer = document.querySelector('footer')!;
+      footer.textContent = footer.textContent.replace(/ShutHost Coordinator v[0-9A-Za-z.\-]+/, 'ShutHost Coordinator v<<VERSION>>');
+  });
+}
+
 export const expand_and_sanitize_host_install = async (
   page: Page,
   configKey: ConfigKey

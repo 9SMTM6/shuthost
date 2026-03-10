@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { getBaseUrl } from './test-utils';
+import { getBaseUrl, sanitizeVersion } from './test-utils';
 
 // This test is mobile-specific. Desktop projects should ignore this file via Playwright config.
 test.describe('mobile navigation', () => {
@@ -28,12 +28,7 @@ test.describe('mobile navigation', () => {
         await page.waitForLoadState('networkidle');
 
         // Redact version for stable snapshots
-        await page.evaluate(() => {
-            const footer = document.querySelector('footer');
-            if (footer && footer.textContent) {
-                footer.textContent = footer.textContent.replace(/ShutHost Coordinator v[0-9A-Za-z.\-]+/, 'ShutHost Coordinator v<<VERSION>>');
-            }
-        });
+        await sanitizeVersion(page);
 
         await expect(page.locator('body')).toMatchAriaSnapshot({ name: 'mobile-navigation.aria.yml' });
     });

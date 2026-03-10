@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { getBaseUrl, expand_and_sanitize_host_install, sanitizeEnvironmentDependents } from './test-utils';
+import { getBaseUrl, expand_and_sanitize_host_install, sanitizeEnvironmentDependents, sanitizeVersion } from './test-utils';
 
 test.describe('main page(s)', () => {
     const cfg = "hosts-and-clients"; // key, not path
@@ -8,6 +8,7 @@ test.describe('main page(s)', () => {
         await page.goto(base + '#hosts');
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#hosts-tab', { state: 'visible' });
+        await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`);
     });
 
@@ -22,6 +23,7 @@ test.describe('main page(s)', () => {
         await page.goto(base + '#clients');
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#clients-tab', { state: 'visible' });
+        await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`);
     });
 
@@ -66,6 +68,7 @@ test.describe('token login', () => {
     test('login page', async ({ page }) => {
         await page.goto(base + '/login');
         await page.waitForLoadState('networkidle');
+        await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot(`login_token_auth.png`);
     });
 
@@ -93,6 +96,7 @@ test.describe('OIDC login', () => {
     test('login page', async ({ page }) => {
         await page.goto(base + '/login');
         await page.waitForLoadState('networkidle');
+        await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot(`login_oidc_auth.png`);
     });
 
@@ -100,6 +104,8 @@ test.describe('OIDC login', () => {
         await page.goto(base + '/login?error=session_expired');
         await page.waitForSelector('.alert-warning', { state: 'visible' });
         await page.waitForLoadState('networkidle');
+        // we need to sanitize version here because otherwise the potential layout shifts leads to a snapshot size difference
+        await sanitizeVersion(page);
         await expect(page.locator('#main-content')).toHaveScreenshot(`login_oidc_session_expired.png`);
     });
 });
@@ -111,6 +117,7 @@ test.describe('demo mode', () => {
         await page.waitForLoadState('networkidle');
         // demo page rendering varies slightly; sanitize and allow fuzz
         await sanitizeEnvironmentDependents(page);
+        await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot('demo_main_page.png', {
             maxDiffPixelRatio: 0.1,
         });
