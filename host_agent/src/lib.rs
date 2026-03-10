@@ -18,10 +18,14 @@ use clap::{Parser, Subcommand};
 
 use server::ServiceOptions;
 
+use crate::install::BINARY_NAME;
+
+pub const VERSION: &str = git_version::git_version!();
+
 /// Top-level CLI parser for `host_agent`.
 #[derive(Debug, Parser)]
-#[command(name = env!("CARGO_PKG_NAME"))]
-#[command(version = env!("CARGO_PKG_VERSION"))]
+#[command(name = BINARY_NAME)]
+#[command(version = VERSION)]
 #[command(author = env!("CARGO_PKG_AUTHORS"))]
 #[command(about = env!("CARGO_PKG_DESCRIPTION"))]
 pub struct Cli {

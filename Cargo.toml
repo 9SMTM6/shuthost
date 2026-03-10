@@ -81,6 +81,7 @@ base64 = "0.22.1"
 clap = { version = "4.5.37", features = ["derive"] }
 eyre = "0.6.12"
 futures = "0.3.31"
+git-version = "0.3.9"
 hex = "0.4.3"
 hmac = "0.12.1"
 miniserde = "0.1"
@@ -99,6 +100,7 @@ shuthost_coordinator = { path = "./coordinator" }
 shuthost_host_agent = { path = "./host_agent" }
 tokio = { version = "1.44.2", features = ["full"] }
 toml = "1.x"
+
 
 [workspace.lints.rust]
 edition_2024_expr_fragment_specifier = "allow"

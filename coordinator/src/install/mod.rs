@@ -13,6 +13,7 @@ use std::{
 
 use clap::Parser;
 use eyre::WrapErr as _;
+use git_version::git_version;
 use nix::unistd::User;
 
 mod migration;
@@ -28,7 +29,17 @@ const SERVICE_FILE_TEMPLATE: &str =
 #[cfg(target_os = "linux")]
 const OPENRC_FILE_TEMPLATE: &str = include_str!("openrc.shuthost_coordinator.tmpl.sh");
 
-const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
+pub const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
+pub const VERSION: &str = git_version!(
+    fallback = "unknown",
+    cargo_prefix = "cargo:",
+    args = [
+        "--tags",
+        "--exclude=nightly_release*",
+        "--always",
+        "--dirty=-modified"
+    ]
+);
 
 /// Arguments for the `install` subcommand of the coordinator.
 #[derive(Debug, Parser)]

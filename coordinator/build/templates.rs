@@ -13,6 +13,8 @@ macro_rules! include_frontend_asset {
     };
 }
 
+pub const VERSION: &str = git_version::git_version!();
+
 trait TemplateExt {
     fn include_svgs(&self, svg_hashes: &HashMap<String, String>) -> String;
     fn include_png_icons(&self, icon_hashes: &HashMap<u32, String>) -> String;
@@ -58,7 +60,7 @@ impl<T: AsRef<str>> TemplateExt for T {
         let s = self.as_ref();
         s.replace("{ description }", env!("CARGO_PKG_DESCRIPTION"))
             .replace("{ repository }", env!("CARGO_PKG_REPOSITORY"))
-            .replace("{ version }", env!("CARGO_PKG_VERSION"))
+            .replace("{ version }", VERSION)
     }
 
     /// Note that this doesnt provide the needed JS to show the warnings, these are only in `app.ts`, as parts of the code are used there,

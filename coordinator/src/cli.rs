@@ -7,12 +7,13 @@ use std::env;
 
 #[cfg(unix)]
 use crate::install;
+use crate::install::{BINARY_NAME, VERSION};
 use clap::{Parser, Subcommand, ValueEnum};
 
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
-#[command(name = env!("CARGO_PKG_NAME"))]
-#[command(version = env!("CARGO_PKG_VERSION"))]
+#[command(name = BINARY_NAME)]
+#[command(version = VERSION)]
 #[command(about = env!("CARGO_PKG_DESCRIPTION"))]
 pub struct Cli {
     #[command(subcommand)]

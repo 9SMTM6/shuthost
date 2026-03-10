@@ -42,6 +42,8 @@ use demo::run_demo_service;
 
 use app::start;
 
+use crate::install::VERSION;
+
 static INIT_TRACING: Once = Once::new();
 static INIT_RUSTLS: Once = Once::new();
 
@@ -95,7 +97,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
 
             // Create a startup span that holds the resolved config path for the lifetime
             // of the coordinator initialization phase.
-            let startup_span = tracing::info_span!("coord.startup", ?config_path, pid=?process::id(), version = env!("CARGO_PKG_VERSION"));
+            let startup_span = tracing::info_span!("coord.startup", ?config_path, pid=?process::id(), version = VERSION);
             let _startup_enter = startup_span.enter();
 
             INIT_RUSTLS.call_once(|| {

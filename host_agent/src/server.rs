@@ -15,9 +15,9 @@ use shuthost_common::{
 };
 
 use crate::{
+    VERSION,
     commands::execute_shutdown,
-    install::default_hostname,
-    install::{get_default_interface, get_ip, get_mac},
+    install::{default_hostname, get_default_interface, get_ip, get_mac},
     validation::validate_request,
 };
 
@@ -102,7 +102,7 @@ fn broadcast_startup(config: &ServiceOptions) {
     let interface = get_default_interface().unwrap_or_else(|| "unknown".to_string());
     let ip_address = get_ip(&interface).unwrap_or_else(|| "unknown".to_string());
     let mac_address = get_mac(&interface).unwrap_or_else(|| "unknown".to_string());
-    let agent_version = env!("CARGO_PKG_VERSION").to_string();
+    let agent_version = VERSION.to_string();
     let timestamp = shuthost_common::unix_time_seconds();
     let broadcast = BroadcastMessage::AgentStartup(StartupBroadcast {
         hostname: config.hostname.clone(),
