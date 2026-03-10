@@ -7,9 +7,10 @@ use std::env;
 
 #[cfg(unix)]
 use crate::install;
-use crate::install::BINARY_NAME;
 use clap::{Parser, Subcommand, ValueEnum};
 use shuthost_common::VERSION;
+
+pub const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]
