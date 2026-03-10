@@ -76,6 +76,7 @@ test.describe('token login', () => {
         await page.goto(base + '/login?error=session_expired');
         await page.waitForSelector('.alert-warning', { state: 'visible' });
         await page.waitForLoadState('networkidle');
+        await sanitizeVersion(page);
         await expect(page.locator('#main-content')).toHaveScreenshot(`login_token_session_expired.png`);
     });
 
