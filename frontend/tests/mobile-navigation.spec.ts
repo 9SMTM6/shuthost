@@ -31,7 +31,7 @@ test.describe('mobile navigation', () => {
         await page.evaluate(() => {
             const footer = document.querySelector('footer');
             if (footer && footer.textContent) {
-                footer.textContent = footer.textContent.replace(/ShutHost Coordinator v[\d.]+/, 'ShutHost Coordinator v<<VERSION>>');
+                footer.textContent = footer.textContent.replace(/ShutHost Coordinator v[0-9A-Za-z.\-]+/, 'ShutHost Coordinator v<<VERSION>>');
             }
         });
 

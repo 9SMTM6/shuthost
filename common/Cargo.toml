@@ -13,6 +13,7 @@ categories.workspace = true
 [dependencies]
 hex.workspace = true
 hmac.workspace = true
+git-version.workspace = true
 miniserde = { workspace = true, optional = true }
 nix.workspace = true
 secrecy.workspace = true

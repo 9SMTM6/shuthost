@@ -7,8 +7,9 @@ use std::env;
 
 #[cfg(unix)]
 use crate::install;
-use crate::install::{BINARY_NAME, VERSION};
+use crate::install::BINARY_NAME;
 use clap::{Parser, Subcommand, ValueEnum};
+use shuthost_common::VERSION;
 
 /// Top-level command-line interface definition.
 #[derive(Debug, Parser)]

@@ -15,6 +15,7 @@ mod validation;
 
 use std::{net::UdpSocket, path};
 
+use git_version::git_version;
 pub use map_to_str::*;
 pub use protocol::*;
 pub use service_install::*;
@@ -34,6 +35,17 @@ pub const DEFAULT_COORDINATOR_BROADCAST_PORT: u16 = 5757;
 /// the various installer templates.  Again, installers must be manually updated
 /// if this value changes.
 pub const DEFAULT_AGENT_TCP_PORT: u16 = 9090;
+
+pub const VERSION: &str = git_version!(
+    fallback = "unknown",
+    cargo_prefix = "cargo:",
+    args = [
+        "--tags",
+        "--exclude=nightly_release*",
+        "--always",
+        "--dirty=-modified"
+    ]
+);
 
 /// Creates a UDP socket configured for broadcasting on the specified port.
 ///

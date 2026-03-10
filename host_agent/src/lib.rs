@@ -17,10 +17,9 @@ use std::env;
 use clap::{Parser, Subcommand};
 
 use server::ServiceOptions;
+use shuthost_common::VERSION;
 
 use crate::install::BINARY_NAME;
-
-pub const VERSION: &str = git_version::git_version!();
 
 /// Top-level CLI parser for `host_agent`.
 #[derive(Debug, Parser)]

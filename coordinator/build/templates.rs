@@ -1,6 +1,7 @@
 use base64::{Engine as _, engine::general_purpose};
 use eyre::WrapErr as _;
 use sha2::{Digest as _, Sha256};
+use shuthost_common::VERSION;
 use std::{
     collections::HashMap,
     fs,
@@ -12,8 +13,6 @@ macro_rules! include_frontend_asset {
         include_str!(concat!("../../frontend/assets/", $path))
     };
 }
-
-pub const VERSION: &str = git_version::git_version!();
 
 trait TemplateExt {
     fn include_svgs(&self, svg_hashes: &HashMap<String, String>) -> String;

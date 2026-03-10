@@ -24,6 +24,7 @@ pub mod wol;
 
 #[cfg(unix)]
 use nix::sys::stat;
+use shuthost_common::VERSION;
 use tracing::Instrument as _;
 // for use in integration tests
 pub use websocket::WsMessage;
@@ -41,8 +42,6 @@ use cli::{Cli, Command, LogFormat};
 use demo::run_demo_service;
 
 use app::start;
-
-use crate::install::VERSION;
 
 static INIT_TRACING: Once = Once::new();
 static INIT_RUSTLS: Once = Once::new();
