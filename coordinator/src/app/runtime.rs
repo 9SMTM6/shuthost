@@ -173,9 +173,9 @@ pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, con
                 let mut prev = hoststatus_rx.borrow().clone();
                 while hoststatus_rx.changed().await.is_ok() {
                     let current = hoststatus_rx.borrow().clone();
-                    for (host, state) in current.iter() {
-                        if prev.get(host) != Some(state) {
-                            info!(host = %host, state = ?state, "Host status changed");
+                    for (host, h_state) in current.iter() {
+                        if prev.get(host) != Some(h_state) {
+                            info!(host = %host, state = ?h_state, "Host status changed");
                         }
                     }
                     prev = current;
