@@ -287,7 +287,10 @@ async fn poll_host_statuses(state: AppState) {
             };
             async move {
                 let polled = poll_host_status(&host_with_name).await;
-                debug!("Polled {} at {}:{} - state: {:?}", host_with_name.name, host_with_name.host.ip, host_with_name.host.port, polled);
+                debug!(
+                    "Polled {} at {}:{} - state: {:?}",
+                    host_with_name.name, host_with_name.host.ip, host_with_name.host.port, polled
+                );
                 (name, polled)
             }
         });
