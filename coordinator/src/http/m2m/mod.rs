@@ -19,7 +19,10 @@ use serde_json::json;
 use tracing::error;
 
 use crate::{
-    app::{AppState, HostControlError, LeaseSource, db, handle_host_state},
+    app::{
+        AppState, HostControlError, HostState, LeaseSource, db, lookup_host_with_overrides,
+        poll_and_wait,
+    },
     http::api::{LeaseAction, update_lease},
     wol,
 };
@@ -95,7 +98,7 @@ async fn handle_m2m_lease_action(
         Err((sc, err)) => return Err((sc, err.to_owned())),
     };
 
-    tracing::info!(client_id = %client_id, "Accepted m2m request");
+    tracing::info!(%client_id, "Accepted m2m request");
 
     // Update client's last used timestamp
     if let Some(ref pool) = state.db_pool
@@ -108,30 +111,47 @@ async fn handle_m2m_lease_action(
 
     let is_async = query.r#async.unwrap_or(false);
 
-    let lease_set = match update_lease(&host, lease_source, action, &state).await {
-        Ok(set) => set,
-        Err(e) => {
+    update_lease(&host, lease_source, action, &state)
+        .await
+        .map_err(|e| {
             error!("Failed to update lease: {}", e);
-            return Err((
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to update lease".to_string(),
-            ));
-        }
-    };
+            )
+        })?;
 
+    use HostControlError as HCE;
+    use HostState as HS;
     use LeaseAction as LA;
+    use StatusCode as SC;
 
     if !is_async {
-        // In sync mode, the request waits for the host to reach the desired state (or timeout) before returning.
-        use HostControlError as HCE;
-        match handle_host_state(&host, &state, &lease_set).await {
+        // In sync mode, wait for the reconciler triggered signal to make the host reach the desired state.
+        let desired_state = match action {
+            LA::Take => HS::Online,
+            LA::Release => HS::Offline,
+        };
+
+        // Lookup host config and apply runtime overrides via shared helper.
+        let host_with_name = match lookup_host_with_overrides(&state, &host).await {
+            Some(h) => h,
+            None => {
+                return Err((
+                    SC::NOT_FOUND,
+                    format!("No configuration found for host {}", host),
+                ));
+            }
+        };
+
+        match poll_and_wait(&host_with_name, &state.hoststatus_tx, desired_state).await {
             Ok(()) => {}
             Err(err) => {
                 return Err((
                     match err {
-                        HCE::NotFound(_) => StatusCode::NOT_FOUND,
-                        HCE::Timeout(_) => StatusCode::GATEWAY_TIMEOUT,
-                        HCE::OperationFailed(_, _) => StatusCode::INTERNAL_SERVER_ERROR,
+                        HCE::NotFound(_) => SC::NOT_FOUND,
+                        HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
+                        HCE::OperationFailed(_, _) => SC::INTERNAL_SERVER_ERROR,
                     },
                     err.to_string(),
                 ));

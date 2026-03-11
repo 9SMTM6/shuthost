@@ -14,7 +14,7 @@ use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::app::{AppState, LeaseSource, LeaseSources, db};
+use crate::app::{AppState, LeaseSource, db};
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
@@ -44,17 +44,16 @@ impl Display for LeaseSource {
 }
 
 /// Updates the lease set for a host and persists to database if available.
-/// Returns the updated lease set.
 #[tracing::instrument(skip(state))]
 pub(crate) async fn update_lease(
     hostname: &str,
     lease_source: LeaseSource,
     action: LeaseAction,
     state: &AppState,
-) -> Result<LeaseSources, Box<dyn error::Error + Send + Sync>> {
-    let snapshot = state
+) -> Result<(), Box<dyn error::Error + Send + Sync>> {
+    state
         .leases
-        .update::<_, Box<dyn error::Error + Send + Sync>>({
+        .update({
             let hostname = hostname.to_string();
             let lease_source = lease_source.clone();
             let db_pool = state.db_pool.clone();
@@ -80,11 +79,7 @@ pub(crate) async fn update_lease(
                 Ok(())
             }
         })
-        .await?;
-
-    let lease_set = snapshot.get(hostname).cloned().unwrap_or_default();
-
-    Ok(lease_set)
+        .await
 }
 
 /// Handles taking or releasing a lease on a host via the web interface.

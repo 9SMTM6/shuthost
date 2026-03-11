@@ -71,7 +71,7 @@ impl LeaseState {
     /// DB writes), then publish the new snapshot and return it.
     ///
     /// If `f` returns an error the map is not published and the error is forwarded.
-    pub(crate) async fn update<F, E>(&self, f: F) -> Result<Arc<LeaseMapRaw>, E>
+    pub(crate) async fn update<F, E>(&self, f: F) -> Result<(), E>
     where
         F: AsyncFnOnce(&mut LeaseMapRaw) -> Result<(), E>,
     {
@@ -82,8 +82,8 @@ impl LeaseState {
         drop(guard);
         let snapshot = Arc::new(snapshot);
         // Ignore send error: it means all receivers were dropped (e.g. during shutdown).
-        drop(self.tx.send(snapshot.clone()));
-        Ok(snapshot)
+        drop(self.tx.send(snapshot));
+        Ok(())
     }
 
     /// Read the current snapshot cheaply without acquiring the write mutex.
@@ -95,6 +95,31 @@ impl LeaseState {
     pub(crate) fn subscribe(&self) -> LeaseRx {
         self.tx.subscribe()
     }
+}
+
+/// Lookup a host's config from the runtime config and apply any runtime IP/port
+/// overrides stored in `AppState`. Returns `None` if the host is not present
+/// in the configuration.
+pub(crate) async fn lookup_host_with_overrides(
+    state: &AppState,
+    host: &str,
+) -> Option<HostWithName> {
+    let cfg_snapshot = state.config_rx.borrow().clone();
+    let mut host_cfg = match cfg_snapshot.hosts.get(host) {
+        Some(h) => h.clone(),
+        None => return None,
+    };
+
+    let overrides = state.host_overrides.read().await;
+    if let Some(o) = overrides.get(host) {
+        host_cfg.ip = o.ip.clone();
+        host_cfg.port = o.port;
+    }
+
+    Some(HostWithName {
+        name: host.to_string(),
+        host: host_cfg,
+    })
 }
 
 /// Represents a source that holds a lease on a host.
@@ -124,16 +149,10 @@ pub(crate) enum HostControlError {
 
 /// High-level application entrypoint for handling host state transitions.
 /// Returns a `HostControlError` describing any failure.
-#[tracing::instrument(skip(config_rx, hoststatus_rx, hoststatus_tx), err(Debug))]
-pub(crate) async fn handle_host_state(
+#[tracing::instrument(skip(state), err(Debug))]
+pub async fn handle_host_state(
     host: &str,
-    &AppState {
-        ref config_rx,
-        ref hoststatus_rx,
-        ref hoststatus_tx,
-        ref host_overrides,
-        ..
-    }: &AppState,
+    state: &AppState,
     lease_set: &LeaseSources,
 ) -> Result<(), HostControlError> {
     let should_be_running = !lease_set.is_empty();
@@ -144,7 +163,7 @@ pub(crate) async fn handle_host_state(
     );
 
     let current_state = {
-        let hoststatus_rx = hoststatus_rx.borrow();
+        let hoststatus_rx = state.hoststatus_rx.borrow();
         hoststatus_rx
             .get(host)
             .copied()
@@ -153,30 +172,16 @@ pub(crate) async fn handle_host_state(
 
     debug!("Current state for host '{}': {:?}", host, current_state);
 
-    // Lookup host config, applying any persisted IP/port override.
-    let cfg_snapshot = config_rx.borrow().clone();
-    let mut host_cfg = match cfg_snapshot.hosts.get(host) {
-        Some(h) => h.clone(),
+    // Lookup host config and runtime overrides using shared helper.
+    let host_with_name = match lookup_host_with_overrides(state, host).await {
+        Some(h) => h,
         None => return Err(HostControlError::NotFound(host.to_string())),
-    };
-    {
-        let overrides = host_overrides.read().await;
-        if let Some(o) = overrides.get(host) {
-            host_cfg.ip = o.ip.clone();
-            host_cfg.port = o.port;
-        }
-    }
-
-    // Build a small helper struct pairing the host name with its config
-    let host_with_name = HostWithName {
-        name: host.to_string(),
-        host: host_cfg,
     };
 
     if should_be_running && current_state == HostState::Offline {
-        wake_host_and_wait(&host_with_name, hoststatus_tx).await
+        wake_host_and_wait(&host_with_name, &state.hoststatus_tx).await
     } else if !should_be_running && current_state == HostState::Online {
-        shutdown_host_and_wait(&host_with_name, hoststatus_tx).await
+        shutdown_host_and_wait(&host_with_name, &state.hoststatus_tx).await
     } else {
         Ok(())
     }
@@ -295,7 +300,7 @@ async fn shutdown_host_and_wait(
 }
 
 /// Poll for the desired host state and handle errors uniformly.
-async fn poll_and_wait(
+pub(crate) async fn poll_and_wait(
     host_with_name: &HostWithName,
     hoststatus_tx: &HostStatusTx,
     desired_state: HostState,
