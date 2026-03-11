@@ -31,23 +31,20 @@ use crate::{
     websocket::WsMessage,
 };
 
+use crate::app::host_control::HostWithName;
+
 /// How long a diverged enforced-host state must be stable before the enforcer
 /// re-triggers a wake / shutdown (prevents hammering during transitions).
 pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
 
 /// Poll a single host for its online status.
-async fn poll_host_status(
-    name: &str,
-    ip: &str,
-    port: u16,
-    shared_secret: &secrecy::SecretString,
-) -> HostState {
-    let addr = format!("{ip}:{port}");
+async fn poll_host_status(host: &HostWithName) -> HostState {
+    let addr = format!("{}:{}", host.host.ip, host.host.port);
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
-            let signed_message = create_signed_message("status", shared_secret);
+            let signed_message = create_signed_message("status", host.host.shared_secret.as_ref());
             if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
-                debug!("Failed to write to {}: {}", name, e);
+                debug!("Failed to write to {}: {}", host.name, e);
                 return HostState::Offline;
             }
             let mut buf = vec![0u8; 256];
@@ -90,8 +87,7 @@ pub(super) enum PollError {
 }
 
 pub(super) async fn poll_until_host_state(
-    host_name: &str,
-    host: &Host,
+    host: &HostWithName,
     desired_state: HostState,
     timeout_secs: u64,
     poll_interval_ms: u64,
@@ -101,14 +97,13 @@ pub(super) async fn poll_until_host_state(
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     let start = Instant::now();
     loop {
-        let poll_fut =
-            poll_host_status(host_name, &host.ip, host.port, host.shared_secret.as_ref());
+        let poll_fut = poll_host_status(host);
         let tick_fut = ticker.tick();
         let (current_state, _) = tokio::join!(poll_fut, tick_fut);
         // Update global state
         let mut status_map = hoststatus_tx.borrow().as_ref().clone();
-        if status_map.get(host_name) != Some(&current_state) {
-            status_map.insert(host_name.to_string(), current_state);
+        if status_map.get(host.name.as_str()) != Some(&current_state) {
+            status_map.insert(host.name.clone(), current_state);
             if hoststatus_tx.send(Arc::new(status_map)).is_err() {
                 debug!("Host status receiver dropped, stopping polling");
                 return Err(PollError::CoordinatorShuttingDown);
@@ -119,7 +114,7 @@ pub(super) async fn poll_until_host_state(
         }
         if start.elapsed().as_secs() >= timeout_secs {
             return Err(PollError::Timeout {
-                host_name: host_name.to_string(),
+                host_name: host.name.clone(),
                 desired_state,
             });
         }
@@ -279,14 +274,20 @@ async fn poll_host_statuses(state: AppState) {
 
         let futures = config.hosts.iter().map(|(name, host)| {
             let name = name.clone();
+            let mut host_clone = host.clone();
             let (ip, port) = ip_overrides.get(name.as_str()).map_or_else(
-                || (host.ip.clone(), host.port),
+                || (host_clone.ip.clone(), host_clone.port),
                 |&(ref ip, port)| (ip.clone(), port),
             );
-            let shared_secret = host.shared_secret.clone();
+            host_clone.ip = ip;
+            host_clone.port = port;
+            let host_with_name = HostWithName {
+                name: name.clone(),
+                host: host_clone,
+            };
             async move {
-                let polled = poll_host_status(&name, &ip, port, shared_secret.as_ref()).await;
-                debug!("Polled {} at {}:{} - state: {:?}", name, ip, port, polled);
+                let polled = poll_host_status(&host_with_name).await;
+                debug!("Polled {} at {}:{} - state: {:?}", host_with_name.name, host_with_name.host.ip, host_with_name.host.port, polled);
                 (name, polled)
             }
         });
