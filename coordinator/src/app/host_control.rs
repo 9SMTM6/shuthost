@@ -25,6 +25,15 @@ use crate::app::{AppState, runtime::poll_until_host_state, state::HostState};
 use crate::wol;
 use crate::{app::state::HostStatusTx, config::Host};
 
+/// Combines a host name with its `Host` configuration.
+#[derive(Debug, Clone)]
+pub(crate) struct HostWithName {
+    /// Logical name/identifier of the host as present in the config map.
+    pub name: String,
+    /// The host configuration data.
+    pub host: Host,
+}
+
 /// The set of lease sources for a single host
 pub(crate) type LeaseSources = HashSet<LeaseSource>;
 
@@ -158,10 +167,16 @@ pub(crate) async fn handle_host_state(
         }
     }
 
+    // Build a small helper struct pairing the host name with its config
+    let host_with_name = HostWithName {
+        name: host.to_string(),
+        host: host_cfg,
+    };
+
     if should_be_running && current_state == HostState::Offline {
-        wake_host_and_wait(host, &host_cfg, hoststatus_tx).await
+        wake_host_and_wait(&host_with_name, hoststatus_tx).await
     } else if !should_be_running && current_state == HostState::Online {
-        shutdown_host_and_wait(host, &host_cfg, hoststatus_tx).await
+        shutdown_host_and_wait(&host_with_name, hoststatus_tx).await
     } else {
         Ok(())
     }
@@ -238,39 +253,37 @@ async fn send_shutdown_to_address(
 /// Send a `WoL` packet (via crate-level `wol` helper) and then wait until the
 /// host becomes online by polling runtime state.
 async fn wake_host_and_wait(
-    host_name: &str,
-    host_cfg: &Host,
+    host_with_name: &HostWithName,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
-    if host_cfg.mac.eq_ignore_ascii_case("disablewol") {
-        info!(host = %host_name, "WOL disabled for host");
+    if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
+        info!(host = %host_with_name.name, "WOL disabled for host");
         return Ok(());
     }
-    info!(host = %host_name, mac = %host_cfg.mac, "Sending WoL packet");
+    info!(host = %host_with_name.name, mac = %host_with_name.host.mac, "Sending WoL packet");
 
     // send_magic_packet is behind cfg flags in some builds; call the wrapper
     #[cfg(not(any(coverage, test)))]
-    if let Err(e) = wol::send_magic_packet(&host_cfg.mac, "255.255.255.255") {
+    if let Err(e) = wol::send_magic_packet(&host_with_name.host.mac, "255.255.255.255") {
         return Err(HostControlError::OperationFailed(
             HostState::Online,
             e.wrap_err("Failed to send WoL packet"),
         ));
     }
 
-    poll_and_wait(host_name, host_cfg, hoststatus_tx, HostState::Online).await
+    poll_and_wait(host_with_name, hoststatus_tx, HostState::Online).await
 }
 
 /// Send shutdown command to host and wait until offline.
 async fn shutdown_host_and_wait(
-    host_name: &str,
-    host_cfg: &Host,
+    host_with_name: &HostWithName,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     // Send shutdown to the address
     let _resp = match send_shutdown_to_address(
-        &host_cfg.ip,
-        host_cfg.port,
-        host_cfg.shared_secret.as_ref(),
+        &host_with_name.host.ip,
+        host_with_name.host.port,
+        host_with_name.host.shared_secret.as_ref(),
     )
     .await
     {
@@ -278,19 +291,17 @@ async fn shutdown_host_and_wait(
         Err(e) => return Err(HostControlError::OperationFailed(HostState::Offline, e)),
     };
 
-    poll_and_wait(host_name, host_cfg, hoststatus_tx, HostState::Offline).await
+    poll_and_wait(host_with_name, hoststatus_tx, HostState::Offline).await
 }
 
 /// Poll for the desired host state and handle errors uniformly.
 async fn poll_and_wait(
-    host_name: &str,
-    host_cfg: &Host,
+    host_with_name: &HostWithName,
     hoststatus_tx: &HostStatusTx,
     desired_state: HostState,
 ) -> Result<(), HostControlError> {
     match poll_until_host_state(
-        host_name,
-        host_cfg,
+        host_with_name,
         desired_state,
         DEFAULT_POLL_TIMEOUT_SECS,
         DEFAULT_POLL_INTERVAL_MS,
