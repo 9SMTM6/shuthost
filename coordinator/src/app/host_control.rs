@@ -115,7 +115,7 @@ pub(crate) enum HostControlError {
 
 /// High-level application entrypoint for handling host state transitions.
 /// Returns a `HostControlError` describing any failure.
-#[tracing::instrument(skip_all, err(Debug))]
+#[tracing::instrument(skip(config_rx, hoststatus_rx, hoststatus_tx), err(Debug))]
 pub(crate) async fn handle_host_state(
     host: &str,
     &AppState {
@@ -169,7 +169,6 @@ pub(crate) async fn handle_host_state(
 
 /// Helper function to spawn an async task that handles host state changes.
 /// This clones the necessary state fields and spawns a background task to handle the host state change.
-#[tracing::instrument(skip(state))]
 pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, state: &AppState) {
     let host = host.to_string();
     let lease_set = lease_set.clone();
