@@ -60,7 +60,7 @@ commit_snapshot "$BASE_IMAGE-coordinator-installed"
 # This will end up installing the self-extracting-shell agent, since it can't detect an init system in this container.
 exec_with_coverage sh -c "
   curl -k -fsSL https://localhost:8080/download/host_agent_installer.sh | sh -s https://localhost:8080 &&
-  curl -k -fsSLO 'https://localhost:8080/download/host_agent_installer.ps1'; pwsh -ExecutionPolicy Bypass -File ./host_agent_installer.ps1 https://localhost:8080 --init-system=self-extracting-pwsh
+  curl -k -fsSLO 'https://localhost:8080/download/host_agent_installer.ps1'; pwsh -ExecutionPolicy Bypass -File ./host_agent_installer.ps1 https://localhost:8080 -- --init-system=self-extracting-pwsh
 " || true
 
 # Commit to final installed image
