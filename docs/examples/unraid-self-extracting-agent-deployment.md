@@ -17,7 +17,7 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
 2. **Obtain the Shared Secret and Coordinator Configuration**:
    - On your ShutHost coordinator server, run the following command to generate the configuration for the agent. Replace 'https://shuthost.example.com' with your coordinator URL:
      ```bash
-     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com --os=linux-musl
+     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com
      ```
    - This command will output a configuration block. Copy this block.
    - Add the copied configuration block to your coordinator's configuration file (usually `coordinator_config.toml`).
@@ -50,7 +50,7 @@ This guide demonstrates how to deploy the ShutHost self-extracting host agent on
      # Replace 'https://shuthost.example.com' with your coordinator URL
      # Replace '<secret>' with your actual shared secret
      # Be sure the --broadcast-port value matches your coordinator's setting
-     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com --broadcast-port=5757 --shared-secret=<secret> --shutdown-command="echo -n mem > /sys/power/state" --init-system=self-extracting-shell
+     curl -fsSL https://shuthost.example.com/download/host_agent_installer.sh | sh -s https://shuthost.example.com -- --broadcast-port=5757 --shared-secret=<secret> --shutdown-command="echo -n mem > /sys/power/state" --init-system=self-extracting-shell
 
      # Run the self-extracting agent binary
      ./shuthost_host_agent_self_extracting

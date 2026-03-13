@@ -502,7 +502,7 @@ const setupInstallerCommands = () => {
         throw new Error('Missing required install command elements');
     }
 
-    const bpArg = coordinatorBroadcastPort !== undefined ? ` --broadcast-port ${coordinatorBroadcastPort}` : '';
+    const bpArg = coordinatorBroadcastPort !== undefined ? ` -- --broadcast-port ${coordinatorBroadcastPort}` : '';
     hostInstallCommandSh.textContent = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl}${bpArg}`;
     hostInstallCommandPs1.textContent = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl}${bpArg}`;
     clientInstallCommandSh.textContent = `curl -sSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`;

@@ -196,7 +196,6 @@ These are generated or validated automatically as part of the test suite, and th
 - 🛡️ **Rate limiting of requests by shuthost clients**
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
-- the install scripts for host agents directly from github currently don't support passing options to the agents. Remedy that - Note that the installer from the coordinator does support passing arguments.
 
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
@@ -205,6 +204,7 @@ These are generated or validated automatically as part of the test suite, and th
 
 ### 🔧 Management Features
 - 🗑️ **Uninstalls**
+- ✅ **Validate broadcast port configuration on agent install**
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
