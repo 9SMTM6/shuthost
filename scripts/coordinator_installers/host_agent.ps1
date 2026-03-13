@@ -6,11 +6,26 @@ param(
     [string]$RemoteUrl,
     [Parameter(Mandatory=$false)]
     [string]$Port = "9090",
+    [Parameter(Mandatory=$false)]
+    [switch]$Help,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Show help if requested
+if ($Help) {
+    Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [-- <install_args>]"
+    Write-Host "Install ShutHost host agent from coordinator."
+    Write-Host ""
+    Write-Host "Parameters:"
+    Write-Host "  remote_url     URL of the coordinator (required)"
+    Write-Host "  -Port <port>   Port for WoL testing (default: 9090)"
+    Write-Host "  -Help          Show this help message"
+    Write-Host "  -- <args>      Additional arguments for the host agent install command"
+    exit 0
+}
 
 # Determine if we should accept self-signed certificates (for localhost/testing)
 $hostPart = $RemoteUrl -replace '^https?://', '' -replace '/.*$', '' -replace ':.*$', ''
@@ -130,6 +145,14 @@ try {
 
     Detect-Platform
 
+    # Parse installer args
+    $binaryArgs = @()
+    if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -eq "--") {
+        $binaryArgs = $InstallerArgs[1..($InstallerArgs.Length-1)]
+    } else {
+        $binaryArgs = $InstallerArgs
+    }
+
     Write-Host "Downloading host_agent for $PLATFORM/$ARCH from $RemoteUrl..."
 
     $downloadUrl = "$RemoteUrl/download/host_agent/$PLATFORM/$ARCH"
@@ -150,8 +173,8 @@ try {
 
     # Run the installer
     $installCmd = "./$script:FILENAME install"
-    if ($InstallerArgs) {
-        $installCmd += " " + ($InstallerArgs -join " ")
+    if ($binaryArgs) {
+        $installCmd += " " + ($binaryArgs -join " ")
     }
 
     Run-As-Elevated $installCmd

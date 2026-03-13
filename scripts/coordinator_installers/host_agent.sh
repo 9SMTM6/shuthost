@@ -6,28 +6,22 @@
 
 set -e
 
-if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [shuthost_host_agent install options..., get them by passing --help to the installer script]"
-  exit 1
-fi
-
-REMOTE_URL="$1"
-shift
-
-# Determine if we should accept self-signed certificates (for localhost/testing)
-HOST=$(echo "$REMOTE_URL" | sed -e 's|^https*://||' -e 's|/.*$||' -e 's|:.*$||')
-if [ "$HOST" = "localhost" ] || echo "$HOST" | grep -q '^127\.'; then
-    CURL_OPTS="-k"
-else
-    CURL_OPTS=""
-fi
-
+# Parse options
+HELP=false
+REMOTE_URL=""
 DEFAULT_PORT="9090"
 INSTALLER_ARGS=""
 
-# Parse arguments for port
 while [ $# -gt 0 ]; do
     case "$1" in
+        -h|--help)
+            HELP=true
+            break
+            ;;
+        --)
+            shift
+            break
+            ;;
         --port=*)
             DEFAULT_PORT="${1#--port=}"
             INSTALLER_ARGS="$INSTALLER_ARGS $1"
@@ -37,16 +31,56 @@ while [ $# -gt 0 ]; do
             DEFAULT_PORT="$1"
             INSTALLER_ARGS="$INSTALLER_ARGS --port $1"
             ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
         *)
-            # Escape any embedded double quotes
-            ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
-            if printf '%s' "$ESCAPED_ARG" | grep -q '[[:space:]]'; then
-                INSTALLER_ARGS="$INSTALLER_ARGS \"$ESCAPED_ARG\""
+            if [ -z "$REMOTE_URL" ]; then
+                REMOTE_URL="$1"
             else
-                INSTALLER_ARGS="$INSTALLER_ARGS $ESCAPED_ARG"
+                echo "Unexpected argument: $1" >&2
+                exit 1
             fi
             ;;
     esac
+    shift
+done
+
+if $HELP; then
+    echo "Usage: $0 <remote_url> [--port PORT] [-- <install_args>]"
+    echo "Install ShutHost host agent from coordinator."
+    echo ""
+    echo "Arguments:"
+    echo "  remote_url     URL of the coordinator"
+    echo "  --port PORT    Port for WoL testing (default: 9090)"
+    echo "  -- <args>      Additional arguments for the host agent install command"
+    exit 0
+fi
+
+if [ -z "$REMOTE_URL" ]; then
+    echo "Error: remote_url is required" >&2
+    exit 1
+fi
+
+# Determine if we should accept self-signed certificates (for localhost/testing)
+HOST=$(echo "$REMOTE_URL" | sed -e 's|^https*://||' -e 's|/.*$||' -e 's|:.*$||')
+if [ "$HOST" = "localhost" ] || echo "$HOST" | grep -q '^127\.'; then
+    CURL_OPTS="-k"
+else
+    CURL_OPTS=""
+fi
+
+# Collect remaining as binary args
+BINARY_ARGS=""
+while [ $# -gt 0 ]; do
+    # Escape any embedded double quotes
+    ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
+    if printf '%s' "$ESCAPED_ARG" | grep -q '[[:space:]]'; then
+        BINARY_ARGS="$BINARY_ARGS \"$ESCAPED_ARG\""
+    else
+        BINARY_ARGS="$BINARY_ARGS $ESCAPED_ARG"
+    fi
     shift
 done
 
@@ -142,7 +176,7 @@ chmod +x "$OUTFILE"
 test_wol_packet_reachability
 
 # shellcheck disable=SC2090,SC2086
-run_as_elevated ./$OUTFILE install $INSTALLER_ARGS
+run_as_elevated ./$OUTFILE install $BINARY_ARGS
 
 set +v
 
