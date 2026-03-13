@@ -223,4 +223,7 @@ These are generated or validated automatically as part of the test suite, and th
 * reconciler doesn't seem to properly handle state changes after startup.
 * cargo test leaves leftover processes during failures, investigate cleanup.
 * oidc appears to be currently broken, and fixing this will take time. I'll need to fix this and finally introduce OIDC tests to avoid drifts like this in the future
+* reconciler currently leads to a bunch of calls to handle_host_state every poll. This should be deduplicated.
+* we might want to emit multiple WOL calls during the waiting period instead (they are UDP after all)
+* we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
 -->
