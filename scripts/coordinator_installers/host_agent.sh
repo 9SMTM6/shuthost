@@ -10,6 +10,7 @@ set -e
 HELP=false
 REMOTE_URL=""
 DEFAULT_PORT="9090"
+PORT_SPECIFIED=false
 INSTALLER_ARGS=""
 
 while [ $# -gt 0 ]; do
@@ -24,12 +25,12 @@ while [ $# -gt 0 ]; do
             ;;
         --port=*)
             DEFAULT_PORT="${1#--port=}"
-            INSTALLER_ARGS="$INSTALLER_ARGS $1"
+            PORT_SPECIFIED=true
             ;;
         --port)
             shift
             DEFAULT_PORT="$1"
-            INSTALLER_ARGS="$INSTALLER_ARGS --port $1"
+            PORT_SPECIFIED=true
             ;;
         -*)
             echo "Unknown option: $1" >&2
@@ -53,8 +54,8 @@ if $HELP; then
     echo ""
     echo "Arguments:"
     echo "  remote_url     URL of the coordinator"
-    echo "  --port PORT    Port for WoL testing (default: 9090)"
-    echo "  -- <args>      Additional arguments for the host agent install command"
+    echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
+    echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
     exit 0
 fi
 
@@ -71,15 +72,28 @@ else
     CURL_OPTS=""
 fi
 
+# Prepare binary args
+BINARY_ARGS=""
+if $PORT_SPECIFIED; then
+    BINARY_ARGS="--port $DEFAULT_PORT"
+fi
+
 # Collect remaining as binary args
 BINARY_ARGS=""
 while [ $# -gt 0 ]; do
+    if echo "$1" | grep -q '^--port'; then
+        echo "Error: --port cannot be passed via -- as it conflicts with installer option" >&2
+        exit 1
+    fi
     # Escape any embedded double quotes
     ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
+    if [ -n "$BINARY_ARGS" ]; then
+        BINARY_ARGS="$BINARY_ARGS "
+    fi
     if printf '%s' "$ESCAPED_ARG" | grep -q '[[:space:]]'; then
-        BINARY_ARGS="$BINARY_ARGS \"$ESCAPED_ARG\""
+        BINARY_ARGS="$BINARY_ARGS\"$ESCAPED_ARG\""
     else
-        BINARY_ARGS="$BINARY_ARGS $ESCAPED_ARG"
+        BINARY_ARGS="$BINARY_ARGS$ESCAPED_ARG"
     fi
     shift
 done
