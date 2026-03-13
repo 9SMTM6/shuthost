@@ -21,9 +21,9 @@ if ($Help) {
     Write-Host ""
     Write-Host "Parameters:"
     Write-Host "  remote_url     URL of the coordinator (required)"
-    Write-Host "  -Port <port>   Port for WoL testing (default: 9090)"
+    Write-Host "  -Port <port>   Port for WoL testing (default: 9090), also passed to install command"
     Write-Host "  -Help          Show this help message"
-    Write-Host "  -- <args>      Additional arguments for the host agent install command"
+    Write-Host "  -- <args>      Additional arguments for the host agent install command (except --port)"
     exit 0
 }
 
@@ -145,12 +145,25 @@ try {
 
     Detect-Platform
 
+    $portSpecified = $PSBoundParameters.ContainsKey('Port')
+
     # Parse installer args
     $binaryArgs = @()
-    if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -eq "--") {
-        $binaryArgs = $InstallerArgs[1..($InstallerArgs.Length-1)]
+    if ($portSpecified) {
+        $binaryArgs += "--port"
+        $binaryArgs += $Port.ToString()
+    }
+    $installerArgsList = if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -eq "--") {
+        $InstallerArgs[1..($InstallerArgs.Length-1)]
     } else {
-        $binaryArgs = $InstallerArgs
+        $InstallerArgs
+    }
+    foreach ($arg in $installerArgsList) {
+        if ($arg -like "--port*") {
+            Write-Error "--port cannot be passed via -- as it conflicts with installer option"
+            exit 1
+        }
+        $binaryArgs += $arg
     }
 
     Write-Host "Downloading host_agent for $PLATFORM/$ARCH from $RemoteUrl..."
