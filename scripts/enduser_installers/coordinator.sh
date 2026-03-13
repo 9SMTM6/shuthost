@@ -16,6 +16,7 @@ while getopts "t:b:h" opt; do
            echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
            echo "  -h           Show this help message."
            echo "  -- <args>    Pass additional arguments to the coordinator install subcommand."
+           echo "               See repository path: docs/examples/cli_help_output/coordinator_install.txt for subcommand help."
            echo "If no options, defaults to latest release."
            exit 0 ;;
         *) echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]" >&2; exit 1 ;;
