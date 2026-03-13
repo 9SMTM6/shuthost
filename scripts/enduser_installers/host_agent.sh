@@ -14,10 +14,6 @@ cleanup() {
 
 trap cleanup EXIT
 
-echo "ShutHost Host Agent Binary Installer"
-echo "===================================="
-echo
-
 # Parse command line options
 TAG=""
 BRANCH=""
@@ -25,17 +21,29 @@ while getopts "t:b:h" opt; do
     case $opt in
         t) TAG="$OPTARG" ;;
         b) BRANCH="$OPTARG" ;;
-        h) echo "Usage: $0 [-t tag] [-b branch] [-h]"
+        h) echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]"
            echo "Install ShutHost host agent binary."
            echo "Options:"
            echo "  -t tag       Specify a release tag to download."
            echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
            echo "  -h           Show this help message."
+           echo "  -- <args>    Pass additional arguments to the agent install subcommand."
            echo "If no options, defaults to latest release."
            exit 0 ;;
-        *) echo "Usage: $0 [-t tag] [-b branch] [-h]" >&2; exit 1 ;;
+        *) echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]" >&2; exit 1 ;;
     esac
 done
+
+echo "ShutHost Host Agent Binary Installer"
+echo "===================================="
+echo
+
+# Parse binary args
+BINARY_ARGS=""
+if [ $# -gt 0 ] && [ "$1" = "--" ]; then
+    shift
+    BINARY_ARGS="$@"
+fi
 
 # Determine the tag
 if [ -n "$BRANCH" ]; then
@@ -72,7 +80,7 @@ verify_checksum
 tar -xzf "$FILENAME"
 
 # Run the installer
-run_as_elevated ./shuthost_host_agent install
+run_as_elevated ./shuthost_host_agent install $BINARY_ARGS
 
 set +v
 
