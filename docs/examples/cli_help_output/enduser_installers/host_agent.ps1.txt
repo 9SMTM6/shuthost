@@ -1,0 +1,8 @@
+Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [-- <binary-args>]
+Install ShutHost host agent binary.
+Options:
+  -Tag <tag>       Specify a release tag to download.
+  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'.
+  -Help            Show this help message.
+  -- <args>        Pass additional arguments to the agent install subcommand.
+If no options, defaults to latest release.

@@ -2,7 +2,7 @@
 # Installs the host agent by downloading from the coordinator
 
 param(
-    [Parameter(Mandatory=$true, Position=0)]
+    [Parameter(Mandatory=$false, Position=0)]
     [string]$RemoteUrl,
     [Parameter(Mandatory=$false)]
     [string]$Port = "9090",
@@ -25,6 +25,11 @@ if ($Help) {
     Write-Host "  -Help          Show this help message"
     Write-Host "  -- <args>      Additional arguments for the host agent install command (except --port)"
     exit 0
+}
+
+if (-not $RemoteUrl) {
+    Write-Error "RemoteUrl is required"
+    exit 1
 }
 
 # Determine if we should accept self-signed certificates (for localhost/testing)

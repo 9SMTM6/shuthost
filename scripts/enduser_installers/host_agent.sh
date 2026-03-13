@@ -8,6 +8,7 @@ set -eu
 # with command-line flags to specify a release tag or branch.
 . ./scripts/helpers.sh
 
+FILENAME=""
 cleanup() {
     rm -f "$FILENAME" shuthost_host_agent
 }

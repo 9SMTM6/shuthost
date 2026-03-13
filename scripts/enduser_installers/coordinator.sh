@@ -35,6 +35,7 @@ fi
 # That build script then gets released as an asset, with a tagged download URL.
 . ./scripts/helpers.sh
 
+FILENAME=""
 cleanup() {
     rm -f "$FILENAME" shuthost_coordinator
 }
