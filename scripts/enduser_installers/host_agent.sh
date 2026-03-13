@@ -29,6 +29,8 @@ while getopts "t:b:h" opt; do
            echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
            echo "  -h           Show this help message."
            echo "  -- <args>    Pass additional arguments to the agent install subcommand."
+           echo "               See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
+           echo "               Note: init-system options may differ by platform, but the default is usually correct."
            echo "If no options, defaults to latest release."
            exit 0 ;;
         *) echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]" >&2; exit 1 ;;

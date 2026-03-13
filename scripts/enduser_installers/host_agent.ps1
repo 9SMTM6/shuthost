@@ -23,6 +23,8 @@ if ($Help) {
     Write-Host "  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'."
     Write-Host "  -Help            Show this help message."
     Write-Host "  -- <args>        Pass additional arguments to the agent install subcommand."
+    Write-Host "                   See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
+    Write-Host "                   Note: init-system options may differ by platform, but the default is usually correct."
     Write-Host "If no options, defaults to latest release."
     exit 0
 }
