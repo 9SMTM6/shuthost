@@ -7,19 +7,22 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$Branch,
     [Parameter(Mandatory=$false)]
-    [switch]$Help
+    [switch]$Help,
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$BinaryArgs
 )
 
 $ErrorActionPreference = 'Stop'
 
 # Show help if requested
 if ($Help) {
-    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help]"
+    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [-- <binary-args>]"
     Write-Host "Install ShutHost host agent binary."
     Write-Host "Options:"
     Write-Host "  -Tag <tag>       Specify a release tag to download."
     Write-Host "  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'."
     Write-Host "  -Help            Show this help message."
+    Write-Host "  -- <args>        Pass additional arguments to the agent install subcommand."
     Write-Host "If no options, defaults to latest release."
     exit 0
 }
@@ -165,6 +168,14 @@ try {
     Write-Host "Detected platform: $TARGET_TRIPLE"
     Write-Host
 
+    # Parse binary args
+    $binaryArgs = @()
+    if ($BinaryArgs.Length -gt 0 -and $BinaryArgs[0] -eq "--") {
+        $binaryArgs = $BinaryArgs[1..($BinaryArgs.Length-1)]
+    } else {
+        $binaryArgs = $BinaryArgs
+    }
+
     # Construct download URL and filename
     $FILENAME = "shuthost_host_agent-${TARGET_TRIPLE}.tar.gz"
     $DOWNLOAD_FILE_URL = "${DOWNLOAD_URL}/${FILENAME}"
@@ -179,7 +190,12 @@ try {
     & tar -xzf $FILENAME
 
     # Run the installer
-    Run-As-Elevated "./$BINARY_NAME install"
+    $installCmd = "./$BINARY_NAME install"
+    if ($binaryArgs.Length -gt 0) {
+        $quotedArgs = $binaryArgs | ForEach-Object { "`"$_`"" }
+        $installCmd += " " + ($quotedArgs -join " ")
+    }
+    Run-As-Elevated $installCmd
 
     Write-Host "Installation complete!"
     Write-Host
