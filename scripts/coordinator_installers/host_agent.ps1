@@ -152,17 +152,27 @@ try {
 
     $portSpecified = $PSBoundParameters.ContainsKey('Port')
 
-    # Parse installer args
+    # Parse installer args (require explicit -- separator for forwarded install args)
     $binaryArgs = @()
     if ($portSpecified) {
         $binaryArgs += "--port"
         $binaryArgs += $Port.ToString()
     }
-    $installerArgsList = if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -eq "--") {
-        $InstallerArgs[1..($InstallerArgs.Length-1)]
-    } else {
-        $InstallerArgs
+
+    # Unified handling for forwarded installer args:
+    # - If any InstallerArgs are provided they must start with a literal '--'.
+    # - A lone '--' is allowed and means "no forwarded args".
+    if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -ne "--") {
+        Write-Error "Forwarded installer arguments must be passed after a literal -- separator. Example: .\host_agent.ps1 <url> -- --flag value"
+        exit 1
     }
+
+    if ($InstallerArgs.Length -le 1) {
+        $installerArgsList = @()
+    } else {
+        $installerArgsList = $InstallerArgs[1..($InstallerArgs.Length-1)]
+    }
+
     foreach ($arg in $installerArgsList) {
         if ($arg -like "--port*") {
             Write-Error "--port cannot be passed via -- as it conflicts with installer option"

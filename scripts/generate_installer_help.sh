@@ -55,13 +55,13 @@ generate_host_agent_install_linux() {
 # Enduser installers
 generate_help "scripts/enduser_installers/coordinator.sh" "$OUTPUT_BASE/enduser_installers/coordinator.txt" "Coordinator installer"
 generate_help "scripts/enduser_installers/host_agent.sh" "$OUTPUT_BASE/enduser_installers/host_agent.txt" "Host agent installer"
-generate_help "scripts/enduser_installers/host_agent.ps1" "$OUTPUT_BASE/enduser_installers/host_agent.ps1.txt" "Host agent installer (PowerShell)"
+generate_help "scripts/enduser_installers/host_agent.ps1" "$OUTPUT_BASE/enduser_installers/host_agent.ps1.txt" "Host agent installer (PowerShell)" || true # accept failure when pwsh is not available
 
 # Coordinator installers
 generate_help "scripts/coordinator_installers/client.sh" "$OUTPUT_BASE/coordinator_installers/client.txt" "Client installer"
 generate_help "scripts/coordinator_installers/host_agent.sh" "$OUTPUT_BASE/coordinator_installers/host_agent.txt" "Host agent installer (coordinator)"
-generate_help "scripts/coordinator_installers/host_agent.ps1" "$OUTPUT_BASE/coordinator_installers/host_agent.ps1.txt" "Host agent installer (coordinator PowerShell)"
-generate_help "scripts/coordinator_installers/client.ps1" "$OUTPUT_BASE/coordinator_installers/client.ps1.txt" "Client installer (PowerShell)"
+generate_help "scripts/coordinator_installers/host_agent.ps1" "$OUTPUT_BASE/coordinator_installers/host_agent.ps1.txt" "Host agent installer (coordinator PowerShell)" || true
+generate_help "scripts/coordinator_installers/client.ps1" "$OUTPUT_BASE/coordinator_installers/client.ps1.txt" "Client installer (PowerShell)" || true
 
 # CLI commands
 generate_cli_help "shuthost_coordinator" "install" "$OUTPUT_BASE/coordinator_install.txt" "Coordinator install command"

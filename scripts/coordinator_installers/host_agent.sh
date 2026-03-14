@@ -11,7 +11,6 @@ HELP=false
 REMOTE_URL=""
 DEFAULT_PORT="9090"
 PORT_SPECIFIED=false
-INSTALLER_ARGS=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -79,7 +78,7 @@ if $PORT_SPECIFIED; then
 fi
 
 # Collect remaining as binary args
-BINARY_ARGS=""
+# Argument parsing beforehand ensured these remaining args were prepended by --
 while [ $# -gt 0 ]; do
     if echo "$1" | grep -q '^--port'; then
         echo "Error: --port cannot be passed via -- as it conflicts with installer option" >&2
@@ -181,7 +180,7 @@ echo "$ARCH"
 
 echo "$PLATFORM"
 
-echo "$INSTALLER_ARGS"
+echo "$BINARY_ARGS"
 
 
 curl --compressed -fL $CURL_OPTS "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
