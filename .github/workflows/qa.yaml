@@ -49,6 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - run: rustup update stable
+      - uses: *rust-cache
       - name: Install PowerShell
         run: |
           # Install PowerShell for testing PowerShell script help
