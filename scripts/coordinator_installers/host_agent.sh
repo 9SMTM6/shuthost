@@ -7,16 +7,24 @@
 set -e
 
 # Parse options
-HELP=false
 REMOTE_URL=""
 DEFAULT_PORT="9090"
 PORT_SPECIFIED=false
 
+print_help() {
+    echo "Usage: $0 <remote_url> [--port PORT] [-- <install_args>]"
+    echo "Install ShutHost host agent from coordinator."
+    echo ""
+    echo "Arguments:" 
+    echo "  remote_url     URL of the coordinator"
+    echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
+    echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
+}
+
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help)
-            HELP=true
-            break
+            print_help; exit 0
             ;;
         --)
             shift
@@ -40,6 +48,7 @@ while [ $# -gt 0 ]; do
                 REMOTE_URL="$1"
             else
                 echo "Unexpected argument: $1" >&2
+                print_help
                 exit 1
             fi
             ;;
@@ -47,19 +56,11 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if $HELP; then
-    echo "Usage: $0 <remote_url> [--port PORT] [-- <install_args>]"
-    echo "Install ShutHost host agent from coordinator."
-    echo ""
-    echo "Arguments:"
-    echo "  remote_url     URL of the coordinator"
-    echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
-    echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
-    exit 0
-fi
+# help handled during option parsing via print_help
 
 if [ -z "$REMOTE_URL" ]; then
     echo "Error: remote_url is required" >&2
+    print_help
     exit 1
 fi
 

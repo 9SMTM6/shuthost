@@ -14,8 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
-if ($Help) {
+function Print-Help {
     Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [-- <install_args>]"
     Write-Host "Install ShutHost host agent from coordinator."
     Write-Host ""
@@ -24,11 +23,13 @@ if ($Help) {
     Write-Host "  -Port <port>   Port for WoL testing (default: 9090), also passed to install command"
     Write-Host "  -Help          Show this help message"
     Write-Host "  -- <args>      Additional arguments for the host agent install command (except --port)"
-    exit 0
 }
+
+if ($Help) { Print-Help; exit 0 }
 
 if (-not $RemoteUrl) {
     Write-Error "RemoteUrl is required"
+    Print-Help
     exit 1
 }
 
@@ -163,7 +164,8 @@ try {
     # - If any InstallerArgs are provided they must start with a literal '--'.
     # - A lone '--' is allowed and means "no forwarded args".
     if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -ne "--") {
-        Write-Error "Forwarded installer arguments must be passed after a literal -- separator. Example: .\host_agent.ps1 <url> -- --flag value"
+        Write-Error "Forwarded installer arguments must be passed after a literal -- separator."
+        Print-Help
         exit 1
     }
 
