@@ -170,12 +170,18 @@ try {
     Write-Host "Detected platform: $TARGET_TRIPLE"
     Write-Host
 
-    # Parse binary args
-    $binaryArgs = @()
-    if ($BinaryArgs.Length -gt 0 -and $BinaryArgs[0] -eq "--") {
-        $binaryArgs = $BinaryArgs[1..($BinaryArgs.Length-1)]
+    # Unified handling for forwarded binary args:
+    # - If any BinaryArgs are provided they must start with a literal '--'.
+    # - A lone '--' is allowed and means "no forwarded args".
+    if ($BinaryArgs.Length -gt 0 -and $BinaryArgs[0] -ne "--") {
+        Write-Error "Forwarded binary arguments must be passed after a literal -- separator. Example: .\host_agent.ps1 -- --flag value"
+        exit 1
+    }
+
+    if ($BinaryArgs.Length -le 1) {
+        $binaryArgs = @()
     } else {
-        $binaryArgs = $BinaryArgs
+        $binaryArgs = $BinaryArgs[1..($BinaryArgs.Length-1)]
     }
 
     # Construct download URL and filename

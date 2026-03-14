@@ -45,7 +45,7 @@ echo
 BINARY_ARGS=""
 if [ $# -gt 0 ] && [ "$1" = "--" ]; then
     shift
-    BINARY_ARGS="$@"
+    BINARY_ARGS + "$@"
 fi
 
 # Determine the tag

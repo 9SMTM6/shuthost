@@ -27,7 +27,7 @@ done
 BINARY_ARGS=""
 if [ $# -gt 0 ] && [ "$1" = "--" ]; then
     shift
-    BINARY_ARGS="$@"
+    BINARY_ARGS + "$@"
 fi
 
 # Helper script to install the ShutHost coordinator binary
