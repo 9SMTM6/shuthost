@@ -14,8 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
-if ($Help) {
+function Print-Help {
     Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [-- <binary-args>]"
     Write-Host "Install ShutHost host agent binary."
     Write-Host "Options:"
@@ -26,8 +25,9 @@ if ($Help) {
     Write-Host "                   See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
     Write-Host "                   Note: init-system options may differ by platform, but the default is usually correct."
     Write-Host "If no options, defaults to latest release."
-    exit 0
 }
+
+if ($Help) { Print-Help; exit 0 }
 
 # This script can be configured with parameters to specify a release tag or branch.
 
@@ -174,7 +174,8 @@ try {
     # - If any BinaryArgs are provided they must start with a literal '--'.
     # - A lone '--' is allowed and means "no forwarded args".
     if ($BinaryArgs.Length -gt 0 -and $BinaryArgs[0] -ne "--") {
-        Write-Error "Forwarded binary arguments must be passed after a literal -- separator. Example: .\host_agent.ps1 -- --flag value"
+        Write-Error "Forwarded binary arguments must be passed after a literal -- separator."
+        Print-Help
         exit 1
     }
 

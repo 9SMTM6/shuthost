@@ -2,6 +2,19 @@
 
 set -eu
 
+# Print help (does not exit)
+print_help() {
+    echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]"
+    echo "Install ShutHost coordinator binary."
+    echo "Options:"
+    echo "  -t tag       Specify a release tag to download."
+    echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
+    echo "  -h           Show this help message."
+    echo "  -- <args>    Pass additional arguments to the coordinator install subcommand."
+    echo "               See repository path: docs/examples/cli_help_output/coordinator_install.txt for subcommand help."
+    echo "If no options, defaults to latest release."
+}
+
 # Parse command line options
 TAG=""
 BRANCH=""
@@ -9,25 +22,16 @@ while getopts "t:b:h" opt; do
     case $opt in
         t) TAG="$OPTARG" ;;
         b) BRANCH="$OPTARG" ;;
-        h) echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]"
-           echo "Install ShutHost coordinator binary."
-           echo "Options:"
-           echo "  -t tag       Specify a release tag to download."
-           echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
-           echo "  -h           Show this help message."
-           echo "  -- <args>    Pass additional arguments to the coordinator install subcommand."
-           echo "               See repository path: docs/examples/cli_help_output/coordinator_install.txt for subcommand help."
-           echo "If no options, defaults to latest release."
-           exit 0 ;;
-        *) echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]" >&2; exit 1 ;;
+        h) print_help; exit 0 ;;
+        *) echo "Invalid option" >&2; print_help; exit 1 ;;
     esac
 done
 
-# Parse binary args
+# Parse binary args (remaining args after literal --)
 BINARY_ARGS=""
 if [ $# -gt 0 ] && [ "$1" = "--" ]; then
     shift
-    BINARY_ARGS + "$@"
+    BINARY_ARGS="$*"
 fi
 
 # Helper script to install the ShutHost coordinator binary

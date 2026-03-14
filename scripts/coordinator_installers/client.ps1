@@ -16,8 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
-if ($Help) {
+function Print-Help {
     Write-Host "Usage: .\client.ps1 [-RemoteUrl <url>] [-ClientId <id>] [-Help]"
     Write-Host "Install ShutHost client script."
     Write-Host ""
@@ -25,8 +24,9 @@ if ($Help) {
     Write-Host "  -RemoteUrl <url>    URL of the coordinator (default: http://localhost:8080)"
     Write-Host "  -ClientId <id>      Custom client ID (default: generated)"
     Write-Host "  -Help               Show this help message"
-    exit 0
 }
+
+if ($Help) { Print-Help; exit 0 }
 
 $isUnix = [Environment]::OSVersion.Platform -eq 'Unix'
 $curlCmd = if ($isUnix) { "curl" } else { "curl.exe" }
