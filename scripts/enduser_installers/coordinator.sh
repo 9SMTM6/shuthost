@@ -27,11 +27,20 @@ while getopts "t:b:h" opt; do
     esac
 done
 
+# Shift away the options parsed by getopts so remaining args start at first non-option
+shift "$((OPTIND - 2))" # IDK why this needs to be reduced by 2, but thats what works for me.
+
 # Parse binary args (remaining args after literal --)
 BINARY_ARGS=""
-if [ $# -gt 0 ] && [ "$1" = "--" ]; then
-    shift
-    BINARY_ARGS="$*"
+if [ $# -gt 0 ]; then
+    if [ "$1" = "--" ]; then
+        shift
+        BINARY_ARGS="$*"
+    else
+        echo "Unexpected arguments: $*" >&2
+        print_help
+        exit 1
+    fi
 fi
 
 # Helper script to install the ShutHost coordinator binary
@@ -51,12 +60,7 @@ echo "ShutHost Coordinator Binary Installer"
 echo "====================================="
 echo
 
-set -v
-
 detect_platform
-
-echo "Detected platform: $TARGET_TRIPLE"
-echo
 
 # Determine the tag
 if [ -n "$BRANCH" ]; then
@@ -72,9 +76,20 @@ else
     DOWNLOAD_URL="https://github.com/9SMTM6/shuthost/releases/latest/download"
 fi
 
+set -v
+
 # Construct download URL and filename
 FILENAME="shuthost_coordinator-${TARGET_TRIPLE}.tar.gz"
 DOWNLOAD_FILE_URL="${DOWNLOAD_URL}/${FILENAME}"
+
+
+echo "$ARCH"
+
+echo "$PLATFORM"
+
+echo "$BINARY_ARGS"
+
+echo "$TAG"
 
 echo "Downloading binary from $DOWNLOAD_FILE_URL ..."
 
