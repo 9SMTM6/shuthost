@@ -7,6 +7,17 @@
 
 set -e
 
+# Check for help
+if [ $# -gt 0 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
+    echo "Usage: $0 [REMOTE_URL] [CLIENT_ID]"
+    echo "Install ShutHost client script."
+    echo ""
+    echo "Arguments:"
+    echo "  REMOTE_URL    URL of the coordinator (default: http://localhost:8080)"
+    echo "  CLIENT_ID     Custom client ID (default: generated)"
+    exit 0
+fi
+
 # Default values
 INSTALL_DIR="$HOME/.local/bin"
 REMOTE_URL="${1:-http://localhost:8080}"

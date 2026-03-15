@@ -7,22 +7,29 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$Branch,
     [Parameter(Mandatory=$false)]
-    [switch]$Help
+    [switch]$Help,
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$BinaryArgs
 )
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
-if ($Help) {
-    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help]"
+function Print-Help {
+    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [<binary-args> ...]"
     Write-Host "Install ShutHost host agent binary."
     Write-Host "Options:"
     Write-Host "  -Tag <tag>       Specify a release tag to download."
     Write-Host "  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'."
     Write-Host "  -Help            Show this help message."
+    Write-Host "  <binary-args>    Pass additional arguments to the agent install subcommand."
+    Write-Host "                   Example: --init-system=self-extracting-pwsh"
+    Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
+    Write-Host "                   See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
+    Write-Host "                   Note: init-system options may differ by platform, but the default is usually correct."
     Write-Host "If no options, defaults to latest release."
-    exit 0
 }
+
+if ($Help) { Print-Help; exit 0 }
 
 # This script can be configured with parameters to specify a release tag or branch.
 
@@ -179,7 +186,12 @@ try {
     & tar -xzf $FILENAME
 
     # Run the installer
-    Run-As-Elevated "./$BINARY_NAME install"
+    $installCmd = "./$BINARY_NAME install"
+    if ($BinaryArgs.Length -gt 0) {
+        $quotedArgs = $BinaryArgs | ForEach-Object { "`"$_`"" }
+        $installCmd += " " + ($quotedArgs -join " ")
+    }
+    Run-As-Elevated $installCmd
 
     Write-Host "Installation complete!"
     Write-Host

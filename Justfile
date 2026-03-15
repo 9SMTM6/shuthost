@@ -148,6 +148,14 @@ cargo_deny:
 alias deny := cargo_deny
 
 [group('projectmanagement')]
+update_installer_help:
+    ./scripts/generate_installer_help.sh
+
+[group('tests')]
+test_installer_help:
+    ./scripts/tests/installer_help_up_to_date.sh
+
+[group('projectmanagement')]
 [working-directory("docs/examples")]
 update_test_config_diffs:
     diff -u example_config.toml example_config_with_client_and_host.toml > example_config_with_client_and_host.toml.patch || true

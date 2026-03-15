@@ -1,0 +1,11 @@
+Install the coordinator service to start on boot
+
+Usage: shuthost_coordinator install [OPTIONS] <USER>
+
+Arguments:
+  <USER>  Username to own the generated config file [env: SUDO_USER=]
+
+Options:
+  -p, --port <PORT>  Port on which the coordinator HTTP server will listen [default: 8080]
+  -b, --bind <BIND>  Bind address for the HTTP server (e.g., 127.0.0.1 or 0.0.0.0) [default: 127.0.0.1]
+  -h, --help         Print help

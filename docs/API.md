@@ -75,7 +75,7 @@ The host agent accepts TCP connections for status checks and shutdown commands. 
 The agent also emits a UDP startup broadcast; that port defaults to `shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT` and may be set separately with `--broadcast-port`.
 
 > **Note:** When you copy the host‑agent install command from the coordinator web UI, it
-> will automatically include `--broadcast-port <value>` reflecting the port
+> will automatically include `-- --broadcast-port <value>` reflecting the port
 > configured for that coordinator instance, so no manual adjustment is
 > needed.
 **Message Format:** Text-based with HMAC authentication

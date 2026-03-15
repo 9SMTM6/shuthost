@@ -1,0 +1,9 @@
+Usage: scripts/enduser_installers/coordinator.sh [-t tag] [-b branch] [-h] [-- <binary-args>]
+Install ShutHost coordinator binary.
+Options:
+  -t tag       Specify a release tag to download.
+  -b branch    Specify a branch; tag will be 'nightly_release<branch>'.
+  -h           Show this help message.
+  -- <args>    Pass additional arguments to the coordinator install subcommand.
+               See repository path: docs/examples/cli_help_output/coordinator_install.txt for subcommand help.
+If no options, defaults to latest release.

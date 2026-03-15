@@ -2,15 +2,38 @@
 # Installs the host agent by downloading from the coordinator
 
 param(
-    [Parameter(Mandatory=$true, Position=0)]
+    [Parameter(Mandatory=$false, Position=0)]
     [string]$RemoteUrl,
     [Parameter(Mandatory=$false)]
     [string]$Port = "9090",
+    [Parameter(Mandatory=$false)]
+    [switch]$Help,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Print-Help {
+    Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [<install_args> ...]"
+    Write-Host "Install ShutHost host agent from coordinator."
+    Write-Host ""
+    Write-Host "Parameters:"
+    Write-Host "  remote_url        URL of the coordinator (required)"
+    Write-Host "  -Port <port>      Port for WoL testing (default: 9090), also passed to install command"
+    Write-Host "  -Help             Show this help message"
+    Write-Host "  <install_args>    Additional arguments forwarded to the host agent install command."
+    Write-Host "                   Example: --init-system=self-extracting-pwsh"
+    Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
+}
+
+if ($Help) { Print-Help; exit 0 }
+
+if (-not $RemoteUrl) {
+    Write-Error "RemoteUrl is required"
+    Print-Help
+    exit 1
+}
 
 # Determine if we should accept self-signed certificates (for localhost/testing)
 $hostPart = $RemoteUrl -replace '^https?://', '' -replace '/.*$', '' -replace ':.*$', ''
@@ -130,6 +153,21 @@ try {
 
     Detect-Platform
 
+    $portSpecified = $PSBoundParameters.ContainsKey('Port')
+
+    # Pass all remaining arguments through to the host agent install command.
+    $binaryArgs = @()
+    if ($portSpecified) {
+        $binaryArgs += "--port"
+        $binaryArgs += $Port.ToString()
+    }
+
+    foreach ($arg in $InstallerArgs) {
+        # a guard against accidentally passing --port, as in the shell script, doesnt make sense here
+        # as the pwsh parser will handle that as script argument even if intermixed with arguments for the installer.
+        $binaryArgs += $arg
+    }
+
     Write-Host "Downloading host_agent for $PLATFORM/$ARCH from $RemoteUrl..."
 
     $downloadUrl = "$RemoteUrl/download/host_agent/$PLATFORM/$ARCH"
@@ -150,8 +188,8 @@ try {
 
     # Run the installer
     $installCmd = "./$script:FILENAME install"
-    if ($InstallerArgs) {
-        $installCmd += " " + ($InstallerArgs -join " ")
+    if ($binaryArgs) {
+        $installCmd += " " + ($binaryArgs -join " ")
     }
 
     Run-As-Elevated $installCmd

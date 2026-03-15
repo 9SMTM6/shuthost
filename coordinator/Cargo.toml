@@ -126,7 +126,6 @@ thiserror = "2.0"
 workspace = true
 
 [build-dependencies]
-# Generate PNG favicons from SVG at build time (no external browser)
 base64.workspace = true
 cargo-about = "0.8.4"
 eyre.workspace = true
@@ -134,13 +133,13 @@ handlebars = "6.3.2"
 hex.workspace = true
 krates = "0.20.0"
 regex.workspace = true
+# Generate PNG favicons from SVG at build time (no external browser)
 resvg = "0.47"
 serde_json.workspace = true
 serde.workspace = true
 sha2.workspace = true
 shuthost_common = { workspace = true, features = ["coordinator"] }
 spdx = { version = "0.13", features = ["text"] }
-# stuck at outdated because of resvg
 tiny-skia = "0.12"
 toml.workspace = true
 url = { version = "2", features = ["serde"] }

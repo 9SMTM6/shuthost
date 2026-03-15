@@ -6,13 +6,65 @@
 
 set -e
 
-if [ -z "$1" ]; then
-  echo "Usage: $0 <remote_url> [shuthost_host_agent install options..., get them by passing --help to the installer script]"
-  exit 1
-fi
+# Parse options
+REMOTE_URL=""
+DEFAULT_PORT="9090"
+PORT_SPECIFIED=false
 
-REMOTE_URL="$1"
-shift
+print_help() {
+    echo "Usage: $0 <remote_url> [--port PORT] [-- <install_args>]"
+    echo "Install ShutHost host agent from coordinator."
+    echo ""
+    echo "Arguments:" 
+    echo "  remote_url     URL of the coordinator"
+    echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
+    echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
+    echo "                 See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
+    echo "                 Note: init-system options may differ by platform, but the default is usually correct."
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            print_help; exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        --port=*)
+            DEFAULT_PORT="${1#--port=}"
+            PORT_SPECIFIED=true
+            ;;
+        --port)
+            shift
+            DEFAULT_PORT="$1"
+            PORT_SPECIFIED=true
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            if [ -z "$REMOTE_URL" ]; then
+                REMOTE_URL="$1"
+            else
+                echo "Unexpected argument: $1" >&2
+                print_help
+                exit 1
+            fi
+            ;;
+    esac
+    shift
+done
+
+# help handled during option parsing via print_help
+
+if [ -z "$REMOTE_URL" ]; then
+    echo "Error: remote_url is required" >&2
+    print_help
+    exit 1
+fi
 
 # Determine if we should accept self-signed certificates (for localhost/testing)
 HOST=$(echo "$REMOTE_URL" | sed -e 's|^https*://||' -e 's|/.*$||' -e 's|:.*$||')
@@ -22,31 +74,29 @@ else
     CURL_OPTS=""
 fi
 
-DEFAULT_PORT="9090"
-INSTALLER_ARGS=""
+# Prepare binary args
+BINARY_ARGS=""
+if $PORT_SPECIFIED; then
+    BINARY_ARGS="--port $DEFAULT_PORT"
+fi
 
-# Parse arguments for port
+# Collect remaining as binary args
+# Argument parsing beforehand ensured these remaining args were prepended by --
 while [ $# -gt 0 ]; do
-    case "$1" in
-        --port=*)
-            DEFAULT_PORT="${1#--port=}"
-            INSTALLER_ARGS="$INSTALLER_ARGS $1"
-            ;;
-        --port)
-            shift
-            DEFAULT_PORT="$1"
-            INSTALLER_ARGS="$INSTALLER_ARGS --port $1"
-            ;;
-        *)
-            # Escape any embedded double quotes
-            ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
-            if printf '%s' "$ESCAPED_ARG" | grep -q '[[:space:]]'; then
-                INSTALLER_ARGS="$INSTALLER_ARGS \"$ESCAPED_ARG\""
-            else
-                INSTALLER_ARGS="$INSTALLER_ARGS $ESCAPED_ARG"
-            fi
-            ;;
-    esac
+    if echo "$1" | grep -q '^--port'; then
+        echo "Error: --port cannot be passed via -- as it conflicts with installer option" >&2
+        exit 1
+    fi
+    # Escape any embedded double quotes
+    ESCAPED_ARG=$(printf '%s' "$1" | sed 's/\"/\\\"/g')
+    if [ -n "$BINARY_ARGS" ]; then
+        BINARY_ARGS="$BINARY_ARGS "
+    fi
+    if printf '%s' "$ESCAPED_ARG" | grep -q '[[:space:]]'; then
+        BINARY_ARGS="$BINARY_ARGS\"$ESCAPED_ARG\""
+    else
+        BINARY_ARGS="$BINARY_ARGS$ESCAPED_ARG"
+    fi
     shift
 done
 
@@ -133,7 +183,7 @@ echo "$ARCH"
 
 echo "$PLATFORM"
 
-echo "$INSTALLER_ARGS"
+echo "$BINARY_ARGS"
 
 
 curl --compressed -fL $CURL_OPTS "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
@@ -142,7 +192,7 @@ chmod +x "$OUTFILE"
 test_wol_packet_reachability
 
 # shellcheck disable=SC2090,SC2086
-run_as_elevated ./$OUTFILE install $INSTALLER_ARGS
+run_as_elevated ./$OUTFILE install $BINARY_ARGS
 
 set +v
 
