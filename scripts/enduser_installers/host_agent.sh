@@ -40,8 +40,15 @@ while getopts "t:b:h" opt; do
     esac
 done
 
-# Shift away the options parsed by getopts so remaining args start at first non-option
-shift "$((OPTIND - 2))" # IDK why this needs to be reduced by 2, but thats what works for me.
+# Shift away the options parsed by getopts so remaining args start at first non-option.
+# getopts leaves OPTIND pointing to the next positional argument. We subtract 2 here
+# because we want to keep the optional "--" separator in the remaining args (so
+# we can validate that the user passed it).
+#
+# `shift` rejects negative values; when no options are provided, OPTIND=1, so the
+# computed shift count would be negative. We attempt the desired shift and fall back
+# to `shift 0` if the computed value is invalid.
+shift "$((OPTIND - 2))" 2>/dev/null || shift 0
 
 # Parse binary args (remaining args after literal --)
 BINARY_ARGS=""
