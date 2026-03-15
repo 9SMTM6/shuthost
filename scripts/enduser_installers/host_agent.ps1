@@ -15,13 +15,15 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Print-Help {
-    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [-- <binary-args>]"
+    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [<binary-args> ...]"
     Write-Host "Install ShutHost host agent binary."
     Write-Host "Options:"
     Write-Host "  -Tag <tag>       Specify a release tag to download."
     Write-Host "  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'."
     Write-Host "  -Help            Show this help message."
-    Write-Host "  -- <args>        Pass additional arguments to the agent install subcommand."
+    Write-Host "  <binary-args>    Pass additional arguments to the agent install subcommand."
+    Write-Host "                   Example: --init-system=self-extracting-pwsh"
+    Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
     Write-Host "                   See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
     Write-Host "                   Note: init-system options may differ by platform, but the default is usually correct."
     Write-Host "If no options, defaults to latest release."
@@ -170,21 +172,6 @@ try {
     Write-Host "Detected platform: $TARGET_TRIPLE"
     Write-Host
 
-    # Unified handling for forwarded binary args:
-    # - If any BinaryArgs are provided they must start with a literal '--'.
-    # - A lone '--' is allowed and means "no forwarded args".
-    if ($BinaryArgs.Length -gt 0 -and $BinaryArgs[0] -ne "--") {
-        Write-Error "Forwarded binary arguments must be passed after a literal -- separator."
-        Print-Help
-        exit 1
-    }
-
-    if ($BinaryArgs.Length -le 1) {
-        $binaryArgs = @()
-    } else {
-        $binaryArgs = $BinaryArgs[1..($BinaryArgs.Length-1)]
-    }
-
     # Construct download URL and filename
     $FILENAME = "shuthost_host_agent-${TARGET_TRIPLE}.tar.gz"
     $DOWNLOAD_FILE_URL = "${DOWNLOAD_URL}/${FILENAME}"
@@ -200,8 +187,8 @@ try {
 
     # Run the installer
     $installCmd = "./$BINARY_NAME install"
-    if ($binaryArgs.Length -gt 0) {
-        $quotedArgs = $binaryArgs | ForEach-Object { "`"$_`"" }
+    if ($BinaryArgs.Length -gt 0) {
+        $quotedArgs = $BinaryArgs | ForEach-Object { "`"$_`"" }
         $installCmd += " " + ($quotedArgs -join " ")
     }
     Run-As-Elevated $installCmd

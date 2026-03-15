@@ -15,14 +15,16 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Print-Help {
-    Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [-- <install_args>]"
+    Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [<install_args> ...]"
     Write-Host "Install ShutHost host agent from coordinator."
     Write-Host ""
     Write-Host "Parameters:"
-    Write-Host "  remote_url     URL of the coordinator (required)"
-    Write-Host "  -Port <port>   Port for WoL testing (default: 9090), also passed to install command"
-    Write-Host "  -Help          Show this help message"
-    Write-Host "  -- <args>      Additional arguments for the host agent install command (except --port)"
+    Write-Host "  remote_url        URL of the coordinator (required)"
+    Write-Host "  -Port <port>      Port for WoL testing (default: 9090), also passed to install command"
+    Write-Host "  -Help             Show this help message"
+    Write-Host "  <install_args>    Additional arguments forwarded to the host agent install command."
+    Write-Host "                   Example: --init-system=self-extracting-pwsh"
+    Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
 }
 
 if ($Help) { Print-Help; exit 0 }
@@ -153,33 +155,16 @@ try {
 
     $portSpecified = $PSBoundParameters.ContainsKey('Port')
 
-    # Parse installer args (require explicit -- separator for forwarded install args)
+    # Pass all remaining arguments through to the host agent install command.
     $binaryArgs = @()
     if ($portSpecified) {
         $binaryArgs += "--port"
         $binaryArgs += $Port.ToString()
     }
 
-    # Unified handling for forwarded installer args:
-    # - If any InstallerArgs are provided they must start with a literal '--'.
-    # - A lone '--' is allowed and means "no forwarded args".
-    if ($InstallerArgs.Length -gt 0 -and $InstallerArgs[0] -ne "--") {
-        Write-Error "Forwarded installer arguments must be passed after a literal -- separator."
-        Print-Help
-        exit 1
-    }
-
-    if ($InstallerArgs.Length -le 1) {
-        $installerArgsList = @()
-    } else {
-        $installerArgsList = $InstallerArgs[1..($InstallerArgs.Length-1)]
-    }
-
-    foreach ($arg in $installerArgsList) {
-        if ($arg -like "--port*") {
-            Write-Error "--port cannot be passed via -- as it conflicts with installer option"
-            exit 1
-        }
+    foreach ($arg in $InstallerArgs) {
+        # a guard against accidentally passing --port, as in the shell script, doesnt make sense here
+        # as the pwsh parser will handle that as script argument even if intermixed with arguments for the installer.
         $binaryArgs += $arg
     }
 

@@ -19,6 +19,8 @@ print_help() {
     echo "  remote_url     URL of the coordinator"
     echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
     echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
+    echo "                 See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
+    echo "                 Note: init-system options may differ by platform, but the default is usually correct."
 }
 
 while [ $# -gt 0 ]; do
