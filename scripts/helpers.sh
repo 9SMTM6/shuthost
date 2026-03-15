@@ -99,12 +99,6 @@ verify_checksum() {
     echo "Please verify this checksum against the one provided for $FILENAME on the releases page:"
     echo "$BASE_URL"
     echo
-    # In CI environments, we assume checksum verification is handled by the CI pipeline.
-    if [ -n "${CI_MODE:-}" ] || [ -n "${CI:-}" ]; then
-        echo "CI_MODE/CI detected: automatically accepting checksum."
-        return 0
-    fi
-
     if [ -t 0 ]; then
         printf "Have you verified the checksum? (y/N): "
         read REPLY
