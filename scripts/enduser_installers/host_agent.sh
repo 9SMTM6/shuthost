@@ -93,7 +93,7 @@ echo "$TAG"
 
 echo "$ARCH"
 
-echo "$PLATFORM"
+echo "$OS"
 
 echo "$BINARY_ARGS"
 

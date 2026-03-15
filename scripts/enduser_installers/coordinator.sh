@@ -92,7 +92,7 @@ DOWNLOAD_FILE_URL="${DOWNLOAD_URL}/${FILENAME}"
 
 echo "$ARCH"
 
-echo "$PLATFORM"
+echo "$OS"
 
 echo "$BINARY_ARGS"
 
