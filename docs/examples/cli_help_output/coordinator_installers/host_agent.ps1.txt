@@ -1,8 +1,10 @@
-Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [-- <install_args>]
+Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [<install_args> ...]
 Install ShutHost host agent from coordinator.
 
 Parameters:
-  remote_url     URL of the coordinator (required)
-  -Port <port>   Port for WoL testing (default: 9090), also passed to install command
-  -Help          Show this help message
-  -- <args>      Additional arguments for the host agent install command (except --port)
+  remote_url        URL of the coordinator (required)
+  -Port <port>      Port for WoL testing (default: 9090), also passed to install command
+  -Help             Show this help message
+  <install_args>    Additional arguments forwarded to the host agent install command.
+                   Example: --init-system=self-extracting-pwsh
+                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name).

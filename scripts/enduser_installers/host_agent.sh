@@ -11,6 +11,7 @@ print_help() {
     echo "  -h           Show this help message."
     echo "  -- <args>    Pass additional arguments to the agent install subcommand."
     echo "               See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
+    echo "               Note: init-system options may differ by platform, but the default is usually correct."
     echo "If no options, defaults to latest release."
 }
 
