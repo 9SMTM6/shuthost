@@ -46,9 +46,12 @@ done
 # we can validate that the user passed it).
 #
 # `shift` rejects negative values; when no options are provided, OPTIND=1, so the
-# computed shift count would be negative. We attempt the desired shift and fall back
-# to `shift 0` if the computed value is invalid.
-shift "$((OPTIND - 2))" 2>/dev/null || shift 0
+# computed shift count would be negative.
+shift_count=$((OPTIND - 2))
+if [ "$shift_count" -lt 0 ]; then
+    shift_count=0
+fi
+shift "$shift_count"
 
 # Parse binary args (remaining args after literal --)
 BINARY_ARGS=""
