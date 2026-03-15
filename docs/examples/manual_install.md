@@ -38,5 +38,8 @@
   rm shuthost_coordinator
   # Access the WebUI at http://localhost:8080
   ```
+
+  ✅ For a copy of the exact CLI help output for the install command, see [docs/examples/cli_help_output/coordinator_install.txt](./cli_help_output/coordinator_install.txt).
+
 - Notes:
   - The installer will create service units for systemd or openrc where appropriate and set config file ownership/permissions.
