@@ -97,6 +97,8 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
   ```
   This script will automatically detect your platform, download the appropriate binary, print the checksum, and install the coordinator as a system service.
 
+  ✅ For the full install CLI help text (flags, defaults, etc.), see [docs/examples/cli_help_output/coordinator_install.txt](docs/examples/cli_help_output/coordinator_install.txt).
+
 - Or follow the [manual steps](docs/examples/manual_install.md).
 
 #### Docker (Linux only)
@@ -125,6 +127,9 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
 
 ### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
+
+  ✅ The full CLI install help text is checked into this repo at [docs/examples/cli_help_output/host_agent_install_linux.txt](docs/examples/cli_help_output/host_agent_install_linux.txt).
+
 - To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
 
 ## ⚡ Agent-only Install
