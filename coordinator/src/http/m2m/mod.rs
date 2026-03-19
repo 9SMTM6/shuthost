@@ -134,14 +134,11 @@ async fn handle_m2m_lease_action(
         };
 
         // Lookup host config and apply runtime overrides via shared helper.
-        let host_with_name = match lookup_host_with_overrides(&state, &host).await {
-            Some(h) => h,
-            None => {
-                return Err((
-                    SC::NOT_FOUND,
-                    format!("No configuration found for host {}", host),
-                ));
-            }
+        let Some(host_with_name) = lookup_host_with_overrides(&state, &host).await else {
+            return Err((
+                SC::NOT_FOUND,
+                format!("No configuration found for host {host}"),
+            ));
         };
 
         match poll_and_wait(&host_with_name, &state.hoststatus_tx, desired_state).await {
