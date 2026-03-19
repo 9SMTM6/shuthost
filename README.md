@@ -215,6 +215,10 @@ These are generated or validated automatically as part of the test suite, and th
   * https://crates.io/crates/windows-service
   * https://crates.io/crates/planif
 * port test-client-scripts to run locally as well
+* add tests for push agents notifications
+  * copilot:
+    > New UDP startup broadcast handling (parsing, HMAC validation, override persistence, and status marking) is introduced without tests, while this module already has unit tests. Adding tests for valid/invalid packets, timestamp/HMAC failures, and the override update/clear behavior would help prevent regressions.
+* we need to properly handle UDP ports from the coordinator in tests, currently this leads to error spams in the logs - but since that error is non critical - might want to reconsider that too - and we dont actively use this feature in the tests yet, so its not a huge issue currently.
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik
 * add tests for OIDC refresh flow
 * pages-deployment and release-test workflows currently trigger too often, its just very annoying to debug, but perhaps I can get that solved some day
