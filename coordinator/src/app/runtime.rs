@@ -470,70 +470,108 @@ async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppSt
         return;
     };
 
-    // The signed message format is "timestamp|{json}|signature".
-    // We extract the JSON so we can look up the host's secret before doing full HMAC validation.
-    let Some((_, json_payload, _)) = parse_hmac_message(raw) else {
-        debug!("Malformed startup packet from {peer_addr}");
+    let Some(startup) = parse_startup_broadcast(raw, peer_addr) else {
         return;
     };
 
-    let broadcast: BroadcastMessage = match serde_json::from_str(&json_payload) {
-        Ok(b) => b,
-        Err(e) => {
-            debug!("Failed to parse startup broadcast JSON from {peer_addr}: {e}");
-            return;
-        }
-    };
-
-    let BroadcastMessage::AgentStartup(ref startup) = broadcast;
     let hostname = &startup.hostname;
-
-    let config = state.config_rx.borrow().clone();
-    let Some(host_cfg) = config.hosts.get(hostname).cloned() else {
-        debug!("Startup broadcast for unknown host '{hostname}' from {peer_addr}, ignoring");
+    let Some(host_cfg) = lookup_host_config(state, hostname, peer_addr) else {
         return;
     };
 
-    // Full HMAC + timestamp validation using the host's shared secret.
-    if !matches!(
-        validate_hmac_message(raw, &host_cfg.shared_secret),
-        HmacValidationResult::Valid(_)
-    ) {
-        warn!("Invalid HMAC on startup broadcast from {peer_addr} claiming to be '{hostname}'");
+    if !validate_startup_hmac(raw, &host_cfg, peer_addr, hostname) {
         return;
     }
 
     info!("Received valid startup broadcast from host '{hostname}' at {peer_addr}");
 
-    // Immediately mark host Online to avoid waiting for the next poll cycle.
-    {
-        let mut status_map = state.hoststatus_tx.borrow().as_ref().clone();
-        if status_map.get(hostname.as_str()) != Some(&HostState::Online) {
-            status_map.insert(hostname.clone(), HostState::Online);
-            if state.hoststatus_tx.send(Arc::new(status_map)).is_err() {
-                debug!("Host status channel closed");
-            }
+    mark_host_online(state, hostname);
+    persist_host_override_if_needed(state, hostname, &host_cfg, &startup).await;
+}
+
+fn parse_startup_broadcast(
+    raw: &str,
+    peer_addr: SocketAddr,
+) -> Option<shuthost_common::StartupBroadcast> {
+    // The signed message format is "timestamp|{json}|signature".
+    // We extract the JSON so we can look up the host's secret before doing full HMAC validation.
+    let Some((_, json_payload, _)) = parse_hmac_message(raw) else {
+        debug!("Malformed startup packet from {peer_addr}");
+        return None;
+    };
+
+    match serde_json::from_str::<BroadcastMessage>(&json_payload) {
+        Ok(BroadcastMessage::AgentStartup(startup)) => Some(startup),
+        Err(e) => {
+            debug!("Failed to parse startup broadcast JSON from {peer_addr}: {e}");
+            None
         }
     }
+}
 
-    // If the agent's IP/port differs from the config, persist an override.
+fn lookup_host_config(state: &AppState, hostname: &str, peer_addr: SocketAddr) -> Option<Host> {
+    let config = state.config_rx.borrow().clone();
+    match config.hosts.get(hostname).cloned() {
+        Some(cfg) => Some(cfg),
+        None => {
+            debug!("Startup broadcast for unknown host '{hostname}' from {peer_addr}, ignoring");
+            None
+        }
+    }
+}
+
+fn validate_startup_hmac(
+    raw: &str,
+    host_cfg: &Host,
+    peer_addr: SocketAddr,
+    hostname: &str,
+) -> bool {
+    let mac_is_valid = matches!(
+        validate_hmac_message(raw, &host_cfg.shared_secret),
+        HmacValidationResult::Valid(_)
+    );
+    if !mac_is_valid {
+        debug!("Invalid HMAC on startup broadcast from {peer_addr} claiming to be '{hostname}'");
+    }
+    mac_is_valid
+}
+
+fn mark_host_online(state: &AppState, hostname: &str) {
+    let mut status_map = state.hoststatus_tx.borrow().as_ref().clone();
+    if status_map.get(hostname) != Some(&HostState::Online) {
+        status_map.insert(hostname.to_string(), HostState::Online);
+        if state.hoststatus_tx.send(Arc::new(status_map)).is_err() {
+            debug!("Host status channel closed");
+        }
+    }
+}
+
+async fn persist_host_override_if_needed(
+    state: &AppState,
+    hostname: &str,
+    host_cfg: &Host,
+    startup: &shuthost_common::StartupBroadcast,
+) {
     let agent_ip = &startup.ip_address;
     let agent_port = startup.port;
+
     if agent_ip != &host_cfg.ip || agent_port != host_cfg.port {
         warn!(
             "Host '{hostname}' address differs from config: config={}:{}, agent={}:{}; storing override",
             host_cfg.ip, host_cfg.port, agent_ip, agent_port
         );
+
         {
             let mut overrides = state.host_overrides.write().await;
             overrides.insert(
-                hostname.clone(),
+                hostname.to_string(),
                 db::HostOverride {
                     ip: agent_ip.clone(),
                     port: agent_port,
                 },
             );
         }
+
         if let Some(ref pool) = state.db_pool
             && let Err(e) = db::upsert_host_ip_override(pool, hostname, agent_ip, agent_port).await
         {
