@@ -173,9 +173,8 @@ pub async fn handle_host_state(
     debug!("Current state for host '{}': {:?}", host, current_state);
 
     // Lookup host config and runtime overrides using shared helper.
-    let host_with_name = match lookup_host_with_overrides(state, host).await {
-        Some(h) => h,
-        None => return Err(HostControlError::NotFound(host.to_string())),
+    let Some(host_with_name) = lookup_host_with_overrides(state, host).await else {
+        return Err(HostControlError::NotFound(host.to_string()));
     };
 
     if should_be_running && current_state == HostState::Offline {

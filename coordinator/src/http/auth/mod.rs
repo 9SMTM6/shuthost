@@ -9,8 +9,8 @@ pub mod middleware;
 pub mod oidc;
 pub mod token;
 
+use alloc::fmt;
 use alloc::sync::Arc;
-use std::fmt;
 
 use crate::{
     app::{
@@ -18,7 +18,7 @@ use crate::{
         db::{KV_AUTH_TOKEN, KV_COOKIE_SECRET},
     },
     config::OidcConfig,
-    http::auth::oidc::{OidcClientReady},
+    http::auth::oidc::OidcClientReady,
 };
 use axum::extract::FromRef;
 use axum::response::Redirect;
@@ -79,10 +79,13 @@ pub(crate) enum Resolved {
 /// Custom debug impl to cut down on logging clutter
 impl fmt::Debug for Resolved {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
+        match *self {
             Resolved::Token { .. } => write!(f, "Token"),
-            Resolved::Oidc { config, .. } => write!(f, "Oidc({config:?})"),
-            _ => write!(f, "{self:?}"),
+            Resolved::Oidc { ref config, .. } => write!(f, "Oidc({config:?})"),
+            Resolved::External { exceptions_version } => {
+                write!(f, "External{{exceptions_version: {exceptions_version}}}")
+            }
+            Resolved::Disabled => write!(f, "Disabled"),
         }
     }
 }

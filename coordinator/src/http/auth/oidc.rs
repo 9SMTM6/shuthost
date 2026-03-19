@@ -140,10 +140,7 @@ pub(crate) async fn login(
     jar: SignedCookieJar,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let auth::Resolved::Oidc {
-        ref config,
-    } = auth.mode
-    else {
+    let auth::Resolved::Oidc { ref config } = auth.mode else {
         return Redirect::to("/").into_response();
     };
     let scopes = &config.scopes;
@@ -161,10 +158,12 @@ pub(crate) async fn login(
         tracing::info!(return_to = %return_to, "oidc_login: existing session, redirecting to return_to");
         return (jar, Redirect::to(&return_to)).into_response();
     }
-    let client = build_client(&config.issuer, &config.client_id, &config.client_secret).await.unwrap_or_else(|e| {
-        tracing::error!(%e, "Failed to build OIDC client");
-        panic!("Failed to build OIDC client: {e}");
-    });
+    let client = build_client(&config.issuer, &config.client_id, &config.client_secret)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!(%e, "Failed to build OIDC client");
+            panic!("Failed to build OIDC client: {e}");
+        });
     let client = match set_redirect_uri(&client, &headers) {
         Ok(c) => c,
         Err(sc) => return sc.into_response(),
@@ -346,7 +345,7 @@ fn id_token_from_response(
     }
 }
 
-async fn verify_id_token_and_build_session(
+fn verify_id_token_and_build_session(
     client: &SharedOidcClient,
     id_token: &CoreIdToken,
     nonce_cookie: Option<&Nonce>,
@@ -375,7 +374,7 @@ async fn verify_id_token_and_build_session(
         Ok(OIDCSessionClaims { sub, exp })
     }
 
-    do_verify(&client, id_token, nonce_cookie)
+    do_verify(client, id_token, nonce_cookie)
 }
 
 /// Exchange code, verify `id_token` and build session
@@ -397,7 +396,7 @@ async fn process_token_and_build_session(
     let token_response = exchange_code_for_token(client, code, pkce_verifier).await?;
     let id_token = id_token_from_response(&token_response)?;
     let nonce_cookie = nonce_from_cookie(jar);
-    verify_id_token_and_build_session(&client, &id_token, nonce_cookie.as_ref()).await
+    verify_id_token_and_build_session(client, &id_token, nonce_cookie.as_ref())
 }
 
 /// OIDC callback handler
@@ -413,10 +412,7 @@ pub(crate) async fn callback(
         error_description,
     }): extract::Query<CallbackQueryParams>,
 ) -> impl IntoResponse {
-    let auth::Resolved::Oidc {
-        ref config,
-    } = auth.mode
-    else {
+    let auth::Resolved::Oidc { ref config } = auth.mode else {
         return Redirect::to("/").into_response();
     };
 
@@ -428,10 +424,12 @@ pub(crate) async fn callback(
         return resp;
     }
 
-    let client = build_client(&config.issuer, &config.client_id, &config.client_secret).await.unwrap_or_else(|e| {
-        tracing::error!(%e, "Failed to build OIDC client");
-        panic!("Failed to build OIDC client: {e}");
-    });
+    let client = build_client(&config.issuer, &config.client_id, &config.client_secret)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!(%e, "Failed to build OIDC client");
+            panic!("Failed to build OIDC client: {e}");
+        });
 
     let client = match set_redirect_uri(&client, &headers) {
         Ok(c) => c,
