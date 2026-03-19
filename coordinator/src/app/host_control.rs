@@ -150,7 +150,7 @@ pub(crate) enum HostControlError {
 /// High-level application entrypoint for handling host state transitions.
 /// Returns a `HostControlError` describing any failure.
 #[tracing::instrument(skip(state), err(Debug))]
-pub async fn handle_host_state(
+async fn handle_host_state(
     host: &str,
     state: &AppState,
     lease_set: &LeaseSources,
