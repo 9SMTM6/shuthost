@@ -44,22 +44,22 @@ export default defineConfig({
     projects: [
         {
             name: 'Desktop Dark',
-            testIgnore: ["mobile-navigation.spec.*"],
+            testMatch: ["accessibility-scan.spec.ts", "functional.spec.ts", "pwa-installability.spec.ts", "aria-snapshots.spec.ts", "visual-regression.spec.ts"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
         },
         {
             name: 'Desktop Light',
-            testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*", "mobile-navigation.spec.*"],
+            testMatch: ["accessibility-scan.spec.ts", "visual-regression.spec.ts"],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
         },
         {
             name: 'Mobile Dark',
-            testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
+            testMatch: ["accessibility-scan.spec.ts", "mobile-navigation.spec.ts", "visual-regression.spec.ts"],
             use: { ...devices['Pixel 7'], colorScheme: 'dark' },
         },
         {
             name: 'Mobile Light',
-            testIgnore: ["aria-snapshots.spec.*", "pwa-installability.spec.*", "functional.spec.*"],
+            testMatch: ["accessibility-scan.spec.ts", "mobile-navigation.spec.ts", "visual-regression.spec.ts"],
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
         },
     ],
