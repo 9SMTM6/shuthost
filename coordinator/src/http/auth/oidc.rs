@@ -433,13 +433,13 @@ pub(crate) async fn callback(
         panic!("Failed to build OIDC client: {e}");
     });
 
-    let client_for_redirect = match set_redirect_uri(&client, &headers) {
+    let client = match set_redirect_uri(&client, &headers) {
         Ok(c) => c,
         Err(sc) => return sc.into_response(),
     };
 
     // Log useful debug info to diagnose token exchange issues
-    tracing::debug!(redirect_uri = %client_for_redirect.redirect_uri().expect("Should be set now").as_str(), "OIDC callback computed redirect URI");
+    tracing::debug!(redirect_uri = %client.redirect_uri().expect("Should be set now").as_str(), "OIDC callback computed redirect URI");
 
     let session = match process_token_and_build_session(&client, &jar, code).await {
         Ok(s) => {
