@@ -1,0 +1,15 @@
+{
+    "name": "shuthost-oidc-integration-tests",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "npx tsc --noEmit && npx playwright test",
+        "install-chromium": "playwright install chromium",
+        "install-chromium-ci": "playwright install chromium --with-deps"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.43.0",
+        "@types/node": "25.x",
+        "typescript": "^5.8.3"
+    }
+}
