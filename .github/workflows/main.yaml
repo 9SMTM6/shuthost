@@ -904,6 +904,46 @@ jobs:
             frontend/test-results
           compression-level: 9
 
+  oidc-integration-tests:
+    name: Run OIDC Integration Tests (Dex)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: *checkout
+
+      - run: rustup update stable
+
+      - uses: *rust-cache
+
+      - name: Build coordinator (release)
+        env:
+          OIDC_DANGER_ACCEPT_INVALID_CERTS: "1"
+        run: cargo build --release --bin shuthost_coordinator
+
+      - name: Install node deps and Playwright Chromium
+        run: |
+          cd tests/oidc-integration
+          npm ci
+          npx playwright install chromium --with-deps
+
+      - name: Run OIDC integration tests
+        env:
+          CI: true
+          SKIP_BUILD: "1"
+        run: |
+          cd tests/oidc-integration
+          npx playwright test --reporter=line
+
+      - name: Upload OIDC Playwright report + test-results
+        if: always()
+        uses: *upload-artifact
+        with:
+          name: oidc-integration-playwright-artifacts-${{ github.run_id }}
+          path: |
+            tests/oidc-integration/playwright-report
+            target/playwright-oidc-test-results
+          compression-level: 9
+
   test-client-scripts:
     name: Test Client Scripts (virtual)
     runs-on: ubuntu-latest
@@ -953,6 +993,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - playwright-tests
+      - oidc-integration-tests
       - test
       - validate-file-snapshots
       - ci-only-tests
@@ -965,6 +1006,7 @@ jobs:
       - build-coordinators
       # test-aggregate
       - playwright-tests
+      - oidc-integration-tests
       - test
       - validate-file-snapshots
       ## ci-only-tests
