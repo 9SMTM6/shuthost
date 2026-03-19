@@ -62,5 +62,10 @@ export default defineConfig({
             testMatch: ["accessibility-scan.spec.ts", "mobile-navigation.spec.ts", "visual-regression.spec.ts"],
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
         },
+        {
+            name: 'Mobile Landscape',
+            testMatch: ["accessibility-scan.spec.ts", "visual-regression.spec.ts"],
+            use: { ...devices['Pixel 7 landscape'], colorScheme: 'dark' },
+        },
     ],
 });
