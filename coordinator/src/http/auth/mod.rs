@@ -17,7 +17,7 @@ use crate::{
         db::{KV_AUTH_TOKEN, KV_COOKIE_SECRET},
     },
     config::OidcConfig,
-    http::auth::oidc::{OidcClientReady, build_client},
+    http::auth::oidc::{OidcClientReady},
 };
 use axum::extract::FromRef;
 use axum::response::Redirect;
@@ -25,7 +25,6 @@ use axum_extra::extract::cookie::Key;
 use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
-use tokio::sync::RwLock;
 use tracing::{Instrument as _, info, warn};
 
 use crate::{
@@ -57,7 +56,7 @@ pub(crate) struct Runtime {
 
 /// Shared (async) lock around the runtime OIDC client so it can be rebuilt on the fly when
 /// discovery or key material changes.
-pub(crate) type SharedOidcClient = Arc<RwLock<OidcClientReady>>;
+pub(crate) type SharedOidcClient = OidcClientReady;
 
 #[derive(Debug)]
 pub(crate) enum Resolved {
@@ -69,7 +68,6 @@ pub(crate) enum Resolved {
     /// configuration so the client can be rebuilt on demand (e.g. when a
     /// discovery failure triggers a refresh).
     Oidc {
-        client: SharedOidcClient,
         config: OidcConfig,
     },
     /// External auth (reverse proxy / external provider) acknowledged by operator.
@@ -178,17 +176,10 @@ async fn resolve_auth_mode(mode: &AuthMode, db_pool: Option<&DbPool>) -> eyre::R
                 .await
         }
         AuthMode::Oidc(ref oidc_cfg) => {
-            let client_inner = build_client(
-                &oidc_cfg.issuer,
-                &oidc_cfg.client_id,
-                &oidc_cfg.client_secret,
-            )
-            .in_current_span()
-            .await
-            .wrap_err("Failed to build OIDC client")?;
-            let client = Arc::new(RwLock::new(client_inner));
+            // TODO: we removed the building of the client in here.
+            // Either something doesnt work out with that, or, which i find rather likely right now,,
+            // The failure to set the redirect-url here caused the issues with OIDC we observed.
             Ok(Resolved::Oidc {
-                client,
                 config: oidc_cfg.clone(),
             })
         }
