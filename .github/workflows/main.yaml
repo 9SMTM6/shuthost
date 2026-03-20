@@ -631,8 +631,13 @@ jobs:
           try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null } catch { Write-Error "Coordinator service is not running"; exit 1 }
 
           # Run installer and capture output
+          # Use Start-Process with file redirection to avoid RemoteException when child process writes to stderr
           curl.exe -sSLO 'http://localhost:8080/download/client_installer.ps1'
-          $CLIENT_INSTALL_OUT = powershell -ExecutionPolicy Bypass -File .\client_installer.ps1 http://localhost:8080 2>&1 | Out-String
+          $outFile = [System.IO.Path]::GetTempFileName()
+          $errFile = [System.IO.Path]::GetTempFileName()
+          Start-Process powershell -ArgumentList @("-ExecutionPolicy", "Bypass", "-File", ".\client_installer.ps1", "http://localhost:8080") -Wait -NoNewWindow -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+          $CLIENT_INSTALL_OUT = ((Get-Content $outFile -Raw) + "`n" + (Get-Content $errFile -Raw))
+          Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
           Write-Host "--- installer output start ---"
           Write-Host $CLIENT_INSTALL_OUT
           $CLIENT_PATH = [regex]::Match($CLIENT_INSTALL_OUT, '([A-Za-z]:\\[^ ]*shuthost_client_[^ ]*\.ps1)').Groups[1].Value
@@ -664,7 +669,11 @@ jobs:
           # Run the client and capture output.
           # The client is now registered, so the request should succeed.
           # We want to test that the request is sent correctly and succeeds
-          $OUTPUT = powershell -ExecutionPolicy Bypass -File $CLIENT_PATH take testhost -Async 2>&1 | Out-String
+          $outFile2 = [System.IO.Path]::GetTempFileName()
+          $errFile2 = [System.IO.Path]::GetTempFileName()
+          Start-Process powershell -ArgumentList @("-ExecutionPolicy", "Bypass", "-File", $CLIENT_PATH, "take", "testhost", "-Async") -Wait -NoNewWindow -RedirectStandardOutput $outFile2 -RedirectStandardError $errFile2
+          $OUTPUT = ((Get-Content $outFile2 -Raw) + "`n" + (Get-Content $errFile2 -Raw))
+          Remove-Item $outFile2, $errFile2 -Force -ErrorAction SilentlyContinue
           Write-Host "--- client output start ---"
           Write-Host $OUTPUT
           Write-Host "--- client output end ---"
