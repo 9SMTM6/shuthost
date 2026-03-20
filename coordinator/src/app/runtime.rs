@@ -1,7 +1,10 @@
 //! Background polling tasks for the coordinator.
 
 use alloc::sync::Arc;
-use core::{net::{IpAddr, SocketAddr}, time::Duration};
+use core::{
+    net::{IpAddr, SocketAddr},
+    time::Duration,
+};
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
@@ -599,12 +602,11 @@ async fn persist_host_override_if_needed(
             }
         }
 
-        if removed_override {
-            if let Some(ref pool) = state.db_pool
-                && let Err(e) = db::delete_host_ip_override(pool, hostname).await
-            {
-                error!("Failed to clear IP override for '{hostname}': {e}");
-            }
+        if removed_override
+            && let Some(ref pool) = state.db_pool
+            && let Err(e) = db::delete_host_ip_override(pool, hostname).await
+        {
+            error!("Failed to clear IP override for '{hostname}': {e}");
         }
     }
 }

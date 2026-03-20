@@ -192,6 +192,14 @@ pub(crate) async fn upsert_host_ip_override(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn delete_host_ip_override(pool: &DbPool, hostname: &str) -> eyre::Result<()> {
+    sqlx::query!("DELETE FROM host_ip_overrides WHERE hostname = ?", hostname,)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Loads all leases from the database into the in-memory map.
 ///
 /// # Arguments
