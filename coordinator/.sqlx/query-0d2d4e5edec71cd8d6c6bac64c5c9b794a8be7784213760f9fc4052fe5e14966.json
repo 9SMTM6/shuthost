@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM host_ip_overrides WHERE hostname = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "0d2d4e5edec71cd8d6c6bac64c5c9b794a8be7784213760f9fc4052fe5e14966"
+}
