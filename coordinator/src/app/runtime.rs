@@ -15,6 +15,7 @@ use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpStream, UdpSocket},
+    task::JoinSet,
     time::{Instant, MissedTickBehavior, interval, timeout},
 };
 use tracing::{debug, error, info, warn};
@@ -125,16 +126,19 @@ pub(super) async fn poll_until_host_state(
 }
 
 /// Start all background tasks for the HTTP server.
+/// Returns a [`JoinSet`] that owns all spawned tasks; dropping it aborts them all.
 pub(super) fn start_background_tasks(
     state: &AppState,
     config_tx: &ConfigTx,
     config_path: &Path,
     broadcast_socket: UdpSocket,
-) {
+) -> JoinSet<()> {
+    let mut tasks = JoinSet::new();
+
     // Start host status polling task
     {
         let state = state.clone();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             poll_host_statuses(state).await;
         });
     }
@@ -143,7 +147,7 @@ pub(super) fn start_background_tasks(
     {
         let path = config_path.to_path_buf();
         let config_tx = config_tx.clone();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             watch_config_file(path, config_tx).await;
         });
     }
@@ -152,7 +156,7 @@ pub(super) fn start_background_tasks(
     {
         let ws_tx = state.ws_tx.clone();
         let mut hoststatus_rx = state.hoststatus_tx.subscribe();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             while hoststatus_rx.changed().await.is_ok() {
                 let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
                 if ws_tx.send(msg).is_err() {
@@ -165,7 +169,7 @@ pub(super) fn start_background_tasks(
     // Log host state transitions.
     {
         let mut hoststatus_rx = state.hoststatus_tx.subscribe();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             let mut prev = hoststatus_rx.borrow().clone();
             while hoststatus_rx.changed().await.is_ok() {
                 let current = hoststatus_rx.borrow().clone();
@@ -183,7 +187,7 @@ pub(super) fn start_background_tasks(
     {
         let ws_tx = state.ws_tx.clone();
         let mut config_rx = state.config_rx.clone();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             while config_rx.changed().await.is_ok() {
                 let config = config_rx.borrow();
                 let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
@@ -200,7 +204,7 @@ pub(super) fn start_background_tasks(
     {
         let leases_rx = state.leases.subscribe();
         let state = state.clone();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             reconcile_on_lease_change(leases_rx, state).await;
         });
     }
@@ -209,7 +213,7 @@ pub(super) fn start_background_tasks(
     {
         let leases_rx = state.leases.subscribe();
         let ws_tx = state.ws_tx.clone();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             broadcast_lease_updates(leases_rx, ws_tx).await;
         });
     }
@@ -217,10 +221,12 @@ pub(super) fn start_background_tasks(
     // Listens for UDP startup broadcasts from agents and persists IP overrides.
     {
         let state = state.clone();
-        tokio::spawn(async move {
+        tasks.spawn(async move {
             listen_for_agent_startup(state, broadcast_socket).await;
         });
     }
+
+    tasks
 }
 
 /// Determine whether the given host configuration and observed runtime state

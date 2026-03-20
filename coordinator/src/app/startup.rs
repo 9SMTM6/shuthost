@@ -109,7 +109,9 @@ pub(crate) async fn start(
         .wrap_err(format!("Failed to bind UDP broadcast socket on {broadcast_addr}"))?;
     tracing::info!("Listening for agent startup broadcasts on {broadcast_addr}");
 
-    start_background_tasks(&app_state, &config_tx, config_path, broadcast_socket);
+    // Hold the JoinSet for the lifetime of the server — dropping it aborts all background tasks.
+    let _background_tasks =
+        start_background_tasks(&app_state, &config_tx, config_path, broadcast_socket);
 
     start_server(
         app_state,

@@ -33,7 +33,7 @@ async fn websocket_config_updates() {
         .await
         .expect("failed to write config");
 
-    let _child = spawn_coordinator_with_config_file(&config_path);
+    let _child = spawn_coordinator_with_config_file(&config_path, port);
     wait_for_listening(port, 5).await;
 
     // Connect websocket client

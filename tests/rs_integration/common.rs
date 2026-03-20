@@ -85,11 +85,14 @@ pub(crate) fn spawn_coordinator_with_config(port: u16, config_toml: &str) -> Kil
     let tmp = env::temp_dir().join(format!("integration_test_config_{port}.toml"));
     fs::write(&tmp, config_toml).expect("failed to write config");
 
-    spawn_coordinator_with_config_file(&tmp)
+    spawn_coordinator_with_config_file(&tmp, port)
 }
 
 /// Spawn the coordinator service from a given config file path.
-pub(crate) fn spawn_coordinator_with_config_file(config_path: &Path) -> KillOnDrop {
+pub(crate) fn spawn_coordinator_with_config_file(
+    config_path: &Path,
+    broadcast_port: u16,
+) -> KillOnDrop {
     let cli = CoordinatorCli::parse_from([
         "shuthost_coordinator",
         "control-service",
@@ -97,6 +100,8 @@ pub(crate) fn spawn_coordinator_with_config_file(config_path: &Path) -> KillOnDr
         "pretty",
         "--config",
         config_path.to_str().unwrap(),
+        "--broadcast-port",
+        &broadcast_port.to_string(),
     ]);
     let handle = tokio::spawn(async move {
         // SAFETY: This is only used in integration tests and no user-facing code. It just tells the coordinator to log less verbose output.
