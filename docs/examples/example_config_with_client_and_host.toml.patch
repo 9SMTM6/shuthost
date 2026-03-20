@@ -1,4 +1,4 @@
---- example_config.toml	2026-03-01 13:16:09.258618367 +0100
+--- example_config.toml	2026-03-01 16:31:27.908295225 +0100
 +++ example_config_with_client_and_host.toml	2026-03-01 13:17:11.988617759 +0100
 @@ -129,27 +129,28 @@
  # The host agent installer will print the exact configuration line you need to add here.
