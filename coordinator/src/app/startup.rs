@@ -3,8 +3,10 @@ use core::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use tracing::Instrument as _;
 
+use eyre::WrapErr as _;
 use tokio::{net, signal};
 
+use super::runtime::start_background_tasks;
 use super::state::{self, AppState};
 use crate::{
     config::TlsConfig,
@@ -83,10 +85,11 @@ pub(crate) async fn start(
     config_path: &Path,
     port_override: Option<u16>,
     bind_override: Option<&str>,
+    broadcast_port_override: Option<u16>,
 ) -> eyre::Result<()> {
     tracing::info!("Starting HTTP server...");
 
-    let (app_state, tls_opt) = state::initialize_state(config_path).await?;
+    let (app_state, tls_opt, config_tx) = state::initialize_state(config_path).await?;
 
     // Apply optional overrides from CLI/tests
     let listen_port = port_override.unwrap_or(app_state.config_rx.borrow().server.port);
@@ -96,6 +99,17 @@ pub(crate) async fn start(
     );
 
     let listen_ip: IpAddr = bind_str.parse()?;
+
+    // Bind the UDP broadcast socket early so failures are fatal on startup.
+    let broadcast_port =
+        broadcast_port_override.unwrap_or(app_state.config_rx.borrow().server.broadcast_port);
+    let broadcast_addr = format!("0.0.0.0:{broadcast_port}");
+    let broadcast_socket = net::UdpSocket::bind(&broadcast_addr)
+        .await
+        .wrap_err(format!("Failed to bind UDP broadcast socket on {broadcast_addr}"))?;
+    tracing::info!("Listening for agent startup broadcasts on {broadcast_addr}");
+
+    start_background_tasks(&app_state, &config_tx, config_path, broadcast_socket);
 
     start_server(
         app_state,

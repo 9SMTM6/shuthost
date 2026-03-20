@@ -13,7 +13,6 @@ use crate::{
     app::{
         LeaseMapRaw, LeaseState,
         db::{self, DbPool},
-        runtime::start_background_tasks,
     },
     config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
     http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth},
@@ -146,7 +145,7 @@ fn emit_startup_warnings(app_state: &AppState) {
 #[tracing::instrument(skip_all)]
 pub(super) async fn initialize_state(
     config_path: &Path,
-) -> eyre::Result<(AppState, Option<TlsConfig>)> {
+) -> eyre::Result<(AppState, Option<TlsConfig>, ConfigTx)> {
     let initial_config = Arc::new(load(config_path).await?);
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
@@ -212,10 +211,7 @@ pub(super) async fn initialize_state(
         db_pool,
     };
 
-    // Start background tasks now that the full AppState is available.
-    start_background_tasks(&app_state, &config_tx, config_path);
-
     emit_startup_warnings(&app_state);
 
-    Ok((app_state, tls_opt))
+    Ok((app_state, tls_opt, config_tx))
 }

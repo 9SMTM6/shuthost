@@ -63,6 +63,10 @@ pub struct ServiceArgs {
     /// Optional override for the bind address (overrides bind in config)
     #[arg(long)]
     pub bind: Option<String>,
+
+    /// Optional override for the UDP broadcast listen port (overrides broadcast_port in config)
+    #[arg(long)]
+    pub broadcast_port: Option<u16>,
     /// Logging format
     #[arg(long, value_enum, default_value_t = LogFormat::default())]
     pub log_format: LogFormat,

@@ -15,7 +15,7 @@ use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpStream, UdpSocket},
-    time::{Instant, MissedTickBehavior, interval, sleep, timeout},
+    time::{Instant, MissedTickBehavior, interval, timeout},
 };
 use tracing::{debug, error, info, warn};
 
@@ -125,7 +125,12 @@ pub(super) async fn poll_until_host_state(
 }
 
 /// Start all background tasks for the HTTP server.
-pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, config_path: &Path) {
+pub(super) fn start_background_tasks(
+    state: &AppState,
+    config_tx: &ConfigTx,
+    config_path: &Path,
+    broadcast_socket: UdpSocket,
+) {
     // Start host status polling task
     {
         let state = state.clone();
@@ -213,7 +218,7 @@ pub(super) fn start_background_tasks(state: &AppState, config_tx: &ConfigTx, con
     {
         let state = state.clone();
         tokio::spawn(async move {
-            listen_for_agent_startup(state).await;
+            listen_for_agent_startup(state, broadcast_socket).await;
         });
     }
 }
@@ -419,48 +424,27 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
     }
 }
 
-/// Background task: listens on the configured UDP broadcast port for agent startup announcements.
+/// Background task: listens on the pre-bound UDP socket for agent startup announcements.
 /// When a valid signed broadcast is received, the host is immediately marked Online and any
 /// IP/port differences are persisted as overrides.
-async fn listen_for_agent_startup(state: AppState) {
-    let mut config_rx = state.config_rx.clone();
+///
+/// The socket is bound once at startup. `broadcast_port` changes in the config file are never
+/// propagated at runtime (the config watcher only applies `[hosts]` and `[clients]` changes),
+/// so no port-change handling is needed here.
+async fn listen_for_agent_startup(state: AppState, socket: UdpSocket) {
+    let bound_port = socket.local_addr().map(|a| a.port()).unwrap_or(0);
+    let mut buf = vec![0u8; 4096];
     loop {
-        let broadcast_port = config_rx.borrow_and_update().server.broadcast_port;
-        let addr = format!("0.0.0.0:{broadcast_port}");
-        let socket = match UdpSocket::bind(&addr).await {
-            Ok(s) => {
-                info!("Listening for agent startup broadcasts on {addr}");
-                s
+        match socket.recv_from(&mut buf).await {
+            Ok((n, peer_addr)) => {
+                let data = buf
+                    .get(..n)
+                    .expect("n should be <= buf.size by definition")
+                    .to_vec();
+                handle_startup_packet(&data, peer_addr, &state).await;
             }
             Err(e) => {
-                error!("Failed to bind UDP broadcast socket on {addr}: {e}");
-                sleep(Duration::from_secs(5)).await;
-                continue;
-            }
-        };
-
-        let mut buf = vec![0u8; 4096];
-        loop {
-            tokio::select! {
-                result = socket.recv_from(&mut buf) => {
-                    match result {
-                        Ok((n, peer_addr)) => {
-                            let data = buf.get(..n).expect("n should be <= buf.size by definition").to_vec();
-                            handle_startup_packet(&data, peer_addr, &state).await;
-                        }
-                        Err(e) => {
-                            error!("UDP receive error on port {broadcast_port}: {e}");
-                            break;
-                        }
-                    }
-                }
-                _ = config_rx.changed() => {
-                    let new_port = config_rx.borrow().server.broadcast_port;
-                    if new_port != broadcast_port {
-                        info!("Broadcast port changed from {broadcast_port} to {new_port}, rebinding");
-                        break;
-                    }
-                }
+                error!("UDP receive error on port {bound_port}: {e}");
             }
         }
     }
