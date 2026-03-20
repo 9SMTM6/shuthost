@@ -4,24 +4,27 @@ set -eu
 
 # Print help (does not exit)
 print_help() {
-    echo "Usage: $0 [-t tag] [-b branch] [-h] [-- <binary-args>]"
+    echo "Usage: $0 [-t tag] [-b branch] [-i] [-h] [-- <binary-args>]"
     echo "Install ShutHost coordinator binary."
     echo "Options:"
     echo "  -t tag       Specify a release tag to download."
     echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
+    echo "  -i           Pass --help to the coordinator install subcommand and exit."
     echo "  -h           Show this help message."
     echo "  -- <args>    Pass additional arguments to the coordinator install subcommand."
-    echo "               See repository path: docs/examples/cli_help_output/coordinator_install.txt for subcommand help."
+    echo "               Use -i to see available install subcommand arguments."
     echo "If no options, defaults to latest release."
 }
 
 # Parse command line options
 TAG=""
 BRANCH=""
-while getopts "t:b:h" opt; do
+INSTALL_HELP=false
+while getopts "t:b:ih" opt; do
     case $opt in
         t) TAG="$OPTARG" ;;
         b) BRANCH="$OPTARG" ;;
+        i) INSTALL_HELP=true ;;
         h) print_help; exit 0 ;;
         *) echo "Invalid option" >&2; print_help; exit 1 ;;
     esac
@@ -111,10 +114,14 @@ verify_checksum
 tar -xzf "$FILENAME"
 
 # Run the installer
-run_as_elevated ./shuthost_coordinator install "$(whoami)" $BINARY_ARGS
+if $INSTALL_HELP; then
+    ./shuthost_coordinator install --help
+else
+    run_as_elevated ./shuthost_coordinator install "$(whoami)" $BINARY_ARGS
 
-set +v
+    set +v
 
-echo "Installation complete!"
-echo "Access the WebUI at http://localhost:8080"
-echo
+    echo "Installation complete!"
+    echo "Access the WebUI at http://localhost:8080"
+    echo
+fi

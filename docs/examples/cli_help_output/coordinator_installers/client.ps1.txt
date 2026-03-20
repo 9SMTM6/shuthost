@@ -1,7 +1,0 @@
-Usage: .\client.ps1 [-RemoteUrl <url>] [-ClientId <id>] [-Help]
-Install ShutHost client script.
-
-Parameters:
-  -RemoteUrl <url>    URL of the coordinator (default: http://localhost:8080)
-  -ClientId <id>      Custom client ID (default: generated)
-  -Help               Show this help message

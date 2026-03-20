@@ -96,8 +96,7 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
   curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_coordinator_installer.sh | sh
   ```
   This script will automatically detect your platform, download the appropriate binary, print the checksum, and install the coordinator as a system service.
-
-  ✅ For the full install CLI help text (flags, defaults, etc.), see [docs/examples/cli_help_output/coordinator_install.txt](docs/examples/cli_help_output/coordinator_install.txt).
+  Pass `-i` to see all available install subcommand options (e.g. custom port or user).
 
 - Or follow the [manual steps](docs/examples/manual_install.md).
 
@@ -127,8 +126,7 @@ Windows [isn't supported by the coordinator](frontend/assets/partials/platform_s
 
 ### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
-
-  ✅ The full CLI install help text is checked into this repo at [docs/examples/cli_help_output/host_agent_install_linux.txt](docs/examples/cli_help_output/host_agent_install_linux.txt).
+  Pass `--install-help` (shell) or `-InstallHelp` (PowerShell) to the install script to see all available install subcommand options.
 
 - To install a client (M2M, e.g., backup scripts): switch to the Clients tab, open "Install Client" and follow the instructions shown.
 

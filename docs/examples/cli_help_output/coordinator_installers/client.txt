@@ -1,6 +1,0 @@
-Usage: scripts/coordinator_installers/client.sh [REMOTE_URL] [CLIENT_ID]
-Install ShutHost client script.
-
-Arguments:
-  REMOTE_URL    URL of the coordinator (default: http://localhost:8080)
-  CLIENT_ID     Custom client ID (default: generated)

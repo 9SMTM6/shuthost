@@ -18,9 +18,8 @@ Install with the released host agent installer (recommended when you want a pack
 curl -fsSL https://github.com/9SMTM6/shuthost/releases/latest/download/shuthost_host_agent_installer.sh | sh
 ```
 
-✅ The full CLI install help text (flags and defaults) is checked into this repo at [docs/examples/cli_help_output/host_agent_install_linux.txt](./cli_help_output/host_agent_install_linux.txt).
-
 The installer detects your platform, installs the agent binary and service unit where appropriate, and creates a restrictive default configuration file.
+Pass `-i` (shell) or `-InstallHelp` (PowerShell) to see all available install subcommand options (e.g. custom port, hostname, or shared secret).
 
 ### Generate a direct-control script
 
