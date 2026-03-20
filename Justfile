@@ -272,12 +272,9 @@ release TYPE skip_coverage_and_file_snapshots="false":
     esac
     echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
     sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
-    cd frontend
-    npx playwright test --update-snapshots all
-    cd ..
     git add .
     while true; do
-        read -p "Please check the new snapshots and any other changes. Continue with commit? (y/N/s for shell) " -n 1 -r REPLY
+        read -p "Please check the staged changes. Continue with commit? (y/N/s for shell) " -n 1 -r REPLY
         echo
         case $REPLY in
             [Yy])
