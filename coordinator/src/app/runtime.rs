@@ -1,7 +1,7 @@
 //! Background polling tasks for the coordinator.
 
 use alloc::sync::Arc;
-use core::{net::SocketAddr, time::Duration};
+use core::{net::{IpAddr, SocketAddr}, time::Duration};
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
@@ -555,6 +555,17 @@ async fn persist_host_override_if_needed(
     let agent_ip = &startup.ip_address;
     let agent_port = startup.port;
 
+    // Validate the agent-reported IP address before trusting/persisting it.
+    let agent_ip_trimmed = agent_ip.trim();
+    let parsed_ip = agent_ip_trimmed.parse::<IpAddr>();
+    if let Err(e) = parsed_ip {
+        warn!(
+            "Ignoring invalid agent IP address '{}' for host '{}': {e}",
+            agent_ip, hostname
+        );
+        return;
+    }
+
     if agent_ip != &host_cfg.ip || agent_port != host_cfg.port {
         warn!(
             "Host '{hostname}' address differs from config: config={}:{}, agent={}:{}; storing override",
@@ -576,6 +587,24 @@ async fn persist_host_override_if_needed(
             && let Err(e) = db::upsert_host_ip_override(pool, hostname, agent_ip, agent_port).await
         {
             error!("Failed to persist IP override for '{hostname}': {e}");
+        }
+    } else {
+        // The agent-reported address matches the static config again.
+        // Clear any existing override from memory and the database.
+        let mut removed_override = false;
+        {
+            let mut overrides = state.host_overrides.write().await;
+            if overrides.remove(hostname).is_some() {
+                removed_override = true;
+            }
+        }
+
+        if removed_override {
+            if let Some(ref pool) = state.db_pool
+                && let Err(e) = db::delete_host_ip_override(pool, hostname).await
+            {
+                error!("Failed to clear IP override for '{hostname}': {e}");
+            }
         }
     }
 }
