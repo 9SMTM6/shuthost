@@ -116,9 +116,9 @@ function Test-WolPacketReachability {
     Remove-Job $job -ErrorAction SilentlyContinue
 
     if ($TEST_RESULT -match '"broadcast":true') {
-        Write-Host "✓ Broadcast WoL packets working"
+        Write-Host "[OK] Broadcast WoL packets working"
     } else {
-        Write-Host "⚠️  Broadcast WoL packets failed - check firewall rules for UDP port 9"
+        Write-Warning "Broadcast WoL packets failed - check firewall rules for UDP port 9"
     }
 }
 
