@@ -8,6 +8,8 @@ param(
     [string]$Port = "9090",
     [Parameter(Mandatory=$false)]
     [switch]$Help,
+    [Parameter(Mandatory=$false)]
+    [switch]$InstallHelp,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
@@ -22,9 +24,11 @@ function Print-Help {
     Write-Host "  remote_url        URL of the coordinator (required)"
     Write-Host "  -Port <port>      Port for WoL testing (default: 9090), also passed to install command"
     Write-Host "  -Help             Show this help message"
+    Write-Host "  -InstallHelp      Pass --help to the host agent install subcommand and exit"
     Write-Host "  <install_args>    Additional arguments forwarded to the host agent install command."
     Write-Host "                   Example: --init-system=self-extracting-pwsh"
     Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
+    Write-Host "                   Use -InstallHelp to see available install subcommand arguments."
 }
 
 if ($Help) { Print-Help; exit 0 }
@@ -184,17 +188,20 @@ try {
         & chmod +x $script:FILENAME
     }
 
-    Test-WolPacketReachability
+    if ($InstallHelp) {
+        & "./$script:FILENAME" install --help
+    } else {
+        Test-WolPacketReachability
 
-    # Run the installer
-    $installCmd = "./$script:FILENAME install"
-    if ($binaryArgs) {
-        $installCmd += " " + ($binaryArgs -join " ")
+        # Run the installer
+        $installCmd = "./$script:FILENAME install"
+        if ($binaryArgs) {
+            $installCmd += " " + ($binaryArgs -join " ")
+        }
+        Run-As-Elevated $installCmd
+
+        Write-Host "Installation complete!"
     }
-
-    Run-As-Elevated $installCmd
-
-    Write-Host "Installation complete!"
 
 } finally {
     Cleanup

@@ -10,6 +10,7 @@ set -e
 REMOTE_URL=""
 DEFAULT_PORT="9090"
 PORT_SPECIFIED=false
+INSTALL_HELP=false
 
 print_help() {
     echo "Usage: $0 <remote_url> [--port PORT] [-- <install_args>]"
@@ -18,15 +19,18 @@ print_help() {
     echo "Arguments:" 
     echo "  remote_url     URL of the coordinator"
     echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
+    echo "  --install-help Pass --help to the host agent install subcommand and exit"
     echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
-    echo "                 See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
-    echo "                 Note: init-system options may differ by platform, but the default is usually correct."
+    echo "                 Use --install-help to see available install subcommand arguments."
 }
 
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help)
             print_help; exit 0
+            ;;
+        --install-help)
+            INSTALL_HELP=true
             ;;
         --)
             shift
@@ -189,10 +193,14 @@ echo "$BINARY_ARGS"
 curl --compressed -fL $CURL_OPTS "${REMOTE_URL}/download/host_agent/$PLATFORM/$ARCH" -o "$OUTFILE"
 chmod +x "$OUTFILE"
 
-test_wol_packet_reachability
+if $INSTALL_HELP; then
+    ./"$OUTFILE" install --help
+else
+    test_wol_packet_reachability
 
-# shellcheck disable=SC2090,SC2086
-run_as_elevated ./$OUTFILE install $BINARY_ARGS
+    # shellcheck disable=SC2090,SC2086
+    run_as_elevated ./$OUTFILE install $BINARY_ARGS
+fi
 
 set +v
 

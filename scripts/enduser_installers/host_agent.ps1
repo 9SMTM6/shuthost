@@ -8,24 +8,26 @@ param(
     [string]$Branch,
     [Parameter(Mandatory=$false)]
     [switch]$Help,
+    [Parameter(Mandatory=$false)]
+    [switch]$InstallHelp,
     [Parameter(ValueFromRemainingArguments=$true)]
-    [string[]]$BinaryArgs
+    [string[]]$InstallerArgs
 )
 
 $ErrorActionPreference = 'Stop'
 
 function Print-Help {
-    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [<binary-args> ...]"
+    Write-Host "Usage: .\host_agent.ps1 [-Tag <tag>] [-Branch <branch>] [-Help] [<install_args> ...]"
     Write-Host "Install ShutHost host agent binary."
     Write-Host "Options:"
     Write-Host "  -Tag <tag>       Specify a release tag to download."
     Write-Host "  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'."
     Write-Host "  -Help            Show this help message."
-    Write-Host "  <binary-args>    Pass additional arguments to the agent install subcommand."
+    Write-Host "  -InstallHelp     Pass --help to the host agent install subcommand and exit."
+    Write-Host "  <install_args>    Pass additional arguments to the agent install subcommand."
     Write-Host "                   Example: --init-system=self-extracting-pwsh"
     Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
-    Write-Host "                   See repository path: docs/examples/cli_help_output/host_agent_install_linux.txt for subcommand help."
-    Write-Host "                   Note: init-system options may differ by platform, but the default is usually correct."
+    Write-Host "                   Use -InstallHelp to see available install subcommand arguments."
     Write-Host "If no options, defaults to latest release."
 }
 
@@ -180,21 +182,26 @@ try {
 
     & $curlCmd -fLO $DOWNLOAD_FILE_URL
 
-    Verify-Checksum
+    if (-not $InstallHelp) {
+        Verify-Checksum
+    }
 
     # Extract the archive
     & tar -xzf $FILENAME
 
     # Run the installer
-    $installCmd = "./$BINARY_NAME install"
-    if ($BinaryArgs.Length -gt 0) {
-        $quotedArgs = $BinaryArgs | ForEach-Object { "`"$_`"" }
-        $installCmd += " " + ($quotedArgs -join " ")
+    if ($InstallHelp) {
+        & "./$BINARY_NAME" install --help
+    } else {
+        $installCmd = "./$BINARY_NAME install"
+        if ($InstallerArgs.Length -gt 0) {
+            $quotedArgs = $InstallerArgs | ForEach-Object { "`"$_`"" }
+            $installCmd += " " + ($quotedArgs -join " ")
+        }
+        Run-As-Elevated $installCmd
+        Write-Host "Installation complete!"
+        Write-Host
     }
-    Run-As-Elevated $installCmd
-
-    Write-Host "Installation complete!"
-    Write-Host
 
     # Clean up the installer script itself
     Remove-Item -Path $MyInvocation.MyCommand.Path -ErrorAction SilentlyContinue
