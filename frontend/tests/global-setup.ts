@@ -36,7 +36,7 @@ const globalSetup = async () => {
 
         const args = key === 'demo'
             ? ['demo-service', '--port', String(port)]
-            : ['control-service', '--port', String(port), `--config=${configPathForKey(key)}`];
+            : ['control-service', '--port', String(port), '--broadcast-port', String(port), `--config=${configPathForKey(key)}`];
         console.log(`spawning ${key} coordinator on port ${port}`);
         spawn(BACKEND_PATH, args, { stdio: 'inherit', env: { RUST_LOG: 'error', ...process.env } });
 
