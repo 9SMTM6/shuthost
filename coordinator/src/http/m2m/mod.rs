@@ -111,6 +111,18 @@ async fn handle_m2m_lease_action(
 
     let is_async = query.r#async.unwrap_or(false);
 
+    // In sync mode, validate that the host exists and has configuration
+    // before mutating lease state. This avoids leaving behind leases/DB
+    // rows for unknown or mistyped hostnames.
+    if !is_async {
+        let Some(_host_with_name) = lookup_host_with_overrides(&state, &host).await else {
+            return Err((
+                StatusCode::NOT_FOUND,
+                format!("No configuration found for host {host}"),
+            ));
+        };
+    }
+
     update_lease(&host, lease_source, action, &state)
         .await
         .map_err(|e| {
