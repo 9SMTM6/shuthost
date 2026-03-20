@@ -182,6 +182,7 @@ single_option_map = "warn"
 std_instead_of_alloc = "warn"
 std_instead_of_core = "warn"
 struct_excessive_bools = "warn"
+tail_expr_drop_order = "allow"            # This doesnt help in this project, sincewe're already in 2024 edition
 tests_outside_test_module = "warn"
 todo = "warn"
 too_long_first_doc_paragraph = "warn"

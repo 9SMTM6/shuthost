@@ -64,7 +64,7 @@ pub struct ServiceArgs {
     #[arg(long)]
     pub bind: Option<String>,
 
-    /// Optional override for the UDP broadcast listen port (overrides broadcast_port in config)
+    /// Optional override for the UDP broadcast listen port (overrides `broadcast_port` in config)
     #[arg(long)]
     pub broadcast_port: Option<u16>,
     /// Logging format

@@ -106,7 +106,9 @@ pub(crate) async fn start(
     let broadcast_addr = format!("0.0.0.0:{broadcast_port}");
     let broadcast_socket = net::UdpSocket::bind(&broadcast_addr)
         .await
-        .wrap_err(format!("Failed to bind UDP broadcast socket on {broadcast_addr}"))?;
+        .wrap_err(format!(
+            "Failed to bind UDP broadcast socket on {broadcast_addr}"
+        ))?;
     tracing::info!("Listening for agent startup broadcasts on {broadcast_addr}");
 
     // Hold the JoinSet for the lifetime of the server — dropping it aborts all background tasks.

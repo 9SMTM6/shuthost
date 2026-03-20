@@ -112,9 +112,14 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             info!("Starting coordinator");
 
             // Pass through optional port/bind overrides from CLI
-            start(&config_path, args.port, args.bind.as_deref(), args.broadcast_port)
-                .in_current_span()
-                .await?;
+            start(
+                &config_path,
+                args.port,
+                args.bind.as_deref(),
+                args.broadcast_port,
+            )
+            .in_current_span()
+            .await?;
             Ok(())
         }
         Command::DemoService {
