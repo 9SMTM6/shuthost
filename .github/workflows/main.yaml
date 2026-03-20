@@ -254,9 +254,28 @@ jobs:
     name: Test Direct Control (Windows)
     runs-on: windows-latest
     needs: [build-host_agents]
+    defaults:
+      run:
+        shell: powershell
 
     steps:
       - uses: *checkout
+
+      - &disable-pwsh
+        name: Disable pwsh to detect PowerShell Core dependencies
+        run: |
+          $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+          if ($pwshPath) {
+            Rename-Item $pwshPath "$pwshPath.disabled" -Force
+            Write-Host "Disabled pwsh at $pwshPath"
+          } else {
+            Write-Host "pwsh not found in PATH, nothing to disable"
+          }
+          if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+            Write-Error "pwsh is still accessible in PATH after disabling"
+            exit 1
+          }
+          Write-Host "Verified: pwsh is not in PATH"
 
       - name: Download host_agent binary
         uses: *download-artifact
@@ -576,12 +595,17 @@ jobs:
     name: Test Client Scripts on Windows
     runs-on: windows-latest
     needs: [build-coordinators]
+    defaults:
+      run:
+        shell: powershell
 
     steps:
       - name: Download coordinator binary
         uses: *download-artifact
         with:
           name: coordinator-x86_64-pc-windows-msvc
+
+      - *disable-pwsh
 
       - name: Windows - Start service in background && Install and run client
         run: |
@@ -599,7 +623,7 @@ jobs:
           "@ | Out-File -FilePath shuthost_coordinator.toml -Encoding UTF8
 
           # Start the coordinator service
-          ./shuthost_coordinator.exe control-service --config shuthost_coordinator.toml &
+          Start-Process -FilePath ".\shuthost_coordinator.exe" -ArgumentList @("control-service", "--config", "shuthost_coordinator.toml")
           # Wait for coordinator to be ready (timeout 30s)
           for ($i = 1; $i -le 30; $i++) {
             try { Invoke-WebRequest -Uri http://localhost:8080/login -UseBasicParsing | Out-Null; break } catch { Start-Sleep 1 }
@@ -630,7 +654,7 @@ jobs:
             Get-Content shuthost_coordinator.toml
             # Restart coordinator to reload config, since the file watcher doesnt work on windows
             Stop-Process -Name shuthost_coordinator -Force -ErrorAction SilentlyContinue
-            ./shuthost_coordinator.exe control-service --config shuthost_coordinator.toml &
+            Start-Process -FilePath ".\shuthost_coordinator.exe" -ArgumentList @("control-service", "--config", "shuthost_coordinator.toml")
             Start-Sleep 1
           } else {
             Write-Error "Could not parse client config line from installer output"; exit 1
