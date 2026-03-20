@@ -176,7 +176,8 @@ try {
 
     Write-Host "Downloading host_agent for $PLATFORM/$ARCH from $RemoteUrl at $downloadUrl..."
 
-    & $curlCmd --compressed -fL $curlOpts $downloadUrl -o $script:FILENAME
+    $curlDownloadArgs = @($curlOpts) + @('--compressed', '-fL', $downloadUrl, '-o', $script:FILENAME)
+    & $curlCmd @curlDownloadArgs
 
     if (-not (Test-Path $script:FILENAME)) {
         Write-Error "Failed to download binary"
