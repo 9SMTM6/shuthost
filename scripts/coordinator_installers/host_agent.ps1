@@ -37,7 +37,7 @@ if (-not $RemoteUrl) {
 
 # Determine if we should accept self-signed certificates (for localhost/testing)
 $hostPart = $RemoteUrl -replace '^https?://', '' -replace '/.*$', '' -replace ':.*$', ''
-$curlOpts = if ($hostPart -eq 'localhost' -or $hostPart -match '^127\.') { '-k' } else { '' }
+$curlOpts = if ($hostPart -eq 'localhost' -or $hostPart -match '^127\.') { @('-k') } else { @() }
 
 $isUnix = $PSVersionTable.Platform -eq 'Unix'
 $curlCmd = if ($isUnix) { 'curl' } else { 'curl.exe' }
@@ -168,9 +168,9 @@ try {
         $binaryArgs += $arg
     }
 
-    Write-Host "Downloading host_agent for $PLATFORM/$ARCH from $RemoteUrl..."
-
     $downloadUrl = "$RemoteUrl/download/host_agent/$PLATFORM/$ARCH"
+
+    Write-Host "Downloading host_agent for $PLATFORM/$ARCH from $RemoteUrl at $downloadUrl..."
 
     & $curlCmd --compressed -fL $curlOpts $downloadUrl -o $script:FILENAME
 
