@@ -21,7 +21,7 @@ pub(crate) fn execute_shutdown(config: &ServiceOptions) -> Result<(), io::Error>
 
     const IS_WINDOWS: bool = cfg!(target_os = "windows");
 
-    process::Command::new(if IS_WINDOWS { "pwsh" } else { "sh" })
+    process::Command::new(if IS_WINDOWS { "powershell.exe" } else { "sh" })
         .arg(if IS_WINDOWS { "-Command" } else { "-c" })
         .arg(&config.shutdown_command)
         .spawn()?
