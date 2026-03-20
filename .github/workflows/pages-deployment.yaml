@@ -91,7 +91,7 @@ jobs:
           pwsh -ExecutionPolicy Bypass -File ./client_installer.ps1 https://9smtm6.github.io/shuthost
 
   host-agent-installer-test:
-    name: Test live-demo host agent installer
+    name: Test live-demo host agent installer (shell)
     runs-on: ${{ matrix.os }}
     needs: deploy_gh_pages
     if: *cond
@@ -101,4 +101,29 @@ jobs:
     steps:
       - name: Install host agent
         run: |
-          curl -fsSL https://9smtm6.github.io/shuthost/download/host_agent_installer.sh | sh -s https://9smtm6.github.io/shuthost --broadcast-port 5757
+          curl -fsSL https://9smtm6.github.io/shuthost/download/host_agent_installer.sh | sh -s https://9smtm6.github.io/shuthost -- --broadcast-port 5757
+
+  host-agent-ps1-installer-test-windows:
+    name: Test live-demo host agent installer (powershell on Windows)
+    runs-on: windows-latest
+    needs: deploy_gh_pages
+    if: *cond
+    steps:
+      - name: Install host agent
+        run: |
+          curl.exe -sSLO 'https://9smtm6.github.io/shuthost/download/host_agent_installer.ps1'
+          powershell -ExecutionPolicy Bypass -File .\host_agent_installer.ps1 https://9smtm6.github.io/shuthost --broadcast-port 5757
+
+  host-agent-ps1-installer-test-unix:
+    name: Test live-demo host agent installer (powershell on Unix)
+    runs-on: ${{ matrix.os }}
+    needs: deploy_gh_pages
+    if: *cond
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Install host agent
+        run: |
+          curl -sSLO https://9smtm6.github.io/shuthost/download/host_agent_installer.ps1
+          pwsh -ExecutionPolicy Bypass -File ./host_agent_installer.ps1 https://9smtm6.github.io/shuthost --broadcast-port 5757
