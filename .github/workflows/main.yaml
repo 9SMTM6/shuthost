@@ -384,6 +384,8 @@ jobs:
     needs: [build-coordinators]
 
     steps:
+      - uses: *checkout
+
       - name: Download coordinator binary
         uses: *download-artifact
         with:
@@ -420,6 +422,8 @@ jobs:
     needs: [build-coordinators]
 
     steps:
+      - uses: *checkout
+
       - name: Download coordinator binary
         uses: *download-artifact
         with:
@@ -444,6 +448,8 @@ jobs:
       image: docker.io/heywoodlh/openrc:latest
       options: --privileged --memory=2g
     steps:
+      - uses: *checkout
+
       - name: Download coordinator binary
         uses: *download-artifact
         with:
