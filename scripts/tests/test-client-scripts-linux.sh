@@ -33,10 +33,10 @@ if [ -n "$clientConfigLine" ]; then
   cat "$CONFIG_PATH"
   # Add the host if not present
   if ! grep -q 'testhost' "$CONFIG_PATH"; then
-    sed -i.bak '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$CONFIG_PATH" && rm "$CONFIG_PATH.bak"
+    sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$CONFIG_PATH"
   fi
   # Add the client under [clients]
-  sed -i.bak '/^\[clients\]$/a '"$clientConfigLine" "$CONFIG_PATH" && rm "$CONFIG_PATH.bak"
+  sed -i '/^\[clients\]$/a '"$clientConfigLine" "$CONFIG_PATH"
   echo "Added client to config: $clientConfigLine"
   echo "Config file after modification:"
   cat "$CONFIG_PATH"
