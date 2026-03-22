@@ -54,6 +54,34 @@ const showJSError = (message: string) => {
     }
 };
 
+/**
+ * Wrapper for fetch that redirects to login on 401 responses, shows errors for other failures, and throws.
+ */
+const apiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+    try {
+        const resp = await fetch(url, options);
+        if (resp.status === 401) {
+            window.location.assign('/login');
+            throw new Error('Unauthorized');
+        }
+        if (!resp.ok) {
+            const errorMsg = `HTTP ${resp.status}: ${resp.statusText}`;
+            showJSError(errorMsg);
+            throw new Error(errorMsg);
+        }
+        return resp;
+    } catch (err) {
+        if (err instanceof Error && err.message === 'Unauthorized') throw err;
+        // For other errors (network, etc.), show error and re-throw
+        if (err instanceof Error) {
+            showJSError(err.message);
+        } else {
+            showJSError('Unknown fetch error');
+        }
+        throw err;
+    }
+};
+
 // Global WebSocket reference for bfcache handling
 let currentSocket: WebSocket | null = null;
 
@@ -63,13 +91,12 @@ let currentSocket: WebSocket | null = null;
  */
 const checkAuthThenReconnect = async () => {
     try {
-        const resp = await fetch('/api/hosts_status', { credentials: 'same-origin' });
-        if (resp.status === 401) {
-            window.location.href = '/login';
-            return;
-        }
+        await apiFetch('/api/hosts_status', { credentials: 'same-origin' });
     } catch (err) {
-        // Network error or other issue, proceed to reconnect
+        // If unauthorized, apiFetch already redirected, so just return
+        if (err instanceof Error && err.message === 'Unauthorized') return;
+        // Other errors, apiFetch already showed error, proceed to reconnect
+        console.error('Auth check failed:', err);
     }
     setTimeout(connectWebSocket, 2000);
 };
@@ -438,8 +465,9 @@ const updateLease = async (host: string, action: LeaseAction) => {
         return;
     }
     try {
-        await fetch(`/api/lease/${host}/${action}`, { method: 'POST' });
+        await apiFetch(`/api/lease/${host}/${action}`, { method: 'POST' });
     } catch (err) {
+        if (err instanceof Error && err.message === 'Unauthorized') return; // Already redirected
         console.error(`Failed to ${action} lease for ${host}:`, err);
     }
 };
@@ -455,8 +483,9 @@ const resetClientLeases = async (clientId: string) => {
         return;
     }
     try {
-        await fetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
+        await apiFetch(`/api/reset_leases/${clientId}`, { method: 'POST' });
     } catch (err) {
+        if (err instanceof Error && err.message === 'Unauthorized') return; // Already redirected
         console.error(`Failed to reset leases for client ${clientId}:`, err);
     }
 };
