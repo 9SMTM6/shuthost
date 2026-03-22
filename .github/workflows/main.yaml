@@ -410,50 +410,9 @@ jobs:
 
       - name: Install and run client
         run: |
-          # Run installer and capture output
-          CLIENT_INSTALL_OUT=$(curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080 2>&1 || true)
-          echo "--- installer output start ---"
-          echo "$CLIENT_INSTALL_OUT"
-          CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
-          echo "Detected client path: $CLIENT_PATH"
-          if [ -z "$CLIENT_PATH" ]; then
-            echo "Client path not found in installer output"; exit 1
-          fi
-
-          # Parse the client config line from installer output and add to config
-          clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
-          if [ -n "$clientConfigLine" ]; then
-            config_path="/Users/$(whoami)/.config/shuthost_coordinator/config.toml"
-            echo "Config file before modification:"
-            sudo cat "$config_path"
-            # Add the host if not present
-            if ! sudo grep -q 'testhost' "$config_path"; then
-              sudo sed -i '' '/^\[hosts\]$/a\'$'\n''testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
-            fi
-            # Add the client under [clients]
-            sudo sed -i '' '/^\[clients\]$/a\'$'\n'"$clientConfigLine" "$config_path"
-            echo "Added client to config: $clientConfigLine"
-            echo "Config file after modification:"
-            sudo cat "$config_path"
-            # Wait for config reload
-            sleep 5
-          else
-            echo "Could not parse client config line from installer output"; exit 1
-          fi
-
-          # Run the client and capture output.
-          # The client is now registered, so the request should succeed.
-          # We want to test that the request is sent correctly and succeeds
-          OUTPUT=$($CLIENT_PATH take testhost --async 2>&1 || true)
-          echo "--- client output start ---"
-          echo "$OUTPUT"
-          echo "--- client output end ---"
-
-          # Ensure the request succeeded (no error messages)
-          if echo "$OUTPUT" | grep -iq "error\|failed"; then
-            echo 'Client request failed!';
-            exit 1
-          fi
+          export PORT=8080
+          export CONFIG_PATH="/Users/$(whoami)/.config/shuthost_coordinator/config.toml"
+          sh scripts/tests/test-client-scripts-linux.sh
 
   test-client-scripts-ubuntu:
     name: Test Client Scripts on Ubuntu
@@ -472,50 +431,9 @@ jobs:
 
       - name: Install and run client
         run: |
-          # Run installer and capture output
-          CLIENT_INSTALL_OUT=$(curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080 2>&1 || true)
-          echo "--- installer output start ---"
-          echo "$CLIENT_INSTALL_OUT"
-          CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
-          echo "Detected client path: $CLIENT_PATH"
-          if [ -z "$CLIENT_PATH" ]; then
-            echo "Client path not found in installer output"; exit 1
-          fi
-
-          # Parse the client config line from installer output and add to config
-          clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
-          if [ -n "$clientConfigLine" ]; then
-            config_path="/home/$(whoami)/.config/shuthost_coordinator/config.toml"
-            echo "Config file before modification:"
-            sudo cat "$config_path"
-            # Add the host if not present
-            if ! sudo grep -q 'testhost' "$config_path"; then
-              sudo sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
-            fi
-            # Add the client under [clients]
-            sudo sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
-            echo "Added client to config: $clientConfigLine"
-            echo "Config file after modification:"
-            sudo cat "$config_path"
-            # Wait for config reload
-            sleep 5
-          else
-            echo "Could not parse client config line from installer output"; exit 1
-          fi
-
-          # Run the client and capture output.
-          # The client is now registered, so the request should succeed.
-          # We want to test that the request is sent correctly and succeeds
-          OUTPUT=$($CLIENT_PATH take testhost --async 2>&1 || true)
-          echo "--- client output start ---"
-          echo "$OUTPUT"
-          echo "--- client output end ---"
-
-          # Ensure the request succeeded (no error messages)
-          if echo "$OUTPUT" | grep -iq "error\|failed"; then
-            echo 'Client request failed!';
-            exit 1
-          fi
+          export PORT=8080
+          export CONFIG_PATH="/home/$(whoami)/.config/shuthost_coordinator/config.toml"
+          sh scripts/tests/test-client-scripts-linux.sh
 
   test-client-scripts-alpine:
     name: Test Client Scripts on Alpine (Docker)
@@ -546,50 +464,9 @@ jobs:
 
       - name: Install and run client
         run: |
-          # Run installer and capture output
-          CLIENT_INSTALL_OUT=$(curl -fsSL http://localhost:8080/download/client_installer.sh | sh -s http://localhost:8080 2>&1 || true)
-          echo "--- installer output start ---"
-          echo "$CLIENT_INSTALL_OUT"
-          CLIENT_PATH=$(echo "$CLIENT_INSTALL_OUT" | grep -Eo '/[^ ]*shuthost_client_[^ ]*' | head -n1)
-          echo "Detected client path: $CLIENT_PATH"
-          if [ -z "$CLIENT_PATH" ]; then
-            echo "Client path not found in installer output"; exit 1
-          fi
-
-          # Parse the client config line from installer output and add to config
-          clientConfigLine=$(echo "$CLIENT_INSTALL_OUT" | grep '^".*" = { shared_secret = ".*" }$')
-          if [ -n "$clientConfigLine" ]; then
-            config_path="/home/root/.config/shuthost_coordinator/config.toml"
-            echo "Config file before modification:"
-            cat "$config_path"
-            # Add the host if not present
-            if ! grep -q 'testhost' "$config_path"; then
-              sed -i '/^\[hosts\]$/a testhost = { ip = "127.0.0.1", mac = "disableWOL", port = 9000, shared_secret = "testsecret" }' "$config_path"
-            fi
-            # Add the client under [clients]
-            sed -i '/^\[clients\]$/a '"$clientConfigLine" "$config_path"
-            echo "Added client to config: $clientConfigLine"
-            echo "Config file after modification:"
-            cat "$config_path"
-            # Wait for config reload
-            sleep 5
-          else
-            echo "Could not parse client config line from installer output"; exit 1
-          fi
-
-          # Run the client and capture output.
-          # The client is now registered, so the request should succeed.
-          # We want to test that the request is sent correctly and succeeds
-          OUTPUT=$($CLIENT_PATH take testhost --async 2>&1 || true)
-          echo "--- client output start ---"
-          echo "$OUTPUT"
-          echo "--- client output end ---"
-
-          # Ensure the request succeeded (no error messages)
-          if echo "$OUTPUT" | grep -iq "error\|failed"; then
-            echo 'Client request failed!';
-            exit 1
-          fi
+          export PORT=8080
+          export CONFIG_PATH="/home/root/.config/shuthost_coordinator/config.toml"
+          sh scripts/tests/test-client-scripts-linux.sh
 
   test-client-scripts-windows:
     name: Test Client Scripts on Windows
