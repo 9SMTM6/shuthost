@@ -124,7 +124,7 @@ jobs:
           cargo llvm-cov report --html --output-dir target/coverage --ignore-filename-regex ".*cargo/registry/src/.*|tests/rs_integration/.*"
 
       - name: Upload coverage artifacts (HTML + LCOV)
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-reports
           path: |
@@ -156,7 +156,7 @@ jobs:
       - uses: *checkout
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Test docker-compose config validation
         working-directory: docs/examples

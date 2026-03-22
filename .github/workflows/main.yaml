@@ -44,7 +44,7 @@ jobs:
           bin-name: shuthost_host_agent
 
       - name: Upload artifact
-        uses: &upload-artifact actions/upload-artifact@v5
+        uses: &upload-artifact actions/upload-artifact@v7
         with:
           name: host_agent-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/shuthost_host_agent${{ matrix.ext || '' }}
@@ -77,7 +77,7 @@ jobs:
       - uses: *checkout
 
       - name: Download all host_agent binaries
-        uses: &download-artifact actions/download-artifact@v6
+        uses: &download-artifact actions/download-artifact@v8
         with:
           path: ./rehydrate
 
