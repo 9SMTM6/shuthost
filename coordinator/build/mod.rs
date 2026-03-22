@@ -45,15 +45,19 @@ fn main() -> eyre::Result<()> {
     const ON_ASSET_CHANGE: &str = "cargo::rerun-if-changed=frontend/assets";
 
     println!("cargo::rerun-if-changed=frontend/package.json");
-    println!("{ON_ASSET_CHANGE}/app.ts");
-    npm::run("build:tsc")?;
-
+    println!("{ON_ASSET_CHANGE}/app.tsx");
+    println!("{ON_ASSET_CHANGE}/index.tsx");
+    println!("{ON_ASSET_CHANGE}/components");
+    println!("{ON_ASSET_CHANGE}/stores");
     println!("{ON_ASSET_CHANGE}/styles.tailwind.css");
     println!("{ON_ASSET_CHANGE}/index.tmpl.html");
     println!("{ON_ASSET_CHANGE}/login.tmpl.html");
     println!("{ON_ASSET_CHANGE}/partials");
     println!("{ON_ASSET_CHANGE}/about.tmpl.hbs");
-    npm::run("build:tailwind")?;
+    // Spawn typecheck in parallel — it produces no output files so it is
+    // independent of the other build steps.
+    let typecheck = npm::spawn("typecheck")?;
+    npm::run("build")?;
 
     println!("{ON_ASSET_CHANGE}/favicon.svg");
     icons::generate_pngs()?;
@@ -69,6 +73,9 @@ fn main() -> eyre::Result<()> {
     templates::process()?;
 
     csp::generate_hashes()?;
+
+    // Block until the parallel typecheck finishes, surfacing any type errors.
+    npm::join(typecheck, "typecheck")?;
 
     warnings::emit();
 

@@ -11,7 +11,6 @@ pub fn generate_hashes() -> eyre::Result<()> {
     let served_html_files = [
         "../frontend/assets/generated/index.html",
         "../frontend/assets/generated/login.html",
-        "../frontend/assets/partials/external_auth_config.tmpl.html",
     ];
     for file_path in served_html_files {
         let content = fs::read_to_string(file_path)?;

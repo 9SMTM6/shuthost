@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Ensure Tailwind scans HTML templates and partials that Vite never touches,
+   so that login.tmpl.html, about.tmpl.hbs, and all partials keep their classes. */
+@source "../../**/*.html";
+@source "../../**/*.tmpl.html";
+@source "./**/*.hbs";
+
 /* Prefer deterministic fonts: Inter for UI sans-serif and Cascadia Code for
 monospace. These variables override the Tailwind-generated defaults and
 ensure the app uses the desired families when available. Avoid serif
