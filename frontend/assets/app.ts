@@ -71,12 +71,13 @@ const apiFetch = async (url: string, options?: RequestInit): Promise<Response> =
         }
         return resp;
     } catch (err) {
-        if (err instanceof Error && err.message === 'Unauthorized') throw err;
-        // For other errors (network, etc.), show error and re-throw
-        if (err instanceof Error) {
-            showJSError(err.message);
-        } else {
-            showJSError('Unknown fetch error');
+        // For errors other than 401 (network, etc.), show error in UI.
+        if (!(err instanceof Error && err.message === 'Unauthorized')) {
+            if (err instanceof Error) {
+                showJSError(err.message);
+            } else {
+                showJSError('Unknown fetch error');
+            }
         }
         throw err;
     }
