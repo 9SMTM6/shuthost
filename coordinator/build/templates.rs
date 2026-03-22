@@ -62,8 +62,8 @@ impl<T: AsRef<str>> TemplateExt for T {
             .replace("{ version }", VERSION)
     }
 
-    /// Note that this doesnt provide the needed JS to show the warnings, these are only in `app.ts`, as parts of the code are used there,
-    /// This means that where that isn't included all this does show the noscript warning.
+    /// Note that this doesn't provide the needed JS to show the warnings, that is part of the
+    /// SolidJS app bundle. This means that where JS is disabled, this only shows the noscript warning.
     fn insert_js_warnings(&self) -> String {
         self.as_ref().replace(
             "{ js_warnings }",
@@ -81,7 +81,7 @@ impl<T: AsRef<str>> TemplateExt for T {
     }
 
     fn no_logout(&self) -> String {
-        self.as_ref().replace("{ maybe_logout }", "")
+        self.as_ref().replace("<div id=\"logout-mount\"></div>", "")
     }
 
     fn insert_header_tmpl(&self) -> String {
@@ -92,7 +92,7 @@ impl<T: AsRef<str>> TemplateExt for T {
     }
 
     fn no_demo_differences_or_not_in_demo(&self) -> String {
-        self.as_ref().replace("{ maybe_demo_disclaimer }", "")
+        self.as_ref().replace("<div id=\"demo-banner-mount\"></div>", "")
     }
 
     /// Sites other than the SPA main page get

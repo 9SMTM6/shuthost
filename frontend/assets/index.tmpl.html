@@ -8,158 +8,9 @@
     { header }
 
     <main id="main-content" class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full" tabindex="-1">
-        <section class="py-4 sm:py-6" aria-labelledby="hosts-section-title">
+        <section class="py-4 sm:py-6">
             { js_warnings }
-            { maybe_auth_warning }
-
-            <section id="hosts-tab" class="tab-content active" aria-labelledby="tab-hosts" role="tabpanel" tabindex="0">
-                <!-- Install Instructions Panel -->
-                <section class="section-container mt-0 py-0" aria-labelledby="host-install-title">
-                    <details class="collapsible-details" aria-labelledby="host-install-title">
-                        <summary class="collapsible-header py-2" aria-controls="host-install-content"
-                            id="host-install-header">
-                            <h2 class="section-title mb-0 text-base" id="host-install-title">Install Host Agent</h2>
-                            <span class="collapsible-icon" aria-hidden="true"></span>
-                        </summary>
-                        <div id="host-install-content" class="collapsible-content" role="group"
-                            aria-labelledby="host-install-title">
-                            <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
-
-                            <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
-                            <div class="code-container py-2">
-                                <button class="copy-button" data-copy-target="#host-install-command-sh" type="button"
-                                    aria-label="Copy install command">Copy</button>
-                                <code id="host-install-command-sh" class="code-block">Loading...</code>
-                            </div>
-
-                            <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
-                            <div class="code-container py-2">
-                                <button class="copy-button" data-copy-target="#host-install-command-ps1" type="button"
-                                    aria-label="Copy install command">Copy</button>
-                                <code id="host-install-command-ps1" class="code-block">Loading...</code>
-                            </div>
-                            <p class="description-text text-xs">Adjust options as needed. The command will already include the
-                                configured broadcast port, so no manual change is required. Add the output to the hosts
-                                section of your config on the Coordinator Host:</p>
-                            <div class="code-container">
-                                <button class="copy-button" data-copy-target="#config-location" type="button"
-                                    aria-label="Copy config location">Copy</button>
-                                <code id="config-location" class="code-block">{ coordinator_config }</code>
-                            </div>
-
-                            { agent_install_requirements_gotchas }
-                        </div>
-                    </details>
-                </section>
-
-                <!-- Hosts Table -->
-                <section class="section-container mt-4" aria-labelledby="hosts-table-title">
-                    <h2 id="hosts-table-title" class="sr-only">Hosts Table</h2>
-                    <div class="table-wrapper">
-                        <table class="actions-table w-full" aria-describedby="hosts-table-title">
-                            <thead>
-                                <tr id="host-table-header">
-                                    <th class="table-header" scope="col">Host</th>
-                                    <th class="table-header" scope="col">Status</th>
-                                    <th class="table-header" id="host-table-leases-header" scope="col">Leases</th>
-                                    <th class="table-header" scope="col">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="host-table-body" class="divide-y divide-gray-200" aria-live="polite">
-                                <!-- Hosts will be loaded here dynamically -->
-                            </tbody>
-                            <template id="host-row-template">
-                                <tr class="table-row" role="row" data-hostname="PLACEHOLDER">
-                                    <th class="table-cell" scope="row"></th>
-                                    <td class="table-cell status" aria-label="Status"></td>
-                                    <td class="table-cell leases" aria-label="Leases"></td>
-                                    <td class="table-cell" aria-label="Actions">
-                                        <div class="actions-cell">
-                                            <button class="btn btn-green take-lease" type="button"></button>
-                                            <button class="btn btn-red release-lease" type="button"></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </table>
-                    </div>
-                </section>
-            </section>
-
-            <section id="clients-tab" class="tab-content" aria-labelledby="tab-clients" role="tabpanel" tabindex="0">
-                <!-- Install Instructions Panel -->
-                <section class="section-container mt-0 py-0" aria-labelledby="client-install-title">
-                    <details class="collapsible-details" aria-labelledby="client-install-title">
-                        <summary class="collapsible-header py-2" aria-controls="client-install-content"
-                            id="client-install-header">
-                            <h2 class="section-title mb-0 text-base" id="client-install-title">Install Client</h2>
-                            <span class="collapsible-icon" aria-hidden="true"></span>
-                        </summary>
-                        <div id="client-install-content" class="collapsible-content" role="group"
-                            aria-labelledby="client-install-title">
-                            <p class="mb-1 text-sm">Run one of the following commands in your terminal:</p>
-
-                            <p class="mb-1 text-xs font-semibold">For Linux/macOS:</p>
-                            <div class="code-container py-2">
-                                <button class="copy-button" data-copy-target="#client-install-command-sh" type="button"
-                                    aria-label="Copy install command">Copy</button>
-                                <code id="client-install-command-sh" class="code-block">Loading...</code>
-                            </div>
-
-                            <p class="mb-1 text-xs font-semibold">For Windows (PowerShell):</p>
-                            <div class="code-container py-2">
-                                <button class="copy-button" data-copy-target="#client-install-command-ps1" type="button"
-                                    aria-label="Copy install command">Copy</button>
-                                <code id="client-install-command-ps1" class="code-block">Loading...</code>
-                            </div>
-                            <p class="description-text text-xs">Optionally specify a custom base client ID as the second
-                                argument (otherwise random). The full client ID will include your hostname.
-                                <strong>Tip:</strong> Use separate clients for different use cases.</p>
-                            <p class="description-text text-xs">Then, add the output to the clients section of your
-                                config on the Coordinator Host:</p>
-                            <div class="code-container">
-                                <button class="copy-button" data-copy-target="#config-location" type="button"
-                                    aria-label="Copy config location">Copy</button>
-                                <code id="config-location" class="code-block">{ coordinator_config }</code>
-                            </div>
-
-                            { client_install_requirements_gotchas }
-                        </div>
-                    </details>
-                </section>
-
-                <!-- Clients Table -->
-                <section class="section-container mt-4" aria-labelledby="clients-table-title">
-                    <h2 id="clients-table-title" class="sr-only">Clients Table</h2>
-                    <div class="table-wrapper">
-                        <table class="actions-table w-full" aria-describedby="clients-table-title">
-                            <thead>
-                                <tr>
-                                    <th class="table-header" scope="col">Client ID</th>
-                                    <th id="host-table-leases-header" class="table-header" scope="col">Leases</th>
-                                    <th id="last-used-header" class="table-header" scope="col">Last Used</th>
-                                    <th class="table-header" scope="col">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="client-table-body" class="divide-y divide-gray-200" aria-live="polite">
-                                <!-- Clients will be loaded here dynamically -->
-                            </tbody>
-                            <template id="client-row-template">
-                                <tr class="table-row" role="row" data-client-id="PLACEHOLDER">
-                                    <th class="table-cell" scope="row"></th>
-                                    <td class="table-cell leases" aria-label="Leases"></td>
-                                    <td class="table-cell last-used" aria-label="Last Used"></td>
-                                    <td class="table-cell" aria-label="Actions">
-                                        <div class="actions-cell">
-                                            <button class="btn btn-red reset-client" type="button"></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </table>
-                    </div>
-                </section>
-            </section>
+            <div id="app"></div>
 
             { architecture_documentation }
         </section>
@@ -167,6 +18,7 @@
 
     { footer }
 
+    <script id="server-data" type="application/json">{ server_data }</script>
     <script type="module">
         { js }
     </script>

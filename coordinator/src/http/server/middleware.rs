@@ -51,7 +51,11 @@ pub(crate) async fn secure_headers_middleware(req: Request<Body>, next: Next) ->
         HeaderName::from_static("content-security-policy"),
         HeaderValue::from_static(concat!(
             "default-src 'self'; ",
-            "require-trusted-types-for 'script'; ",
+            // require-trusted-types-for is omitted: SolidJS sets innerHTML on
+            // <template> elements during compiled-template bootstrap, which
+            // violates the Trusted Types sink restriction. The remaining
+            // directives (hash-locked script-src, object-src 'none', etc.)
+            // already prevent the DOM-XSS vectors that Trusted Types guards.
             "script-src ",
             env!("CSP_INLINE_SCRIPTS_HASHES"),
             "; ",

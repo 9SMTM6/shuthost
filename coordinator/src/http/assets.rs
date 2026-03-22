@@ -16,6 +16,7 @@ use axum_extra::{
     headers::{CacheControl, ContentLength, ContentType},
 };
 use mime::{IMAGE_SVG, TEXT_CSS};
+use serde_json::json as sjson;
 
 use crate::{app::AppState, http::EXPECTED_AUTH_EXCEPTIONS_VERSION, http::auth::Resolved};
 
@@ -164,50 +165,39 @@ pub(crate) enum UiMode<'params> {
     Normal {
         config_path: &'params path::Path,
         show_logout: bool,
-        maybe_auth_warning: &'params str,
+        auth_warning: bool,
     },
     Demo {
         subpath: &'params str,
     },
 }
 
-/// Renders the main HTML template, injecting dynamic content and demo disclaimer if needed.
+/// Renders the main HTML template, injecting a JSON data island with all
+/// server-side values that the SolidJS app needs on startup.
 pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
-    let maybe_logout = if matches!(
-        *mode,
+    let server_data = match *mode {
         UiMode::Normal {
-            show_logout: true,
-            ..
-        }
-    ) {
-        include_utf8_asset!("partials/logout_form.html")
-    } else {
-        ""
-    };
-    let maybe_demo_disclaimer = match *mode {
-        UiMode::Demo { subpath } => {
-            // Build a small disclaimer div with a `data-subpath` attribute so the
-            // frontend demo code can adapt links and installer commands.
-            include_utf8_asset!("partials/demo_disclaimer.html").replace("{ subpath }", subpath)
-        }
-        UiMode::Normal { .. } => String::new(),
-    };
-    let maybe_auth_warning = match *mode {
-        UiMode::Normal {
-            maybe_auth_warning, ..
-        } => maybe_auth_warning,
-        UiMode::Demo { .. } => "",
-    };
-    let config_path = match *mode {
-        UiMode::Normal { config_path, .. } => config_path.to_string_lossy().to_string(),
-        UiMode::Demo { .. } => "/this/is/a/demo.toml".to_string(),
+            config_path,
+            show_logout,
+            auth_warning,
+        } => sjson!({
+            "configPath": config_path.to_string_lossy(),
+            "showLogout": show_logout,
+            "authWarning": auth_warning,
+            "isDemo": false,
+            "demoSubpath": "",
+        }),
+        UiMode::Demo { subpath } => sjson!({
+            "configPath": "/this/is/a/demo.toml",
+            "showLogout": false,
+            "authWarning": false,
+            "isDemo": true,
+            "demoSubpath": subpath,
+        }),
     };
 
     include_utf8_asset!("generated/index.html")
-        .replace("{ coordinator_config }", &config_path)
-        .replace("{ maybe_auth_warning }", maybe_auth_warning)
-        .replace("{ maybe_logout }", maybe_logout)
-        .replace("{ maybe_demo_disclaimer }", &maybe_demo_disclaimer)
+        .replace("{ server_data }", &server_data.to_string())
 }
 
 /// Serves the main HTML template, injecting dynamic content.
@@ -221,26 +211,20 @@ pub(crate) async fn serve_ui(
 
     let show_logout = !matches!(auth.mode, A::Disabled | A::External { .. });
 
-    // Determine whether to include the external auth config warning. If Auth is
-    // Disabled we must show it. If Auth::External is configured but its
-    // exceptions_version doesn't match the current expected version, show it.
-    let maybe_auth_warning = match &auth.mode {
-        &A::Token { .. }
-        | &A::Oidc { .. }
-        | &A::External {
-            exceptions_version: EXPECTED_AUTH_EXCEPTIONS_VERSION,
-        } => "",
-        &A::Disabled | &A::External { .. } => {
-            include_utf8_asset!("partials/external_auth_config.tmpl.html")
-        }
-    };
+    // Show auth warning when auth is disabled, or when External auth is
+    // configured but its exceptions_version doesn't match the expected value.
+    let auth_warning = matches!(&auth.mode, A::Disabled)
+        || matches!(
+            &auth.mode,
+            A::External { exceptions_version } if *exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION
+        );
 
     (
         TypedHeader(ContentType::html()),
         render_ui_html(&UiMode::Normal {
             config_path: &config_path,
             show_logout,
-            maybe_auth_warning,
+            auth_warning,
         }),
     )
 }

@@ -3,9 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "npm run build:tsc && npm run build:tailwind",
-        "build:tsc": "cd assets && tsc --outDir ./generated",
-        "build:tailwind": "cd assets && npx @tailwindcss/cli -i ./styles.tailwind.css -o ./generated/styles.css --minify",
+        "build": "vite build",
+        "typecheck": "tsc --noEmit",
         "build:diagrams": "tsc --noEmit build-diagrams.ts && node build-diagrams.ts",
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
@@ -13,7 +12,7 @@
         "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json"
     },
     "dependencies": {
-        "@tailwindcss/cli": "^4.1.8",
+        "solid-js": "^1.9.5",
         "tailwindcss": "^4.1.8",
         "typescript": "^5.8.3"
     },
@@ -21,7 +20,10 @@
         "@axe-core/playwright": "^4.10.2",
         "@mermaid-js/mermaid-cli": "^11.12.0",
         "@playwright/test": "^1.43.0",
+        "@tailwindcss/vite": "^4.1.8",
         "@types/node": "25.x",
-        "license-checker-rseidelsohn": "^4.4.2"
+        "license-checker-rseidelsohn": "^4.4.2",
+        "vite": "^6.3.3",
+        "vite-plugin-solid": "^2.11.6"
     }
 }
