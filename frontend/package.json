@@ -9,9 +9,11 @@
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
-        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json"
+        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
+        "generate-pages": "vite-node --config vite.ssr.config.ts generate-pages.tsx"
     },
     "dependencies": {
+        "@solidjs/router": "^0.15.3",
         "solid-js": "^1.9.5",
         "tailwindcss": "^4.1.8",
         "typescript": "^5.8.3"
@@ -24,6 +26,7 @@
         "@types/node": "25.x",
         "license-checker-rseidelsohn": "^4.4.2",
         "vite": "^8.0.1",
+        "vite-node": "^6.0.0",
         "vite-plugin-solid": "^2.11.6"
     }
 }

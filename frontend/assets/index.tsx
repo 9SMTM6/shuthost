@@ -1,19 +1,35 @@
 import './styles.tailwind.css';
 import { render } from 'solid-js/web';
+import { Router, Route } from '@solidjs/router';
+import type { RouteSectionProps } from '@solidjs/router';
+import { Header } from './components/Header';
 import { App } from './components/App';
-import { LogoutButton, DemoDisclaimer } from './components/HeaderSlots';
+import { LoginPage } from './components/LoginPage';
 
-// Mount the main app
+const RootLayout = (props: RouteSectionProps) => (
+    <>
+        <Header />
+        <main
+            id="main-content"
+            class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full"
+            tabindex="-1"
+        >
+            <section class="py-4 sm:py-6">
+                {props.children}
+            </section>
+        </main>
+    </>
+);
+
 const appMount = document.getElementById('app');
-if (appMount) render(() => <App />, appMount);
-
-// Mount the logout button into its slot in the static header
-const logoutMount = document.getElementById('logout-mount');
-if (logoutMount) render(() => <LogoutButton />, logoutMount);
-
-// Mount the demo disclaimer into its slot in the static header
-const demoBannerMount = document.getElementById('demo-banner-mount');
-if (demoBannerMount) render(() => <DemoDisclaimer />, demoBannerMount);
+if (appMount) {
+    render(() => (
+        <Router root={RootLayout}>
+            <Route path="/" component={App} />
+            <Route path="/login" component={LoginPage} />
+        </Router>
+    ), appMount);
+}
 
 // Global error handlers
 window.addEventListener('error', (event) => {

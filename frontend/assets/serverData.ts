@@ -6,9 +6,17 @@ export type ServerData = {
     authWarning: boolean;
     isDemo: boolean;
     demoSubpath: string;
+    authMode: 'token' | 'oidc' | 'disabled' | 'external';
 };
 
-const el = document.getElementById('server-data');
-if (!el?.textContent) throw new Error('Missing #server-data element');
+function loadServerData(): ServerData {
+    if (typeof document === 'undefined') {
+        // SSR context (generate-pages.tsx via vite-node) — no data needed for static rendering.
+        return {} as ServerData;
+    }
+    const el = document.getElementById('server-data');
+    if (!el?.textContent) throw new Error('Missing #server-data element');
+    return JSON.parse(el.textContent) as ServerData;
+}
 
-export const serverData: ServerData = JSON.parse(el.textContent);
+export const serverData: ServerData = loadServerData();
