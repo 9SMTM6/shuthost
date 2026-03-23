@@ -2,8 +2,7 @@
 
 /* Ensure Tailwind scans HTML templates and partials that Vite never touches,
    so that login.tmpl.html, about.tmpl.hbs, and all partials keep their classes. */
-@source "../../**/*.html";
-@source "../../**/*.tmpl.html";
+@source "./**/*.html";
 @source "./**/*.hbs";
 
 /* Prefer deterministic fonts: Inter for UI sans-serif and Cascadia Code for
