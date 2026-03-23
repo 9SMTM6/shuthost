@@ -1,28 +1,27 @@
 - main:
-  - region:
-    - tabpanel:
-      - region "Install Client":
-        - group "Install Client":
-          - heading "Install Client" [level=2]
-      - region "Clients Table":
-        - heading "Clients Table" [level=2]
-        - table:
-          - rowgroup:
-            - row "Client ID Leases Last Used Actions":
-              - columnheader "Client ID"
-              - columnheader "Leases"
-              - columnheader "Last Used"
-              - columnheader "Actions"
-          - rowgroup:
-            - row "denna Leases Last Used Actions":
-              - rowheader "denna"
-              - cell "Leases"
-              - cell "Last Used"
-              - cell "Actions":
-                - button "Reset Leases" [disabled]
-            - row "felurian Leases Last Used Actions":
-              - rowheader "felurian"
-              - cell "Leases"
-              - cell "Last Used"
-              - cell "Actions":
-                - button "Reset Leases" [disabled]
+  - tabpanel:
+    - region "Install Client":
+      - group "Install Client":
+        - heading "Install Client" [level=2]
+    - region "Clients Table":
+      - heading "Clients Table" [level=2]
+      - table:
+        - rowgroup:
+          - row "Client ID Leases Last Used Actions":
+            - columnheader "Client ID"
+            - columnheader "Leases"
+            - columnheader "Last Used"
+            - columnheader "Actions"
+        - rowgroup:
+          - row "denna Leases Last Used Actions":
+            - rowheader "denna"
+            - cell "Leases"
+            - cell "Last Used"
+            - cell "Actions":
+              - button "Reset Leases" [disabled]
+          - row "felurian Leases Last Used Actions":
+            - rowheader "felurian"
+            - cell "Leases"
+            - cell "Last Used"
+            - cell "Actions":
+              - button "Reset Leases" [disabled]
