@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js';
 import { For, Show, createMemo } from 'solid-js';
+import agentGotchasHtml from '../agent_install_requirements_gotchas.md?raw';
 import { state } from '../stores/appStore';
 import type { LeaseSource } from '../stores/appStore';
 import { serverData } from '../serverData';
@@ -159,6 +160,9 @@ export const HostsTab: Component<{ configPath: string }> = (props) => {
                             <CopyButton targetId="host-config-location" label="Copy config location" />
                             <code id="host-config-location" class="code-block">{props.configPath}</code>
                         </div>
+
+                        {/* Inlined at build time from agent_install_requirements_gotchas.md */}
+                        <div innerHTML={agentGotchasHtml} />
                     </div>
                 </details>
             </section>
