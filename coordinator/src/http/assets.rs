@@ -254,7 +254,7 @@ pub(crate) async fn serve_styles() -> impl IntoResponse {
     (
         TypedHeader(ContentType::from(TEXT_CSS)),
         IMMUTABLE_HEADER(),
-        include_utf8_asset!("generated/styles.css"),
+        include_utf8_asset!("generated/app.css"),
     )
 }
 
