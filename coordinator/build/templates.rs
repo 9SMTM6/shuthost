@@ -157,8 +157,8 @@ struct AssetHashes {
 }
 
 fn hash_non_template_assets() -> eyre::Result<AssetHashes> {
-    let styles_css = fs::read_to_string("../frontend/assets/generated/styles.css")
-        .wrap_err("Failed to read generated styles.css")?;
+    let styles_css = fs::read_to_string("../frontend/assets/generated/app.css")
+        .wrap_err("Failed to read generated app.css")?;
     let styles_hash = url_hash(styles_css.as_bytes());
     let styles_integrity = integrity_hash(&styles_css);
 
