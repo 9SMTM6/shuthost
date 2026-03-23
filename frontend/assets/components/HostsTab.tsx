@@ -158,7 +158,7 @@ export const HostsTab: Component<{ configPath: string }> = (props) => {
                         </p>
                         <div class="code-container">
                             <CopyButton targetId="host-config-location" label="Copy config location" />
-                            <code id="host-config-location" class="code-block">{props.configPath}</code>
+                            <code id="host-config-location" data-config-location class="code-block">{props.configPath}</code>
                         </div>
 
                         {/* Inlined at build time from agent_install_requirements_gotchas.md */}
