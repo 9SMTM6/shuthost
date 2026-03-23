@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js';
 import { For, Show, createMemo } from 'solid-js';
+import clientGotchasHtml from '../client_install_requirements_gotchas.md?raw';
 import { state, applyMessage } from '../stores/appStore';
 import { serverData } from '../serverData';
 import { demoSubpath } from '../demo';
@@ -161,6 +162,9 @@ export const ClientsTab: Component<{ configPath: string }> = (props) => {
                             <CopyButton targetId="client-config-location" label="Copy config location" />
                             <code id="client-config-location" class="code-block">{props.configPath}</code>
                         </div>
+
+                        {/* Inlined at build time from client_install_requirements_gotchas.md */}
+                        <div innerHTML={clientGotchasHtml} />
                     </div>
                 </details>
             </section>

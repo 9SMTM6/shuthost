@@ -272,14 +272,6 @@ fn process_templates(
             "{ platform_support }",
             include_frontend_asset!("partials/platform_support.md"),
         )
-        .replace(
-            "{ client_install_requirements_gotchas }",
-            include_frontend_asset!("client_install_requirements_gotchas.md"),
-        )
-        .replace(
-            "{ agent_install_requirements_gotchas }",
-            include_frontend_asset!("agent_install_requirements_gotchas.md"),
-        )
         .insert_header_tmpl()
         .insert_footer()
         .include_svgs(svg_hashes)
