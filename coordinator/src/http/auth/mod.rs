@@ -40,7 +40,6 @@ pub(crate) use middleware::{request_is_secure, require};
 
 // Centralized login error keys used as query values on /login?error=<key>
 pub(crate) const LOGIN_ERROR_INSECURE: &str = "insecure";
-pub(crate) const LOGIN_ERROR_UNKNOWN: &str = "unknown";
 pub(crate) const LOGIN_ERROR_TOKEN: &str = "token";
 pub(crate) const LOGIN_ERROR_OIDC: &str = "oidc";
 pub(crate) const LOGIN_ERROR_SESSION_EXPIRED: &str = "session_expired";

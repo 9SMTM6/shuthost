@@ -166,6 +166,7 @@ pub(crate) enum UiMode<'params> {
         config_path: &'params path::Path,
         show_logout: bool,
         auth_warning: bool,
+        auth_mode: &'static str,
     },
     Demo {
         subpath: &'params str,
@@ -180,12 +181,14 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             config_path,
             show_logout,
             auth_warning,
+            auth_mode,
         } => sjson!({
             "configPath": config_path.to_string_lossy(),
             "showLogout": show_logout,
             "authWarning": auth_warning,
             "isDemo": false,
             "demoSubpath": "",
+            "authMode": auth_mode,
         }),
         UiMode::Demo { subpath } => sjson!({
             "configPath": "/this/is/a/demo.toml",
@@ -193,6 +196,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             "authWarning": false,
             "isDemo": true,
             "demoSubpath": subpath,
+            "authMode": "disabled",
         }),
     };
 
@@ -219,12 +223,20 @@ pub(crate) async fn serve_ui(
             A::External { exceptions_version } if *exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION
         );
 
+    let auth_mode = match auth.mode {
+        A::Token { .. } => "token",
+        A::Oidc { .. } => "oidc",
+        A::Disabled => "disabled",
+        A::External { .. } => "external",
+    };
+
     (
         TypedHeader(ContentType::html()),
         render_ui_html(&UiMode::Normal {
             config_path: &config_path,
             show_logout,
             auth_warning,
+            auth_mode,
         }),
     )
 }

@@ -25,11 +25,6 @@ pub(crate) struct LoginForm {
     token: SecretString,
 }
 
-#[derive(Deserialize, Default)]
-pub(crate) struct LoginQuery {
-    pub error: Option<String>,
-}
-
 #[axum::debug_handler]
 pub(crate) async fn login_post(
     State(AppState {

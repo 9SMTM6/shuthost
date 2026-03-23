@@ -2,7 +2,7 @@
 
 use axum::{
     Router,
-    extract::{self, State},
+    extract::State,
     http::HeaderMap,
     response::{IntoResponse, Redirect},
     routing::{get, post},
@@ -13,13 +13,12 @@ use reqwest::StatusCode;
 use crate::{
     app::AppState,
     http::auth::{
-        LOGIN_ERROR_INSECURE, LOGIN_ERROR_OIDC, LOGIN_ERROR_SESSION_EXPIRED, LOGIN_ERROR_TOKEN,
-        LOGIN_ERROR_UNKNOWN, Resolved,
+        Resolved,
         cookies::{self, get_oidc_session_from_cookie, get_token_session_from_cookie},
         oidc,
-        token::{self, LoginQuery},
+        token,
     },
-    include_utf8_asset,
+    http::assets::{UiMode, render_ui_html},
 };
 
 /// Returns a router with all authentication-related routes.
@@ -31,14 +30,13 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/oidc/callback", get(oidc::callback))
 }
 
-/// Handle GET requests to the login page.
+/// Handle GET requests to the login page. Redirects if already authenticated;
+/// otherwise serves the SPA shell — SolidJS Router renders `/login` client-side.
 #[axum::debug_handler]
 pub(crate) async fn page(
-    State(AppState { auth, .. }): State<AppState>,
+    State(AppState { auth, config_path, .. }): State<AppState>,
     headers: HeaderMap,
-    extract::Query(LoginQuery { error }): extract::Query<LoginQuery>,
 ) -> impl IntoResponse {
-    // Check if already authenticated
     type A = Resolved;
 
     let jar = SignedCookieJar::from_headers(&headers, auth.cookie_key.clone());
@@ -54,36 +52,23 @@ pub(crate) async fn page(
         return Redirect::to("/").into_response();
     }
 
-    let maybe_error = match error.as_deref() {
-        Some(v) if v == LOGIN_ERROR_INSECURE => {
-            include_utf8_asset!("partials/login_error_insecure.html")
-        }
-        Some(v) if v == LOGIN_ERROR_TOKEN => {
-            include_utf8_asset!("partials/login_error_token.html")
-        }
-        Some(v) if v == LOGIN_ERROR_UNKNOWN => {
-            include_utf8_asset!("partials/login_error_unknown.html")
-        }
-        Some(v) if v == LOGIN_ERROR_OIDC => {
-            include_utf8_asset!("partials/login_error_oidc.html")
-        }
-        Some(v) if v == LOGIN_ERROR_SESSION_EXPIRED => {
-            include_utf8_asset!("partials/login_error_session_expired.html")
-        }
-        Some(_) => include_utf8_asset!("partials/login_error_unknown.html"),
-        None => "",
+    let auth_mode = match auth.mode {
+        A::Token { .. } => "token",
+        A::Oidc { .. } => "oidc",
+        A::Disabled => "disabled",
+        A::External { .. } => "external",
     };
 
-    let login_form = match auth.mode {
-        A::Token { .. } => include_utf8_asset!("partials/token_login.html"),
-        A::Oidc { .. } => include_utf8_asset!("partials/oidc_login.html"),
-        _ => "",
-    };
-
-    let html = include_utf8_asset!("generated/login.html")
-        .replace("{ maybe_error }", maybe_error)
-        .replace("{ login_form }", login_form);
-    (TypedHeader(ContentType::html()), html).into_response()
+    (
+        TypedHeader(ContentType::html()),
+        render_ui_html(&UiMode::Normal {
+            config_path: &config_path,
+            show_logout: false,
+            auth_warning: false,
+            auth_mode,
+        }),
+    )
+        .into_response()
 }
 
 /// Handle logout requests.

@@ -3,9 +3,9 @@ use std::{collections::HashMap, fs};
 
 use cargo_about::licenses::config;
 use eyre::Context as _;
-use handlebars::Handlebars;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
+use shuthost_common::VERSION;
 use spdx::text as spdx_text;
 use spdx::{LicenseItem, Licensee, expression::Expression};
 use toml::from_str as toml_from_str;
@@ -157,14 +157,14 @@ fn get_spdx_text(id: &str) -> Option<String> {
     None
 }
 
-pub fn build_html() -> eyre::Result<()> {
+pub fn build_json() -> eyre::Result<()> {
     let mut combined = Vec::<CombinedEntry>::new();
     let mut licenses_set = BTreeSet::<LicenseItem>::new();
 
     process_rust_crates(&mut combined, &mut licenses_set)?;
     process_npm_packages(&mut combined, &mut licenses_set)?;
 
-    generate_about_html(&combined, &licenses_set)
+    generate_about_json(&combined, &licenses_set)
 }
 
 fn process_rust_crates(
@@ -276,7 +276,7 @@ fn process_npm_packages(
     Ok(())
 }
 
-fn generate_about_html(
+fn generate_about_json(
     combined: &[CombinedEntry],
     licenses_set: &BTreeSet<LicenseItem>,
 ) -> eyre::Result<()> {
@@ -290,16 +290,16 @@ fn generate_about_html(
         })
         .collect();
 
-    // Render HTML with Handlebars
-    let hb = Handlebars::new();
-    let template = include_str!("../../frontend/assets/about.tmpl.hbs");
     let data = serde_json::json!({
+        "description": env!("CARGO_PKG_DESCRIPTION"),
+        "repository": env!("CARGO_PKG_REPOSITORY"),
+        "version": VERSION,
         "entries": combined,
         "licenses": licenses_map,
     });
-    let html = hb
-        .render_template(template, &data)
-        .wrap_err("Handlebars failed to render template")?;
-    fs::write("../frontend/assets/generated/about.tmpl.html", &html)?;
+    fs::write(
+        "../frontend/assets/generated/about-data.json",
+        serde_json::to_string_pretty(&data)?,
+    )?;
     Ok(())
 }

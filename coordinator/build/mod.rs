@@ -48,12 +48,12 @@ fn main() -> eyre::Result<()> {
     println!("{ON_ASSET_CHANGE}/app.tsx");
     println!("{ON_ASSET_CHANGE}/index.tsx");
     println!("{ON_ASSET_CHANGE}/components");
+    println!("{ON_ASSET_CHANGE}/pages");
     println!("{ON_ASSET_CHANGE}/stores");
     println!("{ON_ASSET_CHANGE}/styles.tailwind.css");
-    println!("{ON_ASSET_CHANGE}/index.tmpl.html");
-    println!("{ON_ASSET_CHANGE}/login.tmpl.html");
     println!("{ON_ASSET_CHANGE}/partials");
-    println!("{ON_ASSET_CHANGE}/about.tmpl.hbs");
+    println!("cargo::rerun-if-changed=frontend/generate-pages.tsx");
+    println!("cargo::rerun-if-changed=frontend/build-common.ts");
     // Spawn typecheck in parallel — it produces no output files so it is
     // independent of the other build steps.
     let typecheck = npm::spawn("typecheck")?;
@@ -65,12 +65,14 @@ fn main() -> eyre::Result<()> {
     println!("cargo::rerun-if-changed=frontend/package-lock.json");
     println!("cargo::rerun-if-changed=deny.toml");
     npm::run("generate-npm-licenses")?;
-    about::build_html()?;
+    about::build_json()?;
 
     println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
     println!("{ON_ASSET_CHANGE}/client_install_requirements_gotchas.md");
     println!("{ON_ASSET_CHANGE}/agent_install_requirements_gotchas.md");
-    templates::process()?;
+    templates::compute_hashes()?;
+
+    npm::run("generate-pages")?;
 
     csp::generate_hashes()?;
 
