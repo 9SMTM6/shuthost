@@ -39,6 +39,8 @@ fn about_config() -> eyre::Result<config::Config> {
             "aarch64-unknown-linux-musl".to_string(),
             "x86_64-apple-darwin".to_string(),
             "aarch64-apple-darwin".to_string(),
+            "x86_64-pc-windows-msvc".to_string(),
+            "aarch64-pc-windows-msvc".to_string(),
         ],
         ..Default::default()
     })
