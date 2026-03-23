@@ -1,28 +1,27 @@
 - main:
-  - region:
-    - tabpanel:
-      - region "Install Host Agent":
-        - group "Install Host Agent":
-          - heading "Install Host Agent" [level=2]
-      - region "Hosts Table":
-        - heading "Hosts Table" [level=2]
-        - table:
-          - rowgroup:
-            - row "Host Status Leases Actions":
-              - columnheader "Host"
-              - columnheader "Status"
-              - columnheader "Leases"
-              - columnheader "Actions"
-          - rowgroup:
-            - row "archive Status Leases Actions":
-              - rowheader "archive"
-              - cell "Status": offline
-              - cell "Leases"
-              - cell "Actions":
-                - button "Take Lease"
-            - row "tarbean Status Leases Actions":
-              - rowheader "tarbean"
-              - cell "Status": offline
-              - cell "Leases"
-              - cell "Actions":
-                - button "Take Lease"
+  - tabpanel:
+    - region "Install Host Agent":
+      - group "Install Host Agent":
+        - heading "Install Host Agent" [level=2]
+    - region "Hosts Table":
+      - heading "Hosts Table" [level=2]
+      - table:
+        - rowgroup:
+          - row "Host Status Leases Actions":
+            - columnheader "Host"
+            - columnheader "Status"
+            - columnheader "Leases"
+            - columnheader "Actions"
+        - rowgroup:
+          - row "archive Status Leases Actions":
+            - rowheader "archive"
+            - cell "Status": offline
+            - cell "Leases"
+            - cell "Actions":
+              - button "Take Lease"
+          - row "tarbean Status Leases Actions":
+            - rowheader "tarbean"
+            - cell "Status": offline
+            - cell "Leases"
+            - cell "Actions":
+              - button "Take Lease"
