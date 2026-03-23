@@ -48,7 +48,7 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
         node.textContent = sanitizeText(node.textContent || '');
       } else if (isHTMLElement(node)) {
         // Special handling for config location
-        if (node.id === 'config-location') {
+        if (node.hasAttribute('data-config-location')) {
           node.textContent = '<coordinator_config_location>';
         }
         node.childNodes.forEach(walk);

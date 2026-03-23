@@ -160,7 +160,7 @@ export const ClientsTab: Component<{ configPath: string }> = (props) => {
                         </p>
                         <div class="code-container">
                             <CopyButton targetId="client-config-location" label="Copy config location" />
-                            <code id="client-config-location" class="code-block">{props.configPath}</code>
+                            <code id="client-config-location" data-config-location class="code-block">{props.configPath}</code>
                         </div>
 
                         {/* Inlined at build time from client_install_requirements_gotchas.md */}
