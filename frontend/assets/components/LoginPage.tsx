@@ -112,16 +112,14 @@ export const LoginPage: Component = () => {
 
     return (
         <div class="flex flex-col items-center justify-center flex-1 p-4 gap-4 w-full">
-            <div class="max-w-md w-full" aria-live="polite">
-                <Show when={errorInfo()}>
-                    {info => (
-                        <div class="alert alert-warning">
-                            <div class="alert-title">{info().title}</div>
-                            <p>{info().body}</p>
-                        </div>
-                    )}
-                </Show>
-            </div>
+            <Show when={errorInfo()}>
+                {info => (
+                    <div class="max-w-md w-full alert alert-warning" role="alert">
+                        <div class="alert-title">{info().title}</div>
+                        <p>{info().body}</p>
+                    </div>
+                )}
+            </Show>
 
             <section class="section-container max-w-md w-full" aria-labelledby="login-title">
                 <header class="py-3 text-center">

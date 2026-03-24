@@ -11,7 +11,7 @@ export const Footer: Component<{ data: BuildData }> = (props) => (
             <wbr />
             <span class="whitespace-nowrap"> v{props.data.version}</span>
         </a>
-        <span class="mx-2" aria-hidden="true">|</span>
+        <span aria-hidden="true"> | </span>
         <wbr />
         <a href="/about" rel="external" class="link font-medium whitespace-nowrap">About &amp; Licenses</a>
     </footer>
