@@ -139,6 +139,7 @@ pub(crate) enum UiMode<'params> {
         show_logout: bool,
         auth_warning: bool,
         auth_mode: &'static str,
+        broadcast_port: u16,
     },
     Demo {
         subpath: &'params str,
@@ -154,6 +155,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             show_logout,
             auth_warning,
             auth_mode,
+            broadcast_port,
         } => sjson!({
             "configPath": config_path.to_string_lossy(),
             "showLogout": show_logout,
@@ -161,6 +163,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             "isDemo": false,
             "demoSubpath": "",
             "authMode": auth_mode,
+            "broadcastPort": broadcast_port,
         }),
         UiMode::Demo { subpath } => sjson!({
             "configPath": "/this/is/a/demo.toml",
@@ -169,6 +172,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             "isDemo": true,
             "demoSubpath": subpath,
             "authMode": "disabled",
+            "broadcastPort": shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
         }),
     };
 
@@ -180,7 +184,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
 #[axum::debug_handler]
 pub(crate) async fn serve_ui(
     State(AppState {
-        config_path, auth, ..
+        config_path, auth, config_rx, ..
     }): State<AppState>,
 ) -> impl IntoResponse {
     type A = Resolved;
@@ -197,6 +201,8 @@ pub(crate) async fn serve_ui(
 
     let auth_mode = auth.mode.auth_mode_str();
 
+    let broadcast_port = config_rx.borrow().server.broadcast_port;
+
     (
         TypedHeader(ContentType::html()),
         render_ui_html(&UiMode::Normal {
@@ -204,6 +210,7 @@ pub(crate) async fn serve_ui(
             show_logout,
             auth_warning,
             auth_mode,
+            broadcast_port,
         }),
     )
 }

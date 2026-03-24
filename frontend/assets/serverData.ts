@@ -7,6 +7,7 @@ export type ServerData = {
     isDemo: boolean;
     demoSubpath: string;
     authMode: 'token' | 'oidc' | 'disabled' | 'external';
+    broadcastPort: number;
 };
 
 function loadServerData(): ServerData {

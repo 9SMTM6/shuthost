@@ -34,7 +34,7 @@ pub(crate) fn routes() -> Router<AppState> {
 /// otherwise serves the SPA shell — SolidJS Router renders `/login` client-side.
 #[axum::debug_handler]
 pub(crate) async fn page(
-    State(AppState { auth, config_path, .. }): State<AppState>,
+    State(AppState { auth, config_path, config_rx, .. }): State<AppState>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
     type A = Resolved;
@@ -53,6 +53,7 @@ pub(crate) async fn page(
     }
 
     let auth_mode = auth.mode.auth_mode_str();
+    let broadcast_port = config_rx.borrow().server.broadcast_port;
 
     (
         TypedHeader(ContentType::html()),
@@ -61,6 +62,7 @@ pub(crate) async fn page(
             show_logout: false,
             auth_warning: false,
             auth_mode,
+            broadcast_port,
         }),
     )
         .into_response()

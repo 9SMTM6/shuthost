@@ -58,8 +58,6 @@ pub enum WsMessage {
         status: HostStatus,
         leases: LeaseMapRaw,
         client_stats: Option<HashMap<String, ClientStats>>,
-        /// Broadcast port configured for the coordinator.
-        broadcast_port: u16,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
@@ -197,7 +195,6 @@ async fn send_startup_msg(
         status: current_state.as_ref().clone(),
         leases,
         client_stats,
-        broadcast_port: config.server.broadcast_port,
     };
 
     send_ws_message(socket, &initial_msg)
