@@ -44,30 +44,3 @@ pub fn run(task: &str) -> eyre::Result<()> {
     }
     Ok(())
 }
-
-// TODO: consider some more generic spawn method, to be used for different tasks during build.
-/// Spawns an npm script in the background, returning the child process.
-/// Call [`join`] with the returned child to wait for it and check success.
-pub fn spawn(task: &str) -> eyre::Result<process::Child> {
-    process::Command::new(NPM_BIN)
-        .arg("run")
-        .arg(task)
-        .current_dir(FRONTEND_DIR)
-        .stdout(process::Stdio::piped())
-        .stderr(process::Stdio::piped())
-        .spawn()
-        .wrap_err(format!("Failed to spawn npm run {task}"))
-}
-
-/// Waits for a child started by [`spawn`] and returns an error if it failed.
-pub fn join(child: process::Child, task: &str) -> eyre::Result<()> {
-    let output = child
-        .wait_with_output()
-        .wrap_err(format!("Failed to wait for npm run {task}"))?;
-    if !output.status.success() {
-        eprint!("{}", String::from_utf8_lossy(&output.stdout));
-        eprint!("{}", String::from_utf8_lossy(&output.stderr));
-        bail!("npm run {task} failed with {}", output.status);
-    }
-    Ok(())
-}

@@ -29,6 +29,7 @@ mod about;
 mod assets;
 mod icons;
 mod npm;
+mod tasks;
 mod warnings;
 mod workspace;
 
@@ -52,31 +53,37 @@ fn main() -> eyre::Result<()> {
     println!("cargo::rerun-if-changed=frontend/generate-pages.tsx");
     println!("cargo::rerun-if-changed=frontend/build-common.ts");
 
+    // Spawn typecheck in parallel — it produces no output files so it is
+    // independent of the other build steps.
+    let typecheck = tasks::spawn("typecheck", || npm::run("typecheck"));
+
+    println!("cargo::rerun-if-changed=deny.toml");
+    println!("cargo::rerun-if-changed=frontend/package-lock.json");
+    let about_json = tasks::spawn("build-about-json", || {
+        npm::run("generate-npm-licenses")?;
+        about::build_json()
+    });
+
     // Icons and the manifest/build-data.json must be ready before the npm build
     // because vite.config.ts reads build-data.json at config-load time.
     println!("{ON_ASSET_CHANGE}/favicon.svg");
     println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
-    icons::generate_pngs()?;
-    assets::write_pre_build_data()?;
-
-    // Spawn typecheck in parallel — it produces no output files so it is
-    // independent of the other build steps.
-    let typecheck = npm::spawn("typecheck")?;
-    npm::run("build")?;
-
-    println!("cargo::rerun-if-changed=frontend/package-lock.json");
-    println!("cargo::rerun-if-changed=deny.toml");
-    npm::run("generate-npm-licenses")?;
-    about::build_json()?;
-
     println!("{ON_ASSET_CHANGE}/partials/client_install_requirements_gotchas.md");
     println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
-    assets::compute_hashes()?;
+    let main_frontend_assets = tasks::spawn("build-frontend", || {
+        icons::generate_pngs()?;
+        assets::write_pre_build_data()?;
+        npm::run("build")?;
+        assets::compute_hashes()
+    });
+
+    tasks::join(about_json)?;
+    tasks::join(main_frontend_assets)?;
 
     npm::run("generate-pages")?;
 
     // Block until the parallel typecheck finishes, surfacing any type errors.
-    npm::join(typecheck, "typecheck")?;
+    tasks::join(typecheck)?;
 
     warnings::emit();
 
