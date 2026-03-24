@@ -119,7 +119,7 @@ fn set_cargo_env_vars(
     svg_hashes: &HashMap<String, String>,
 ) {
     println!("cargo::rustc-env=ASSET_HASH_STYLES_CSS={styles_hash}");
-    println!("cargo::rustc-env=CSP_APP_JS_HASH={app_js_csp_hash}");
+    println!("cargo::rustc-env=CSP_APP_JS_HASH='{app_js_csp_hash}'");
     println!("cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={manifest_hash}");
     for &size in &ICON_SIZES {
         println!(

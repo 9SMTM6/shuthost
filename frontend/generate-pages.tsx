@@ -97,9 +97,7 @@ const indexBodyContent = `\
 </noscript>
     <div id="app"></div>
     <script id="server-data" type="application/json">{ server_data }</script>
-    <script type="module">
-${appJs}
-    </script>`;
+    <script type="module">${appJs}</script>`;
 
 const indexHtml = buildPage({
     title: 'ShutHost Coordinator',
