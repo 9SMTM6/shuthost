@@ -10,7 +10,7 @@ export type ServerData = {
     broadcastPort: number;
 };
 
-function loadServerData(): ServerData {
+const loadServerData = () => {
     if (typeof document === 'undefined') {
         // SSR context (generate-pages.tsx via vite-node) — no data needed for static rendering.
         return {} as ServerData;

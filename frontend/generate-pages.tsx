@@ -18,7 +18,7 @@ import { Footer } from './assets/components/Footer';
 import { SimpleHeader } from './assets/components/Header';
 import { AboutPage, type AboutPageProps } from './assets/pages/AboutPage';
 
-export interface BuildData {
+export type BuildData = {
     styles_hash: string;
     styles_integrity: string;
     manifest_hash: string;
@@ -27,18 +27,16 @@ export interface BuildData {
     description: string;
     repository: string;
     version: string;
-}
+};
 
-export function loadBuildData(): BuildData {
+export const loadBuildData = () => {
     const path = resolve(frontend_dir, 'assets/generated/build-data.json');
     return JSON.parse(readFileSync(path, 'utf-8')) as BuildData;
-}
+};
 
 const frontend_dir = dirname(fileURLToPath(import.meta.url));
 
-function asset(path: string): string {
-    return resolve(frontend_dir, path);
-}
+const asset = (path: string) => resolve(frontend_dir, path);
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Shared resources
@@ -51,23 +49,21 @@ const appJs = readFileSync(asset('assets/generated/app.js'), 'utf-8');
 // Page assembly helpers
 // ──────────────────────────────────────────────────────────────────────────────
 
-function escapeHtml(str: string): string {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
+const escapeHtml = (str: string) => str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
-interface PageOptions {
+type PageOptions = {
     title: string;
     head: string;
     bodyClass?: string;
     bodyContent: string;
     footer?: string;
-}
+};
 
-function buildPage(opts: PageOptions): string {
+const buildPage = (opts: PageOptions) => {
     const bodyClass = opts.bodyClass ? ` class="${escapeHtml(opts.bodyClass)}"` : '';
     const footerHtml = opts.footer ? `\n${opts.footer}` : '';
     return `<!DOCTYPE html>
@@ -81,7 +77,7 @@ ${opts.bodyContent}${footerHtml}
 
 </html>
 `;
-}
+};
 
 // ──────────────────────────────────────────────────────────────────────────────
 // index.html — SPA shell
@@ -123,8 +119,8 @@ const aboutData: AboutPageProps = JSON.parse(
     readFileSync(asset('assets/generated/about-data.json'), 'utf-8'),
 );
 
-const aboutHeader = renderToString(() => SimpleHeader({}));
-const aboutMain = renderToString(() => AboutPage(aboutData));
+const aboutHeader = renderToString(() => <SimpleHeader />);
+const aboutMain = renderToString(() => <AboutPage {...aboutData} />);
 
 const aboutBodyContent = `\
 ${aboutHeader}

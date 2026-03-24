@@ -37,12 +37,12 @@ if (appMount) {
     ), appMount);
 }
 
-function showJsError(message: string): void {
+const showJsError = (message: string) => {
     const errorDiv = document.getElementById('js-error') as HTMLDivElement;
     const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement;
     messageEl.textContent = message;
     errorDiv.hidden = false;
-}
+};
 
 // Global error handlers
 window.addEventListener('error', (event) => {

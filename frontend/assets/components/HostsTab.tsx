@@ -64,7 +64,7 @@ const makeInstallCommands = () => {
 // HostRow
 // ==========================
 
-const HostRow: Component<{ hostName: string }> = (props) => {
+const HostRow = ((props: { hostName: string }) => {
     const leases = () => state.leaseMap[props.hostName] ?? [];
     const status = () => state.statusMap[props.hostName] ?? 'Loading...';
     const hasWebInterfaceLease = () => leases().some(l => l.type === 'WebInterface');
@@ -109,13 +109,13 @@ const HostRow: Component<{ hostName: string }> = (props) => {
             </td>
         </tr>
     );
-};
+}) satisfies Component<any>;
 
 // ==========================
 // HostsTab
 // ==========================
 
-export const HostsTab: Component<{ configPath: string }> = (props) => {
+export const HostsTab = ((props: { configPath: string }) => {
     const sortedHosts = createMemo(() =>
         sortActiveFirst(
             state.hosts,
@@ -192,4 +192,4 @@ export const HostsTab: Component<{ configPath: string }> = (props) => {
             </section>
         </section>
     );
-};
+}) satisfies Component<any>;

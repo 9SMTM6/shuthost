@@ -5,7 +5,7 @@ import { onMount } from 'solid-js';
  * Security warning panel for when no internal auth is configured or the
  * external auth exceptions_version is outdated.
  */
-export const AuthWarningPanel: Component = () => {
+export const AuthWarningPanel = (() => {
     onMount(() => {
         const baseUrl = window.location.origin;
         const domain = baseUrl.replace(/^https?:\/\//, '');
@@ -126,4 +126,4 @@ location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ {
             </details>
         </section>
     );
-};
+}) satisfies Component<any>;

@@ -1,12 +1,12 @@
 import type { Component } from 'solid-js';
 import { For } from 'solid-js';
 
-export interface Author {
+export type Author = {
     name: string;
     email?: string | null;
-}
+};
 
-export interface DependencyEntry {
+export type DependencyEntry = {
     name: string;
     version: string;
     ecosystem: 'Rust' | 'Npm';
@@ -14,17 +14,17 @@ export interface DependencyEntry {
     license_html: string;
     authors: Author[];
     repository?: string | null;
-}
+};
 
-export interface AboutPageProps {
+export type AboutPageProps = {
     description: string;
     repository: string;
     version: string;
     entries: DependencyEntry[];
     licenses: Record<string, string>;
-}
+};
 
-export const AboutPage: Component<AboutPageProps> = (props) => (
+export const AboutPage = ((props: AboutPageProps) => (
     <main
         id="main-content"
         class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full"
@@ -123,4 +123,4 @@ export const AboutPage: Component<AboutPageProps> = (props) => (
 
         </section>
     </main>
-);
+)) satisfies Component<any>;

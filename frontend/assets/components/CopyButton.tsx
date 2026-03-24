@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 import { createSignal, onCleanup } from 'solid-js';
 
-export const CopyButton: Component<{ targetId: string; label: string }> = (props) => {
+export const CopyButton = ((props: { targetId: string; label: string }) => {
     const [text, setText] = createSignal('Copy');
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -22,4 +22,4 @@ export const CopyButton: Component<{ targetId: string; label: string }> = (props
             {text()}
         </button>
     );
-};
+}) satisfies Component<any>;

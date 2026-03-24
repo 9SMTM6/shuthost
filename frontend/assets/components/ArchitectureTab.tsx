@@ -5,7 +5,7 @@ import clientControllerInteractionSvg from '../generated/client_controller_inter
 import deploymentSvg from '../generated/deployment.svg?raw';
 import directControlComparisonSvg from '../generated/direct_control_comparison.svg?raw';
 
-export const ArchitectureTab: Component = () => (
+export const ArchitectureTab = (() => (
     <section id="architecture-tab" class="tab-content">
         <div innerHTML={platformSupportHtml} />
 
@@ -163,4 +163,4 @@ export const ArchitectureTab: Component = () => (
             </section>
         </article>
     </section>
-);
+)) satisfies Component<any>;

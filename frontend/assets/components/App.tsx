@@ -9,7 +9,7 @@ import { AuthWarningPanel } from './AuthWarningPanel';
 import { ArchitectureTab } from './ArchitectureTab';
 
 /** Root component rendered inside RootLayout's <main id="main-content">. */
-export const App: Component = () => {
+export const App = (() => {
     onMount(() => {
         if (serverData.isDemo) {
             initDemoMode();
@@ -31,4 +31,4 @@ export const App: Component = () => {
             <ClientsTab configPath={serverData.configPath} />
         </>
     );
-};
+}) satisfies Component<any>;

@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 import type { BuildData } from '../../generate-pages';
 
-export const HtmlHead: Component<{ title: string; data: BuildData }> = (props) => {
+export const HtmlHead = ((props: { title: string; data: BuildData }) => {
     const d = props.data;
     return (
         <head>
@@ -23,4 +23,4 @@ export const HtmlHead: Component<{ title: string; data: BuildData }> = (props) =
             <link rel="stylesheet" href={`./styles.${d.styles_hash}.css`} integrity={d.styles_integrity} />
         </head>
     );
-};
+}) satisfies Component<any>;
