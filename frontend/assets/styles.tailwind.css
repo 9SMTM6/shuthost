@@ -37,6 +37,15 @@ body {
     footer {
         grid-area: footer;
     }
+
+    &.login-page {
+        .main {
+            @apply flex flex-col flex-1 max-w-full px-0;
+            > section {
+                @apply flex flex-col flex-1 py-0;
+            }
+        }
+    }
 }
 
 @layer components {

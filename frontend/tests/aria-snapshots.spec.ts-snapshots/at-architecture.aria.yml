@@ -40,7 +40,32 @@
     - region "Core Components & Interactions":
       - heading "Core Components & Interactions" [level=3]
       - figure:
-        - img "Host-Agent-Coordinator Interaction Diagram"
+        - document:
+          - paragraph:
+            - strong: Host
+          - paragraph:
+            - text: starts on
+            - emphasis: boot
+          - paragraph:
+            - text: executes
+            - strong: shutdown
+          - paragraph:
+            - strong: shutdown
+            - text: requests
+          - paragraph:
+            - strong: status
+            - text: pings (
+            - emphasis: host online
+            - text: )
+          - paragraph:
+            - strong: WOL
+            - text: startup
+          - paragraph: Controller
+          - paragraph: Direct Control (Script)
+          - paragraph: Coordinator
+          - paragraph: Actual Host
+          - paragraph:
+            - strong: Agent
       - note "Component Roles":
         - heading "Component Roles" [level=4]
         - list:
@@ -71,7 +96,31 @@
     - region "Lease System & Multi-Client Access":
       - heading "Lease System & Multi-Client Access" [level=3]
       - figure:
-        - img "Client-Coordinator-Host Lease System Diagram"
+        - document:
+          - paragraph:
+            - strong: WOL
+            - text: startup (if
+            - strong: ">=1 leases"
+            - text: )
+          - paragraph:
+            - text: shutdown (if
+            - strong: =0 leases
+            - text: )
+          - paragraph:
+            - text: request/release
+            - strong: leases
+            - text: on hosts
+          - paragraph:
+            - emphasis: indirectly
+            - text: control
+          - paragraph: Clients
+          - paragraph: WebUI
+          - paragraph:
+            - text: Client (Script) one per
+            - emphasis: automated Task
+          - paragraph: Coordinator
+          - paragraph:
+            - strong: Host
       - paragraph:
         - strong: "When leases matter:"
         - text: When you have
@@ -115,7 +164,30 @@
     - region "Deployment Options":
       - heading "Deployment Options" [level=3]
       - figure:
-        - img "Deployment Options Diagram"
+        - document:
+          - paragraph: Agent Only Install
+          - paragraph:
+            - text: Installer (
+            - strong: binary
+            - text: ) or
+            - strong: Docker
+          - paragraph: Installer
+          - paragraph: Installer
+          - paragraph: register manually
+          - paragraph: register manually
+          - paragraph: generates
+          - paragraph:
+            - text: Installer
+            - emphasis: tests WOL connectivity
+          - paragraph: GitHub Releases
+          - paragraph: Coordinator (WebUI + API)
+          - paragraph:
+            - text: Host Agent
+            - emphasis: per host
+          - paragraph: Direct Control Script
+          - paragraph:
+            - text: Client
+            - emphasis: per task
       - note "Deployment Paths":
         - heading "Installation Paths" [level=4]
         - list:
@@ -134,7 +206,28 @@
     - region "Direct Control vs. Coordinator":
       - heading "Direct Control vs. Coordinator" [level=3]
       - figure:
-        - img "Direct Control vs Coordinator Comparison Diagram"
+        - document:
+          - paragraph:
+            - strong: LAN
+          - paragraph: Controller
+          - paragraph:
+            - strong: control
+          - paragraph:
+            - strong: startup
+          - paragraph:
+            - strong: shutdown
+          - paragraph:
+            - text: control
+            - emphasis: outside
+            - text: of
+            - strong: LAN
+          - paragraph: Clients
+          - paragraph:
+            - strong: WebUI
+          - paragraph: Client (Script)
+          - paragraph: Direct Control Script
+          - paragraph: Coordinator
+          - paragraph: Host
       - note "Network Limitations":
         - heading "LAN Limitation" [level=4]
         - paragraph:

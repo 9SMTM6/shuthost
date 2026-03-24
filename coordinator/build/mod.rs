@@ -68,8 +68,8 @@ fn main() -> eyre::Result<()> {
     about::build_json()?;
 
     println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
-    println!("{ON_ASSET_CHANGE}/client_install_requirements_gotchas.md");
-    println!("{ON_ASSET_CHANGE}/agent_install_requirements_gotchas.md");
+    println!("{ON_ASSET_CHANGE}/partials/client_install_requirements_gotchas.md");
+    println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
     templates::compute_hashes()?;
 
     npm::run("generate-pages")?;
