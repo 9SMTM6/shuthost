@@ -1,4 +1,4 @@
-import type { Component, ParentComponent } from 'solid-js';
+import type { Component, ParentComponent, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { serverData } from '../serverData';
@@ -22,9 +22,11 @@ function normalizeTab(hash: string): TabId {
 /**
  * Shared header shell: branded bar with logo. Pass children to add content
  * after the logo (e.g. nav tabs, hamburger). Simple variant passes nothing.
+ * topBanner renders inside <header> above the main bar (keeps it in grid-area: header).
  */
-const HeaderShell: ParentComponent = (props) => (
+const HeaderShell: ParentComponent<{ topBanner?: JSX.Element }> = (props) => (
     <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
+        {props.topBanner}
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-(--header-height)">
                 <a href="/" class="flex items-center gap-4">
@@ -96,18 +98,17 @@ export const Header: Component = () => {
                 Skip to main content
             </a>
 
-            {/* Demo disclaimer banner */}
-            <Show when={serverData.isDemo}>
-                <div
-                    id="demo-mode-disclaimer"
-                    data-subpath={demoSubpath}
-                    class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
-                >
-                    Demo Mode: Static UI with simulated interactions only
-                </div>
-            </Show>
-
-            <HeaderShell>
+            <HeaderShell topBanner={
+                <Show when={serverData.isDemo}>
+                    <div
+                        id="demo-mode-disclaimer"
+                        data-subpath={demoSubpath}
+                        class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
+                    >
+                        Demo Mode: Static UI with simulated interactions only
+                    </div>
+                </Show>
+            }>
                 <div class="flex items-center gap-2">
                     <button
                         type="button"
