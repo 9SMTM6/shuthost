@@ -24,4 +24,4 @@
             - columnheader "Status"
             - columnheader "Actions"
         - rowgroup
-- contentinfo: ShutHost Coordinator v<<VERSION>>|About & Licenses
+- contentinfo: ShutHost Coordinator v<<VERSION>> | About & Licenses
