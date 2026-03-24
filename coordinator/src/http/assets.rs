@@ -147,7 +147,7 @@ pub(crate) enum UiMode<'params> {
 }
 
 /// Renders the main HTML template, injecting a JSON data island with all
-/// server-side values that the SolidJS app needs on startup.
+/// server-side values that the `SolidJS` app needs on startup.
 pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
     let server_data = match *mode {
         UiMode::Normal {
@@ -176,15 +176,17 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
         }),
     };
 
-    include_utf8_asset!("generated/index.html")
-        .replace("{ server_data }", &server_data.to_string())
+    include_utf8_asset!("generated/index.html").replace("{ server_data }", &server_data.to_string())
 }
 
 /// Serves the main HTML template, injecting dynamic content.
 #[axum::debug_handler]
 pub(crate) async fn serve_ui(
     State(AppState {
-        config_path, auth, config_rx, ..
+        config_path,
+        auth,
+        config_rx,
+        ..
     }): State<AppState>,
 ) -> impl IntoResponse {
     type A = Resolved;
