@@ -19,8 +19,8 @@ const RootLayout = (props: RouteSectionProps) => (
             class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full"
             tabindex="-1"
         >
-            <JsErrorBox />
             <section class="py-4 sm:py-6">
+                <JsErrorBox />
                 {props.children}
             </section>
         </main>

@@ -48,6 +48,14 @@ body {
     }
 }
 
+/* SolidJS mounts into <div id="app"> which would otherwise be the only direct
+   child of body participating in the grid, preventing header/main from
+   claiming their named grid areas. display:contents makes the div layout-
+   transparent so its children (header, main) act as direct body grid items. */
+#app {
+    display: contents;
+}
+
 @layer components {
     .section-container {
         @apply bg-white dark:bg-[#1e1e1e] shadow-md rounded-lg overflow-x-auto overflow-y-hidden;
