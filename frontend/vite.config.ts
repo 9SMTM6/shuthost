@@ -1,8 +1,17 @@
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 import tailwindcss from '@tailwindcss/vite';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+const buildData = JSON.parse(
+    readFileSync(resolve(__dirname, 'assets/generated/build-data.json'), 'utf-8')
+) as { repository: string };
 
 export default defineConfig({
+    define: {
+        __BUILD_REPOSITORY__: JSON.stringify(buildData.repository),
+    },
     plugins: [
         solid(),
         tailwindcss(),
