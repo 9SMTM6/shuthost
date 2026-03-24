@@ -28,7 +28,7 @@ pub fn write_pre_build_data() -> eyre::Result<()> {
     let manifest_hash = generate_manifest(&generated_dir, &svg_hashes, &icon_hashes)?;
     write_build_data(
         &generated_dir,
-        BuildData {
+        &BuildData {
             styles_hash: "",
             styles_integrity: "",
             manifest_hash: &manifest_hash,
@@ -53,10 +53,16 @@ pub fn compute_hashes() -> eyre::Result<()> {
 
     let (icon_hashes, svg_hashes) = compute_icon_hashes()?;
     let manifest_hash = generate_manifest(&generated_dir, &svg_hashes, &icon_hashes)?;
-    set_cargo_env_vars(&styles_hash, &app_js_csp_hash, &manifest_hash, &icon_hashes, &svg_hashes);
+    set_cargo_env_vars(
+        &styles_hash,
+        &app_js_csp_hash,
+        &manifest_hash,
+        &icon_hashes,
+        &svg_hashes,
+    );
     write_build_data(
         &generated_dir,
-        BuildData {
+        &BuildData {
             styles_hash: &styles_hash,
             styles_integrity: &styles_integrity,
             manifest_hash: &manifest_hash,
@@ -73,7 +79,9 @@ fn compute_icon_hashes() -> eyre::Result<(HashMap<u32, String>, HashMap<String, 
 
     let mut icon_hashes = HashMap::new();
     for &size in &ICON_SIZES {
-        let png = fs::read(format!("../frontend/assets/generated/icons/icon-{size}.png"))?;
+        let png = fs::read(format!(
+            "../frontend/assets/generated/icons/icon-{size}.png"
+        ))?;
         icon_hashes.insert(size, url_hash(&png));
     }
 
@@ -114,7 +122,10 @@ fn set_cargo_env_vars(
     println!("cargo::rustc-env=CSP_APP_JS_HASH={app_js_csp_hash}");
     println!("cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={manifest_hash}");
     for &size in &ICON_SIZES {
-        println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={}", icon_hashes[&size]);
+        println!(
+            "cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={}",
+            icon_hashes[&size]
+        );
     }
     for (asset, hash) in svg_hashes {
         println!(
@@ -125,15 +136,15 @@ fn set_cargo_env_vars(
     }
 }
 
-struct BuildData<'a> {
-    styles_hash: &'a str,
-    styles_integrity: &'a str,
-    manifest_hash: &'a str,
-    icon_hashes: &'a HashMap<u32, String>,
-    svg_hashes: &'a HashMap<String, String>,
+struct BuildData<'all> {
+    styles_hash: &'all str,
+    styles_integrity: &'all str,
+    manifest_hash: &'all str,
+    icon_hashes: &'all HashMap<u32, String>,
+    svg_hashes: &'all HashMap<String, String>,
 }
 
-fn write_build_data(generated_dir: &Path, data: BuildData<'_>) -> eyre::Result<()> {
+fn write_build_data(generated_dir: &Path, data: &BuildData<'_>) -> eyre::Result<()> {
     let icon_hashes_json: serde_json::Map<String, serde_json::Value> = data
         .icon_hashes
         .iter()
