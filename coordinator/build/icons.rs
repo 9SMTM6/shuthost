@@ -4,6 +4,9 @@ use resvg::usvg;
 use std::{fs, path::PathBuf};
 use tiny_skia::Pixmap;
 
+// sizes to emit: favicons, apple-touch, and PWA sizes
+pub(super) const ICON_SIZES: [u32; 7] = [32, 48, 64, 128, 180, 192, 512];
+
 pub fn generate_pngs() -> eyre::Result<()> {
     let out_dir = PathBuf::from("../frontend/assets/generated/icons");
     if !out_dir.exists() {
@@ -18,15 +21,13 @@ pub fn generate_pngs() -> eyre::Result<()> {
     };
     let rtree = usvg::Tree::from_str(str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 
-    // sizes to emit: favicons, apple-touch, and PWA sizes
-    let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
     #[expect(
         clippy::cast_precision_loss,
         reason = "scaling factor does not need to be exact"
     )]
-    let scaling_sizes = sizes.map(|it| it as f32 / 400.0);
+    let scaling_sizes = ICON_SIZES.map(|it| it as f32 / 400.0);
 
-    for (&size, scaling) in sizes.iter().zip(scaling_sizes) {
+    for (&size, scaling) in ICON_SIZES.iter().zip(scaling_sizes) {
         let mut pixmap = Pixmap::new(size, size)
             .ok_or_else(|| eyre!("failed to allocate pixmap {size}x{size}"))?;
 

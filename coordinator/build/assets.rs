@@ -8,73 +8,76 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::icons::ICON_SIZES;
+
 macro_rules! include_frontend_asset {
     ($path:expr) => {
         include_str!(concat!("../../frontend/assets/", $path))
     };
 }
 
+/// Writes a preliminary `build-data.json` before the npm build so that
+/// `vite.config.ts` can load it (it reads `repository` at config time).
+/// Icons must already be generated before calling this.
+/// The full data (including CSS and JS hashes) is written by [`compute_hashes`].
+pub fn write_pre_build_data() -> eyre::Result<()> {
+    let generated_dir = PathBuf::from("../frontend/assets/generated");
+    fs::create_dir_all(&generated_dir)?;
+
+    let (icon_hashes, svg_hashes) = compute_icon_hashes()?;
+    let manifest_hash = generate_manifest(&generated_dir, &svg_hashes, &icon_hashes)?;
+    write_build_data(
+        &generated_dir,
+        BuildData {
+            styles_hash: "",
+            styles_integrity: "",
+            manifest_hash: &manifest_hash,
+            icon_hashes: &icon_hashes,
+            svg_hashes: &svg_hashes,
+        },
+    )
+}
+
 pub fn compute_hashes() -> eyre::Result<()> {
     let generated_dir = PathBuf::from("../frontend/assets/generated");
     fs::create_dir_all(&generated_dir)?;
 
-    let asset_hashes = hash_non_template_assets()?;
-    let manifest_hash = generate_manifest(
-        &generated_dir,
-        &asset_hashes.svg_hashes,
-        &asset_hashes.icon_hashes,
-    )?;
-    set_cargo_env_vars(
-        &asset_hashes.styles_hash,
-        &manifest_hash,
-        &asset_hashes.icon_hashes,
-        &asset_hashes.svg_hashes,
-    );
-    write_build_data(
-        &generated_dir,
-        &asset_hashes.styles_hash,
-        &asset_hashes.styles_integrity,
-        &manifest_hash,
-        &asset_hashes.icon_hashes,
-        &asset_hashes.svg_hashes,
-    )?;
-
-    Ok(())
-}
-
-struct AssetHashes {
-    styles_hash: String,
-    styles_integrity: String,
-    icon_hashes: HashMap<u32, String>,
-    svg_hashes: HashMap<String, String>,
-}
-
-fn hash_non_template_assets() -> eyre::Result<AssetHashes> {
     let styles_css = fs::read_to_string("../frontend/assets/generated/app.css")
         .wrap_err("Failed to read generated app.css")?;
     let styles_hash = url_hash(styles_css.as_bytes());
     let styles_integrity = integrity_hash(&styles_css);
 
-    let favicon_short_hash = url_hash(include_frontend_asset!("favicon.svg").as_bytes());
+    let app_js = fs::read("../frontend/assets/generated/app.js")
+        .wrap_err("Failed to read generated app.js")?;
+    let app_js_csp_hash = integrity_hash(&app_js);
 
-    let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
+    let (icon_hashes, svg_hashes) = compute_icon_hashes()?;
+    let manifest_hash = generate_manifest(&generated_dir, &svg_hashes, &icon_hashes)?;
+    set_cargo_env_vars(&styles_hash, &app_js_csp_hash, &manifest_hash, &icon_hashes, &svg_hashes);
+    write_build_data(
+        &generated_dir,
+        BuildData {
+            styles_hash: &styles_hash,
+            styles_integrity: &styles_integrity,
+            manifest_hash: &manifest_hash,
+            icon_hashes: &icon_hashes,
+            svg_hashes: &svg_hashes,
+        },
+    )
+}
+
+fn compute_icon_hashes() -> eyre::Result<(HashMap<u32, String>, HashMap<String, String>)> {
+    let favicon_hash = url_hash(include_frontend_asset!("favicon.svg").as_bytes());
+    let mut svg_hashes = HashMap::new();
+    svg_hashes.insert("favicon".to_string(), favicon_hash);
+
     let mut icon_hashes = HashMap::new();
-    for &size in &sizes {
-        let png_path = format!("../frontend/assets/generated/icons/icon-{size}.png");
-        let png = fs::read(&png_path)?;
-        let short_hash = url_hash(&png);
-        icon_hashes.insert(size, short_hash);
+    for &size in &ICON_SIZES {
+        let png = fs::read(format!("../frontend/assets/generated/icons/icon-{size}.png"))?;
+        icon_hashes.insert(size, url_hash(&png));
     }
 
-    let mut svg_hashes = HashMap::new();
-    svg_hashes.insert("favicon".to_string(), favicon_short_hash);
-
-    Ok(AssetHashes {
-        styles_hash,
-        styles_integrity,
-        icon_hashes,
-        svg_hashes,
-    })
+    Ok((icon_hashes, svg_hashes))
 }
 
 fn generate_manifest(
@@ -102,16 +105,16 @@ fn generate_manifest(
 
 fn set_cargo_env_vars(
     styles_hash: &str,
+    app_js_csp_hash: &str,
     manifest_hash: &str,
     icon_hashes: &HashMap<u32, String>,
     svg_hashes: &HashMap<String, String>,
 ) {
     println!("cargo::rustc-env=ASSET_HASH_STYLES_CSS={styles_hash}");
+    println!("cargo::rustc-env=CSP_APP_JS_HASH={app_js_csp_hash}");
     println!("cargo::rustc-env=ASSET_HASH_MANIFEST_JSON={manifest_hash}");
-    let sizes: [u32; _] = [32, 48, 64, 128, 180, 192, 512];
-    for &size in &sizes {
-        let hash = &icon_hashes[&size];
-        println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={hash}");
+    for &size in &ICON_SIZES {
+        println!("cargo::rustc-env=ASSET_HASH_ICON_{size}_PNG={}", icon_hashes[&size]);
     }
     for (asset, hash) in svg_hashes {
         println!(
@@ -122,26 +125,29 @@ fn set_cargo_env_vars(
     }
 }
 
-fn write_build_data(
-    generated_dir: &Path,
-    styles_hash: &str,
-    styles_integrity: &str,
-    manifest_hash: &str,
-    icon_hashes: &HashMap<u32, String>,
-    svg_hashes: &HashMap<String, String>,
-) -> eyre::Result<()> {
-    let icon_hashes_json: serde_json::Map<String, serde_json::Value> = icon_hashes
+struct BuildData<'a> {
+    styles_hash: &'a str,
+    styles_integrity: &'a str,
+    manifest_hash: &'a str,
+    icon_hashes: &'a HashMap<u32, String>,
+    svg_hashes: &'a HashMap<String, String>,
+}
+
+fn write_build_data(generated_dir: &Path, data: BuildData<'_>) -> eyre::Result<()> {
+    let icon_hashes_json: serde_json::Map<String, serde_json::Value> = data
+        .icon_hashes
         .iter()
         .map(|(k, v)| (k.to_string(), serde_json::Value::String(v.clone())))
         .collect();
-    let svg_hashes_json: serde_json::Map<String, serde_json::Value> = svg_hashes
+    let svg_hashes_json: serde_json::Map<String, serde_json::Value> = data
+        .svg_hashes
         .iter()
         .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
         .collect();
     let build_data = serde_json::json!({
-        "styles_hash": styles_hash,
-        "styles_integrity": styles_integrity,
-        "manifest_hash": manifest_hash,
+        "styles_hash": data.styles_hash,
+        "styles_integrity": data.styles_integrity,
+        "manifest_hash": data.manifest_hash,
         "icon_hashes": icon_hashes_json,
         "svg_hashes": svg_hashes_json,
         "description": env!("CARGO_PKG_DESCRIPTION"),
@@ -163,7 +169,6 @@ fn integrity_hash(content: impl AsRef<[u8]>) -> String {
 
 /// A short hash for the purpose of cache busting
 fn url_hash(content: &[u8]) -> String {
-    let hash = Sha256::digest(content);
-    let hash_hex = hex::encode(hash);
+    let hash_hex = hex::encode(Sha256::digest(content));
     hash_hex[..8].to_string()
 }
