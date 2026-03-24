@@ -52,12 +52,7 @@ pub(crate) async fn page(
         return Redirect::to("/").into_response();
     }
 
-    let auth_mode = match auth.mode {
-        A::Token { .. } => "token",
-        A::Oidc { .. } => "oidc",
-        A::Disabled => "disabled",
-        A::External { .. } => "external",
-    };
+    let auth_mode = auth.mode.auth_mode_str();
 
     (
         TypedHeader(ContentType::html()),

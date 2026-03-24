@@ -195,12 +195,7 @@ pub(crate) async fn serve_ui(
             A::External { exceptions_version } if *exceptions_version != EXPECTED_AUTH_EXCEPTIONS_VERSION
         );
 
-    let auth_mode = match auth.mode {
-        A::Token { .. } => "token",
-        A::Oidc { .. } => "oidc",
-        A::Disabled => "disabled",
-        A::External { .. } => "external",
-    };
+    let auth_mode = auth.mode.auth_mode_str();
 
     (
         TypedHeader(ContentType::html()),

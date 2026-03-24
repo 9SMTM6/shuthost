@@ -75,6 +75,17 @@ pub(crate) enum Resolved {
     },
 }
 
+impl Resolved {
+    pub(crate) fn auth_mode_str(&self) -> &'static str {
+        match self {
+            Self::Token { .. } => "token",
+            Self::Oidc { .. } => "oidc",
+            Self::Disabled => "disabled",
+            Self::External { .. } => "external",
+        }
+    }
+}
+
 /// Custom debug impl to cut down on logging clutter
 impl fmt::Debug for Resolved {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
