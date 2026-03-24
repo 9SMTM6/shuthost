@@ -57,7 +57,7 @@ pub(crate) async fn secure_headers_middleware(req: Request<Body>, next: Next) ->
             // directives (hash-locked script-src, object-src 'none', etc.)
             // already prevent the DOM-XSS vectors that Trusted Types guards.
             "script-src ",
-            env!("CSP_INLINE_SCRIPTS_HASHES"),
+            env!("CSP_APP_JS_HASH"),
             "; ",
             "manifest-src 'self'; ",
             "style-src-elem 'self' 'unsafe-inline'; ",
