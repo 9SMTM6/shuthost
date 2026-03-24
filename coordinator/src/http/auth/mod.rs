@@ -76,8 +76,8 @@ pub(crate) enum Resolved {
 }
 
 impl Resolved {
-    pub(crate) fn auth_mode_str(&self) -> &'static str {
-        match self {
+    pub(crate) const fn auth_mode_str(&self) -> &'static str {
+        match *self {
             Self::Token { .. } => "token",
             Self::Oidc { .. } => "oidc",
             Self::Disabled => "disabled",

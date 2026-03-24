@@ -8,9 +8,7 @@ pub fn generate_hashes() -> eyre::Result<()> {
     let script_regex = Regex::new(r#"<script type="module"[^>]*>([\s\S]*?)<\/script>"#)?;
     let mut script_hashes = collections::HashSet::new();
 
-    let served_html_files = [
-        "../frontend/assets/generated/index.html",
-    ];
+    let served_html_files = ["../frontend/assets/generated/index.html"];
     for file_path in served_html_files {
         let content = fs::read_to_string(file_path)?;
         for cap in script_regex.captures_iter(&content) {

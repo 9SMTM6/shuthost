@@ -12,13 +12,12 @@ use reqwest::StatusCode;
 
 use crate::{
     app::AppState,
+    http::assets::{UiMode, render_ui_html},
     http::auth::{
         Resolved,
         cookies::{self, get_oidc_session_from_cookie, get_token_session_from_cookie},
-        oidc,
-        token,
+        oidc, token,
     },
-    http::assets::{UiMode, render_ui_html},
 };
 
 /// Returns a router with all authentication-related routes.
@@ -31,10 +30,15 @@ pub(crate) fn routes() -> Router<AppState> {
 }
 
 /// Handle GET requests to the login page. Redirects if already authenticated;
-/// otherwise serves the SPA shell — SolidJS Router renders `/login` client-side.
+/// otherwise serves the SPA shell — `SolidJS` Router renders `/login` client-side.
 #[axum::debug_handler]
 pub(crate) async fn page(
-    State(AppState { auth, config_path, config_rx, .. }): State<AppState>,
+    State(AppState {
+        auth,
+        config_path,
+        config_rx,
+        ..
+    }): State<AppState>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
     type A = Resolved;

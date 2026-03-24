@@ -19,8 +19,11 @@ pub fn compute_hashes() -> eyre::Result<()> {
     fs::create_dir_all(&generated_dir)?;
 
     let asset_hashes = hash_non_template_assets()?;
-    let manifest_hash =
-        generate_manifest(&generated_dir, &asset_hashes.svg_hashes, &asset_hashes.icon_hashes)?;
+    let manifest_hash = generate_manifest(
+        &generated_dir,
+        &asset_hashes.svg_hashes,
+        &asset_hashes.icon_hashes,
+    )?;
     set_cargo_env_vars(
         &asset_hashes.styles_hash,
         &manifest_hash,
