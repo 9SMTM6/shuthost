@@ -15,36 +15,34 @@ pub fn setup() -> eyre::Result<()> {
         .output()
         .wrap_err("Ensure node/npm is installed")?;
 
-    process::Command::new(NPM_BIN)
+    let output = process::Command::new(NPM_BIN)
         .arg("ci")
         .current_dir(FRONTEND_DIR)
         .env("npm_config_cache", "/tmp/.npm")
         .env("PUPPETEER_SKIP_DOWNLOAD", "true")
-        .status()
-        .map(|it| {
-            if it.success() {
-                Ok(())
-            } else {
-                bail!("npm ci failed with {it}")
-            }
-        })
-        .wrap_err("Failed to npm ci")?
+        .output()
+        .wrap_err("Failed to npm ci")?;
+    if !output.status.success() {
+        eprint!("{}", String::from_utf8_lossy(&output.stdout));
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        bail!("npm ci failed with {}", output.status);
+    }
+    Ok(())
 }
 
 pub fn run(task: &str) -> eyre::Result<()> {
-    process::Command::new(NPM_BIN)
+    let output = process::Command::new(NPM_BIN)
         .arg("run")
         .arg(task)
         .current_dir(FRONTEND_DIR)
-        .status()
-        .map(|it| {
-            if it.success() {
-                Ok(())
-            } else {
-                bail!("npm run {task} failed with {it}")
-            }
-        })
-        .wrap_err(format!("Failed to npm run {task}"))?
+        .output()
+        .wrap_err(format!("Failed to npm run {task}"))?;
+    if !output.status.success() {
+        eprint!("{}", String::from_utf8_lossy(&output.stdout));
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        bail!("npm run {task} failed with {}", output.status);
+    }
+    Ok(())
 }
 
 // TODO: consider some more generic spawn method, to be used for different tasks during build.
@@ -55,16 +53,19 @@ pub fn spawn(task: &str) -> eyre::Result<process::Child> {
         .arg("run")
         .arg(task)
         .current_dir(FRONTEND_DIR)
+        .stdout(process::Stdio::piped())
+        .stderr(process::Stdio::piped())
         .spawn()
         .wrap_err(format!("Failed to spawn npm run {task}"))
 }
 
 /// Waits for a child started by [`spawn`] and returns an error if it failed.
 pub fn join(mut child: process::Child, task: &str) -> eyre::Result<()> {
-    let status = child.wait().wrap_err(format!("Failed to wait for npm run {task}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        bail!("npm run {task} failed with {status}")
+    let output = child.wait_with_output().wrap_err(format!("Failed to wait for npm run {task}"))?;
+    if !output.status.success() {
+        eprint!("{}", String::from_utf8_lossy(&output.stdout));
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        bail!("npm run {task} failed with {}", output.status);
     }
+    Ok(())
 }
