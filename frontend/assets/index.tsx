@@ -37,33 +37,33 @@ if (appMount) {
     ), appMount);
 }
 
+function showJsError(message: string): void {
+    const errorDiv = document.getElementById('js-error') as HTMLDivElement;
+    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement;
+    messageEl.textContent = message;
+    errorDiv.hidden = false;
+}
+
 // Global error handlers
 window.addEventListener('error', (event) => {
     console.error('Global error:', event.error);
-    const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
-    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
-    if (errorDiv && messageEl) {
-        messageEl.textContent = event.error?.message || 'An unknown error occurred';
-        errorDiv.hidden = false;
-    }
+    const message = event.error?.message || 'An unknown error occurred';
+    showJsError(message);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
-    const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
-    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
-    if (errorDiv && messageEl) {
-        messageEl.textContent = event.reason?.message || 'An unhandled promise rejection occurred';
-        errorDiv.hidden = false;
-    }
+    const message = event.reason?.message || 'An unhandled promise rejection occurred';
+    showJsError(message);
 });
 
 window.addEventListener('securitypolicyviolation', (event) => {
-    console.error('Security policy violation:', event);
-    const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
-    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
-    if (errorDiv && messageEl) {
-        messageEl.textContent = 'A security policy violation occurred';
-        errorDiv.hidden = false;
+    // Ignore violations originating from browser extensions — they inject their
+    // own styles/scripts and are correctly blocked by our CSP, but are not our bug.
+    if (event.sourceFile?.startsWith('moz-extension://') || event.sourceFile?.startsWith('chrome-extension://')) {
+        console.warn('CSP violation from browser extension (ignored):', event.sourceFile);
+        return;
     }
+    console.error('Security policy violation:', event);
+    showJsError('A security policy violation occurred');
 });

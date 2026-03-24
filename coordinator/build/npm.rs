@@ -60,7 +60,7 @@ pub fn spawn(task: &str) -> eyre::Result<process::Child> {
 }
 
 /// Waits for a child started by [`spawn`] and returns an error if it failed.
-pub fn join(mut child: process::Child, task: &str) -> eyre::Result<()> {
+pub fn join(child: process::Child, task: &str) -> eyre::Result<()> {
     let output = child.wait_with_output().wrap_err(format!("Failed to wait for npm run {task}"))?;
     if !output.status.success() {
         eprint!("{}", String::from_utf8_lossy(&output.stdout));
