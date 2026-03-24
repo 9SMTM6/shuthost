@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 import type { BuildData } from '../../generate-pages';
 
-export const Footer: Component<{ data: BuildData }> = (props) => (
+export const Footer = ((props: { data: BuildData }) => (
     <footer
         class="bg-white dark:bg-[#1e1e1e] shadow-md py-2 px-4 text-center text-[#616161] dark:text-[#a0a0a0] text-xs mt-auto"
         role="contentinfo"
@@ -15,4 +15,4 @@ export const Footer: Component<{ data: BuildData }> = (props) => (
         <wbr />
         <a href="/about" rel="external" class="link font-medium whitespace-nowrap">About &amp; Licenses</a>
     </footer>
-);
+)) satisfies Component<any>;

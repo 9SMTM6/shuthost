@@ -1,4 +1,4 @@
-import type { Component, ParentComponent, JSX } from 'solid-js';
+import type { Component, ParentProps, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { serverData } from '../serverData';
@@ -14,17 +14,17 @@ type TabId = keyof typeof TAB_LABELS;
 
 const VALID_TABS = Object.keys(TAB_LABELS) as Array<TabId>;
 
-function normalizeTab(hash: string): TabId {
+const normalizeTab = (hash: string) => {
     const tab = hash.replace('#', '') as TabId;
     return VALID_TABS.includes(tab) ? tab : 'hosts';
-}
+};
 
 /**
  * Shared header shell: branded bar with logo. Pass children to add content
  * after the logo (e.g. nav tabs, logout). leftExtra renders before the logo
  * (e.g. hamburger). topBanner renders inside <header> above the main bar.
  */
-const HeaderShell: ParentComponent<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }> = (props) => (
+const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>) => (
     <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
         {props.topBanner}
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,13 +40,13 @@ const HeaderShell: ParentComponent<{ topBanner?: JSX.Element; leftExtra?: JSX.El
             </div>
         </div>
     </header>
-);
+)) satisfies Component<any>;
 
 /** Minimal header for static/about pages. No router dependency — safe for SSR (generate-pages). */
-export const SimpleHeader: Component = () => <HeaderShell />;
+export const SimpleHeader = (() => <HeaderShell />) satisfies Component<any>;
 
 /** Full header with tab navigation, logout button, and demo banner. */
-export const Header: Component = () => {
+export const Header = (() => {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -74,7 +74,7 @@ export const Header: Component = () => {
         });
     });
 
-    const TabButton: Component<{ tabId: TabId }> = (tabProps) => (
+    const TabButton = ((tabProps: { tabId: TabId }) => (
         <button
             type="button"
             class="tab"
@@ -87,7 +87,7 @@ export const Header: Component = () => {
         >
             {TAB_LABELS[tabProps.tabId]}
         </button>
-    );
+    )) satisfies Component<any>;
 
     return (
         <>
@@ -154,4 +154,4 @@ export const Header: Component = () => {
             </Show>
         </>
     );
-};
+}) satisfies Component<any>;

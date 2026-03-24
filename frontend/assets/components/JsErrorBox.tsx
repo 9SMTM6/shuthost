@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 declare const __BUILD_REPOSITORY__: string;
 
 /** Inline error banner shown by the global error handlers in index.tsx. */
-export const JsErrorBox: Component = () => (
+export const JsErrorBox = (() => (
     <div id="js-error" class="alert alert-error mb-4" role="alert" hidden>
         <strong class="alert-title">JavaScript Error</strong>
         <p id="js-error-message" />
@@ -20,4 +20,4 @@ export const JsErrorBox: Component = () => (
             </a>
         </p>
     </div>
-);
+)) satisfies Component<any>;

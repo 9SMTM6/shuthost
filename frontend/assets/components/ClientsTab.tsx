@@ -36,7 +36,7 @@ const formatLastUsed = (clientId: string): string => {
 // ClientRow
 // ==========================
 
-const ClientRow: Component<{ clientId: string; leases: string[] }> = (props) => {
+const ClientRow = ((props: { clientId: string; leases: string[] }) => {
     const resetLeases = async () => {
         if (serverData.isDemo) {
             // Demo: clear leases out of the store directly
@@ -83,7 +83,7 @@ const ClientRow: Component<{ clientId: string; leases: string[] }> = (props) => 
             </td>
         </tr>
     );
-};
+}) satisfies Component<any>;
 
 // ==========================
 // ClientsTab
@@ -97,7 +97,7 @@ const makeClientCommands = () => {
     };
 };
 
-export const ClientsTab: Component<{ configPath: string }> = (props) => {
+export const ClientsTab = ((props: { configPath: string }) => {
     // Build a map of clientId -> [hosts with that client's lease]
     const clientLeaseMap = createMemo(() => {
         const map = new Map<string, string[]>();
@@ -194,4 +194,4 @@ export const ClientsTab: Component<{ configPath: string }> = (props) => {
             </section>
         </section>
     );
-};
+}) satisfies Component<any>;
