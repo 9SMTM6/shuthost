@@ -8,8 +8,6 @@ const subpath = (() => {
     return (raw.startsWith('/') ? raw : '/' + raw).replace(/\/$/, '');
 })();
 
-export const demoBroadcastPort = 5757;
-
 let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
 let statusTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -33,7 +31,6 @@ export const initDemoMode = () => {
                 status: { tarbean: 'offline', archive: 'offline' },
                 leases: { archive: [] },
                 client_stats: {},
-                broadcast_port: demoBroadcastPort,
             },
         });
     }, 500);

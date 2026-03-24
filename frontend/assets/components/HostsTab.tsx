@@ -51,12 +51,12 @@ export const sortActiveFirst = <T,>(
 // Installer commands
 // ==========================
 
-const makeInstallCommands = (broadcastPort: number | undefined) => {
+const makeInstallCommands = () => {
     const baseUrl = window.location.origin + (serverData.isDemo ? demoSubpath : '');
-    const bpArg = broadcastPort !== undefined ? ` -- --broadcast-port ${broadcastPort}` : '';
+    const bpArg = `--broadcast-port ${serverData.broadcastPort}`;
     return {
-        hostSh: `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl}${bpArg}`,
-        hostPs1: `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl}${bpArg}`,
+        hostSh: `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} -- ${bpArg}`,
+        hostPs1: `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} ${bpArg}`,
     };
 };
 
@@ -124,7 +124,7 @@ export const HostsTab: Component<{ configPath: string }> = (props) => {
         )
     );
 
-    const cmds = createMemo(() => makeInstallCommands(state.broadcastPort));
+    const cmds = createMemo(() => makeInstallCommands());
     const hasClients = () => state.clients.length > 0;
 
     return (
