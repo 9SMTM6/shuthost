@@ -185,10 +185,6 @@ body {
         }
     }
 
-    .client-table {
-        @apply mt-4;
-    }
-
     /* Update tab styles */
     .tab {
         @apply px-4 py-4 text-sm font-medium text-[#616161] border-b-2 border-transparent transition-colors cursor-pointer dark:text-[#a0a0a0];
