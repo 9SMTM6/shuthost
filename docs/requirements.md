@@ -4,7 +4,7 @@ This document outlines the system requirements and platform support for ShutHost
 
 ## 🤖 Agent Requirements
 
-For the requirements for the agent, see [Requirements to install the agent](../frontend/assets/agent_install_requirements_gotchas.md).
+For the requirements for the agent, see [Requirements to install the agent](../frontend/assets/partials/agent_install_requirements_gotchas.md).
 
 ## 🖥️ Coordinator Requirements
 

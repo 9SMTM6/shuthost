@@ -5,6 +5,11 @@ import type { RouteSectionProps } from '@solidjs/router';
 import { Header } from './components/Header';
 import { App } from './components/App';
 import { LoginPage } from './components/LoginPage';
+import { JsErrorBox } from './components/JsErrorBox';
+
+// TODO:
+// * make index a index.html instead of index.tsx
+// * revalidate the static rendering approach
 
 const RootLayout = (props: RouteSectionProps) => (
     <>
@@ -14,6 +19,7 @@ const RootLayout = (props: RouteSectionProps) => (
             class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full"
             tabindex="-1"
         >
+            <JsErrorBox />
             <section class="py-4 sm:py-6">
                 {props.children}
             </section>

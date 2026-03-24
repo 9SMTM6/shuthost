@@ -94,34 +94,6 @@ pub(crate) fn routes() -> Router<AppState> {
             concat!("/icons/icon-512.", env!("ASSET_HASH_ICON_512_PNG"), ".png"),
             get(serve_icon_512),
         )
-        .route(
-            concat!(
-                "/host_agent_interaction.",
-                env!("ASSET_HASH_HOST_AGENT_INTERACTION_SVG"),
-                ".svg"
-            ),
-            get(serve_host_agent_interaction),
-        )
-        .route(
-            concat!(
-                "/client_controller_interaction.",
-                env!("ASSET_HASH_CLIENT_CONTROLLER_INTERACTION_SVG"),
-                ".svg"
-            ),
-            get(serve_client_controller_interaction),
-        )
-        .route(
-            concat!("/deployment.", env!("ASSET_HASH_DEPLOYMENT_SVG"), ".svg"),
-            get(serve_deployment),
-        )
-        .route(
-            concat!(
-                "/direct_control_comparison.",
-                env!("ASSET_HASH_DIRECT_CONTROL_COMPARISON_SVG"),
-                ".svg"
-            ),
-            get(serve_direct_control_comparison),
-        )
 }
 
 /// Macro to define a static SVG download handler using `include_bytes`!
@@ -271,10 +243,6 @@ pub(crate) async fn serve_styles() -> impl IntoResponse {
 }
 
 static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
-static_svg_download_handler!(fn serve_host_agent_interaction, file = "generated/host_agent_interaction.svg");
-static_svg_download_handler!(fn serve_client_controller_interaction, file = "generated/client_controller_interaction.svg");
-static_svg_download_handler!(fn serve_deployment, file = "generated/deployment.svg");
-static_svg_download_handler!(fn serve_direct_control_comparison, file = "generated/direct_control_comparison.svg");
 
 // Binary icon handlers (generated in build.rs into frontend/assets/generated/icons)
 static_png_download_handler!(fn serve_icon_32, file = "icon-32.png");

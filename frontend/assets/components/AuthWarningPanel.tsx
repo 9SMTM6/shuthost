@@ -3,8 +3,7 @@ import { onMount } from 'solid-js';
 
 /**
  * Security warning panel for when no internal auth is configured or the
- * external auth exceptions_version is outdated. Replaces the injected
- * `external_auth_config.tmpl.html` partial.
+ * external auth exceptions_version is outdated.
  */
 export const AuthWarningPanel: Component = () => {
     onMount(() => {

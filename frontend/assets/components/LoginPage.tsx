@@ -111,11 +111,7 @@ export const LoginPage: Component = () => {
     };
 
     return (
-        <main
-            id="main-content"
-            class="flex flex-col items-center justify-center flex-1 p-4 gap-4"
-            tabindex="-1"
-        >
+        <div class="flex flex-col items-center justify-center flex-1 p-4 gap-4 w-full">
             <div class="max-w-md w-full" aria-live="polite">
                 <Show when={errorInfo()}>
                     {info => (
@@ -140,6 +136,6 @@ export const LoginPage: Component = () => {
                     </Show>
                 </div>
             </section>
-        </main>
+        </div>
     );
 };

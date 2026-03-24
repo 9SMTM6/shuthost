@@ -6,8 +6,9 @@ import { initDemoMode } from '../demo';
 import { HostsTab } from './HostsTab';
 import { ClientsTab } from './ClientsTab';
 import { AuthWarningPanel } from './AuthWarningPanel';
+import { ArchitectureTab } from './ArchitectureTab';
 
-/** Root component mounted into <div id="app"> inside <main>. */
+/** Root component rendered inside RootLayout's <main id="main-content">. */
 export const App: Component = () => {
     onMount(() => {
         if (serverData.isDemo) {
@@ -23,6 +24,8 @@ export const App: Component = () => {
             <Show when={serverData.authWarning}>
                 <AuthWarningPanel />
             </Show>
+
+            <ArchitectureTab />
 
             <HostsTab configPath={serverData.configPath} />
             <ClientsTab configPath={serverData.configPath} />

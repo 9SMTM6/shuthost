@@ -53,6 +53,7 @@ export const applyMessage = (message: WsMessage) => {
                 statusMap: message.payload.status,
                 leaseMap: message.payload.leases,
                 clientStats: message.payload.client_stats,
+                // TODO: move this into static serverData
                 broadcastPort: message.payload.broadcast_port,
             });
             break;

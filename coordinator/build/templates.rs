@@ -63,41 +63,8 @@ fn hash_non_template_assets() -> eyre::Result<AssetHashes> {
         icon_hashes.insert(size, short_hash);
     }
 
-    let host_agent_interaction_svg =
-        fs::read_to_string("../frontend/assets/generated/host_agent_interaction.svg")
-            .wrap_err("Failed to read generated host_agent_interaction.svg")?;
-    let host_agent_interaction_short_hash = url_hash(host_agent_interaction_svg.as_bytes());
-
-    let client_controller_interaction_svg =
-        fs::read_to_string("../frontend/assets/generated/client_controller_interaction.svg")
-            .wrap_err("Failed to read generated client_controller_interaction.svg")?;
-    let client_controller_interaction_short_hash =
-        url_hash(client_controller_interaction_svg.as_bytes());
-
-    let deployment_svg = fs::read_to_string("../frontend/assets/generated/deployment.svg")
-        .wrap_err("Failed to read generated deployment.svg")?;
-    let deployment_short_hash = url_hash(deployment_svg.as_bytes());
-
-    let direct_control_comparison_svg =
-        fs::read_to_string("../frontend/assets/generated/direct_control_comparison.svg")
-            .wrap_err("Failed to read generated direct_control_comparison.svg")?;
-    let direct_control_comparison_short_hash = url_hash(direct_control_comparison_svg.as_bytes());
-
     let mut svg_hashes = HashMap::new();
     svg_hashes.insert("favicon".to_string(), favicon_short_hash);
-    svg_hashes.insert(
-        "host_agent_interaction".to_string(),
-        host_agent_interaction_short_hash,
-    );
-    svg_hashes.insert(
-        "client_controller_interaction".to_string(),
-        client_controller_interaction_short_hash,
-    );
-    svg_hashes.insert("deployment".to_string(), deployment_short_hash);
-    svg_hashes.insert(
-        "direct_control_comparison".to_string(),
-        direct_control_comparison_short_hash,
-    );
 
     Ok(AssetHashes {
         styles_hash,
