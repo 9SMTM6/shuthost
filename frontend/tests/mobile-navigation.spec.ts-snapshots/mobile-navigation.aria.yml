@@ -1,6 +1,7 @@
 - link "Skip to main content":
   - /url: "#main-content"
 - banner:
+  - button "Toggle menu" [expanded]
   - link "ShutHost Logo ShutHost":
     - /url: /
     - img "ShutHost Logo"
@@ -10,7 +11,7 @@
     - tab "Hosts" [selected]
     - tab "Clients"
 - main:
-  - tabpanel:
+  - tabpanel "Hosts":
     - region "Install Host Agent":
       - group "Install Host Agent":
         - heading "Install Host Agent" [level=2]
@@ -23,4 +24,4 @@
             - columnheader "Status"
             - columnheader "Actions"
         - rowgroup
-- contentinfo: ShutHost Coordinator v<<VERSION>> | About & Licenses
+- contentinfo: ShutHost Coordinator v<<VERSION>>|About & Licenses

@@ -8,8 +8,8 @@ test.describe('mobile navigation', () => {
     test('mobile navigation opens and shows backdrop', async ({ page }) => {
         await page.goto(base + '/');
         // Click the visible hamburger label (aria-label="Toggle menu")
-        await page.waitForSelector('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
-        await page.click('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
+        await page.waitForSelector('button[aria-label="Toggle menu"]');
+        await page.click('button[aria-label="Toggle menu"]');
         // Wait for the mobile menu backdrop or nav tabs to appear
         await page.waitForSelector('.mobile-menu-backdrop, header .nav-tabs', { state: 'visible' });
         await page.waitForLoadState('networkidle');
@@ -20,9 +20,9 @@ test.describe('mobile navigation', () => {
     test('ARIA snapshot for mobile navigation', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'Mobile Light', "Theme doesn't show in ARIA snapshots");
         await page.goto(base + '/');
-        // Click the visible hamburger label (aria-label="Toggle menu")
-        await page.waitForSelector('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
-        await page.click('label[for="mobile-menu-toggle"], label[aria-label="Toggle menu"]');
+        // Click the hamburger button (aria-label="Toggle menu")
+        await page.waitForSelector('button[aria-label="Toggle menu"]');
+        await page.click('button[aria-label="Toggle menu"]');
         // Wait for the mobile menu backdrop or nav tabs to appear
         await page.waitForSelector('.mobile-menu-backdrop, header .nav-tabs', { state: 'visible' });
         await page.waitForLoadState('networkidle');

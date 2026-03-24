@@ -21,14 +21,15 @@ function normalizeTab(hash: string): TabId {
 
 /**
  * Shared header shell: branded bar with logo. Pass children to add content
- * after the logo (e.g. nav tabs, hamburger). Simple variant passes nothing.
- * topBanner renders inside <header> above the main bar (keeps it in grid-area: header).
+ * after the logo (e.g. nav tabs, logout). leftExtra renders before the logo
+ * (e.g. hamburger). topBanner renders inside <header> above the main bar.
  */
-const HeaderShell: ParentComponent<{ topBanner?: JSX.Element }> = (props) => (
+const HeaderShell: ParentComponent<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }> = (props) => (
     <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
         {props.topBanner}
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-(--header-height)">
+                {props.leftExtra}
                 <a href="/" class="flex items-center gap-4">
                     <img src="/favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
                     <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
@@ -73,15 +74,15 @@ export const Header: Component = () => {
         });
     });
 
-    const TabButton: Component<{ tabId: TabId; mobile?: boolean }> = (tabProps) => (
+    const TabButton: Component<{ tabId: TabId }> = (tabProps) => (
         <button
             type="button"
-            class={tabProps.mobile ? 'tab text-left w-full' : 'tab'}
-            data-tab-content={tabProps.mobile ? undefined : tabProps.tabId}
-            role={tabProps.mobile ? undefined : 'tab'}
-            aria-selected={tabProps.mobile ? undefined : activeTab() === tabProps.tabId}
-            aria-controls={tabProps.mobile ? undefined : `${tabProps.tabId}-tab`}
-            id={tabProps.mobile ? undefined : `tab-${tabProps.tabId}`}
+            class="tab"
+            data-tab-content={tabProps.tabId}
+            role="tab"
+            aria-selected={activeTab() === tabProps.tabId}
+            aria-controls={`${tabProps.tabId}-tab`}
+            id={`tab-${tabProps.tabId}`}
             onClick={() => activateTab(tabProps.tabId)}
         >
             {TAB_LABELS[tabProps.tabId]}
@@ -98,21 +99,23 @@ export const Header: Component = () => {
                 Skip to main content
             </a>
 
-            <HeaderShell topBanner={
-                <Show when={serverData.isDemo}>
-                    <div
-                        id="demo-mode-disclaimer"
-                        data-subpath={demoSubpath}
-                        class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
-                    >
-                        Demo Mode: Static UI with simulated interactions only
-                    </div>
-                </Show>
-            }>
-                <div class="flex items-center gap-2">
+            <HeaderShell
+                topBanner={
+                    <Show when={serverData.isDemo}>
+                        <div
+                            id="demo-mode-disclaimer"
+                            data-subpath={demoSubpath}
+                            class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
+                        >
+                            Demo Mode: Static UI with simulated interactions only
+                        </div>
+                    </Show>
+                }
+                leftExtra={
                     <button
                         type="button"
                         class="hamburger md:hidden"
+                        classList={{ open: mobileMenuOpen() }}
                         aria-label="Toggle menu"
                         aria-expanded={mobileMenuOpen()}
                         onClick={() => setMobileMenuOpen(o => !o)}
@@ -121,7 +124,10 @@ export const Header: Component = () => {
                         <span class="hamburger-line" />
                         <span class="hamburger-line" />
                     </button>
-                    <nav class="nav-tabs" role="tablist" aria-label="Main tabs">
+                }
+            >
+                <div class="flex items-center gap-2">
+                    <nav class="nav-tabs" classList={{ open: mobileMenuOpen() }} role="tablist" aria-label="Main tabs">
                         {VALID_TABS.map(tabId => <TabButton tabId={tabId} />)}
                     </nav>
                     <Show when={serverData.showLogout}>
@@ -137,13 +143,6 @@ export const Header: Component = () => {
                     </Show>
                 </div>
             </HeaderShell>
-
-            {/* Mobile menu */}
-            <Show when={mobileMenuOpen()}>
-                <div class="md:hidden border-t border-[#e5e5e5] dark:border-[#3e3e42] px-4 py-2 flex flex-col gap-1">
-                    {VALID_TABS.map(tabId => <TabButton tabId={tabId} mobile />)}
-                </div>
-            </Show>
 
             {/* Mobile menu backdrop */}
             <Show when={mobileMenuOpen()}>
