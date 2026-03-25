@@ -20,4 +20,4 @@ const loadServerData = () => {
     return JSON.parse(el.textContent) as ServerData;
 }
 
-export const serverData: ServerData = loadServerData();
+export const serverData = loadServerData();

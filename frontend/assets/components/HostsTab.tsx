@@ -11,7 +11,7 @@ import { CopyButton } from './CopyButton';
 // Helpers (shared with ClientsTab)
 // ==========================
 
-export const apiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+export const apiFetch = async (url: string, options?: RequestInit) => {
     const resp = await fetch(url, options);
     if (resp.status === 401) {
         window.location.assign('/login');
@@ -27,10 +27,10 @@ export const apiFetch = async (url: string, options?: RequestInit): Promise<Resp
     return resp;
 };
 
-const formatLeaseSource = (lease: LeaseSource): string =>
+const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
 
-export const getFormattedLeases = (leases: LeaseSource[]): string => {
+export const getFormattedLeases = (leases: LeaseSource[]) => {
     const clientLeases = leases.filter(l => l.type === 'Client');
     return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
 };
