@@ -5,8 +5,8 @@ import { render } from 'solid-js/web';
 import { Router, Route } from '@solidjs/router';
 import type { RouteSectionProps } from '@solidjs/router';
 import { Header } from './components/Header';
-import { App } from './components/App';
-import { LoginPage } from './components/LoginPage';
+import { App } from './pages/App';
+import { LoginPage } from './pages/LoginPage';
 import { JsErrorBox } from './components/JsErrorBox';
 
 // TODO:
