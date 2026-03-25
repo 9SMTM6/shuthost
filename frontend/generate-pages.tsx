@@ -14,7 +14,6 @@ import { fileURLToPath } from 'url';
 import { renderToString } from 'solid-js/web';
 
 import { HtmlHead } from './assets/components/HtmlHead';
-import { Footer } from './assets/components/Footer';
 import { SimpleHeader } from './assets/components/Header';
 import { AboutPage, type AboutPageProps } from './assets/pages/AboutPage';
 
@@ -22,7 +21,7 @@ export type BuildData = {
     styles_hash: string;
     styles_integrity: string;
     manifest_hash: string;
-    icon_hashes: Record<string, string>;
+    icon_hashes: Record<number, string>;
     svg_hashes: Record<string, string>;
     description: string;
     repository: string;
@@ -60,19 +59,30 @@ type PageOptions = {
     head: string;
     bodyClass?: string;
     bodyContent: string;
-    footer?: string;
 };
 
 const buildPage = (opts: PageOptions) => {
     const bodyClass = opts.bodyClass ? ` class="${escapeHtml(opts.bodyClass)}"` : '';
-    const footerHtml = opts.footer ? `\n${opts.footer}` : '';
     return `<!DOCTYPE html>
 <html lang="en">
 
 ${opts.head}
 
 <body${bodyClass}>
-${opts.bodyContent}${footerHtml}
+${opts.bodyContent}
+<footer
+    class="bg-white dark:bg-[#1e1e1e] shadow-md py-2 px-4 text-center text-[#616161] dark:text-[#a0a0a0] text-xs mt-auto"
+    role="contentinfo"
+>
+    <a href="${buildData.repository}" class="link">
+        <span class="whitespace-nowrap">ShutHost Coordinator</span>
+        <wbr />
+        <span class="whitespace-nowrap"> v${buildData.version}</span>
+    </a>
+    <span aria-hidden="true"> | </span>
+    <wbr />
+    <a href="/about" rel="external" class="link font-medium whitespace-nowrap">About &amp; Licenses</a>
+</footer>
 </body>
 
 </html>
@@ -84,7 +94,6 @@ ${opts.bodyContent}${footerHtml}
 // ──────────────────────────────────────────────────────────────────────────────
 
 const head = (title: string) => renderToString(() => <HtmlHead title={title} data={buildData} />);
-const footer = renderToString(() => <Footer data={buildData} />);
 
 // The literal string `{ server_data }` is preserved here for Rust's runtime .replace() in render_ui_html().
 const indexBodyContent = `\
@@ -103,7 +112,6 @@ const indexHtml = buildPage({
     title: 'ShutHost Coordinator',
     head: head('ShutHost Coordinator'),
     bodyContent: indexBodyContent,
-    footer,
 });
 
 writeFileSync(asset('assets/generated/index.html'), indexHtml);
@@ -129,7 +137,6 @@ const aboutHtml = buildPage({
     head: head('Dependencies and Licenses • ShutHost'),
     bodyClass: 'disable-nav',
     bodyContent: aboutBodyContent,
-    footer,
 });
 
 writeFileSync(asset('assets/generated/about.html'), aboutHtml);
