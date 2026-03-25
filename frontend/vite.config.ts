@@ -19,7 +19,7 @@ export default defineConfig({
     build: {
         outDir: 'assets/generated',
         emptyOutDir: false,
-        rollupOptions: {
+        rolldownOptions: {
             input: {
                 app: 'assets/index.tsx',
             },
@@ -30,5 +30,6 @@ export default defineConfig({
                 assetFileNames: '[name][extname]',
             },
         },
+        target: 'esnext',
     },
 });
