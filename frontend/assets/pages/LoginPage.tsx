@@ -94,9 +94,11 @@ export const LoginPage = (() => {
 
     onMount(() => {
         document.body.classList.add('flex', 'flex-col', 'login-page', 'disable-nav');
+        document.head.title = 'Login - ShutHost Coordinator';
     });
     onCleanup(() => {
         document.body.classList.remove('flex', 'flex-col', 'login-page', 'disable-nav');
+        document.head.title = 'ShutHost Coordinator';
     });
 
     const errorKey = () => {
