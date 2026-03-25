@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 import './styles.tailwind.css';
 import { render } from 'solid-js/web';
 import { Router, Route } from '@solidjs/router';
