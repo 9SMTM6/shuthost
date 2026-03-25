@@ -13,7 +13,6 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { renderToString } from 'solid-js/web';
 
-import { HtmlHead } from './assets/components/HtmlHead';
 import { SimpleHeader } from './assets/components/Header';
 import { AboutPage, type AboutPageProps } from './assets/pages/AboutPage';
 
@@ -56,19 +55,35 @@ const escapeHtml = (str: string) => str
 
 type PageOptions = {
     title: string;
-    head: string;
     bodyClass?: string;
     bodyContent: string;
 };
 
 const buildPage = (opts: PageOptions) => {
-    const bodyClass = opts.bodyClass ? ` class="${escapeHtml(opts.bodyClass)}"` : '';
+    const bodyClass = opts.bodyClass ? `class="${escapeHtml(opts.bodyClass)}"` : '';
     return `<!DOCTYPE html>
 <html lang="en">
 
-${opts.head}
+<head>
+    <meta charset="UTF-8" />
+    <title>${escapeHtml(opts.title)}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="${buildData.description}" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b6b3a" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2ec164" />
+    <meta name="background-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="background-color" media="(prefers-color-scheme: dark)" content="#0b0f12" />
+    <link rel="manifest" href="./manifest.${buildData.manifest_hash}.json" />
+    <link rel="icon" href="./icons/icon-32.${buildData.icon_hashes['32']}.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="./icons/icon-48.${buildData.icon_hashes['48']}.png" sizes="48x48" type="image/png" />
+    <link rel="icon" href="./icons/icon-64.${buildData.icon_hashes['64']}.png" sizes="64x64" type="image/png" />
+    <link rel="icon" href="./icons/icon-128.${buildData.icon_hashes['128']}.png" sizes="128x128" type="image/png" />
+    <link rel="apple-touch-icon" href="./icons/icon-180.${buildData.icon_hashes['180']}.png" sizes="180x180" />
+    <link rel="icon" href="./favicon.${buildData.svg_hashes['favicon']}.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.${buildData.styles_hash}.css" integrity="${buildData.styles_integrity}" />
+</head>
 
-<body${bodyClass}>
+<body ${bodyClass}>
 ${opts.bodyContent}
 <footer
     class="bg-white dark:bg-[#1e1e1e] shadow-md py-2 px-4 text-center text-[#616161] dark:text-[#a0a0a0] text-xs mt-auto"
@@ -93,8 +108,6 @@ ${opts.bodyContent}
 // index.html — SPA shell
 // ──────────────────────────────────────────────────────────────────────────────
 
-const head = (title: string) => renderToString(() => <HtmlHead title={title} data={buildData} />);
-
 // The literal string `{ server_data }` is preserved here for Rust's runtime .replace() in render_ui_html().
 const indexBodyContent = `\
 <noscript>
@@ -110,7 +123,6 @@ const indexBodyContent = `\
 
 const indexHtml = buildPage({
     title: 'ShutHost Coordinator',
-    head: head('ShutHost Coordinator'),
     bodyContent: indexBodyContent,
 });
 
@@ -134,7 +146,6 @@ ${aboutMain}`;
 
 const aboutHtml = buildPage({
     title: 'Dependencies and Licenses • ShutHost',
-    head: head('Dependencies and Licenses • ShutHost'),
     bodyClass: 'disable-nav',
     bodyContent: aboutBodyContent,
 });
