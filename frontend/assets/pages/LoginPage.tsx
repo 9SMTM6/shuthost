@@ -83,6 +83,7 @@ const TokenLoginForm = (() => {
 const OidcLoginForm = (() => (
     <a
         href="/oidc/login"
+        rel="external"
         class="w-full text-xs sm:text-sm px-3 py-2 mt-3 rounded bg-[#005fb8] text-white hover:bg-[#004a94] dark:bg-[#0078d4] dark:hover:bg-[#006cbe] border border-transparent text-center block"
     >
         Login with SSO
