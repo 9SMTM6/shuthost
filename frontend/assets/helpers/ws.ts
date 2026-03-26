@@ -1,36 +1,7 @@
 import { applyMessage, type WsMessage } from './appStore';
+import { apiFetch } from './apiFetch';
 
 let currentSocket: WebSocket | null = null;
-
-const showJSError = (message: string) => {
-    const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
-    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
-    if (errorDiv && messageEl) {
-        messageEl.textContent = message;
-        errorDiv.hidden = false;
-    }
-};
-
-const apiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
-    try {
-        const resp = await fetch(url, options);
-        if (resp.status === 401) {
-            window.location.assign('/login');
-            throw new Error('Unauthorized');
-        }
-        if (!resp.ok) {
-            const msg = `HTTP ${resp.status}: ${resp.statusText}`;
-            showJSError(msg);
-            throw new Error(msg);
-        }
-        return resp;
-    } catch (err) {
-        if (!(err instanceof Error && err.message === 'Unauthorized')) {
-            showJSError(err instanceof Error ? err.message : 'Unknown fetch error');
-        }
-        throw err;
-    }
-};
 
 const checkAuthThenReconnect = async () => {
     try {

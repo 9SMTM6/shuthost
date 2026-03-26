@@ -4,7 +4,8 @@ import clientGotchasHtml from '../partials/client_install_requirements_gotchas.m
 import { state, applyMessage } from '../helpers/appStore';
 import { serverData } from '../helpers/serverData';
 import { demoSubpath } from '../helpers/demo';
-import { apiFetch, sortActiveFirst } from './HostsTab';
+import { apiFetch } from '../helpers/apiFetch';
+import { sortActiveFirst } from '../helpers/utils';
 import { CopyButton } from './CopyButton';
 
 const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });

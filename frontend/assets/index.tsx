@@ -7,7 +7,7 @@ import type { RouteSectionProps } from '@solidjs/router';
 import { Header } from './components/Header';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
-import { JsErrorBox } from './components/JsErrorBox';
+import { JsErrorBox, showJSError } from './components/JsErrorBox';
 
 // TODO:
 // * make index a index.html instead of index.tsx
@@ -39,24 +39,17 @@ if (appMount) {
     ), appMount);
 }
 
-const showJsError = (message: string) => {
-    const errorDiv = document.getElementById('js-error') as HTMLDivElement;
-    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement;
-    messageEl.textContent = message;
-    errorDiv.hidden = false;
-};
-
 // Global error handlers
 window.addEventListener('error', (event) => {
     console.error('Global error:', event.error);
     const message = event.error?.message || 'An unknown error occurred';
-    showJsError(message);
+    showJSError(message);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     const message = event.reason?.message || 'An unhandled promise rejection occurred';
-    showJsError(message);
+    showJSError(message);
 });
 
 window.addEventListener('securitypolicyviolation', (event) => {
@@ -67,5 +60,5 @@ window.addEventListener('securitypolicyviolation', (event) => {
         return;
     }
     console.error('Security policy violation:', event);
-    showJsError('A security policy violation occurred');
+    showJSError('A security policy violation occurred');
 });
