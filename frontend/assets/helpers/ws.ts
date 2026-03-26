@@ -1,4 +1,4 @@
-import { applyMessage, type WsMessage } from './stores/appStore';
+import { applyMessage, type WsMessage } from './appStore';
 
 let currentSocket: WebSocket | null = null;
 

@@ -1,10 +1,10 @@
 import type { Component } from 'solid-js';
 import { For, Show, createMemo } from 'solid-js';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
-import { state } from '../stores/appStore';
-import type { LeaseSource } from '../stores/appStore';
-import { serverData } from '../serverData';
-import { demoSubpath, demoUpdateLease } from '../demo';
+import { state } from '../helpers/appStore';
+import type { LeaseSource } from '../helpers/appStore';
+import { serverData } from '../helpers/serverData';
+import { demoSubpath, demoUpdateLease } from '../helpers/demo';
 import { CopyButton } from './CopyButton';
 
 // ==========================

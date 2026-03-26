@@ -1,8 +1,8 @@
 import type { Component, ParentProps, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
-import { serverData } from '../serverData';
-import { demoSubpath } from '../demo';
+import { serverData } from '../helpers/serverData';
+import { demoSubpath } from '../helpers/demo';
 
 const TAB_LABELS = {
     architecture: 'Docs',
