@@ -1,4 +1,4 @@
-import { applyMessage } from './stores/appStore';
+import { applyMessage } from './appStore';
 import { serverData } from './serverData';
 
 // Normalise subpath: '' or '/base' (no trailing slash)

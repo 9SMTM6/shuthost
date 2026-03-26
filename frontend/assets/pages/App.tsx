@@ -1,8 +1,8 @@
 import type { Component } from 'solid-js';
 import { Show, onMount } from 'solid-js';
-import { serverData } from '../serverData';
-import { connectWebSocket } from '../ws';
-import { initDemoMode } from '../demo';
+import { serverData } from '../helpers/serverData';
+import { connectWebSocket } from '../helpers/ws';
+import { initDemoMode } from '../helpers/demo';
 import { HostsTab } from '../components/HostsTab';
 import { ClientsTab } from '../components/ClientsTab';
 import { AuthWarningPanel } from '../components/AuthWarningPanel';

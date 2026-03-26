@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 import { Show, createSignal, onMount, onCleanup } from 'solid-js';
 import { useSearchParams } from '@solidjs/router';
-import { serverData } from '../serverData';
+import { serverData } from '../helpers/serverData';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.
 const ERROR_MESSAGES: Record<string, { title: string; body: string }> = {

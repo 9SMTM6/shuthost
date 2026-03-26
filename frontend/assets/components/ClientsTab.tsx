@@ -1,9 +1,9 @@
 import type { Component } from 'solid-js';
 import { For, Show, createMemo } from 'solid-js';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
-import { state, applyMessage } from '../stores/appStore';
-import { serverData } from '../serverData';
-import { demoSubpath } from '../demo';
+import { state, applyMessage } from '../helpers/appStore';
+import { serverData } from '../helpers/serverData';
+import { demoSubpath } from '../helpers/demo';
 import { apiFetch, sortActiveFirst } from './HostsTab';
 import { CopyButton } from './CopyButton';
 
