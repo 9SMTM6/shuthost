@@ -13,7 +13,7 @@ export const JsErrorBox = (() => (
                 id="js-error-issue-link"
                 href={`${__BUILD_REPOSITORY__}/issues`}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="external noopener noreferrer"
                 class="underline text-sm"
             >
                 Report this issue on GitHub
