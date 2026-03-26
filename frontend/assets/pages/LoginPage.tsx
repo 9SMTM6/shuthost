@@ -1,6 +1,8 @@
 import type { Component } from 'solid-js';
-import { Show, createSignal, onMount, onCleanup } from 'solid-js';
+import { Show, createSignal } from 'solid-js';
+import { Title } from '@solidjs/meta';
 import { useSearchParams } from '@solidjs/router';
+import { SimpleHeader } from '../components/Header';
 import { serverData } from '../helpers/serverData';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.
@@ -93,15 +95,6 @@ const OidcLoginForm = (() => (
 export const LoginPage = (() => {
     const [searchParams] = useSearchParams();
 
-    onMount(() => {
-        document.body.classList.add('flex', 'flex-col', 'login-page', 'disable-nav');
-        document.head.title = 'Login - ShutHost Coordinator';
-    });
-    onCleanup(() => {
-        document.body.classList.remove('flex', 'flex-col', 'login-page', 'disable-nav');
-        document.head.title = 'ShutHost Coordinator';
-    });
-
     const errorKey = () => {
         const v = searchParams['error'];
         if (Array.isArray(v)) return v[0] ?? null;
@@ -114,6 +107,10 @@ export const LoginPage = (() => {
     };
 
     return (
+        <>
+        <Title>Login - ShutHost Coordinator</Title>
+        <SimpleHeader />
+        <main id="main-content" class="main flex flex-col" tabindex="-1">
         <div class="flex flex-col items-center justify-center flex-1 p-4 gap-4 w-full">
             <Show when={errorInfo()}>
                 {info => (
@@ -138,5 +135,7 @@ export const LoginPage = (() => {
                 </div>
             </section>
         </div>
+        </main>
+        </>
     );
 }) satisfies Component<any>;

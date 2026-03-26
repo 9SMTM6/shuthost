@@ -2,40 +2,25 @@
 
 import './styles.tailwind.css';
 import { render } from 'solid-js/web';
+import { MetaProvider } from '@solidjs/meta';
 import { Router, Route } from '@solidjs/router';
-import type { RouteSectionProps } from '@solidjs/router';
-import { Header } from './components/Header';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
-import { JsErrorBox, showJSError } from './components/JsErrorBox';
+import { showJSError } from './components/JsErrorBox';
 
 // TODO:
 // * make index a index.html instead of index.tsx
 // * revalidate the static rendering approach
 
-const RootLayout = (props: RouteSectionProps) => (
-    <>
-        <Header />
-        <main
-            id="main-content"
-            class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full"
-            tabindex="-1"
-        >
-            <section class="py-4 sm:py-6">
-                <JsErrorBox />
-                {props.children}
-            </section>
-        </main>
-    </>
-);
-
 const appMount = document.getElementById('app');
 if (appMount) {
     render(() => (
-        <Router root={RootLayout}>
+        <MetaProvider>
+        <Router>
             <Route path="/" component={App} />
             <Route path="/login" component={LoginPage} />
         </Router>
+        </MetaProvider>
     ), appMount);
 }
 

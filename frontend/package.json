@@ -13,6 +13,7 @@
         "generate-pages": "vite-node --config vite.ssr.config.ts generate-pages.tsx"
     },
     "dependencies": {
+        "@solidjs/meta": "^0.29.4",
         "@solidjs/router": "^0.16.1",
         "solid-js": "^1.9.5",
         "tailwindcss": "^4.1.8",

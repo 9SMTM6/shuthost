@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { renderToString } from 'solid-js/web';
+import { MetaProvider } from '@solidjs/meta';
 
 import { SimpleHeader } from './assets/components/Header';
 import { AboutPage, type AboutPageProps } from './assets/pages/AboutPage';
@@ -55,12 +56,10 @@ const escapeHtml = (str: string) => str
 
 type PageOptions = {
     title: string;
-    bodyClass?: string;
     bodyContent: string;
 };
 
 const buildPage = (opts: PageOptions) => {
-    const bodyClass = opts.bodyClass ? `class="${escapeHtml(opts.bodyClass)}"` : '';
     return `<!DOCTYPE html>
 <html lang="en">
 
@@ -83,7 +82,7 @@ const buildPage = (opts: PageOptions) => {
     <link rel="stylesheet" href="./styles.${buildData.styles_hash}.css" integrity="${buildData.styles_integrity}" />
 </head>
 
-<body ${bodyClass}>
+<body>
 ${opts.bodyContent}
 <footer
     class="bg-white dark:bg-[#1e1e1e] shadow-md py-2 px-4 text-center text-[#616161] dark:text-[#a0a0a0] text-xs mt-auto"
@@ -138,15 +137,18 @@ const aboutData: AboutPageProps = JSON.parse(
 );
 
 const aboutHeader = renderToString(() => <SimpleHeader />);
-const aboutMain = renderToString(() => <AboutPage {...aboutData} />);
+const aboutMain = renderToString(() => (
+    <MetaProvider>
+        <AboutPage {...aboutData} />
+    </MetaProvider>
+));
 
 const aboutBodyContent = `\
 ${aboutHeader}
 ${aboutMain}`;
 
 const aboutHtml = buildPage({
-    title: 'Dependencies and Licenses • ShutHost',
-    bodyClass: 'disable-nav',
+    title: 'About & Licenses - ShutHost Coordinator',
     bodyContent: aboutBodyContent,
 });
 

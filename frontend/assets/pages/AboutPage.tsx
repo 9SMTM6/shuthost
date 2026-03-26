@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js';
 import { For } from 'solid-js';
+import { Title } from '@solidjs/meta';
 
 export type Author = {
     name: string;
@@ -25,6 +26,8 @@ export type AboutPageProps = {
 };
 
 export const AboutPage = ((props: AboutPageProps) => (
+    <>
+    <Title>About &amp; Licenses - ShutHost Coordinator</Title>
     <main
         id="main-content"
         class="main px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full"
@@ -123,4 +126,5 @@ export const AboutPage = ((props: AboutPageProps) => (
 
         </section>
     </main>
+    </>
 )) satisfies Component<any>;

@@ -38,14 +38,6 @@ body {
         grid-area: footer;
     }
 
-    &.login-page {
-        .main {
-            @apply flex flex-col flex-1 max-w-full px-0;
-            > section {
-                @apply flex flex-col flex-1 py-0;
-            }
-        }
-    }
 }
 
 /* SolidJS mounts into <div id="app"> which would otherwise be the only direct
@@ -329,22 +321,6 @@ body {
             background-color: currentColor;
             margin: 2px 0;
             transition: transform 0.3s, opacity 0.3s;
-        }
-    }
-
-    .disable-nav {
-        /* Hide hamburger on login page but keep space */
-        .hamburger {
-            visibility: hidden;
-        }
-        .mobile-menu-backdrop {
-            display: none;
-        }
-        .nav-tabs {
-            visibility: hidden;
-        }
-        .logout {
-            visibility: hidden;
         }
     }
 
