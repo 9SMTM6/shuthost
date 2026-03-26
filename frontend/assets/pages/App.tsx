@@ -3,10 +3,10 @@ import { Show, onMount } from 'solid-js';
 import { serverData } from '../serverData';
 import { connectWebSocket } from '../ws';
 import { initDemoMode } from '../demo';
-import { HostsTab } from './HostsTab';
-import { ClientsTab } from './ClientsTab';
-import { AuthWarningPanel } from './AuthWarningPanel';
-import { ArchitectureTab } from './ArchitectureTab';
+import { HostsTab } from '../components/HostsTab';
+import { ClientsTab } from '../components/ClientsTab';
+import { AuthWarningPanel } from '../components/AuthWarningPanel';
+import { ArchitectureTab } from '../components/ArchitectureTab';
 
 /** Root component rendered inside RootLayout's <main id="main-content">. */
 export const App = (() => {
