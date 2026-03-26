@@ -1,5 +1,14 @@
 import type { Component } from 'solid-js';
 
+export const showJSError = (message: string) => {
+    const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
+    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
+    if (errorDiv && messageEl) {
+        messageEl.textContent = message;
+        errorDiv.hidden = false;
+    }
+};
+
 declare const __BUILD_REPOSITORY__: string;
 
 /** Inline error banner shown by the global error handlers in index.tsx. */

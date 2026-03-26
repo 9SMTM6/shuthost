@@ -6,45 +6,15 @@ import type { LeaseSource } from '../helpers/appStore';
 import { serverData } from '../helpers/serverData';
 import { demoSubpath, demoUpdateLease } from '../helpers/demo';
 import { CopyButton } from './CopyButton';
-
-// ==========================
-// Helpers (shared with ClientsTab)
-// ==========================
-
-export const apiFetch = async (url: string, options?: RequestInit) => {
-    const resp = await fetch(url, options);
-    if (resp.status === 401) {
-        window.location.assign('/login');
-        throw new Error('Unauthorized');
-    }
-    if (!resp.ok) {
-        const msg = `HTTP ${resp.status}: ${resp.statusText}`;
-        const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
-        const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
-        if (errorDiv && messageEl) { messageEl.textContent = msg; errorDiv.hidden = false; }
-        throw new Error(msg);
-    }
-    return resp;
-};
+import { apiFetch } from '../helpers/apiFetch';
+import { sortActiveFirst } from '../helpers/utils';
 
 const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
 
-export const getFormattedLeases = (leases: LeaseSource[]) => {
+const getFormattedLeases = (leases: LeaseSource[]) => {
     const clientLeases = leases.filter(l => l.type === 'Client');
     return clientLeases.length > 0 ? clientLeases.map(formatLeaseSource).join(', ') : 'None';
-};
-
-export const sortActiveFirst = <T,>(
-    items: T[],
-    isActive: (item: T) => boolean,
-    getName: (item: T) => string,
-): T[] => {
-    const compare = (a: T, b: T) => getName(a).localeCompare(getName(b));
-    return [
-        ...items.filter(isActive).toSorted(compare),
-        ...items.filter(i => !isActive(i)).toSorted(compare),
-    ];
 };
 
 // ==========================
