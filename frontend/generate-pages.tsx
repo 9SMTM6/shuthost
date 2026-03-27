@@ -16,19 +16,9 @@ import { MetaProvider } from '@solidjs/meta';
 
 import { SimpleHeader } from './assets/components/Header';
 import { AboutPage, type AboutPageProps } from './assets/pages/AboutPage';
+import { type BuildData } from './assets/helpers/buildData';
 
-export type BuildData = {
-    styles_hash: string;
-    styles_integrity: string;
-    manifest_hash: string;
-    icon_hashes: Record<number, string>;
-    svg_hashes: Record<string, string>;
-    description: string;
-    repository: string;
-    version: string;
-};
-
-export const loadBuildData = () => {
+const loadBuildData = () => {
     const path = resolve(frontend_dir, 'assets/generated/build-data.json');
     return JSON.parse(readFileSync(path, 'utf-8')) as BuildData;
 };
@@ -118,6 +108,7 @@ const indexBodyContent = `\
     </div>
 </noscript>
     <div id="app"></div>
+    <script id="build-data" type="application/json">${JSON.stringify(buildData)}</script>
     <script id="server-data" type="application/json">{ server_data }</script>
     <script type="module">${appJs}</script>`;
 
@@ -136,7 +127,7 @@ const aboutData: AboutPageProps = JSON.parse(
     readFileSync(asset('assets/generated/about-data.json'), 'utf-8'),
 );
 
-const aboutHeader = renderToString(() => <SimpleHeader />);
+const aboutHeader = renderToString(() => <SimpleHeader buildData={buildData} />);
 const aboutMain = renderToString(() => (
     <MetaProvider>
         <AboutPage {...aboutData} />

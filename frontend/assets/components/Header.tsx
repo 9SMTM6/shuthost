@@ -2,6 +2,7 @@ import type { Component, ParentProps, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { serverData } from '../helpers/serverData';
+import { buildData, BuildData } from '../helpers/buildData';
 import { demoSubpath } from '../helpers/demo';
 
 const TAB_LABELS = {
@@ -24,14 +25,14 @@ const normalizeTab = (hash: string) => {
  * after the logo (e.g. nav tabs, logout). leftExtra renders before the logo
  * (e.g. hamburger). topBanner renders inside <header> above the main bar.
  */
-const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>) => (
+const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element, buildData: BuildData }>) => (
     <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
         {props.topBanner}
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-(--header-height)">
                 {props.leftExtra}
                 <a href="/" class="flex items-center gap-4">
-                    <img src="/favicon.svg" alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
+                    <img src={`/favicon.${props.buildData.svg_hashes['favicon']}.svg`} alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
                     <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
                         ShutHost
                     </h1>
@@ -43,7 +44,7 @@ const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: 
 )) satisfies Component<any>;
 
 /** Minimal header for static/about pages. No router dependency — safe for SSR (generate-pages). */
-export const SimpleHeader = (() => <HeaderShell />) satisfies Component<any>;
+export const SimpleHeader = ((props: { buildData: BuildData }) => <HeaderShell buildData={props.buildData} />) satisfies Component<any>;
 
 /** Full header with tab navigation, logout button, and demo banner. */
 export const Header = (() => {
@@ -100,6 +101,7 @@ export const Header = (() => {
             </a>
 
             <HeaderShell
+                buildData={buildData}
                 topBanner={
                     <Show when={serverData.isDemo}>
                         <div

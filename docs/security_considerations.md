@@ -13,7 +13,7 @@ See [OIDC Authentication with Kanidm](docs/examples/oidc-kanidm.md) for an examp
 For external auth, you need to add the following exceptions. The WebUI will show you convenience configs for some auth providers if you set `exceptions_version=0`.
 
 Public endpoints (bypass):
-- `/download/*`, `/manifest.json`, `/favicon.svg`, `/architecture*.svg`
+- `/download/*`, `/manifest.json`, `/favicon.*.svg`, `/architecture*.svg`
 - `/api/m2m/*` (M2M API, e.g. for clients)
 
 All other routes should be protected by your external auth.
