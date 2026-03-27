@@ -55,17 +55,18 @@ const escapeHtml = (str: string) => str
     .replace(/"/g, '&quot;');
 
 type PageOptions = {
-    title: string;
+    title?: string;
     bodyContent: string;
 };
 
 const buildPage = (opts: PageOptions) => {
+    const titleTag = opts.title ? `<title>${escapeHtml(opts.title)}</title>` : '';
     return `<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8" />
-    <title>${escapeHtml(opts.title)}</title>
+    ${titleTag}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="${buildData.description}" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0b6b3a" />
@@ -121,7 +122,6 @@ const indexBodyContent = `\
     <script type="module">${appJs}</script>`;
 
 const indexHtml = buildPage({
-    title: 'ShutHost Coordinator',
     bodyContent: indexBodyContent,
 });
 
