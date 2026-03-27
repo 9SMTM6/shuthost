@@ -13,7 +13,7 @@ import { JsErrorBox } from '../components/JsErrorBox';
 
 export const App = (() => {
     onMount(() => {
-        if (serverData.isDemo) {
+        if (serverData.demoSubpath) {
             initDemoMode();
         } else {
             connectWebSocket();

@@ -1,9 +1,8 @@
 import type { Component, ParentProps, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
-import { serverData } from '../helpers/serverData';
+import { ServerData, serverData } from '../helpers/serverData';
 import { buildData, BuildData } from '../helpers/buildData';
-import { demoSubpath } from '../helpers/demo';
 
 const TAB_LABELS = {
     architecture: 'Docs',
@@ -90,6 +89,13 @@ export const Header = (() => {
         </button>
     )) satisfies Component<any>;
 
+    const SHOW_LOGOUT_FOR = {
+        disabled: false,
+        external: false,
+        token: true,
+        oidc: true,
+    } satisfies Record<ServerData['authMode'], boolean>;
+
     return (
         <>
             {/* Skip to main content link for accessibility */}
@@ -103,10 +109,10 @@ export const Header = (() => {
             <HeaderShell
                 buildData={buildData}
                 topBanner={
-                    <Show when={serverData.isDemo}>
+                    <Show when={serverData.demoSubpath}>
                         <div
                             id="demo-mode-disclaimer"
-                            data-subpath={demoSubpath}
+                            data-subpath={serverData.demoSubpath}
                             class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
                         >
                             Demo Mode: Static UI with simulated interactions only
@@ -132,7 +138,7 @@ export const Header = (() => {
                     <nav class="nav-tabs" classList={{ open: mobileMenuOpen() }} role="tablist" aria-label="Main tabs">
                         {VALID_TABS.map(tabId => <TabButton tabId={tabId} />)}
                     </nav>
-                    <Show when={serverData.showLogout}>
+                    <Show when={SHOW_LOGOUT_FOR[serverData.authMode]}>
                         <form method="post" action="/logout">
                             <button
                                 type="submit"

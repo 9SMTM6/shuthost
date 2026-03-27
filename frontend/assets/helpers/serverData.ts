@@ -1,11 +1,18 @@
 /// <reference lib="dom" />
 
+/**
+ * Data embedded by the server into the HTML for the client to read on startup. 
+ * This is used for configuration and should only contain static and non-sensitive data.
+ */
 export type ServerData = {
     configPath: string;
-    showLogout: boolean;
     authWarning: boolean;
-    isDemo: boolean;
-    demoSubpath: string;
+    /** Demo mode is encoded by presence of this field.
+     * 
+     * * `undefined` => normal mode
+     * * string => demo mode (optional base subpath).
+     */
+    demoSubpath?: string;
     authMode: 'token' | 'oidc' | 'disabled' | 'external';
     broadcastPort: number;
 };

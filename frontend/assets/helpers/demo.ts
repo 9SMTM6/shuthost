@@ -3,7 +3,7 @@ import { serverData } from './serverData';
 
 // Normalise subpath: '' or '/base' (no trailing slash)
 const subpath = (() => {
-    const raw = serverData.demoSubpath;
+    const raw = serverData.demoSubpath ?? '';
     if (!raw || raw === '/') return '';
     return (raw.startsWith('/') ? raw : '/' + raw).replace(/\/$/, '');
 })();
@@ -35,8 +35,6 @@ export const initDemoMode = () => {
         });
     }, 500);
 };
-
-export const demoSubpath = subpath;
 
 export const demoUpdateLease = async (host: string, action: 'take' | 'release') => {
     if (action === 'take') {

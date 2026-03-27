@@ -16,7 +16,7 @@ use axum_extra::{
     headers::{CacheControl, ContentLength, ContentType},
 };
 use mime::{IMAGE_SVG, TEXT_CSS};
-use serde_json::json as sjson;
+use serde::Serialize;
 
 use crate::{app::AppState, http::EXPECTED_AUTH_EXCEPTIONS_VERSION, http::auth::Resolved};
 
@@ -136,7 +136,6 @@ macro_rules! static_png_download_handler {
 pub(crate) enum UiMode<'params> {
     Normal {
         config_path: &'params path::Path,
-        show_logout: bool,
         auth_warning: bool,
         auth_mode: &'static str,
         broadcast_port: u16,
@@ -146,37 +145,47 @@ pub(crate) enum UiMode<'params> {
     },
 }
 
+/// Holds static server data injected into the UI; this should not contain sensitive data.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UiServerData<'a> {
+    config_path: std::borrow::Cow<'a, str>,
+    auth_warning: bool,
+    /// Demo mode signal: `Some` means demo mode, `None` means normal mode.
+    demo_subpath: Option<&'a str>,
+    auth_mode: &'a str,
+    broadcast_port: u16,
+}
+
 /// Renders the main HTML template, injecting a JSON data island with all
 /// server-side values that the `SolidJS` app needs on startup.
 pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
     let server_data = match *mode {
         UiMode::Normal {
             config_path,
-            show_logout,
             auth_warning,
             auth_mode,
             broadcast_port,
-        } => sjson!({
-            "configPath": config_path.to_string_lossy(),
-            "showLogout": show_logout,
-            "authWarning": auth_warning,
-            "isDemo": false,
-            "demoSubpath": "",
-            "authMode": auth_mode,
-            "broadcastPort": broadcast_port,
-        }),
-        UiMode::Demo { subpath } => sjson!({
-            "configPath": "/this/is/a/demo.toml",
-            "showLogout": false,
-            "authWarning": false,
-            "isDemo": true,
-            "demoSubpath": subpath,
-            "authMode": "disabled",
-            "broadcastPort": shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
-        }),
+        } => UiServerData {
+            config_path: config_path.to_string_lossy(),
+            auth_warning,
+            demo_subpath: None,
+            auth_mode,
+            broadcast_port,
+        },
+        UiMode::Demo { subpath } => UiServerData {
+            config_path: std::borrow::Cow::Borrowed("/this/is/a/demo.toml"),
+            auth_warning: false,
+            demo_subpath: Some(subpath),
+            auth_mode: "disabled",
+            broadcast_port: shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
+        },
     };
 
-    include_utf8_asset!("generated/index.html").replace("{ server_data }", &server_data.to_string())
+    let server_data =
+        serde_json::to_string(&server_data).expect("UiServerData serialization should not fail");
+
+    include_utf8_asset!("generated/index.html").replace("{ server_data }", &server_data)
 }
 
 /// Serves the main HTML template, injecting dynamic content.
@@ -190,8 +199,6 @@ pub(crate) async fn serve_ui(
     }): State<AppState>,
 ) -> impl IntoResponse {
     type A = Resolved;
-
-    let show_logout = !matches!(auth.mode, A::Disabled | A::External { .. });
 
     // Show auth warning when auth is disabled, or when External auth is
     // configured but its exceptions_version doesn't match the expected value.
@@ -209,7 +216,6 @@ pub(crate) async fn serve_ui(
         TypedHeader(ContentType::html()),
         render_ui_html(&UiMode::Normal {
             config_path: &config_path,
-            show_logout,
             auth_warning,
             auth_mode,
             broadcast_port,
