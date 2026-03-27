@@ -4,7 +4,7 @@ import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?
 import { state } from '../helpers/appStore';
 import type { LeaseSource } from '../helpers/appStore';
 import { serverData } from '../helpers/serverData';
-import { demoSubpath, demoUpdateLease } from '../helpers/demo';
+import { demoUpdateLease } from '../helpers/demo';
 import { CopyButton } from './CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import { sortActiveFirst } from '../helpers/utils';
@@ -22,7 +22,7 @@ const getFormattedLeases = (leases: LeaseSource[]) => {
 // ==========================
 
 const makeInstallCommands = () => {
-    const baseUrl = window.location.origin + (serverData.isDemo ? demoSubpath : '');
+    const baseUrl = window.location.origin + (serverData.demoSubpath ?? '');
     const bpArg = `--broadcast-port ${serverData.broadcastPort}`;
     return {
         hostSh: `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} -- ${bpArg}`,
@@ -41,7 +41,7 @@ const HostRow = ((props: { hostName: string }) => {
     const hasClients = () => state.clients.length > 0;
 
     const updateLease = async (action: 'take' | 'release') => {
-        if (serverData.isDemo) { await demoUpdateLease(props.hostName, action); return; }
+        if (serverData.demoSubpath) { await demoUpdateLease(props.hostName, action); return; }
         try {
             await apiFetch(`/api/lease/${props.hostName}/${action}`, { method: 'POST' });
         } catch (err) {

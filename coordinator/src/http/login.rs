@@ -63,7 +63,6 @@ pub(crate) async fn page(
         TypedHeader(ContentType::html()),
         render_ui_html(&UiMode::Normal {
             config_path: &config_path,
-            show_logout: false,
             auth_warning: false,
             auth_mode,
             broadcast_port,

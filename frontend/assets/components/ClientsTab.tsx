@@ -3,7 +3,6 @@ import { For, Show, createMemo } from 'solid-js';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
 import { state, applyMessage } from '../helpers/appStore';
 import { serverData } from '../helpers/serverData';
-import { demoSubpath } from '../helpers/demo';
 import { apiFetch } from '../helpers/apiFetch';
 import { sortActiveFirst } from '../helpers/utils';
 import { CopyButton } from './CopyButton';
@@ -39,7 +38,7 @@ const formatLastUsed = (clientId: string): string => {
 
 const ClientRow = ((props: { clientId: string; leases: string[] }) => {
     const resetLeases = async () => {
-        if (serverData.isDemo) {
+        if (serverData.demoSubpath) {
             // Demo: clear leases out of the store directly
             const newLeaseMap = { ...state.leaseMap };
             for (const host of Object.keys(newLeaseMap)) {
@@ -91,7 +90,7 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => {
 // ==========================
 
 const makeClientCommands = () => {
-    const baseUrl = window.location.origin + (serverData.isDemo ? demoSubpath : '');
+    const baseUrl = window.location.origin + (serverData.demoSubpath ?? '');
     return {
         clientSh: `curl -sSL ${baseUrl}/download/client_installer.sh | sh -s ${baseUrl}`,
         clientPs1: `curl.exe -sSLO '${baseUrl}/download/client_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\client_installer.ps1 ${baseUrl}`,
