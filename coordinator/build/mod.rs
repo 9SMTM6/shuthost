@@ -43,11 +43,10 @@ fn main() -> eyre::Result<()> {
     const ON_ASSET_CHANGE: &str = "cargo::rerun-if-changed=frontend/assets";
 
     println!("cargo::rerun-if-changed=frontend/package.json");
-    println!("{ON_ASSET_CHANGE}/app.tsx");
     println!("{ON_ASSET_CHANGE}/index.tsx");
     println!("{ON_ASSET_CHANGE}/components");
     println!("{ON_ASSET_CHANGE}/pages");
-    println!("{ON_ASSET_CHANGE}/stores");
+    println!("{ON_ASSET_CHANGE}/helpers");
     println!("{ON_ASSET_CHANGE}/styles.tailwind.css");
     println!("{ON_ASSET_CHANGE}/partials");
     println!("cargo::rerun-if-changed=frontend/generate-pages.tsx");
