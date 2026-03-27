@@ -71,9 +71,17 @@ const buildPage = (opts: PageOptions) => {
     <link rel="apple-touch-icon" href="./icons/icon-180.${buildData.icon_hashes['180']}.png" sizes="180x180" />
     <link rel="icon" href="./favicon.${buildData.svg_hashes['favicon']}.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.${buildData.styles_hash}.css" integrity="${buildData.styles_integrity}" />
+    <script id="build-data" type="application/json">${JSON.stringify(buildData)}</script>
 </head>
 
 <body>
+<noscript>
+    <div id="noscript-warning" class="alert alert-error mb-4" role="alert">
+        <strong class="alert-title">Error!</strong>
+        <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser settings
+            and reload the page.</p>
+    </div>
+</noscript>
 ${opts.bodyContent}
 <footer
     class="bg-white dark:bg-[#1e1e1e] shadow-md py-2 px-4 text-center text-[#616161] dark:text-[#a0a0a0] text-xs mt-auto"
@@ -100,15 +108,7 @@ ${opts.bodyContent}
 
 // The literal string `{ server_data }` is preserved here for Rust's runtime .replace() in render_ui_html().
 const indexBodyContent = `\
-<noscript>
-    <div id="noscript-warning" class="alert alert-error mb-4" role="alert">
-        <strong class="alert-title">Error!</strong>
-        <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser settings
-            and reload the page.</p>
-    </div>
-</noscript>
     <div id="app"></div>
-    <script id="build-data" type="application/json">${JSON.stringify(buildData)}</script>
     <script id="server-data" type="application/json">{ server_data }</script>
     <script type="module">${appJs}</script>`;
 
