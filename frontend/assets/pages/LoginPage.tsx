@@ -4,6 +4,7 @@ import { Title } from '@solidjs/meta';
 import { useSearchParams } from '@solidjs/router';
 import { SimpleHeader } from '../components/Header';
 import { serverData } from '../helpers/serverData';
+import { buildData } from '../helpers/buildData';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.
 const ERROR_MESSAGES: Record<string, { title: string; body: string }> = {
@@ -109,7 +110,7 @@ export const LoginPage = (() => {
     return (
         <>
         <Title>Login - ShutHost Coordinator</Title>
-        <SimpleHeader />
+        <SimpleHeader buildData={buildData} />
         <main id="main-content" class="main flex flex-col" tabindex="-1">
         <div class="flex flex-col items-center justify-center flex-1 p-4 gap-4 w-full">
             <Show when={errorInfo()}>
