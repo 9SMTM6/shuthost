@@ -26,7 +26,6 @@
         "@types/node": "25.x",
         "license-checker-rseidelsohn": "^4.4.2",
         "vite": "^8.0.1",
-        "vite-node": "^6.0.0",
         "vite-plugin-solid": "^2.11.6"
     }
 }
