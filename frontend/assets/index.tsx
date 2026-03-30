@@ -6,10 +6,11 @@ import { MetaProvider } from '@solidjs/meta';
 import { Router, Route } from '@solidjs/router';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
+import { AboutPage } from './pages/AboutPage';
 import { showJSError } from './components/JsErrorBox';
 
 // TODO:
-// * make index a index.html instead of index.tsx
+// * make the page use hydration from a statically rendered page, to show js errors more reliably.
 // * revalidate the static rendering approach
 
 const appMount = document.getElementById('app');
@@ -19,6 +20,7 @@ if (appMount) {
         <Router>
             <Route path="/" component={App} />
             <Route path="/login" component={LoginPage} />
+            <Route path="/about" component={AboutPage} />
         </Router>
         </MetaProvider>
     ), appMount);

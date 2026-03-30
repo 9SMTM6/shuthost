@@ -5,6 +5,7 @@ import { serverData } from '../helpers/serverData';
 import { connectWebSocket } from '../helpers/ws';
 import { initDemoMode } from '../helpers/demo';
 import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
 import { HostsTab } from '../components/HostsTab';
 import { ClientsTab } from '../components/ClientsTab';
 import { AuthWarningPanel } from '../components/AuthWarningPanel';
@@ -42,6 +43,7 @@ export const App = (() => {
                     <ClientsTab configPath={serverData.configPath} />
                 </section>
             </main>
+            <Footer />
         </>
     );
 }) satisfies Component<any>;

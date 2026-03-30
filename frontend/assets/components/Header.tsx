@@ -2,7 +2,8 @@ import type { Component, ParentProps, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { ServerData, serverData } from '../helpers/serverData';
-import { buildData, BuildData } from '../helpers/buildData';
+import { buildData } from '../helpers/buildData';
+import { isLoggedIn } from '../helpers/authState';
 
 const TAB_LABELS = {
     architecture: 'Docs',
@@ -24,26 +25,55 @@ const normalizeTab = (hash: string) => {
  * after the logo (e.g. nav tabs, logout). leftExtra renders before the logo
  * (e.g. hamburger). topBanner renders inside <header> above the main bar.
  */
-const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element, buildData: BuildData }>) => (
-    <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
-        {props.topBanner}
-        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-(--header-height)">
-                {props.leftExtra}
-                <a href="/" class="flex items-center gap-4">
-                    <img src={`/favicon.${props.buildData.svg_hashes['favicon']}.svg`} alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
-                    <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
-                        ShutHost
-                    </h1>
-                </a>
-                {props.children}
+const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>) => {
+    const navigate = useNavigate();
+    const logoHref = () => isLoggedIn() === false ? '/login' : '/';
+    const handleLogoClick = (e: MouseEvent) => {
+        e.preventDefault();
+        navigate(logoHref());
+    };
+    return (
+        <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
+            {props.topBanner}
+            <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-(--header-height)">
+                    {props.leftExtra}
+                    <a href={logoHref()} class="flex items-center gap-4" onClick={handleLogoClick}>
+                        <img src={`/favicon.${buildData.svg_hashes['favicon']}.svg`} alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
+                        <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
+                            ShutHost
+                        </h1>
+                    </a>
+                    {props.children}
+                </div>
             </div>
-        </div>
-    </header>
-)) satisfies Component<any>;
+        </header>
+    );
+}) satisfies Component<any>;
 
-/** Minimal header for static/about pages. No router dependency — safe for SSR (generate-pages). */
-export const SimpleHeader = ((props: { buildData: BuildData }) => <HeaderShell buildData={props.buildData} />) satisfies Component<any>;
+const SHOW_LOGOUT_FOR = {
+    disabled: false,
+    external: false,
+    token: true,
+    oidc: true,
+} satisfies Record<ServerData['authMode'], boolean>;
+
+/** Header for the About page: logo + conditional logout, no tab navigation. */
+export const SimpleHeader = (() => (
+    <HeaderShell>
+        <Show when={isLoggedIn() === true && SHOW_LOGOUT_FOR[serverData.authMode]}>
+            <form method="post" action="/logout">
+                <button
+                    type="submit"
+                    class="text-xs sm:text-sm px-3 py-1 rounded border border-transparent btn btn-red"
+                    aria-label="Logout"
+                >
+                    Logout
+                </button>
+            </form>
+        </Show>
+    </HeaderShell>
+)) satisfies Component<any>;
 
 /** Full header with tab navigation, logout button, and demo banner. */
 export const Header = (() => {
@@ -89,13 +119,6 @@ export const Header = (() => {
         </button>
     )) satisfies Component<any>;
 
-    const SHOW_LOGOUT_FOR = {
-        disabled: false,
-        external: false,
-        token: true,
-        oidc: true,
-    } satisfies Record<ServerData['authMode'], boolean>;
-
     return (
         <>
             {/* Skip to main content link for accessibility */}
@@ -107,7 +130,6 @@ export const Header = (() => {
             </a>
 
             <HeaderShell
-                buildData={buildData}
                 topBanner={
                     <Show when={serverData.demoSubpath}>
                         <div

@@ -10,11 +10,12 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
+use axum_extra::{TypedHeader, headers::ContentType};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::app::{AppState, LeaseSource, db};
+use crate::{app::{AppState, LeaseSource, db}, include_utf8_asset};
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
@@ -24,6 +25,15 @@ pub(crate) fn routes() -> Router<AppState> {
             post(handle_reset_client_leases),
         )
         .route("/hosts_status", get(get_hosts_status))
+        .route("/dependency-data.json", get(serve_dependency_data))
+}
+
+#[axum::debug_handler]
+async fn serve_dependency_data() -> impl IntoResponse {
+    (
+        TypedHeader(ContentType::json()),
+        include_utf8_asset!("generated/about-data.json"),
+    )
 }
 
 /// Lease action for lease endpoints (shared between web and m2m)
