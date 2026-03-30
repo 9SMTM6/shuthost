@@ -36,7 +36,7 @@ impl TokenSessionClaims {
             token_hash: {
                 let mut hasher = Sha256::new();
                 hasher.update(token.as_bytes());
-                format!("{:x}", hasher.finalize())
+                hex::encode(hasher.finalize())
             },
         }
     }
@@ -49,7 +49,7 @@ impl TokenSessionClaims {
     pub(crate) fn matches_token(&self, token: &SecretString) -> bool {
         let mut hasher = Sha256::new();
         hasher.update(token.expose_secret().as_bytes());
-        let hash = format!("{:x}", hasher.finalize());
+        let hash = hex::encode(hasher.finalize());
         self.token_hash == hash
     }
 }
