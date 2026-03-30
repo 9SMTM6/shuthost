@@ -9,6 +9,8 @@ export type BuildData = {
     description: string;
     repository: string;
     version: string;
+    app_js_hash: string;
+    app_js_integrity: string;
 };
 
 const loadBuildData = () => {

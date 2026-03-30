@@ -49,7 +49,7 @@ fn main() -> eyre::Result<()> {
     println!("{ON_ASSET_CHANGE}/helpers");
     println!("{ON_ASSET_CHANGE}/styles.tailwind.css");
     println!("{ON_ASSET_CHANGE}/partials");
-    println!("cargo::rerun-if-changed=frontend/generate-pages.tsx");
+    println!("cargo::rerun-if-changed=frontend/assets/page.template.html");
     println!("cargo::rerun-if-changed=frontend/build-common.ts");
 
     // Spawn typecheck in parallel — it produces no output files so it is
@@ -71,15 +71,12 @@ fn main() -> eyre::Result<()> {
     println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
     let main_frontend_assets = tasks::spawn("build-frontend", || {
         icons::generate_pngs()?;
-        assets::write_pre_build_data()?;
         npm::run("build")?;
         assets::compute_hashes()
     });
 
     tasks::join(about_json)?;
     tasks::join(main_frontend_assets)?;
-
-    npm::run("generate-pages")?;
 
     // Block until the parallel typecheck finishes, surfacing any type errors.
     tasks::join(typecheck)?;
