@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vite build",
         "typecheck": "tsc --noEmit",
-        "build:diagrams": "tsc --noEmit build-diagrams.ts && node build-diagrams.ts",
+        "build:diagrams": "tsc --noEmit && node build-diagrams.ts",
         "test": "tsc --noEmit && playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
@@ -25,9 +25,9 @@
     "devDependencies": {
         "@axe-core/playwright": "^4.10.2",
         "@biomejs/biome": "^2.4.10",
-        "@mermaid-js/mermaid-cli": "^11.12.0",
         "@playwright/test": "^1.43.0",
         "@tailwindcss/vite": "^4.1.8",
+        "@terrastruct/d2": "^0.1.33",
         "@types/node": "25.x",
         "license-checker-rseidelsohn": "^4.4.2",
         "vite": "^8.0.1",

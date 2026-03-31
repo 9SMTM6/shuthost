@@ -1,0 +1,16 @@
+direction: right
+
+clients: Clients {
+  direction: down
+  webui: WebUI {shape: circle}
+  client: "Client (Script)\none per automated Task" {shape: document}
+}
+coordinator: Coordinator {shape: queue}
+host: Host {shape: queue}
+
+clients -> coordinator: "request/release leases on hosts"
+clients -> host: "indirectly control" {
+  style.stroke-dash: 5
+}
+coordinator -> host: "WOL startup\n(if ≥1 leases)"
+coordinator -> host: "shutdown\n(if =0 leases)"
