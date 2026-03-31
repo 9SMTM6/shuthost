@@ -2,6 +2,7 @@ import type { Component } from 'solid-js';
 import { Show, onMount } from 'solid-js';
 import { Title } from '@solidjs/meta';
 import { serverData } from '../helpers/serverData';
+import { isDemoMode } from '../helpers/demo';
 import { connectWebSocket } from '../helpers/ws';
 import { initDemoMode } from '../helpers/demo';
 import { Header } from '../components/Header';
@@ -14,7 +15,7 @@ import { JsErrorBox } from '../components/JsErrorBox';
 
 export const App = (() => {
     onMount(() => {
-        if (serverData.demoSubpath) {
+        if (isDemoMode) {
             initDemoMode();
         } else {
             connectWebSocket();

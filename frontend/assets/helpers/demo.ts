@@ -1,12 +1,16 @@
 import { applyMessage } from './appStore';
 import { serverData } from './serverData';
 
-// Normalise subpath: '' or '/base' (no trailing slash)
-const subpath = (() => {
+export const isDemoMode = !!serverData.demoSubpath;
+
+/** Normalised demo subpath: `''` or `'/base'` (no trailing slash). */
+export const demoSubpath = (() => {
     const raw = serverData.demoSubpath ?? '';
     if (!raw || raw === '/') return '';
     return (raw.startsWith('/') ? raw : '/' + raw).replace(/\/$/, '');
 })();
+
+const subpath = demoSubpath;
 
 let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
 let statusTimeout: ReturnType<typeof setTimeout> | null = null;

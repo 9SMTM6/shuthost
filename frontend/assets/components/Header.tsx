@@ -2,6 +2,7 @@ import type { Component, ParentProps, JSX } from 'solid-js';
 import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { ServerData, serverData } from '../helpers/serverData';
+import { isDemoMode, demoSubpath } from '../helpers/demo';
 import { buildData } from '../helpers/buildData';
 import { isLoggedIn } from '../helpers/authState';
 
@@ -131,10 +132,10 @@ export const Header = (() => {
 
             <HeaderShell
                 topBanner={
-                    <Show when={serverData.demoSubpath}>
+                    <Show when={isDemoMode}>
                         <div
                             id="demo-mode-disclaimer"
-                            data-subpath={serverData.demoSubpath}
+                            data-subpath={demoSubpath}
                             class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
                         >
                             Demo Mode: Static UI with simulated interactions only
