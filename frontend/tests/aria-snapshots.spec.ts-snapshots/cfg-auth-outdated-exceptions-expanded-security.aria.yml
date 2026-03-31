@@ -19,13 +19,13 @@
   - text: ""
   - paragraph: "Authelia:"
   - button "Copy Authelia config"
-  - code: "- domain: <base_url> policy: bypass resources: - '^/download/(.*)' - '^/api/m2m/(.*)$' - '/manifest\\..*\\.json$' - '/favicon\\..*\\.svg$'"
+  - code: "- domain: <base_url> policy: bypass resources: - '^/download/(.*)' - '^/api/m2m/(.*)$' - '/manifest..*.json$' - '/favicon..*.svg$'"
   - paragraph: "Nginx Proxy Manager with Authentication:"
   - button "Copy Nginx config"
   - code: "# In your proxy host's advanced configuration location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ { auth_basic off; proxy_pass http://your-shuthost-backend; }"
   - paragraph: "Traefik with ForwardAuth:"
   - button "Copy Traefik config"
-  - code: "/# Add to your service labels - \"traefik\\.http\\.routers\\.shuthost-bypass\\.rule=Host\\(`<base_url>`\\) && \\(PathPrefix\\(`\\/download`\\) \\|\\| PathPrefix\\(`\\/api\\/m2m`\\) \\|\\| PathRegexp\\(`\\/manifest\\\\\\.\\.\\*\\\\\\.json`\\) \\|\\| PathRegexp\\(`\\/favicon\\\\\\.\\.\\*\\\\\\.svg`\\)\\)\" - \"traefik\\.http\\.routers\\.shuthost-bypass\\.priority=\\d+\" # Remove auth middleware for bypass routes/"
+  - code: "/# Add to your service labels - \"traefik\\.http\\.routers\\.shuthost-bypass\\.rule=Host\\(`<base_url>`\\) && \\(PathPrefix\\(`\\/download`\\) \\|\\| PathPrefix\\(`\\/api\\/m2m`\\) \\|\\| PathRegexp\\(`\\/manifest\\.\\.\\*\\.json`\\) \\|\\| PathRegexp\\(`\\/favicon\\.\\.\\*\\.svg`\\)\\)\" - \"traefik\\.http\\.routers\\.shuthost-bypass\\.priority=\\d+\" # Remove auth middleware for bypass routes/"
   - paragraph:
     - emphasis:
       - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set

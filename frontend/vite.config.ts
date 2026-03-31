@@ -15,8 +15,8 @@ export default defineConfig({
                 app: 'assets/index.tsx',
             },
             output: {
-                // No hash in filenames: Rust reads app.js and inlines it, so
-                // cache-busting comes from the CSP hash of the inline block.
+                // No hash in filenames: Rust reads app.js serves it under hashed url.
+                // Since we dont clear the out-dir, we'd leave back stale files if we keep the hash in the name.
                 entryFileNames: '[name].js',
                 assetFileNames: '[name][extname]',
             },

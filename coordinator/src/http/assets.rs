@@ -187,8 +187,9 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
         },
     };
 
-    let server_data =
-        serde_json::to_string(&server_data).expect("UiServerData serialization should not fail");
+    let server_data = serde_json::to_string(&server_data)
+        .expect("UiServerData serialization should not fail")
+        .replace("</", r"<\/");
 
     include_utf8_asset!("generated/index.html").replace("{ server_data }", &server_data)
 }
