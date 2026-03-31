@@ -175,15 +175,16 @@ export const Header = (() => {
                 }
             >
                 <div class="flex items-center gap-2">
-                    <nav
+                    <div
                         class="nav-tabs"
                         classList={{ open: mobileMenuOpen() }}
+                        role="tablist"
                         aria-label="Main tabs"
                     >
                         {VALID_TABS.map((tabId) => (
                             <TabButton tabId={tabId} />
                         ))}
-                    </nav>
+                    </div>
                     <Show when={SHOW_LOGOUT_FOR[serverData.authMode]}>
                         <form method="post" action="/logout">
                             <button
