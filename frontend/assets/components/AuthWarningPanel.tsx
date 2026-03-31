@@ -1,27 +1,12 @@
 import type { Component } from 'solid-js';
-import { onMount } from 'solid-js';
+import { CopyButton } from './CopyButton';
 
 /**
  * Security warning panel for when no internal auth is configured or the
  * external auth exceptions_version is outdated.
  */
 export const AuthWarningPanel = (() => {
-    onMount(() => {
-        const baseUrl = window.location.origin;
-        const domain = baseUrl.replace(/^https?:\/\//, '');
-
-        const autheliaConfig = document.getElementById('authelia-config');
-        const traefikConfig = document.getElementById('traefik-config');
-
-        if (autheliaConfig) {
-            autheliaConfig.textContent =
-                `- domain: ${domain}\n    policy: bypass\n    resources:\n        - '^/download/(.*)'\n        - '^/api/m2m/(.*)$'\n        - '/manifest\\..*\\.json$'\n        - '/favicon\\..*\\.svg$'`;
-        }
-        if (traefikConfig) {
-            traefikConfig.textContent =
-                `# Add to your service labels\n- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || PathRegexp(\`/manifest\\..*\\.json\`) || PathRegexp(\`/favicon\\..*\\.svg\`))"\n- "traefik.http.routers.shuthost-bypass.priority=100"\n# Remove auth middleware for bypass routes`;
-        }
-    });
+    const domain = window.location.origin.replace(/^https?:\/\//, '');
 
     return (
         <section class="section-container mb-4" aria-labelledby="security-config-title">
@@ -92,13 +77,19 @@ export const AuthWarningPanel = (() => {
                         <div class="alert-title">Configuration Examples</div>
                         <p class="text-sm font-semibold mb-2">Authelia:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#authelia-config" type="button" aria-label="Copy Authelia config">Copy</button>
-                            <code id="authelia-config" class="code-block">Loading...</code>
+                            <CopyButton targetId="authelia-config" label="Copy Authelia config" />
+                            <code id="authelia-config" class="code-block">{`- domain: ${domain}
+    policy: bypass
+    resources:
+        - '^/download/(.*)'
+        - '^/api/m2m/(.*)$'
+        - '/manifest\..*\.json$'
+        - '/favicon\..*\.svg$'`}</code>
                         </div>
 
                         <p class="text-sm font-semibold mb-2 mt-4">Nginx Proxy Manager with Authentication:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#nginx-config" type="button" aria-label="Copy Nginx config">Copy</button>
+                            <CopyButton targetId="nginx-config" label="Copy Nginx config" />
                             <code id="nginx-config" class="code-block">{`# In your proxy host's advanced configuration
 location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ {
     auth_basic off;
@@ -108,8 +99,11 @@ location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ {
 
                         <p class="text-sm font-semibold mb-2 mt-4">Traefik with ForwardAuth:</p>
                         <div class="code-container">
-                            <button class="copy-button" data-copy-target="#traefik-config" type="button" aria-label="Copy Traefik config">Copy</button>
-                            <code id="traefik-config" class="code-block">Loading...</code>
+                            <CopyButton targetId="traefik-config" label="Copy Traefik config" />
+                            <code id="traefik-config" class="code-block">{`# Add to your service labels
+- "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || PathRegexp(\`/manifest\..*\.json\`) || PathRegexp(\`/favicon\..*\.svg\`))"
+- "traefik.http.routers.shuthost-bypass.priority=100"
+# Remove auth middleware for bypass routes`}</code>
                         </div>
 
                         <p class="text-xs mt-2">

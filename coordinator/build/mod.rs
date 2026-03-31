@@ -51,6 +51,8 @@ fn main() -> eyre::Result<()> {
     println!("{ON_ASSET_CHANGE}/partials");
     println!("cargo::rerun-if-changed=frontend/assets/page.template.html");
     println!("cargo::rerun-if-changed=frontend/build-common.ts");
+    println!("cargo::rerun-if-changed=frontend/vite.config.ts");
+    println!("cargo::rerun-if-changed=frontend/tsconfig.json");
 
     // Spawn typecheck in parallel — it produces no output files so it is
     // independent of the other build steps.
