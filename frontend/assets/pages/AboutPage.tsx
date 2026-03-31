@@ -4,6 +4,7 @@ import { Title } from '@solidjs/meta';
 import { SimpleHeader } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { buildData } from '../helpers/buildData';
+import { demoSubpath } from '../helpers/demo';
 
 export type Author = {
     name: string;
@@ -34,7 +35,7 @@ type DepsResult =
     | { kind: 'ok'; data: AboutPageProps };
 
 const fetchDeps = async (): Promise<DepsResult> => {
-    const res = await fetch('/api/dependency-data.json');
+    const res = await fetch(`${demoSubpath}/api/dependency-data.json`);
     if (res.status === 401) return { kind: 'unauthorized' };
     if (!res.ok) return { kind: 'error', message: `HTTP ${res.status}` };
     return { kind: 'ok', data: await res.json() as AboutPageProps };

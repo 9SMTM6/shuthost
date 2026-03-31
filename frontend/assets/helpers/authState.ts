@@ -1,15 +1,16 @@
 import { createSignal } from 'solid-js';
 import { serverData } from './serverData';
+import { isDemoMode, demoSubpath } from './demo';
 
 type AuthStatus = 'unknown' | 'yes' | 'no';
 
-// For auth modes that require no login, we are always considered authenticated.
-const needsProbe = serverData.authMode === 'token' || serverData.authMode === 'oidc';
+// In demo mode there is no real backend — treat the user as authenticated.
+const needsProbe = !isDemoMode && (serverData.authMode === 'token' || serverData.authMode === 'oidc');
 
 const [_authStatus, setAuthStatus] = createSignal<AuthStatus>(needsProbe ? 'unknown' : 'yes');
 
 if (needsProbe) {
-    fetch('/api/hosts_status', { method: 'HEAD', credentials: 'same-origin' })
+    fetch(`${demoSubpath}/api/hosts_status`, { method: 'HEAD', credentials: 'same-origin' })
         .then(res => setAuthStatus(res.status === 401 ? 'no' : 'yes'))
         .catch(() => { /* leave 'unknown' on network error */ });
 }

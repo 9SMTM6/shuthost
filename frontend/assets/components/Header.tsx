@@ -3,6 +3,7 @@ import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { ServerData, serverData } from '../helpers/serverData';
 import { isDemoMode, demoSubpath } from '../helpers/demo';
+
 import { buildData } from '../helpers/buildData';
 import { isLoggedIn } from '../helpers/authState';
 
@@ -40,7 +41,7 @@ const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: 
                 <div class="flex items-center justify-between h-(--header-height)">
                     {props.leftExtra}
                     <a href={logoHref()} class="flex items-center gap-4" onClick={handleLogoClick}>
-                        <img src={`/favicon.${buildData.svg_hashes['favicon']}.svg`} alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
+                        <img src={`${demoSubpath}/favicon.${buildData.svg_hashes['favicon']}.svg`} alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
                         <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
                             ShutHost
                         </h1>
