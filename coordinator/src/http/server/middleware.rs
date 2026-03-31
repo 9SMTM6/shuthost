@@ -66,6 +66,7 @@ pub(crate) async fn secure_headers_middleware(req: Request<Body>, next: Next) ->
             "base-uri 'none'; ",
             "frame-src 'none'; ",
             "media-src 'none'; ",
+            "font-src 'self' data:; ",
         )),
     );
     response.headers_mut().insert(
