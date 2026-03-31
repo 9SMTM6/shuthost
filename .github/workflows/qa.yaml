@@ -30,6 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - &latest-node-lts
+        name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts'
       - run: rustup update stable
       - run: rustup component add clippy
       - uses: *rust-cache
@@ -40,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - *latest-node-lts
       - run: rustup update stable
       - run: cargo install sqlx-cli --no-default-features --features sqlite --locked
       - run: cargo sqlx prepare --check --workspace
@@ -155,6 +161,7 @@ jobs:
     steps:
       - uses: *checkout
 
+      - *latest-node-lts
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -235,6 +242,7 @@ jobs:
       - uses: *checkout
         with:
           lfs: false
+      - *latest-node-lts
       - name: Test LFS availability with minimal bandwidth
         run: |
           # Try to fetch a small LFS file to test if quota allows any LFS access
