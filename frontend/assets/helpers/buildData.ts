@@ -13,14 +13,18 @@ export type BuildData = {
     app_js_integrity: string;
 };
 
-const loadBuildData = () => {
+const loadBuildData = (): BuildData => {
     if (typeof document === 'undefined') {
-        // SSR context (generate-pages.tsx via vite-node) — no data needed for static rendering.
-        return {} as BuildData;
+        // SSR context (prerender.tsx via vite-node): return placeholder strings
+        // for hash fields. Rust substitutes {{PRERENDERED_HTML}} first in the
+        // template chain, so subsequent hash replacements resolve these too.
+        return {
+            svg_hashes: { favicon: '{{FAVICON_SVG_HASH}}' },
+        } as unknown as BuildData;
     }
     const el = document.getElementById('build-data');
     if (!el?.textContent) throw new Error('Missing #build-data element');
     return JSON.parse(el.textContent) as BuildData;
 };
 
-export const buildData = loadBuildData();
+export const buildData: BuildData = loadBuildData();

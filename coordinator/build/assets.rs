@@ -32,6 +32,7 @@ pub fn compute_hashes() -> eyre::Result<()> {
 
     let (icon_hashes, svg_hashes) = compute_icon_hashes()?;
     let manifest_hash = generate_manifest(&generated_dir, &svg_hashes, &icon_hashes)?;
+
     set_cargo_env_vars(
         &styles_hash,
         &app_js_url_hash,
@@ -146,7 +147,11 @@ fn generate_index_html(generated_dir: &Path, data: &BuildData<'_>) -> eyre::Resu
         .expect("build data serialization should not fail")
         .replace("</", r"<\/");
 
+    let prerendered_html = fs::read_to_string("../frontend/assets/generated/prerendered-app.html")
+        .wrap_err("Failed to read prerendered-app.html")?;
+
     let html = template
+        .replace("{{PRERENDERED_HTML}}", &prerendered_html)
         .replace("{{STYLES_HASH}}", data.styles_hash)
         .replace("{{STYLES_INTEGRITY}}", data.styles_integrity)
         .replace("{{MANIFEST_HASH}}", data.manifest_hash)

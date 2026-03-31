@@ -9,12 +9,9 @@ import { LoginPage } from './pages/LoginPage';
 import { AboutPage } from './pages/AboutPage';
 import { showJSError } from './components/JsErrorBox';
 
-// TODO:
-// * make the page use hydration from a statically rendered page, to show js errors more reliably.
-// * revalidate the static rendering approach
-
 const appMount = document.getElementById('app');
 if (appMount) {
+    appMount.replaceChildren();
     render(() => (
         <MetaProvider>
         <Router>

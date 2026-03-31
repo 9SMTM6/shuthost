@@ -71,9 +71,12 @@ fn main() -> eyre::Result<()> {
     println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
     println!("{ON_ASSET_CHANGE}/partials/client_install_requirements_gotchas.md");
     println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
+    println!("cargo::rerun-if-changed=frontend/assets/prerender.tsx");
+    println!("cargo::rerun-if-changed=frontend/vite.config.ssr.ts");
     let main_frontend_assets = tasks::spawn("build-frontend", || {
         icons::generate_pngs()?;
         npm::run("build")?;
+        npm::run("prerender")?;
         assets::compute_hashes()
     });
 
