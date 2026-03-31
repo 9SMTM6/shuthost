@@ -6,7 +6,7 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The MSRV is generally set to the latest stable `rustc` as of the most recent commit.
 
 ## Frontend Dependencies
-- The project depends on an installed `npm` to build frontend assets ([TailwindCSS and TypeScript](../frontend/package.json)).
+- The project depends on an installed `npm` to build frontend assets ([SolidJS, TailwindCSS and TypeScript](../frontend/package.json)).
 - `npm` is invoked from the workspace build script (or from `frontend`) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
 
 
