@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import type { AnyComponent } from '../helpers/component';
 import { CopyButton } from './CopyButton';
 
 /**
@@ -184,4 +184,4 @@ location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ {
             </details>
         </section>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

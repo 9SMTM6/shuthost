@@ -1,7 +1,7 @@
-import type { Component } from 'solid-js';
 import { createMemo, For, Show } from 'solid-js';
 import { apiFetch } from '../helpers/apiFetch';
 import { applyMessage, state } from '../helpers/appStore';
+import type { AnyComponent } from '../helpers/component';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
@@ -100,7 +100,7 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => {
             </td>
         </tr>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;
 
 // ==========================
 // ClientsTab
@@ -299,4 +299,4 @@ export const ClientsTab = ((props: { configPath: string }) => {
             </section>
         </section>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

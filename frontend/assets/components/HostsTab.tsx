@@ -1,8 +1,8 @@
-import type { Component } from 'solid-js';
 import { createMemo, For, Show } from 'solid-js';
 import { apiFetch } from '../helpers/apiFetch';
 import type { LeaseSource } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
+import type { AnyComponent } from '../helpers/component';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { sortActiveFirst } from '../helpers/utils';
@@ -100,7 +100,7 @@ const HostRow = ((props: { hostName: string }) => {
             </td>
         </tr>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;
 
 // ==========================
 // HostsTab
@@ -265,4 +265,4 @@ export const HostsTab = ((props: { configPath: string }) => {
             </section>
         </section>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

@@ -1,5 +1,4 @@
 import { Title } from '@solidjs/meta';
-import type { Component } from 'solid-js';
 import { onMount, Show } from 'solid-js';
 import { ArchitectureTab } from '../components/ArchitectureTab';
 import { AuthWarningPanel } from '../components/AuthWarningPanel';
@@ -8,6 +7,7 @@ import { Footer } from '../components/Footer';
 import { Header } from '../components/Header';
 import { HostsTab } from '../components/HostsTab';
 import { JsErrorBox } from '../components/JsErrorBox';
+import type { AnyComponent } from '../helpers/component';
 import { initDemoMode, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { connectWebSocket } from '../helpers/ws';
@@ -46,4 +46,4 @@ export const App = (() => {
             <Footer />
         </>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

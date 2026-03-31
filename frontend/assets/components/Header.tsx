@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from '@solidjs/router';
-import type { Component, JSX, ParentProps } from 'solid-js';
+import type { JSX, ParentProps } from 'solid-js';
 import { createEffect, createSignal, Show } from 'solid-js';
 import { isLoggedIn } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
+import type { AnyComponent } from '../helpers/component';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { type ServerData, serverData } from '../helpers/serverData';
 
@@ -60,7 +61,7 @@ const HeaderShell = ((
             </div>
         </header>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;
 
 const SHOW_LOGOUT_FOR = {
     disabled: false,
@@ -86,7 +87,7 @@ export const SimpleHeader = (() => (
             </form>
         </Show>
     </HeaderShell>
-)) satisfies Component<any>;
+)) satisfies AnyComponent;
 
 /** Full header with tab navigation, logout button, and demo banner. */
 export const Header = (() => {
@@ -133,7 +134,7 @@ export const Header = (() => {
         >
             {TAB_LABELS[tabProps.tabId]}
         </button>
-    )) satisfies Component<any>;
+    )) satisfies AnyComponent;
 
     return (
         <>
@@ -207,4 +208,4 @@ export const Header = (() => {
             </Show>
         </>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

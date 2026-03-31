@@ -1,10 +1,10 @@
 import { Title } from '@solidjs/meta';
 import { useSearchParams } from '@solidjs/router';
-import type { Component } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { JsErrorBox } from '../components/JsErrorBox';
+import type { AnyComponent } from '../helpers/component';
 import { serverData } from '../helpers/serverData';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.
@@ -98,7 +98,7 @@ const TokenLoginForm = (() => {
             </button>
         </form>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;
 
 const OidcLoginForm = (() => (
     <a
@@ -108,7 +108,7 @@ const OidcLoginForm = (() => (
     >
         Login with SSO
     </a>
-)) satisfies Component<any>;
+)) satisfies AnyComponent;
 
 export const LoginPage = (() => {
     const [searchParams] = useSearchParams();
@@ -166,4 +166,4 @@ export const LoginPage = (() => {
             <Footer />
         </>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

@@ -1,5 +1,5 @@
-import type { Component } from 'solid-js';
 import { buildData } from '../helpers/buildData';
+import type { AnyComponent } from '../helpers/component';
 
 export const showJSError = (message: string) => {
     const errorDiv = document.getElementById(
@@ -31,4 +31,4 @@ export const JsErrorBox = (() => (
             </a>
         </p>
     </div>
-)) satisfies Component<any>;
+)) satisfies AnyComponent;

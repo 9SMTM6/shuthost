@@ -1,5 +1,5 @@
-import type { Component } from 'solid-js';
 import { createSignal, onCleanup } from 'solid-js';
+import type { AnyComponent } from '../helpers/component';
 
 export const CopyButton = ((props: { targetId: string; label: string }) => {
     const [text, setText] = createSignal('Copy');
@@ -29,4 +29,4 @@ export const CopyButton = ((props: { targetId: string; label: string }) => {
             {text()}
         </button>
     );
-}) satisfies Component<any>;
+}) satisfies AnyComponent;

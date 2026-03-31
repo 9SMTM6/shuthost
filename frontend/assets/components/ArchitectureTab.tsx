@@ -1,8 +1,8 @@
-import type { Component } from 'solid-js';
 import clientControllerInteractionSvg from '../generated/client_controller_interaction.svg?raw';
 import deploymentSvg from '../generated/deployment.svg?raw';
 import directControlComparisonSvg from '../generated/direct_control_comparison.svg?raw';
 import hostAgentInteractionSvg from '../generated/host_agent_interaction.svg?raw';
+import type { AnyComponent } from '../helpers/component';
 import platformSupportHtml from '../partials/platform_support.md?raw';
 
 export const ArchitectureTab = (() => (
@@ -348,4 +348,4 @@ export const ArchitectureTab = (() => (
             </section>
         </article>
     </section>
-)) satisfies Component<any>;
+)) satisfies AnyComponent;

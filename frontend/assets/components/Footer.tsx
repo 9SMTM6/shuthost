@@ -1,5 +1,5 @@
-import type { Component } from 'solid-js';
 import { buildData } from '../helpers/buildData';
+import type { AnyComponent } from '../helpers/component';
 
 export const Footer = (() => (
     <footer
@@ -17,4 +17,4 @@ export const Footer = (() => (
             About &amp; Licenses
         </a>
     </footer>
-)) satisfies Component<any>;
+)) satisfies AnyComponent;
