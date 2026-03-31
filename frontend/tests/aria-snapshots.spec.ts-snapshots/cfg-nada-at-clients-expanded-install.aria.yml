@@ -1,5 +1,5 @@
 - main:
-  - tabpanel:
+  - tabpanel "Clients":
     - region "Install Client":
       - group "Install Client":
         - heading "Install Client" [level=2]

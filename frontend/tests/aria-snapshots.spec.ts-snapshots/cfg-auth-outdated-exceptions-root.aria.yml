@@ -13,7 +13,7 @@
       - emphasis: When using an external auth reverse proxy, you must allow unauthenticated access to certain endpoints so installers and machine-to-machine clients can work. See the examples below.
     - group "🔒 Required Security Exceptions":
       - heading "🔒 Required Security Exceptions" [level=2]
-  - tabpanel:
+  - tabpanel "Hosts":
     - region "Install Host Agent":
       - group "Install Host Agent":
         - heading "Install Host Agent" [level=2]

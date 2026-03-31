@@ -1,5 +1,5 @@
 - main:
-  - tabpanel:
+  - tabpanel "Hosts":
     - region "Install Host Agent":
       - group "Install Host Agent":
         - heading "Install Host Agent" [level=2]
