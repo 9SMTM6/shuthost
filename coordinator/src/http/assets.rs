@@ -2,6 +2,7 @@
 //!
 //! Provides Axum routes to serve HTML, JS, CSS, images, and manifest.
 
+use alloc::borrow;
 use core::time::Duration;
 use std::path;
 
@@ -152,12 +153,12 @@ pub(crate) enum UiMode<'params> {
 /// Holds static server data injected into the UI; this should not contain sensitive data.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct UiServerData<'a> {
-    config_path: std::borrow::Cow<'a, str>,
+struct UiServerData<'strings> {
+    config_path: borrow::Cow<'strings, str>,
     auth_warning: bool,
     /// Demo mode signal: `Some` means demo mode, `None` means normal mode.
-    demo_subpath: Option<&'a str>,
-    auth_mode: &'a str,
+    demo_subpath: Option<&'strings str>,
+    auth_mode: &'strings str,
     broadcast_port: u16,
 }
 
@@ -178,7 +179,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             broadcast_port,
         },
         UiMode::Demo { subpath } => UiServerData {
-            config_path: std::borrow::Cow::Borrowed("/this/is/a/demo.toml"),
+            config_path: borrow::Cow::Borrowed("/this/is/a/demo.toml"),
             auth_warning: false,
             demo_subpath: Some(subpath),
             auth_mode: "disabled",

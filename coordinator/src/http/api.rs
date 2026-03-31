@@ -15,7 +15,10 @@ use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::{app::{AppState, LeaseSource, db}, include_utf8_asset};
+use crate::{
+    app::{AppState, LeaseSource, db},
+    include_utf8_asset,
+};
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
