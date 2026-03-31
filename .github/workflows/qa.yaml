@@ -48,7 +48,7 @@ jobs:
       - name: Install dependencies
         run: cd frontend && npm ci
       - name: Check frontend formatting
-        run: cd frontend && npx biome format --check .
+        run: cd frontend && npx biome format .
 
   frontend-lint:
     runs-on: ubuntu-latest
