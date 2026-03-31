@@ -575,15 +575,16 @@ jobs:
           if ($clientConfigLine) {
             Write-Host "Config file before modification:"
             Get-Content shuthost_coordinator.toml
-            # Add the client under [clients]
-            $content = Get-Content shuthost_coordinator.toml
+            # Stop coordinator to avoid file-lock races, then add the client under [clients]
+            # I'll accept this on windows for now, since thats not a supported production platform.
+            Stop-Process -Name shuthost_coordinator -Force -ErrorAction SilentlyContinue
+            $content = Get-Content -Raw -Path shuthost_coordinator.toml
             $newContent = $content -replace '(\[clients\])', "`$1`n$clientConfigLine"
-            $newContent | Set-Content shuthost_coordinator.toml
+            [System.IO.File]::WriteAllText('shuthost_coordinator.toml', $newContent, [System.Text.Encoding]::UTF8)
             Write-Host "Added client to config: $clientConfigLine"
             Write-Host "Config file after modification:"
             Get-Content shuthost_coordinator.toml
             # Restart coordinator to reload config, since the file watcher doesnt work on windows
-            Stop-Process -Name shuthost_coordinator -Force -ErrorAction SilentlyContinue
             Start-Process -FilePath ".\shuthost_coordinator.exe" -ArgumentList @("control-service", "--config", "shuthost_coordinator.toml")
             Start-Sleep 1
           } else {
