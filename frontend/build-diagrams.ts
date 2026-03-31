@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 const files = readdirSync('assets').filter((f) => f.endsWith('.mmd'));
 files.forEach((f) => {
     const name = f.replace(/\.mmd$/, '');
-    execSync(`npx mmdc -i assets/${f} -o assets/generated/${name}.svg --svgId diagram-${name}`, { stdio: 'inherit' });
+    execSync(`npx mmdc -i assets/${f} -o assets/generated/${name}.svg --svgId diagram-${name} --backgroundColor transparent`, { stdio: 'inherit' });
 
     // Post-process SVG for dark mode
     const svgPath = `assets/generated/${name}.svg`;
@@ -33,11 +33,7 @@ files.forEach((f) => {
     if (!svgContent.includes('</style>')) {
         throw new Error(`Missing </style> in SVG for diagram ${name}`);
     };
-    if (!svgContent.includes('background-color: white;')) {
-        throw new Error(`Missing background-color style in SVG for diagram ${name}`);
-    };
     svgContent = svgContent.replace('</style>', darkModeCSS + '</style>');
-    svgContent = svgContent.replace('background-color: white;', 'background-color: transparent;');
 
     writeFileSync(svgPath, svgContent);
 });
