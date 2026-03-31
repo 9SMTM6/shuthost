@@ -40,6 +40,36 @@ jobs:
       - uses: *rust-cache
       - run: cargo +stable clippy --workspace --all-targets -- -D warnings
 
+  frontend-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: *checkout
+      - *latest-node-lts
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Check frontend formatting
+        run: cd frontend && npx biome format --check .
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: *checkout
+      - *latest-node-lts
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Lint frontend
+        run: cd frontend && npm run lint
+
+  frontend-tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: *checkout
+      - *latest-node-lts
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Type check frontend
+        run: cd frontend && npm run typecheck
+
   sqlx-offline-cache:
     name: sqlx offline cache check with prepare
     runs-on: ubuntu-latest
