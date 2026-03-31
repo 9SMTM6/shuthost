@@ -36,7 +36,14 @@
         "rules": {
             "recommended": true,
             "suspicious": {
-                "noExplicitAny": "warn"
+                "noExplicitAny": "warn",
+                "noConsole": {
+                    "level": "warn",
+                    "options": {
+                        "allow": ["error", "warn", "info"]
+                    }
+                },
+                "noSkippedTests": "warn"
             },
             "style": {
                 "noNonNullAssertion": "warn",
@@ -47,12 +54,33 @@
                 "useSemanticElements": "warn"
             },
             "complexity": {
-                "useLiteralKeys": "off"
+                "useLiteralKeys": "off",
+                "noExcessiveCognitiveComplexity": "warn"
             },
             "correctness": {
                 "noUnusedVariables": "error",
                 "noUnusedImports": "error"
+            },
+            "security": {
+                "noGlobalEval": "error"
             }
         }
-    }
+    },
+    "overrides": [
+        {
+            "includes": ["tests/**/*.ts"],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noConsole": {
+                            "level": "warn",
+                            "options": {
+                                "allow": ["error", "warn", "info", "log"]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
 }

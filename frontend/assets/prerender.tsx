@@ -27,4 +27,4 @@ const html = renderToString(() => (
 const outDir = path.join(__dirname, 'generated');
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(path.join(outDir, 'prerendered-app.html'), html, 'utf-8');
-console.log('Prerendering complete');
+console.info('Prerendering complete');

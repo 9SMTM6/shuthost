@@ -37,6 +37,7 @@ const formatLastUsed = (clientId: string): string => {
 // ==========================
 
 const ClientRow = ((props: { clientId: string; leases: string[] }) => {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: demo mode requires parallel mutation paths alongside the real API path
     const resetLeases = async () => {
         if (isDemoMode) {
             // Demo: clear leases out of the store directly
@@ -173,6 +174,7 @@ export const ClientsTab = ((props: { configPath: string }) => {
                         </h2>
                         <span class="collapsible-icon" aria-hidden="true" />
                     </summary>
+                    {/* biome-ignore lint/a11y/useSemanticElements: role="group" has no semantic HTML element equivalent outside of form contexts */}
                     <div
                         id="client-install-content"
                         class="collapsible-content"

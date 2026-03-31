@@ -5,6 +5,7 @@ import { getBaseUrl } from './test-utils';
 const base = getBaseUrl('hosts-and-clients');
 
 test('PWA install prompt is available', async ({ page }) => {
+    // biome-ignore lint/suspicious/noSkippedTests: PWA install prompt detection is unreliable in test environments; revisit when a reliable approach is found
     test.skip(true, 'TODO, this doesnt seem to work correctly.');
     await page.goto(`${base}/`);
     const installPromptFired = page.evaluate(() => {
@@ -23,6 +24,7 @@ test('PWA install prompt is available', async ({ page }) => {
     expect(isInstallable).toBe(true);
 });
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: sequential heuristic assertions require checking multiple manifest fields in one test
 test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
     // Heuristics taken from https://web.dev/articles/install-criteria,
     // and from my experience (regarding image purpose)
@@ -36,6 +38,7 @@ test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
         .getAttribute('href');
     expect(manifestHref).toBeTruthy();
 
+    // biome-ignore lint/style/noNonNullAssertion: truthiness guaranteed by the expect() assertion above
     const manifestUrl = new URL(manifestHref!, page.url()).toString();
     const manifestResp = await request.get(manifestUrl);
     expect(manifestResp.status()).toBe(200);

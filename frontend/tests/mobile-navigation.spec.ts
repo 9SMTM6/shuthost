@@ -20,6 +20,7 @@ test.describe('mobile navigation', () => {
     });
 
     test('ARIA snapshot for mobile navigation', async ({ page }, testInfo) => {
+        // biome-ignore lint/suspicious/noSkippedTests: intentionally skipped on non-Mobile-Light projects where the test is not applicable
         test.skip(
             testInfo.project.name !== 'Mobile Light',
             "Theme doesn't show in ARIA snapshots",

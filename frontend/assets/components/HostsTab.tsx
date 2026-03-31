@@ -148,6 +148,7 @@ export const HostsTab = ((props: { configPath: string }) => {
                         </h2>
                         <span class="collapsible-icon" aria-hidden="true" />
                     </summary>
+                    {/* biome-ignore lint/a11y/useSemanticElements: role="group" has no semantic HTML element equivalent outside of form contexts */}
                     <div
                         id="host-install-content"
                         class="collapsible-content"

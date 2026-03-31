@@ -58,6 +58,7 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
 
 export const sanitizeVersion = async (page: Page) => {
     await page.evaluate(() => {
+        // biome-ignore lint/style/noNonNullAssertion: footer is always present in the rendered app
         const footer = document.querySelector('footer')!;
         footer.textContent = footer.textContent.replace(
             /ShutHost Coordinator v[0-9A-Za-z.-]+/,
