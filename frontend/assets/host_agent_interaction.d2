@@ -1,0 +1,18 @@
+direction: right
+
+controller: Controller {
+  direction: down
+  direct: "Direct Control (Script)" {shape: document}
+  coordinator: Coordinator {shape: queue}
+}
+
+host_unit: Host {
+  host: "Actual Host" {shape: oval}
+  agent: Agent {shape: step}
+}
+
+host_unit.host -> host_unit.agent: "starts on boot"
+controller -> host_unit.agent: "shutdown requests"
+controller -> host_unit.agent: "status pings (host online)"
+controller -> host_unit.host: "WOL startup"
+host_unit.agent -> host_unit.host: "executes shutdown"

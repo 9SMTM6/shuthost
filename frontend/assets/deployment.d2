@@ -1,0 +1,19 @@
+direction: right
+
+github: "GitHub Releases" {shape: hexagon}
+coordinator: "Coordinator\n(WebUI + API)" {shape: queue}
+
+agent_only: "Agent Only Install" {
+  host_agent: "Host Agent\nper host" {shape: step}
+  direct_control: "Direct Control Script" {shape: document}
+}
+
+client: "Client\nper task" {shape: document}
+
+github -> coordinator: "Installer (binary) or Docker"
+github -> agent_only.host_agent: "Installer"
+coordinator -> client: "Installer"
+client -> coordinator: "register manually"
+agent_only.host_agent -> coordinator: "register manually"
+agent_only.host_agent -> agent_only.direct_control: generates
+coordinator -> agent_only.host_agent: "Installer (tests WOL connectivity)"

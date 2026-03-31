@@ -1,0 +1,22 @@
+direction: right
+
+clients: Clients {
+  direction: down
+  webui: WebUI {shape: circle}
+  client: "Client (Script)" {shape: document}
+}
+
+lan: LAN {
+  controller: Controller {
+    direct_control: "Direct Control Script" {shape: document}
+    coordinator: Coordinator {shape: queue}
+  }
+  host: Host {shape: queue}
+}
+
+clients -> lan.controller.coordinator: control
+lan.controller -> lan.host: startup
+lan.controller -> lan.host: shutdown
+clients -> lan.host: "control outside of LAN" {
+  style.stroke-dash: 5
+}
