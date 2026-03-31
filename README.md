@@ -234,4 +234,5 @@ These are generated or validated automatically as part of the test suite, and th
 * consider creating some global style to modify architecture diagrams instead of allowing inline style globally via CSP. There is the remaining issue that this will likely still trigger a CSP warning if we dont make 2 diagram variants for embedding (without inlined style) and not, leading to warnings clutter.
   * another alternative is moving away from mermaid and to terrastruct/d2, which is likely faster, might provide stable output (allowing removal of the artifacts from the repo if we can get d2 in some portable way) and importantly for this issue, has a native dark and light theme.
 * test github pages page once its on main, especially the about page
+* test whether the external script csp hash causes issues on modern Safari, in that case go down to script-src self 
 -->
