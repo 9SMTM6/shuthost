@@ -5,7 +5,9 @@ export const CopyButton = ((props: { targetId: string; label: string }) => {
     const [text, setText] = createSignal('Copy');
     let timeout: ReturnType<typeof setTimeout> | undefined;
 
-    onCleanup(() => { if (timeout) clearTimeout(timeout); });
+    onCleanup(() => {
+        if (timeout) clearTimeout(timeout);
+    });
 
     const handleClick = () => {
         const content = document.getElementById(props.targetId)?.textContent;
@@ -18,7 +20,12 @@ export const CopyButton = ((props: { targetId: string; label: string }) => {
     };
 
     return (
-        <button class="copy-button" type="button" aria-label={props.label} onClick={handleClick}>
+        <button
+            class="copy-button"
+            type="button"
+            aria-label={props.label}
+            onClick={handleClick}
+        >
             {text()}
         </button>
     );

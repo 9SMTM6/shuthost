@@ -1,80 +1,81 @@
 /// <reference lib="dom" />
 
-import { Page } from '@playwright/test';
-import { assignedPortForConfig} from './backend-utils';
-
-import { ConfigKey } from './backend-utils';
+import type { Page } from '@playwright/test';
+import { assignedPortForConfig, type ConfigKey } from './backend-utils';
 
 export const getBaseUrl = (configKey: ConfigKey, useTls = false): string => {
-  const port = assignedPortForConfig(configKey);
-  const protocol = useTls ? 'https' : 'http';
-  return `${protocol}://127.0.0.1:${port}`;
+    const port = assignedPortForConfig(configKey);
+    const protocol = useTls ? 'https' : 'http';
+    return `${protocol}://127.0.0.1:${port}`;
 };
 
 /** Replaces environment-dependent values like URLs and config paths with placeholders for generic snapshots */
 export const sanitizeEnvironmentDependents = async (page: Page) => {
-  await page.evaluate(() => {
-    // Recursively sanitize all text nodes in the DOM
-    const fullUrlRegexes: RegExp[] = [
-      /https?:\/\/127\.0\.0\.1:\d+/g,
-      /https?:\/\/localhost:\d+/g,
-      /http:\/\/127\.0\.0\.1:\d+/g,
-      /http:\/\/localhost:\d+/g
-    ];
-    const domainRegexes: RegExp[] = [
-      /127\.0\.0\.1:\d+/g,
-      /localhost:\d+/g,
-      /127\.0\.0\.1/g,
-      /localhost/g
-    ];
-    /** Replace environment-dependent URLs and domains in a string.*/
-    const sanitizeText = (text: string): string => {
-      let sanitized = text;
-      fullUrlRegexes.forEach((r: RegExp) => {
-        sanitized = sanitized.replace(r, '<protocol://base_url>');
-      });
-      domainRegexes.forEach((r: RegExp) => {
-        sanitized = sanitized.replace(r, '<base_url>');
-      });
-      return sanitized;
-    };
-    const isHTMLElement = (node: Node): node is HTMLElement => {
-      return node.nodeType === Node.ELEMENT_NODE;
-    };
+    await page.evaluate(() => {
+        // Recursively sanitize all text nodes in the DOM
+        const fullUrlRegexes: RegExp[] = [
+            /https?:\/\/127\.0\.0\.1:\d+/g,
+            /https?:\/\/localhost:\d+/g,
+            /http:\/\/127\.0\.0\.1:\d+/g,
+            /http:\/\/localhost:\d+/g,
+        ];
+        const domainRegexes: RegExp[] = [
+            /127\.0\.0\.1:\d+/g,
+            /localhost:\d+/g,
+            /127\.0\.0\.1/g,
+            /localhost/g,
+        ];
+        /** Replace environment-dependent URLs and domains in a string.*/
+        const sanitizeText = (text: string): string => {
+            let sanitized = text;
+            fullUrlRegexes.forEach((r: RegExp) => {
+                sanitized = sanitized.replace(r, '<protocol://base_url>');
+            });
+            domainRegexes.forEach((r: RegExp) => {
+                sanitized = sanitized.replace(r, '<base_url>');
+            });
+            return sanitized;
+        };
+        const isHTMLElement = (node: Node): node is HTMLElement => {
+            return node.nodeType === Node.ELEMENT_NODE;
+        };
 
-    /** Recursively walk the DOM and sanitize all text nodes. */
-    const walk = (node: Node): void => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        node.textContent = sanitizeText(node.textContent || '');
-      } else if (isHTMLElement(node)) {
-        // Special handling for config location
-        if (node.hasAttribute('data-config-location')) {
-          node.textContent = '<coordinator_config_location>';
-        }
-        node.childNodes.forEach(walk);
-      }
-    };
-    walk(document.body);
-  });
-}
+        /** Recursively walk the DOM and sanitize all text nodes. */
+        const walk = (node: Node): void => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                node.textContent = sanitizeText(node.textContent || '');
+            } else if (isHTMLElement(node)) {
+                // Special handling for config location
+                if (node.hasAttribute('data-config-location')) {
+                    node.textContent = '<coordinator_config_location>';
+                }
+                node.childNodes.forEach(walk);
+            }
+        };
+        walk(document.body);
+    });
+};
 
 export const sanitizeVersion = async (page: Page) => {
-  await page.evaluate(() => {
-    const footer = document.querySelector('footer')!;
-      footer.textContent = footer.textContent.replace(/ShutHost Coordinator v[0-9A-Za-z.\-]+/, 'ShutHost Coordinator v<<VERSION>>');
-  });
-}
+    await page.evaluate(() => {
+        const footer = document.querySelector('footer')!;
+        footer.textContent = footer.textContent.replace(
+            /ShutHost Coordinator v[0-9A-Za-z.-]+/,
+            'ShutHost Coordinator v<<VERSION>>',
+        );
+    });
+};
 
 export const expand_and_sanitize_host_install = async (
-  page: Page,
-  configKey: ConfigKey
+    page: Page,
+    configKey: ConfigKey,
 ) => {
-  await page.goto(getBaseUrl(configKey) + '#hosts');
-  // Open the collapsible by checking the toggle input
-  // The checkbox input is hidden (CSS); click the visible header/label instead.
-  await page.waitForSelector('#host-install-header');
-  await page.click('#host-install-header');
-  await page.waitForSelector('#host-install-content', { state: 'visible' });
-  // Sanitize dynamic install command and config path for stable snapshots
-  await sanitizeEnvironmentDependents(page);
-}
+    await page.goto(`${getBaseUrl(configKey)}#hosts`);
+    // Open the collapsible by checking the toggle input
+    // The checkbox input is hidden (CSS); click the visible header/label instead.
+    await page.waitForSelector('#host-install-header');
+    await page.click('#host-install-header');
+    await page.waitForSelector('#host-install-content', { state: 'visible' });
+    // Sanitize dynamic install command and config path for stable snapshots
+    await sanitizeEnvironmentDependents(page);
+};

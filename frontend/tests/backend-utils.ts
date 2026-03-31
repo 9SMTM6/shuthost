@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import os from 'node:os';
-import https, { Server } from 'node:https';
-import fs from 'node:fs';
-import path from 'node:path';
 import { createPublicKey } from 'node:crypto';
+import fs from 'node:fs';
+import https, { type Server } from 'node:https';
+import os from 'node:os';
+import path from 'node:path';
 
 // --- configuration --------------------------------------------------------
 // canonical list of known configuration keys; kept in a fixed order so
@@ -21,9 +21,12 @@ export const CONFIG_KEYS = [
 
 // helper that builds the config file path for a given key.  demo mode does
 // not have a configuration file, so callers should special-case it.
-export const configPathForKey = (key: typeof CONFIG_KEYS[number]) => `./tests/configs/${key}.toml`;
+export const configPathForKey = (key: (typeof CONFIG_KEYS)[number]) =>
+    `./tests/configs/${key}.toml`;
 
-export const BACKEND_PATH = process.env['COVERAGE'] ? '../target/debug/shuthost_coordinator' : '../target/release/shuthost_coordinator';
+export const BACKEND_PATH = process.env['COVERAGE']
+    ? '../target/debug/shuthost_coordinator'
+    : '../target/release/shuthost_coordinator';
 
 // canonical list of all backend keys including the special demo entry.  Using
 // a single array ensures loops in setup/teardown stay in sync and provides a
@@ -31,12 +34,9 @@ export const BACKEND_PATH = process.env['COVERAGE'] ? '../target/debug/shuthost_
 // comprehensive list including the special `demo` entry.  having a
 // separate array makes it easy to iterate through all possible backends
 // during setup/teardown.
-export const ALL_CONFIG_KEYS = [
-    ...CONFIG_KEYS,
-    'demo',
-] as const;
+export const ALL_CONFIG_KEYS = [...CONFIG_KEYS, 'demo'] as const;
 
-export type ConfigKey = typeof ALL_CONFIG_KEYS[number];
+export type ConfigKey = (typeof ALL_CONFIG_KEYS)[number];
 
 export const BASE_PORT = 8081;
 export const OIDC_PORT = BASE_PORT;
@@ -61,10 +61,14 @@ export const killTestBackendProcess = async (key: ConfigKey) => {
     for (const pid of pids) {
         const isExpected = validatePidIsExpected(pid, BACKEND_PATH);
         if (isExpected) {
-            console.log(`terminating coordinator pid ${pid} for config ${key} on port ${port}`);
+            console.log(
+                `terminating coordinator pid ${pid} for config ${key} on port ${port}`,
+            );
             await killPidGracefully(pid);
         } else {
-            console.warn(`leaving pid ${pid} for config ${key} on port ${port} (not coordinator)`);
+            console.warn(
+                `leaving pid ${pid} for config ${key} on port ${port} (not coordinator)`,
+            );
         }
     }
 };
@@ -100,18 +104,26 @@ export const assignedPortForConfig = (configKey: ConfigKey) => {
 export const getPidsListeningOnPort = (port: number) => {
     try {
         if (os.platform() === 'win32') {
-            const out = spawnSync('netstat', ['-ano'], { encoding: 'utf8' }).stdout;
-            return Array.from(new Set(
-                out
-                    .split('\n')
-                    .filter((l) => l.includes(`:${port}`))
-                    .map((l) => l.trim().split(/\s+/).pop())
-                    .filter(Boolean)
-                    .map((s) => Number(s))
-                    .filter((n) => !Number.isNaN(n))
-            ));
+            const out = spawnSync('netstat', ['-ano'], {
+                encoding: 'utf8',
+            }).stdout;
+            return Array.from(
+                new Set(
+                    out
+                        .split('\n')
+                        .filter((l) => l.includes(`:${port}`))
+                        .map((l) => l.trim().split(/\s+/).pop())
+                        .filter(Boolean)
+                        .map((s) => Number(s))
+                        .filter((n) => !Number.isNaN(n)),
+                ),
+            );
         } else {
-            const out = spawnSync('lsof', ['-nP', '-iTCP:' + port, '-sTCP:LISTEN', '-t'], { encoding: 'utf8' }).stdout;
+            const out = spawnSync(
+                'lsof',
+                ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'],
+                { encoding: 'utf8' },
+            ).stdout;
             return out
                 .split(/\s+/)
                 .filter(Boolean)
@@ -129,10 +141,20 @@ export const getPidsListeningOnPort = (port: number) => {
 const pidCommandLine = (pid: number) => {
     try {
         if (os.platform() === 'win32') {
-            const out = spawnSync('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object -ExpandProperty CommandLine`], { encoding: 'utf8' }).stdout.trim();
+            const out = spawnSync(
+                'powershell',
+                [
+                    '-NoProfile',
+                    '-Command',
+                    `Get-CimInstance Win32_Process -Filter "ProcessId=${pid}" | Select-Object -ExpandProperty CommandLine`,
+                ],
+                { encoding: 'utf8' },
+            ).stdout.trim();
             return out || null;
         } else {
-            const out = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8' }).stdout.trim();
+            const out = spawnSync('ps', ['-p', String(pid), '-o', 'command='], {
+                encoding: 'utf8',
+            }).stdout.trim();
             return out || null;
         }
     } catch {
@@ -169,7 +191,7 @@ const killPidGracefully = async (pid: number, timeoutMs = 5000) => {
                 if (Date.now() - start >= timeoutMs) {
                     try {
                         process.kill(pid, 'SIGKILL');
-                    } catch { }
+                    } catch {}
                     try {
                         process.kill(pid, 0);
                         resolve(false);
@@ -224,7 +246,7 @@ export const startOidcMockServer = async () => {
 
     const serverOptions = { key, cert };
 
-    let oidcServer = https.createServer(serverOptions, (req, res) => {
+    const oidcServer = https.createServer(serverOptions, (req, res) => {
         if (req.url === '/.well-known/openid-configuration') {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(discovery));
@@ -238,10 +260,10 @@ export const startOidcMockServer = async () => {
     });
     return await new Promise<Server>((resolve, reject) => {
         // Bind explicitly to IPv4 loopback to avoid IPv6/IPv4 dual-stack issues.
-        oidcServer!.listen(OIDC_PORT, OIDC_HOST, () => {
+        oidcServer?.listen(OIDC_PORT, OIDC_HOST, () => {
             console.log(`OIDC mock server running at ${OIDC_BASE_URL}`);
             resolve(oidcServer);
         });
-        oidcServer!.on('error', (err) => reject(err));
+        oidcServer?.on('error', (err) => reject(err));
     });
 };

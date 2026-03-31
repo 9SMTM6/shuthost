@@ -1,5 +1,5 @@
-import { applyMessage, type WsMessage } from './appStore';
 import { apiFetch } from './apiFetch';
+import { applyMessage, type WsMessage } from './appStore';
 
 let currentSocket: WebSocket | null = null;
 
@@ -36,7 +36,11 @@ export const connectWebSocket = () => {
     };
     socket.onerror = (ev) => console.error('WebSocket error', ev);
     socket.onclose = (ev) => {
-        console.warn('WebSocket closed', { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
+        console.warn('WebSocket closed', {
+            code: ev.code,
+            reason: ev.reason,
+            wasClean: ev.wasClean,
+        });
         currentSocket = null;
         checkAuthThenReconnect();
     };

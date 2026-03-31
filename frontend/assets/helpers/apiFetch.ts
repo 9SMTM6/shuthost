@@ -1,6 +1,9 @@
 import { showJSError } from '../components/JsErrorBox';
 
-export const apiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+export const apiFetch = async (
+    url: string,
+    options?: RequestInit,
+): Promise<Response> => {
     try {
         const resp = await fetch(url, options);
         if (resp.status === 401) {
@@ -15,7 +18,9 @@ export const apiFetch = async (url: string, options?: RequestInit): Promise<Resp
         return resp;
     } catch (err) {
         if (!(err instanceof Error && err.message === 'Unauthorized')) {
-            showJSError(err instanceof Error ? err.message : 'Unknown fetch error');
+            showJSError(
+                err instanceof Error ? err.message : 'Unknown fetch error',
+            );
         }
         throw err;
     }

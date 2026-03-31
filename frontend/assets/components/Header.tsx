@@ -1,11 +1,10 @@
-import type { Component, ParentProps, JSX } from 'solid-js';
-import { Show, createSignal, createEffect } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
-import { ServerData, serverData } from '../helpers/serverData';
-import { isDemoMode, demoSubpath } from '../helpers/demo';
-
-import { buildData } from '../helpers/buildData';
+import type { Component, JSX, ParentProps } from 'solid-js';
+import { createEffect, createSignal, Show } from 'solid-js';
 import { isLoggedIn } from '../helpers/authState';
+import { buildData } from '../helpers/buildData';
+import { demoSubpath, isDemoMode } from '../helpers/demo';
+import { type ServerData, serverData } from '../helpers/serverData';
 
 const TAB_LABELS = {
     architecture: 'Docs',
@@ -27,21 +26,31 @@ const normalizeTab = (hash: string) => {
  * after the logo (e.g. nav tabs, logout). leftExtra renders before the logo
  * (e.g. hamburger). topBanner renders inside <header> above the main bar.
  */
-const HeaderShell = ((props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>) => {
+const HeaderShell = ((
+    props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>,
+) => {
     const navigate = useNavigate();
-    const logoHref = () => isLoggedIn() === false ? '/login' : '/';
+    const logoHref = () => (isLoggedIn() === false ? '/login' : '/');
     const handleLogoClick = (e: MouseEvent) => {
         e.preventDefault();
         navigate(logoHref());
     };
     return (
-        <header class="bg-white dark:bg-[#1e1e1e] shadow-md" role="banner">
+        <header class="bg-white dark:bg-[#1e1e1e] shadow-md">
             {props.topBanner}
             <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-(--header-height)">
                     {props.leftExtra}
-                    <a href={logoHref()} class="flex items-center gap-4" onClick={handleLogoClick}>
-                        <img src={`${demoSubpath}/favicon.${buildData.svg_hashes['favicon']}.svg`} alt="ShutHost Logo" class="h-6 sm:h-8 w-auto" />
+                    <a
+                        href={logoHref()}
+                        class="flex items-center gap-4"
+                        onClick={handleLogoClick}
+                    >
+                        <img
+                            src={`${demoSubpath}/favicon.${buildData.svg_hashes['favicon']}.svg`}
+                            alt="ShutHost Logo"
+                            class="h-6 sm:h-8 w-auto"
+                        />
                         <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
                             ShutHost
                         </h1>
@@ -63,7 +72,9 @@ const SHOW_LOGOUT_FOR = {
 /** Header for the About page: logo + conditional logout, no tab navigation. */
 export const SimpleHeader = (() => (
     <HeaderShell>
-        <Show when={isLoggedIn() === true && SHOW_LOGOUT_FOR[serverData.authMode]}>
+        <Show
+            when={isLoggedIn() === true && SHOW_LOGOUT_FOR[serverData.authMode]}
+        >
             <form method="post" action="/logout">
                 <button
                     type="submit"
@@ -86,19 +97,22 @@ export const Header = (() => {
     const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
 
     const activateTab = (tabId: TabId) => {
-        navigate(`${location.pathname}#${tabId}`, { replace: true, scroll: false });
+        navigate(`${location.pathname}#${tabId}`, {
+            replace: true,
+            scroll: false,
+        });
         setMobileMenuOpen(false);
     };
 
     // Show/hide .tab-content elements (including #architecture-tab outside SolidJS tree)
     createEffect(() => {
         const tab = activeTab();
-        document.querySelectorAll<HTMLElement>('.tab-content').forEach(el => {
+        document.querySelectorAll<HTMLElement>('.tab-content').forEach((el) => {
             const isActive = el.id === `${tab}-tab`;
             el.classList.toggle('active', isActive);
             el.setAttribute('aria-hidden', String(!isActive));
         });
-        document.querySelectorAll<HTMLElement>('.tab').forEach(btn => {
+        document.querySelectorAll<HTMLElement>('.tab').forEach((btn) => {
             const tabId = btn.dataset['tabContent'] as TabId | undefined;
             const isActive = tabId === tab;
             btn.classList.toggle('active', isActive);
@@ -139,7 +153,8 @@ export const Header = (() => {
                             data-subpath={demoSubpath}
                             class="w-full bg-[#fff8e1] dark:bg-[rgba(204,167,0,0.15)] text-[#bf8803] dark:text-[#cca700] border border-[#ffd54f] dark:border-[#8a7300] px-4 py-2 text-center font-semibold"
                         >
-                            Demo Mode: Static UI with simulated interactions only
+                            Demo Mode: Static UI with simulated interactions
+                            only
                         </div>
                     </Show>
                 }
@@ -150,7 +165,7 @@ export const Header = (() => {
                         classList={{ open: mobileMenuOpen() }}
                         aria-label="Toggle menu"
                         aria-expanded={mobileMenuOpen()}
-                        onClick={() => setMobileMenuOpen(o => !o)}
+                        onClick={() => setMobileMenuOpen((o) => !o)}
                     >
                         <span class="hamburger-line" />
                         <span class="hamburger-line" />
@@ -159,8 +174,14 @@ export const Header = (() => {
                 }
             >
                 <div class="flex items-center gap-2">
-                    <nav class="nav-tabs" classList={{ open: mobileMenuOpen() }} role="tablist" aria-label="Main tabs">
-                        {VALID_TABS.map(tabId => <TabButton tabId={tabId} />)}
+                    <nav
+                        class="nav-tabs"
+                        classList={{ open: mobileMenuOpen() }}
+                        aria-label="Main tabs"
+                    >
+                        {VALID_TABS.map((tabId) => (
+                            <TabButton tabId={tabId} />
+                        ))}
                     </nav>
                     <Show when={SHOW_LOGOUT_FOR[serverData.authMode]}>
                         <form method="post" action="/logout">

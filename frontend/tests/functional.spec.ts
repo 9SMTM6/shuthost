@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { test, expect } from '@playwright/test';
-import { getBaseUrl } from './test-utils';
+import { expect, test } from '@playwright/test';
 import { CONFIG_KEYS, configPathForKey } from './backend-utils';
+import { getBaseUrl } from './test-utils';
 
 test.describe('token login', () => {
     const base = getBaseUrl('auth-token', true);
@@ -32,10 +32,12 @@ test.describe('token login', () => {
     // reflected in the copy/paste install command
     test('host install command includes broadcast port', async ({ page }) => {
         const cfgBase = getBaseUrl('nada');
-        await page.goto(cfgBase + '#hosts');
+        await page.goto(`${cfgBase}#hosts`);
         await page.waitForSelector('#host-install-header');
         await page.click('#host-install-header');
-        await page.waitForSelector('#host-install-content', { state: 'visible' });
+        await page.waitForSelector('#host-install-content', {
+            state: 'visible',
+        });
         const cmd = await page.textContent('#host-install-command-sh');
         expect(cmd).toBeTruthy();
         expect(cmd).toContain('--broadcast-port');
@@ -45,7 +47,7 @@ test.describe('token login', () => {
 });
 
 test.describe('OIDC login', () => {
-    const base = getBaseUrl("auth-oidc", true);
+    const base = getBaseUrl('auth-oidc', true);
 
     test('redirects unauthorized access to login', async ({ page }) => {
         // Try to access the main page without authentication
@@ -59,7 +61,7 @@ test.describe('OIDC login', () => {
 
 // The repository keeps a directory of configuration files that are used to
 // start various coordinator backends during tests.  A mismatch between
-// `CONFIG_KEYS` (which is statically  provided for improved TS inference) 
+// `CONFIG_KEYS` (which is statically  provided for improved TS inference)
 // and the actual files can easily creep in when new features
 // are added or old ones removed.
 //

@@ -1,14 +1,14 @@
-import { execSync, spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import { execSync, spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
     ALL_CONFIG_KEYS,
-    ConfigKey,
-    configPathForKey,
-    killTestBackendProcess,
     assignedPortForConfig,
-    getPidsListeningOnPort,
     BACKEND_PATH,
+    type ConfigKey,
+    configPathForKey,
+    getPidsListeningOnPort,
+    killTestBackendProcess,
     startOidcMockServer,
 } from './backend-utils';
 
@@ -18,12 +18,12 @@ const buildCoordinator = () => {
         return;
     }
 
-    const flags = process.env['COVERAGE'] ? "" : "--release"
+    const flags = process.env['COVERAGE'] ? '' : '--release';
 
     console.log(`Global setup: building coordinator (${flags})`);
     const env = { ...process.env, OIDC_DANGER_ACCEPT_INVALID_CERTS: '1' };
     execSync(`cargo build ${flags}`, { cwd: '..', stdio: 'inherit', env });
-}
+};
 
 const globalSetup = async () => {
     console.log('Playwright global setup');
@@ -34,17 +34,31 @@ const globalSetup = async () => {
         const port = assignedPortForConfig(key);
         await killTestBackendProcess(key);
 
-        const args = key === 'demo'
-            ? ['demo-service', '--port', String(port)]
-            : ['control-service', '--port', String(port), '--broadcast-port', String(port), `--config=${configPathForKey(key)}`];
+        const args =
+            key === 'demo'
+                ? ['demo-service', '--port', String(port)]
+                : [
+                      'control-service',
+                      '--port',
+                      String(port),
+                      '--broadcast-port',
+                      String(port),
+                      `--config=${configPathForKey(key)}`,
+                  ];
         console.log(`spawning ${key} coordinator on port ${port}`);
-        spawn(BACKEND_PATH, args, { stdio: 'inherit', env: { RUST_LOG: 'error', ...process.env } });
+        spawn(BACKEND_PATH, args, {
+            stdio: 'inherit',
+            env: { RUST_LOG: 'error', ...process.env },
+        });
 
         await new Promise<void>((resolve, reject) => {
             const deadline = Date.now() + 10000;
             const check = () => {
                 if (getPidsListeningOnPort(port).length > 0) return resolve();
-                if (Date.now() > deadline) return reject(new Error(`backend failed to bind port ${port}`));
+                if (Date.now() > deadline)
+                    return reject(
+                        new Error(`backend failed to bind port ${port}`),
+                    );
                 setTimeout(check, 100);
             };
             check();
@@ -58,7 +72,9 @@ const globalSetup = async () => {
     const keyPath = path.resolve(thisDir, 'configs', 'tls_key.pem');
 
     if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
-        console.log('cert files missing; bootstrapping by launching auth-token backend');
+        console.log(
+            'cert files missing; bootstrapping by launching auth-token backend',
+        );
         await startOne('auth-token');
         await killTestBackendProcess('auth-token');
     }

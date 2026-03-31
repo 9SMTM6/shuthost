@@ -18,12 +18,13 @@ export default defineConfig({
             scale: 'device',
             // Strip the platform from the file name,
             // so that we don't need to execute on every platform after changes.
-            // 
+            //
             // This might cause issues, if so we'll have to revert.
-            pathTemplate: "{snapshotDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}",
-            // Default: 
+            pathTemplate:
+                '{snapshotDir}/{testFileName}-snapshots/{arg}-{projectName}{ext}',
+            // Default:
             // pathTemplate: "{snapshotDir}/{testFileName}-snapshots/{arg}-{projectName}-{platform}{ext}",
-        }
+        },
     },
     fullyParallel: true,
     // 'github' for GitHub Actions CI to generate annotations
@@ -44,27 +45,47 @@ export default defineConfig({
     projects: [
         {
             name: 'Desktop Dark',
-            testMatch: ["accessibility-scan.spec.ts", "functional.spec.ts", "pwa-installability.spec.ts", "aria-snapshots.spec.ts", "visual-regression.spec.ts"],
+            testMatch: [
+                'accessibility-scan.spec.ts',
+                'functional.spec.ts',
+                'pwa-installability.spec.ts',
+                'aria-snapshots.spec.ts',
+                'visual-regression.spec.ts',
+            ],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'dark' },
         },
         {
             name: 'Desktop Light',
-            testMatch: ["accessibility-scan.spec.ts", "visual-regression.spec.ts"],
+            testMatch: [
+                'accessibility-scan.spec.ts',
+                'visual-regression.spec.ts',
+            ],
             use: { ...devices['Desktop Chrome HiDPI'], colorScheme: 'light' },
         },
         {
             name: 'Mobile Dark',
-            testMatch: ["accessibility-scan.spec.ts", "mobile-navigation.spec.ts", "visual-regression.spec.ts"],
+            testMatch: [
+                'accessibility-scan.spec.ts',
+                'mobile-navigation.spec.ts',
+                'visual-regression.spec.ts',
+            ],
             use: { ...devices['Pixel 7'], colorScheme: 'dark' },
         },
         {
             name: 'Mobile Light',
-            testMatch: ["accessibility-scan.spec.ts", "mobile-navigation.spec.ts", "visual-regression.spec.ts"],
+            testMatch: [
+                'accessibility-scan.spec.ts',
+                'mobile-navigation.spec.ts',
+                'visual-regression.spec.ts',
+            ],
             use: { ...devices['Pixel 7'], colorScheme: 'light' },
         },
         {
             name: 'Mobile Landscape',
-            testMatch: ["accessibility-scan.spec.ts", "visual-regression.spec.ts"],
+            testMatch: [
+                'accessibility-scan.spec.ts',
+                'visual-regression.spec.ts',
+            ],
             use: { ...devices['Pixel 7 landscape'], colorScheme: 'dark' },
         },
     ],

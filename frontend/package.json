@@ -10,7 +10,10 @@
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
         "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
-        "prerender": "vite-node --config vite.config.ssr.ts assets/prerender.tsx"
+        "prerender": "vite-node --config vite.config.ssr.ts assets/prerender.tsx",
+        "lint": "biome check .",
+        "lint:fix": "biome check --write .",
+        "fmt": "biome format --write ."
     },
     "dependencies": {
         "@solidjs/meta": "^0.29.4",
@@ -21,6 +24,7 @@
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.10.2",
+        "@biomejs/biome": "^2.4.10",
         "@mermaid-js/mermaid-cli": "^11.12.0",
         "@playwright/test": "^1.43.0",
         "@tailwindcss/vite": "^4.1.8",

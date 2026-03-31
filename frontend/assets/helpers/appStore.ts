@@ -17,7 +17,16 @@ export type ClientStats = {
 export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
     | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
-    | { type: 'Initial'; payload: { hosts: string[]; clients: string[]; status: StatusMap; leases: Record<string, LeaseSource[]>; client_stats: Record<string, ClientStats> | null } }
+    | {
+          type: 'Initial';
+          payload: {
+              hosts: string[];
+              clients: string[];
+              status: StatusMap;
+              leases: Record<string, LeaseSource[]>;
+              client_stats: Record<string, ClientStats> | null;
+          };
+      }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 export type AppState = {
@@ -61,9 +70,11 @@ export const applyMessage = (message: WsMessage) => {
             setState('clients', message.payload.clients);
             break;
         case 'LeaseUpdate':
-            setState(produce((s) => {
-                s.leaseMap[message.payload.host] = message.payload.leases;
-            }));
+            setState(
+                produce((s) => {
+                    s.leaseMap[message.payload.host] = message.payload.leases;
+                }),
+            );
             break;
     }
 };

@@ -7,7 +7,7 @@ export const isDemoMode = !!serverData.demoSubpath;
 export const demoSubpath = (() => {
     const raw = serverData.demoSubpath ?? '';
     if (!raw || raw === '/') return '';
-    return (raw.startsWith('/') ? raw : '/' + raw).replace(/\/$/, '');
+    return (raw.startsWith('/') ? raw : `/${raw}`).replace(/\/$/, '');
 })();
 
 const subpath = demoSubpath;
@@ -17,11 +17,13 @@ let statusTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const initDemoMode = () => {
     // Adjust root-relative links for the GitHub Pages subpath
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/"]').forEach(a => {
-        const href = a.getAttribute('href');
-        if (!href || href.startsWith('//')) return;
-        a.setAttribute('href', subpath + href);
-    });
+    document
+        .querySelectorAll<HTMLAnchorElement>('a[href^="/"]')
+        .forEach((a) => {
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('//')) return;
+            a.setAttribute('href', subpath + href);
+        });
 
     console.info('Demo mode enabled: UI is using simulated data.');
 
@@ -40,24 +42,39 @@ export const initDemoMode = () => {
     }, 500);
 };
 
-export const demoUpdateLease = async (host: string, action: 'take' | 'release') => {
+export const demoUpdateLease = async (
+    host: string,
+    action: 'take' | 'release',
+) => {
     if (action === 'take') {
         if (leaseTimeout) clearTimeout(leaseTimeout);
         leaseTimeout = setTimeout(() => {
-            applyMessage({ type: 'LeaseUpdate', payload: { host, leases: [{ type: 'WebInterface' }] } });
+            applyMessage({
+                type: 'LeaseUpdate',
+                payload: { host, leases: [{ type: 'WebInterface' }] },
+            });
         }, 500);
         if (statusTimeout) clearTimeout(statusTimeout);
         statusTimeout = setTimeout(() => {
-            applyMessage({ type: 'HostStatus', payload: { tarbean: 'offline', archive: 'online' } });
+            applyMessage({
+                type: 'HostStatus',
+                payload: { tarbean: 'offline', archive: 'online' },
+            });
         }, 1200);
     } else {
         if (leaseTimeout) clearTimeout(leaseTimeout);
         leaseTimeout = setTimeout(() => {
-            applyMessage({ type: 'LeaseUpdate', payload: { host, leases: [] } });
+            applyMessage({
+                type: 'LeaseUpdate',
+                payload: { host, leases: [] },
+            });
         }, 500);
         if (statusTimeout) clearTimeout(statusTimeout);
         statusTimeout = setTimeout(() => {
-            applyMessage({ type: 'HostStatus', payload: { tarbean: 'offline', archive: 'offline' } });
+            applyMessage({
+                type: 'HostStatus',
+                payload: { tarbean: 'offline', archive: 'offline' },
+            });
         }, 1200);
     }
 };

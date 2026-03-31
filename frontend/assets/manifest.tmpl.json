@@ -1,29 +1,29 @@
 {
-  "name": "Shuthost Coordinator",
-  "short_name": "shuthost",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#0f1720",
-  "theme_color": "#0b6b3a",
-  "description": "{ description }",
-  "icons": [
-    {
-      "src": "{ favicon }",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "{ icon_192 }",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "{ icon_512 }",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ]
+    "name": "Shuthost Coordinator",
+    "short_name": "shuthost",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#0f1720",
+    "theme_color": "#0b6b3a",
+    "description": "{ description }",
+    "icons": [
+        {
+            "src": "{ favicon }",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "{ icon_192 }",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "{ icon_512 }",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
 }

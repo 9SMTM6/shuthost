@@ -1,15 +1,19 @@
 // filepath: frontend/tests/pwa-installability.spec.ts
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { getBaseUrl } from './test-utils';
 
 const base = getBaseUrl('hosts-and-clients');
 
- test('PWA install prompt is available', async ({ page }) => {
-    test.skip(true, "TODO, this doesnt seem to work correctly.");
-    await page.goto(base + '/');
+test('PWA install prompt is available', async ({ page }) => {
+    test.skip(true, 'TODO, this doesnt seem to work correctly.');
+    await page.goto(`${base}/`);
     const installPromptFired = page.evaluate(() => {
         return new Promise<boolean>((resolve) => {
-            window.addEventListener('beforeinstallprompt', () => resolve(true), { once: true });
+            window.addEventListener(
+                'beforeinstallprompt',
+                () => resolve(true),
+                { once: true },
+            );
             // Timeout after 5 seconds if not fired
             setTimeout(() => resolve(false), 5000);
         });
@@ -19,15 +23,17 @@ const base = getBaseUrl('hosts-and-clients');
     expect(isInstallable).toBe(true);
 });
 
- test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
-    // Heuristics taken from https://web.dev/articles/install-criteria, 
+test('PWA manifest and icons meet heuristics', async ({ page, request }) => {
+    // Heuristics taken from https://web.dev/articles/install-criteria,
     // and from my experience (regarding image purpose)
 
     // Navigate to the app root so relative URLs resolve correctly
-    await page.goto(base + '/');
+    await page.goto(`${base}/`);
 
     // Find manifest link
-    const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
+    const manifestHref = await page
+        .locator('link[rel="manifest"]')
+        .getAttribute('href');
     expect(manifestHref).toBeTruthy();
 
     const manifestUrl = new URL(manifestHref!, page.url()).toString();
@@ -41,11 +47,19 @@ const base = getBaseUrl('hosts-and-clients');
     expect(manifest.start_url).toBeTruthy();
 
     // display must be one of the allowed values
-    const allowedDisplays = ['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay'];
+    const allowedDisplays = [
+        'fullscreen',
+        'standalone',
+        'minimal-ui',
+        'window-controls-overlay',
+    ];
     expect(allowedDisplays.includes(manifest.display)).toBe(true);
 
     // prefer_related_applications must not be present or must be false
-    expect(manifest.prefer_related_applications === undefined || manifest.prefer_related_applications === false).toBe(true);
+    expect(
+        manifest.prefer_related_applications === undefined ||
+            manifest.prefer_related_applications === false,
+    ).toBe(true);
 
     // Icons: must include a 192px and a 512px icon
     expect(Array.isArray(manifest.icons)).toBe(true);
@@ -64,7 +78,10 @@ const base = getBaseUrl('hosts-and-clients');
         }
 
         // Check sizes attribute for 192x192 and 512x512
-        const sizes = (icon.sizes || '').toString().split(/\s+/).filter(Boolean);
+        const sizes = (icon.sizes || '')
+            .toString()
+            .split(/\s+/)
+            .filter(Boolean);
         for (const s of sizes) {
             const m = s.match(/^(\d+)x(\d+)$/);
             if (m) {
@@ -82,14 +99,23 @@ const base = getBaseUrl('hosts-and-clients');
 
         // If sizes didn't explicitly include the required sizes, probe the image in the browser to get natural dimensions
         if (!has192 || !has512) {
-            const dims = await page.evaluate(async (src) => {
-                return new Promise<{w:number,h:number}>((resolve, reject) => {
-                    const img = new Image();
-                    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-                    img.onerror = () => reject(new Error('failed to load image'));
-                    img.src = src;
-                });
-            }, iconUrl).catch(() => ({ w: 0, h: 0 }));
+            const dims = await page
+                .evaluate(async (src) => {
+                    return new Promise<{ w: number; h: number }>(
+                        (resolve, reject) => {
+                            const img = new Image();
+                            img.onload = () =>
+                                resolve({
+                                    w: img.naturalWidth,
+                                    h: img.naturalHeight,
+                                });
+                            img.onerror = () =>
+                                reject(new Error('failed to load image'));
+                            img.src = src;
+                        },
+                    );
+                }, iconUrl)
+                .catch(() => ({ w: 0, h: 0 }));
 
             if (dims.w === 192 || dims.h === 192) has192 = true;
             if (dims.w === 512 || dims.h === 512) has512 = true;
@@ -99,4 +125,3 @@ const base = getBaseUrl('hosts-and-clients');
     expect(has192).toBe(true);
     expect(has512).toBe(true);
 });
-

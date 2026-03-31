@@ -192,11 +192,49 @@ cargo_clippy +flags="":
 alias clippy := cargo_clippy
 
 [group('projectmanagement')]
-rustfix_yolo:
-    __CARGO_FIX_YOLO=1 cargo clippy --fix --workspace --all-targets --allow-dirty
-    cargo fmt
+rust_fmt:
+    cargo fmt --all
 
-alias yolo := rustfix_yolo
+[group('projectmanagement')]
+rust_clippy_fix +flags="":
+    __CARGO_FIX_YOLO=1 cargo clippy --fix --workspace --all-targets --allow-dirty {{flags}}
+
+[group('projectmanagement')]
+rustfix_yolo:
+    just rust_clippy_fix
+    just fmt
+
+[group('projectmanagement')]
+yolo:
+    just rustfix_yolo
+    just frontend_lint_fix
+
+[group('projectmanagement')]
+fmt:
+    just rust_fmt
+    just frontend_fmt
+
+[group('tests')]
+[working-directory("frontend")]
+frontend_typecheck:
+    npm run typecheck
+
+alias tsc := frontend_typecheck
+
+[group('tests')]
+[working-directory("frontend")]
+frontend_lint:
+    npm run lint
+
+[group('projectmanagement')]
+[working-directory("frontend")]
+frontend_lint_fix:
+    npm run lint:fix
+
+[group('projectmanagement')]
+[working-directory("frontend")]
+frontend_fmt:
+    npm run fmt
 
 [group('tests')]
 playwright +flags="":
@@ -239,7 +277,7 @@ release TYPE skip_coverage_and_file_snapshots="false":
     fi
     echo "Starting {{TYPE}} release process with skip_coverage_and_file_snapshots={{skip_coverage_and_file_snapshots}}..."
     just update_dependencies
-    cargo fmt
+    just rust_fmt
     just update_test_config_diffs
     just patch_test_configs
     just cargo_deny

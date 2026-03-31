@@ -2,8 +2,12 @@ import type { Component } from 'solid-js';
 import { buildData } from '../helpers/buildData';
 
 export const showJSError = (message: string) => {
-    const errorDiv = document.getElementById('js-error') as HTMLDivElement | null;
-    const messageEl = document.getElementById('js-error-message') as HTMLParagraphElement | null;
+    const errorDiv = document.getElementById(
+        'js-error',
+    ) as HTMLDivElement | null;
+    const messageEl = document.getElementById(
+        'js-error-message',
+    ) as HTMLParagraphElement | null;
     if (errorDiv && messageEl) {
         messageEl.textContent = message;
         errorDiv.hidden = false;

@@ -1,11 +1,11 @@
-import type { Component } from 'solid-js';
-import { Show, createSignal } from 'solid-js';
 import { Title } from '@solidjs/meta';
 import { useSearchParams } from '@solidjs/router';
-import { SimpleHeader } from '../components/Header';
+import type { Component } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { Footer } from '../components/Footer';
-import { serverData } from '../helpers/serverData';
+import { SimpleHeader } from '../components/Header';
 import { JsErrorBox } from '../components/JsErrorBox';
+import { serverData } from '../helpers/serverData';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.
 const ERROR_MESSAGES: Record<string, { title: string; body: string }> = {
@@ -35,14 +35,28 @@ const TokenLoginForm = (() => {
     const [showToken, setShowToken] = createSignal(false);
 
     const eyeIcon = (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="18"
+            height="18"
+            aria-hidden="true"
+        >
             <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
             <circle cx="12" cy="12" r="3" />
         </svg>
     );
 
     const eyeOffIcon = (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            width="18"
+            height="18"
+            aria-hidden="true"
+        >
             <path d="M2 4l2-2 18 18-2 2-3.4-3.4C14.7 19.5 13.4 20 12 20 5 20 2 13 2 13s1.1-2.4 3.2-4.7L2 4zm6.2 6.2L9.7 11.7A3 3 0 0 0 12 15a3 3 0 0 0 2.8-4l1.5 1.5A5 5 0 0 1 12 17a5 5 0 0 1-3.8-6.8zM12 5c2 0 3.7.6 5 .1l2.1 2.1C20.3 8.4 22 11 22 11s-3 7-10 7c-1.4 0-2.7-.5-3.8-1.2l1.5-1.5c.7.4 1.5.7 2.3.7a5 5 0 0 0 5-5c0-.8-.3-1.6-.7-2.3l1.5-1.5C18.5 6.7 15.6 5 12 5z" />
         </svg>
     );
@@ -50,7 +64,9 @@ const TokenLoginForm = (() => {
     return (
         <form method="post" action="/login" class="space-y-4">
             <div>
-                <label class="block text-sm mb-1" for="token">Access Token</label>
+                <label class="block text-sm mb-1" for="token">
+                    Access Token
+                </label>
                 <div class="flex items-stretch gap-2 max-w-sm mx-auto">
                     <input
                         id="token"
@@ -68,7 +84,7 @@ const TokenLoginForm = (() => {
                         aria-label={showToken() ? 'Hide token' : 'Show token'}
                         aria-pressed={showToken()}
                         title={showToken() ? 'Hide token' : 'Show token'}
-                        onClick={() => setShowToken(v => !v)}
+                        onClick={() => setShowToken((v) => !v)}
                     >
                         {showToken() ? eyeOffIcon : eyeIcon}
                     </button>
@@ -110,36 +126,44 @@ export const LoginPage = (() => {
 
     return (
         <>
-        <Title>Login - ShutHost Coordinator</Title>
-        <SimpleHeader />
-        <main id="main-content" class="main flex flex-col" tabindex="-1">
-        <JsErrorBox />
-        <div class="flex flex-col items-center justify-center flex-1 p-4 gap-4 w-full">
-            <Show when={errorInfo()}>
-                {info => (
-                    <div class="max-w-md w-full alert alert-warning" role="alert">
-                        <div class="alert-title">{info().title}</div>
-                        <p>{info().body}</p>
-                    </div>
-                )}
-            </Show>
+            <Title>Login - ShutHost Coordinator</Title>
+            <SimpleHeader />
+            <main id="main-content" class="main flex flex-col" tabindex="-1">
+                <JsErrorBox />
+                <div class="flex flex-col items-center justify-center flex-1 p-4 gap-4 w-full">
+                    <Show when={errorInfo()}>
+                        {(info) => (
+                            <div
+                                class="max-w-md w-full alert alert-warning"
+                                role="alert"
+                            >
+                                <div class="alert-title">{info().title}</div>
+                                <p>{info().body}</p>
+                            </div>
+                        )}
+                    </Show>
 
-            <section class="section-container max-w-md w-full" aria-labelledby="login-title">
-                <header class="py-3 text-center">
-                    <h1 id="login-title" class="text-lg font-semibold">Sign in</h1>
-                </header>
-                <div class="p-4">
-                    <Show when={serverData.authMode === 'token'}>
-                        <TokenLoginForm />
-                    </Show>
-                    <Show when={serverData.authMode === 'oidc'}>
-                        <OidcLoginForm />
-                    </Show>
+                    <section
+                        class="section-container max-w-md w-full"
+                        aria-labelledby="login-title"
+                    >
+                        <header class="py-3 text-center">
+                            <h1 id="login-title" class="text-lg font-semibold">
+                                Sign in
+                            </h1>
+                        </header>
+                        <div class="p-4">
+                            <Show when={serverData.authMode === 'token'}>
+                                <TokenLoginForm />
+                            </Show>
+                            <Show when={serverData.authMode === 'oidc'}>
+                                <OidcLoginForm />
+                            </Show>
+                        </div>
+                    </section>
                 </div>
-            </section>
-        </div>
-        </main>
-        <Footer />
+            </main>
+            <Footer />
         </>
     );
 }) satisfies Component<any>;

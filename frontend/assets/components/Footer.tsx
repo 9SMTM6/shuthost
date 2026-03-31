@@ -13,6 +13,8 @@ export const Footer = (() => (
         </a>
         <span aria-hidden="true"> | </span>
         <wbr />
-        <a href="/about" class="link font-medium whitespace-nowrap">About &amp; Licenses</a>
+        <a href="/about" class="link font-medium whitespace-nowrap">
+            About &amp; Licenses
+        </a>
     </footer>
 )) satisfies Component<any>;

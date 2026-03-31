@@ -9,9 +9,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderToString } from 'solid-js/web';
 import { MetaProvider } from '@solidjs/meta';
-import { Router, Route } from '@solidjs/router';
+import { Route, Router } from '@solidjs/router';
+import { renderToString } from 'solid-js/web';
 import { PrerenderedShell } from './pages/PrerenderedShell';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
