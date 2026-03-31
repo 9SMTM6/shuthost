@@ -1,5 +1,5 @@
-import { D2 } from '@terrastruct/d2';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { D2 } from '@terrastruct/d2';
 
 // Theme colors derived from the frontend's VS Code-like light/dark palette.
 // Prepended to every diagram source so the theme is defined once here.
@@ -76,7 +76,7 @@ for (const f of files) {
     });
 
     writeFileSync(`assets/generated/${name}.svg`, svg);
-    console.log(`Generated assets/generated/${name}.svg`);
+    console.info(`Generated assets/generated/${name}.svg`);
 }
 
 // The D2 WASM runtime keeps a WebWorker alive after use; explicitly exit so
