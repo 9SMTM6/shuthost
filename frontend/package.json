@@ -5,8 +5,8 @@
     "scripts": {
         "build": "vite build",
         "typecheck": "tsc --noEmit",
-        "build:diagrams": "tsc --noEmit && node build-diagrams.ts",
-        "test": "tsc --noEmit && playwright test",
+        "build:diagrams": "node build-diagrams.ts",
+        "test": "playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
         "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
