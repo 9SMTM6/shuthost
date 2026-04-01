@@ -54,7 +54,7 @@ deploy_branch_on_metal:
 
 [group('projectmanagement')]
 [working-directory("frontend")]
-build_graphs:
+build_graphs: frontend_typecheck
     npm run build:diagrams
 
 [group('devops')]
@@ -223,17 +223,17 @@ alias tsc := frontend_typecheck
 
 [group('tests')]
 [working-directory("frontend")]
-frontend_lint:
+frontend_lint: frontend_typecheck
     npm run lint
 
 [group('projectmanagement')]
 [working-directory("frontend")]
-frontend_lint_fix:
+frontend_lint_fix: frontend_typecheck
     npm run lint:fix
 
 [group('projectmanagement')]
 [working-directory("frontend")]
-frontend_fmt:
+frontend_fmt: frontend_typecheck
     npm run fmt
 
 [group('tests')]
@@ -281,6 +281,7 @@ release TYPE skip_coverage_and_file_snapshots="false":
     just update_test_config_diffs
     just patch_test_configs
     just cargo_deny
+    just frontend_typecheck
     just db_update_sqlx_cache
     if [[ "{{skip_coverage_and_file_snapshots}}" != "true" ]]; then
         just update_file_snapshots
