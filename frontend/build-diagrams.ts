@@ -60,23 +60,28 @@ vars: {
 
 const d2 = new D2();
 
-const files = readdirSync('assets').filter((f) => f.endsWith('.d2'));
-for (const f of files) {
-    const name = f.replace(/\.d2$/, '');
-    const source = readFileSync(`assets/${f}`, 'utf8');
+try {
+    const files = readdirSync('assets').filter((f) => f.endsWith('.d2'));
+    for (const f of files) {
+        const name = f.replace(/\.d2$/, '');
+        const source = readFileSync(`assets/${f}`, 'utf8');
 
-    const result = await d2.compile(`${D2_THEME_HEADER}\n${source}`);
-    const svg = await d2.render(result.diagram, {
-        ...result.renderOptions,
-        // Theme 0 = Default (light), Theme 200 = Dark Mauve as base for dark mode.
-        // Colors are fully overridden by dark-theme-overrides above.
-        darkThemeID: 200,
-        // Omit XML declaration so SVGs can be embedded directly via innerHTML
-        noXMLTag: true,
-    });
+        const result = await d2.compile(`${D2_THEME_HEADER}\n${source}`);
+        const svg = await d2.render(result.diagram, {
+            ...result.renderOptions,
+            // Theme 0 = Default (light), Theme 200 = Dark Mauve as base for dark mode.
+            // Colors are fully overridden by dark-theme-overrides above.
+            darkThemeID: 200,
+            // Omit XML declaration so SVGs can be embedded directly via innerHTML
+            noXMLTag: true,
+        });
 
-    writeFileSync(`assets/generated/${name}.svg`, svg);
-    console.info(`Generated assets/generated/${name}.svg`);
+        writeFileSync(`assets/generated/${name}.svg`, svg);
+        console.info(`Generated assets/generated/${name}.svg`);
+    }
+} catch (error) {
+    console.error('Error building diagrams:', error);
+    process.exit(1);
 }
 
 // The D2 WASM runtime keeps a WebWorker alive after use; explicitly exit so
