@@ -234,4 +234,6 @@ These are generated or validated automatically as part of the test suite, and th
   * another alternative is moving away from mermaid and to terrastruct/d2, which is likely faster, might provide stable output (allowing removal of the artifacts from the repo if we can get d2 in some portable way) and importantly for this issue, has a native dark and light theme.
 * test github pages page once its on main, especially the about page
 * test whether the external script csp hash causes issues on modern Safari, in that case go down to script-src self 
+* D2’s SVG output currently embeds large base64-encoded font data (@font-face src: url(data:...)), which can significantly bloat assets/generated/*.svg and impact page load time and bundle size. If possible, configure rendering to avoid embedding fonts (or post-process to strip the embedded fonts and rely on a standard font stack) so the generated assets stay small.
+  * we can only remove them by post-processing. And that seems to be a bit of a project, and easy to do things the wrong way. The wins are also not extremely huge, I removed the embedded fonts on one of the SVGs manually, and it went down from 32kb to 17kb. We'd probably better approach the issue from another direction, e.g. load SVGs lazy after all, or load the architecture page in its entirety lazily.
 -->
