@@ -230,8 +230,6 @@ These are generated or validated automatically as part of the test suite, and th
   * we might want to emit multiple WOL calls during the waiting period instead (they are UDP after all)
   * we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
 * create tooling to allow running the frontend independently of rust, showing e.g. the demo frontend.
-* consider creating some global style to modify architecture diagrams instead of allowing inline style globally via CSP. There is the remaining issue that this will likely still trigger a CSP warning if we dont make 2 diagram variants for embedding (without inlined style) and not, leading to warnings clutter.
-  * another alternative is moving away from mermaid and to terrastruct/d2, which is likely faster, might provide stable output (allowing removal of the artifacts from the repo if we can get d2 in some portable way) and importantly for this issue, has a native dark and light theme.
 * test github pages page once its on main, especially the about page
 * test whether the external script csp hash causes issues on modern Safari, in that case go down to script-src self 
 * D2’s SVG output currently embeds large base64-encoded font data (@font-face src: url(data:...)), which can significantly bloat assets/generated/*.svg and impact page load time and bundle size. If possible, configure rendering to avoid embedding fonts (or post-process to strip the embedded fonts and rely on a standard font stack) so the generated assets stay small.
