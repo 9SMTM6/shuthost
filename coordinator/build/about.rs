@@ -163,7 +163,7 @@ pub fn build_json() -> eyre::Result<()> {
     let mut licenses_set = BTreeSet::<LicenseItem>::new();
 
     process_rust_crates(&mut combined, &mut licenses_set)?;
-    process_pnpm_packages(&mut combined, &mut licenses_set)?;;
+    process_pnpm_packages(&mut combined, &mut licenses_set)?;
 
     generate_about_json(&combined, &licenses_set)
 }

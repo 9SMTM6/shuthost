@@ -42,7 +42,7 @@ use eyre::Ok;
 fn main() -> eyre::Result<()> {
     workspace::set_root()?;
 
-    pnpm::setup()?;;
+    pnpm::setup()?;
 
     const ON_CHANGE: &str = "cargo::rerun-if-changed=frontend";
 
@@ -85,7 +85,7 @@ fn main() -> eyre::Result<()> {
     println!("{ON_CHANGE}/assets/partials/agent_install_requirements_gotchas.md");
     let main_frontend_assets = tasks::spawn("build-frontend", move || {
         tasks::join(build_diagrams)?;
-        pnpm::run("build")?;;
+        pnpm::run("build")?;
         tasks::join(prerender)?;
         tasks::join(pngs)?;
         assets::generate_frontend_assets()
