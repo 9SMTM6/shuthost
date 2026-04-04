@@ -83,7 +83,7 @@ cat "/tmp/$CLIENT_SCRIPT_NAME.tmpl" | \
   '{gsub("{client_id}", client_id); gsub("{shared_secret}", shared_secret); gsub("{embedded_remote_url}", remote_url); print}' > "/tmp/$CLIENT_SCRIPT_NAME"
 
 mv "/tmp/$CLIENT_SCRIPT_NAME" "$INSTALL_DIR/$CLIENT_SCRIPT_NAME"
-# Make script executable, readable and writeable for you, but noone else 
+# Make script executable, readable and writable for you, but noone else 
 chmod 700 "$INSTALL_DIR/$CLIENT_SCRIPT_NAME"
 
 set +v

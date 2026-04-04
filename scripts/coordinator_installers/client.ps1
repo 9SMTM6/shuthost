@@ -108,7 +108,7 @@ $customizedContent = $templateContent -replace '\{client_id\}', $ClientId `
 $finalPath = Join-Path $installDir $clientScriptName
 $customizedContent | Out-File -FilePath $finalPath -Encoding UTF8
 if ($isUnix) {
-    # Make script executable, readable and writeable for you, but noone else 
+    # Make script executable, readable and writable for you, but noone else 
     & chmod 700 $finalPath
 }
 
