@@ -67,6 +67,7 @@ clean:
 update_dependencies:
     cargo update --verbose
     cd frontend && pnpm update
+    cd frontend && pnpm outdated || true
 
 alias deps := update_dependencies
 

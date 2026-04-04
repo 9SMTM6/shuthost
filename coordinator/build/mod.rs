@@ -48,7 +48,7 @@ fn main() -> eyre::Result<()> {
 
     // Spawn typecheck in parallel — it produces no output files so it is
     // independent of the other build steps.
-    println!("{ON_CHANGE}/package.json");
+    println!("{ON_CHANGE}/package.yaml");
     println!("{ON_CHANGE}/assets/index.tsx");
     println!("{ON_CHANGE}/assets/components");
     println!("{ON_CHANGE}/assets/pages");

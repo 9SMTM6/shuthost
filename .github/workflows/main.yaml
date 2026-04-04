@@ -74,10 +74,10 @@ jobs:
       - uses: *checkout
       - &setup-pnpm
         name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: latest
-          package_json_file: frontend/package.json
+          package_json_file: frontend/package.yaml
       - &latest-node-lts
         uses: actions/setup-node@v6
         with:

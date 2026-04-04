@@ -6,7 +6,7 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The MSRV is generally set to the latest stable `rustc` as of the most recent commit.
 
 ## Frontend Dependencies
-- The project depends on **Node.js (latest LTS)** and **pnpm** to build frontend assets ([SolidJS, TailwindCSS and TypeScript](../frontend/package.json)).
+- The project depends on **Node.js (latest LTS)** and **pnpm** to build frontend assets ([SolidJS, TailwindCSS and TypeScript](../frontend/package.yaml)).
 - Node.js **v22.18.0 or newer** (available in the latest LTS release) is required because the build tooling runs TypeScript files directly (without a prior compilation step). You can install it from https://nodejs.org/en/download or via a version manager such as `nvm`.
 - `pnpm` is invoked from the workspace build script (or from `frontend`) to avoid missing errors from missed manual updates. This means `pnpm` is a hard dependency for building the project. You can install it from https://pnpm.io/installation or via npm with `npm install -g pnpm`.
 
