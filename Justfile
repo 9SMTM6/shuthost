@@ -61,7 +61,7 @@ build_graphs: frontend_typecheck
 [confirm]
 clean:
     cargo clean && cargo fetch
-    cd frontend && rm -rf node_modules && npm ci
+    cd frontend && rm -rf node_modules && rm -r assets/generated && npm ci && just build_graphs
 
 [group('projectmanagement')]
 update_dependencies:
