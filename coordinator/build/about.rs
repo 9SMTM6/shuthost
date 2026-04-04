@@ -5,8 +5,9 @@ use cargo_about::licenses::config;
 use eyre::Context as _;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
-use shuthost_common::VERSION;
 use spdx::text as spdx_text;
+
+const VERSION: &str = shuthost_common::version_string!();
 use spdx::{LicenseItem, Licensee, expression::Expression};
 use toml::from_str as toml_from_str;
 use url::Url;

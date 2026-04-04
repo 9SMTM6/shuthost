@@ -3745,7 +3745,6 @@ dependencies = [
 name = "shuthost_common"
 version = "1.6.4"
 dependencies = [
- "git-version",
  "hex",
  "hmac 0.13.0",
  "miniserde",

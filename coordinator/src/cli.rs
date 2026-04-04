@@ -8,7 +8,7 @@ use std::env;
 #[cfg(unix)]
 use crate::install;
 use clap::{Parser, Subcommand, ValueEnum};
-use shuthost_common::VERSION;
+use crate::VERSION;
 
 pub const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 

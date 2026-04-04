@@ -17,7 +17,8 @@ use std::env;
 use clap::{Parser, Subcommand};
 
 use server::ServiceOptions;
-use shuthost_common::VERSION;
+
+pub(crate) const VERSION: &str = shuthost_common::version_string!();
 
 use crate::install::BINARY_NAME;
 

@@ -24,7 +24,7 @@ pub mod wol;
 
 #[cfg(unix)]
 use nix::sys::stat;
-use shuthost_common::VERSION;
+pub(crate) const VERSION: &str = shuthost_common::version_string!();
 use tracing::Instrument as _;
 // for use in integration tests
 pub use websocket::WsMessage;
