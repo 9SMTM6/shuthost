@@ -22,6 +22,10 @@
 //!
 //! The script informs Cargo to rerun the build if certain frontend asset files change, ensuring
 //! that modifications to styles, icons, or the JS bundle trigger a rebuild.
+#![expect(
+    clippy::indexing_slicing,
+    reason = "panicking during build becomes a compilation error"
+)]
 extern crate alloc;
 extern crate core;
 

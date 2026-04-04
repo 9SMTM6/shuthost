@@ -15,7 +15,10 @@ use tokio::sync::mpsc::unbounded_channel;
 use tracing::{error, info, warn};
 
 use super::state::{ConfigRx, ConfigTx};
-use crate::{app::state::emit_warning_on_unsaved_sync_state, config::{self, ControllerConfig}};
+use crate::{
+    app::state::emit_warning_on_unsaved_sync_state,
+    config::{self, ControllerConfig},
+};
 
 /// Handles the logic for reloading the configuration file and updating the application state.
 ///

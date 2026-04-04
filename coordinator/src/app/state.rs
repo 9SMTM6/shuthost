@@ -103,7 +103,12 @@ async fn initialize_database(
 // TODO: consider showing warning in gui as well
 pub fn emit_warning_on_unsaved_sync_state(app_state: &ControllerConfig) {
     if !matches!(app_state.db, Some(DbConfig { enable: true, .. })) {
-        let has_enforcing_hosts: Vec<_> = app_state.hosts.iter().filter_map(|(n, h)| h.enforce_state.then(|| n.clone())).collect();
+        let has_enforcing_hosts: Vec<_> = app_state
+            .hosts
+            .iter()
+            .filter(|&(_, h)| h.enforce_state)
+            .map(|(n, _)| n.clone())
+            .collect();
         if !has_enforcing_hosts.is_empty() {
             let host_names = has_enforcing_hosts.join(", ");
             tracing::warn!(

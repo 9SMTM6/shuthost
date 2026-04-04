@@ -61,8 +61,9 @@ vars: {
 const getFontFamilyFromTailwind = () => {
     const css = readFileSync('assets/styles.tailwind.css', 'utf8');
     const match = css.match(/--font-sans:\s*([^;]+);/s);
+    // biome-ignore lint/style/noNonNullAssertion: We expect this to always be present in the generated Tailwind CSS.
     return match![1]!.trim().replace(/\s+/g, ' ');
-}
+};
 
 const FONT_FAMILY = getFontFamilyFromTailwind();
 
@@ -88,21 +89,27 @@ const replaceEmbeddedFonts = (svg: string, fontFamily: string) => {
 ]]>`;
 
     let replaced = false;
-    stripped = stripped.replace(/<style([^>]*)>([\s\S]*?)<\/style>/g, (_match, attrs, content) => {
-        if (!replaced && /\.text\s*\{/.test(content)) {
-            replaced = true;
-            return `<style${attrs}>${replacementCss}</style>`;
-        }
+    stripped = stripped.replace(
+        /<style([^>]*)>([\s\S]*?)<\/style>/g,
+        (_match, attrs, content) => {
+            if (!replaced && /\.text\s*\{/.test(content)) {
+                replaced = true;
+                return `<style${attrs}>${replacementCss}</style>`;
+            }
 
-        return `<style${attrs}>${content}</style>`;
-    });
+            return `<style${attrs}>${content}</style>`;
+        },
+    );
 
     if (!replaced) {
-        stripped = stripped.replace(/(<svg[^>]*>)/, `$1<style type="text/css">${replacementCss}</style>`);
+        stripped = stripped.replace(
+            /(<svg[^>]*>)/,
+            `$1<style type="text/css">${replacementCss}</style>`,
+        );
     }
 
     return stripped;
-}
+};
 
 const d2 = new D2();
 
