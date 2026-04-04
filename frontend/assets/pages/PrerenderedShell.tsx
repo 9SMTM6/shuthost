@@ -2,7 +2,7 @@ import { Title } from '@solidjs/meta';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { JsErrorBox } from '../components/JsErrorBox';
-import { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/component';
 
 /**
  * Static HTML shell served to all routes before JS loads.

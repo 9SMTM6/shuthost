@@ -78,7 +78,7 @@ fn main() -> eyre::Result<()> {
     let prerender = tasks::spawn("build-prerender", || npm::run("build:prerender"));
 
     println!("{ON_CHANGE}/assets/favicon.svg");
-    let pngs = tasks::spawn("generate-png-icons", || icons::generate_pngs());
+    let pngs = tasks::spawn("generate-png-icons", icons::generate_pngs);
 
     // Icons and the manifest/build-data.json must be ready before the npm build
     // because vite.config.ts reads build-data.json at config-load time.

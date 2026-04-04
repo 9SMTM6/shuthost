@@ -5,10 +5,10 @@
 
 use std::env;
 
+use crate::VERSION;
 #[cfg(unix)]
 use crate::install;
 use clap::{Parser, Subcommand, ValueEnum};
-use crate::VERSION;
 
 pub const BINARY_NAME: &str = env!("CARGO_PKG_NAME");
 
