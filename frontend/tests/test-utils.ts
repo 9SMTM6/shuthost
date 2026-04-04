@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import type { Page } from '@playwright/test';
 import { assignedPortForConfig, type ConfigKey } from './backend-utils';
 
