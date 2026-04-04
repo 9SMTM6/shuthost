@@ -58,6 +58,52 @@ vars: {
 *.*.*: {style.font-size: 18}
 `;
 
+const getFontFamilyFromTailwind = () => {
+    const css = readFileSync('assets/styles.tailwind.css', 'utf8');
+    const match = css.match(/--font-sans:\s*([^;]+);/s);
+    return match![1]!.trim().replace(/\s+/g, ' ');
+}
+
+const FONT_FAMILY = getFontFamilyFromTailwind();
+
+const replaceEmbeddedFonts = (svg: string, fontFamily: string) => {
+    let stripped = svg
+        // Remove embedded @font-face rules that carry base64 blobs.
+        .replace(/@font-face\s*{[\s\S]*?}/g, '')
+        // Remove any src URL references (including data URIs) if left behind.
+        .replace(/src:\s*url\([^)]*\)\s*;?/g, '');
+
+    const replacementCss = `<![CDATA[
+[class^="d2-"] .text {
+  font-family: ${fontFamily};
+}
+[class^="d2-"] .text-bold {
+  font-family: ${fontFamily};
+  font-weight: bold;
+}
+[class^="d2-"] .text-italic {
+  font-family: ${fontFamily};
+  font-style: italic;
+}
+]]>`;
+
+    let replaced = false;
+    stripped = stripped.replace(/<style([^>]*)>([\s\S]*?)<\/style>/g, (_match, attrs, content) => {
+        if (!replaced && /\.text\s*\{/.test(content)) {
+            replaced = true;
+            return `<style${attrs}>${replacementCss}</style>`;
+        }
+
+        return `<style${attrs}>${content}</style>`;
+    });
+
+    if (!replaced) {
+        stripped = stripped.replace(/(<svg[^>]*>)/, `$1<style type="text/css">${replacementCss}</style>`);
+    }
+
+    return stripped;
+}
+
 const d2 = new D2();
 
 try {
@@ -76,7 +122,9 @@ try {
             noXMLTag: true,
         });
 
-        writeFileSync(`assets/generated/${name}.svg`, svg);
+        const optimizedSvg = replaceEmbeddedFonts(svg, FONT_FAMILY);
+
+        writeFileSync(`assets/generated/${name}.svg`, optimizedSvg);
         console.info(`Generated assets/generated/${name}.svg`);
     }
 } catch (error) {
