@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { MetaProvider } from '@solidjs/meta';
 import { Route, Router } from '@solidjs/router';
 import { renderToString } from 'solid-js/web';
-import { PrerenderedShell } from './pages/PrerenderedShell';
+import { PrerenderedShell } from './assets/pages/PrerenderedShell';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,7 +24,7 @@ const html = renderToString(() => (
     </MetaProvider>
 ));
 
-const outDir = path.join(__dirname, 'generated');
+const outDir = path.join(__dirname, 'assets/generated');
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(path.join(outDir, 'prerendered-app.html'), html, 'utf-8');
 console.info('Prerendering complete');

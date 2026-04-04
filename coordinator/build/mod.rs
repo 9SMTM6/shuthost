@@ -82,7 +82,7 @@ fn main() -> eyre::Result<()> {
         icons::generate_pngs()?;
         npm::run("build:diagrams")?;
         npm::run("build")?;
-        npm::run("prerender")?;
+        npm::run("build:prerender")?;
         assets::compute_hashes()
     });
 

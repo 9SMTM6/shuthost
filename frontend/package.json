@@ -10,7 +10,7 @@
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
         "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
-        "prerender": "vite-node --config vite.config.ssr.ts assets/prerender.tsx",
+        "build:prerender": "vite-node --config vite.config.ssr.ts prerender.tsx",
         "lint": "biome check .",
         "lint:fix": "biome check --write .",
         "fmt": "biome format --write ."
