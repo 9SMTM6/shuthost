@@ -75,8 +75,13 @@ jobs:
 
     steps:
       - uses: *checkout
+      - &setup-pnpm
+        name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          package_json_file: frontend/package.json
       - &latest-node-lts
-        name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
@@ -817,6 +822,7 @@ jobs:
         with:
           lfs: false
           fetch-depth: 0
+      - *setup-pnpm
       - *latest-node-lts
       - name: Fetch LFS objects (exclude webp)
         run: |
@@ -844,8 +850,8 @@ jobs:
       - name: Install node deps, Playwright Chromium and system deps
         run: |
           cd frontend
-          npm ci
-          npm run install-chromium-ci
+          pnpm install --frozen-lockfile
+          pnpm run install-chromium-ci
 
       - uses: *rust-cache
 
@@ -855,7 +861,7 @@ jobs:
           CI: true
         run: |
           cd frontend
-          npx playwright test
+          pnpm exec playwright test
 
       - name: Upload Playwright report + test-results (zip via Actions)
         if: always()

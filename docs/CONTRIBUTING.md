@@ -6,8 +6,9 @@ Thank you for your interest in contributing to shuthost! We welcome contribution
 - The MSRV is generally set to the latest stable `rustc` as of the most recent commit.
 
 ## Frontend Dependencies
-- The project depends on an installed `npm` to build frontend assets ([SolidJS, TailwindCSS and TypeScript](../frontend/package.json)).
-- `npm` is invoked from the workspace build script (or from `frontend`) to avoid missing errors from missed manual invocations of `tsc` or `tailwindcss`. This means `npm` is a hard dependency for building the project.
+- The project depends on **Node.js (latest LTS)** and **pnpm** to build frontend assets ([SolidJS, TailwindCSS and TypeScript](../frontend/package.json)).
+- Node.js **v22.18.0 or newer** (available in the latest LTS release) is required because the build tooling runs TypeScript files directly (without a prior compilation step). You can install it from https://nodejs.org/en/download or via a version manager such as `nvm`.
+- `pnpm` is invoked from the workspace build script (or from `frontend`) to avoid missing errors from missed manual updates. This means `pnpm` is a hard dependency for building the project. You can install it from https://pnpm.io/installation or via npm with `npm install -g pnpm`.
 
 
 ## Host Agent Artifacts
@@ -42,8 +43,8 @@ The repository includes ARIA snapshot and visual regression tests based on Playw
 Quick checklist:
 - Install Node dependencies and Playwright (from the repository root):
   - `cd frontend`
-  - `npm ci`
-  - `npm run install-chromium`
+  - `pnpm install`
+  - `pnpm run install-chromium`
  - Install Git LFS and fetch visual-regression assets (if you only run ARIA snapshot tests or the accessibility tests this is not needed):
    - Install Git LFS for your OS (see https://git-lfs.com/)
    - `git lfs install`
@@ -51,8 +52,8 @@ Quick checklist:
 
 Running tests:
 - From the `frontend/` folder run:
-  - `npx playwright test`
-  - or `npm run test`
+  - `pnpm exec playwright test`
+  - or `pnpm run test`
 
 ### Accessibility tests & updating snapshots
 
@@ -60,9 +61,9 @@ Running tests:
 
 -- To update snapshots (ARIA snapshots or Playwright's snapshot files) use Playwright's update flag. From `frontend/` you can:
   - Update all snapshots:
-    - `npx playwright test --update-snapshots all`
+    - `pnpm exec playwright test --update-snapshots all`
   - Update snapshots for a single test file (faster and safer when only one test changed):
-    - `npx playwright test tests/aria-snapshots.spec.ts -u`
+    - `pnpm exec playwright test tests/aria-snapshots.spec.ts -u`
 
 - Notes when updating snapshots:
   - Review snapshot diffs carefully before committing. Accessibility snapshots and visual snapshots can change for legitimate reasons (UI refactors, updated wording) but should not be blindly accepted.
@@ -71,8 +72,8 @@ Running tests:
 Notes and tips:
 - Tests run fully parallel by default. Each worker uses a per-worker port computed as `8081 + workerIndex` via the environment variables `TEST_PARALLEL_INDEX` or `TEST_WORKER_INDEX`. You can force a single-worker run by exporting `TEST_WORKER_INDEX=0` before starting tests.
 - To install missing system dependencies for Chromium on Linux (Debian/Ubuntu) run:
-  - `npx playwright install-deps`
-- Playwright collects traces and generates an HTML report by default; run `npx playwright show-report` after a run for debugging.
+  - `pnpm exec playwright install-deps`
+- Playwright collects traces and generates an HTML report by default; run `pnpm exec playwright show-report` after a run for debugging.
 
 ### Fonts required for visual regression
 

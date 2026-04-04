@@ -3,6 +3,7 @@ FROM rust:alpine
 RUN rustup component add llvm-tools
 
 RUN apk add --no-cache \
+    nodejs \
     npm \
     perl \
     make \
@@ -13,6 +14,8 @@ RUN apk add --no-cache \
     curl \
     llvm \
     tar
+
+RUN npm install -g pnpm && npm cache clean --force
 
 WORKDIR /src
 

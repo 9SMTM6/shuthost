@@ -2,30 +2,33 @@ use eyre::{Ok, WrapErr as _, bail};
 use std::process;
 
 #[cfg(not(target_os = "windows"))]
-const NPM_BIN: &str = "npm";
+const NPM_BIN: &str = "pnpm";
 #[cfg(target_os = "windows")]
-const NPM_BIN: &str = "npm.cmd";
+const NPM_BIN: &str = "pnpm.cmd";
 
 const FRONTEND_DIR: &str = "../frontend";
 
+pub const fn pnpm_bin() -> &'static str {
+    NPM_BIN
+}
+
 pub fn setup() -> eyre::Result<()> {
-    // Check npm
+    // Check pnpm
     process::Command::new(NPM_BIN)
         .arg("--version")
         .output()
-        .wrap_err("Ensure node/npm is installed")?;
+        .wrap_err("Ensure pnpm is installed")?;
 
     let output = process::Command::new(NPM_BIN)
-        .arg("ci")
+        .arg("install")
+        .arg("--frozen-lockfile")
         .current_dir(FRONTEND_DIR)
-        .env("npm_config_cache", "/tmp/.npm")
-        .env("PUPPETEER_SKIP_DOWNLOAD", "true")
         .output()
-        .wrap_err("Failed to npm ci")?;
+        .wrap_err("Failed to pnpm install")?;
     if !output.status.success() {
         eprint!("{}", String::from_utf8_lossy(&output.stdout));
         eprint!("{}", String::from_utf8_lossy(&output.stderr));
-        bail!("npm ci failed with {}", output.status);
+        bail!("pnpm install failed with {}", output.status);
     }
     Ok(())
 }
@@ -36,11 +39,11 @@ pub fn run(task: &str) -> eyre::Result<()> {
         .arg(task)
         .current_dir(FRONTEND_DIR)
         .output()
-        .wrap_err(format!("Failed to npm run {task}"))?;
+        .wrap_err(format!("Failed to pnpm run {task}"))?;
     if !output.status.success() {
         eprint!("{}", String::from_utf8_lossy(&output.stdout));
         eprint!("{}", String::from_utf8_lossy(&output.stderr));
-        bail!("npm run {task} failed with {}", output.status);
+        bail!("pnpm run {task} failed with {}", output.status);
     }
     Ok(())
 }

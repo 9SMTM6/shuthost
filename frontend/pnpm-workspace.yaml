@@ -1,0 +1,15 @@
+# Supply-chain hardening: block all package lifecycle scripts (postinstall, install, preinstall).
+# Packages not listed in allowBuilds are denied by default (warning). strictDepBuilds upgrades
+# those warnings to errors. To permit a package's build scripts, add it explicitly:
+#   allowBuilds:
+#     some-package: true
+strictDepBuilds: true
+
+# Fail on peer dependency conflicts rather than silently ignoring them.
+strictPeerDependencies: true
+
+# Only allow packages whose latest version is at least 3 days (in minutes = 3 * 24 * 60) old, reducing
+# the window for a freshly-published malicious package to slip in.
+minimumReleaseAge: 4320
+
+trustPolicy: no-downgrade

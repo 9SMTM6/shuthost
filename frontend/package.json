@@ -10,7 +10,6 @@
         "test": "playwright test",
         "install-chromium": "playwright install chromium",
         "install-chromium-ci": "playwright install chromium --with-deps",
-        "generate-npm-licenses": "license-checker-rseidelsohn --json > assets/generated/npm-licenses.json",
         "lint": "biome check .",
         "lint:fix": "biome check --write .",
         "fmt": "biome format --write ."
@@ -29,7 +28,6 @@
         "@tailwindcss/vite": "^4.1.8",
         "@terrastruct/d2": "^0.1.33",
         "@types/node": "25.x",
-        "license-checker-rseidelsohn": "^4.4.2",
         "vite": "^8.0.1",
         "vite-node": "^6.0.0",
         "vite-plugin-solid": "^2.11.6"

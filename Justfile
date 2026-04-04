@@ -55,18 +55,18 @@ deploy_branch_on_metal:
 [group('projectmanagement')]
 [working-directory("frontend")]
 build_graphs: frontend_typecheck
-    npm run build:diagrams
+    pnpm run build:diagrams
 
 [group('devops')]
 [confirm]
 clean:
     cargo clean && cargo fetch
-    cd frontend && rm -rf node_modules && rm -r assets/generated && npm ci && just build_graphs
+    cd frontend && rm -rf node_modules && rm -r assets/generated && pnpm install && just build_graphs
 
 [group('projectmanagement')]
 update_dependencies:
     cargo update --verbose
-    cd frontend && npm update
+    cd frontend && pnpm update
 
 alias deps := update_dependencies
 
@@ -123,7 +123,7 @@ coverage:
     # note: building for a provided target instead of native
     # doesnt seem to result in an instrumented binary
     . ./scripts/helpers.sh && build_gnu
-    cd frontend && npm run test && cd ..
+    cd frontend && pnpm run test && cd ..
     just build_gh_pages --provided-binary=target/debug/shuthost_coordinator
     cargo test --workspace --all-targets
     cd {{justfile_directory()}}
@@ -217,28 +217,28 @@ fmt:
 [group('tests')]
 [working-directory("frontend")]
 frontend_typecheck:
-    npm run typecheck
+    pnpm run typecheck
 
 alias tsc := frontend_typecheck
 
 [group('tests')]
 [working-directory("frontend")]
 frontend_lint: frontend_typecheck
-    npm run lint
+    pnpm run lint
 
 [group('projectmanagement')]
 [working-directory("frontend")]
 frontend_lint_fix: frontend_typecheck
-    npm run lint:fix
+    pnpm run lint:fix
 
 [group('projectmanagement')]
 [working-directory("frontend")]
 frontend_fmt: frontend_typecheck
-    npm run fmt
+    pnpm run fmt
 
 [group('tests')]
 playwright +flags="":
-    cd frontend && npm ci && npx tsc --noEmit && npx playwright test {{flags}}
+    cd frontend && pnpm install --frozen-lockfile && pnpm exec playwright test {{flags}}
 
 [group('tests')]
 pixelpeep:
@@ -246,7 +246,7 @@ pixelpeep:
 
 [group('tests')]
 playwright_report:
-    cd frontend && npx playwright show-report
+    cd frontend && pnpm exec playwright show-report
 
 [script]
 [group('tests')]

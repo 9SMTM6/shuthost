@@ -30,8 +30,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - &setup-pnpm
+        name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          package_json_file: frontend/package.json
       - &latest-node-lts
-        name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
@@ -44,37 +49,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - *setup-pnpm
       - *latest-node-lts
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: cd frontend && pnpm install --frozen-lockfile
       - name: Check frontend formatting
-        run: cd frontend && npx biome format .
+        run: cd frontend && pnpm exec biome format .
 
   frontend-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - *setup-pnpm
       - *latest-node-lts
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: cd frontend && pnpm install --frozen-lockfile
       - name: Lint frontend
-        run: cd frontend && npm run lint
+        run: cd frontend && pnpm run lint
 
   frontend-tsc:
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - *setup-pnpm
       - *latest-node-lts
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: cd frontend && pnpm install --frozen-lockfile
       - name: Type check frontend
-        run: cd frontend && npm run typecheck
+        run: cd frontend && pnpm run typecheck
 
   sqlx-offline-cache:
     name: sqlx offline cache check with prepare
     runs-on: ubuntu-latest
     steps:
       - uses: *checkout
+      - *setup-pnpm
       - *latest-node-lts
       - run: rustup update stable
       - run: cargo install sqlx-cli --no-default-features --features sqlite --locked
@@ -117,8 +126,8 @@ jobs:
       - name: Install node deps, Playwright Chromium and system deps
         run: |
           cd frontend
-          npm ci
-          npm run install-chromium-ci
+          pnpm install --frozen-lockfile
+          pnpm run install-chromium-ci
 
       - run: rustup update stable
 
@@ -142,7 +151,7 @@ jobs:
           cargo llvm-cov clean --workspace
           . ./scripts/helpers.sh && build_gnu
           if [ "$LFS_AVAILABLE" = "true" ]; then
-            cd frontend && npx playwright test && cd ..
+            cd frontend && pnpm exec playwright test && cd ..
           else
             echo "Skipping Playwright tests due to LFS quota"
           fi
@@ -191,6 +200,7 @@ jobs:
     steps:
       - uses: *checkout
 
+      - *setup-pnpm
       - *latest-node-lts
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -272,6 +282,7 @@ jobs:
       - uses: *checkout
         with:
           lfs: false
+      - *setup-pnpm
       - *latest-node-lts
       - name: Test LFS availability with minimal bandwidth
         run: |

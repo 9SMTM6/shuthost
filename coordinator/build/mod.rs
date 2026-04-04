@@ -4,7 +4,7 @@
 //! for the Rust application. It is responsible for:
 //!
 //! - Setting the workspace root environment variable.
-//! - Installing and running npm to build the frontend assets.
+//! - Installing and running pnpm to build the frontend assets.
 //! - Generating PNG icons from the SVG favicon at various sizes.
 //! - Hashing assets and writing `build-data.json` consumed by the TypeScript build.
 //! - Emitting build warnings based on configuration (e.g., Windows builds, missing agent features).
@@ -32,7 +32,7 @@ extern crate core;
 mod about;
 mod assets;
 mod icons;
-mod npm;
+mod pnpm;
 mod tasks;
 mod warnings;
 mod workspace;
@@ -42,7 +42,7 @@ use eyre::Ok;
 fn main() -> eyre::Result<()> {
     workspace::set_root()?;
 
-    npm::setup()?;
+    pnpm::setup()?;;
 
     const ON_CHANGE: &str = "cargo::rerun-if-changed=frontend";
 
@@ -57,30 +57,27 @@ fn main() -> eyre::Result<()> {
     println!("{ON_CHANGE}/assets/page.template.html");
     println!("{ON_CHANGE}/vite.config.ts");
     println!("{ON_CHANGE}/tsconfig.json");
-    let typecheck = tasks::spawn("typecheck", || npm::run("typecheck"));
+    let typecheck = tasks::spawn("typecheck", || pnpm::run("typecheck"));
 
     println!("cargo::rerun-if-changed=deny.toml");
-    println!("{ON_CHANGE}/package-lock.json");
-    let about_json = tasks::spawn("build-about-json", || {
-        npm::run("generate-npm-licenses")?;
-        about::build_json()
-    });
+    println!("{ON_CHANGE}/pnpm-lock.yaml");
+    let about_json = tasks::spawn("build-about-json", about::build_json);
 
     println!("{ON_CHANGE}/assets/client_controller_interaction.d2");
     println!("{ON_CHANGE}/assets/deployment.d2");
     println!("{ON_CHANGE}/assets/direct_control_comparison.d2");
     println!("{ON_CHANGE}/assets/host_agent_interaction.d2");
     println!("{ON_CHANGE}/build-diagrams.ts");
-    let build_diagrams = tasks::spawn("build-diagrams", || npm::run("build:diagrams"));
+    let build_diagrams = tasks::spawn("build-diagrams", || pnpm::run("build:diagrams"));
 
     println!("{ON_CHANGE}/assets/prerender.tsx");
     println!("{ON_CHANGE}/assets/vite.config.ssr.ts");
-    let prerender = tasks::spawn("build-prerender", || npm::run("build:prerender"));
+    let prerender = tasks::spawn("build-prerender", || pnpm::run("build:prerender"));
 
     println!("{ON_CHANGE}/assets/favicon.svg");
     let pngs = tasks::spawn("generate-png-icons", icons::generate_pngs);
 
-    // Icons and the manifest/build-data.json must be ready before the npm build
+    // Icons and the manifest/build-data.json must be ready before the pnpm build
     // because vite.config.ts reads build-data.json at config-load time.
     println!("{ON_CHANGE}/assets/manifest.tmpl.json");
     println!("{ON_CHANGE}/assets/styles.tailwind.css");
@@ -88,7 +85,7 @@ fn main() -> eyre::Result<()> {
     println!("{ON_CHANGE}/assets/partials/agent_install_requirements_gotchas.md");
     let main_frontend_assets = tasks::spawn("build-frontend", move || {
         tasks::join(build_diagrams)?;
-        npm::run("build")?;
+        pnpm::run("build")?;;
         tasks::join(prerender)?;
         tasks::join(pngs)?;
         assets::generate_frontend_assets()
