@@ -15,7 +15,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use tracing::{error, info, warn};
 
 use super::state::{ConfigRx, ConfigTx};
-use crate::config::{self, ControllerConfig};
+use crate::{app::state::emit_warning_on_unsaved_sync_state, config::{self, ControllerConfig}};
 
 /// Handles the logic for reloading the configuration file and updating the application state.
 ///
@@ -51,6 +51,8 @@ async fn process_config_change(path: &Path, tx: &ConfigTx, rx: &ConfigRx) -> Res
     }
 
     if hosts_changed || clients_changed {
+        emit_warning_on_unsaved_sync_state(&effective);
+
         // Only apply hosts/clients updates; keep prior server config
         tx.send(Arc::new(effective))
             .wrap_err("Failed to send updated config through watch channel")?;

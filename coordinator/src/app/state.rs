@@ -100,8 +100,21 @@ async fn initialize_database(
     })
 }
 
+// TODO: consider showing warning in gui as well
+pub fn emit_warning_on_unsaved_sync_state(app_state: &ControllerConfig) {
+    if !matches!(app_state.db, Some(DbConfig { enable: true, .. })) {
+        let has_enforcing_hosts: Vec<_> = app_state.hosts.iter().filter_map(|(n, h)| h.enforce_state.then(|| n.clone())).collect();
+        if !has_enforcing_hosts.is_empty() {
+            let host_names = has_enforcing_hosts.join(", ");
+            tracing::warn!(
+                "Database persistence is disabled but there are hosts with enforce_state=true ({host_names}). The coordinator will lose all lease state on restarts or updates, potentially causing these hosts to be shut down unexpectedly."
+            );
+        }
+    }
+}
+
 /// Emit startup warnings based on configuration and runtime state.
-fn emit_startup_warnings(app_state: &AppState) {
+fn emit_startup_warnings(app_state: &AppState, app_config: &ControllerConfig) {
     #[cfg(unix)]
     {
         use std::fs;
@@ -139,6 +152,8 @@ fn emit_startup_warnings(app_state: &AppState) {
         }
         _ => {}
     }
+
+    emit_warning_on_unsaved_sync_state(app_config);
 }
 
 /// Initialize application state and start background tasks.
@@ -211,7 +226,7 @@ pub(super) async fn initialize_state(
         db_pool,
     };
 
-    emit_startup_warnings(&app_state);
+    emit_startup_warnings(&app_state, &initial_config);
 
     Ok((app_state, tls_opt, config_tx))
 }

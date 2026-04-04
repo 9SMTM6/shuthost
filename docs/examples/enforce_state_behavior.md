@@ -14,6 +14,8 @@ When `enforce_state` is set to `true` for a host, the coordinator will:
 
 If `enforce_state` is set to `false`, the coordinator will only send commands when a lease change occurs (edge-triggered behavior).
 
+> **Warning:** If you enable `enforce_state=true` for one or more hosts but do not configure database persistence, the coordinator will lose all lease state on restart or config reload. This can cause `enforce_state` hosts to be shut down unexpectedly after an update or restart.
+
 ## Situations Where `enforce_state=false` May Not Wake/Shutdown a Host
 
 When `enforce_state` is set to `false` - which is the default -, the coordinator will not take action in the following scenarios:
