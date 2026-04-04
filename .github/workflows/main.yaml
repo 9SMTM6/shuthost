@@ -69,9 +69,6 @@ jobs:
             runner: ubuntu-latest
           - target: aarch64-unknown-linux-musl
             runner: ubuntu-24.04-arm
-          # Note: Windows coordinator binary is for testing client scripts only, not for production use
-          - target: x86_64-pc-windows-msvc
-            runner: windows-latest
 
     steps:
       - uses: *checkout
@@ -94,7 +91,8 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Rehydrate target directory structure
+      - &rehydrate-target-dir
+        name: Rehydrate target directory structure
         shell: bash
         run: |
           set -eux
@@ -120,7 +118,36 @@ jobs:
         uses: *upload-artifact
         with:
           name: coordinator-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/shuthost_coordinator${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          path: target/${{ matrix.target }}/release/shuthost_coordinator
+
+  # Built separately so it doesn't block the main build pipeline.
+  # The Windows coordinator binary is for testing client scripts only, not for production use.
+  build-coordinator-windows:
+    name: Build Coordinator for x86_64-pc-windows-msvc
+    needs: build-host_agents
+    runs-on: windows-latest
+    steps:
+      - uses: *checkout
+      - *setup-pnpm
+      - *latest-node-lts
+      - name: Download all host_agent binaries
+        uses: *download-artifact
+        with:
+          path: ./rehydrate
+      - uses: *rust-cache
+        with:
+          key: x86_64-pc-windows-msvc
+      - *rehydrate-target-dir
+      - uses: ./.github/actions/rust-build
+        with:
+          target: x86_64-pc-windows-msvc
+          bin-name: shuthost_coordinator
+          additional-flags: --features include_agents
+      - name: Upload coordinator binary
+        uses: *upload-artifact
+        with:
+          name: coordinator-x86_64-pc-windows-msvc
+          path: target/x86_64-pc-windows-msvc/release/shuthost_coordinator.exe
 
   test:
     name: Run Tests
@@ -531,7 +558,7 @@ jobs:
   test-client-scripts-windows:
     name: Test Client Scripts on Windows
     runs-on: windows-latest
-    needs: [build-coordinators]
+    needs: [build-coordinator-windows]
     defaults:
       run:
         shell: powershell
