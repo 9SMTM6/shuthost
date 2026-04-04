@@ -138,7 +138,7 @@ resvg = "0.47"
 serde_json.workspace = true
 serde.workspace = true
 sha2.workspace = true
-shuthost_common = { workspace = true, features = ["coordinator"] }
+shuthost_common = { workspace = true }
 spdx = { version = "0.13", features = ["text"] }
 tiny-skia = "0.12"
 toml.workspace = true

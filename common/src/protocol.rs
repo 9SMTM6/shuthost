@@ -37,7 +37,7 @@ pub struct StartupBroadcast {
 #[derive(Debug, Clone, PartialEq, Eq)]
 // serde deserialization for coordinator
 #[cfg_attr(feature = "coordinator", derive(Deserialize, Serialize))]
-#[serde(tag = "type", content = "payload")]
+#[cfg_attr(feature = "coordinator", serde(tag = "type", content = "payload"))]
 pub enum BroadcastMessage {
     /// Agent startup announcement
     AgentStartup(StartupBroadcast),
