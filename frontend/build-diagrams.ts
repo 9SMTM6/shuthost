@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { D2 } from '@terrastruct/d2';
 
 // Theme colors derived from the frontend's VS Code-like light/dark palette.
@@ -114,6 +114,7 @@ const replaceEmbeddedFonts = (svg: string, fontFamily: string) => {
 const d2 = new D2();
 
 try {
+    mkdirSync('assets/generated', { recursive: true });
     const files = readdirSync('assets').filter((f) => f.endsWith('.d2'));
     for (const f of files) {
         const name = f.replace(/\.d2$/, '');
