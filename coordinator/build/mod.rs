@@ -69,24 +69,30 @@ fn main() -> eyre::Result<()> {
         about::build_json()
     });
 
-    // Icons and the manifest/build-data.json must be ready before the npm build
-    // because vite.config.ts reads build-data.json at config-load time.
-    println!("{ON_ASSET_CHANGE}/favicon.svg");
-    println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
-    println!("{ON_ASSET_CHANGE}/partials/client_install_requirements_gotchas.md");
-    println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
-    println!("cargo::rerun-if-changed=frontend/assets/prerender.tsx");
-    println!("cargo::rerun-if-changed=frontend/vite.config.ssr.ts");
     println!("{ON_ASSET_CHANGE}/client_controller_interaction.d2");
     println!("{ON_ASSET_CHANGE}/deployment.d2");
     println!("{ON_ASSET_CHANGE}/direct_control_comparison.d2");
     println!("{ON_ASSET_CHANGE}/host_agent_interaction.d2");
     println!("cargo::rerun-if-changed=frontend/build-diagrams.ts");
-    let main_frontend_assets = tasks::spawn("build-frontend", || {
-        icons::generate_pngs()?;
-        npm::run("build:diagrams")?;
+    let build_diagrams = tasks::spawn("build-diagrams", || npm::run("build:diagrams"));
+
+    println!("cargo::rerun-if-changed=frontend/assets/prerender.tsx");
+    println!("cargo::rerun-if-changed=frontend/vite.config.ssr.ts");
+    let prerender = tasks::spawn("build-prerender", || npm::run("build:prerender"));
+
+    println!("{ON_ASSET_CHANGE}/favicon.svg");
+    let pngs = tasks::spawn("generate-png-icons", || icons::generate_pngs());
+
+    // Icons and the manifest/build-data.json must be ready before the npm build
+    // because vite.config.ts reads build-data.json at config-load time.
+    println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
+    println!("{ON_ASSET_CHANGE}/partials/client_install_requirements_gotchas.md");
+    println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
+    let main_frontend_assets = tasks::spawn("build-frontend", move || {
+        tasks::join(build_diagrams)?;
         npm::run("build")?;
-        npm::run("build:prerender")?;
+        tasks::join(prerender)?;
+        tasks::join(pngs)?;
         assets::generate_frontend_assets()
     });
 
