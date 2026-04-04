@@ -35,7 +35,7 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: latest
-          package_json_file: frontend/package.yaml
+          package_json_file: frontend/package.json
       - &latest-node-lts
         uses: actions/setup-node@v6
         with:
