@@ -83,7 +83,7 @@ fn main() -> eyre::Result<()> {
         npm::run("build:diagrams")?;
         npm::run("build")?;
         npm::run("build:prerender")?;
-        assets::compute_hashes()
+        assets::generate_frontend_assets()
     });
 
     tasks::join(about_json)?;
