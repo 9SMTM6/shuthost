@@ -449,7 +449,7 @@ dependencies = [
  "handlebars",
  "home",
  "ignore",
- "krates 0.20.0",
+ "krates",
  "libc",
  "log",
  "mimalloc",
@@ -2145,20 +2145,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "krates"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "612c722b926d7dac13718c33059590438a5c2ce513cf860ced483d67925a30eb"
-dependencies = [
- "camino",
- "cfg-expr",
- "petgraph",
- "semver",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "kurbo"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2764,9 +2750,9 @@ dependencies = [
 
 [[package]]
 name = "petgraph"
-version = "0.8.1"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a98c6720655620a521dcc722d0ad66cd8afd5d86e34a89ef691c50b7b24de06"
+checksum = "8701b58ea97060d5e5b155d383a69952a60943f0e6dfe30b04c287beb0b27455"
 dependencies = [
  "fixedbitset",
  "hashbrown 0.15.5",
@@ -3781,7 +3767,7 @@ dependencies = [
  "hex",
  "hmac 0.13.0",
  "hyper",
- "krates 0.21.0",
+ "krates",
  "mime",
  "nix",
  "notify",
