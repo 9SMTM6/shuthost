@@ -44,50 +44,48 @@ fn main() -> eyre::Result<()> {
 
     npm::setup()?;
 
-    const ON_ASSET_CHANGE: &str = "cargo::rerun-if-changed=frontend/assets";
-
-    println!("cargo::rerun-if-changed=frontend/package.json");
-    println!("{ON_ASSET_CHANGE}/index.tsx");
-    println!("{ON_ASSET_CHANGE}/components");
-    println!("{ON_ASSET_CHANGE}/pages");
-    println!("{ON_ASSET_CHANGE}/helpers");
-    println!("{ON_ASSET_CHANGE}/styles.tailwind.css");
-    println!("{ON_ASSET_CHANGE}/partials");
-    println!("cargo::rerun-if-changed=frontend/assets/page.template.html");
-    println!("cargo::rerun-if-changed=frontend/build-common.ts");
-    println!("cargo::rerun-if-changed=frontend/vite.config.ts");
-    println!("cargo::rerun-if-changed=frontend/tsconfig.json");
+    const ON_CHANGE: &str = "cargo::rerun-if-changed=frontend";
 
     // Spawn typecheck in parallel — it produces no output files so it is
     // independent of the other build steps.
+    println!("{ON_CHANGE}/package.json");
+    println!("{ON_CHANGE}/assets/index.tsx");
+    println!("{ON_CHANGE}/assets/components");
+    println!("{ON_CHANGE}/assets/pages");
+    println!("{ON_CHANGE}/assets/helpers");
+    println!("{ON_CHANGE}/assets/partials");
+    println!("{ON_CHANGE}/assets/page.template.html");
+    println!("{ON_CHANGE}/vite.config.ts");
+    println!("{ON_CHANGE}/tsconfig.json");
     let typecheck = tasks::spawn("typecheck", || npm::run("typecheck"));
 
     println!("cargo::rerun-if-changed=deny.toml");
-    println!("cargo::rerun-if-changed=frontend/package-lock.json");
+    println!("{ON_CHANGE}/package-lock.json");
     let about_json = tasks::spawn("build-about-json", || {
         npm::run("generate-npm-licenses")?;
         about::build_json()
     });
 
-    println!("{ON_ASSET_CHANGE}/client_controller_interaction.d2");
-    println!("{ON_ASSET_CHANGE}/deployment.d2");
-    println!("{ON_ASSET_CHANGE}/direct_control_comparison.d2");
-    println!("{ON_ASSET_CHANGE}/host_agent_interaction.d2");
-    println!("cargo::rerun-if-changed=frontend/build-diagrams.ts");
+    println!("{ON_CHANGE}/assets/client_controller_interaction.d2");
+    println!("{ON_CHANGE}/assets/deployment.d2");
+    println!("{ON_CHANGE}/assets/direct_control_comparison.d2");
+    println!("{ON_CHANGE}/assets/host_agent_interaction.d2");
+    println!("{ON_CHANGE}/build-diagrams.ts");
     let build_diagrams = tasks::spawn("build-diagrams", || npm::run("build:diagrams"));
 
-    println!("cargo::rerun-if-changed=frontend/assets/prerender.tsx");
-    println!("cargo::rerun-if-changed=frontend/vite.config.ssr.ts");
+    println!("{ON_CHANGE}/assets/prerender.tsx");
+    println!("{ON_CHANGE}/assets/vite.config.ssr.ts");
     let prerender = tasks::spawn("build-prerender", || npm::run("build:prerender"));
 
-    println!("{ON_ASSET_CHANGE}/favicon.svg");
+    println!("{ON_CHANGE}/assets/favicon.svg");
     let pngs = tasks::spawn("generate-png-icons", || icons::generate_pngs());
 
     // Icons and the manifest/build-data.json must be ready before the npm build
     // because vite.config.ts reads build-data.json at config-load time.
-    println!("{ON_ASSET_CHANGE}/manifest.tmpl.json");
-    println!("{ON_ASSET_CHANGE}/partials/client_install_requirements_gotchas.md");
-    println!("{ON_ASSET_CHANGE}/partials/agent_install_requirements_gotchas.md");
+    println!("{ON_CHANGE}/assets/manifest.tmpl.json");
+    println!("{ON_CHANGE}/assets/styles.tailwind.css");
+    println!("{ON_CHANGE}/assets/partials/client_install_requirements_gotchas.md");
+    println!("{ON_CHANGE}/assets/partials/agent_install_requirements_gotchas.md");
     let main_frontend_assets = tasks::spawn("build-frontend", move || {
         tasks::join(build_diagrams)?;
         npm::run("build")?;
