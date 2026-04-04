@@ -129,6 +129,10 @@ jobs:
     steps:
       - uses: *checkout
 
+      - *setup-pnpm
+
+      - *latest-node-lts
+
       - run: rustup update stable
 
       - uses: *rust-cache
