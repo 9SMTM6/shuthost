@@ -193,9 +193,6 @@ These are generated or validated automatically as part of the test suite, and th
 - 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
 - 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
-- 🔄 **State Synchronization / Enforcement**: Add support for state synchronization or state enforcement, where the coordinator keeps sending shutdown or WOL commands to hosts if their actual state does not match the desired state. This helps ensure hosts remain in their intended state (on or off) even if manual intervention or unexpected changes occur.
-  - This will likely require the database to be enabled, to avoid unintended effects after coordinator restarts.
-  - It will likely be configurable per host (either opt-in or opt-out, TBD).
 - 🛡️ **Rate limiting of requests by shuthost clients**
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
@@ -224,14 +221,10 @@ These are generated or validated automatically as part of the test suite, and th
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik, dex
   * (add tests for OIDC refresh flow) currently not active code
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
-* reconciler doesn't seem to properly handle state changes after startup.
-* cargo test leaves leftover processes during failures, investigate cleanup.
 * reconciler currently leads to a bunch of calls to handle_host_state every poll. This should be deduplicated.
   * we might want to emit multiple WOL calls during the waiting period instead (they are UDP after all)
   * we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
 * create tooling to allow running the frontend independently of rust, showing e.g. the demo frontend.
 * test github pages page once its on main, especially the about page
 * test whether the external script csp hash causes issues on modern Safari, in that case go down to script-src self 
-* D2’s SVG output currently embeds large base64-encoded font data (@font-face src: url(data:...)), which can significantly bloat assets/generated/*.svg and impact page load time and bundle size. If possible, configure rendering to avoid embedding fonts (or post-process to strip the embedded fonts and rely on a standard font stack) so the generated assets stay small.
-  * we can only remove them by post-processing. And that seems to be a bit of a project, and easy to do things the wrong way. The wins are also not extremely huge, I removed the embedded fonts on one of the SVGs manually, and it went down from 32kb to 17kb. We'd probably better approach the issue from another direction, e.g. load SVGs lazy after all, or load the architecture page in its entirety lazily.
 -->
