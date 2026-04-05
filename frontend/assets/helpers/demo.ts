@@ -1,7 +1,7 @@
 import { applyMessage } from './appStore';
 import { serverData } from './serverData';
 
-export const isDemoMode = serverData.demoSubpath !== undefined;
+export const isDemoMode = serverData.demoSubpath != null;
 
 /** Normalised demo subpath: `''` or `'/base'` (no trailing slash). */
 export const demoSubpath = (() => {

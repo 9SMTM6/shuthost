@@ -157,6 +157,7 @@ struct UiServerData<'strings> {
     config_path: borrow::Cow<'strings, str>,
     auth_warning: bool,
     /// Demo mode signal: `Some` means demo mode, `None` means normal mode.
+    #[serde(skip_serializing_if = "Option::is_none")]
     demo_subpath: Option<&'strings str>,
     auth_mode: &'strings str,
     broadcast_port: u16,
