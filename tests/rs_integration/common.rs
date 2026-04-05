@@ -10,12 +10,13 @@
     )
 )]
 
-use core::{
-    sync::atomic::{AtomicU16, Ordering},
-    time::Duration,
-};
+use core::time::Duration;
 use std::{
-    env, fs, io::Write as _, net::TcpStream as StdTcpStream, path::Path, thread, time::Instant,
+    env, fs, io::Write as _,
+    net::{TcpListener, TcpStream as StdTcpStream},
+    path::Path,
+    thread,
+    time::Instant,
 };
 
 use clap::Parser as _;
@@ -32,14 +33,35 @@ use tokio::{
 
 use shuthost_coordinator::app::{HostState, HostStatus};
 
-static NEXT_PORT: AtomicU16 = AtomicU16::new(10000);
-
 pub(crate) const fn host_agent_bin_path() -> &'static str {
     env!("CARGO_BIN_EXE_host_agent")
 }
 
 pub(crate) fn get_free_port() -> u16 {
-    NEXT_PORT.fetch_add(1, Ordering::SeqCst)
+    // Bind to port 0 to let the OS pick a free port, then release it and return
+    // the port number for the coordinator/agent to bind to.
+    //
+    // TOCTOU note: there is a small window between dropping the listener here
+    // and the coordinator/agent binding the port where another process could
+    // steal it. In practice this is extremely unlikely because:
+    //
+    //   1. Modern OS kernels (Linux, macOS, Windows) avoid reusing recently
+    //      released ephemeral ports for a short period via a "TIME_WAIT" or
+    //      similar port reuse avoidance mechanism.
+    //   2. The ports assigned by `bind(0)` are unpredictable, so there is no
+    //      systematic collision between concurrent tests.
+    //   3. The coordinator/agent starts binding almost immediately after this
+    //      call returns.
+    //
+    // The alternative — passing a pre-bound `TcpListener` into the
+    // coordinator/agent — would eliminate the race entirely but requires
+    // production code changes. The current approach is the accepted industry
+    // standard for test port allocation.
+    TcpListener::bind("127.0.0.1:0")
+        .expect("failed to bind to port 0")
+        .local_addr()
+        .expect("failed to get local addr")
+        .port()
 }
 
 /// Guard that kills the coordinator or agent when dropped.

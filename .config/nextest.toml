@@ -1,0 +1,10 @@
+[profile.default]
+# Fail any test that runs longer than 3 minutes
+slow-timeout = { period = "180s", terminate-after = 1 }
+
+# Fail tests that leave child processes running after the test exits (leaky tests).
+# A test is considered leaky when its stdout/stderr handles don't close within
+# `period` after the test process exits — which happens when a spawned child
+# inherits those handles and is not cleaned up.
+# The default period (200ms) is kept; only the result is changed to "fail".
+leak-timeout = { period = "200ms", result = "fail" }

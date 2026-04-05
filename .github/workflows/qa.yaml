@@ -136,6 +136,9 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+
       # running these in an individual step didn't work.
       - name: Generate coverage reports based on playwright and Rust tests
         env:
@@ -156,7 +159,7 @@ jobs:
             echo "Skipping Playwright tests due to LFS quota"
           fi
           ./scripts/build-gh-pages.sh --provided-binary=target/debug/shuthost_coordinator
-          cargo test --workspace --all-targets
+          cargo nextest run --workspace
           ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
           ./scripts/tests/service-installation-systemd.sh ./target/debug/shuthost_coordinator
           ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator

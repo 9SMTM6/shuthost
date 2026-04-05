@@ -71,22 +71,6 @@ update_dependencies:
 
 alias deps := update_dependencies
 
-[group('projectmanagement')]
-show_test_blocking_processes:
-    @# list any processes listening on the test port range
-    ss -lptn 'sport >= :10000 and sport <= :10100'
-    @# if any listener lines appear after the header, fail the recipe
-    @ss -lptn 'sport >= :10000 and sport <= :10100' | tail -n +2 | grep -q . && exit 1 || true
-
-[group('projectmanagement')]
-[confirm]
-kill_test_blocking_processes:
-    # find any processes listening on the test ports and kill them
-    ss -lptn 'sport >= :10000 and sport <= :10100' \
-        | grep -oP 'pid=\K[0-9]+' \
-        | sort -u \
-        | xargs --no-run-if-empty kill -9 || true
-
 [group('devops')]
 build_gh_pages +flags="":
     ./scripts/build-gh-pages.sh {{flags}}
@@ -126,7 +110,7 @@ coverage:
     . ./scripts/helpers.sh && build_gnu
     cd frontend && pnpm run test && cd ..
     just build_gh_pages --provided-binary=target/debug/shuthost_coordinator
-    cargo test --workspace --all-targets
+    cargo nextest run --workspace
     cd {{justfile_directory()}}
     # ought to run this before the musl tests to ensure its running the gnu binary (not that it should make a huge difference)
     ./scripts/tests/direct-control-ubuntu.sh ./target/debug/shuthost_host_agent
@@ -252,12 +236,7 @@ playwright_report:
 [script]
 [group('tests')]
 cargo_tests +flags="":
-    # ensure no test server ports are occupied before running rust tests
-    if ! just show_test_blocking_processes; then
-        echo "Ports 10000-10100 are in use; please run 'just kill_test_blocking_processes' and try again."
-        exit 1
-    fi
-    RUST_BACKTRACE=0 cargo test --workspace {{flags}}
+    RUST_BACKTRACE=0 cargo nextest run --workspace {{flags}}
 
 alias ct := cargo_tests
 alias ctests := cargo_tests

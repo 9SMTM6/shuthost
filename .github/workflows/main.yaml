@@ -164,8 +164,11 @@ jobs:
 
       - uses: *rust-cache
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo nextest run --workspace
 
   test-service-installation-systemd:
     name: Test Service Installation (systemd)
