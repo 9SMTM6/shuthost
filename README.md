@@ -226,5 +226,4 @@ These are generated or validated automatically as part of the test suite, and th
   * we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
 * create tooling to allow running the frontend independently of rust, showing e.g. the demo frontend.
 * test github pages page once its on main, especially the about page
-* test whether the external script csp hash causes issues on modern Safari, in that case go down to script-src self 
 -->

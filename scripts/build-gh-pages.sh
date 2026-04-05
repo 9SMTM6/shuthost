@@ -81,6 +81,13 @@ for html in "$export_dir"/*.html; do
         done
 done
 
+# Fetch dynamically loaded API data (not discoverable via HTML attribute scraping)
+echo "Fetching API data..."
+
+api_dir="$export_dir/api"
+mkdir -p "$api_dir"
+curl -s "$base_url/api/dependency-data.json" -o "$api_dir/dependency-data.json"
+
 # Fetch downloadable files (installers, scripts, binaries)
 echo "Fetching downloadable files..."
 
