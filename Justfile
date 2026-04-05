@@ -49,6 +49,11 @@ build_all_host_agents:
     wait
 
 [group('devops')]
+[working-directory('frontend')]
+frontend_dev:
+    pnpm run dev
+
+[group('devops')]
 deploy_branch_on_metal:
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 

@@ -224,6 +224,5 @@ These are generated or validated automatically as part of the test suite, and th
 * reconciler currently leads to a bunch of calls to handle_host_state every poll. This should be deduplicated.
   * we might want to emit multiple WOL calls during the waiting period instead (they are UDP after all)
   * we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
-* create tooling to allow running the frontend independently of rust, showing e.g. the demo frontend.
 * test github pages page once its on main, especially the about page
 -->

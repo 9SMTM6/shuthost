@@ -6,6 +6,7 @@
         "node": ">=22.18.0"
     },
     "scripts": {
+        "dev": "vite",
         "typecheck": "tsc --noEmit",
         "build": "vite build",
         "build:diagrams": "node build-diagrams.ts",
