@@ -12,7 +12,8 @@
 
 use core::time::Duration;
 use std::{
-    env, fs, io::Write as _,
+    env, fs,
+    io::Write as _,
     net::{TcpListener, TcpStream as StdTcpStream},
     path::Path,
     thread,
