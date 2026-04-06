@@ -31,7 +31,7 @@
         "@playwright/test": "^1.59.1",
         "@tailwindcss/vite": "^4.2.2",
         "@terrastruct/d2": "^0.1.33",
-        "@types/node": "~25.5.0",
+        "@types/node": "~25.5.2",
         "vite": "^8.0.3",
         "vite-node": "^6.0.0",
         "vite-plugin-solid": "^2.11.11"
