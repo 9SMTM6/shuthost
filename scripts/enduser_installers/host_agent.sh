@@ -2,6 +2,9 @@
 
 set -eu
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "$SCRIPT_DIR/../.."
+
 print_help() {
     echo "Usage: $0 [-t tag] [-b branch] [-i] [-h] [-- <binary-args>]"
     echo "Install ShutHost host agent binary."

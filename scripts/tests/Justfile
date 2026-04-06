@@ -1,0 +1,22 @@
+[private]
+list:
+    just --list
+
+# Run a script by name. Omit name to list available scripts.
+run name="" +args="":
+    #!/bin/sh
+    if [ -z "{{name}}" ]; then
+        echo "Available scripts:"
+        ls "{{source_directory()}}"/*.sh | xargs -n1 basename | sed 's/\.sh$//'
+        exit 0
+    fi
+    "{{source_directory()}}/{{name}}.sh" {{args}}
+
+[group('tests')]
+all_installers:
+    just run enduser_install_scripts
+    just run direct-control-alpine
+    just run direct-control-pwsh
+    just run direct-control-ubuntu
+    just run service-installation-openrc
+    just run service-installation-systemd

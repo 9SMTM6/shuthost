@@ -4,6 +4,9 @@
 
 set -e
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "$SCRIPT_DIR/../.."
+
 . ./scripts/helpers.sh
 
 if [ -n "$1" ]; then

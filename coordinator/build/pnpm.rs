@@ -23,6 +23,8 @@ pub fn setup() -> eyre::Result<()> {
         .arg("install")
         .arg("--frozen-lockfile")
         .current_dir(FRONTEND_DIR)
+        // TODO: remove hotfix
+        .env("CI", "true")
         .output()
         .wrap_err("Failed to pnpm install")?;
     if !output.status.success() {

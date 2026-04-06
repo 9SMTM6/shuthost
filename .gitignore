@@ -20,3 +20,5 @@ shuthost_host_agent.ps1
 # OS and editor files
 .DS_Store
 .vscode
+
+.pnpm-store

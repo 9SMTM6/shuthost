@@ -8,27 +8,14 @@ choose:
 
 alias c := choose
 
+mod tests
+mod snapshots 'snapshot_files'
+mod installers 'enduser_installers'
+
 [group('devops')]
-[working-directory('..')]
 build_gh_pages +flags="":
-    ./scripts/build-gh-pages.sh {{flags}}
+    ./build-gh-pages.sh {{flags}}
 
-[script]
-[group('tests')]
-[working-directory('..')]
-update_file_snapshots:
-    . ./scripts/helpers.sh && build_gnu
-    ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
-    . ./scripts/helpers.sh && build_musl
-    ./scripts/snapshot_files/openrc.sh ./target/debug/shuthost_coordinator
-    ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
+alias installer_tests := tests::all_installers
 
-[group('tests')]
-[working-directory('..')]
-install_test_scripts:
-    ./scripts/tests/enduser_install_scripts.sh
-    ./scripts/tests/direct-control-alpine.sh
-    ./scripts/tests/direct-control-pwsh.sh
-    ./scripts/tests/direct-control-ubuntu.sh
-    ./scripts/tests/service-installation-openrc.sh
-    ./scripts/tests/service-installation-systemd.sh
+alias update_all_snapshots := snapshots::update_all

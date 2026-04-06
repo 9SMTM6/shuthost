@@ -4,6 +4,9 @@
 
 set -e
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "$SCRIPT_DIR/../.."
+
 docker build -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
 
 docker build -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .

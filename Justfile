@@ -23,9 +23,13 @@ alias db_add_migration := coordinator::db_add_migration
 alias update_test_config_diffs := examples::update_test_config_diffs
 alias patch_test_configs := examples::patch_test_configs
 alias build_gh_pages := scripts::build_gh_pages
-alias update_file_snapshots := scripts::update_file_snapshots
-alias install_test_scripts := scripts::install_test_scripts
 alias tsc := frontend::typecheck
+
+install_test_scripts:
+    just scripts::installer_tests
+
+update_file_snapshots:
+    just scripts::update_all_snapshots
 
 export RUST_BACKTRACE := "1"
 export LOG_FORMAT := "pretty"

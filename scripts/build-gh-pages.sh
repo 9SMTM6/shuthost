@@ -4,6 +4,9 @@
 
 set -ev
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "$SCRIPT_DIR/.."
+
 export_dir="target/gh-pages"
 
 rm -rf "$export_dir"
