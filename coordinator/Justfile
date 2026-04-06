@@ -1,0 +1,28 @@
+# this ensures that just running just give a list of commands
+[private]
+list:
+    just --list
+
+choose:
+    just --choose
+
+alias c := choose
+
+export DATABASE_URL := "sqlite:" + justfile_directory() + "/shuthost.db"
+export SQLX_OFFLINE := "true"
+
+[group('database')]
+db_create:
+    cargo sqlx database drop
+    cargo sqlx database create
+    cargo sqlx migrate run --source migrations
+
+[group('database')]
+[group('projectmanagement')]
+db_update_sqlx_cache:
+    cargo sqlx prepare
+
+[group('database')]
+[group('projectmanagement')]
+db_add_migration name:
+    sqlx migrate add {{name}}

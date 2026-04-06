@@ -1,0 +1,60 @@
+# this ensures that just running just give a list of commands
+[private]
+list:
+    just --list
+
+choose:
+    just --choose
+
+alias c := choose
+
+[group('devops')]
+dev:
+    pnpm run dev
+
+[group('tests')]
+typecheck:
+    pnpm run typecheck
+
+alias tsc := typecheck
+
+[group('tests')]
+lint: typecheck
+    pnpm run lint
+
+[group('projectmanagement')]
+lint_fix: typecheck
+    pnpm run lint:fix
+
+[group('projectmanagement')]
+fmt: typecheck
+    pnpm run fmt
+
+[group('projectmanagement')]
+build_graphs: typecheck
+    pnpm run build:diagrams
+
+[group('tests')]
+playwright +flags="":
+    pnpm install --frozen-lockfile && pnpm exec playwright test {{flags}}
+
+[group('tests')]
+pixelpeep:
+    PIXELPEEP=1 just playwright
+
+[group('tests')]
+playwright_report:
+    pnpm exec playwright show-report
+
+[group('devops')]
+[confirm]
+clean:
+    rm -rf node_modules && rm -r assets/generated && pnpm install && just build_graphs
+
+[group('projectmanagement')]
+update_deps:
+    pnpm update
+    pnpm outdated || true
+
+[group('projectmanagement')]
+yolo: fmt lint_fix

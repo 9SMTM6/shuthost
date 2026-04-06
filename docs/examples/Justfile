@@ -1,0 +1,21 @@
+# this ensures that just running just give a list of commands
+[private]
+list:
+    just --list
+
+choose:
+    just --choose
+
+alias c := choose
+
+[group('projectmanagement')]
+update_test_config_diffs:
+    diff -u example_config.toml example_config_with_client_and_host.toml > example_config_with_client_and_host.toml.patch || true
+    diff -u example_config.toml example_config_oidc.toml > example_config_oidc.toml.patch || true
+    diff -u example_config.toml example_config_external.toml > example_config_external.toml.patch || true
+
+[group('setup')]
+patch_test_configs:
+    patch example_config.toml -o example_config_with_client_and_host.toml < example_config_with_client_and_host.toml.patch 
+    patch example_config.toml -o example_config_oidc.toml < example_config_oidc.toml.patch
+    patch example_config.toml -o example_config_external.toml < example_config_external.toml.patch

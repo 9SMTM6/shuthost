@@ -8,6 +8,25 @@ choose:
 
 alias c := choose
 
+mod frontend
+mod coordinator
+mod examples 'docs/examples'
+mod scripts
+
+alias build_graphs := frontend::build_graphs
+alias playwright := frontend::playwright
+alias pixelpeep := frontend::pixelpeep
+alias playwright_report := frontend::playwright_report
+alias db_create := coordinator::db_create
+alias db_update_sqlx_cache := coordinator::db_update_sqlx_cache
+alias db_add_migration := coordinator::db_add_migration
+alias update_test_config_diffs := examples::update_test_config_diffs
+alias patch_test_configs := examples::patch_test_configs
+alias build_gh_pages := scripts::build_gh_pages
+alias update_file_snapshots := scripts::update_file_snapshots
+alias install_test_scripts := scripts::install_test_scripts
+alias tsc := frontend::typecheck
+
 export RUST_BACKTRACE := "1"
 export LOG_FORMAT := "pretty"
 
@@ -49,57 +68,24 @@ build_all_host_agents:
     wait
 
 [group('devops')]
-[working-directory('frontend')]
-frontend_dev:
-    pnpm run dev
-
-[group('devops')]
 deploy_branch_on_metal:
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
-
-[group('projectmanagement')]
-[working-directory("frontend")]
-build_graphs: frontend_typecheck
-    pnpm run build:diagrams
 
 [group('devops')]
 [confirm]
 clean:
     cargo clean && cargo fetch
-    cd frontend && rm -rf node_modules && rm -r assets/generated && pnpm install && just build_graphs
+    just frontend::clean
 
 [group('projectmanagement')]
 update_dependencies:
     cargo update --verbose
-    cd frontend && pnpm update
-    cd frontend && pnpm outdated || true
+    just frontend::update_deps
 
 alias deps := update_dependencies
 
-[group('devops')]
-build_gh_pages +flags="":
-    ./scripts/build-gh-pages.sh {{flags}}
-
 export DATABASE_URL := "sqlite:" + justfile_directory() + "/shuthost.db"
 export SQLX_OFFLINE := "true"
-
-[group('database')]
-db_create:
-    cargo sqlx database drop
-    cargo sqlx database create
-    cargo sqlx migrate run --source coordinator/migrations
-
-[group('database')]
-[group('projectmanagement')]
-[working-directory("coordinator")]
-db_update_sqlx_cache:
-    cargo sqlx prepare
-
-[group('database')]
-[group('projectmanagement')]
-[working-directory("coordinator")]
-db_add_migration name:
-    sqlx migrate add {{name}}
 
 [script]
 [group('tests')]
@@ -137,38 +123,6 @@ cargo_deny:
 
 alias deny := cargo_deny
 
-[group('projectmanagement')]
-[working-directory("docs/examples")]
-update_test_config_diffs:
-    diff -u example_config.toml example_config_with_client_and_host.toml > example_config_with_client_and_host.toml.patch || true
-    diff -u example_config.toml example_config_oidc.toml > example_config_oidc.toml.patch || true
-    diff -u example_config.toml example_config_external.toml > example_config_external.toml.patch || true
-
-[group('setup')]
-[working-directory("docs/examples")]
-patch_test_configs:
-    patch example_config.toml -o example_config_with_client_and_host.toml < example_config_with_client_and_host.toml.patch 
-    patch example_config.toml -o example_config_oidc.toml < example_config_oidc.toml.patch
-    patch example_config.toml -o example_config_external.toml < example_config_external.toml.patch
-
-[script]
-[group('tests')]
-update_file_snapshots:
-    . ./scripts/helpers.sh && build_gnu
-    ./scripts/snapshot_files/systemd.sh ./target/debug/shuthost_coordinator
-    . ./scripts/helpers.sh && build_musl
-    ./scripts/snapshot_files/openrc.sh ./target/debug/shuthost_coordinator
-    ./scripts/snapshot_files/compose_and_self_extracting.sh ./target/debug/shuthost_coordinator
-
-[group('tests')]
-install_test_scripts:
-    ./scripts/tests/enduser_install_scripts.sh
-    ./scripts/tests/direct-control-alpine.sh
-    ./scripts/tests/direct-control-pwsh.sh
-    ./scripts/tests/direct-control-ubuntu.sh
-    ./scripts/tests/service-installation-openrc.sh
-    ./scripts/tests/service-installation-systemd.sh
-
 [group('tests')]
 typos:
     typos
@@ -197,46 +151,12 @@ rustfix_yolo:
 [group('projectmanagement')]
 yolo:
     just rustfix_yolo
-    just frontend_lint_fix
+    just frontend::yolo
 
 [group('projectmanagement')]
 fmt:
     just rust_fmt
-    just frontend_fmt
-
-[group('tests')]
-[working-directory("frontend")]
-frontend_typecheck:
-    pnpm run typecheck
-
-alias tsc := frontend_typecheck
-
-[group('tests')]
-[working-directory("frontend")]
-frontend_lint: frontend_typecheck
-    pnpm run lint
-
-[group('projectmanagement')]
-[working-directory("frontend")]
-frontend_lint_fix: frontend_typecheck
-    pnpm run lint:fix
-
-[group('projectmanagement')]
-[working-directory("frontend")]
-frontend_fmt: frontend_typecheck
-    pnpm run fmt
-
-[group('tests')]
-playwright +flags="":
-    cd frontend && pnpm install --frozen-lockfile && pnpm exec playwright test {{flags}}
-
-[group('tests')]
-pixelpeep:
-    PIXELPEEP=1 just playwright
-
-[group('tests')]
-playwright_report:
-    cd frontend && pnpm exec playwright show-report
+    just frontend::fmt
 
 [script]
 [group('tests')]
@@ -266,7 +186,7 @@ release TYPE skip_coverage_and_file_snapshots="false":
     just update_test_config_diffs
     just patch_test_configs
     just cargo_deny
-    just frontend_typecheck
+    just frontend::typecheck
     just db_update_sqlx_cache
     if [[ "{{skip_coverage_and_file_snapshots}}" != "true" ]]; then
         just update_file_snapshots
