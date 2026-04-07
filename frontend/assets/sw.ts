@@ -99,7 +99,7 @@ const staleWhileRevalidate = (
     bgWorkPromise: Promise<void>;
 } => {
     // Serve from cache immediately; populate cache on first load.
-    const responsePromise = (async (): Promise<Response> => {
+    const responsePromise = (async () => {
         const cache = await caches.open(CACHE_NAME);
         const cached = await cache.match(request);
         if (cached) return cached;
@@ -109,7 +109,7 @@ const staleWhileRevalidate = (
     })();
 
     // Revalidate + diff in the background (skip on first load).
-    const bgWorkPromise = (async (): Promise<void> => {
+    const bgWorkPromise = (async () => {
         const cache = await caches.open(CACHE_NAME);
         // Independent cache.match — each call returns a fresh Response handle.
         const cachedEntry = await cache.match(request);

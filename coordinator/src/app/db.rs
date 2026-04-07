@@ -592,10 +592,7 @@ pub(crate) async fn get_subscriptions_for_host_online(
 ///
 /// Returns an error if the database operation fails.
 #[tracing::instrument(skip(pool), err)]
-pub(crate) async fn delete_push_subscription(
-    pool: &DbPool,
-    endpoint: &str,
-) -> eyre::Result<()> {
+pub(crate) async fn delete_push_subscription(pool: &DbPool, endpoint: &str) -> eyre::Result<()> {
     sqlx::query!(
         "DELETE FROM push_subscriptions WHERE endpoint = ?",
         endpoint,

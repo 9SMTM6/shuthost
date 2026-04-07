@@ -19,8 +19,8 @@ use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
 use web_push::{
-    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, SubscriptionKeys,
-    WebPushClient as _, WebPushMessageBuilder,
+    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, SubscriptionKeys, WebPushClient as _,
+    WebPushMessageBuilder,
 };
 
 use crate::app::{AppState, db};
@@ -74,7 +74,11 @@ struct VapidPublicKeyResponse {
 #[axum::debug_handler]
 async fn get_vapid_public_key(State(state): State<AppState>) -> impl IntoResponse {
     let Some(ref vapid_key) = state.vapid_key else {
-        return (StatusCode::SERVICE_UNAVAILABLE, "Push notifications require database persistence to be enabled").into_response();
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Push notifications require database persistence to be enabled",
+        )
+            .into_response();
     };
 
     let public_key_bytes = vapid_key.get_public_key();

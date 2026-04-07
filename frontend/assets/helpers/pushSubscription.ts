@@ -14,7 +14,7 @@ const urlBase64ToUint8Array = (base64: string) => {
         output[i] = rawData.charCodeAt(i);
     }
     return output;
-}
+};
 
 /**
  * Registers the service worker (if not already registered) and returns the
@@ -48,7 +48,7 @@ const getOrCreatePushSubscription = async () => {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
-}
+};
 
 /**
  * Subscribes the current browser to push notifications for when the given
@@ -63,4 +63,4 @@ export const subscribeToHostOnline = async (hostname: string) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: subJson, hostname }),
     });
-}
+};
