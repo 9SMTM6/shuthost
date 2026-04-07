@@ -105,6 +105,7 @@ tokio = { workspace = true, features = [
 ]}
 toml.workspace = true
 tower = "0.5"
+web-push = "0.11.0"
 tower-http = { version = "0.6", features = [
     "request-id",
     "sensitive-headers",

@@ -23,7 +23,7 @@ use crate::{
     websocket,
 };
 
-use crate::http::{api, assets, download, login, m2m};
+use crate::http::{api, assets, download, login, m2m, push};
 
 use crate::http::server::middleware::secure_headers_middleware;
 
@@ -43,6 +43,7 @@ pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<App
 
     let private = Router::new()
         .nest("/api", api::routes())
+        .nest("/api", push::routes())
         .route("/", get(assets::serve_ui))
         .route("/ws", any(websocket::ws_handler))
         .route_layer(ax_middleware::from_fn_with_state(

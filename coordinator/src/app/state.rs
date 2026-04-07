@@ -8,6 +8,7 @@ use eyre::WrapErr as _;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, broadcast, watch};
 use tracing::info;
+use web_push::PartialVapidSignatureBuilder;
 
 use crate::{
     app::{
@@ -65,6 +66,10 @@ pub(crate) struct AppState {
 
     /// Database connection pool for persistent storage.
     pub db_pool: Option<DbPool>,
+
+    /// VAPID key builder for signing web push notifications.
+    /// `None` when DB persistence is disabled.
+    pub vapid_key: Option<Arc<PartialVapidSignatureBuilder>>,
 }
 
 /// Initialize database pool based on configuration.
@@ -218,6 +223,27 @@ pub(super) async fn initialize_state(
         _ => None,
     };
 
+    let vapid_key = if let Some(ref pool) = db_pool {
+        let pem = match db::get_kv(pool, db::KV_VAPID_PRIVATE_KEY_PEM).await? {
+            Some(pem) => pem,
+            None => {
+                let key = rcgen::KeyPair::generate_for(&rcgen::PKCS_ECDSA_P256_SHA256)
+                    .wrap_err("Failed to generate VAPID EC key")?;
+                let pem = key.serialize_pem();
+                db::store_kv(pool, db::KV_VAPID_PRIVATE_KEY_PEM, &pem).await?;
+                info!("Generated and stored new VAPID private key");
+                pem
+            }
+        };
+        Some(Arc::new(
+            web_push::VapidSignatureBuilder::from_pem_no_sub(pem.as_bytes())
+                .wrap_err("Failed to load VAPID private key from PEM")?,
+        ))
+    } else {
+        info!("VAPID key unavailable: DB persistence disabled");
+        None
+    };
+
     let app_state = AppState {
         config_rx,
         hoststatus_rx,
@@ -229,6 +255,7 @@ pub(super) async fn initialize_state(
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
         db_pool,
+        vapid_key,
     };
 
     emit_startup_warnings(&app_state, &initial_config);

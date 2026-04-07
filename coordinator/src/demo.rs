@@ -63,6 +63,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         ),
         tls_enabled: false,
         db_pool: None,
+        vapid_key: None,
     };
 
     let app = Router::new()

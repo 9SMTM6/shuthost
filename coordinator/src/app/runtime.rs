@@ -32,6 +32,7 @@ use crate::{
         host_control::spawn_handle_host_state,
     },
     config::Host,
+    http::push,
     websocket::WsMessage,
 };
 
@@ -325,9 +326,21 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         if any_changed {
-            if state.hoststatus_tx.send(Arc::new(new_status)).is_err() {
+            if state.hoststatus_tx.send(Arc::new(new_status.clone())).is_err() {
                 debug!("Host status receiver dropped, stopping polling");
                 break;
+            }
+
+            // Fire push notifications for any host that just came online.
+            if let (Some(pool), Some(vapid_key)) =
+                (state.db_pool.clone(), state.vapid_key.clone())
+            {
+                spawn_push_notifications_for_going_online(
+                    &old_status,
+                    &new_status,
+                    &pool,
+                    &vapid_key,
+                );
             }
         } else {
             debug!("No change in host status");
@@ -353,6 +366,42 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         ticker.tick().await;
+    }
+}
+
+/// Spawns a push-notification task for each host that just transitioned from
+/// any state to [`HostState::Online`].
+fn spawn_push_notifications_for_going_online(
+    old_status: &Arc<HashMap<String, HostState>>,
+    new_status: &HashMap<String, HostState>,
+    pool: &db::DbPool,
+    vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
+) {
+    for (host_name, new_state) in new_status {
+        if *new_state == HostState::Online
+            && old_status.get(host_name) != Some(&HostState::Online)
+        {
+            let pool = pool.clone();
+            let vapid_key = vapid_key.clone();
+            let host_name = host_name.clone();
+            tokio::spawn(async move {
+                match db::get_subscriptions_for_host_online(&pool, &host_name).await {
+                    Ok(subs) if !subs.is_empty() => {
+                        let payload = serde_json::json!({
+                            "title": "ShutHost",
+                            "body": format!("{host_name} is online"),
+                            "data": { "hostname": host_name },
+                        })
+                        .to_string();
+                        push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!(host = %host_name, "Failed to fetch push subscriptions: {e:#}");
+                    }
+                }
+            });
+        }
     }
 }
 
