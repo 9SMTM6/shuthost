@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO push_subscription_host_online (subscription_id, hostname) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "dc9cef9811ebb4ef29aa72fc497d25305860da787c9ea0d71e9e536706f816b8"
+}

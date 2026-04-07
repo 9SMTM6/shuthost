@@ -1,5 +1,6 @@
-import { createMemo, For, Show } from 'solid-js';
+import { createMemo, createSignal, For, Show } from 'solid-js';
 import { apiFetch } from '../helpers/apiFetch';
+import { subscribeToHostOnline } from '../helpers/pushSubscription';
 import type { LeaseSource } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
@@ -42,6 +43,24 @@ const HostRow = ((props: { hostName: string }) => {
     const hasWebInterfaceLease = () =>
         leases().some((l) => l.type === 'WebInterface');
     const hasClients = () => state.clients.length > 0;
+
+    const [notifyState, setNotifyState] = createSignal<
+        'idle' | 'loading' | 'subscribed' | 'error'
+    >('idle');
+
+    const handleNotifyClick = async () => {
+        setNotifyState('loading');
+        try {
+            await subscribeToHostOnline(props.hostName);
+            setNotifyState('subscribed');
+        } catch (err) {
+            console.error(
+                `Failed to subscribe to notifications for ${props.hostName}:`,
+                err,
+            );
+            setNotifyState('error');
+        }
+    };
 
     const updateLease = async (action: 'take' | 'release') => {
         if (isDemoMode) {
@@ -96,6 +115,27 @@ const HostRow = ((props: { hostName: string }) => {
                     >
                         {hasClients() ? 'Release Lease' : 'Shutdown'}
                     </button>
+                    <Show when={notifyState() !== 'subscribed'}>
+                        <button
+                            class="btn notify-online"
+                            classList={{
+                                'btn-yellow': notifyState() === 'error',
+                                'btn-gray': notifyState() === 'loading',
+                            }}
+                            type="button"
+                            disabled={notifyState() === 'loading'}
+                            onClick={handleNotifyClick}
+                            aria-label="Notify when online"
+                            title="Notify when online"
+                        >
+                            {notifyState() === 'error' ? '🔔?' : '🔔'}
+                        </button>
+                    </Show>
+                    <Show when={notifyState() === 'subscribed'}>
+                        <span class="text-xs text-green-600" aria-live="polite">
+                            ✓ Subscribed
+                        </span>
+                    </Show>
                 </div>
             </td>
         </tr>

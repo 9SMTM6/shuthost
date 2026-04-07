@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM push_subscriptions WHERE endpoint = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "4214e11f0f4e6530ae92b371628e339f2bbbac9eed358bad8a61f50e5207bb6a"
+}

@@ -8,6 +8,7 @@ pub mod auth;
 pub mod download;
 pub mod login;
 pub mod m2m;
+pub mod push;
 pub mod server;
 
 pub(crate) use server::*;

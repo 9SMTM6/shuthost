@@ -28,6 +28,7 @@ export default defineConfig({
         rolldownOptions: {
             input: {
                 app: 'assets/index.tsx',
+                sw: 'assets/sw.ts',
             },
             output: {
                 // No hash in filenames: Rust reads app.js serves it under hashed url.

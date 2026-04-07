@@ -99,6 +99,7 @@ pub(crate) fn routes() -> Router<AppState> {
             concat!("/icons/icon-512.", env!("ASSET_HASH_ICON_512_PNG"), ".png"),
             get(serve_icon_512),
         )
+        .route("/sw.js", get(serve_service_worker))
 }
 
 /// Macro to define a static SVG download handler using `include_bytes`!
@@ -295,3 +296,15 @@ static_png_download_handler!(fn serve_icon_128, file = "icon-128.png");
 static_png_download_handler!(fn serve_icon_180, file = "icon-180.png");
 static_png_download_handler!(fn serve_icon_192, file = "icon-192.png");
 static_png_download_handler!(fn serve_icon_512, file = "icon-512.png");
+
+/// Serves the service worker script without caching so browsers always pick up updates.
+#[axum::debug_handler]
+async fn serve_service_worker() -> impl IntoResponse {
+    const SW: &str = include_utf8_asset!("generated/sw.js");
+    (
+        TypedHeader(ContentType::from(mime::TEXT_JAVASCRIPT)),
+        TypedHeader(CacheControl::new().with_no_store()),
+        TypedHeader(ContentLength(SW.len() as u64)),
+        SW,
+    )
+}
