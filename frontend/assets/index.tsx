@@ -5,6 +5,7 @@ import { MetaProvider } from '@solidjs/meta';
 import { Route, Router } from '@solidjs/router';
 import { render } from 'solid-js/web';
 import { showJSError } from './components/JsErrorBox';
+import { demoSubpath } from './helpers/demo';
 import { AboutPage } from './pages/AboutPage';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
@@ -15,7 +16,7 @@ if (appMount) {
     render(
         () => (
             <MetaProvider>
-                <Router>
+                <Router base={demoSubpath}>
                     <Route path="/" component={App} />
                     <Route path="/login" component={LoginPage} />
                     <Route path="/about" component={AboutPage} />
