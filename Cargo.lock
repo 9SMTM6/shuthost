@@ -3718,7 +3718,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shuthost"
-version = "1.6.5"
+version = "1.6.6"
 dependencies = [
  "clap",
  "eyre",
@@ -3737,7 +3737,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_common"
-version = "1.6.5"
+version = "1.6.6"
 dependencies = [
  "hex",
  "hmac 0.13.0",
@@ -3751,7 +3751,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_coordinator"
-version = "1.6.5"
+version = "1.6.6"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3802,7 +3802,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_host_agent"
-version = "1.6.5"
+version = "1.6.6"
 dependencies = [
  "base64 0.22.1",
  "clap",
