@@ -3,14 +3,17 @@
 import './styles.tailwind.css';
 import { MetaProvider } from '@solidjs/meta';
 import { Route, Router } from '@solidjs/router';
+import { Show, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import { showJSError } from './components/JsErrorBox';
 import { demoSubpath } from './helpers/demo';
-import { registerServiceWorker } from './helpers/serviceWorker';
+import { onUpdateAvailable, registerServiceWorker } from './helpers/serviceWorker';
 import { AboutPage } from './pages/AboutPage';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+
+const [updateAvailable, setUpdateAvailable] = createSignal(false);
 
 const appMount = document.getElementById('app');
 if (appMount) {
@@ -24,6 +27,18 @@ if (appMount) {
                     <Route path="/about" component={AboutPage} />
                     <Route path="*" component={NotFoundPage} />
                 </Router>
+                <Show when={updateAvailable()}>
+                    <div class="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border-l-4 border-[#64b5f6] bg-[#d8f3ff] px-4 py-3 text-[#005fb8] shadow-lg dark:border-[#0078d4] dark:bg-[rgba(0,120,212,0.10)] dark:text-[#4fc3f7]">
+                        <span class="text-sm">A new version is available.</span>
+                        <button
+                            type="button"
+                            class="rounded bg-[#005fb8] px-2 py-1 text-xs font-semibold text-white hover:bg-[#004e9a] dark:bg-[#0078d4] dark:hover:bg-[#006cbd]"
+                            onClick={() => location.reload()}
+                        >
+                            Refresh
+                        </button>
+                    </div>
+                </Show>
             </MetaProvider>
         ),
         appMount,
@@ -31,6 +46,7 @@ if (appMount) {
 }
 
 registerServiceWorker();
+onUpdateAvailable(() => setUpdateAvailable(true));
 
 // Global error handlers
 window.addEventListener('error', (event) => {
