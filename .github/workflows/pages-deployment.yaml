@@ -6,6 +6,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy (e.g. "main" → downloads nightly_release_main). Leave empty to deploy from the latest non-prerelease tag.'
+        required: false
+        default: ''
   workflow_run:
     workflows: ["Build, Test and Release"]
     types: [completed]
@@ -28,7 +33,10 @@ jobs:
 
       - name: Set tag
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.branch }}" ]; then
+            safe_ref=$(echo "${{ inputs.branch }}" | tr '/' '-')
+            echo "TAG=nightly_release_${safe_ref}" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" = "release" ]; then
             echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           elif [ "${{ github.event_name }}" = "workflow_run" ]; then
             TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }} | head -1)
