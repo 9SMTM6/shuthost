@@ -326,14 +326,17 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         if any_changed {
-            if state.hoststatus_tx.send(Arc::new(new_status.clone())).is_err() {
+            if state
+                .hoststatus_tx
+                .send(Arc::new(new_status.clone()))
+                .is_err()
+            {
                 debug!("Host status receiver dropped, stopping polling");
                 break;
             }
 
             // Fire push notifications for any host that just came online.
-            if let (Some(pool), Some(vapid_key)) =
-                (state.db_pool.clone(), state.vapid_key.clone())
+            if let (Some(pool), Some(vapid_key)) = (state.db_pool.clone(), state.vapid_key.clone())
             {
                 spawn_push_notifications_for_going_online(
                     &old_status,
@@ -378,8 +381,7 @@ fn spawn_push_notifications_for_going_online(
     vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
 ) {
     for (host_name, new_state) in new_status {
-        if *new_state == HostState::Online
-            && old_status.get(host_name) != Some(&HostState::Online)
+        if *new_state == HostState::Online && old_status.get(host_name) != Some(&HostState::Online)
         {
             let pool = pool.clone();
             let vapid_key = vapid_key.clone();

@@ -3,11 +3,14 @@
 import './styles.tailwind.css';
 import { MetaProvider } from '@solidjs/meta';
 import { Route, Router } from '@solidjs/router';
-import { Show, createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { render } from 'solid-js/web';
 import { showJSError } from './components/JsErrorBox';
 import { demoSubpath } from './helpers/demo';
-import { onUpdateAvailable, registerServiceWorker } from './helpers/serviceWorker';
+import {
+    onUpdateAvailable,
+    registerServiceWorker,
+} from './helpers/serviceWorker';
 import { AboutPage } from './pages/AboutPage';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';

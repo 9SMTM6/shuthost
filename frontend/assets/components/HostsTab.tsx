@@ -1,10 +1,10 @@
 import { createMemo, createSignal, For, Show } from 'solid-js';
 import { apiFetch } from '../helpers/apiFetch';
-import { subscribeToHostOnline } from '../helpers/pushSubscription';
 import type { LeaseSource } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
+import { subscribeToHostOnline } from '../helpers/pushSubscription';
 import { serverData } from '../helpers/serverData';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
