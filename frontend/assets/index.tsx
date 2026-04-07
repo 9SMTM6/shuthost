@@ -16,7 +16,7 @@ if (appMount) {
     render(
         () => (
             <MetaProvider>
-                <Router transformUrl={(url) => demoSubpath ? url.slice(demoSubpath.length) || '/' : url}>
+                <Router base={demoSubpath}>
                     <Route path="/" component={App} />
                     <Route path="/login" component={LoginPage} />
                     <Route path="/about" component={AboutPage} />
