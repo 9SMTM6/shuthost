@@ -59,6 +59,7 @@ pub(crate) async fn secure_headers_middleware(req: Request<Body>, next: Next) ->
             "script-src ",
             env!("CSP_APP_JS_HASH"),
             "; ",
+            "worker-src 'self'; ",
             "manifest-src 'self'; ",
             "style-src-elem 'self' 'unsafe-inline'; ",
             "style-src-attr 'unsafe-inline'; ",
