@@ -34,9 +34,19 @@ fmt: typecheck
 build_graphs: typecheck
     pnpm run build:diagrams
 
+install_frozen:
+    pnpm install --frozen-lockfile
+
+install:
+    pnpm install
+
 [group('tests')]
 playwright +flags="":
-    pnpm install --frozen-lockfile && pnpm exec playwright test {{flags}}
+    pnpm exec playwright test {{flags}}
+
+[group('tests')]
+playwright_live_demo +flags="":
+    pnpm exec playwright test --config=playwright.live-demo.config.ts {{flags}}
 
 [group('tests')]
 pixelpeep:

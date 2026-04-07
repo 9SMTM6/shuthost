@@ -1,8 +1,12 @@
 /// <reference types="node" />
 
-import { defineConfig, devices } from '@playwright/test';
+import {
+    defineConfig,
+    devices,
+    type PlaywrightTestConfig,
+} from '@playwright/test';
 
-export default defineConfig({
+export const baseConfig = {
     // Playwright will resolve these paths relative to the config file.
     globalSetup: './tests/global-setup.ts',
     globalTeardown: './tests/global-teardown.ts',
@@ -89,4 +93,6 @@ export default defineConfig({
             use: { ...devices['Pixel 7 landscape'], colorScheme: 'dark' },
         },
     ],
-});
+} as const satisfies PlaywrightTestConfig;
+
+export default defineConfig(baseConfig);
