@@ -1,0 +1,20 @@
+[server]
+port = {{COORD_PORT}}
+bind = "127.0.0.1"
+
+[server.auth.oidc]
+issuer = "http://127.0.0.1:{{DEX_PORT}}"
+client_id = "shuthost-test"
+client_secret = "shuthost-test-secret"
+
+[server.tls]
+cert_path = "{{CERT_PATH}}"
+key_path = "{{KEY_PATH}}"
+persist_self_signed = false
+
+[db]
+path = ":memory:"
+
+[hosts]
+
+[clients]

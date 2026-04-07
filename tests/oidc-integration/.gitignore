@@ -1,0 +1,9 @@
+node_modules
+playwright-report
+test-results
+
+# Generated coordinator config (filled from template at runtime)
+configs/coordinator-dex.toml
+
+# Generated TLS certificates
+certs/

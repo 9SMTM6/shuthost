@@ -162,6 +162,10 @@ fmt:
     just rust_fmt
     just frontend::fmt
 
+[group('tests')]
+oidc_integration_tests +flags="":
+    cd tests/oidc-integration && npm ci && npx playwright test --reporter=line {{flags}}
+
 [script]
 [group('tests')]
 cargo_tests +flags="":
