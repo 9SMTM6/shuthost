@@ -1,11 +1,12 @@
 /// <reference lib="webworker" />
 
-// Service worker for ShutHost push notifications.
-// Handles incoming push events and notification clicks.
+// ShutHost service worker.
+// Currently handles push notifications and notification click events.
+// Registered eagerly at app startup so it is available for future use cases.
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-interface PushPayload {
+type PushPayload = {
     title: string;
     body: string;
     data?: Record<string, unknown>;

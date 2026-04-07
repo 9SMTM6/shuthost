@@ -30,9 +30,8 @@ const getOrCreatePushSubscription = async () => {
         throw new Error('Notification permission denied');
     }
 
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-        type: 'module',
-    });
+    // The service worker is registered eagerly at app startup; just wait for it.
+    const registration = await navigator.serviceWorker.ready;
 
     const vapidResp = await fetch('/api/push/vapid-public-key');
     if (!vapidResp.ok) {

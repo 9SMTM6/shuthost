@@ -6,6 +6,7 @@ import { Route, Router } from '@solidjs/router';
 import { render } from 'solid-js/web';
 import { showJSError } from './components/JsErrorBox';
 import { demoSubpath } from './helpers/demo';
+import { registerServiceWorker } from './helpers/serviceWorker';
 import { AboutPage } from './pages/AboutPage';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
@@ -28,6 +29,8 @@ if (appMount) {
         appMount,
     );
 }
+
+registerServiceWorker();
 
 // Global error handlers
 window.addEventListener('error', (event) => {
