@@ -71,7 +71,7 @@ const HostRow = ((props: { hostName: string }) => {
             data-has-lease={String(hasWebInterfaceLease())}
         >
             <th class="table-cell" scope="row">
-                <A href={`/hosts/${props.hostName}`} class="link">
+                <A href={`/hosts/${props.hostName}`} class="link block">
                     {props.hostName}
                 </A>
             </th>
