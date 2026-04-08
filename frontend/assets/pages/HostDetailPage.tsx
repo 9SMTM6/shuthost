@@ -43,7 +43,21 @@ export const HostDetailPage = (() => {
     };
 
     // Notification: online for longer than duration
-    const [notifyDuration, setNotifyDuration] = createSignal('30');
+    const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
+    type DurationUnit = keyof typeof unitDefaults;
+    const [notifyDuration, setNotifyDuration] = createSignal(unitDefaults.minutes);
+    const [notifyDurationUnit, setNotifyDurationUnit] = createSignal<DurationUnit>('minutes');
+    const [notifyDurationModified, setNotifyDurationModified] = createSignal(false);
+    const handleDurationInput = (value: string) => {
+        setNotifyDuration(Number(value));
+        setNotifyDurationModified(true);
+    };
+    const handleUnitChange = (unit: DurationUnit) => {
+        setNotifyDurationUnit(unit);
+        if (!notifyDurationModified()) {
+            setNotifyDuration(unitDefaults[unit]);
+        }
+    };
     const [notifyDurationState, setNotifyDurationState] =
         createSignal<NotifyState>('idle');
     const handleNotifyDuration = async () => {
@@ -168,19 +182,6 @@ export const HostDetailPage = (() => {
                         title="Get a push notification when this host has been continuously online for longer than the given duration."
                     >
                         <div class="flex items-center gap-1.5">
-                            <input
-                                type="number"
-                                min="1"
-                                class="w-16 px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
-                                value={notifyDuration()}
-                                onInput={(e) =>
-                                    setNotifyDuration(e.currentTarget.value)
-                                }
-                                aria-label="Duration in minutes"
-                            />
-                            <span class="text-sm text-[#616161] dark:text-[#9d9d9d]">
-                                min
-                            </span>
                             <button
                                 type="button"
                                 class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
@@ -197,8 +198,30 @@ export const HostDetailPage = (() => {
                                 <Show when={notifyDurationState() !== 'loading'}>
                                     <Bell size={16} aria-hidden="true" />
                                 </Show>
-                                Online too long
+                                Notify after online for
                             </button>
+                            <input
+                                type="number"
+                                min="1"
+                                class="w-16 px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+                                value={notifyDuration()}
+                                onInput={(e) =>
+                                    handleDurationInput(e.currentTarget.value)
+                                }
+                                aria-label="Duration"
+                            />
+                            <select
+                                class="px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+                                value={notifyDurationUnit()}
+                                onChange={(e) =>
+                                    handleUnitChange(e.currentTarget.value as 'minutes' | 'hours' | 'days')
+                                }
+                                aria-label="Duration unit"
+                            >
+                                <option value="minutes">min</option>
+                                <option value="hours">hr</option>
+                                <option value="days">day</option>
+                            </select>
                         </div>
                         <Show when={notifyDurationState() === 'subscribed'}>
                             <span
