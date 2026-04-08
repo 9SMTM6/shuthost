@@ -27,9 +27,9 @@ use crate::app::{AppState, db};
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
-        .route("/push/vapid-public-key", get(get_vapid_public_key))
-        .route("/push/subscribe-host-online", post(subscribe_host_online))
-        .route("/push/test", post(send_test_push))
+        .route("/vapid-public-key", get(get_vapid_public_key))
+        .route("/subscribe-host-online", post(subscribe_host_online))
+        .route("/test", post(send_test_push))
 }
 
 // ──────────────────────────────────────────────

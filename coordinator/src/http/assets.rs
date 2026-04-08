@@ -60,7 +60,6 @@ pub(crate) fn routes() -> Router<AppState> {
             concat!("/app.", env!("ASSET_HASH_APP_JS"), ".js"),
             get(serve_app_js),
         )
-        .route("/about", get(serve_about))
         .route(
             "/favicon.svg",
             get(async || {
@@ -240,29 +239,6 @@ async fn serve_app_js() -> impl IntoResponse {
         IMMUTABLE_HEADER(),
         TypedHeader(ContentLength(JS.len() as u64)),
         JS,
-    )
-}
-
-/// Serves the about/licenses page as a SPA shell with injected server data.
-#[axum::debug_handler]
-pub(crate) async fn serve_about(
-    State(AppState {
-        auth,
-        config_path,
-        config_rx,
-        ..
-    }): State<AppState>,
-) -> impl IntoResponse {
-    let auth_mode = auth.mode.auth_mode_str();
-    let broadcast_port = config_rx.borrow().server.broadcast_port;
-    (
-        TypedHeader(ContentType::html()),
-        render_ui_html(&UiMode::Normal {
-            config_path: &config_path,
-            auth_warning: false,
-            auth_mode,
-            broadcast_port,
-        }),
     )
 }
 

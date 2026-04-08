@@ -3,14 +3,14 @@ use core::time::Duration;
 
 use axum::{
     Router,
-    body::Body,
+    extract::State,
     http::{
-        Request, StatusCode,
+        Method, StatusCode,
         header::{AUTHORIZATION, COOKIE},
     },
     middleware::{self as ax_middleware},
-    response::Redirect,
-    routing::{self, IntoMakeService, any, get},
+    response::{IntoResponse, Response},
+    routing::{IntoMakeService, any, get},
 };
 use tower::ServiceBuilder;
 use tower_http::{
@@ -43,7 +43,7 @@ pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<App
 
     let private = Router::new()
         .nest("/api", api::routes())
-        .nest("/api", push::routes())
+        .nest("/api/push", push::routes())
         .route("/", get(assets::serve_ui))
         .route("/ws", any(websocket::ws_handler))
         .route_layer(ax_middleware::from_fn_with_state(
@@ -54,6 +54,17 @@ pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<App
         ));
 
     public.merge(private)
+}
+
+/// Fallback handler for unmatched routes: serves the SPA shell for GET/HEAD
+/// requests (letting the client-side router render the correct page, including
+/// the 404 page), and returns 404 for all other methods.
+async fn spa_fallback(method: Method, state: State<AppState>) -> Response {
+    if method == Method::GET || method == Method::HEAD {
+        assets::serve_ui(state).await.into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
 }
 
 pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
@@ -81,11 +92,11 @@ pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         .layer(ax_middleware::from_fn(secure_headers_middleware));
 
     let app = create_app_router(&app_state.auth)
+        // Any unmatched /api/* path gets a clean 404; this must be registered
+        // before the fallback so it is matched with higher precedence.
+        .route("/api/{*path}", any(|| async { StatusCode::NOT_FOUND }))
+        .fallback(spa_fallback)
         .with_state(app_state)
-        .fallback(routing::any(|req: Request<Body>| async move {
-            tracing::warn!(method = %req.method(), uri = %req.uri(), "Unhandled request");
-            Redirect::permanent("/")
-        }))
         .layer(middleware_stack);
 
     app.into_make_service()
