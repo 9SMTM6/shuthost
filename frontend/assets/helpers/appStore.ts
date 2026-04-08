@@ -14,6 +14,9 @@ export type ClientStats = {
     last_used: string | null;
 };
 
+// TODO:
+// * explore defining this depending on the de presence, perhaps add db being enabled to serverdata json and use that to have globally dynamically correct typing
+// * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
 export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
     | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
@@ -25,6 +28,7 @@ export type WsMessage =
               status: StatusMap;
               leases: Record<string, LeaseSource[]>;
               client_stats: Record<string, ClientStats> | null;
+              host_last_online: Record<string, string> | null;
           };
       }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
@@ -35,6 +39,7 @@ export type AppState = {
     leaseMap: Record<string, LeaseSource[]>;
     clients: string[];
     clientStats: Record<string, ClientStats> | null;
+    hostLastOnline: Record<string, string> | null;
 };
 
 // ==========================
@@ -47,6 +52,7 @@ const [state, setState] = createStore<AppState>({
     leaseMap: {},
     clients: [],
     clientStats: null,
+    hostLastOnline: null,
 });
 
 export { state };
@@ -60,6 +66,7 @@ export const applyMessage = (message: WsMessage) => {
                 statusMap: message.payload.status,
                 leaseMap: message.payload.leases,
                 clientStats: message.payload.client_stats,
+                hostLastOnline: message.payload.host_last_online,
             });
             break;
         case 'HostStatus':

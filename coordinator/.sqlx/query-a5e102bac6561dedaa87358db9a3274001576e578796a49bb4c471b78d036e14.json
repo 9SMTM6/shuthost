@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT hostname, last_online FROM host_last_online",
+  "describe": {
+    "columns": [
+      {
+        "name": "hostname",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "last_online",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a5e102bac6561dedaa87358db9a3274001576e578796a49bb4c471b78d036e14"
+}

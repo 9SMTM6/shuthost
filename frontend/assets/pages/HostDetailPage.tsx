@@ -180,7 +180,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 //     );
 // };
 
-const HostInfoSection = () => (
+const HostInfoSection = (props: { lastOnline: string | null }) => (
     <section class="section-container p-4 mb-4" aria-labelledby="host-info-title">
         <h3 id="host-info-title" class="section-title text-base">
             Information
@@ -190,9 +190,8 @@ const HostInfoSection = () => (
             {/* TODO: Requires backend to store agent_version from StartupBroadcast and expose it via WebSocket */}
             {/* <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd> */}
             <dt class="font-medium text-black dark:text-[#cccccc]">Last online</dt>
-            {/* TODO: Requires backend to track last-seen timestamp per host and expose it via WebSocket */}
             <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                {formatRelativeTimestamp('2026-04-07T14:23:00Z')}
+                {formatRelativeTimestamp(props.lastOnline)}
             </dd>
         </dl>
     </section>
@@ -285,6 +284,10 @@ export const HostDetailPage = (() => {
         leases().filter(
             (l): l is ClientLease => l.type === 'Client',
         );
+    const lastOnline = (): string | null | undefined =>
+        state.hostLastOnline === null
+            ? undefined
+            : (state.hostLastOnline[hostname()] ?? null);
 
     const updateLease = async (action: 'take' | 'release') => {
         if (isDemoMode) {
@@ -340,7 +343,9 @@ export const HostDetailPage = (() => {
                     {/* <NotifyDurationButton hostname={hostname()} /> */}
                 </div>
 
-                <HostInfoSection />
+                <Show when={lastOnline() !== undefined}>
+                    <HostInfoSection lastOnline={lastOnline() as string | null} />
+                </Show>
 
                 <HostLeasesSection
                     hasWebInterfaceLease={hasWebInterfaceLease()}

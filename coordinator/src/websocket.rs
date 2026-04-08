@@ -58,6 +58,7 @@ pub enum WsMessage {
         status: HostStatus,
         leases: LeaseMapRaw,
         client_stats: Option<HashMap<String, ClientStats>>,
+        host_last_online: Option<HashMap<String, chrono::DateTime<chrono::Utc>>>,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
@@ -189,12 +190,24 @@ async fn send_startup_msg(
     } else {
         None
     };
+    let host_last_online = if let Some(pool) = db_pool {
+        match db::get_all_host_last_online(pool).await {
+            Ok(map) => Some(map),
+            Err(e) => {
+                error!(%e, "Failed to get host last online timestamps");
+                None
+            }
+        }
+    } else {
+        None
+    };
     let initial_msg = WsMessage::Initial {
         hosts,
         clients,
         status: current_state.as_ref().clone(),
         leases,
         client_stats,
+        host_last_online,
     };
 
     send_ws_message(socket, &initial_msg)
