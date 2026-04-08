@@ -36,7 +36,7 @@ fi
 
 echo "$binary"
 
-port=8090
+port=8091
 "$binary" demo-service --port $port "$subpath" &
 DEMO_PID=$!
 
@@ -51,37 +51,26 @@ base_url=http://localhost:$port
 # Fetch demo HTML
 curl -s $base_url/ > "$export_dir/index.html"
 
-# Collect all internal pages to fetch
-pages=$(grep -Eo 'href="/[^"]*"' "$export_dir/index.html" | sed 's/href="//;s/"$//' | grep -v '^http' | sort | uniq)
-
-# Fetch additional pages
-for page in $pages; do
-    if [ "$page" != "/" ]; then
-        filename="${page#/}.html"
-        curl -s "$base_url$page" > "$export_dir/$filename"
-    fi
-done
-
-# Adjust links in HTML files for static hosting
+# Infer and fetch assets from demo server (root-relative paths, before rewriting links)
 for html in "$export_dir"/*.html; do
-    sed -i 's|href="/"|href="index.html"|g' "$html"
-    sed -i 's|href="/\([^/][^"]*\)"|href="\1.html"|g' "$html"
-    sed -i 's|src="/\([^/][^"]*\)"|src="\1"|g' "$html"
-done
-
-# Infer and fetch assets from demo server
-for html in "$export_dir"/*.html; do
-    grep -Eo '(src|href)="[^"]+"' "$html" | \
+    grep -Eo '(src|href)="(/[^"]*)"' "$html" | \
         sed -E 's/^(src|href)="//;s/"$//' | \
         while read asset; do
-            # Only fetch local relative assets
+            # Only fetch actual static files (have a file extension); skip bare SPA routes
             case "$asset" in
-                ./*) ;;
+                *.*) ;;
                 *) continue;;
             esac
-            mkdir -p "$export_dir/$(dirname "$asset")"
-            curl -s "http://localhost:8090/$asset" -o "$export_dir/$asset"
+            local_path="${asset#/}"
+            mkdir -p "$export_dir/$(dirname "$local_path")"
+            curl -s "$base_url$asset" -o "$export_dir/$local_path"
         done
+done
+
+# Rewrite root-relative links to include subpath (required for GitHub Pages deployment at a subpath)
+for html in "$export_dir"/*.html; do
+    sed -i "s|href=\"/\([^\"]*\)\"|href=\"${subpath}\1\"|g" "$html"
+    sed -i "s|src=\"/\([^\"]*\)\"|src=\"${subpath}\1\"|g" "$html"
 done
 
 # Fetch dynamically loaded API data (not discoverable via HTML attribute scraping)
