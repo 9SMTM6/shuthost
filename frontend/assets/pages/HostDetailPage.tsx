@@ -1,5 +1,6 @@
 import { Title } from '@solidjs/meta';
 import { A, useParams } from '@solidjs/router';
+import { Bell, BellRing, LoaderCircle, Power, PowerOff } from 'lucide-solid';
 import { createSignal, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
@@ -183,6 +184,7 @@ export const HostDetailPage = (() => {
                                                 }
                                                 aria-label="Take web interface lease"
                                             >
+                                                <Power size={14} aria-hidden="true" />
                                                 Take
                                             </button>
                                             <button
@@ -193,6 +195,7 @@ export const HostDetailPage = (() => {
                                                 }
                                                 aria-label="Release web interface lease"
                                             >
+                                                <PowerOff size={14} aria-hidden="true" />
                                                 Release
                                             </button>
                                         </div>
@@ -262,14 +265,21 @@ export const HostDetailPage = (() => {
                                 }
                                 onClick={handleNotifyDuration}
                             >
+                                <Show when={notifyDurationState() === 'loading'}>
+                                    <LoaderCircle size={14} class="animate-spin" aria-hidden="true" />
+                                </Show>
+                                <Show when={notifyDurationState() !== 'loading'}>
+                                    <Bell size={14} aria-hidden="true" />
+                                </Show>
                                 Subscribe
                             </button>
                             <Show when={notifyDurationState() === 'subscribed'}>
                                 <span
-                                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)]"
+                                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
                                     aria-live="polite"
                                 >
-                                    ✓ Subscribed
+                                    <BellRing size={14} aria-hidden="true" />
+                                    Subscribed
                                 </span>
                             </Show>
                             <Show when={notifyDurationState() === 'error'}>
@@ -302,16 +312,23 @@ export const HostDetailPage = (() => {
                                 }
                                 onClick={handleNotifyUnscheduled}
                             >
+                                <Show when={notifyUnscheduledState() === 'loading'}>
+                                    <LoaderCircle size={14} class="animate-spin" aria-hidden="true" />
+                                </Show>
+                                <Show when={notifyUnscheduledState() !== 'loading'}>
+                                    <Bell size={14} aria-hidden="true" />
+                                </Show>
                                 Subscribe
                             </button>
                             <Show
                                 when={notifyUnscheduledState() === 'subscribed'}
                             >
                                 <span
-                                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)]"
+                                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
                                     aria-live="polite"
                                 >
-                                    ✓ Subscribed
+                                    <BellRing size={14} aria-hidden="true" />
+                                    Subscribed
                                 </span>
                             </Show>
                             <Show when={notifyUnscheduledState() === 'error'}>

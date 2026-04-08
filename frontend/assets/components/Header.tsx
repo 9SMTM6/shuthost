@@ -1,6 +1,7 @@
 import { A, useLocation, useNavigate } from '@solidjs/router';
 import type { JSX, ParentProps } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
+import { LogOut } from 'lucide-solid';
 import { isLoggedIn } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
 import type { AnyComponent } from '../helpers/component';
@@ -73,8 +74,9 @@ export const SimpleHeader = (() => (
                     type="submit"
                     class="text-xs sm:text-sm px-3 py-1 rounded border border-transparent btn btn-red"
                     aria-label="Logout"
+                    title="Logout"
                 >
-                    Logout
+                    <LogOut size={16} aria-hidden="true" />
                 </button>
             </form>
         </Show>
@@ -171,8 +173,9 @@ export const Header = (() => {
                                 type="submit"
                                 class="text-xs sm:text-sm px-3 py-1 rounded border border-transparent btn btn-red"
                                 aria-label="Logout"
+                                title="Logout"
                             >
-                                Logout
+                                <LogOut size={16} aria-hidden="true" />
                             </button>
                         </form>
                     </Show>

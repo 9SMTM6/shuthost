@@ -62,7 +62,7 @@ body {
         @apply bg-[#f3f3f3] dark:bg-[#252526] rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] py-2 px-3 relative overflow-x-auto;
         .copy-button {
             /* vertically center the button inside the code container so it doesn't overlap wrapped text */
-            @apply absolute right-2 bg-[#005fb8] dark:bg-[#0078d4] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95;
+            @apply inline-flex items-center gap-1 absolute right-2 bg-[#005fb8] dark:bg-[#0078d4] text-white px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 cursor-pointer active:scale-95;
             &:hover {
                 @apply bg-[#004a94] dark:bg-[#006cbe] shadow-sm;
             }
@@ -80,7 +80,7 @@ body {
     }
 
     .btn {
-        @apply w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer;
+        @apply inline-flex items-center justify-center gap-1 w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer;
         &.btn-green {
             @apply bg-[#007a4d] dark:bg-[rgba(46,193,100,0.85)] dark:text-black;
             &:hover {

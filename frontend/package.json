@@ -21,6 +21,7 @@
     "dependencies": {
         "@solidjs/meta": "^0.29.4",
         "@solidjs/router": "^0.16.1",
+        "lucide-solid": "^1.7.0",
         "solid-js": "^1.9.12",
         "tailwindcss": "^4.2.2",
         "typescript": "^6.0.2"

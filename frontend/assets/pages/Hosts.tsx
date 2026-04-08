@@ -1,5 +1,6 @@
 import { A } from '@solidjs/router';
 import { createMemo, For, Show } from 'solid-js';
+import { Power, PowerOff } from 'lucide-solid';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
@@ -90,6 +91,7 @@ const HostRow = ((props: { hostName: string }) => {
                         onClick={() => updateLease('take')}
                         aria-label={hasClients() ? 'Take Lease' : 'Start'}
                     >
+                        <Power size={14} aria-hidden="true" />
                         {hasClients() ? 'Take Lease' : 'Start'}
                     </button>
                     <button
@@ -98,6 +100,7 @@ const HostRow = ((props: { hostName: string }) => {
                         onClick={() => updateLease('release')}
                         aria-label={hasClients() ? 'Release Lease' : 'Shutdown'}
                     >
+                        <PowerOff size={14} aria-hidden="true" />
                         {hasClients() ? 'Release Lease' : 'Shutdown'}
                     </button>
                 </div>
