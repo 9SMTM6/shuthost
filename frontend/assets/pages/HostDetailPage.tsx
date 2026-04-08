@@ -1,6 +1,13 @@
 import { Title } from '@solidjs/meta';
 import { A, useParams } from '@solidjs/router';
-import { ArrowLeft, Bell, BellRing, LoaderCircle, Power, PowerOff } from 'lucide-solid';
+import {
+    ArrowLeft,
+    Bell,
+    BellRing,
+    LoaderCircle,
+    Power,
+    PowerOff,
+} from 'lucide-solid';
 import { createSignal, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
@@ -15,7 +22,9 @@ type ClientLease = { type: 'Client'; value: string };
 
 // --- Sub-components ---
 
-const HostStatusBadge = (props: { status: 'online' | 'offline' | undefined }) => (
+const HostStatusBadge = (props: {
+    status: 'online' | 'offline' | undefined;
+}) => (
     <>
         <Show when={props.status === 'online'}>
             <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-[rgba(46,193,100,0.15)] dark:text-[rgba(46,193,100,0.9)]">
@@ -60,11 +69,18 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
             <button
                 type="button"
                 class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
-                disabled={notifyState() === 'loading' || notifyState() === 'subscribed'}
+                disabled={
+                    notifyState() === 'loading' ||
+                    notifyState() === 'subscribed'
+                }
                 onClick={handle}
             >
                 <Show when={notifyState() === 'loading'}>
-                    <LoaderCircle size={16} class="animate-spin" aria-hidden="true" />
+                    <LoaderCircle
+                        size={16}
+                        class="animate-spin"
+                        aria-hidden="true"
+                    />
                 </Show>
                 <Show when={notifyState() !== 'loading'}>
                     <Bell size={16} aria-hidden="true" />
@@ -81,7 +97,10 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
                 </span>
             </Show>
             <Show when={notifyState() === 'error'}>
-                <span class="text-xs text-red-500 dark:text-[#f48771]" aria-live="polite">
+                <span
+                    class="text-xs text-red-500 dark:text-[#f48771]"
+                    aria-live="polite"
+                >
                     Failed to subscribe. Please try again.
                 </span>
             </Show>
@@ -179,7 +198,10 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 // };
 
 const HostInfoSection = (props: { lastOnline: string | null }) => (
-    <section class="section-container p-4 mb-4" aria-labelledby="host-info-title">
+    <section
+        class="section-container p-4 mb-4"
+        aria-labelledby="host-info-title"
+    >
         <h3 id="host-info-title" class="section-title text-base">
             Information
         </h3>
@@ -187,7 +209,9 @@ const HostInfoSection = (props: { lastOnline: string | null }) => (
             {/* <dt class="font-medium text-black dark:text-[#cccccc]">Agent version</dt> */}
             {/* TODO: Requires backend to store agent_version from StartupBroadcast and expose it via WebSocket */}
             {/* <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd> */}
-            <dt class="font-medium text-black dark:text-[#cccccc]">Last online</dt>
+            <dt class="font-medium text-black dark:text-[#cccccc]">
+                Last online
+            </dt>
             <dd class="text-[#616161] dark:text-[#9d9d9d]">
                 {formatRelativeTimestamp(props.lastOnline)}
             </dd>
@@ -210,13 +234,20 @@ const HostLeasesSection = (props: {
             <table class="actions-table w-full">
                 <thead>
                     <tr>
-                        <th class="table-header" scope="col">Holder</th>
-                        <th class="table-header" scope="col">Actions</th>
+                        <th class="table-header" scope="col">
+                            Holder
+                        </th>
+                        <th class="table-header" scope="col">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200" aria-live="polite">
                     {/* Web Interface lease — always shown; Take/Release toggled via CSS */}
-                    <tr class="table-row" data-has-lease={String(props.hasWebInterfaceLease)}>
+                    <tr
+                        class="table-row"
+                        data-has-lease={String(props.hasWebInterfaceLease)}
+                    >
                         <th class="table-cell" scope="row">
                             <span class="block">Web Interface</span>
                             <Show when={!props.hasWebInterfaceLease}>
@@ -253,7 +284,9 @@ const HostLeasesSection = (props: {
                     <For each={props.clientLeases}>
                         {(lease) => (
                             <tr class="table-row">
-                                <th class="table-cell" scope="row">{lease.value}</th>
+                                <th class="table-cell" scope="row">
+                                    {lease.value}
+                                </th>
                                 <td class="table-cell text-[#616161] dark:text-[#9d9d9d] text-xs">
                                     Client-held
                                 </td>
@@ -279,9 +312,7 @@ export const HostDetailPage = (() => {
     const hasWebInterfaceLease = () =>
         leases().some((l) => l.type === 'WebInterface');
     const clientLeases = () =>
-        leases().filter(
-            (l): l is ClientLease => l.type === 'Client',
-        );
+        leases().filter((l): l is ClientLease => l.type === 'Client');
     const lastOnline = (): string | null | undefined =>
         state.hostLastOnline === null
             ? undefined
@@ -342,7 +373,9 @@ export const HostDetailPage = (() => {
                 </div>
 
                 <Show when={lastOnline() !== undefined}>
-                    <HostInfoSection lastOnline={lastOnline() as string | null} />
+                    <HostInfoSection
+                        lastOnline={lastOnline() as string | null}
+                    />
                 </Show>
 
                 <HostLeasesSection

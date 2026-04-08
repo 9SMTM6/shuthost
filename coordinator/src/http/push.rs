@@ -28,7 +28,10 @@ use crate::app::{AppState, db};
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/vapid-public-key", get(get_vapid_public_key))
-        .route("/subscribe-host-unscheduled", post(subscribe_host_unscheduled))
+        .route(
+            "/subscribe-host-unscheduled",
+            post(subscribe_host_unscheduled),
+        )
         .route("/test", post(send_test_push))
 }
 
@@ -139,7 +142,8 @@ async fn send_test_push(
         return StatusCode::SERVICE_UNAVAILABLE;
     };
 
-    let subscriptions = match db::get_subscriptions_for_host_unscheduled(pool, &body.hostname).await {
+    let subscriptions = match db::get_subscriptions_for_host_unscheduled(pool, &body.hostname).await
+    {
         Ok(s) => s,
         Err(e) => {
             error!("Failed to fetch subscriptions: {e:#}");

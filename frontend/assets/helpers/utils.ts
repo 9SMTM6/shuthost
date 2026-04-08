@@ -1,6 +1,8 @@
 const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
-export const formatRelativeTimestamp = (isoTimestamp: string | null | undefined): string => {
+export const formatRelativeTimestamp = (
+    isoTimestamp: string | null | undefined,
+): string => {
     if (!isoTimestamp) return 'Never';
     const date = new Date(isoTimestamp);
     const diffMs = Date.now() - date.getTime();
