@@ -51,14 +51,14 @@ const getOrCreatePushSubscription = async () => {
 };
 
 /**
- * Subscribes the current browser to push notifications for when the given
- * host comes online.
+ * Subscribes the current browser to push notifications for unscheduled events
+ * on the given host (startup or shutdown not triggered by ShutHost).
  */
-export const subscribeToHostOnline = async (hostname: string) => {
+export const subscribeToHostUnscheduled = async (hostname: string) => {
     const subscription = await getOrCreatePushSubscription();
     const subJson = subscription.toJSON();
 
-    await apiFetch('/api/push/subscribe-host-online', {
+    await apiFetch('/api/push/subscribe-host-unscheduled', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: subJson, hostname }),

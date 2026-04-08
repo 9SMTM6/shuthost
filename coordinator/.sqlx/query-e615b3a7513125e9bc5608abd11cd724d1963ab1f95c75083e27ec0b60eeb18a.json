@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT ps.endpoint, ps.p256dh, ps.auth\n         FROM push_subscriptions ps\n         JOIN push_subscription_host_online pho ON pho.subscription_id = ps.id\n         WHERE pho.hostname = ?",
+  "query": "SELECT ps.endpoint, ps.p256dh, ps.auth\n         FROM push_subscriptions ps\n         JOIN push_subscription_host_unscheduled phu ON phu.subscription_id = ps.id\n         WHERE phu.hostname = ?",
   "describe": {
     "columns": [
       {
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "bbb99f2bef3124216cce3d3d5bb57191b81a2811c8aa4f3e080ee337de3b5f88"
+  "hash": "e615b3a7513125e9bc5608abd11cd724d1963ab1f95c75083e27ec0b60eeb18a"
 }

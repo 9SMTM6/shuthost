@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO push_subscription_host_unscheduled (subscription_id, hostname) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3438fce78f49b4dd29f3b7806ee0a0ebd2d681a481aee6595b7f061b50cd5cc0"
+}

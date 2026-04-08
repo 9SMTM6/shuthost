@@ -549,19 +549,19 @@ pub(crate) async fn upsert_push_subscription(
     Ok(result.id)
 }
 
-/// Associates a push subscription with a host-online notification.
+/// Associates a push subscription with unscheduled-event notifications for a host.
 ///
 /// # Errors
 ///
 /// Returns an error if the database operation fails.
 #[tracing::instrument(skip(pool), err)]
-pub(crate) async fn subscribe_host_online(
+pub(crate) async fn subscribe_host_unscheduled(
     pool: &DbPool,
     subscription_id: i64,
     hostname: &str,
 ) -> eyre::Result<()> {
     sqlx::query!(
-        "INSERT OR IGNORE INTO push_subscription_host_online (subscription_id, hostname) VALUES (?, ?)",
+        "INSERT OR IGNORE INTO push_subscription_host_unscheduled (subscription_id, hostname) VALUES (?, ?)",
         subscription_id,
         hostname,
     )
@@ -570,13 +570,13 @@ pub(crate) async fn subscribe_host_online(
     Ok(())
 }
 
-/// Returns all push subscriptions interested in a specific host coming online.
+/// Returns all push subscriptions interested in unscheduled events for a specific host.
 ///
 /// # Errors
 ///
 /// Returns an error if the database query fails.
 #[tracing::instrument(skip(pool), err)]
-pub(crate) async fn get_subscriptions_for_host_online(
+pub(crate) async fn get_subscriptions_for_host_unscheduled(
     pool: &DbPool,
     hostname: &str,
 ) -> eyre::Result<Vec<PushSubscription>> {
@@ -584,8 +584,8 @@ pub(crate) async fn get_subscriptions_for_host_online(
         PushSubscription,
         "SELECT ps.endpoint, ps.p256dh, ps.auth
          FROM push_subscriptions ps
-         JOIN push_subscription_host_online pho ON pho.subscription_id = ps.id
-         WHERE pho.hostname = ?",
+         JOIN push_subscription_host_unscheduled phu ON phu.subscription_id = ps.id
+         WHERE phu.hostname = ?",
         hostname,
     )
     .fetch_all(pool)
@@ -638,7 +638,7 @@ pub(crate) async fn get_all_host_last_online(
         .collect())
 }
 
-/// Removes a push subscription (and all associated host-online entries via CASCADE).
+/// Removes a push subscription (and all associated unscheduled-event entries via CASCADE).
 ///
 /// # Errors
 ///
