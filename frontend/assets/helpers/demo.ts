@@ -10,20 +10,14 @@ export const demoSubpath = (() => {
     return (raw.startsWith('/') ? raw : `/${raw}`).replace(/\/$/, '');
 })();
 
-const subpath = demoSubpath;
-
 let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
 let statusTimeout: ReturnType<typeof setTimeout> | null = null;
 
+let _demoInitialized = false;
+
 export const initDemoMode = () => {
-    // Adjust root-relative links for the GitHub Pages subpath
-    document
-        .querySelectorAll<HTMLAnchorElement>('a[href^="/"]')
-        .forEach((a) => {
-            const href = a.getAttribute('href');
-            if (!href || href.startsWith('//')) return;
-            a.setAttribute('href', subpath + href);
-        });
+    if (_demoInitialized) return;
+    _demoInitialized = true;
 
     console.info('Demo mode enabled: UI is using simulated data.');
 

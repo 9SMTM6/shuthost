@@ -1,5 +1,7 @@
 import { A } from '@solidjs/router';
 import { createMemo, For, Show } from 'solid-js';
+import { AppLayout } from '../components/App';
+import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import type { LeaseSource } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
@@ -8,7 +10,6 @@ import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
-import { CopyButton } from './CopyButton';
 
 const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
@@ -99,18 +100,13 @@ const HostRow = ((props: { hostName: string }) => {
                     >
                         {hasClients() ? 'Release Lease' : 'Shutdown'}
                     </button>
-
                 </div>
             </td>
         </tr>
     );
 }) satisfies AnyComponent;
 
-// ==========================
-// HostsTab
-// ==========================
-
-export const HostsTab = ((props: { configPath: string }) => {
+export const HostsPage = (() => {
     const sortedHosts = createMemo(() =>
         sortActiveFirst(
             state.hosts,
@@ -123,13 +119,7 @@ export const HostsTab = ((props: { configPath: string }) => {
     const hasClients = () => state.clients.length > 0;
 
     return (
-        <section
-            id="hosts-tab"
-            class="tab-content active"
-            aria-labelledby="tab-hosts"
-            role="tabpanel"
-            tabindex="0"
-        >
+        <AppLayout>
             {/* Install Instructions Panel */}
             <section
                 class="section-container mt-0 py-0"
@@ -211,7 +201,7 @@ export const HostsTab = ((props: { configPath: string }) => {
                                 data-config-location
                                 class="code-block"
                             >
-                                {props.configPath}
+                                {serverData.configPath}
                             </code>
                         </div>
 
@@ -268,6 +258,6 @@ export const HostsTab = ((props: { configPath: string }) => {
                     </table>
                 </div>
             </section>
-        </section>
+        </AppLayout>
     );
 }) satisfies AnyComponent;

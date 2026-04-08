@@ -42,6 +42,10 @@ export const baseConfig = {
         baseURL: 'http://127.0.0.1',
         trace: 'on',
         ignoreHTTPSErrors: true,
+        // --ignore-certificate-errors is needed in addition to ignoreHTTPSErrors because
+        // Playwright's flag only covers page navigations. Chromium's internal service worker
+        // script fetch bypasses that flag and rejects self-signed certs at the browser level.
+        launchOptions: { args: ['--ignore-certificate-errors'] },
         // Explicitly use Playwright's Chromium browser so projects don't try to use a system Chrome
         browserName: 'chromium',
         channel: 'chromium',

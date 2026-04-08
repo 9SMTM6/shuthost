@@ -69,7 +69,7 @@ export const expand_and_sanitize_host_install = async (
     page: Page,
     configKey: ConfigKey,
 ) => {
-    await page.goto(`${getBaseUrl(configKey)}#hosts`);
+    await page.goto(`${getBaseUrl(configKey)}/hosts`);
     // Open the collapsible by checking the toggle input
     // The checkbox input is hidden (CSS); click the visible header/label instead.
     await page.waitForSelector('#host-install-header');

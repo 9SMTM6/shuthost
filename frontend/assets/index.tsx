@@ -2,7 +2,7 @@
 
 import './styles.tailwind.css';
 import { MetaProvider } from '@solidjs/meta';
-import { Route, Router } from '@solidjs/router';
+import { Navigate, Route, Router } from '@solidjs/router';
 import { createSignal, Show } from 'solid-js';
 import { render } from 'solid-js/web';
 import { showJSError } from './components/JsErrorBox';
@@ -12,8 +12,10 @@ import {
     registerServiceWorker,
 } from './helpers/serviceWorker';
 import { AboutPage } from './pages/AboutPage';
-import { App } from './pages/App';
+import { ArchitecturePage } from './pages/Architecture';
+import { ClientsPage } from './pages/Clients';
 import { HostDetailPage } from './pages/HostDetailPage';
+import { HostsPage } from './pages/Hosts';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -26,7 +28,13 @@ if (appMount) {
         () => (
             <MetaProvider>
                 <Router base={demoSubpath}>
-                    <Route path="/" component={App} />
+                    <Route
+                        path="/"
+                        component={() => <Navigate href="/hosts" />}
+                    />
+                    <Route path="/hosts" component={HostsPage} />
+                    <Route path="/clients" component={ClientsPage} />
+                    <Route path="/docs" component={ArchitecturePage} />
                     <Route path="/login" component={LoginPage} />
                     <Route path="/about" component={AboutPage} />
                     <Route path="/hosts/:hostname" component={HostDetailPage} />

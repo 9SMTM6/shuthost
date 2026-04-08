@@ -1,3 +1,4 @@
+import { AppLayout } from '../components/App';
 import clientControllerInteractionSvg from '../generated/client_controller_interaction.svg?raw';
 import deploymentSvg from '../generated/deployment.svg?raw';
 import directControlComparisonSvg from '../generated/direct_control_comparison.svg?raw';
@@ -5,8 +6,8 @@ import hostAgentInteractionSvg from '../generated/host_agent_interaction.svg?raw
 import type { AnyComponent } from '../helpers/component';
 import platformSupportHtml from '../partials/platform_support.md?raw';
 
-export const ArchitectureTab = (() => (
-    <section id="architecture-tab" class="tab-content">
+export const ArchitecturePage = (() => (
+    <AppLayout>
         <div innerHTML={platformSupportHtml} />
 
         <article class="section-container mt-0">
@@ -347,5 +348,5 @@ export const ArchitectureTab = (() => (
                 </aside>
             </section>
         </article>
-    </section>
+    </AppLayout>
 )) satisfies AnyComponent;

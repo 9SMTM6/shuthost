@@ -122,4 +122,8 @@ fetch_agent "windows/aarch64"
 # Stop demo service
 kill $DEMO_PID
 
+# Copy index.html as 404.html so GitHub Pages serves the SPA for all deep-link paths
+# (e.g. /hosts, /clients, /docs) that are handled by the client-side router.
+cp "$export_dir/index.html" "$export_dir/404.html"
+
 echo "Static demo prepared in $export_dir. Ready for GitHub Pages deployment."

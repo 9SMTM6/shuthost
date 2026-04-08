@@ -8,7 +8,7 @@ test.describe('main page(s)', () => {
     test('hosts page should not have any automatically detectable accessibility issues', async ({
         page,
     }) => {
-        await page.goto(`${base}#hosts`);
+        await page.goto(`${base}/hosts`);
         await expand_and_sanitize_host_install(page, 'hosts-and-clients');
 
         const accessibilityScanResults = await new AxeBuilder({
@@ -21,7 +21,7 @@ test.describe('main page(s)', () => {
     test('clients page should not have any automatically detectable accessibility issues', async ({
         page,
     }) => {
-        await page.goto(`${base}#clients`);
+        await page.goto(`${base}/clients`);
 
         const accessibilityScanResults = await new AxeBuilder({
             page,
@@ -33,7 +33,7 @@ test.describe('main page(s)', () => {
     test('docs page should not have any automatically detectable accessibility issues', async ({
         page,
     }) => {
-        await page.goto(`${base}#architecture`);
+        await page.goto(`${base}/docs`);
 
         const accessibilityScanResults = await new AxeBuilder({
             page,

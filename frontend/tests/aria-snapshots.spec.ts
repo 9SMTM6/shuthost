@@ -11,7 +11,7 @@ for (const name of ['hosts-only', 'hosts-and-clients'] as const) {
     test.describe(`${name} config`, () => {
         const base = getBaseUrl(name);
         test(`ARIA snapshot for hosts tab (${name})`, async ({ page }) => {
-            await page.goto(`${base}#hosts`);
+            await page.goto(`${base}/hosts`);
             await page.waitForSelector('#host-table-body', {
                 state: 'attached',
             });
@@ -22,7 +22,7 @@ for (const name of ['hosts-only', 'hosts-and-clients'] as const) {
         });
 
         test(`ARIA snapshot for clients tab (${name})`, async ({ page }) => {
-            await page.goto(`${base}#clients`);
+            await page.goto(`${base}/clients`);
             await page.waitForSelector('#client-table-body', {
                 state: 'attached',
             });
@@ -38,7 +38,7 @@ for (const name of ['hosts-only', 'hosts-and-clients'] as const) {
 test.describe('no-db config', () => {
     const base = getBaseUrl('no-db');
     test('ARIA snapshot for clients table (no-db)', async ({ page }) => {
-        await page.goto(`${base}#clients`);
+        await page.goto(`${base}/clients`);
         await page.waitForSelector('#client-table-body', { state: 'attached' });
         await expect(page.locator('#client-table-body')).toMatchAriaSnapshot({
             name: `at_clients-table-cfg_no-db.aria.yml`,
@@ -50,8 +50,10 @@ test.describe('no-db config', () => {
 test.describe('architecture tab', () => {
     const base = getBaseUrl('hosts-and-clients');
     test('ARIA snapshot for architecture tab', async ({ page }) => {
-        await page.goto(`${base}#architecture`);
-        await page.waitForSelector('#architecture-tab', { state: 'visible' });
+        await page.goto(`${base}/docs`);
+        await page.waitForSelector('#platform-support-title', {
+            state: 'visible',
+        });
         await sanitizeVersion(page);
         await expect(page.locator('#main-content')).toMatchAriaSnapshot({
             name: `at_architecture.aria.yml`,
@@ -66,7 +68,7 @@ test.describe('expanded install panels', () => {
     test('ARIA snapshot with Install Host Agent expanded (nada)', async ({
         page,
     }) => {
-        await page.goto(`${base}#hosts`);
+        await page.goto(`${base}/hosts`);
         await expand_and_sanitize_host_install(page, key);
         await sanitizeVersion(page);
         await expect(page.locator('#main-content')).toMatchAriaSnapshot({
@@ -76,7 +78,7 @@ test.describe('expanded install panels', () => {
     test('ARIA snapshot with Install Client expanded (nada)', async ({
         page,
     }) => {
-        await page.goto(`${base}#clients`);
+        await page.goto(`${base}/clients`);
         await page.waitForSelector('#client-install-header');
         await page.click('#client-install-header');
         await page.waitForSelector('#client-install-content', {

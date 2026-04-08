@@ -10,15 +10,15 @@ test.describe('main page(s)', () => {
     const cfg = 'hosts-and-clients'; // key, not path
     const base = getBaseUrl(cfg);
     test('hosts', async ({ page }) => {
-        await page.goto(`${base}#hosts`);
+        await page.goto(`${base}/hosts`);
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('#hosts-tab', { state: 'visible' });
+        await page.waitForSelector('#host-table-body', { state: 'attached' });
         await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`);
     });
 
     test('expanded host install', async ({ page }) => {
-        await page.goto(`${base}#hosts`);
+        await page.goto(`${base}/hosts`);
         await expand_and_sanitize_host_install(page, cfg);
         await page.waitForLoadState('networkidle');
         await expect(
@@ -27,15 +27,15 @@ test.describe('main page(s)', () => {
     });
 
     test('clients', async ({ page }) => {
-        await page.goto(`${base}#clients`);
+        await page.goto(`${base}/clients`);
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('#clients-tab', { state: 'visible' });
+        await page.waitForSelector('#client-table-body', { state: 'attached' });
         await sanitizeVersion(page);
         await expect(page.locator('body')).toHaveScreenshot(`at_clients.png`);
     });
 
     test('platform support', async ({ page }) => {
-        await page.goto(`${base}#architecture`);
+        await page.goto(`${base}/docs`);
         await page.waitForLoadState('networkidle');
         await page.waitForSelector('#platform-support-title', {
             state: 'visible',
