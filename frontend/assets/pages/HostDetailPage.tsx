@@ -91,94 +91,94 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
     );
 };
 
-const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
-type DurationUnit = keyof typeof unitDefaults;
+// const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
+// type DurationUnit = keyof typeof unitDefaults;
 
-const NotifyDurationButton = (_props: { hostname: string }) => {
-    const [notifyDuration, setNotifyDuration] = createSignal(unitDefaults.minutes);
-    const [notifyDurationUnit, setNotifyDurationUnit] = createSignal<DurationUnit>('minutes');
-    const [notifyDurationModified, setNotifyDurationModified] = createSignal(false);
-    const [notifyState, setNotifyState] = createSignal<NotifyState>('idle');
+// const NotifyDurationButton = (_props: { hostname: string }) => {
+//     const [notifyDuration, setNotifyDuration] = createSignal(unitDefaults.minutes);
+//     const [notifyDurationUnit, setNotifyDurationUnit] = createSignal<DurationUnit>('minutes');
+//     const [notifyDurationModified, setNotifyDurationModified] = createSignal(false);
+//     const [notifyState, setNotifyState] = createSignal<NotifyState>('idle');
 
-    const handleDurationInput = (value: string) => {
-        setNotifyDuration(Number(value));
-        setNotifyDurationModified(true);
-    };
+//     const handleDurationInput = (value: string) => {
+//         setNotifyDuration(Number(value));
+//         setNotifyDurationModified(true);
+//     };
 
-    const handleUnitChange = (unit: DurationUnit) => {
-        setNotifyDurationUnit(unit);
-        if (!notifyDurationModified()) {
-            setNotifyDuration(unitDefaults[unit]);
-        }
-    };
+//     const handleUnitChange = (unit: DurationUnit) => {
+//         setNotifyDurationUnit(unit);
+//         if (!notifyDurationModified()) {
+//             setNotifyDuration(unitDefaults[unit]);
+//         }
+//     };
 
-    const handle = async () => {
-        setNotifyState('loading');
-        try {
-            // TODO: Replace with actual "online for longer than duration" subscription endpoint
-            throw new Error('Not yet implemented');
-        } catch {
-            setNotifyState('error');
-        }
-    };
+//     const handle = async () => {
+//         setNotifyState('loading');
+//         try {
+//             // TODO: Replace with actual "online for longer than duration" subscription endpoint
+//             throw new Error('Not yet implemented');
+//         } catch {
+//             setNotifyState('error');
+//         }
+//     };
 
-    return (
-        <div
-            class="flex flex-col items-center gap-1"
-            title="Get a push notification when this host has been continuously online for longer than the given duration."
-        >
-            <div class="flex items-center gap-1.5">
-                <button
-                    type="button"
-                    class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
-                    disabled={notifyState() === 'loading' || notifyState() === 'subscribed'}
-                    onClick={handle}
-                    aria-label="Subscribe to online-too-long notification"
-                >
-                    <Show when={notifyState() === 'loading'}>
-                        <LoaderCircle size={16} class="animate-spin" aria-hidden="true" />
-                    </Show>
-                    <Show when={notifyState() !== 'loading'}>
-                        <Bell size={16} aria-hidden="true" />
-                    </Show>
-                    Notify after online for
-                </button>
-                <input
-                    type="number"
-                    min="1"
-                    class="w-16 px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
-                    value={notifyDuration()}
-                    onInput={(e) => handleDurationInput(e.currentTarget.value)}
-                    aria-label="Duration"
-                />
-                <select
-                    class="px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
-                    value={notifyDurationUnit()}
-                    onChange={(e) => handleUnitChange(e.currentTarget.value as DurationUnit)}
-                    aria-label="Duration unit"
-                >
-                    <option value="minutes">min</option>
-                    <option value="hours">hr</option>
-                    <option value="days">day</option>
-                </select>
-            </div>
-            <Show when={notifyState() === 'subscribed'}>
-                <span
-                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
-                    aria-live="polite"
-                >
-                    <BellRing size={12} aria-hidden="true" />
-                    Subscribed
-                </span>
-            </Show>
-            <Show when={notifyState() === 'error'}>
-                <span class="text-xs text-red-500 dark:text-[#f48771]" aria-live="polite">
-                    Not yet implemented
-                </span>
-            </Show>
-        </div>
-    );
-};
+//     return (
+//         <div
+//             class="flex flex-col items-center gap-1"
+//             title="Get a push notification when this host has been continuously online for longer than the given duration."
+//         >
+//             <div class="flex items-center gap-1.5">
+//                 <button
+//                     type="button"
+//                     class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
+//                     disabled={notifyState() === 'loading' || notifyState() === 'subscribed'}
+//                     onClick={handle}
+//                     aria-label="Subscribe to online-too-long notification"
+//                 >
+//                     <Show when={notifyState() === 'loading'}>
+//                         <LoaderCircle size={16} class="animate-spin" aria-hidden="true" />
+//                     </Show>
+//                     <Show when={notifyState() !== 'loading'}>
+//                         <Bell size={16} aria-hidden="true" />
+//                     </Show>
+//                     Notify after online for
+//                 </button>
+//                 <input
+//                     type="number"
+//                     min="1"
+//                     class="w-16 px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+//                     value={notifyDuration()}
+//                     onInput={(e) => handleDurationInput(e.currentTarget.value)}
+//                     aria-label="Duration"
+//                 />
+//                 <select
+//                     class="px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+//                     value={notifyDurationUnit()}
+//                     onChange={(e) => handleUnitChange(e.currentTarget.value as DurationUnit)}
+//                     aria-label="Duration unit"
+//                 >
+//                     <option value="minutes">min</option>
+//                     <option value="hours">hr</option>
+//                     <option value="days">day</option>
+//                 </select>
+//             </div>
+//             <Show when={notifyState() === 'subscribed'}>
+//                 <span
+//                     class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
+//                     aria-live="polite"
+//                 >
+//                     <BellRing size={12} aria-hidden="true" />
+//                     Subscribed
+//                 </span>
+//             </Show>
+//             <Show when={notifyState() === 'error'}>
+//                 <span class="text-xs text-red-500 dark:text-[#f48771]" aria-live="polite">
+//                     Not yet implemented
+//                 </span>
+//             </Show>
+//         </div>
+//     );
+// };
 
 const HostInfoSection = () => (
     <section class="section-container p-4 mb-4" aria-labelledby="host-info-title">
@@ -186,9 +186,9 @@ const HostInfoSection = () => (
             Information
         </h3>
         <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-            <dt class="font-medium text-black dark:text-[#cccccc]">Agent version</dt>
+            {/* <dt class="font-medium text-black dark:text-[#cccccc]">Agent version</dt> */}
             {/* TODO: Requires backend to store agent_version from StartupBroadcast and expose it via WebSocket */}
-            <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd>
+            {/* <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd> */}
             <dt class="font-medium text-black dark:text-[#cccccc]">Last online</dt>
             {/* TODO: Requires backend to track last-seen timestamp per host and expose it via WebSocket */}
             <dd class="text-[#616161] dark:text-[#9d9d9d]">
@@ -337,7 +337,7 @@ export const HostDetailPage = (() => {
                 {/* Notifications — centered, prominent, above information */}
                 <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
                     <NotifyUnscheduledButton hostname={hostname()} />
-                    <NotifyDurationButton hostname={hostname()} />
+                    {/* <NotifyDurationButton hostname={hostname()} /> */}
                 </div>
 
                 <HostInfoSection />
