@@ -1,4 +1,5 @@
 import { createMemo, For, Show } from 'solid-js';
+import { RotateCcw } from 'lucide-solid';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
@@ -97,6 +98,7 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => {
                         onClick={resetLeases}
                         aria-label="Reset Leases"
                     >
+                        <RotateCcw size={14} aria-hidden="true" />
                         Reset Leases
                     </button>
                 </div>
