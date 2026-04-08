@@ -400,8 +400,8 @@ async fn poll_host_statuses(state: AppState) {
 /// Spawns push-notification tasks for unscheduled host state transitions.
 ///
 /// An event is considered unscheduled when:
-/// - A host transitions `Offline → Online` with no active leases (ShutHost did not wake it up).
-/// - A host transitions `Online → Offline` while leases are held (ShutHost did not shut it down).
+/// - A host transitions `Offline → Online` with no active leases (`ShutHost` did not wake it up).
+/// - A host transitions `Online → Offline` while leases are held (`ShutHost` did not shut it down).
 fn spawn_push_notifications_for_unscheduled(
     old_status: &Arc<HashMap<String, HostState>>,
     new_status: &HashMap<String, HostState>,
@@ -410,13 +410,14 @@ fn spawn_push_notifications_for_unscheduled(
     vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
 ) {
     for (host_name, &new_state) in new_status {
-        let old_state = old_status.get(host_name).copied().unwrap_or(HostState::Offline);
+        let old_state = old_status
+            .get(host_name)
+            .copied()
+            .unwrap_or(HostState::Offline);
         if old_state == new_state {
             continue;
         }
-        let has_leases = leases
-            .get(host_name)
-            .is_some_and(|s| !s.is_empty());
+        let has_leases = leases.get(host_name).is_some_and(|s| !s.is_empty());
         let is_unscheduled = match (old_state, new_state) {
             (HostState::Offline, HostState::Online) => !has_leases,
             (HostState::Online, HostState::Offline) => has_leases,

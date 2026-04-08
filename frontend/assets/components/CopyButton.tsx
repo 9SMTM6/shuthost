@@ -1,5 +1,5 @@
-import { createSignal, onCleanup } from 'solid-js';
 import { Check, Copy } from 'lucide-solid';
+import { createSignal, onCleanup } from 'solid-js';
 import type { AnyComponent } from '../helpers/component';
 
 export const CopyButton = ((props: { targetId: string; label: string }) => {
@@ -30,7 +30,11 @@ export const CopyButton = ((props: { targetId: string; label: string }) => {
             title={copied() ? 'Copied!' : props.label}
             onClick={handleClick}
         >
-            {copied() ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+            {copied() ? (
+                <Check size={14} aria-hidden="true" />
+            ) : (
+                <Copy size={14} aria-hidden="true" />
+            )}
         </button>
     );
 }) satisfies AnyComponent;

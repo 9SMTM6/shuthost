@@ -1,7 +1,7 @@
 import { A, useLocation, useNavigate } from '@solidjs/router';
+import { LogOut } from 'lucide-solid';
 import type { JSX, ParentProps } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
-import { LogOut } from 'lucide-solid';
 import { isLoggedIn } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
 import type { AnyComponent } from '../helpers/component';
