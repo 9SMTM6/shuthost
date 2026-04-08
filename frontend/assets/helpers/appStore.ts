@@ -24,23 +24,27 @@ export type DbData = {
     hostStats: Record<string, HostStats>;
 };
 
-export type AppState = {
+/** The configuration values (mapped to what the frontend can see) that the coordinator accepts runtime changes of */
+type DynamicConfig = {
     hosts: string[];
+    clients: string[];
+};
+
+export type AppState = {
     statusMap: StatusMap;
     leaseMap: Record<string, LeaseSource[]>;
-    clients: string[];
     dbData: DbData | null;
-};
+} & DynamicConfig;
 
 // TODO:
 // * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
 export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
-    | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
+    | { type: 'ConfigChanged'; payload: DynamicConfig }
     | {
-          type: 'Initial';
-          payload: AppState;
-      }
+        type: 'Initial';
+        payload: AppState;
+    }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 // ==========================
@@ -83,5 +87,9 @@ export const applyMessage = (message: WsMessage) => {
                 }),
             );
             break;
+        default: {
+            const _exhaustive: never = message;
+            throw new Error(`Unhandled WebSocket message: ${JSON.stringify(_exhaustive)}`);
+        }
     }
 };

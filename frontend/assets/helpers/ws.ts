@@ -32,6 +32,7 @@ export const connectWebSocket = () => {
             applyMessage(JSON.parse(event.data) as WsMessage);
         } catch (err) {
             console.error('Error handling WS message:', err);
+            setTimeout(() => { throw err; });
         }
     };
     socket.onerror = (ev) => console.error('WebSocket error', ev);
