@@ -8,6 +8,7 @@ import { state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
 import { demoUpdateLease, isDemoMode } from '../helpers/demo';
 import { subscribeToHostOnline } from '../helpers/pushSubscription';
+import { formatRelativeTimestamp } from '../helpers/utils';
 
 type NotifyState = 'idle' | 'loading' | 'subscribed' | 'error';
 
@@ -233,6 +234,11 @@ export const HostDetailPage = (() => {
                         </dt>
                         {/* TODO: Requires backend to store agent_version from StartupBroadcast and expose it via WebSocket */}
                         <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd>
+                        <dt class="font-medium text-black dark:text-[#cccccc]">
+                            Last online
+                        </dt>
+                        {/* TODO: Requires backend to track last-seen timestamp per host and expose it via WebSocket */}
+                        <dd class="text-[#616161] dark:text-[#9d9d9d]">{formatRelativeTimestamp('2026-04-07T14:23:00Z')}</dd>
                     </dl>
                 </section>
 
