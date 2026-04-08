@@ -31,6 +31,7 @@ export const initDemoMode = () => {
                 status: { tarbean: 'offline', archive: 'offline' },
                 leases: { archive: [] },
                 client_stats: {},
+                host_last_online: null,
             },
         });
     }, 500);

@@ -43,6 +43,13 @@ struct ClientStatsRecord {
     last_used: Option<chrono::NaiveDateTime>,
 }
 
+/// Represents a host last-online record from the database.
+#[derive(sqlx::FromRow)]
+struct HostLastOnlineRecord {
+    hostname: String,
+    last_online: Option<chrono::NaiveDateTime>,
+}
+
 /// Represents a host IP override record from the database.
 #[derive(sqlx::FromRow)]
 struct HostIpOverrideRecord {
@@ -584,6 +591,51 @@ pub(crate) async fn get_subscriptions_for_host_online(
     .fetch_all(pool)
     .await?;
     Ok(records)
+}
+
+/// Upserts the last-online timestamp for a host to the current UTC time.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> eyre::Result<()> {
+    sqlx::query!(
+        "INSERT OR REPLACE INTO host_last_online (hostname, last_online) VALUES (?, datetime('now'))",
+        hostname,
+    )
+    .execute(&pool)
+    .await?;
+    Ok(())
+}
+
+/// Loads all host last-online timestamps from the database.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn get_all_host_last_online(
+    pool: &DbPool,
+) -> eyre::Result<HashMap<String, DateTime<Utc>>> {
+    let records: Vec<HostLastOnlineRecord> = sqlx::query_as!(
+        HostLastOnlineRecord,
+        "SELECT hostname, last_online FROM host_last_online"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(records
+        .into_iter()
+        .filter_map(|rec| {
+            rec.last_online.map(|dt| {
+                (
+                    rec.hostname,
+                    DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc),
+                )
+            })
+        })
+        .collect())
 }
 
 /// Removes a push subscription (and all associated host-online entries via CASCADE).
