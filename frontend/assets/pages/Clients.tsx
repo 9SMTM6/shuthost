@@ -7,32 +7,13 @@ import { applyMessage, state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
-import { sortActiveFirst } from '../helpers/utils';
+import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
-
-const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
 const formatLastUsed = (clientId: string): string => {
     if (state.clientStats === null) return '';
     const stats = state.clientStats[clientId];
-    if (!stats?.last_used) return 'Never';
-    const date = new Date(stats.last_used);
-    const diffMs = Date.now() - date.getTime();
-    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-    if (diffMs >= oneYearMs) return date.toLocaleString();
-    const seconds = Math.round(diffMs / 1000);
-    if (seconds < 45) return 'just now';
-    if (seconds < 90) return RTF.format(-1, 'minute');
-    const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return RTF.format(-minutes, 'minute');
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return RTF.format(-hours, 'hour');
-    const days = Math.round(hours / 24);
-    if (days < 7) return RTF.format(-days, 'day');
-    if (days < 30) return RTF.format(-Math.round(days / 7), 'week');
-    const months = Math.round(days / 30);
-    if (months < 12) return RTF.format(-months, 'month');
-    return date.toLocaleString();
+    return formatRelativeTimestamp(stats?.last_used);
 };
 
 // ==========================
