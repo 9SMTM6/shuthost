@@ -305,7 +305,12 @@ export const HostDetailPage = (() => {
                                     )}
                                 >
                                     <th class="table-cell" scope="row">
-                                        Web Interface
+                                        <span class="block">Web Interface</span>
+                                        <Show when={!hasWebInterfaceLease()}>
+                                            <span class="text-xs text-[#616161] dark:text-[#9d9d9d] font-normal">
+                                                no lease held
+                                            </span>
+                                        </Show>
                                     </th>
                                     <td class="table-cell">
                                         <div class="actions-cell">
