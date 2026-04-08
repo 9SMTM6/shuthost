@@ -118,6 +118,107 @@ export const HostDetailPage = (() => {
                     </Show>
                 </div>
 
+                {/* Notifications — centered, prominent, above information */}
+                <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
+                    {/* Unscheduled-events alert */}
+                    <div
+                        class="flex flex-col items-center gap-1"
+                        title="Get a push notification when this host starts up or shuts down without being triggered by ShutHost."
+                    >
+                        <button
+                            type="button"
+                            class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
+                            disabled={
+                                notifyUnscheduledState() === 'loading' ||
+                                notifyUnscheduledState() === 'subscribed'
+                            }
+                            onClick={handleNotifyUnscheduled}
+                        >
+                            <Show when={notifyUnscheduledState() === 'loading'}>
+                                <LoaderCircle size={16} class="animate-spin" aria-hidden="true" />
+                            </Show>
+                            <Show when={notifyUnscheduledState() !== 'loading'}>
+                                <Bell size={16} aria-hidden="true" />
+                            </Show>
+                            Unscheduled events
+                        </button>
+                        <Show when={notifyUnscheduledState() === 'subscribed'}>
+                            <span
+                                class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
+                                aria-live="polite"
+                            >
+                                <BellRing size={12} aria-hidden="true" />
+                                Subscribed
+                            </span>
+                        </Show>
+                        <Show when={notifyUnscheduledState() === 'error'}>
+                            <span
+                                class="text-xs text-red-500 dark:text-[#f48771]"
+                                aria-live="polite"
+                            >
+                                Failed to subscribe. Please try again.
+                            </span>
+                        </Show>
+                    </div>
+
+                    {/* Online-duration alert */}
+                    <div
+                        class="flex flex-col items-center gap-1"
+                        title="Get a push notification when this host has been continuously online for longer than the given duration."
+                    >
+                        <div class="flex items-center gap-1.5">
+                            <input
+                                type="number"
+                                min="1"
+                                class="w-16 px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+                                value={notifyDuration()}
+                                onInput={(e) =>
+                                    setNotifyDuration(e.currentTarget.value)
+                                }
+                                aria-label="Duration in minutes"
+                            />
+                            <span class="text-sm text-[#616161] dark:text-[#9d9d9d]">
+                                min
+                            </span>
+                            <button
+                                type="button"
+                                class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
+                                disabled={
+                                    notifyDurationState() === 'loading' ||
+                                    notifyDurationState() === 'subscribed'
+                                }
+                                onClick={handleNotifyDuration}
+                                aria-label="Subscribe to online-too-long notification"
+                            >
+                                <Show when={notifyDurationState() === 'loading'}>
+                                    <LoaderCircle size={16} class="animate-spin" aria-hidden="true" />
+                                </Show>
+                                <Show when={notifyDurationState() !== 'loading'}>
+                                    <Bell size={16} aria-hidden="true" />
+                                </Show>
+                                Online too long
+                            </button>
+                        </div>
+                        <Show when={notifyDurationState() === 'subscribed'}>
+                            <span
+                                class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
+                                aria-live="polite"
+                            >
+                                <BellRing size={12} aria-hidden="true" />
+                                Subscribed
+                            </span>
+                        </Show>
+                        <Show when={notifyDurationState() === 'error'}>
+                            <span
+                                class="text-xs text-red-500 dark:text-[#f48771]"
+                                aria-live="polite"
+                            >
+                                Not yet implemented
+                            </span>
+                        </Show>
+                    </div>
+                </div>
+
                 {/* Information */}
                 <section
                     class="section-container p-4 mb-4"
@@ -133,129 +234,6 @@ export const HostDetailPage = (() => {
                         {/* TODO: Requires backend to store agent_version from StartupBroadcast and expose it via WebSocket */}
                         <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd>
                     </dl>
-                </section>
-
-                {/* Notifications */}
-                <section
-                    class="section-container p-4 mb-4"
-                    aria-labelledby="host-notifications-title"
-                >
-                    <h3
-                        id="host-notifications-title"
-                        class="section-title text-base"
-                    >
-                        Notifications
-                    </h3>
-
-                    {/* Notify when online for longer than duration */}
-                    <div class="mb-4 pb-4 border-b border-[#e5e5e5] dark:border-[#3e3e42]">
-                        <p class="font-medium text-sm text-black dark:text-[#cccccc] mb-1">
-                            Notify when online for longer than…
-                        </p>
-                        <p class="description-text text-xs mb-2">
-                            Get a push notification when this host has been
-                            continuously online for longer than the given
-                            duration.
-                        </p>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <input
-                                type="number"
-                                min="1"
-                                class="w-20 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
-                                value={notifyDuration()}
-                                onInput={(e) =>
-                                    setNotifyDuration(e.currentTarget.value)
-                                }
-                                aria-label="Duration in minutes"
-                            />
-                            <span class="text-sm text-[#616161] dark:text-[#9d9d9d]">
-                                minutes
-                            </span>
-                            <button
-                                type="button"
-                                class="btn btn-green"
-                                disabled={
-                                    notifyDurationState() === 'loading' ||
-                                    notifyDurationState() === 'subscribed'
-                                }
-                                onClick={handleNotifyDuration}
-                            >
-                                <Show when={notifyDurationState() === 'loading'}>
-                                    <LoaderCircle size={14} class="animate-spin" aria-hidden="true" />
-                                </Show>
-                                <Show when={notifyDurationState() !== 'loading'}>
-                                    <Bell size={14} aria-hidden="true" />
-                                </Show>
-                                Subscribe
-                            </button>
-                            <Show when={notifyDurationState() === 'subscribed'}>
-                                <span
-                                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
-                                    aria-live="polite"
-                                >
-                                    <BellRing size={14} aria-hidden="true" />
-                                    Subscribed
-                                </span>
-                            </Show>
-                            <Show when={notifyDurationState() === 'error'}>
-                                <span
-                                    class="text-xs text-red-500 dark:text-[#f48771]"
-                                    aria-live="polite"
-                                >
-                                    Not yet implemented
-                                </span>
-                            </Show>
-                        </div>
-                    </div>
-
-                    {/* Notify on unscheduled events */}
-                    <div>
-                        <p class="font-medium text-sm text-black dark:text-[#cccccc] mb-1">
-                            Notify on unscheduled events
-                        </p>
-                        <p class="description-text text-xs mb-2">
-                            Get a push notification when this host starts up or
-                            shuts down without being triggered by ShutHost.
-                        </p>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <button
-                                type="button"
-                                class="btn btn-green"
-                                disabled={
-                                    notifyUnscheduledState() === 'loading' ||
-                                    notifyUnscheduledState() === 'subscribed'
-                                }
-                                onClick={handleNotifyUnscheduled}
-                            >
-                                <Show when={notifyUnscheduledState() === 'loading'}>
-                                    <LoaderCircle size={14} class="animate-spin" aria-hidden="true" />
-                                </Show>
-                                <Show when={notifyUnscheduledState() !== 'loading'}>
-                                    <Bell size={14} aria-hidden="true" />
-                                </Show>
-                                Subscribe
-                            </button>
-                            <Show
-                                when={notifyUnscheduledState() === 'subscribed'}
-                            >
-                                <span
-                                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
-                                    aria-live="polite"
-                                >
-                                    <BellRing size={14} aria-hidden="true" />
-                                    Subscribed
-                                </span>
-                            </Show>
-                            <Show when={notifyUnscheduledState() === 'error'}>
-                                <span
-                                    class="text-xs text-red-500 dark:text-[#f48771]"
-                                    aria-live="polite"
-                                >
-                                    Failed to subscribe. Please try again.
-                                </span>
-                            </Show>
-                        </div>
-                    </div>
                 </section>
 
                 {/* Leases */}
