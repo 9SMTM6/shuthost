@@ -1,6 +1,6 @@
 import { Title } from '@solidjs/meta';
 import { A, useParams } from '@solidjs/router';
-import { Bell, BellRing, LoaderCircle, Power, PowerOff } from 'lucide-solid';
+import { ArrowLeft, Bell, BellRing, LoaderCircle, Power, PowerOff } from 'lucide-solid';
 import { createSignal, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
@@ -92,12 +92,6 @@ export const HostDetailPage = (() => {
     return (
         <AppLayout>
             <Title>{hostname()} - ShutHost Coordinator</Title>
-            <nav aria-label="Breadcrumb" class="mb-4">
-                <A href="/hosts" class="link text-sm">
-                    ← Hosts
-                </A>
-            </nav>
-
             <Show when={isLoading()}>
                 <p class="description-text">Loading…</p>
             </Show>
@@ -113,8 +107,17 @@ export const HostDetailPage = (() => {
             </Show>
 
             <Show when={!isLoading() && isKnown()}>
-                {/* Name + status badge */}
-                <div class="flex items-center gap-3 mb-6 flex-wrap">
+                {/* Name + status badge — acts as back-navigation link */}
+                <A
+                    href="/hosts"
+                    aria-label={`Back to hosts list — currently viewing ${hostname()}`}
+                    class="group flex items-center gap-3 mb-6 flex-wrap hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                    <ArrowLeft
+                        size={18}
+                        aria-hidden="true"
+                        class="shrink-0 text-[#616161] dark:text-[#9d9d9d] group-hover:-translate-x-0.5 transition-transform"
+                    />
                     <h2 class="section-title mb-0">{hostname()}</h2>
                     <Show when={status() === 'online'}>
                         <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-[rgba(46,193,100,0.15)] dark:text-[rgba(46,193,100,0.9)]">
@@ -131,7 +134,7 @@ export const HostDetailPage = (() => {
                             unknown
                         </span>
                     </Show>
-                </div>
+                </A>
 
                 {/* Notifications — centered, prominent, above information */}
                 <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
