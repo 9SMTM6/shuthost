@@ -98,8 +98,9 @@ export const Header = (() => {
     const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
 
     const activateTab = (tabId: TabId) => {
-        navigate(`#${tabId}`, {
-            replace: true,
+        const isRoot = location.pathname === '/';
+        navigate(isRoot ? `#${tabId}` : `/#${tabId}`, {
+            replace: isRoot,
             scroll: false,
         });
         setMobileMenuOpen(false);
