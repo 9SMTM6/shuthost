@@ -9,6 +9,7 @@ import { demoSubpath } from './helpers/demo';
 import { AboutPage } from './pages/AboutPage';
 import { App } from './pages/App';
 import { LoginPage } from './pages/LoginPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 const appMount = document.getElementById('app');
 if (appMount) {
@@ -20,6 +21,7 @@ if (appMount) {
                     <Route path="/" component={App} />
                     <Route path="/login" component={LoginPage} />
                     <Route path="/about" component={AboutPage} />
+                    <Route path="*" component={NotFoundPage} />
                 </Router>
             </MetaProvider>
         ),
