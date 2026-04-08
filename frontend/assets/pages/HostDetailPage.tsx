@@ -135,94 +135,9 @@ export const HostDetailPage = (() => {
                     </dl>
                 </section>
 
-                {/* Leases */}
-                <section
-                    class="section-container mb-4"
-                    aria-labelledby="host-leases-title"
-                >
-                    <div class="px-4 pt-4 pb-2">
-                        <h3
-                            id="host-leases-title"
-                            class="section-title text-base"
-                        >
-                            Leases
-                        </h3>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="actions-table w-full">
-                            <thead>
-                                <tr>
-                                    <th class="table-header" scope="col">
-                                        Holder
-                                    </th>
-                                    <th class="table-header" scope="col">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                class="divide-y divide-gray-200"
-                                aria-live="polite"
-                            >
-                                {/* Web Interface lease — always shown; Take/Release toggled via CSS */}
-                                <tr
-                                    class="table-row"
-                                    data-has-lease={String(
-                                        hasWebInterfaceLease(),
-                                    )}
-                                >
-                                    <th class="table-cell" scope="row">
-                                        Web Interface
-                                    </th>
-                                    <td class="table-cell">
-                                        <div class="actions-cell">
-                                            <button
-                                                class="btn btn-green take-lease"
-                                                type="button"
-                                                onClick={() =>
-                                                    updateLease('take')
-                                                }
-                                                aria-label="Take web interface lease"
-                                            >
-                                                <Power size={14} aria-hidden="true" />
-                                                Take
-                                            </button>
-                                            <button
-                                                class="btn btn-red release-lease"
-                                                type="button"
-                                                onClick={() =>
-                                                    updateLease('release')
-                                                }
-                                                aria-label="Release web interface lease"
-                                            >
-                                                <PowerOff size={14} aria-hidden="true" />
-                                                Release
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                {/* Client-held leases (read-only) */}
-                                <For each={clientLeases()}>
-                                    {(lease) => (
-                                        <tr class="table-row">
-                                            <th class="table-cell" scope="row">
-                                                {lease.value}
-                                            </th>
-                                            <td class="table-cell text-[#616161] dark:text-[#9d9d9d] text-xs">
-                                                Client-held
-                                            </td>
-                                        </tr>
-                                    )}
-                                </For>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
                 {/* Notifications */}
                 <section
-                    class="section-container p-4"
+                    class="section-container p-4 mb-4"
                     aria-labelledby="host-notifications-title"
                 >
                     <h3
@@ -340,6 +255,91 @@ export const HostDetailPage = (() => {
                                 </span>
                             </Show>
                         </div>
+                    </div>
+                </section>
+
+                {/* Leases */}
+                <section
+                    class="section-container mb-4"
+                    aria-labelledby="host-leases-title"
+                >
+                    <div class="px-4 pt-4 pb-2">
+                        <h3
+                            id="host-leases-title"
+                            class="section-title text-base"
+                        >
+                            Leases
+                        </h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="actions-table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="table-header" scope="col">
+                                        Holder
+                                    </th>
+                                    <th class="table-header" scope="col">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody
+                                class="divide-y divide-gray-200"
+                                aria-live="polite"
+                            >
+                                {/* Web Interface lease — always shown; Take/Release toggled via CSS */}
+                                <tr
+                                    class="table-row"
+                                    data-has-lease={String(
+                                        hasWebInterfaceLease(),
+                                    )}
+                                >
+                                    <th class="table-cell" scope="row">
+                                        Web Interface
+                                    </th>
+                                    <td class="table-cell">
+                                        <div class="actions-cell">
+                                            <button
+                                                class="btn btn-green take-lease"
+                                                type="button"
+                                                onClick={() =>
+                                                    updateLease('take')
+                                                }
+                                                aria-label="Take web interface lease"
+                                            >
+                                                <Power size={14} aria-hidden="true" />
+                                                Take
+                                            </button>
+                                            <button
+                                                class="btn btn-red release-lease"
+                                                type="button"
+                                                onClick={() =>
+                                                    updateLease('release')
+                                                }
+                                                aria-label="Release web interface lease"
+                                            >
+                                                <PowerOff size={14} aria-hidden="true" />
+                                                Release
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                {/* Client-held leases (read-only) */}
+                                <For each={clientLeases()}>
+                                    {(lease) => (
+                                        <tr class="table-row">
+                                            <th class="table-cell" scope="row">
+                                                {lease.value}
+                                            </th>
+                                            <td class="table-cell text-[#616161] dark:text-[#9d9d9d] text-xs">
+                                                Client-held
+                                            </td>
+                                        </tr>
+                                    )}
+                                </For>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             </Show>
