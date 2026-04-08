@@ -7,7 +7,7 @@ import { apiFetch } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
 import { demoUpdateLease, isDemoMode } from '../helpers/demo';
-import { subscribeToHostOnline } from '../helpers/pushSubscription';
+import { subscribeToHostUnscheduled } from '../helpers/pushSubscription';
 import { formatRelativeTimestamp } from '../helpers/utils';
 
 type NotifyState = 'idle' | 'loading' | 'subscribed' | 'error';
@@ -41,9 +41,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
     const handle = async () => {
         setNotifyState('loading');
         try {
-            // TODO: Replace with real unscheduled-event subscription once backend supports it.
-            // Using subscribe-host-online as a placeholder.
-            await subscribeToHostOnline(props.hostname);
+            await subscribeToHostUnscheduled(props.hostname);
             setNotifyState('subscribed');
         } catch (err) {
             console.error(

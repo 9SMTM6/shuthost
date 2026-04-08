@@ -1,7 +1,7 @@
 //! Web Push (VAPID) endpoints.
 //!
-//! Provides routes for exposing the VAPID public key, subscribing to host-online
-//! push notifications, and sending a test notification.
+//! Provides routes for exposing the VAPID public key, subscribing to
+//! unscheduled-event push notifications, and sending a test notification.
 
 use alloc::sync::Arc;
 
@@ -28,7 +28,7 @@ use crate::app::{AppState, db};
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/vapid-public-key", get(get_vapid_public_key))
-        .route("/subscribe-host-online", post(subscribe_host_online))
+        .route("/subscribe-host-unscheduled", post(subscribe_host_unscheduled))
         .route("/test", post(send_test_push))
 }
 
@@ -49,7 +49,7 @@ struct PushSubscriptionJson {
 }
 
 #[derive(Deserialize)]
-struct SubscribeHostOnlineRequest {
+struct SubscribeHostUnscheduledRequest {
     subscription: PushSubscriptionJson,
     hostname: String,
 }
@@ -93,11 +93,11 @@ async fn get_vapid_public_key(State(state): State<AppState>) -> impl IntoRespons
         .into_response()
 }
 
-/// Registers a browser push subscription for host-online notifications.
+/// Registers a browser push subscription for unscheduled-event notifications.
 #[axum::debug_handler]
-async fn subscribe_host_online(
+async fn subscribe_host_unscheduled(
     State(state): State<AppState>,
-    axum::Json(body): axum::Json<SubscribeHostOnlineRequest>,
+    axum::Json(body): axum::Json<SubscribeHostUnscheduledRequest>,
 ) -> impl IntoResponse {
     let Some(ref pool) = state.db_pool else {
         return StatusCode::SERVICE_UNAVAILABLE;
@@ -118,8 +118,8 @@ async fn subscribe_host_online(
         }
     };
 
-    if let Err(e) = db::subscribe_host_online(pool, sub_id, &body.hostname).await {
-        error!("Failed to subscribe to host-online: {e:#}");
+    if let Err(e) = db::subscribe_host_unscheduled(pool, sub_id, &body.hostname).await {
+        error!("Failed to subscribe to host unscheduled events: {e:#}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
 
@@ -139,7 +139,7 @@ async fn send_test_push(
         return StatusCode::SERVICE_UNAVAILABLE;
     };
 
-    let subscriptions = match db::get_subscriptions_for_host_online(pool, &body.hostname).await {
+    let subscriptions = match db::get_subscriptions_for_host_unscheduled(pool, &body.hostname).await {
         Ok(s) => s,
         Err(e) => {
             error!("Failed to fetch subscriptions: {e:#}");

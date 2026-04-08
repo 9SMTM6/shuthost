@@ -358,12 +358,14 @@ async fn poll_host_statuses(state: AppState) {
                 break;
             }
 
-            // Fire push notifications for any host that just came online.
+            // Fire push notifications for unscheduled state transitions.
             if let (Some(pool), Some(vapid_key)) = (state.db_pool.clone(), state.vapid_key.clone())
             {
-                spawn_push_notifications_for_going_online(
+                let leases_snapshot = state.leases.borrow().clone();
+                spawn_push_notifications_for_unscheduled(
                     &old_status,
                     &new_status,
+                    &leases_snapshot,
                     &pool,
                     &vapid_key,
                 );
@@ -395,38 +397,58 @@ async fn poll_host_statuses(state: AppState) {
     }
 }
 
-/// Spawns a push-notification task for each host that just transitioned from
-/// any state to [`HostState::Online`].
-fn spawn_push_notifications_for_going_online(
+/// Spawns push-notification tasks for unscheduled host state transitions.
+///
+/// An event is considered unscheduled when:
+/// - A host transitions `Offline → Online` with no active leases (ShutHost did not wake it up).
+/// - A host transitions `Online → Offline` while leases are held (ShutHost did not shut it down).
+fn spawn_push_notifications_for_unscheduled(
     old_status: &Arc<HashMap<String, HostState>>,
     new_status: &HashMap<String, HostState>,
+    leases: &Arc<LeaseMapRaw>,
     pool: &db::DbPool,
     vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
 ) {
-    for (host_name, new_state) in new_status {
-        if *new_state == HostState::Online && old_status.get(host_name) != Some(&HostState::Online)
-        {
-            let pool = pool.clone();
-            let vapid_key = vapid_key.clone();
-            let host_name = host_name.clone();
-            tokio::spawn(async move {
-                match db::get_subscriptions_for_host_online(&pool, &host_name).await {
-                    Ok(subs) if !subs.is_empty() => {
-                        let payload = serde_json::json!({
-                            "title": "ShutHost",
-                            "body": format!("{host_name} is online"),
-                            "data": { "hostname": host_name },
-                        })
-                        .to_string();
-                        push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
-                    }
-                    Ok(_) => {}
-                    Err(e) => {
-                        error!(host = %host_name, "Failed to fetch push subscriptions: {e:#}");
-                    }
-                }
-            });
+    for (host_name, &new_state) in new_status {
+        let old_state = old_status.get(host_name).copied().unwrap_or(HostState::Offline);
+        if old_state == new_state {
+            continue;
         }
+        let has_leases = leases
+            .get(host_name)
+            .is_some_and(|s| !s.is_empty());
+        let is_unscheduled = match (old_state, new_state) {
+            (HostState::Offline, HostState::Online) => !has_leases,
+            (HostState::Online, HostState::Offline) => has_leases,
+            _ => false,
+        };
+        if !is_unscheduled {
+            continue;
+        }
+        let body = match new_state {
+            HostState::Online => format!("{host_name} started up unexpectedly"),
+            HostState::Offline => format!("{host_name} shut down unexpectedly"),
+        };
+        let pool = pool.clone();
+        let vapid_key = vapid_key.clone();
+        let host_name = host_name.clone();
+        tokio::spawn(async move {
+            match db::get_subscriptions_for_host_unscheduled(&pool, &host_name).await {
+                Ok(subs) if !subs.is_empty() => {
+                    let payload = serde_json::json!({
+                        "title": "ShutHost",
+                        "body": body,
+                        "data": { "hostname": host_name },
+                    })
+                    .to_string();
+                    push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    error!(host = %host_name, "Failed to fetch push subscriptions: {e:#}");
+                }
+            }
+        });
     }
 }
 
