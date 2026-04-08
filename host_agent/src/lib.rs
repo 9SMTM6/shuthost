@@ -20,6 +20,10 @@ use server::ServiceOptions;
 
 pub(crate) const VERSION: &str = shuthost_common::version_string!();
 
+/// Build commit SHA embedded into the binary to allow staleness checking without executing it.
+#[used]
+static BUILD_COMMIT: &str = env!("SHUTHOST_BUILD_COMMIT");
+
 use crate::install::BINARY_NAME;
 
 /// Top-level CLI parser for `host_agent`.

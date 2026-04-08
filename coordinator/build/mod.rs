@@ -63,6 +63,8 @@ fn main() -> eyre::Result<()> {
     println!("{ON_CHANGE}/pnpm-lock.yaml");
     let about_json = tasks::spawn("build-about-json", about::build_json);
 
+    let warnings = tasks::spawn("warnings", warnings::emit);
+
     println!("{ON_CHANGE}/assets/client_controller_interaction.d2");
     println!("{ON_CHANGE}/assets/deployment.d2");
     println!("{ON_CHANGE}/assets/direct_control_comparison.d2");
@@ -97,7 +99,7 @@ fn main() -> eyre::Result<()> {
     // Block until the parallel typecheck finishes, surfacing any type errors.
     tasks::join(typecheck)?;
 
-    warnings::emit();
+    tasks::join(warnings)?;
 
     Ok(())
 }
