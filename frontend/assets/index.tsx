@@ -13,6 +13,7 @@ import {
 } from './helpers/serviceWorker';
 import { AboutPage } from './pages/AboutPage';
 import { App } from './pages/App';
+import { HostDetailPage } from './pages/HostDetailPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -28,6 +29,7 @@ if (appMount) {
                     <Route path="/" component={App} />
                     <Route path="/login" component={LoginPage} />
                     <Route path="/about" component={AboutPage} />
+                    <Route path="/hosts/:hostname" component={HostDetailPage} />
                     <Route path="*" component={NotFoundPage} />
                 </Router>
                 <Show when={updateAvailable()}>
