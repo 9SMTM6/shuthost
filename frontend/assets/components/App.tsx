@@ -1,18 +1,16 @@
 import { Title } from '@solidjs/meta';
+import type { ParentProps } from 'solid-js';
 import { onMount, Show } from 'solid-js';
-import { ArchitectureTab } from '../components/ArchitectureTab';
-import { AuthWarningPanel } from '../components/AuthWarningPanel';
-import { ClientsTab } from '../components/ClientsTab';
-import { Footer } from '../components/Footer';
-import { Header } from '../components/Header';
-import { HostsTab } from '../components/HostsTab';
-import { JsErrorBox } from '../components/JsErrorBox';
 import type { AnyComponent } from '../helpers/component';
 import { initDemoMode, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { connectWebSocket } from '../helpers/ws';
+import { AuthWarningPanel } from './AuthWarningPanel';
+import { Footer } from './Footer';
+import { Header } from './Header';
+import { JsErrorBox } from './JsErrorBox';
 
-export const App = (() => {
+export const AppLayout = ((props: ParentProps) => {
     onMount(() => {
         if (isDemoMode) {
             initDemoMode();
@@ -36,11 +34,7 @@ export const App = (() => {
                     <Show when={serverData.authWarning}>
                         <AuthWarningPanel />
                     </Show>
-
-                    <ArchitectureTab />
-
-                    <HostsTab configPath={serverData.configPath} />
-                    <ClientsTab configPath={serverData.configPath} />
+                    {props.children}
                 </section>
             </main>
             <Footer />

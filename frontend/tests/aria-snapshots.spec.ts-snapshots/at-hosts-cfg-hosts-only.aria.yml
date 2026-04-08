@@ -1,24 +1,27 @@
 - main:
-  - tabpanel "Hosts":
-    - region "Install Host Agent":
-      - group "Install Host Agent":
-        - heading "Install Host Agent" [level=2]
-    - region "Hosts Table":
-      - heading "Hosts Table" [level=2]
-      - table:
-        - rowgroup:
-          - row "Host Status Actions":
-            - columnheader "Host"
-            - columnheader "Status"
-            - columnheader "Actions"
-        - rowgroup:
-          - row "archive Status Actions":
-            - rowheader "archive"
-            - cell "Status": offline
-            - cell "Actions":
-              - button "Start"
-          - row "tarbean Status Actions":
-            - rowheader "tarbean"
-            - cell "Status": offline
-            - cell "Actions":
-              - button "Start"
+  - region "Install Host Agent":
+    - group "Install Host Agent":
+      - heading "Install Host Agent" [level=2]
+  - region "Hosts Table":
+    - heading "Hosts Table" [level=2]
+    - table:
+      - rowgroup:
+        - row "Host Status Actions":
+          - columnheader "Host"
+          - columnheader "Status"
+          - columnheader "Actions"
+      - rowgroup:
+        - row "archive Status Actions":
+          - rowheader "archive":
+            - link "archive":
+              - /url: /hosts/archive
+          - cell "Status": offline
+          - cell "Actions":
+            - button "Start"
+        - row "tarbean Status Actions":
+          - rowheader "tarbean":
+            - link "tarbean":
+              - /url: /hosts/tarbean
+          - cell "Status": offline
+          - cell "Actions":
+            - button "Start"

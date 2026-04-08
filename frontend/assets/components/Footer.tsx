@@ -1,3 +1,4 @@
+import { A } from '@solidjs/router';
 import { buildData } from '../helpers/buildData';
 import type { AnyComponent } from '../helpers/component';
 
@@ -13,8 +14,8 @@ export const Footer = (() => (
         </a>
         <span aria-hidden="true"> | </span>
         <wbr />
-        <a href="/about" class="link font-medium whitespace-nowrap">
+        <A href="/about" class="link font-medium whitespace-nowrap">
             About &amp; Licenses
-        </a>
+        </A>
     </footer>
 )) satisfies AnyComponent;

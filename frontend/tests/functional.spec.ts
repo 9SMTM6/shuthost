@@ -22,7 +22,7 @@ test.describe('token login', () => {
         await page.fill('#token', 'testtoken');
         await page.click('button:has-text("Login")');
         await page.waitForLoadState('networkidle');
-        await expect(page).toHaveURL(`${base}/`);
+        await expect(page).toHaveURL(`${base}/hosts`);
         await page.click('button[aria-label="Logout"]');
         await page.waitForLoadState('networkidle');
         await expect(page).toHaveURL(`${base}/login`);
@@ -32,7 +32,7 @@ test.describe('token login', () => {
     // reflected in the copy/paste install command
     test('host install command includes broadcast port', async ({ page }) => {
         const cfgBase = getBaseUrl('nada');
-        await page.goto(`${cfgBase}#hosts`);
+        await page.goto(`${cfgBase}/hosts`);
         await page.waitForSelector('#host-install-header');
         await page.click('#host-install-header');
         await page.waitForSelector('#host-install-content', {

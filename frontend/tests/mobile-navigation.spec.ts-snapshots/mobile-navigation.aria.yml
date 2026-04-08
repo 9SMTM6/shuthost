@@ -11,17 +11,16 @@
     - tab "Hosts" [selected]
     - tab "Clients"
 - main:
-  - tabpanel "Hosts":
-    - region "Install Host Agent":
-      - group "Install Host Agent":
-        - heading "Install Host Agent" [level=2]
-    - region "Hosts Table":
-      - heading "Hosts Table" [level=2]
-      - table:
-        - rowgroup:
-          - row "Host Status Actions":
-            - columnheader "Host"
-            - columnheader "Status"
-            - columnheader "Actions"
-        - rowgroup
+  - region "Install Host Agent":
+    - group "Install Host Agent":
+      - heading "Install Host Agent" [level=2]
+  - region "Hosts Table":
+    - heading "Hosts Table" [level=2]
+    - table:
+      - rowgroup:
+        - row "Host Status Actions":
+          - columnheader "Host"
+          - columnheader "Status"
+          - columnheader "Actions"
+      - rowgroup
 - contentinfo: ShutHost Coordinator v<<VERSION>> | About & Licenses

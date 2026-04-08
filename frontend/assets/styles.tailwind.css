@@ -195,13 +195,6 @@ body {
         }
     }
 
-    .tab-content {
-        @apply hidden;
-        &.active {
-            @apply block;
-        }
-    }
-
     details {
         /* Hide the native details marker and ensure summary visuals match header */
         summary {

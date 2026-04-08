@@ -1,6 +1,6 @@
-import { useLocation, useNavigate } from '@solidjs/router';
+import { A, useLocation, useNavigate } from '@solidjs/router';
 import type { JSX, ParentProps } from 'solid-js';
-import { createEffect, createSignal, Show } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { isLoggedIn } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
 import type { AnyComponent } from '../helpers/component';
@@ -17,10 +17,11 @@ type TabId = keyof typeof TAB_LABELS;
 
 const VALID_TABS = Object.keys(TAB_LABELS) as Array<TabId>;
 
-const normalizeTab = (hash: string) => {
-    const tab = hash.replace('#', '') as TabId;
-    return VALID_TABS.includes(tab) ? tab : 'hosts';
-};
+const TAB_ROUTES = {
+    architecture: '/docs',
+    hosts: '/hosts',
+    clients: '/clients',
+} as const satisfies Record<TabId, string>;
 
 /**
  * Shared header shell: branded bar with logo. Pass children to add content
@@ -30,23 +31,14 @@ const normalizeTab = (hash: string) => {
 const HeaderShell = ((
     props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>,
 ) => {
-    const navigate = useNavigate();
     const logoHref = () => (isLoggedIn() === false ? '/login' : '/');
-    const handleLogoClick = (e: MouseEvent) => {
-        e.preventDefault();
-        navigate(logoHref());
-    };
     return (
         <header class="bg-white dark:bg-[#1e1e1e] shadow-md">
             {props.topBanner}
             <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-(--header-height)">
                     {props.leftExtra}
-                    <a
-                        href={logoHref()}
-                        class="flex items-center gap-4"
-                        onClick={handleLogoClick}
-                    >
+                    <A href={logoHref()} class="flex items-center gap-4">
                         <img
                             src={`${demoSubpath}/favicon.${buildData.svg_hashes['favicon']}.svg`}
                             alt="ShutHost Logo"
@@ -55,7 +47,7 @@ const HeaderShell = ((
                         <h1 class="text-xl sm:text-2xl font-semibold text-black dark:text-[#cccccc]">
                             ShutHost
                         </h1>
-                    </a>
+                    </A>
                     {props.children}
                 </div>
             </div>
@@ -94,42 +86,29 @@ export const Header = (() => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const activeTab = () => normalizeTab(location.hash);
+    const activeTab = (): TabId => {
+        const path = location.pathname;
+        if (path === '/clients' || path.startsWith('/clients/'))
+            return 'clients';
+        if (path === '/docs') return 'architecture';
+        // /hosts, /hosts/:hostname, and any other path highlight the Hosts tab
+        return 'hosts';
+    };
     const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
 
     const activateTab = (tabId: TabId) => {
-        const isRoot = location.pathname === '/';
-        navigate(isRoot ? `#${tabId}` : `/#${tabId}`, {
-            replace: isRoot,
-            scroll: false,
-        });
+        navigate(TAB_ROUTES[tabId], { scroll: false });
         setMobileMenuOpen(false);
     };
-
-    // Show/hide .tab-content elements (including #architecture-tab outside SolidJS tree)
-    createEffect(() => {
-        const tab = activeTab();
-        document.querySelectorAll<HTMLElement>('.tab-content').forEach((el) => {
-            const isActive = el.id === `${tab}-tab`;
-            el.classList.toggle('active', isActive);
-            el.setAttribute('aria-hidden', String(!isActive));
-        });
-        document.querySelectorAll<HTMLElement>('.tab').forEach((btn) => {
-            const tabId = btn.dataset['tabContent'] as TabId | undefined;
-            const isActive = tabId === tab;
-            btn.classList.toggle('active', isActive);
-            btn.setAttribute('aria-selected', String(isActive));
-        });
-    });
 
     const TabButton = ((tabProps: { tabId: TabId }) => (
         <button
             type="button"
             class="tab"
+            classList={{ active: activeTab() === tabProps.tabId }}
             data-tab-content={tabProps.tabId}
             role="tab"
             aria-selected={activeTab() === tabProps.tabId}
-            aria-controls={`${tabProps.tabId}-tab`}
             id={`tab-${tabProps.tabId}`}
             onClick={() => activateTab(tabProps.tabId)}
         >

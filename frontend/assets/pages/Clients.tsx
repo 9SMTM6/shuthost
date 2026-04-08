@@ -1,11 +1,13 @@
 import { createMemo, For, Show } from 'solid-js';
+import { AppLayout } from '../components/App';
+import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import { applyMessage, state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
+import { serverData } from '../helpers/serverData';
 import { sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
-import { CopyButton } from './CopyButton';
 
 const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
@@ -103,10 +105,6 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => {
     );
 }) satisfies AnyComponent;
 
-// ==========================
-// ClientsTab
-// ==========================
-
 const makeClientCommands = () => {
     const baseUrl = window.location.origin + demoSubpath;
     return {
@@ -115,7 +113,7 @@ const makeClientCommands = () => {
     };
 };
 
-export const ClientsTab = ((props: { configPath: string }) => {
+export const ClientsPage = (() => {
     // Build a map of clientId -> [hosts with that client's lease]
     const clientLeaseMap = createMemo(() => {
         const map = new Map<string, string[]>();
@@ -145,13 +143,7 @@ export const ClientsTab = ((props: { configPath: string }) => {
     const cmds = createMemo(makeClientCommands);
 
     return (
-        <section
-            id="clients-tab"
-            class="tab-content"
-            aria-labelledby="tab-clients"
-            role="tabpanel"
-            tabindex="0"
-        >
+        <AppLayout>
             {/* Install Instructions Panel */}
             <section
                 class="section-container mt-0 py-0"
@@ -237,7 +229,7 @@ export const ClientsTab = ((props: { configPath: string }) => {
                                 data-config-location
                                 class="code-block"
                             >
-                                {props.configPath}
+                                {serverData.configPath}
                             </code>
                         </div>
 
@@ -299,6 +291,6 @@ export const ClientsTab = ((props: { configPath: string }) => {
                     </table>
                 </div>
             </section>
-        </section>
+        </AppLayout>
     );
 }) satisfies AnyComponent;

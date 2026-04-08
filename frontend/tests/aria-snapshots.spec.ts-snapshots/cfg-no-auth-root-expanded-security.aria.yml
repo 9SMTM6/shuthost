@@ -46,16 +46,15 @@
             - text: Replace backend references with your actual configuration values. After configuring your proxy rules, set
             - code: "auth = { type = \"external\", exceptions_version = 1 }"
             - text: in the coordinator config to acknowledge the exceptions. If this doesn't help, please raise an issue.
-  - tabpanel "Hosts":
-    - region "Install Host Agent":
-      - group "Install Host Agent":
-        - heading "Install Host Agent" [level=2]
-    - region "Hosts Table":
-      - heading "Hosts Table" [level=2]
-      - table:
-        - rowgroup:
-          - row "Host Status Actions":
-            - columnheader "Host"
-            - columnheader "Status"
-            - columnheader "Actions"
-        - rowgroup
+  - region "Install Host Agent":
+    - group "Install Host Agent":
+      - heading "Install Host Agent" [level=2]
+  - region "Hosts Table":
+    - heading "Hosts Table" [level=2]
+    - table:
+      - rowgroup:
+        - row "Host Status Actions":
+          - columnheader "Host"
+          - columnheader "Status"
+          - columnheader "Actions"
+      - rowgroup
