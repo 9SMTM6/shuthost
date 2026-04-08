@@ -314,9 +314,9 @@ export const HostDetailPage = (() => {
     const clientLeases = () =>
         leases().filter((l): l is ClientLease => l.type === 'Client');
     const lastOnline = (): string | null | undefined =>
-        state.hostLastOnline === null
+        state.dbData === null
             ? undefined
-            : (state.hostLastOnline[hostname()] ?? null);
+            : (state.dbData.hostStats[hostname()]?.lastOnline ?? null);
 
     const updateLease = async (action: 'take' | 'release') => {
         if (isDemoMode) {

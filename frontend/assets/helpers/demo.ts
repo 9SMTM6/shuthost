@@ -28,10 +28,9 @@ export const initDemoMode = () => {
             payload: {
                 hosts: ['archive', 'tarbean'],
                 clients: [],
-                status: { tarbean: 'offline', archive: 'offline' },
-                leases: { archive: [] },
-                client_stats: {},
-                host_last_online: null,
+                statusMap: { tarbean: 'offline', archive: 'offline' },
+                leaseMap: { archive: [] },
+                dbData: { clientStats: {}, hostStats: {} },
             },
         });
     }, 500);

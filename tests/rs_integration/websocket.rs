@@ -134,9 +134,9 @@ async fn websocket_host_status_changes() {
     let initial_msg = read.next().await.unwrap().unwrap();
     let initial: WsMessage = serde_json::from_str(&initial_msg.to_string()).unwrap();
     match initial {
-        WsMessage::Initial { status, .. } => {
+        WsMessage::Initial { status_map, .. } => {
             // Initially, host should be offline
-            assert_eq!(status.get("testhost"), Some(&HostState::Offline));
+            assert_eq!(status_map.get("testhost"), Some(&HostState::Offline));
         }
         _ => panic!("Expected Initial message"),
     }

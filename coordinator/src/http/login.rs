@@ -66,6 +66,7 @@ pub(crate) async fn page(
             auth_warning: false,
             auth_mode,
             broadcast_port,
+            db_enabled: false,
         }),
     )
         .into_response()

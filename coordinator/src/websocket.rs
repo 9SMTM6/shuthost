@@ -17,7 +17,7 @@ use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
     AppState, ConfigRx, DbPool, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources, LeaseState,
-    db::{self, ClientStats},
+    db::{self, ClientStats, HostStats},
 };
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
@@ -41,7 +41,15 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DbData {
+    pub client_stats: HashMap<String, ClientStats>,
+    pub host_stats: HashMap<String, HostStats>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]
+#[serde(rename_all = "camelCase")]
 pub enum WsMessage {
     /// Gets sent on host status changes
     HostStatus(HostStatus),
@@ -55,10 +63,9 @@ pub enum WsMessage {
     Initial {
         hosts: Vec<String>,
         clients: Vec<String>,
-        status: HostStatus,
-        leases: LeaseMapRaw,
-        client_stats: Option<HashMap<String, ClientStats>>,
-        host_last_online: Option<HashMap<String, chrono::DateTime<chrono::Utc>>>,
+        status_map: HostStatus,
+        lease_map: LeaseMapRaw,
+        db_data: Option<DbData>,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
@@ -179,35 +186,31 @@ async fn send_startup_msg(
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
     let leases = current_leases.borrow().as_ref().clone();
-    let client_stats = if let Some(pool) = db_pool {
-        match db::get_all_client_stats(pool).await {
-            Ok(stats) => Some(stats),
+    let db_data = if let Some(pool) = db_pool {
+        let client_stats = match db::get_all_client_stats(pool).await {
+            Ok(stats) => stats,
             Err(e) => {
                 error!(%e, "Failed to get client stats");
-                None
+                return Err(axum::Error::new(e));
             }
-        }
-    } else {
-        None
-    };
-    let host_last_online = if let Some(pool) = db_pool {
-        match db::get_all_host_last_online(pool).await {
-            Ok(map) => Some(map),
+        };
+        let host_stats = match db::get_all_host_stats(pool).await {
+            Ok(map) => map,
             Err(e) => {
-                error!(%e, "Failed to get host last online timestamps");
-                None
+                error!(%e, "Failed to get host stats");
+                return Err(axum::Error::new(e));
             }
-        }
+        };
+        Some(DbData { client_stats, host_stats })
     } else {
         None
     };
     let initial_msg = WsMessage::Initial {
         hosts,
         clients,
-        status: current_state.as_ref().clone(),
-        leases,
-        client_stats,
-        host_last_online,
+        status_map: current_state.as_ref().clone(),
+        lease_map: leases,
+        db_data,
     };
 
     send_ws_message(socket, &initial_msg)
