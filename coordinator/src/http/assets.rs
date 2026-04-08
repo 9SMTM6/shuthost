@@ -144,6 +144,7 @@ pub(crate) enum UiMode<'params> {
         auth_warning: bool,
         auth_mode: &'static str,
         broadcast_port: u16,
+        db_enabled: bool,
     },
     Demo {
         subpath: &'params str,
@@ -161,6 +162,7 @@ struct UiServerData<'strings> {
     demo_subpath: Option<&'strings str>,
     auth_mode: &'strings str,
     broadcast_port: u16,
+    db_enabled: bool,
 }
 
 /// Renders the main HTML template, injecting a JSON data island with all
@@ -172,12 +174,14 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             auth_warning,
             auth_mode,
             broadcast_port,
+            db_enabled,
         } => UiServerData {
             config_path: config_path.to_string_lossy(),
             auth_warning,
             demo_subpath: None,
             auth_mode,
             broadcast_port,
+            db_enabled,
         },
         UiMode::Demo { subpath } => UiServerData {
             config_path: borrow::Cow::Borrowed("/this/is/a/demo.toml"),
@@ -185,6 +189,7 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
             demo_subpath: Some(subpath),
             auth_mode: "disabled",
             broadcast_port: shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
+            db_enabled: true,
         },
     };
 
@@ -202,6 +207,7 @@ pub(crate) async fn serve_ui(
         config_path,
         auth,
         config_rx,
+        db_pool,
         ..
     }): State<AppState>,
 ) -> impl IntoResponse {
@@ -226,6 +232,7 @@ pub(crate) async fn serve_ui(
             auth_warning,
             auth_mode,
             broadcast_port,
+            db_enabled: db_pool.is_some(),
         }),
     )
 }

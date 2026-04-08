@@ -1,4 +1,5 @@
 import { createStore, produce } from 'solid-js/store';
+import { serverData } from './serverData';
 
 // ==========================
 // Types
@@ -14,33 +15,33 @@ export type ClientStats = {
     last_used: string | null;
 };
 
-// TODO:
-// * explore defining this depending on the de presence, perhaps add db being enabled to serverdata json and use that to have globally dynamically correct typing
-// * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
-export type WsMessage =
-    | { type: 'HostStatus'; payload: StatusMap }
-    | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
-    | {
-          type: 'Initial';
-          payload: {
-              hosts: string[];
-              clients: string[];
-              status: StatusMap;
-              leases: Record<string, LeaseSource[]>;
-              client_stats: Record<string, ClientStats> | null;
-              host_last_online: Record<string, string> | null;
-          };
-      }
-    | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
+export type HostStats = {
+    lastOnline: string | null;
+};
+
+export type DbData = {
+    clientStats: Record<string, ClientStats>;
+    hostStats: Record<string, HostStats>;
+};
 
 export type AppState = {
     hosts: string[];
     statusMap: StatusMap;
     leaseMap: Record<string, LeaseSource[]>;
     clients: string[];
-    clientStats: Record<string, ClientStats> | null;
-    hostLastOnline: Record<string, string> | null;
+    dbData: DbData | null;
 };
+
+// TODO:
+// * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
+export type WsMessage =
+    | { type: 'HostStatus'; payload: StatusMap }
+    | { type: 'ConfigChanged'; payload: { hosts: string[]; clients: string[] } }
+    | {
+          type: 'Initial';
+          payload: AppState;
+      }
+    | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 // ==========================
 // Store
@@ -51,23 +52,22 @@ const [state, setState] = createStore<AppState>({
     statusMap: {},
     leaseMap: {},
     clients: [],
-    clientStats: null,
-    hostLastOnline: null,
+    dbData: null,
 });
 
 export { state };
 
+export const hasDb = (s: AppState): s is AppState & { dbData: DbData } => s.dbData !== null;
+
 export const applyMessage = (message: WsMessage) => {
     switch (message.type) {
         case 'Initial':
-            setState({
-                hosts: message.payload.hosts,
-                clients: message.payload.clients,
-                statusMap: message.payload.status,
-                leaseMap: message.payload.leases,
-                clientStats: message.payload.client_stats,
-                hostLastOnline: message.payload.host_last_online,
-            });
+            if ((message.payload.dbData !== null) !== serverData.dbEnabled) {
+                throw new Error(
+                    `serverData.dbEnabled (${serverData.dbEnabled}) disagrees with received dbData (${message.payload.dbData === null ? 'null' : 'present'})`,
+                );
+            }
+            setState(message.payload);
             break;
         case 'HostStatus':
             setState('statusMap', message.payload);

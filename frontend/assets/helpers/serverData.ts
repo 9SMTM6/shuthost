@@ -15,6 +15,7 @@ export type ServerData = {
     demoSubpath?: string;
     authMode: 'token' | 'oidc' | 'disabled' | 'external';
     broadcastPort: number;
+    dbEnabled: boolean;
 };
 
 const loadServerData = () => {

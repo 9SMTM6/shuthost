@@ -77,6 +77,12 @@ pub struct ClientStats {
     pub last_used: Option<DateTime<Utc>>,
 }
 
+/// Host statistics for tracking usage metrics.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HostStats {
+    pub last_online: Option<DateTime<Utc>>,
+}
+
 #[cfg(unix)]
 #[expect(
     clippy::absolute_paths,
@@ -609,15 +615,15 @@ pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> e
     Ok(())
 }
 
-/// Loads all host last-online timestamps from the database.
+/// Loads all host stats from the database.
 ///
 /// # Errors
 ///
 /// Returns an error if the database query fails.
 #[tracing::instrument(skip(pool), err)]
-pub(crate) async fn get_all_host_last_online(
+pub(crate) async fn get_all_host_stats(
     pool: &DbPool,
-) -> eyre::Result<HashMap<String, DateTime<Utc>>> {
+) -> eyre::Result<HashMap<String, HostStats>> {
     let records: Vec<HostLastOnlineRecord> = sqlx::query_as!(
         HostLastOnlineRecord,
         "SELECT hostname, last_online FROM host_last_online"
@@ -627,13 +633,15 @@ pub(crate) async fn get_all_host_last_online(
 
     Ok(records
         .into_iter()
-        .filter_map(|rec| {
-            rec.last_online.map(|dt| {
-                (
-                    rec.hostname,
-                    DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc),
-                )
-            })
+        .map(|rec| {
+            (
+                rec.hostname,
+                HostStats {
+                    last_online: rec.last_online.map(|dt| {
+                        DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc)
+                    }),
+                },
+            )
         })
         .collect())
 }

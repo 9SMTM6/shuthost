@@ -11,8 +11,8 @@ import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
 
 const formatLastUsed = (clientId: string): string => {
-    if (state.clientStats === null) return '';
-    const stats = state.clientStats[clientId];
+    if (state.dbData === null) return '';
+    const stats = state.dbData.clientStats[clientId];
     return formatRelativeTimestamp(stats?.last_used);
 };
 
@@ -65,7 +65,7 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => {
             <td class="table-cell leases" aria-label="Leases">
                 {props.leases.join(', ') || 'None'}
             </td>
-            <Show when={state.clientStats !== null}>
+            <Show when={state.dbData !== null}>
                 <td class="table-cell last-used" aria-label="Last Used">
                     {formatLastUsed(props.clientId)}
                 </td>
@@ -243,7 +243,7 @@ export const ClientsPage = (() => {
                                 <th class="table-header" scope="col">
                                     Leases
                                 </th>
-                                <Show when={state.clientStats !== null}>
+                                <Show when={state.dbData !== null}>
                                     <th
                                         id="last-used-header"
                                         class="table-header"
