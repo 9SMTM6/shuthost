@@ -49,7 +49,6 @@ pub struct DbData {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]
-#[serde(rename_all = "camelCase")]
 pub enum WsMessage {
     /// Gets sent on host status changes
     HostStatus(HostStatus),
@@ -60,6 +59,7 @@ pub enum WsMessage {
         clients: Vec<String>,
     },
     /// Send the entire state in the beginning to bootstrap the web client UI.
+    #[serde(rename_all = "camelCase")]
     Initial {
         hosts: Vec<String>,
         clients: Vec<String>,
