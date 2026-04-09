@@ -13,7 +13,7 @@ import clientGotchasHtml from '../partials/client_install_requirements_gotchas.m
 const formatLastUsed = (clientId: string): string => {
     if (state.dbData === null) return '';
     const stats = state.dbData.clientStats[clientId];
-    return formatRelativeTimestamp(stats?.last_used);
+    return formatRelativeTimestamp(stats?.lastUsed);
 };
 
 // ==========================

@@ -73,14 +73,18 @@ pub(crate) const KV_VAPID_PRIVATE_KEY_PEM: &str = "vapid_private_key_pem";
 
 /// Client statistics for tracking usage metrics.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClientStats {
     pub last_used: Option<DateTime<Utc>>,
 }
 
 /// Host statistics for tracking usage metrics.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HostStats {
     pub last_online: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub is_online: bool,
 }
 
 #[cfg(unix)]
@@ -640,6 +644,7 @@ pub(crate) async fn get_all_host_stats(
                     last_online: rec.last_online.map(|dt| {
                         DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc)
                     }),
+                    is_online: false,
                 },
             )
         })

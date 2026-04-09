@@ -12,11 +12,12 @@ export type LeaseSource =
     | { type: 'Client'; value: string };
 
 export type ClientStats = {
-    last_used: string | null;
+    lastUsed: string | null;
 };
 
 export type HostStats = {
     lastOnline: string | null;
+    isOnline?: boolean;
 };
 
 export type DbData = {

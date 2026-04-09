@@ -3,16 +3,16 @@
 import { assertData, is, type Infer } from './assertData';
 
 const buildDataChecks = {
-    styles_hash:       is.string,
-    styles_integrity:  is.string,
-    manifest_hash:     is.string,
-    icon_hashes:       is.recordOf(is.string),
-    svg_hashes:        is.recordOf(is.string),
+    stylesHash:       is.string,
+    stylesIntegrity:  is.string,
+    manifestHash:     is.string,
+    iconHashes:       is.recordOf(is.string),
+    svgHashes:        is.recordOf(is.string),
     description:       is.string,
     repository:        is.string,
     version:           is.string,
-    app_js_hash:       is.string,
-    app_js_integrity:  is.string,
+    appJsHash:        is.string,
+    appJsIntegrity:   is.string,
 } as const;
 
 export type BuildData = Infer<typeof buildDataChecks>;
@@ -23,7 +23,7 @@ const loadBuildData = (): BuildData => {
         // for hash fields. Rust substitutes {{PRERENDERED_HTML}} first in the
         // template chain, so subsequent hash replacements resolve these too.
         return {
-            svg_hashes: { favicon: '{{FAVICON_SVG_HASH}}' },
+            svgHashes: { favicon: '{{FAVICON_SVG_HASH}}' },
         } as unknown as BuildData;
     }
     const el = document.getElementById('build-data');

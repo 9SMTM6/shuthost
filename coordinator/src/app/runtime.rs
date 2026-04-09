@@ -184,7 +184,7 @@ pub(super) fn start_background_tasks(
         });
     }
 
-    // Persist last-online timestamps when hosts transition to Online.
+    // Persist last-online timestamps on every host status transition.
     if let Some(pool) = state.db_pool.clone() {
         let mut hoststatus_rx = state.hoststatus_tx.subscribe();
         tasks.spawn(async move {
@@ -192,7 +192,7 @@ pub(super) fn start_background_tasks(
             while hoststatus_rx.changed().await.is_ok() {
                 let current = hoststatus_rx.borrow().clone();
                 for (host, h_state) in current.iter() {
-                    if *h_state == HostState::Online && prev.get(host) != Some(&HostState::Online) {
+                    if prev.get(host) != Some(h_state) {
                         let pool = pool.clone();
                         let host = host.clone();
                         tokio::spawn(async move {

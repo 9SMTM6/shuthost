@@ -16,8 +16,8 @@ use tracing::{Instrument as _, debug, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
-    AppState, ConfigRx, DbPool, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources, LeaseState,
-    db::{self, ClientStats, HostStats},
+    AppState, ConfigRx, DbPool, HostState, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources,
+    LeaseState, db::{self, ClientStats, HostStats},
 };
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
@@ -194,13 +194,18 @@ async fn send_startup_msg(
                 return Err(axum::Error::new(e));
             }
         };
-        let host_stats = match db::get_all_host_stats(pool).await {
+        let mut host_stats = match db::get_all_host_stats(pool).await {
             Ok(map) => map,
             Err(e) => {
                 error!(%e, "Failed to get host stats");
                 return Err(axum::Error::new(e));
             }
         };
+        for (name, &state) in current_state.iter() {
+            if state == HostState::Online {
+                host_stats.entry(name.clone()).or_default().is_online = true;
+            }
+        }
         Some(DbData { client_stats, host_stats })
     } else {
         None
