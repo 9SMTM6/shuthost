@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS(\n            SELECT 1 FROM push_subscriptions ps\n            JOIN push_subscription_host_unscheduled phu ON phu.subscription_id = ps.id\n            WHERE ps.endpoint = ? AND phu.hostname = ?\n        ) AS subscribed",
+  "describe": {
+    "columns": [
+      {
+        "name": "subscribed",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "516d93fe84dd5bc6b5db5649516f21f0f0f3c5a93378e8cd426a25fdb1e63fdb"
+}

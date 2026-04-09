@@ -646,6 +646,56 @@ pub(crate) async fn get_all_host_stats(
         .collect())
 }
 
+/// Returns whether a push subscription (identified by its endpoint) is subscribed to
+/// unscheduled-event notifications for a specific host.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn is_subscribed_to_host_unscheduled(
+    pool: &DbPool,
+    endpoint: &str,
+    hostname: &str,
+) -> eyre::Result<bool> {
+    let result = sqlx::query!(
+        "SELECT EXISTS(
+            SELECT 1 FROM push_subscriptions ps
+            JOIN push_subscription_host_unscheduled phu ON phu.subscription_id = ps.id
+            WHERE ps.endpoint = ? AND phu.hostname = ?
+        ) AS subscribed",
+        endpoint,
+        hostname,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(result.subscribed != 0)
+}
+
+/// Removes the unscheduled-event subscription link for a specific endpoint + host pair.
+/// Leaves the `push_subscriptions` row intact (it may still be used by other hosts).
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn unsubscribe_host_unscheduled(
+    pool: &DbPool,
+    endpoint: &str,
+    hostname: &str,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "DELETE FROM push_subscription_host_unscheduled
+         WHERE subscription_id = (SELECT id FROM push_subscriptions WHERE endpoint = ?)
+           AND hostname = ?",
+        endpoint,
+        hostname,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Removes a push subscription (and all associated unscheduled-event entries via CASCADE).
 ///
 /// # Errors

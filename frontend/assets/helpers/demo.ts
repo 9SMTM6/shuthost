@@ -36,6 +36,25 @@ export const initDemoMode = () => {
     }, 500);
 };
 
+// ── Demo push subscription state ───────────────────────────────────────────
+// In demo mode there is no real backend, so we maintain an in-memory set of
+// subscribed hostnames and expose helpers that the push-subscription module
+// can delegate to.
+
+const demoPushSubscriptions = new Set<string>();
+
+export const demoCheckHostUnscheduledSubscription = (
+    hostname: string,
+): boolean => demoPushSubscriptions.has(hostname);
+
+export const demoSubscribeToHostUnscheduled = (hostname: string): void => {
+    demoPushSubscriptions.add(hostname);
+};
+
+export const demoUnsubscribeFromHostUnscheduled = (hostname: string): void => {
+    demoPushSubscriptions.delete(hostname);
+};
+
 export const demoUpdateLease = async (
     host: string,
     action: 'take' | 'release',

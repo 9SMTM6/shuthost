@@ -7,7 +7,7 @@ use alloc::sync::Arc;
 
 use axum::{
     Router,
-    extract::State,
+    extract::{Query, State},
     response::IntoResponse,
     routing::{get, post},
 };
@@ -30,7 +30,9 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/vapid-public-key", get(get_vapid_public_key))
         .route(
             "/subscribe-host-unscheduled",
-            post(subscribe_host_unscheduled),
+            get(check_host_unscheduled_subscription)
+                .post(subscribe_host_unscheduled)
+                .delete(unsubscribe_host_unscheduled),
         )
         .route("/test", post(send_test_push))
 }
@@ -54,6 +56,23 @@ struct PushSubscriptionJson {
 #[derive(Deserialize)]
 struct SubscribeHostUnscheduledRequest {
     subscription: PushSubscriptionJson,
+    hostname: String,
+}
+
+#[derive(Deserialize)]
+struct CheckHostUnscheduledQuery {
+    endpoint: String,
+    hostname: String,
+}
+
+#[derive(Serialize)]
+struct CheckHostUnscheduledResponse {
+    subscribed: bool,
+}
+
+#[derive(Deserialize)]
+struct UnsubscribeHostUnscheduledRequest {
+    endpoint: String,
     hostname: String,
 }
 
@@ -94,6 +113,48 @@ async fn get_vapid_public_key(State(state): State<AppState>) -> impl IntoRespons
         }),
     )
         .into_response()
+}
+
+/// Returns whether the given push endpoint is subscribed to unscheduled-event notifications
+/// for the given host.
+#[axum::debug_handler]
+async fn check_host_unscheduled_subscription(
+    State(state): State<AppState>,
+    Query(params): Query<CheckHostUnscheduledQuery>,
+) -> impl IntoResponse {
+    let Some(ref pool) = state.db_pool else {
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    };
+
+    match db::is_subscribed_to_host_unscheduled(pool, &params.endpoint, &params.hostname).await {
+        Ok(subscribed) => {
+            axum::Json(CheckHostUnscheduledResponse { subscribed }).into_response()
+        }
+        Err(e) => {
+            error!("Failed to check push subscription: {e:#}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Removes the unscheduled-event subscription link for a specific endpoint + host pair.
+#[axum::debug_handler]
+async fn unsubscribe_host_unscheduled(
+    State(state): State<AppState>,
+    axum::Json(body): axum::Json<UnsubscribeHostUnscheduledRequest>,
+) -> impl IntoResponse {
+    let Some(ref pool) = state.db_pool else {
+        return StatusCode::SERVICE_UNAVAILABLE;
+    };
+
+    if let Err(e) =
+        db::unsubscribe_host_unscheduled(pool, &body.endpoint, &body.hostname).await
+    {
+        error!("Failed to unsubscribe from host unscheduled events: {e:#}");
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    StatusCode::NO_CONTENT
 }
 
 /// Registers a browser push subscription for unscheduled-event notifications.

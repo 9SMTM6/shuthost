@@ -1,4 +1,10 @@
 import { apiFetch } from './apiFetch';
+import {
+    demoCheckHostUnscheduledSubscription,
+    demoSubscribeToHostUnscheduled,
+    demoUnsubscribeFromHostUnscheduled,
+    isDemoMode,
+} from './demo';
 
 /**
  * Converts a URL-safe base64 string (no padding) to a Uint8Array.
@@ -71,6 +77,10 @@ const getOrCreatePushSubscription = async () => {
  * on the given host (startup or shutdown not triggered by ShutHost).
  */
 export const subscribeToHostUnscheduled = async (hostname: string) => {
+    if (isDemoMode) {
+        demoSubscribeToHostUnscheduled(hostname);
+        return;
+    }
     const subscription = await getOrCreatePushSubscription();
     const subJson = subscription.toJSON();
 
@@ -78,5 +88,57 @@ export const subscribeToHostUnscheduled = async (hostname: string) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: subJson, hostname }),
+    });
+};
+
+/**
+ * Checks whether the current browser is already subscribed to unscheduled-event
+ * push notifications for the given host. Does NOT request notification permission.
+ * Returns false if the browser has no push subscription or push is unsupported.
+ */
+export const checkHostUnscheduledSubscription = async (
+    hostname: string,
+): Promise<boolean> => {
+    if (isDemoMode) {
+        return demoCheckHostUnscheduledSubscription(hostname);
+    }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return false;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return false;
+
+    const endpoint = encodeURIComponent(existing.endpoint);
+    const resp = await fetch(
+        `/api/push/subscribe-host-unscheduled?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
+    );
+    if (!resp.ok) return false;
+    const { subscribed } = (await resp.json()) as { subscribed: boolean };
+    return subscribed;
+};
+
+/**
+ * Removes the unscheduled-event subscription link for the current browser + host pair.
+ * Has no effect if the browser has no push subscription.
+ */
+export const unsubscribeFromHostUnscheduled = async (
+    hostname: string,
+): Promise<void> => {
+    if (isDemoMode) {
+        demoUnsubscribeFromHostUnscheduled(hostname);
+        return;
+    }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return;
+
+    await apiFetch('/api/push/subscribe-host-unscheduled', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint, hostname }),
     });
 };
