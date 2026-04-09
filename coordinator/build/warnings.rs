@@ -101,6 +101,7 @@ fn check_stale_agents(build_warnings: &mut Vec<String>) {
     }
 }
 
+#[expect(clippy::unnecessary_wraps, reason = "Needed to be accepted as task")]
 pub fn emit() -> Result<(), eyre::Report> {
     #[expect(clippy::allow_attributes, reason = "Feature dependent code")]
     #[allow(unused_mut, reason = "Feature-dependent code")]
@@ -135,5 +136,5 @@ pub fn emit() -> Result<(), eyre::Report> {
         build_warnings = build_warnings.join(";")
     );
 
-    return Ok(());
+    Ok(())
 }
