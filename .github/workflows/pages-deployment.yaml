@@ -50,7 +50,7 @@ jobs:
           chmod +x shuthost_coordinator
 
       - name: Build and snapshot demo
-        run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost --provided-binary=./shuthost_coordinator
+        run: ./scripts/build-gh-pages.sh --serve-subpath=/shuthost/ --provided-binary=./shuthost_coordinator
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
