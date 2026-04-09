@@ -1,17 +1,21 @@
 /// <reference lib="dom" />
 
-export type BuildData = {
-    styles_hash: string;
-    styles_integrity: string;
-    manifest_hash: string;
-    icon_hashes: Record<number, string>;
-    svg_hashes: Record<string, string>;
-    description: string;
-    repository: string;
-    version: string;
-    app_js_hash: string;
-    app_js_integrity: string;
-};
+import { assertData, is, type Infer } from './assertData';
+
+const buildDataChecks = {
+    styles_hash:       is.string,
+    styles_integrity:  is.string,
+    manifest_hash:     is.string,
+    icon_hashes:       is.recordOf(is.string),
+    svg_hashes:        is.recordOf(is.string),
+    description:       is.string,
+    repository:        is.string,
+    version:           is.string,
+    app_js_hash:       is.string,
+    app_js_integrity:  is.string,
+} as const;
+
+export type BuildData = Infer<typeof buildDataChecks>;
 
 const loadBuildData = (): BuildData => {
     if (typeof document === 'undefined') {
@@ -24,7 +28,9 @@ const loadBuildData = (): BuildData => {
     }
     const el = document.getElementById('build-data');
     if (!el?.textContent) throw new Error('Missing #build-data element');
-    return JSON.parse(el.textContent) as BuildData;
+    const parsed: unknown = JSON.parse(el.textContent);
+    assertData('#build-data', parsed, buildDataChecks);
+    return parsed;
 };
 
 export const buildData: BuildData = loadBuildData();
