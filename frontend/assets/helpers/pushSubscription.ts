@@ -39,14 +39,30 @@ const getOrCreatePushSubscription = async () => {
     }
     const { publicKey } = (await vapidResp.json()) as { publicKey: string };
 
+    const applicationServerKey = urlBase64ToUint8Array(publicKey);
+
     const existing = await registration.pushManager.getSubscription();
     if (existing) {
-        return existing;
+        // The existing subscription may have been created with a different VAPID
+        // key (e.g. after a server restart that regenerated the key).  If the
+        // keys don't match the push service will reject future sends, so
+        // unsubscribe first and fall through to create a fresh subscription.
+        const existingKey = existing.options.applicationServerKey;
+        if (existingKey) {
+            const existingBytes = new Uint8Array(existingKey);
+            const keysMatch =
+                existingBytes.length === applicationServerKey.length &&
+                existingBytes.every((b, i) => b === applicationServerKey[i]);
+            if (keysMatch) {
+                return existing;
+            }
+        }
+        await existing.unsubscribe();
     }
 
     return registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
+        applicationServerKey,
     });
 };
 
