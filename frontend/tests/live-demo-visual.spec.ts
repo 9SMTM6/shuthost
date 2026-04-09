@@ -11,7 +11,7 @@ test('main page (hosts tab)', async ({ page }) => {
 });
 
 test('docs/architecture tab', async ({ page }) => {
-    await page.goto(`${BASE_URL}/#architecture`);
+    await page.goto(`${BASE_URL}/docs`);
     await page.waitForLoadState('networkidle');
     await sanitizeVersion(page);
     await expect(page.locator('body')).toHaveScreenshot(
