@@ -56,7 +56,7 @@ Extended documentation, examples, and additional resources to help you get the m
 - [❓ FAQ](docs/FAQ.md)
 - [📷 UI screenshots](#-ui-screenshots)
 - [🖥️ Platform Support](frontend/assets/partials/platform_support.md)
-- [🏗️ Architecture](https://9smtm6.github.io/shuthost/#architecture)
+- [🏗️ Architecture](https://9smtm6.github.io/shuthost/docs)
 - [🚀 Potential Future Features](#-potential-future-features)
 - [🤝 Contributing](docs/CONTRIBUTING.md)
 
