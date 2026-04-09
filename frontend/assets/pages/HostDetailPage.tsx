@@ -3,21 +3,24 @@ import { A, useParams } from '@solidjs/router';
 import {
     ArrowLeft,
     Bell,
-    BellRing,
+    BellOff,
     LoaderCircle,
     Power,
     PowerOff,
 } from 'lucide-solid';
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, For, onMount, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
 import type { AnyComponent } from '../helpers/component';
 import { demoUpdateLease, isDemoMode } from '../helpers/demo';
-import { subscribeToHostUnscheduled } from '../helpers/pushSubscription';
+import {
+    checkHostUnscheduledSubscription,
+    subscribeToHostUnscheduled,
+    unsubscribeFromHostUnscheduled,
+} from '../helpers/pushSubscription';
 import { formatRelativeTimestamp } from '../helpers/utils';
 
-type NotifyState = 'idle' | 'loading' | 'subscribed' | 'error';
 type ClientLease = { type: 'Client'; value: string };
 
 // --- Sub-components ---
@@ -45,21 +48,47 @@ const HostStatusBadge = (props: {
 );
 
 const NotifyUnscheduledButton = (props: { hostname: string }) => {
-    const [notifyState, setNotifyState] = createSignal<NotifyState>('idle');
+    const [subscribed, setSubscribed] = createSignal<boolean | null>(null);
+    const [loading, setLoading] = createSignal(false);
+    const [error, setError] = createSignal<string | null>(null);
 
-    const handle = async () => {
-        setNotifyState('loading');
+    onMount(async () => {
         try {
-            await subscribeToHostUnscheduled(props.hostname);
-            setNotifyState('subscribed');
+            const result = await checkHostUnscheduledSubscription(
+                props.hostname,
+            );
+            setSubscribed(result);
+        } catch {
+            setSubscribed(false);
+        }
+    });
+
+    const handleClick = async () => {
+        if (subscribed() === null || loading()) return;
+        setLoading(true);
+        setError(null);
+        const wasSubscribed = subscribed();
+        try {
+            if (wasSubscribed) {
+                await unsubscribeFromHostUnscheduled(props.hostname);
+                setSubscribed(false);
+            } else {
+                await subscribeToHostUnscheduled(props.hostname);
+                setSubscribed(true);
+            }
         } catch (err) {
             console.error(
-                `Failed to subscribe to unscheduled events for ${props.hostname}:`,
+                `Failed to ${wasSubscribed ? 'unsubscribe from' : 'subscribe to'} unscheduled events for ${props.hostname}:`,
                 err,
             );
-            setNotifyState('error');
+            setError('Failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
+
+    const isChecking = () => subscribed() === null;
+    const isSubscribed = () => subscribed() === true;
 
     return (
         <div
@@ -68,40 +97,34 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
         >
             <button
                 type="button"
-                class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
-                disabled={
-                    notifyState() === 'loading' ||
-                    notifyState() === 'subscribed'
-                }
-                onClick={handle}
+                class={`btn sm:px-5 sm:py-3 sm:text-base ${isSubscribed() ? 'btn-red' : 'btn-green'}`}
+                disabled={isChecking() || loading()}
+                onClick={handleClick}
             >
-                <Show when={notifyState() === 'loading'}>
+                <Show when={isChecking() || loading()}>
                     <LoaderCircle
                         size={16}
                         class="animate-spin"
                         aria-hidden="true"
                     />
                 </Show>
-                <Show when={notifyState() !== 'loading'}>
-                    <Bell size={16} aria-hidden="true" />
+                <Show when={!isChecking() && !loading() && isSubscribed()}>
+                    <BellOff size={20} aria-hidden="true" />
                 </Show>
-                Unscheduled events
-            </button>
-            <Show when={notifyState() === 'subscribed'}>
-                <span
-                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
-                    aria-live="polite"
-                >
-                    <BellRing size={12} aria-hidden="true" />
-                    Subscribed
+                <Show when={!isChecking() && !loading() && !isSubscribed()}>
+                    <Bell size={20} aria-hidden="true" />
+                </Show>
+                <span class="flex flex-col text-center leading-tight">
+                    <span>{isSubscribed() ? 'Unsubscribe from' : 'Subscribe to'}</span>
+                    <span>unscheduled events</span>
                 </span>
-            </Show>
-            <Show when={notifyState() === 'error'}>
+            </button>
+            <Show when={error() !== null}>
                 <span
                     class="text-xs text-red-500 dark:text-[#f48771]"
                     aria-live="polite"
                 >
-                    Failed to subscribe. Please try again.
+                    {error()}
                 </span>
             </Show>
         </div>
