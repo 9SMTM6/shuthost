@@ -2,6 +2,8 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 
+const isDebugBuild = process.env['SHUTHOST_DEBUG_BUILD'] === '1';
+
 // In dev mode, the Header renders <img src="/favicon.{hash}.svg"> using the hash from build-data.
 // The dev index.html uses hash "dev", so the request is for /favicon.dev.svg.
 // This plugin intercepts those requests and serves the real asset instead.
@@ -25,6 +27,8 @@ export default defineConfig({
     build: {
         outDir: 'assets/generated',
         emptyOutDir: false,
+        minify: !isDebugBuild,
+        sourcemap: isDebugBuild ? ('inline' as const) : false,
         rolldownOptions: {
             input: {
                 app: 'assets/index.tsx',
