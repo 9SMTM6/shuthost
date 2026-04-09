@@ -8,7 +8,7 @@ export function assertData<C extends AnyChecker>(label: string, x: unknown, chec
     if (typeof x !== 'object' || x === null) throw new Error(`${label}: not an object`);
     const d = x as Record<string, unknown>;
     for (const [key, check] of Object.entries(checks)) {
-        if (!check(d[key])) throw new Error(`${label}: invalid field "${key}"`);
+        if (!check(d[key])) setTimeout(() => {throw new Error(`${label}: invalid field "${key}"`);}, 0);
     }
 }
 
