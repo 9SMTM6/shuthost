@@ -220,7 +220,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 //     );
 // };
 
-const HostInfoSection = (props: { lastOnline: string | null }) => (
+const HostInfoSection = (props: { lastOnline: string | null; isOnline: boolean }) => (
     <section
         class="section-container p-4 mb-4"
         aria-labelledby="host-info-title"
@@ -236,7 +236,7 @@ const HostInfoSection = (props: { lastOnline: string | null }) => (
                 Last online
             </dt>
             <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                {formatRelativeTimestamp(props.lastOnline)}
+                {props.isOnline ? 'Currently online' : formatRelativeTimestamp(props.lastOnline)}
             </dd>
         </dl>
     </section>
@@ -398,6 +398,7 @@ export const HostDetailPage = (() => {
                 <Show when={lastOnline() !== undefined}>
                     <HostInfoSection
                         lastOnline={lastOnline() as string | null}
+                        isOnline={status() === 'online'}
                     />
                 </Show>
 

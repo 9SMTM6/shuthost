@@ -123,6 +123,7 @@ fn emit_build_env_vars(data: &BuildData) {
 }
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 struct BuildData {
     styles_hash: String,
     styles_integrity: String,
