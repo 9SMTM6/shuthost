@@ -1,5 +1,9 @@
+import { demoSubpath } from './demo';
+
 /**
- * Registers /sw.js as a module service worker as early as possible.
+ * Registers the service worker as early as possible.
+ * Uses `demoSubpath` so that subpath deployments (e.g. GitHub Pages) register
+ * at the correct URL (e.g. `/shuthost/sw.js` instead of `/sw.js`).
  * Safe to call multiple times — the browser deduplicates registrations for
  * the same script URL and scope.
  *
@@ -10,7 +14,10 @@ export const registerServiceWorker = () => {
     if (!('serviceWorker' in navigator)) {
         return null;
     }
-    return navigator.serviceWorker.register('/sw.js', { type: 'module' });
+    const swUrl = `${demoSubpath}/sw.js`;
+    return navigator.serviceWorker.register(swUrl, { type: 'module' }).catch((err) => {
+        console.warn('Service worker registration failed:', err);
+    });
 };
 
 /**
