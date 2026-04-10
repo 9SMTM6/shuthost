@@ -625,9 +625,7 @@ pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> e
 ///
 /// Returns an error if the database query fails.
 #[tracing::instrument(skip(pool), err)]
-pub(crate) async fn get_all_host_stats(
-    pool: &DbPool,
-) -> eyre::Result<HashMap<String, HostStats>> {
+pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<String, HostStats>> {
     let records: Vec<HostLastOnlineRecord> = sqlx::query_as!(
         HostLastOnlineRecord,
         "SELECT hostname, last_online FROM host_last_online"
@@ -641,9 +639,9 @@ pub(crate) async fn get_all_host_stats(
             (
                 rec.hostname,
                 HostStats {
-                    last_online: rec.last_online.map(|dt| {
-                        DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc)
-                    }),
+                    last_online: rec
+                        .last_online
+                        .map(|dt| DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc)),
                     is_online: false,
                 },
             )

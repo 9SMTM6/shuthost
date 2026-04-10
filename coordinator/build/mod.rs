@@ -37,6 +37,8 @@ mod tasks;
 mod warnings;
 mod workspace;
 
+use std::env;
+
 use eyre::Ok;
 
 fn main() -> eyre::Result<()> {
@@ -45,11 +47,15 @@ fn main() -> eyre::Result<()> {
     // Enable frontend debug mode when building the coordinator in debug profile, or when the
     // SHUTHOST_FRONTEND_DEBUG env var is set at compile time. `option_env!` makes Cargo
     // automatically re-run this build script if the variable changes.
-    let frontend_debug = std::env::var("PROFILE").as_deref().is_ok_and(|val| val =="debug")
+    let frontend_debug = env::var("PROFILE")
+        .as_deref()
+        .is_ok_and(|val| val == "debug")
         || option_env!("SHUTHOST_FRONTEND_DEBUG").is_some();
     if frontend_debug {
         // SAFETY: no threads have been spawned yet; this is a single write before tasks::spawn.
-        unsafe { std::env::set_var("SHUTHOST_DEBUG_BUILD", "1") };
+        unsafe {
+            env::set_var("SHUTHOST_DEBUG_BUILD", "1");
+        }
     }
 
     cfg!(debug_assertions);

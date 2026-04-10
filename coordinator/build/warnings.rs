@@ -1,6 +1,4 @@
-use std::fs;
-use std::path::PathBuf;
-use std::process::Command;
+use std::{fs, path::PathBuf, process::Command};
 
 struct Agent {
     name: &'static str,

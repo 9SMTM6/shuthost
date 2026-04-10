@@ -115,7 +115,9 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
                     <Bell size={20} aria-hidden="true" />
                 </Show>
                 <span class="flex flex-col text-center leading-tight">
-                    <span>{isSubscribed() ? 'Unsubscribe from' : 'Subscribe to'}</span>
+                    <span>
+                        {isSubscribed() ? 'Unsubscribe from' : 'Subscribe to'}
+                    </span>
                     <span>unscheduled events</span>
                 </span>
             </button>
@@ -220,7 +222,10 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 //     );
 // };
 
-const HostInfoSection = (props: { lastOnline: string | null; isOnline: boolean }) => (
+const HostInfoSection = (props: {
+    lastOnline: string | null;
+    isOnline: boolean;
+}) => (
     <section
         class="section-container p-4 mb-4"
         aria-labelledby="host-info-title"
@@ -236,7 +241,9 @@ const HostInfoSection = (props: { lastOnline: string | null; isOnline: boolean }
                 Last online
             </dt>
             <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                {props.isOnline ? 'Currently online' : formatRelativeTimestamp(props.lastOnline)}
+                {props.isOnline
+                    ? 'Currently online'
+                    : formatRelativeTimestamp(props.lastOnline)}
             </dd>
         </dl>
     </section>

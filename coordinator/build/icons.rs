@@ -1,7 +1,8 @@
 use core::str;
+use std::{fs, path::PathBuf};
+
 use eyre::{Ok, WrapErr as _, eyre};
 use resvg::usvg;
-use std::{fs, path::PathBuf};
 use tiny_skia::Pixmap;
 
 // sizes to emit: favicons, apple-touch, and PWA sizes

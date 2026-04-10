@@ -127,9 +127,7 @@ async fn check_host_unscheduled_subscription(
     };
 
     match db::is_subscribed_to_host_unscheduled(pool, &params.endpoint, &params.hostname).await {
-        Ok(subscribed) => {
-            axum::Json(CheckHostUnscheduledResponse { subscribed }).into_response()
-        }
+        Ok(subscribed) => axum::Json(CheckHostUnscheduledResponse { subscribed }).into_response(),
         Err(e) => {
             error!("Failed to check push subscription: {e:#}");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -147,9 +145,7 @@ async fn unsubscribe_host_unscheduled(
         return StatusCode::SERVICE_UNAVAILABLE;
     };
 
-    if let Err(e) =
-        db::unsubscribe_host_unscheduled(pool, &body.endpoint, &body.hostname).await
-    {
+    if let Err(e) = db::unsubscribe_host_unscheduled(pool, &body.endpoint, &body.hostname).await {
         error!("Failed to unsubscribe from host unscheduled events: {e:#}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }

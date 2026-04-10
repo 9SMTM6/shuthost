@@ -17,7 +17,8 @@ use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
     AppState, ConfigRx, DbPool, HostState, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources,
-    LeaseState, db::{self, ClientStats, HostStats},
+    LeaseState,
+    db::{self, ClientStats, HostStats},
 };
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
@@ -206,7 +207,10 @@ async fn send_startup_msg(
                 host_stats.entry(name.clone()).or_default().is_online = true;
             }
         }
-        Some(DbData { client_stats, host_stats })
+        Some(DbData {
+            client_stats,
+            host_stats,
+        })
     } else {
         None
     };

@@ -5,12 +5,11 @@ use cargo_about::licenses::config;
 use eyre::Context as _;
 use krates::Utf8PathBuf as PathBuf;
 use serde::{Deserialize, Serialize};
-use spdx::text as spdx_text;
-
-const VERSION: &str = shuthost_common::version_string!();
-use spdx::{LicenseItem, Licensee, expression::Expression};
+use spdx::{LicenseItem, Licensee, expression::Expression, text as spdx_text};
 use toml::from_str as toml_from_str;
 use url::Url;
+
+use crate::assets;
 
 #[derive(Deserialize)]
 struct DenyConfig {
@@ -284,7 +283,7 @@ fn generate_about_json(
     let data = serde_json::json!({
         "description": env!("CARGO_PKG_DESCRIPTION"),
         "repository": env!("CARGO_PKG_REPOSITORY"),
-        "version": VERSION,
+        "version": assets::VERSION,
         "entries": combined,
         "licenses": licenses_map,
     });
