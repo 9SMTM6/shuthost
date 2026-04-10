@@ -6,7 +6,7 @@
 use alloc::sync::Arc;
 use std::{collections::HashMap, path};
 
-use axum::{http::Response, response::IntoResponse};
+use axum::{http::Response, response::IntoResponse as _};
 use tokio::{
     net::TcpListener,
     sync::{RwLock, broadcast, watch},

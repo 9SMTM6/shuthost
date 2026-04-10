@@ -9,7 +9,7 @@ use axum::{
         header::{AUTHORIZATION, COOKIE},
     },
     middleware::{self as ax_middleware},
-    response::{IntoResponse, Response},
+    response::{IntoResponse as _, Response},
     routing::{IntoMakeService, any, get},
 };
 use tower::ServiceBuilder;
