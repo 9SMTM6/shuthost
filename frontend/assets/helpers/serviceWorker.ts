@@ -12,10 +12,12 @@ export const registerServiceWorker = () => {
     if (!('serviceWorker' in navigator)) {
         return null;
     }
-    return navigator.serviceWorker.register(`${demoSubpath}/sw.js`, { type: 'module' }).catch((err) => {
-        console.warn('Service worker registration failed:', err);
-        return null;
-    });
+    return navigator.serviceWorker
+        .register(`${demoSubpath}/sw.js`, { type: 'module' })
+        .catch((err) => {
+            console.warn('Service worker registration failed:', err);
+            return null;
+        });
 };
 
 /**

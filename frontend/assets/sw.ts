@@ -166,7 +166,8 @@ sw.addEventListener('fetch', (event) => {
     // to the scope root so we only keep one cached HTML entry instead of one per route.
     if (event.request.mode === 'navigate') {
         const rootRequest = new Request(sw.registration.scope);
-        const { responsePromise, bgWorkPromise } = staleWhileRevalidate(rootRequest);
+        const { responsePromise, bgWorkPromise } =
+            staleWhileRevalidate(rootRequest);
         event.respondWith(responsePromise);
         event.waitUntil(bgWorkPromise);
         return;
