@@ -5,21 +5,18 @@ use alloc::sync::Arc;
 use core::time::Duration;
 use std::collections::{HashMap, HashSet};
 
-use eyre::Context as _;
-use eyre::Report;
-use serde::Deserialize;
-use serde::Serialize;
+use eyre::{Context as _, Report};
+use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
-use tokio::net::TcpStream;
-use tokio::sync::{Mutex, watch};
-use tokio::time::timeout;
-use tracing::Instrument as _;
-use tracing::{debug, info};
+use tokio::{
+    io::{AsyncReadExt as _, AsyncWriteExt as _},
+    net::TcpStream,
+    sync::{Mutex, watch},
+    time::timeout,
+};
+use tracing::{Instrument as _, debug, info};
 
-use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
-
-use crate::app::runtime::PollError;
-use crate::app::{AppState, runtime::poll_until_host_state, state::HostState};
+use crate::app::{AppState, runtime::PollError, runtime::poll_until_host_state, state::HostState};
 
 #[cfg(not(any(coverage, test)))]
 use crate::wol;

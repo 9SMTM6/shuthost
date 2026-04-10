@@ -22,26 +22,21 @@ pub mod install;
 pub mod websocket;
 pub mod wol;
 
+use std::{env, fs, process, sync::Once};
+
 #[cfg(unix)]
 use nix::sys::stat;
-pub(crate) const VERSION: &str = shuthost_common::version_string!();
-use tracing::Instrument as _;
 // for use in integration tests
-pub use websocket::WsMessage;
-
-use std::env;
-use std::fs;
-use std::process;
-use std::sync::Once;
-
 use eyre::{Result, WrapErr as _};
-use tracing::{info, warn};
+use tracing::{Instrument as _, info, warn};
 use tracing_subscriber::{EnvFilter, fmt::time::ChronoLocal};
 
+use app::start;
 use cli::{Cli, Command, LogFormat};
 use demo::run_demo_service;
+pub use websocket::WsMessage;
 
-use app::start;
+pub(crate) const VERSION: &str = shuthost_common::version_string!();
 
 static INIT_TRACING: Once = Once::new();
 static INIT_RUSTLS: Once = Once::new();

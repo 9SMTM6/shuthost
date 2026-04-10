@@ -1,7 +1,7 @@
 //! Shim binary that calls into the `coordinator` library's `inner_main`.
+use clap::Parser as _;
 use eyre::Result;
 
-use clap::Parser as _;
 use shuthost_coordinator::cli::Cli;
 
 #[tokio::main]

@@ -9,8 +9,7 @@ pub mod middleware;
 pub mod oidc;
 pub mod token;
 
-use alloc::fmt;
-use alloc::sync::Arc;
+use alloc::{fmt, sync::Arc};
 
 use crate::{
     app::{
@@ -20,8 +19,7 @@ use crate::{
     config::OidcConfig,
     http::auth::oidc::OidcClientReady,
 };
-use axum::extract::FromRef;
-use axum::response::Redirect;
+use axum::{extract::FromRef, response::Redirect};
 use axum_extra::extract::cookie::Key;
 use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDARD};
 use eyre::Context as _;

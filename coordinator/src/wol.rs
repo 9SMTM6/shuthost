@@ -5,6 +5,7 @@
 )]
 
 use core::time::Duration;
+
 use eyre::Context as _;
 
 const MAC_ADDRESS_LENGTH: usize = 6;
