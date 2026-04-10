@@ -8,8 +8,7 @@ use std::path;
 
 use axum::{
     Router,
-    extract::State,
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
 };
 use axum_extra::{
@@ -201,16 +200,15 @@ pub(crate) fn render_ui_html(mode: &UiMode<'_>) -> String {
 }
 
 /// Serves the main HTML template, injecting dynamic content.
-#[axum::debug_handler]
-pub(crate) async fn serve_ui(
-    State(AppState {
+pub(crate) fn serve_ui(
+    AppState {
         config_path,
         auth,
         config_rx,
         db_pool,
         ..
-    }): State<AppState>,
-) -> impl IntoResponse {
+    }: AppState,
+) -> Response {
     type A = Resolved;
 
     // Show auth warning when auth is disabled, or when External auth is
@@ -235,6 +233,7 @@ pub(crate) async fn serve_ui(
             db_enabled: db_pool.is_some(),
         }),
     )
+        .into_response()
 }
 
 /// Serves the compiled JavaScript bundle for the SPA.

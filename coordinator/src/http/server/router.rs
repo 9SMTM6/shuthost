@@ -9,7 +9,7 @@ use axum::{
         header::{AUTHORIZATION, COOKIE},
     },
     middleware::{self as ax_middleware},
-    response::{IntoResponse as _, Response},
+    response::{IntoResponse, Response},
     routing::{IntoMakeService, any, get},
 };
 use tower::ServiceBuilder;
@@ -34,7 +34,10 @@ use crate::http::server::middleware::secure_headers_middleware;
 /// Private routes include the main UI, API endpoints, and WebSocket handler, protected by auth middleware.
 ///
 /// When routes get added to public routes, [`crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION`] needs to be bumped.
-pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<AppState> {
+pub(crate) fn create_app_router(
+    auth_runtime: &Arc<auth::Runtime>,
+    spa_handler: impl Fn(AppState) -> Response + Send + Sync + Clone + 'static,
+) -> Router<AppState> {
     let public = Router::new()
         .merge(login::routes())
         .merge(assets::routes())
@@ -44,7 +47,13 @@ pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<App
     let private = Router::new()
         .nest("/api", api::routes())
         .nest("/api/push", push::routes())
-        .route("/", get(assets::serve_ui))
+        .route(
+            "/",
+            get({
+                let spa_handler = spa_handler.clone();
+                async move |State(state): State<AppState>| spa_handler(state)
+            }),
+        )
         .route("/ws", any(websocket::ws_handler))
         .route_layer(ax_middleware::from_fn_with_state(
             auth::LayerState {
@@ -53,18 +62,21 @@ pub(crate) fn create_app_router(auth_runtime: &Arc<auth::Runtime>) -> Router<App
             auth::require,
         ));
 
-    public.merge(private)
-}
-
-/// Fallback handler for unmatched routes: serves the SPA shell for GET/HEAD
-/// requests (letting the client-side router render the correct page, including
-/// the 404 page), and returns 404 for all other methods.
-async fn spa_fallback(method: Method, state: State<AppState>) -> Response {
-    if method == Method::GET || method == Method::HEAD {
-        assets::serve_ui(state).await.into_response()
-    } else {
-        StatusCode::NOT_FOUND.into_response()
-    }
+    public
+        .merge(private)
+        // Any unmatched /api/* path gets a clean 404; this must be registered
+        // before the fallback so it is matched with higher precedence.
+        .route("/api/{*path}", any(|| async { StatusCode::NOT_FOUND }))
+        .fallback(async move |method: Method, State(state): State<AppState>| {
+            // Fallback handler for unmatched routes: serves the SPA shell for GET/HEAD
+            // requests (letting the client-side router render the correct page, including
+            // the 404 page), and returns 404 for all other methods.
+            if method == Method::GET || method == Method::HEAD {
+                spa_handler(state)
+            } else {
+                StatusCode::NOT_FOUND.into_response()
+            }
+        })
 }
 
 pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
@@ -91,11 +103,7 @@ pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         ))
         .layer(ax_middleware::from_fn(secure_headers_middleware));
 
-    let app = create_app_router(&app_state.auth)
-        // Any unmatched /api/* path gets a clean 404; this must be registered
-        // before the fallback so it is matched with higher precedence.
-        .route("/api/{*path}", any(|| async { StatusCode::NOT_FOUND }))
-        .fallback(spa_fallback)
+    let app = create_app_router(&app_state.auth, assets::serve_ui)
         .with_state(app_state)
         .layer(middleware_stack);
 
