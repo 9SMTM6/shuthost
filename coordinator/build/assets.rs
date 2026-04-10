@@ -1,14 +1,16 @@
-use base64::{Engine as _, engine::general_purpose};
-use eyre::WrapErr as _;
-use sha2::{Digest as _, Sha256};
 use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
 };
 
+use base64::{Engine as _, engine::general_purpose};
+use eyre::WrapErr as _;
+use sha2::{Digest as _, Sha256};
+
 use crate::icons::ICON_SIZES;
-const VERSION: &str = shuthost_common::version_string!();
+pub(crate) const VERSION: &str = shuthost_common::version_string!();
+
 macro_rules! include_frontend_asset {
     ($path:expr) => {
         include_str!(concat!("../../frontend/assets/", $path))

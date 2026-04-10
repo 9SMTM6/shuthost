@@ -1,5 +1,6 @@
-use eyre::{Ok, eyre};
 use std::path::PathBuf;
+
+use eyre::{Ok, eyre};
 
 pub fn set_root() -> eyre::Result<()> {
     let workspace_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

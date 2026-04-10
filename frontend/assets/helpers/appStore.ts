@@ -43,9 +43,9 @@ export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
     | { type: 'ConfigChanged'; payload: DynamicConfig }
     | {
-        type: 'Initial';
-        payload: AppState;
-    }
+          type: 'Initial';
+          payload: AppState;
+      }
     | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
 
 // ==========================
@@ -62,7 +62,8 @@ const [state, setState] = createStore<AppState>({
 
 export { state };
 
-export const hasDb = (s: AppState): s is AppState & { dbData: DbData } => s.dbData !== null;
+export const hasDb = (s: AppState): s is AppState & { dbData: DbData } =>
+    s.dbData !== null;
 
 export const applyMessage = (message: WsMessage) => {
     switch (message.type) {
@@ -90,7 +91,9 @@ export const applyMessage = (message: WsMessage) => {
             break;
         default: {
             const _exhaustive: never = message;
-            throw new Error(`Unhandled WebSocket message: ${JSON.stringify(_exhaustive)}`);
+            throw new Error(
+                `Unhandled WebSocket message: ${JSON.stringify(_exhaustive)}`,
+            );
         }
     }
 };

@@ -32,7 +32,10 @@ jobs:
             ext: .exe
 
     steps:
-      - uses: &checkout actions/checkout@v6
+      - &checkout_with_tags
+        uses: &checkout actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: &rust-cache Swatinem/rust-cache@v2
         with:
@@ -71,7 +74,7 @@ jobs:
             runner: ubuntu-24.04-arm
 
     steps:
-      - uses: *checkout
+      - *checkout_with_tags
       - &setup-pnpm
         name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -127,7 +130,7 @@ jobs:
     needs: build-host_agents
     runs-on: windows-latest
     steps:
-      - uses: *checkout
+      - *checkout_with_tags
       - *setup-pnpm
       - *latest-node-lts
       - name: Download all host_agent binaries

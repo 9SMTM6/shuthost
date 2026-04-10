@@ -32,10 +32,7 @@ render(
     () => (
         <MetaProvider>
             <Router base={demoSubpath}>
-                <Route
-                    path="/"
-                    component={() => <Navigate href="/hosts" />}
-                />
+                <Route path="/" component={() => <Navigate href="/hosts" />} />
                 <Route path="/hosts" component={HostsPage} />
                 <Route path="/clients" component={ClientsPage} />
                 <Route path="/docs" component={ArchitecturePage} />

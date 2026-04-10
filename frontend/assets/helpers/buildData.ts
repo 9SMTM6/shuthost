@@ -1,18 +1,18 @@
 /// <reference lib="dom" />
 
-import { assertData, is, type Infer } from './assertData';
+import { assertData, type Infer, is } from './assertData';
 
 const buildDataChecks = {
-    stylesHash:       is.string,
-    stylesIntegrity:  is.string,
-    manifestHash:     is.string,
-    iconHashes:       is.recordOf(is.string),
-    svgHashes:        is.recordOf(is.string),
-    description:       is.string,
-    repository:        is.string,
-    version:           is.string,
-    appJsHash:        is.string,
-    appJsIntegrity:   is.string,
+    stylesHash: is.string,
+    stylesIntegrity: is.string,
+    manifestHash: is.string,
+    iconHashes: is.recordOf(is.string),
+    svgHashes: is.recordOf(is.string),
+    description: is.string,
+    repository: is.string,
+    version: is.string,
+    appJsHash: is.string,
+    appJsIntegrity: is.string,
 } as const;
 
 export type BuildData = Infer<typeof buildDataChecks>;
