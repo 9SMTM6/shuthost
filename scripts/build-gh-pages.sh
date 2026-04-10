@@ -81,16 +81,8 @@ mkdir -p "$api_dir"
 curl -s "$base_url/api/dependency-data.json" -o "$api_dir/dependency-data.json"
 
 # Fetch service worker script explicitly (not in HTML as a src/href attribute).
-# Place it under the configured subpath to match the SW registration URL
-# (${demoSubpath}/sw.js, where demoSubpath is '' for '/' and '/foo' otherwise).
 echo "Fetching service worker..."
-if [ "$subpath" = "/" ] || [ -z "$subpath" ]; then
-    sw_export_dir="$export_dir"
-else
-    sw_export_dir="$export_dir/${subpath#/}"
-fi
-mkdir -p "$sw_export_dir"
-curl -s "$base_url/sw.js" -o "$sw_export_dir/sw.js"
+curl -s "$base_url/sw.js" -o "$export_dir/sw.js"
 
 # Fetch downloadable files (installers, scripts, binaries)
 echo "Fetching downloadable files..."
