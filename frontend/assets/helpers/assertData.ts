@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: Any is not problematic (and IIRC actually needed because of covariance) in this context.
 type AnyChecker = Record<string, (v: unknown) => v is any>;
 
 /** Infers the validated type from a checker object — each predicate `v is T` contributes its `T`. */

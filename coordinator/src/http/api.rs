@@ -1,5 +1,5 @@
-use core::convert::Infallible;
 use core::{
+    convert::Infallible,
     error,
     fmt::{self, Display},
 };

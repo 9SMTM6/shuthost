@@ -1,15 +1,17 @@
 use core::time::Duration;
 
-use axum::http::HeaderName;
-use axum::response::Response;
 use axum::{
     body::Body,
+    http::HeaderName,
     http::{HeaderValue, Request},
     middleware::Next,
+    response::Response,
 };
 use hyper::StatusCode;
-use tower_http::classify;
-use tower_http::trace::{DefaultOnFailure, OnFailure};
+use tower_http::{
+    classify,
+    trace::{DefaultOnFailure, OnFailure},
+};
 
 /// Custom failure handling for the trace layer. 503 responses are logged
 /// at `INFO` instead of `ERROR` so they don't fill the error log.

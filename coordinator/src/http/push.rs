@@ -11,10 +11,8 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use axum_extra::TypedHeader;
-use axum_extra::headers::ContentType;
-use base64::Engine as _;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use axum_extra::{TypedHeader, headers::ContentType};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};

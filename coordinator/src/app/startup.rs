@@ -1,13 +1,15 @@
 use alloc::string;
 use core::net::{IpAddr, SocketAddr};
 use std::path::Path;
-use tracing::Instrument as _;
 
 use eyre::WrapErr as _;
 use tokio::{net, signal};
+use tracing::Instrument as _;
 
-use super::runtime::start_background_tasks;
-use super::state::{self, AppState};
+use super::{
+    runtime::start_background_tasks,
+    state::{self, AppState},
+};
 use crate::{
     config::TlsConfig,
     http::{router, tls::setup_tls_config},

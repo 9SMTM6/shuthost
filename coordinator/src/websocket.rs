@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use core::error::Error;
 use std::collections::HashMap;
 
 use axum::{
@@ -9,7 +10,6 @@ use axum::{
     http::HeaderMap,
     response::IntoResponse,
 };
-use core::error::Error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tracing::{Instrument as _, debug, error, info, warn};
