@@ -17,6 +17,7 @@ export const registerServiceWorker = () => {
     const swUrl = `${demoSubpath}/sw.js`;
     return navigator.serviceWorker.register(swUrl, { type: 'module' }).catch((err) => {
         console.warn('Service worker registration failed:', err);
+        return null;
     });
 };
 

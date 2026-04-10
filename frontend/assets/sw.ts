@@ -162,7 +162,7 @@ sw.addEventListener('fetch', (event) => {
     const scopePath = new URL(sw.registration.scope).pathname;
     if (url.pathname.startsWith(`${scopePath}api/`)) return;
 
-    // Navigation requests (SPA page loads) all return the same HTML; canonicalise
+    // Navigation requests (SPA page loads) all return the same HTML; canonicalize
     // to the scope root so we only keep one cached HTML entry instead of one per route.
     if (event.request.mode === 'navigate') {
         const rootRequest = new Request(sw.registration.scope);
