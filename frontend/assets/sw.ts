@@ -159,7 +159,18 @@ sw.addEventListener('fetch', (event) => {
     // Only handle same-origin GET requests; leave API calls and other methods alone.
     if (event.request.method !== 'GET' || url.origin !== sw.location.origin)
         return;
-    if (url.pathname.startsWith('/api/')) return;
+    const scopePath = new URL(sw.registration.scope).pathname;
+    if (url.pathname.startsWith(`${scopePath}api/`)) return;
+
+    // Navigation requests (SPA page loads) all return the same HTML; canonicalise
+    // to the scope root so we only keep one cached HTML entry instead of one per route.
+    if (event.request.mode === 'navigate') {
+        const rootRequest = new Request(sw.registration.scope);
+        const { responsePromise, bgWorkPromise } = staleWhileRevalidate(rootRequest);
+        event.respondWith(responsePromise);
+        event.waitUntil(bgWorkPromise);
+        return;
+    }
 
     if (isHashedAsset(url)) {
         event.respondWith(cacheFirst(event.request, url));
@@ -209,7 +220,7 @@ sw.addEventListener('push', (event) => {
     event.waitUntil(
         sw.registration.showNotification(payload.title, {
             body: payload.body,
-            icon: '/favicon.svg',
+            icon: new URL('favicon.svg', sw.registration.scope).href,
             data: payload.data,
         }),
     );
@@ -228,7 +239,7 @@ sw.addEventListener('notificationclick', (event) => {
                     }
                 }
                 if (sw.clients.openWindow) {
-                    return sw.clients.openWindow('/');
+                    return sw.clients.openWindow(sw.registration.scope);
                 }
                 return undefined;
             }),
