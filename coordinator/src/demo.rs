@@ -6,7 +6,7 @@
 use alloc::sync::Arc;
 use std::{collections::HashMap, path};
 
-use axum::{Router, extract::State, http::Response, routing};
+use axum::{http::Response, response::IntoResponse};
 use tokio::{
     net::TcpListener,
     sync::{RwLock, broadcast, watch},
@@ -17,8 +17,9 @@ use crate::{
     app::{AppState, LeaseMapRaw, LeaseState, shutdown_signal},
     config::{AuthConfig, ControllerConfig},
     http::{
-        assets::{self, UiMode, render_ui_html},
-        auth, download,
+        assets::{UiMode, render_ui_html},
+        auth,
+        server::router::create_app_router,
     },
 };
 
@@ -34,15 +35,13 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
     // Custom asset route for demo mode: inject disclaimer into HTML
     let serve_demo_ui = {
         let subpath = subpath.to_string();
-        move |State(_): State<AppState>| {
-            let subpath = subpath.clone();
-            async move {
-                let html = render_ui_html(&UiMode::Demo { subpath: &subpath });
-                Response::builder()
-                    .header("Content-Type", "text/html")
-                    .body(html)
-                    .expect("failed to build HTTP response")
-            }
+        move |_: AppState| {
+            let html = render_ui_html(&UiMode::Demo { subpath: &subpath });
+            Response::builder()
+                .header("Content-Type", "text/html")
+                .body(html)
+                .expect("failed to build HTTP response")
+                .into_response()
         }
     };
 
@@ -66,11 +65,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         vapid_key: None,
     };
 
-    let app = Router::new()
-        .route("/", routing::get(serve_demo_ui))
-        .merge(assets::routes())
-        .nest("/download", download::routes())
-        .with_state(app_state);
+    let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);
 
     let listener = TcpListener::bind(&addr)
         .await
