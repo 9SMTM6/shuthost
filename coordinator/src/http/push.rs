@@ -1,7 +1,7 @@
 //! Web Push (VAPID) endpoints.
 //!
-//! Provides routes for exposing the VAPID public key, subscribing to
-//! unscheduled-event push notifications, and sending a test notification.
+//! Provides routes for exposing the VAPID public key and subscribing to
+//! unscheduled-event push notifications.
 
 use alloc::sync::Arc;
 
@@ -9,7 +9,7 @@ use axum::{
     Router,
     extract::{Query, State},
     response::IntoResponse,
-    routing::{get, post},
+    routing::get,
 };
 use axum_extra::{TypedHeader, headers::ContentType};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
@@ -32,7 +32,6 @@ pub(crate) fn routes() -> Router<AppState> {
                 .post(subscribe_host_unscheduled)
                 .delete(unsubscribe_host_unscheduled),
         )
-        .route("/test", post(send_test_push))
 }
 
 // ──────────────────────────────────────────────
@@ -71,11 +70,6 @@ struct CheckHostUnscheduledResponse {
 #[derive(Deserialize)]
 struct UnsubscribeHostUnscheduledRequest {
     endpoint: String,
-    hostname: String,
-}
-
-#[derive(Deserialize)]
-struct TestPushRequest {
     hostname: String,
 }
 
@@ -180,40 +174,6 @@ async fn subscribe_host_unscheduled(
         error!("Failed to subscribe to host unscheduled events: {e:#}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
-
-    StatusCode::NO_CONTENT
-}
-
-/// Sends a test push notification to all subscriptions watching the given host.
-#[axum::debug_handler]
-async fn send_test_push(
-    State(state): State<AppState>,
-    axum::Json(body): axum::Json<TestPushRequest>,
-) -> impl IntoResponse {
-    let Some(ref pool) = state.db_pool else {
-        return StatusCode::SERVICE_UNAVAILABLE;
-    };
-    let Some(ref vapid_key) = state.vapid_key else {
-        return StatusCode::SERVICE_UNAVAILABLE;
-    };
-
-    let subscriptions = match db::get_subscriptions_for_host_unscheduled(pool, &body.hostname).await
-    {
-        Ok(s) => s,
-        Err(e) => {
-            error!("Failed to fetch subscriptions: {e:#}");
-            return StatusCode::INTERNAL_SERVER_ERROR;
-        }
-    };
-
-    let payload = serde_json::json!({
-        "title": "ShutHost",
-        "body": format!("{} is online", body.hostname),
-        "data": { "hostname": body.hostname },
-    })
-    .to_string();
-
-    send_push_notifications(vapid_key, pool, &subscriptions, &payload).await;
 
     StatusCode::NO_CONTENT
 }
