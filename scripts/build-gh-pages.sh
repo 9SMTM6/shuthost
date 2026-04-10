@@ -2,12 +2,36 @@
 # GitHub Actions pipeline: Build static demo for GitHub Pages
 # This script builds the demo, snapshots the HTML, and infers/copies required assets.
 
-set -ev
+set -e
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR/.."
 
 export_dir="target/gh-pages"
+
+port=8091
+
+existing="$(ss -ltnp 2>/dev/null | grep -E ":$port\b" || true)"
+if [ -n "$existing" ]; then
+    pids="$(printf '%s
+' "$existing" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | sort -u)"
+    echo "Port $port is already in use by the following process(es):" >&2
+    printf '%s\n' "$existing" >&2
+
+    for pid in $pids; do
+        if ps -p "$pid" >/dev/null 2>&1; then
+            echo "Process info for PID $pid:" >&2
+            ps -p "$pid" -o pid,comm,args >&2
+        fi
+    done
+
+    if [ -n "$pids" ]; then
+        echo "Ready-to-use kill command:" >&2
+        echo "  kill $pids" >&2
+    fi
+
+    exit 1
+fi
 
 rm -rf "$export_dir"
 
@@ -29,6 +53,8 @@ for arg in "$@"; do
     esac
 done
 
+set -v
+
 if [ -z "$binary" ]; then
     cargo build --release --bin shuthost_coordinator
     binary="./target/release/shuthost_coordinator"
@@ -36,53 +62,65 @@ fi
 
 echo "$binary"
 
-port=8091
-"$binary" demo-service --port $port "$subpath" &
+"$binary" demo-service --port $port "$subpath" >/dev/null 2>&1 &
 DEMO_PID=$!
 
-# Wait for server to start
-sleep 2
+trap 'kill "$DEMO_PID" 2>/dev/null || true' EXIT
+
+sleep 1 # Wait for server to start
 
 # Create output directory
 mkdir -p $export_dir
 
 base_url=http://localhost:$port
 
-# Fetch demo HTML
-curl -s $base_url/ > "$export_dir/index.html"
+# Function to fetch downloadable files
+fetch() {
+    path="$1"
+    mkdir -p "$(dirname "$export_dir/$path")"
+
+    if [ "${path#/}" != "$path" ]; then
+        url="$base_url$path"
+    else
+        url="$base_url/$path"
+    fi
+
+    curl -fsSL "$url" -o "$export_dir/${path#/}"
+}
+
+# Fetch demo SPA HTML
+fetch "hosts"
+
+# Serve SPA as 404.html so GitHub Pages serves the SPA for all deep-link paths
+# (e.g. /hosts, /clients, /docs) that are handled by the client-side router.
+root_html="$export_dir/404.html"
+
+mv "$export_dir/hosts" "$root_html"
 
 # Infer and fetch assets from demo server (root-relative paths, before rewriting links)
-for html in "$export_dir"/*.html; do
-    grep -Eo '(src|href)="(/[^"]*)"' "$html" | \
-        sed -E 's/^(src|href)="//;s/"$//' | \
-        while read asset; do
-            # Only fetch actual static files (have a file extension); skip bare SPA routes
-            case "$asset" in
-                *.*) ;;
-                *) continue;;
-            esac
-            local_path="${asset#/}"
-            mkdir -p "$export_dir/$(dirname "$local_path")"
-            curl -s "$base_url$asset" -o "$export_dir/$local_path"
-        done
-done
+grep -Eo '(src|href)="(/[^"]*)"' "$root_html" | \
+    sed -E 's/^(src|href)="//;s/"$//' | \
+    while read asset; do
+        # Only fetch actual static files (have a file extension); skip bare SPA routes
+        case "$asset" in
+            *.*) ;;
+            *) continue;;
+        esac
+        fetch "$asset"
+    done
 
 # Rewrite root-relative links to include subpath (required for GitHub Pages deployment at a subpath)
-for html in "$export_dir"/*.html; do
-    sed -i "s|href=\"/\([^\"]*\)\"|href=\"${subpath}\1\"|g" "$html"
-    sed -i "s|src=\"/\([^\"]*\)\"|src=\"${subpath}\1\"|g" "$html"
-done
+sed -i "s|href=\"/\([^\"]*\)\"|href=\"${subpath}\1\"|g" "$root_html"
+sed -i "s|src=\"/\([^\"]*\)\"|src=\"${subpath}\1\"|g" "$root_html"
 
 # Fetch dynamically loaded API data (not discoverable via HTML attribute scraping)
 echo "Fetching API data..."
 
-api_dir="$export_dir/api"
-mkdir -p "$api_dir"
-curl -s "$base_url/api/dependency-data.json" -o "$api_dir/dependency-data.json"
+fetch "api/dependency-data.json"
 
 # Fetch service worker script explicitly (not in HTML as a src/href attribute).
 echo "Fetching service worker..."
-curl -s "$base_url/sw.js" -o "$export_dir/sw.js"
+fetch "sw.js"
 
 # Fetch downloadable files (installers, scripts, binaries)
 echo "Fetching downloadable files..."
@@ -90,27 +128,24 @@ echo "Fetching downloadable files..."
 agent_dir="$export_dir/download/host_agent"
 mkdir -p $agent_dir
 
-# Function to fetch downloadable files
-fetch_download() {
-    filename="$1"
-    curl -s "$base_url/download/$filename" -o "$export_dir/download/$filename"
-}
-
 # Installers and scripts
-fetch_download "host_agent_installer.sh"
-fetch_download "host_agent_installer.ps1"
-fetch_download "client_installer.sh"
-fetch_download "client_installer.ps1"
-fetch_download "shuthost_client.sh"
-fetch_download "shuthost_client.ps1"
+fetch "download/host_agent_installer.sh"
+fetch "download/host_agent_installer.ps1"
+fetch "download/client_installer.sh"
+fetch "download/client_installer.ps1"
+fetch "download/shuthost_client.sh"
+fetch "download/shuthost_client.ps1"
 
 # Function to fetch agent binaries with proper error handling
 fetch_agent() {
     path="$1"
     mkdir -p "$(dirname "$agent_dir/$path")"
-    if curl -s -w "%{http_code}" "$base_url/download/host_agent/$path" | grep -q "^2"; then
-        curl -s "$base_url/download/host_agent/$path" -o "$agent_dir/$path"
+    tmpfile="$agent_dir/$path.tmp"
+
+    if curl -fsSL "$base_url/download/host_agent/$path" -o "$tmpfile"; then
+        mv "$tmpfile" "$agent_dir/$path"
     else
+        rm -f "$tmpfile"
         echo "$path agent not available"
     fi
 }
@@ -122,12 +157,5 @@ fetch_agent "linux-musl/x86_64"
 fetch_agent "linux-musl/aarch64"
 fetch_agent "windows/x86_64"
 fetch_agent "windows/aarch64"
-
-# Stop demo service
-kill $DEMO_PID
-
-# Copy index.html as 404.html so GitHub Pages serves the SPA for all deep-link paths
-# (e.g. /hosts, /clients, /docs) that are handled by the client-side router.
-cp "$export_dir/index.html" "$export_dir/404.html"
 
 echo "Static demo prepared in $export_dir. Ready for GitHub Pages deployment."
