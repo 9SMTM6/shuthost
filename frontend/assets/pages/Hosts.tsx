@@ -6,7 +6,7 @@ import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import type { LeaseSource } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { sortActiveFirst } from '../helpers/utils';

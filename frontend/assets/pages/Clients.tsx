@@ -4,7 +4,7 @@ import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import { applyMessage, state } from '../helpers/appStore';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';

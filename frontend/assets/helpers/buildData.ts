@@ -1,8 +1,8 @@
 /// <reference lib="dom" />
 
-import { assertData, type Infer, is } from './assertData';
+import { validateData, type Infer, is } from './assertData';
 
-const buildDataChecks = {
+const buildDataChecks = is.object({
     stylesHash: is.string,
     stylesIntegrity: is.string,
     manifestHash: is.string,
@@ -13,7 +13,7 @@ const buildDataChecks = {
     version: is.string,
     appJsHash: is.string,
     appJsIntegrity: is.string,
-} as const;
+} as const);
 
 export type BuildData = Infer<typeof buildDataChecks>;
 
@@ -29,7 +29,7 @@ const loadBuildData = (): BuildData => {
     const el = document.getElementById('build-data');
     if (!el?.textContent) throw new Error('Missing #build-data element');
     const parsed: unknown = JSON.parse(el.textContent);
-    assertData('#build-data', parsed, buildDataChecks);
+    validateData('#build-data', parsed, buildDataChecks);
     return parsed;
 };
 

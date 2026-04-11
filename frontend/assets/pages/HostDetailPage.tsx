@@ -12,7 +12,7 @@ import { createSignal, For, onMount, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 import { demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
     checkHostUnscheduledSubscription,

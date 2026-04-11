@@ -1,3 +1,22 @@
+// DO NOT import any (other than type) parts from component files in this file.
+import type { Component } from 'solid-js';
+
+// biome-ignore lint/suspicious/noExplicitAny: intentional type alias so call sites don't need per-site suppressions
+export type AnyComponent = Component<any>;
+
+export const showJSError = (message: string) => {
+    const errorDiv = document.getElementById(
+        'js-error',
+    ) as HTMLDivElement | null;
+    const messageEl = document.getElementById(
+        'js-error-message',
+    ) as HTMLParagraphElement | null;
+    if (errorDiv && messageEl) {
+        messageEl.textContent = message;
+        errorDiv.hidden = false;
+    }
+};
+
 const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
 export const formatRelativeTimestamp = (

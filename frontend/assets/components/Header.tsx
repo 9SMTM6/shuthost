@@ -4,7 +4,7 @@ import type { JSX, ParentProps } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
 import { isLoggedIn } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { type ServerData, serverData } from '../helpers/serverData';
 

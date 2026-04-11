@@ -1,6 +1,6 @@
 import { A } from '@solidjs/router';
 import { buildData } from '../helpers/buildData';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 
 export const Footer = (() => (
     <footer

@@ -1,7 +1,7 @@
 import { Title } from '@solidjs/meta';
 import type { ParentProps } from 'solid-js';
 import { onMount, Show } from 'solid-js';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 import { initDemoMode, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import { connectWebSocket } from '../helpers/ws';
