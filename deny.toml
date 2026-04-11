@@ -27,6 +27,7 @@ allow = [
     "GPL-2.0-only",
     "ISC",
     "MIT",
+    "MPL-2.0",
     "OpenSSL",
     "Unicode-3.0",
     "Zlib",
