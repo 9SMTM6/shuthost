@@ -95,15 +95,31 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     };
 
     Ok(match args.init_system {
-        #[cfg(target_os = "linux")]
-        InitSystem::Systemd => parse_systemd_config()?,
-        #[cfg(target_os = "linux")]
-        InitSystem::OpenRC => parse_openrc_config()?,
-        #[cfg(unix)]
-        InitSystem::SelfExtractingShell => parse_self_extracting_shell_config(&custom_path)?,
+        InitSystem::Systemd => {
+            #[cfg(target_os = "linux")]
+            return parse_systemd_config();
+            #[cfg(not(target_os = "linux"))]
+            unreachable!("Systemd is not supported on this platform");
+        }
+        InitSystem::OpenRC => {
+            #[cfg(target_os = "linux")]
+            return parse_openrc_config();
+            #[cfg(not(target_os = "linux"))]
+            unreachable!("OpenRC is not supported on this platform");
+        }
+        InitSystem::SelfExtractingShell => {
+            #[cfg(unix)]
+            return parse_self_extracting_shell_config(&custom_path);
+            #[cfg(not(unix))]
+            unreachable!("Self-extracting shell config parsing is not supported on this platform");
+        }
         InitSystem::SelfExtractingPwsh => parse_self_extracting_pwsh_config(&custom_path)?,
-        #[cfg(target_os = "macos")]
-        InitSystem::Launchd => parse_launchd_config()?,
+        InitSystem::Launchd => {
+            #[cfg(target_os = "macos")]
+            return parse_launchd_config();
+            #[cfg(not(target_os = "macos"))]
+            unreachable!("Launchd is not supported on this platform");
+        }
     })
 }
 
