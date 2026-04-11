@@ -156,11 +156,16 @@ const staleWhileRevalidate = (
 sw.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Only handle same-origin GET requests; leave API calls and other methods alone.
+    // Only handle same-origin GET requests; leave API calls, auth flows, and other methods alone.
     if (event.request.method !== 'GET' || url.origin !== sw.location.origin)
         return;
     const scopePath = new URL(sw.registration.scope).pathname;
-    if (url.pathname.startsWith(`${scopePath}api/`)) return;
+    if (
+        url.pathname.startsWith(`${scopePath}api/`) ||
+        url.pathname.startsWith(`${scopePath}oidc/`)
+    ) {
+        return;
+    }
 
     // Navigation requests (SPA page loads) all return the same HTML; canonicalize
     // to the scope root so we only keep one cached HTML entry instead of one per route.
