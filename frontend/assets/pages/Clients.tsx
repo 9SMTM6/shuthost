@@ -4,9 +4,9 @@ import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import { applyMessage, state } from '../helpers/appStore';
-import type { AnyComponent } from '../helpers/utils';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
+import type { AnyComponent } from '../helpers/utils';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
 
@@ -243,7 +243,9 @@ export const ClientsPage = (() => {
                                 <th class="table-header" scope="col">
                                     Leases
                                 </th>
-                                <Show when={state.dbData.status === 'available'}>
+                                <Show
+                                    when={state.dbData.status === 'available'}
+                                >
                                     <th
                                         id="last-used-header"
                                         class="table-header"

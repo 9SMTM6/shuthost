@@ -67,7 +67,9 @@ const [state, setState] = createStore<AppState>({
 
 export { state };
 
-export const hasDb = (s: AppState): s is AppState & { dbData: { status: 'available'; payload: DbData } } =>
+export const hasDb = (
+    s: AppState,
+): s is AppState & { dbData: { status: 'available'; payload: DbData } } =>
     s.dbData.status === 'available';
 
 export const applyMessage = (message: WsMessage) => {

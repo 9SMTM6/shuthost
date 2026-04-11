@@ -6,9 +6,9 @@ import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import type { LeaseSource } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
-import type { AnyComponent } from '../helpers/utils';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
+import type { AnyComponent } from '../helpers/utils';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
 

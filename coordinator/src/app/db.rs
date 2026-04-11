@@ -641,8 +641,7 @@ pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<St
             (
                 rec.hostname,
                 HostStats {
-                    last_online: DateTime::<Utc>::from_naive_utc_and_offset(rec
-                        .last_online, Utc),
+                    last_online: DateTime::<Utc>::from_naive_utc_and_offset(rec.last_online, Utc),
                     agent_version: rec.agent_version,
                     is_online: false,
                 },

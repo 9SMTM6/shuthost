@@ -3,8 +3,8 @@ import { createResource, For, Match, Suspense, Switch } from 'solid-js';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { buildData } from '../helpers/buildData';
-import type { AnyComponent } from '../helpers/utils';
 import { demoSubpath } from '../helpers/demo';
+import type { AnyComponent } from '../helpers/utils';
 
 export type Author = {
     name: string;

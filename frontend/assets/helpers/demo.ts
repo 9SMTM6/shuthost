@@ -30,7 +30,10 @@ export const initDemoMode = () => {
                 clients: [],
                 statusMap: { tarbean: 'offline', archive: 'offline' },
                 leaseMap: { archive: [] },
-                dbData: { status: 'available', payload: { clientStats: {}, hostStats: {} } },
+                dbData: {
+                    status: 'available',
+                    payload: { clientStats: {}, hostStats: {} },
+                },
             },
         });
     }, 500);

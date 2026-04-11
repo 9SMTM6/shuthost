@@ -5,12 +5,12 @@ import { MetaProvider } from '@solidjs/meta';
 import { Navigate, Route, Router } from '@solidjs/router';
 import { createSignal, Show } from 'solid-js';
 import { render } from 'solid-js/web';
-import { showJSError } from './helpers/utils';
 import { demoSubpath } from './helpers/demo';
 import {
     onUpdateAvailable,
     registerServiceWorker,
 } from './helpers/serviceWorker';
+import { showJSError } from './helpers/utils';
 import { AboutPage } from './pages/AboutPage';
 import { ArchitecturePage } from './pages/Architecture';
 import { ClientsPage } from './pages/Clients';
