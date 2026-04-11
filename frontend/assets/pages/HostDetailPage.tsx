@@ -286,13 +286,28 @@ const HostInfoSection = (props: {
                     Init system
                 </dt>
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                    {props.hostStats?.initSystem ?? 'Unknown'}
+                    {props.hostStats?.initSystem != null
+                        ? ({
+                              systemd: 'systemd',
+                              openrc: 'OpenRC',
+                              'self-extracting-shell': 'Self-extracting (sh)',
+                              'self-extracting-pwsh':
+                                  'Self-extracting (PowerShell)',
+                              launchd: 'launchd',
+                          } as const)[props.hostStats.initSystem]
+                        : 'Unknown'}
                 </dd>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Operating system
                 </dt>
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                    {props.hostStats?.operatingSystem ?? 'Unknown'}
+                    {props.hostStats?.operatingSystem != null
+                        ? ({
+                              linux: 'Linux',
+                              windows: 'Windows',
+                              macos: 'macOS',
+                          } as const)[props.hostStats.operatingSystem]
+                        : 'Unknown'}
                 </dd>
                 <Show when={props.hostStats?.scriptPath != null}>
                     <dt class="font-medium text-black dark:text-[#cccccc]">
