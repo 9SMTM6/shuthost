@@ -48,9 +48,11 @@ pub enum Command {
 
     /// Update the already installed `host_agent` in place.
     ///
-    /// For self-extracting installs, this must be run from the same directory as the
-    /// generated script so the installer can detect the script path and reuse its config.
-    Update,
+    /// If a self-extracting script is present in the current directory, it is preferred
+    /// so the update can proceed without needing sudo for init-system service files.
+    ///
+    /// Use `--script-path` to point directly at a self-extracting script and skip autodetection.
+    Update(install::UpdateArgs),
 
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
@@ -73,7 +75,7 @@ pub fn inner_main(invocation: Cli) {
             Ok(()) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),
         },
-        Command::Update => match install::update_host_agent() {
+        Command::Update(args) => match install::update_host_agent(&args) {
             Ok(()) => println!("Agent updated successfully!"),
             Err(e) => eprintln!("Error updating host_agent: {e}"),
         },
