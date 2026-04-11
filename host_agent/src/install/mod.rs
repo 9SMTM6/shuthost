@@ -100,21 +100,21 @@ pub struct UpdateArgs {
 #[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq, Eq)]
 pub enum InitSystem {
     /// Systemd init system (Linux).
-    #[cfg(target_os = "linux")]
+    #[cfg_attr(not(target_os = "linux"), clap(skip))]
     Systemd,
     /// `OpenRC` init system (Linux).
-    #[cfg(target_os = "linux")]
+    #[cfg_attr(not(target_os = "linux"), clap(skip))]
     #[clap(name = "openrc")]
     OpenRC,
     /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself. [aliases: sh]
-    #[cfg(unix)]
+    #[cfg_attr(not(unix), clap(skip))]
     #[clap(alias = "sh")]
     SelfExtractingShell,
     /// Generates a self-extracting `PowerShell` script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the `PowerShell` script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background. [aliases: pwsh]
     #[clap(alias = "pwsh")]
     SelfExtractingPwsh,
     /// Launchd init system (macOS).
-    #[cfg(target_os = "macos")]
+    #[cfg_attr(not(target_os = "macos"), clap(skip))]
     Launchd,
 }
 
@@ -124,7 +124,7 @@ impl fmt::Display for InitSystem {
             f,
             "{}",
             self.to_possible_value()
-                .expect("No skipped variants")
+                .expect("Invoking this with a skipped variant, creating skipped variants in the skipped OSs is forbidden.")
                 .get_name()
         )
     }
@@ -152,17 +152,33 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
     };
 
     match arguments.init_system {
-        #[cfg(target_os = "linux")]
-        InitSystem::Systemd => install_systemd(name, bind_known_vals)?,
-        #[cfg(target_os = "linux")]
-        InitSystem::OpenRC => install_openrc(name, bind_known_vals)?,
-        #[cfg(unix)]
-        InitSystem::SelfExtractingShell => install_self_extracting_shell(name, bind_known_vals)?,
+        InitSystem::Systemd => {
+            #[cfg(target_os = "linux")]
+            install_systemd(name, bind_known_vals)?;
+            #[cfg(not(target_os = "linux"))]
+            unreachable!("Systemd is not supported on this platform");
+        }
+        InitSystem::OpenRC => {
+            #[cfg(target_os = "linux")]
+            install_openrc(name, bind_known_vals)?;
+            #[cfg(not(target_os = "linux"))]
+            unreachable!("OpenRC is not supported on this platform");
+        }
+        InitSystem::SelfExtractingShell => {
+            #[cfg(unix)]
+            install_self_extracting_shell(name, bind_known_vals)?;
+            #[cfg(not(unix))]
+            unreachable!("Self-extracting shell installs are not supported on this platform");
+        }
         InitSystem::SelfExtractingPwsh => {
             install_self_extracting_pwsh(name, arguments, bind_known_vals)?;
         }
-        #[cfg(target_os = "macos")]
-        InitSystem::Launchd => install_launchd(name, &bind_known_vals)?,
+        InitSystem::Launchd => {
+            #[cfg(target_os = "macos")]
+            install_launchd(name, &bind_known_vals)?;
+            #[cfg(not(target_os = "macos"))]
+            unreachable!("Launchd is not supported on this platform");
+        }
     }
 
     let interface = &get_default_interface();
@@ -209,15 +225,31 @@ pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     let script_path = args.script_path.as_deref();
 
     match init_system {
-        #[cfg(target_os = "linux")]
-        InitSystem::Systemd => update_systemd(name)?,
-        #[cfg(target_os = "linux")]
-        InitSystem::OpenRC => update_openrc(name)?,
-        #[cfg(unix)]
-        InitSystem::SelfExtractingShell => update_self_extracting_shell(name, script_path)?,
+        InitSystem::Systemd => {
+            #[cfg(target_os = "linux")]
+            update_systemd(name)?;
+            #[cfg(not(target_os = "linux"))]
+            unreachable!("Systemd updates are not supported on this platform");
+        }
+        InitSystem::OpenRC => {
+            #[cfg(target_os = "linux")]
+            update_openrc(name)?;
+            #[cfg(not(target_os = "linux"))]
+            unreachable!("OpenRC updates are not supported on this platform");
+        }
+        InitSystem::SelfExtractingShell => {
+            #[cfg(unix)]
+            update_self_extracting_shell(name, script_path)?;
+            #[cfg(not(unix))]
+            unreachable!("Self-extracting shell updates are not supported on this platform");
+        }
         InitSystem::SelfExtractingPwsh => update_self_extracting_pwsh(name, script_path)?,
-        #[cfg(target_os = "macos")]
-        InitSystem::Launchd => update_launchd(name)?,
+        InitSystem::Launchd => {
+            #[cfg(target_os = "macos")]
+            update_launchd(name)?;
+            #[cfg(not(target_os = "macos"))]
+            unreachable!("Launchd updates are not supported on this platform");
+        }
     }
 
     Ok(())
