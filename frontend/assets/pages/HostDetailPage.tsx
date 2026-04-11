@@ -10,9 +10,11 @@ import {
 } from 'lucide-solid';
 import { createSignal, For, onMount, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
+import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import { HostStats, state } from '../helpers/appStore';
-import { demoUpdateLease, isDemoMode } from '../helpers/demo';
+import { buildData } from '../helpers/buildData';
+import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
     checkHostUnscheduledSubscription,
     subscribeToHostUnscheduled,
@@ -230,6 +232,41 @@ const HostInfoSection = (props: {
     const lastOnline = props.hostStats?.lastOnline ?? null;
     const agentVersion = props.hostStats?.agentVersion ?? null;
 
+    let updateCmds: { sh?: string; ps1?: string } | null = null;
+    if (props.hostStats != null && agentVersion !== buildData.version) {
+        const baseUrl = window.location.origin + demoSubpath;
+        const initSystem = props.hostStats.initSystem;
+        const scriptPath = props.hostStats.scriptPath;
+        const os = props.hostStats.operatingSystem;
+
+        let shScriptPathArg = '';
+        let ps1ScriptPathArg = '';
+        if (scriptPath != null) {
+            if (initSystem === 'self-extracting-shell') {
+                shScriptPathArg = ` --script-path '${scriptPath}'`;
+            } else if (initSystem === 'self-extracting-pwsh') {
+                ps1ScriptPathArg = ` -ScriptPath '${scriptPath}'`;
+            } else {
+                console.error(
+                    `Host has scriptPath '${scriptPath}' but init system '${
+                        initSystem ?? 'unknown'
+                    }' is not a self-extracting type`,
+                );
+            }
+        }
+
+        const shCmd = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} -- --update${shScriptPathArg}`;
+        const ps1Cmd = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} -Update${ps1ScriptPathArg}`;
+
+        if (initSystem === 'self-extracting-pwsh' || os === 'windows') {
+            updateCmds = { ps1: ps1Cmd };
+        } else if (os == null) {
+            updateCmds = { sh: shCmd, ps1: ps1Cmd };
+        } else {
+            updateCmds = { sh: shCmd };
+        }
+    }
+
     return (
         <section
             class="section-container p-4 mb-4"
@@ -274,6 +311,45 @@ const HostInfoSection = (props: {
                         : formatRelativeTimestamp(lastOnline)}
                 </dd>
             </dl>
+            <Show when={updateCmds != null}>
+                <div class="mt-3 pt-3 border-t border-[#e5e5e5] dark:border-[#3e3e42]">
+                    <p class="text-sm font-medium text-black dark:text-[#cccccc] mb-1">
+                        Update agent
+                    </p>
+                    <Show when={updateCmds?.sh != null}>
+                        <Show when={updateCmds?.ps1 != null}>
+                            <p class="text-xs font-semibold text-[#616161] dark:text-[#9d9d9d] mb-1">
+                                Linux/macOS:
+                            </p>
+                        </Show>
+                        <div class="code-container py-2">
+                            <CopyButton
+                                targetId="host-update-command-sh"
+                                label="Copy update command (sh)"
+                            />
+                            <code id="host-update-command-sh" class="code-block">
+                                {updateCmds?.sh}
+                            </code>
+                        </div>
+                    </Show>
+                    <Show when={updateCmds?.ps1 != null}>
+                        <Show when={updateCmds?.sh != null}>
+                            <p class="text-xs font-semibold text-[#616161] dark:text-[#9d9d9d] mb-1 mt-2">
+                                Windows (PowerShell):
+                            </p>
+                        </Show>
+                        <div class="code-container py-2">
+                            <CopyButton
+                                targetId="host-update-command-ps1"
+                                label="Copy update command (PowerShell)"
+                            />
+                            <code id="host-update-command-ps1" class="code-block">
+                                {updateCmds?.ps1}
+                            </code>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
         </section>
     );
 };

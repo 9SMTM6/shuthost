@@ -12,6 +12,8 @@ param(
     [switch]$InstallHelp,
     [Parameter(Mandatory=$false)]
     [switch]$Update,
+    [Parameter(Mandatory=$false)]
+    [string]$ScriptPath,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
@@ -19,19 +21,21 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Print-Help {
-    Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Help] [<install_args> ...]"
+    Write-Host "Usage: .\host_agent.ps1 <remote_url> [-Port <port>] [-Update] [-ScriptPath <path>] [-Help] [<install_args> ...]"
     Write-Host "Install ShutHost host agent from coordinator."
     Write-Host ""
     Write-Host "Parameters:"
-    Write-Host "  remote_url        URL of the coordinator (required)"
-    Write-Host "  -Port <port>      Port for WoL testing (default: 9090), also passed to install command"
-    Write-Host "  -Help             Show this help message"
-    Write-Host "  -InstallHelp      Pass --help to the host agent install/update subcommand and exit"
-    Write-Host "  -Update           Update an already installed agent in place instead of installing"
-    Write-Host "  <install_args>    Additional arguments forwarded to the host agent install command."
-    Write-Host "                   Example: --init-system=self-extracting-pwsh"
-    Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
-    Write-Host "                   Use -InstallHelp to see available install subcommand arguments."
+    Write-Host "  remote_url           URL of the coordinator (required)"
+    Write-Host "  -Port <port>         Port for WoL testing (default: 9090), also passed to install command"
+    Write-Host "  -Help                Show this help message"
+    Write-Host "  -InstallHelp         Pass --help to the host agent install/update subcommand and exit"
+    Write-Host "  -Update              Update an already installed agent in place instead of installing"
+    Write-Host "  -ScriptPath <path>   Path to the self-extracting script (update mode only; passed to 'update --script-path')"
+    Write-Host "  <install_args>       Additional arguments forwarded to the host agent install command."
+    Write-Host "                      Example: --init-system=self-extracting-pwsh"
+    Write-Host "                      Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
+    Write-Host "                      Do NOT pass -ScriptPath here; use the -ScriptPath parameter instead."
+    Write-Host "                      Use -InstallHelp to see available install subcommand arguments."
 }
 
 if ($Help) { Print-Help; exit 0 }
@@ -177,6 +181,10 @@ try {
     foreach ($arg in $InstallerArgs) {
         # a guard against accidentally passing --port, as in the shell script, doesnt make sense here
         # as the pwsh parser will handle that as script argument even if intermixed with arguments for the installer.
+        if ($arg -like '--script-path*' -or $arg -like '-ScriptPath*') {
+            Write-Error "-ScriptPath cannot be passed as an installer arg; use the -ScriptPath parameter directly."
+            exit 1
+        }
         $binaryArgs += $arg
     }
 
@@ -207,7 +215,11 @@ try {
         Test-WolPacketReachability
 
         if ($Update) {
-            Run-As-Elevated "./$script:FILENAME update"
+            if ($ScriptPath) {
+                Run-As-Elevated "./$script:FILENAME update --script-path `"$ScriptPath`""
+            } else {
+                Run-As-Elevated "./$script:FILENAME update"
+            }
         } else {
             # Run the installer
             $installCmd = "./$script:FILENAME install"
