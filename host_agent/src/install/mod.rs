@@ -5,12 +5,11 @@
 pub mod self_extracting;
 
 use core::iter;
-use std::{fs, process::Command};
+use std::process::Command;
 
 use clap::{Parser, ValueEnum as _};
 use core::fmt;
 use rand::{RngExt as _, distr, rng};
-use shuthost_common::ResultMapErrExt as _;
 
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -78,7 +77,7 @@ pub struct Args {
     #[arg(long, short = 'c', default_value_t = get_default_shutdown_command())]
     pub shutdown_command: String,
 
-    #[arg(long,  short, default_value_t = generate_secret())]
+    #[arg(long, short, default_value_t = generate_secret())]
     pub shared_secret: String,
 
     #[arg(long, short, default_value_t = get_inferred_init_system())]
@@ -335,33 +334,72 @@ fn install_launchd(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Resu
 
 #[cfg(target_os = "linux")]
 fn update_systemd(name: &str) -> Result<(), String> {
-    let service_path = shuthost_common::systemd::get_service_path(name);
-    let service_content = fs::read_to_string(&service_path)
-        .map_err_to_string(&format!("Failed to read {service_path}"))?;
+    let config = registration::parse_config(&registration::Args {
+        init_system: InitSystem::Systemd,
+        script_path: None,
+    })?;
 
-    shuthost_common::systemd::install_self_as_service(name, &service_content)?;
+    let bind_known_vals = |arg: &str| {
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            config.port,
+            config.broadcast_port,
+            &config.shutdown_command,
+            &config.secret,
+            &config.hostname,
+        )
+    };
+
+    shuthost_common::systemd::install_self_as_service(name, &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE))?;
     shuthost_common::systemd::start_and_enable_self_as_service(name)?;
     Ok(())
 }
 
 #[cfg(target_os = "linux")]
 fn update_openrc(name: &str) -> Result<(), String> {
-    let service_path = shuthost_common::openrc::get_service_path(name);
-    let service_content = fs::read_to_string(&service_path)
-        .map_err_to_string(&format!("Failed to read {service_path}"))?;
+    let config = registration::parse_config(&registration::Args {
+        init_system: InitSystem::OpenRC,
+        script_path: None,
+    })?;
 
-    shuthost_common::openrc::install_self_as_service(name, &service_content)?;
+    let bind_known_vals = |arg: &str| {
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            config.port,
+            config.broadcast_port,
+            &config.shutdown_command,
+            &config.secret,
+            &config.hostname,
+        )
+    };
+
+    shuthost_common::openrc::install_self_as_service(name, &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE))?;
     shuthost_common::openrc::start_and_enable_self_as_service(name)?;
     Ok(())
 }
 
 #[cfg(target_os = "macos")]
 fn update_launchd(name: &str) -> Result<(), String> {
-    let service_path = shuthost_common::macos::get_service_path(name);
-    let service_content = fs::read_to_string(&service_path)
-        .map_err_to_string(&format!("Failed to read {service_path}"))?;
+    let config = registration::parse_config(&registration::Args {
+        init_system: InitSystem::Launchd,
+        script_path: None,
+    })?;
 
-    shuthost_common::macos::install_self_as_service(name, &service_content)?;
+    let bind_known_vals = |arg: &str| {
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            config.port,
+            config.broadcast_port,
+            &config.shutdown_command,
+            &config.secret,
+            &config.hostname,
+        )
+    };
+
+    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE))?;
     shuthost_common::macos::start_and_enable_self_as_service(name)?;
     Ok(())
 }
