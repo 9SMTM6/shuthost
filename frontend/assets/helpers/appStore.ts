@@ -17,6 +17,7 @@ export type ClientStats = {
 
 export type HostStats = {
     lastOnline: string | null;
+    agentVersion?: string | null;
     isOnline?: boolean;
 };
 

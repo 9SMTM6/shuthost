@@ -224,6 +224,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 
 const HostInfoSection = (props: {
     lastOnline: string | null;
+    agentVersion: string | null;
     isOnline: boolean;
 }) => (
     <section
@@ -234,9 +235,12 @@ const HostInfoSection = (props: {
             Information
         </h3>
         <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-            {/* <dt class="font-medium text-black dark:text-[#cccccc]">Agent version</dt> */}
-            {/* TODO: Requires backend to store agent_version from StartupBroadcast and expose it via WebSocket */}
-            {/* <dd class="text-[#616161] dark:text-[#9d9d9d]">—</dd> */}
+            <dt class="font-medium text-black dark:text-[#cccccc]">
+                Agent version
+            </dt>
+            <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                {props.agentVersion ?? `<= 1.7.1`}
+            </dd>
             <dt class="font-medium text-black dark:text-[#cccccc]">
                 Last online
             </dt>
@@ -348,6 +352,11 @@ export const HostDetailPage = (() => {
             ? (state.dbData.payload.hostStats[hostname()]?.lastOnline ?? null)
             : undefined;
 
+    const agentVersion = (): string | null | undefined =>
+        state.dbData.status === 'available'
+            ? state.dbData.payload.hostStats[hostname()]?.agentVersion ?? null
+            : undefined;
+
     const updateLease = async (action: 'take' | 'release') => {
         if (isDemoMode) {
             await demoUpdateLease(hostname(), action);
@@ -402,9 +411,10 @@ export const HostDetailPage = (() => {
                     {/* <NotifyDurationButton hostname={hostname()} /> */}
                 </div>
 
-                <Show when={lastOnline() !== undefined}>
+                <Show when={lastOnline() !== undefined && agentVersion() !== undefined}>
                     <HostInfoSection
                         lastOnline={lastOnline() as string | null}
+                        agentVersion={agentVersion() as string | null}
                         isOnline={status() === 'online'}
                     />
                 </Show>

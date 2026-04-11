@@ -150,7 +150,10 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Option<Coord
             use CoordinatorMessage as M;
             let result = validate_request(data, config);
             let (response_bytes, action) = match result {
-                Ok(M::Status) => (b"OK: status".to_vec(), None),
+                Ok(M::Status) => (
+                    format!("OK: status;agent_version={}", VERSION).into_bytes(),
+                    None,
+                ),
                 Ok(M::Shutdown) => (
                     format!(
                         "Now executing command: {}. Hopefully goodbye.",
