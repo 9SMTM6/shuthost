@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import { validateData, type Infer, is } from './assertData';
+import { type Infer, is, validateData } from './assertData';
 
 const buildDataChecks = is.object({
     stylesHash: is.string,

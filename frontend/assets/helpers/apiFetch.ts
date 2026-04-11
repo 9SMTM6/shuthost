@@ -1,4 +1,4 @@
-import { showJSError } from "./utils";
+import { showJSError } from './utils';
 
 export const apiFetch = async (
     url: string,

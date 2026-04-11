@@ -1,7 +1,7 @@
-import { showJSError } from "./utils";
+import { showJSError } from './utils';
 
-// biome-ignore lint/suspicious/noExplicitAny: Any is not problematic (and IIRC actually needed because of covariance) in this context.
 type Checker<T = unknown> = (v: unknown) => v is T;
+// biome-ignore lint/suspicious/noExplicitAny: Any is not problematic (and IIRC actually needed because of covariance) in this context.
 type AnyChecker = Record<string, Checker<any>>;
 
 /** Infers the validated type from a checker predicate or object checker map. */
@@ -9,10 +9,10 @@ export type Infer<C> =
     C extends Checker<infer T>
         ? T
         : C extends AnyChecker
-        ? {
-              [K in keyof C]: C[K] extends Checker<infer T> ? T : never;
-          }
-        : never;
+          ? {
+                [K in keyof C]: C[K] extends Checker<infer T> ? T : never;
+            }
+          : never;
 
 export function validateData<T>(
     label: string,

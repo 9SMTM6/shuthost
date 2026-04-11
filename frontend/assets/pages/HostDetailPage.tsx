@@ -12,13 +12,13 @@ import { createSignal, For, onMount, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
-import type { AnyComponent } from '../helpers/utils';
 import { demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
     checkHostUnscheduledSubscription,
     subscribeToHostUnscheduled,
     unsubscribeFromHostUnscheduled,
 } from '../helpers/pushSubscription';
+import type { AnyComponent } from '../helpers/utils';
 import { formatRelativeTimestamp } from '../helpers/utils';
 
 type ClientLease = { type: 'Client'; value: string };
@@ -345,7 +345,7 @@ export const HostDetailPage = (() => {
         leases().filter((l): l is ClientLease => l.type === 'Client');
     const lastOnline = (): string | null | undefined =>
         state.dbData.status === 'available'
-            ? state.dbData.payload.hostStats[hostname()]?.lastOnline ?? null
+            ? (state.dbData.payload.hostStats[hostname()]?.lastOnline ?? null)
             : undefined;
 
     const updateLease = async (action: 'take' | 'release') => {

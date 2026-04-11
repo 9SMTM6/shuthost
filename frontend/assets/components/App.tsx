@@ -1,9 +1,9 @@
 import { Title } from '@solidjs/meta';
 import type { ParentProps } from 'solid-js';
 import { onMount, Show } from 'solid-js';
-import type { AnyComponent } from '../helpers/utils';
 import { initDemoMode, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
+import type { AnyComponent } from '../helpers/utils';
 import { connectWebSocket } from '../helpers/ws';
 import { AuthWarningPanel } from './AuthWarningPanel';
 import { Footer } from './Footer';
