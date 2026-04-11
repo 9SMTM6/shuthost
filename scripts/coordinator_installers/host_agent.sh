@@ -12,18 +12,20 @@ DEFAULT_PORT="9090"
 PORT_SPECIFIED=false
 INSTALL_HELP=false
 UPDATE_MODE=false
+SCRIPT_PATH=""
 
 print_help() {
-    echo "Usage: $0 <remote_url> [--port PORT] [--update] [--install-help] [-- <install_args>]"
+    echo "Usage: $0 <remote_url> [--port PORT] [--update] [--script-path PATH] [--install-help] [-- <install_args>]"
     echo "Install or update the ShutHost host agent from coordinator."
     echo ""
     echo "Arguments:" 
-    echo "  remote_url     URL of the coordinator"
-    echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
-    echo "  --update       Update an already installed agent in place instead of installing"
-    echo "  --install-help Pass --help to the host agent install/update subcommand and exit"
-    echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
-    echo "                 Use --install-help to see available install subcommand arguments."
+    echo "  remote_url          URL of the coordinator"
+    echo "  --port PORT         Port for WoL testing (default: 9090), also passed to install command"
+    echo "  --update            Update an already installed agent in place instead of installing"
+    echo "  --script-path PATH  Path to the self-extracting script (update mode only; passed to 'update --script-path')"
+    echo "  --install-help      Pass --help to the host agent install/update subcommand and exit"
+    echo "  -- <args>           Additional arguments for the host agent install command (except --port and --script-path)"
+    echo "                      Use --install-help to see available install subcommand arguments."
 }
 
 while [ $# -gt 0 ]; do
@@ -36,6 +38,13 @@ while [ $# -gt 0 ]; do
             ;;
         --update)
             UPDATE_MODE=true
+            ;;
+        --script-path=*)
+            SCRIPT_PATH="${1#--script-path=}"
+            ;;
+        --script-path)
+            shift
+            SCRIPT_PATH="$1"
             ;;
         --)
             shift
@@ -98,6 +107,10 @@ fi
 while [ $# -gt 0 ]; do
     if echo "$1" | grep -q '^--port'; then
         echo "Error: --port cannot be passed via -- as it conflicts with installer option" >&2
+        exit 1
+    fi
+    if echo "$1" | grep -q '^--script-path'; then
+        echo "Error: --script-path cannot be passed via -- ; use the --script-path installer option instead" >&2
         exit 1
     fi
     # Escape any embedded double quotes
@@ -212,8 +225,12 @@ else
     test_wol_packet_reachability
 
     if $UPDATE_MODE; then
-        # shellcheck disable=SC2090,SC2086
-        run_as_elevated ./$OUTFILE update
+        if [ -n "$SCRIPT_PATH" ]; then
+            run_as_elevated "./$OUTFILE update --script-path \"$SCRIPT_PATH\""
+        else
+            # shellcheck disable=SC2090,SC2086
+            run_as_elevated ./$OUTFILE update
+        fi
     else
         # shellcheck disable=SC2090,SC2086
         run_as_elevated ./$OUTFILE install $BINARY_ARGS
