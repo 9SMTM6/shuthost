@@ -47,7 +47,7 @@ struct ClientStatsRecord {
 #[derive(sqlx::FromRow)]
 struct HostLastOnlineRecord {
     hostname: String,
-    last_online: Option<chrono::NaiveDateTime>,
+    last_online: chrono::NaiveDateTime,
 }
 
 /// Represents a host IP override record from the database.
@@ -82,7 +82,7 @@ pub struct ClientStats {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HostStats {
-    pub last_online: Option<DateTime<Utc>>,
+    pub last_online: DateTime<Utc>,
     #[serde(default)]
     pub is_online: bool,
 }
@@ -639,9 +639,8 @@ pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<St
             (
                 rec.hostname,
                 HostStats {
-                    last_online: rec
-                        .last_online
-                        .map(|dt| DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc)),
+                    last_online: DateTime::<Utc>::from_naive_utc_and_offset(rec
+                        .last_online, Utc),
                     is_online: false,
                 },
             )
