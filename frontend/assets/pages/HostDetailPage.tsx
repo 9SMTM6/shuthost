@@ -255,7 +255,7 @@ const HostInfoSection = (props: {
             }
         }
 
-        const shCmd = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} -- --update${shScriptPathArg}`;
+        const shCmd = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --update${shScriptPathArg}`;
         const ps1Cmd = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} -Update${ps1ScriptPathArg}`;
 
         if (initSystem === 'self-extracting-pwsh' || os === 'windows') {
