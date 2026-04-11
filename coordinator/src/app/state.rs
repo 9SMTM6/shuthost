@@ -6,6 +6,7 @@ use std::{
 
 use eyre::WrapErr as _;
 use serde::{Deserialize, Serialize};
+use shuthost_common::protocol::{InitSystem, OsType};
 use tokio::sync::{RwLock, broadcast, watch};
 use tracing::info;
 use web_push::PartialVapidSignatureBuilder;
@@ -35,6 +36,15 @@ pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
 pub(crate) type HostStatusTx = watch::Sender<Arc<HostStatus>>;
 pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 
+/// Cached install metadata for a host, populated from the DB on startup
+/// and updated live when agent startup broadcasts arrive.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct HostInstallInfo {
+    pub agent_version: Option<String>,
+    pub init_system: Option<InitSystem>,
+    pub os: Option<OsType>,
+}
+
 /// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -59,8 +69,8 @@ pub(crate) struct AppState {
     /// Populated from the DB on startup and updated live when agent startup broadcasts arrive.
     pub host_overrides: Arc<RwLock<HashMap<String, db::HostOverride>>>,
 
-    /// Cached known agent versions from the DB and runtime events.
-    pub host_agent_versions: Arc<RwLock<HashMap<String, Option<String>>>>,
+    /// Cached known agent install info from the DB and runtime events.
+    pub host_install_info: Arc<RwLock<HashMap<String, HostInstallInfo>>>,
 
     /// Authentication runtime (mode and secrets)
     pub auth: Arc<auth::Runtime>,
@@ -218,12 +228,21 @@ pub(super) async fn initialize_state(
     };
     let host_overrides = Arc::new(RwLock::new(host_overrides));
 
-    let host_agent_versions = if let Some(ref pool) = db_pool {
+    let host_install_info = if let Some(ref pool) = db_pool {
         let host_stats = db::get_all_host_stats(pool).await?;
         Arc::new(RwLock::new(
             host_stats
                 .into_iter()
-                .map(|(hostname, stats)| (hostname, stats.agent_version))
+                .map(|(hostname, stats)| {
+                    (
+                        hostname,
+                        HostInstallInfo {
+                            agent_version: stats.agent_version,
+                            init_system: stats.init_system,
+                            os: stats.operating_system,
+                        },
+                    )
+                })
                 .collect(),
         ))
     } else {
@@ -267,7 +286,7 @@ pub(super) async fn initialize_state(
         config_path: config_path.to_path_buf(),
         leases,
         host_overrides,
-        host_agent_versions,
+        host_install_info,
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
         db_pool,

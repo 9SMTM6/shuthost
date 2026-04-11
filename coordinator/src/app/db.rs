@@ -10,6 +10,7 @@ use std::os::unix::fs::PermissionsExt as _;
 use chrono::{DateTime, Utc};
 use eyre::Context as _;
 use serde::{Deserialize, Serialize};
+use shuthost_common::protocol::{InitSystem, OsType};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase as _};
 use tracing::warn;
 
@@ -49,6 +50,8 @@ struct HostStatsRecord {
     hostname: String,
     last_online: chrono::NaiveDateTime,
     agent_version: Option<String>,
+    init_system: Option<String>,
+    os: Option<String>,
 }
 
 /// Represents a host IP override record from the database.
@@ -85,6 +88,10 @@ pub struct ClientStats {
 pub struct HostStats {
     pub last_online: DateTime<Utc>,
     pub agent_version: Option<String>,
+    #[serde(default)]
+    pub init_system: Option<InitSystem>,
+    #[serde(default)]
+    pub operating_system: Option<OsType>,
     #[serde(default)]
     pub is_online: bool,
 }
@@ -621,17 +628,33 @@ pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> e
     Ok(())
 }
 
+/// Upserts agent install info (version, init system, OS) for a host.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
 #[tracing::instrument(skip(pool), err)]
-pub(crate) async fn upsert_host_agent_version(
+pub(crate) async fn upsert_host_install_info(
     pool: DbPool,
     hostname: String,
     agent_version: String,
+    init_system: InitSystem,
+    os: OsType,
 ) -> eyre::Result<()> {
+    let init_system_str = init_system.to_string();
+    let os_str = os.to_string();
     sqlx::query(
-        "INSERT INTO host_stats (hostname, last_online, agent_version) VALUES (?, datetime('now'), ?)\n         ON CONFLICT(hostname) DO UPDATE SET agent_version = excluded.agent_version",
+        "INSERT INTO host_stats (hostname, last_online, agent_version, init_system, os) \
+         VALUES (?, datetime('now'), ?, ?, ?) \
+         ON CONFLICT(hostname) DO UPDATE SET \
+             agent_version = excluded.agent_version, \
+             init_system = excluded.init_system, \
+             os = excluded.os",
     )
     .bind(hostname)
     .bind(agent_version)
+    .bind(init_system_str)
+    .bind(os_str)
     .execute(&pool)
     .await?;
     Ok(())
@@ -646,7 +669,7 @@ pub(crate) async fn upsert_host_agent_version(
 pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<String, HostStats>> {
     let records = sqlx::query_as!(
         HostStatsRecord,
-        "SELECT hostname, last_online, agent_version FROM host_stats"
+        "SELECT hostname, last_online, agent_version, init_system, os FROM host_stats"
     )
     .fetch_all(pool)
     .await?;
@@ -654,11 +677,23 @@ pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<St
     Ok(records
         .into_iter()
         .map(|rec| {
+            let init_system = rec.init_system.and_then(|s: String| {
+                s.parse::<InitSystem>()
+                    .map_err(|()| tracing::warn!("Unknown init_system value in DB: {s}"))
+                    .ok()
+            });
+            let operating_system = rec.os.and_then(|s: String| {
+                s.parse::<OsType>()
+                    .map_err(|()| tracing::warn!("Unknown os value in DB: {s}"))
+                    .ok()
+            });
             (
                 rec.hostname,
                 HostStats {
                     last_online: DateTime::<Utc>::from_naive_utc_and_offset(rec.last_online, Utc),
                     agent_version: rec.agent_version,
+                    init_system,
+                    operating_system,
                     is_online: false,
                 },
             )

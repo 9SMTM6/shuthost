@@ -83,6 +83,8 @@ mod tests {
             shutdown_command: "shutdown_cmd".to_string(),
             shared_secret: Some(secret),
             hostname: "test_hostname".to_string(),
+            init_system: crate::install::InitSystem::SelfExtractingShell,
+            script_path: None,
         }
     }
 

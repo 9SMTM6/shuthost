@@ -12,14 +12,128 @@ use miniserde::{Serialize as MiniSerialize, ser};
 #[cfg(feature = "coordinator")]
 use serde::{Deserialize, Serialize};
 
+// Macro to define the enum from variant => string mappings
+macro_rules! define_enum_with_str {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $(
+                $(#[$variant_meta:meta])*
+                $variant:ident => $str:literal
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        $vis enum $name {
+            $(
+                $(#[$variant_meta])*
+                $variant,
+            )*
+        }
+
+        impl core::fmt::Display for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                match *self {
+                    $($name::$variant => write!(f, "{}", $str),)*
+                }
+            }
+        }
+
+        impl FromStr for $name {
+            type Err = ();
+
+            fn from_str(value: &str) -> Result<Self, Self::Err> {
+                match value {
+                    $($str => Ok($name::$variant),)*
+                    _ => Err(()),
+                }
+            }
+        }
+    };
+}
+
+define_enum_with_str! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(feature = "coordinator", derive(Deserialize, Serialize))]
+    #[cfg_attr(feature = "coordinator", serde(try_from = "String", into = "String"))]
+    /// The init system used by the host agent.
+    pub enum InitSystem {
+        /// Systemd init system (Linux).
+        Systemd => "systemd",
+        /// OpenRC init system (Linux).
+        OpenRC => "openrc",
+        /// Self-extracting shell script install (Unix).
+        SelfExtractingShell => "self-extracting-shell",
+        /// Self-extracting PowerShell script install (Windows).
+        SelfExtractingPwsh => "self-extracting-pwsh",
+        /// Launchd init system (macOS).
+        Launchd => "launchd",
+    }
+}
+
+#[cfg(feature = "agent")]
+impl MiniSerialize for InitSystem {
+    fn begin(&self) -> ser::Fragment<'_> {
+        ser::Fragment::Str(Cow::Owned(self.to_string()))
+    }
+}
+
+#[cfg(feature = "coordinator")]
+impl TryFrom<String> for InitSystem {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse().map_err(|()| format!("unknown init system: {s}"))
+    }
+}
+
+#[cfg(feature = "coordinator")]
+impl From<InitSystem> for String {
+    fn from(v: InitSystem) -> Self {
+        v.to_string()
+    }
+}
+
+define_enum_with_str! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(feature = "coordinator", derive(Deserialize, Serialize))]
+    #[cfg_attr(feature = "coordinator", serde(try_from = "String", into = "String"))]
+    /// The operating system running on the host.
+    pub enum OsType {
+        /// Linux operating system.
+        Linux => "linux",
+        /// macOS operating system.
+        MacOS => "macos",
+        /// Windows operating system.
+        Windows => "windows",
+    }
+}
+
+#[cfg(feature = "agent")]
+impl MiniSerialize for OsType {
+    fn begin(&self) -> ser::Fragment<'_> {
+        ser::Fragment::Str(Cow::Owned(self.to_string()))
+    }
+}
+
+#[cfg(feature = "coordinator")]
+impl TryFrom<String> for OsType {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse().map_err(|()| format!("unknown OS type: {s}"))
+    }
+}
+
+#[cfg(feature = "coordinator")]
+impl From<OsType> for String {
+    fn from(v: OsType) -> Self {
+        v.to_string()
+    }
+}
+
 /// Data carried in a startup announcement from an agent.
 ///
 /// Kept separate so that the surrounding enum can carry an explicit message
 /// type tag when we support additional broadcast kinds in the future.
-///
-/// TODO: consider extending this payload with install metadata such as the agent's init
-/// system / install type and, for self-extracting installs, the install script
-/// path or name.
 #[derive(Debug, Clone, PartialEq, Eq)]
 // miniserde serialization for agent
 #[cfg_attr(feature = "agent", derive(MiniSerialize))]
@@ -32,6 +146,8 @@ pub struct StartupBroadcast {
     pub mac_address: String,
     pub ip_address: String,
     pub timestamp: u64,
+    pub init_system: InitSystem,
+    pub os: OsType,
 }
 
 /// Message sent from agent to coordinator over the UDP broadcast channel.
@@ -81,45 +197,6 @@ impl MiniSerialize for BroadcastMessage {
     }
 }
 
-// Macro to define the enum from variant => string mappings
-macro_rules! define_enum_with_str {
-    (
-        $(#[$meta:meta])*
-        $vis:vis enum $name:ident {
-            $(
-                $(#[$variant_meta:meta])*
-                $variant:ident => $str:literal
-            ),* $(,)?
-        }
-    ) => {
-        $(#[$meta])*
-        $vis enum $name {
-            $(
-                $(#[$variant_meta])*
-                $variant,
-            )*
-        }
-
-        impl core::fmt::Display for $name {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                match *self {
-                    $($name::$variant => write!(f, "{}", $str),)*
-                }
-            }
-        }
-
-        impl FromStr for $name {
-            type Err = ();
-
-            fn from_str(value: &str) -> Result<Self, Self::Err> {
-                match value {
-                    $($str => Ok($name::$variant),)*
-                    _ => Err(()),
-                }
-            }
-        }
-    };
-}
 
 define_enum_with_str! {
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -168,21 +245,27 @@ mod tests {
             mac_address: "aa:bb".into(),
             ip_address: "1.2.3.4".into(),
             timestamp: 0,
+            init_system: InitSystem::Systemd,
+            os: OsType::Linux,
         };
         let msg = BroadcastMessage::AgentStartup(startup.clone());
         let serialized = json::to_string(&msg);
         // should contain the correct tag and some payload fields
         assert!(serialized.contains("\"type\":\"AgentStartup\""));
         assert!(serialized.contains("\"hostname\":\"h\""));
+        assert!(serialized.contains("\"init_system\":\"systemd\""));
+        assert!(serialized.contains("\"os\":\"linux\""));
     }
 
     #[cfg(feature = "coordinator")]
     #[test]
     fn broadcast_message_deserialization() {
-        let json = r#"{"type":"AgentStartup","payload":{"hostname":"h","agent_version":"v","port":1234,"mac_address":"aa:bb","ip_address":"1.2.3.4","timestamp":0}}"#;
+        let json = r#"{"type":"AgentStartup","payload":{"hostname":"h","agent_version":"v","port":1234,"mac_address":"aa:bb","ip_address":"1.2.3.4","timestamp":0,"init_system":"systemd","os":"linux"}}"#;
         let msg: BroadcastMessage = serde_json::from_str(json).unwrap();
         let BroadcastMessage::AgentStartup(s) = msg;
         assert_eq!(s.hostname, "h");
         assert_eq!(s.port, 1234);
+        assert_eq!(s.init_system, InitSystem::Systemd);
+        assert_eq!(s.os, OsType::Linux);
     }
 }

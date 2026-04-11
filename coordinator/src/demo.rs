@@ -55,7 +55,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         ws_tx: broadcast::channel(1).0,
         leases: LeaseState::new(LeaseMapRaw::default()).0,
         host_overrides: Arc::new(RwLock::new(HashMap::new())),
-        host_agent_versions: Arc::new(RwLock::new(HashMap::new())),
+        host_install_info: Arc::new(RwLock::new(HashMap::new())),
         auth: Arc::new(
             auth::Runtime::from_config(&AuthConfig::default(), None)
                 .await
