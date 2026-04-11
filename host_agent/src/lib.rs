@@ -46,6 +46,12 @@ pub enum Command {
     /// Install the `host_agent` on the system.
     Install(install::Args),
 
+    /// Update the already installed `host_agent` in place.
+    ///
+    /// For self-extracting installs, this must be run from the same directory as the
+    /// generated script so the installer can detect the script path and reuse its config.
+    Update,
+
     /// Test Wake-on-LAN packet reachability on a given port.
     TestWol {
         /// UDP port to listen on for WOL test packets.
@@ -66,6 +72,10 @@ pub fn inner_main(invocation: Cli) {
         Command::Install(args) => match install::install_host_agent(&args) {
             Ok(()) => println!("Agent installed successfully!"),
             Err(e) => eprintln!("Error installing host_agent: {e}"),
+        },
+        Command::Update => match install::update_host_agent() {
+            Ok(()) => println!("Agent updated successfully!"),
+            Err(e) => eprintln!("Error updating host_agent: {e}"),
         },
         Command::Service(args) => {
             server::start_host_agent(args);

@@ -102,6 +102,8 @@ fn broadcast_startup(config: &ServiceOptions) {
     let mac_address = get_mac(&interface).unwrap_or_else(|| "unknown".to_string());
     let agent_version = VERSION.to_string();
     let timestamp = shuthost_common::unix_time_seconds();
+    // TODO: Include install metadata here alongside agent_version so the coordinator
+    // can distinguish self-extracting installs and choose the appropriate update path.
     let broadcast = BroadcastMessage::AgentStartup(StartupBroadcast {
         hostname: config.hostname.clone(),
         agent_version,

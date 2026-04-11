@@ -5,11 +5,12 @@
 pub mod self_extracting;
 
 use core::iter;
-use std::process::Command;
+use std::{fs, process::Command};
 
 use clap::{Parser, ValueEnum as _};
 use core::fmt;
 use rand::{RngExt as _, distr, rng};
+use shuthost_common::ResultMapErrExt as _;
 
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -62,6 +63,8 @@ pub(crate) fn bind_template_replacements(
         .replace("{ name }", BINARY_NAME)
         .replace("{ hostname }", hostname)
 }
+
+// TODO: update command needs integration tests
 
 /// Arguments for the `install` subcommand of `host_agent`.
 #[derive(Debug, Parser)]
@@ -165,7 +168,38 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
         port: arguments.port,
         broadcast_port: arguments.broadcast_port,
         hostname: arguments.hostname.clone(),
+        shutdown_command: arguments.shutdown_command.clone(),
     });
+
+    Ok(())
+}
+
+/// Updates an existing installation in place using the current installed config.
+///
+/// This command does not support switching the init system during updates.
+///
+/// For self-extracting installs, the update command currently detects the generated
+/// script in the local working directory and regenerates that same script.
+///
+/// TODO: install scripts and GUI flows should expose an update path.
+/// The agent should report the
+/// chosen init system / self-extracting install type, and ideally the install location
+/// for self-extracting agents, so the correct update/install command can be selected.
+pub(crate) fn update_host_agent() -> Result<(), String> {
+    let name = BINARY_NAME;
+    let init_system = registration::detect_installation_init_system()?;
+
+    match init_system {
+        #[cfg(target_os = "linux")]
+        InitSystem::Systemd => update_systemd(name)?,
+        #[cfg(target_os = "linux")]
+        InitSystem::OpenRC => update_openrc(name)?,
+        #[cfg(unix)]
+        InitSystem::SelfExtractingShell => update_self_extracting_shell(name)?,
+        InitSystem::SelfExtractingPwsh => update_self_extracting_pwsh(name)?,
+        #[cfg(target_os = "macos")]
+        InitSystem::Launchd => update_launchd(name)?,
+    }
 
     Ok(())
 }
@@ -276,6 +310,118 @@ fn install_launchd(name: &str, bind_known_vals: impl Fn(&str) -> String) -> Resu
         &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE),
     )?;
     shuthost_common::macos::start_and_enable_self_as_service(name)?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn update_systemd(name: &str) -> Result<(), String> {
+    let service_path = shuthost_common::systemd::get_service_path(name);
+    let service_content = fs::read_to_string(&service_path)
+        .map_err_to_string(&format!("Failed to read {service_path}"))?;
+
+    shuthost_common::systemd::install_self_as_service(name, &service_content)?;
+    shuthost_common::systemd::start_and_enable_self_as_service(name)?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn update_openrc(name: &str) -> Result<(), String> {
+    let service_path = shuthost_common::openrc::get_service_path(name);
+    let service_content = fs::read_to_string(&service_path)
+        .map_err_to_string(&format!("Failed to read {service_path}"))?;
+
+    shuthost_common::openrc::install_self_as_service(name, &service_content)?;
+    shuthost_common::openrc::start_and_enable_self_as_service(name)?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn update_launchd(name: &str) -> Result<(), String> {
+    let service_path = shuthost_common::macos::get_service_path(name);
+    let service_content = fs::read_to_string(&service_path)
+        .map_err_to_string(&format!("Failed to read {service_path}"))?;
+
+    shuthost_common::macos::install_self_as_service(name, &service_content)?;
+    shuthost_common::macos::start_and_enable_self_as_service(name)?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn update_self_extracting_shell(name: &str) -> Result<(), String> {
+    let config = registration::parse_config(&registration::Args {
+        init_system: InitSystem::SelfExtractingShell,
+        script_path: None,
+    })?;
+
+    let bind_known_vals = |arg: &str| {
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            config.port,
+            config.broadcast_port,
+            &config.shutdown_command,
+            &config.secret,
+            &config.hostname,
+        )
+    };
+
+    let target_script_path = format!("./{name}_self_extracting");
+    self_extracting::generate_self_extracting_script_from_template(
+        &bind_known_vals(SELF_EXTRACTING_SHELL_TEMPLATE),
+        &target_script_path,
+    )?;
+
+    if let Err(e) = Command::new(&target_script_path).output() {
+        eprintln!("Failed to start updated self-extracting script: {e}");
+    } else {
+        println!("Started updated self-extracting agent script in background.");
+    }
+
+    Ok(())
+}
+
+fn update_self_extracting_pwsh(name: &str) -> Result<(), String> {
+    let config = registration::parse_config(&registration::Args {
+        init_system: InitSystem::SelfExtractingPwsh,
+        script_path: None,
+    })?;
+
+    let bind_known_vals = |arg: &str| {
+        bind_template_replacements(
+            arg,
+            env!("CARGO_PKG_DESCRIPTION"),
+            config.port,
+            config.broadcast_port,
+            &config.shutdown_command,
+            &config.secret,
+            &config.hostname,
+        )
+    };
+
+    let target_script_path = format!("./{name}_self_extracting.ps1");
+    self_extracting::generate_self_extracting_script_from_template(
+        &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),
+        &target_script_path,
+    )?;
+
+    let powershell_cmd = if cfg!(target_os = "windows") {
+        "powershell.exe"
+    } else {
+        "pwsh"
+    };
+
+    if let Err(e) = Command::new(powershell_cmd)
+        .arg("-ExecutionPolicy")
+        .arg("Bypass")
+        .arg("-File")
+        .arg(&target_script_path)
+        .spawn()
+    {
+        eprintln!("Failed to start updated self-extracting PowerShell script: {e}");
+    } else {
+        println!("Started updated self-extracting agent PowerShell script in background.");
+    }
+
     Ok(())
 }
 

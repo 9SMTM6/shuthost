@@ -16,6 +16,10 @@ use serde::{Deserialize, Serialize};
 ///
 /// Kept separate so that the surrounding enum can carry an explicit message
 /// type tag when we support additional broadcast kinds in the future.
+///
+/// TODO: consider extending this payload with install metadata such as the agent's init
+/// system / install type and, for self-extracting installs, the install script
+/// path or name.
 #[derive(Debug, Clone, PartialEq, Eq)]
 // miniserde serialization for agent
 #[cfg_attr(feature = "agent", derive(MiniSerialize))]
