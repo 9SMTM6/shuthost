@@ -181,7 +181,7 @@ These are generated or validated automatically as part of the test suite, and th
   </tr>
   <tr>
     <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Desktop-Light.png" alt="Hosts expanded — desktop light" width="540"></td>
-    <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Landscape.png" alt="Hosts expanded — mobile landscape" width="220"></td>
+    <td><img src="frontend/tests/visual-regression.spec.ts-snapshots/at-hosts-expanded-install-Mobile-Landscape.png" alt="Hosts expanded — mobile landscape" width="360"></td>
   </tr>
 </table>
 
