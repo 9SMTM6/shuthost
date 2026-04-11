@@ -1,24 +1,30 @@
+import { showJSError } from "./utils";
+
 // biome-ignore lint/suspicious/noExplicitAny: Any is not problematic (and IIRC actually needed because of covariance) in this context.
-type AnyChecker = Record<string, (v: unknown) => v is any>;
+type Checker<T = unknown> = (v: unknown) => v is T;
+type AnyChecker = Record<string, Checker<any>>;
 
-/** Infers the validated type from a checker object — each predicate `v is T` contributes its `T`. */
-export type Infer<C extends AnyChecker> = {
-    [K in keyof C]: C[K] extends (v: unknown) => v is infer T ? T : never;
-};
+/** Infers the validated type from a checker predicate or object checker map. */
+export type Infer<C> =
+    C extends Checker<infer T>
+        ? T
+        : C extends AnyChecker
+        ? {
+              [K in keyof C]: C[K] extends Checker<infer T> ? T : never;
+          }
+        : never;
 
-export function assertData<C extends AnyChecker>(
+export function validateData<T>(
     label: string,
     x: unknown,
-    checks: C,
-): asserts x is Infer<C> {
-    if (typeof x !== 'object' || x === null)
-        throw new Error(`${label}: not an object`);
-    const d = x as Record<string, unknown>;
-    for (const [key, check] of Object.entries(checks)) {
-        if (!check(d[key]))
-            setTimeout(() => {
-                throw new Error(`${label}: invalid field "${key}"`);
-            }, 0);
+    check: Checker<T>,
+): asserts x is T {
+    if (!check(x)) {
+        // Defer error display until the page is rendered.
+        setTimeout(() => {
+            showJSError(`Data validation error: ${label} is invalid`);
+        });
+        console.error(`${label} validation failed`, x);
     }
 }
 
@@ -38,6 +44,15 @@ export const is = {
             v !== null &&
             !Array.isArray(v) &&
             Object.values(v).every(check),
+    object:
+        <C extends AnyChecker>(checks: C) =>
+        (v: unknown): v is Infer<C> =>
+            typeof v === 'object' &&
+            v !== null &&
+            !Array.isArray(v) &&
+            Object.entries(checks).every(([key, check]) =>
+                check((v as Record<string, unknown>)[key]),
+            ),
     oneOf:
         <const T extends readonly string[]>(...values: T) =>
         (v: unknown): v is T[number] =>

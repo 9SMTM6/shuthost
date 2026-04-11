@@ -5,7 +5,7 @@ import { MetaProvider } from '@solidjs/meta';
 import { Navigate, Route, Router } from '@solidjs/router';
 import { createSignal, Show } from 'solid-js';
 import { render } from 'solid-js/web';
-import { showJSError } from './components/JsErrorBox';
+import { showJSError } from './helpers/utils';
 import { demoSubpath } from './helpers/demo';
 import {
     onUpdateAvailable,

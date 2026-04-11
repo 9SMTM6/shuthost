@@ -5,7 +5,7 @@ import { createSignal, Show } from 'solid-js';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { JsErrorBox } from '../components/JsErrorBox';
-import type { AnyComponent } from '../helpers/component';
+import type { AnyComponent } from '../helpers/utils';
 import { serverData } from '../helpers/serverData';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.

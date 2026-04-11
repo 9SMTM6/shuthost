@@ -1,4 +1,4 @@
-import { showJSError } from '../components/JsErrorBox';
+import { showJSError } from "./utils";
 
 export const apiFetch = async (
     url: string,
