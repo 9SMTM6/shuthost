@@ -17,7 +17,7 @@ use shuthost_common::{
 use crate::{
     VERSION,
     commands::execute_shutdown,
-    install::{default_hostname, get_default_interface, get_ip, get_mac},
+    install::{default_hostname, get_inferred_init_system, get_default_interface, get_ip, get_mac, InitSystem},
     validation::validate_request,
 };
 
@@ -47,6 +47,14 @@ pub struct ServiceOptions {
     /// Hostname of this machine.
     #[arg(long, short = 'n', default_value_t = default_hostname())]
     pub hostname: String,
+
+    /// Init system or install type for this agent.
+    #[arg(long, default_value_t = get_inferred_init_system())]
+    pub init_system: InitSystem,
+
+    /// Path to the self-extracting script, only used for self-extracting installs.
+    #[arg(long)]
+    pub script_path: Option<String>,
 }
 
 /// Starts the TCP listener and handles incoming client connections in sequence.
@@ -152,10 +160,17 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Option<Coord
             use CoordinatorMessage as M;
             let result = validate_request(data, config);
             let (response_bytes, action) = match result {
-                Ok(M::Status) => (
-                    format!("OK: status;agent_version={}", VERSION).into_bytes(),
-                    None,
-                ),
+                Ok(M::Status) => {
+                    let mut fields = vec![
+                        format!("agent_version={}", VERSION),
+                        format!("init_system={}", config.init_system),
+                        format!("os={}", env::consts::OS),
+                    ];
+                    if let Some(script_path) = &config.script_path {
+                        fields.push(format!("script_path={}", script_path));
+                    }
+                    (format!("OK: status;{}", fields.join("; ")).into_bytes(), None)
+                },
                 Ok(M::Shutdown) => (
                     format!(
                         "Now executing command: {}. Hopefully goodbye.",

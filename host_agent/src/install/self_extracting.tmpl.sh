@@ -23,6 +23,6 @@ if [ "$#" -gt 0 ] && [ "${1#-}" = "$1" ]; then
         "$OUT" "$@"
     fi
 else
-    nohup "$OUT" service --port="$PORT" --broadcast-port="$BROADCAST_PORT" --shutdown-command="$SHUTDOWN_COMMAND" --hostname="$SHUTHOST_HOSTNAME" "$@" >"$OUT.log" 2>&1 &
+    nohup "$OUT" service --port="$PORT" --broadcast-port="$BROADCAST_PORT" --shutdown-command="$SHUTDOWN_COMMAND" --hostname="$SHUTHOST_HOSTNAME" "$@" --script-path "$0" --init-system self-extracting-shell >"$OUT.log" 2>&1 &
 fi
 exit 0

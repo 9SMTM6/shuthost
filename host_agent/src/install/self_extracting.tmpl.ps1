@@ -53,5 +53,5 @@ if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
 } else {
     # Run the service attached to this script
     # Unlike the shell script, we don't background here - the caller should background this script instead
-    & $tempFile service --port=$env:PORT --broadcast-port=$env:BROADCAST_PORT --shutdown-command=$env:SHUTDOWN_COMMAND --hostname=$env:SHUTHOST_HOSTNAME @args
+    & $tempFile service --port=$env:PORT --broadcast-port=$env:BROADCAST_PORT --shutdown-command=$env:SHUTDOWN_COMMAND --hostname=$env:SHUTHOST_HOSTNAME @args --script-path $MyInvocation.MyCommand.Path --init-system self-extracting-pwsh
 }
