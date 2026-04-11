@@ -6,12 +6,13 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR/../.."
 
 print_help() {
-    echo "Usage: $0 [-t tag] [-b branch] [-i] [-h] [-- <binary-args>]"
-    echo "Install ShutHost host agent binary."
+    echo "Usage: $0 [-t tag] [-b branch] [-u] [-i] [-h] [-- <binary-args>]"
+    echo "Install or update ShutHost host agent binary."
     echo "Options:"
     echo "  -t tag       Specify a release tag to download."
     echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
-    echo "  -i           Pass --help to the host agent install subcommand and exit."
+    echo "  -u           Update an already installed agent in place instead of installing."
+    echo "  -i           Pass --help to the host agent install/update subcommand and exit."
     echo "  -h           Show this help message."
     echo "  -- <args>    Pass additional arguments to the agent install subcommand."
     echo "               Use -i to see available install subcommand arguments."
@@ -35,11 +36,13 @@ trap cleanup EXIT
 TAG=""
 BRANCH=""
 INSTALL_HELP=false
-while getopts "t:b:ih" opt; do
+UPDATE_MODE=false
+while getopts "t:b:ihu" opt; do
     case $opt in
         t) TAG="$OPTARG" ;;
         b) BRANCH="$OPTARG" ;;
         i) INSTALL_HELP=true ;;
+        u) UPDATE_MODE=true ;;
         h) print_help; exit 0 ;;
         *) echo "Invalid option" >&2; print_help; exit 1 ;;
     esac
@@ -118,11 +121,22 @@ tar -xzf "$FILENAME"
 
 # Run the installer
 if $INSTALL_HELP; then
-    ./shuthost_host_agent install --help
-else
-    # shellcheck disable=SC2086
-    run_as_elevated ./shuthost_host_agent install $BINARY_ARGS
-
-    echo "Installation complete!"
-    echo
+        if $UPDATE_MODE; then
+            ./shuthost_host_agent update --help
+        else
+            ./shuthost_host_agent install --help
+        fi
+    else
+        if $UPDATE_MODE; then
+            if [ -n "$BINARY_ARGS" ]; then
+                echo "Error: update mode does not accept additional install arguments." >&2
+                exit 1
+            fi
+            run_as_elevated ./shuthost_host_agent update
+        else
+            # shellcheck disable=SC2086
+            run_as_elevated ./shuthost_host_agent install $BINARY_ARGS
+            echo "Installation complete!"
+            echo
+        fi
 fi

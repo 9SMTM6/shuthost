@@ -136,6 +136,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 // const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
 // type DurationUnit = keyof typeof unitDefaults;
 
+// TODO: When I implement this, I want to extend it to allow both permanent subscriptions when a host was running for longer than x, as well as a one-time notification of that nature. 
 // const NotifyDurationButton = (_props: { hostname: string }) => {
 //     const [notifyDuration, setNotifyDuration] = createSignal(unitDefaults.minutes);
 //     const [notifyDurationUnit, setNotifyDurationUnit] = createSignal<DurationUnit>('minutes');

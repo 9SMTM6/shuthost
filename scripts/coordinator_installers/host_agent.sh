@@ -11,15 +11,17 @@ REMOTE_URL=""
 DEFAULT_PORT="9090"
 PORT_SPECIFIED=false
 INSTALL_HELP=false
+UPDATE_MODE=false
 
 print_help() {
-    echo "Usage: $0 <remote_url> [--port PORT] [-- <install_args>]"
-    echo "Install ShutHost host agent from coordinator."
+    echo "Usage: $0 <remote_url> [--port PORT] [--update] [--install-help] [-- <install_args>]"
+    echo "Install or update the ShutHost host agent from coordinator."
     echo ""
     echo "Arguments:" 
     echo "  remote_url     URL of the coordinator"
     echo "  --port PORT    Port for WoL testing (default: 9090), also passed to install command"
-    echo "  --install-help Pass --help to the host agent install subcommand and exit"
+    echo "  --update       Update an already installed agent in place instead of installing"
+    echo "  --install-help Pass --help to the host agent install/update subcommand and exit"
     echo "  -- <args>      Additional arguments for the host agent install command (except --port)"
     echo "                 Use --install-help to see available install subcommand arguments."
 }
@@ -31,6 +33,9 @@ while [ $# -gt 0 ]; do
             ;;
         --install-help)
             INSTALL_HELP=true
+            ;;
+        --update)
+            UPDATE_MODE=true
             ;;
         --)
             shift
@@ -86,6 +91,10 @@ fi
 
 # Collect remaining as binary args
 # Argument parsing beforehand ensured these remaining args were prepended by --
+if $UPDATE_MODE && [ $# -gt 0 ]; then
+    echo "Error: update mode does not accept additional install arguments." >&2
+    exit 1
+fi
 while [ $# -gt 0 ]; do
     if echo "$1" | grep -q '^--port'; then
         echo "Error: --port cannot be passed via -- as it conflicts with installer option" >&2
@@ -194,12 +203,21 @@ curl --compressed -fL $CURL_OPTS "${REMOTE_URL}/download/host_agent/$PLATFORM/$A
 chmod +x "$OUTFILE"
 
 if $INSTALL_HELP; then
-    ./"$OUTFILE" install --help
+    if $UPDATE_MODE; then
+        ./$OUTFILE update --help
+    else
+        ./$OUTFILE install --help
+    fi
 else
     test_wol_packet_reachability
 
-    # shellcheck disable=SC2090,SC2086
-    run_as_elevated ./$OUTFILE install $BINARY_ARGS
+    if $UPDATE_MODE; then
+        # shellcheck disable=SC2090,SC2086
+        run_as_elevated ./$OUTFILE update
+    else
+        # shellcheck disable=SC2090,SC2086
+        run_as_elevated ./$OUTFILE install $BINARY_ARGS
+    fi
 fi
 
 set +v
