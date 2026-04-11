@@ -21,11 +21,25 @@ fn find_flag_value(line: &str, flag: &str, delimiter: &str) -> Option<String> {
     let pattern = format!("--{flag}=");
     line.find(&pattern).map(|start| {
         let value_slice = &line[start + pattern.len()..];
-        let value = if let Some(end) = value_slice.find(delimiter) {
+
+        let value = if let Some(stripped) = value_slice.strip_prefix("\\\"") {
+            if let Some(end) = stripped.find("\\\"") {
+                &stripped[..end]
+            } else {
+                stripped
+            }
+        } else if let Some(stripped) = value_slice.strip_prefix('"') {
+            if let Some(end) = stripped.find('"') {
+                &stripped[..end]
+            } else {
+                stripped
+            }
+        } else if let Some(end) = value_slice.find(delimiter) {
             &value_slice[..end]
         } else {
             value_slice
         };
+
         value.trim_matches('"').to_string()
     })
 }
@@ -58,6 +72,7 @@ pub(crate) struct ServiceConfig {
     pub port: u16,
     pub broadcast_port: u16,
     pub hostname: String,
+    pub shutdown_command: String,
 }
 
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
@@ -70,7 +85,7 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         InitSystem::SelfExtractingShell => args
             .script_path
             .clone()
-            .unwrap_or_to_string(&format!("{BINARY_NAME}_self_extracting.sh")),
+            .unwrap_or_to_string(&format!("{BINARY_NAME}_self_extracting")),
         _ => {
             if args.script_path.is_some() {
                 return Err("Script path is only valid for SelfExtracting* init system".to_string());
@@ -90,6 +105,54 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => parse_launchd_config()?,
     })
+}
+
+/// Detects an existing installation by looking for the installed service or
+/// self-extracting script in the current working directory.
+///
+/// TODO: expose install metadata or report the install path so self-extracting
+/// agents do not depend on the current working directory.
+/// Detects an existing installation by looking for installed service files or
+/// self-extracting scripts in the current working directory.
+///
+/// TODO: this should eventually return richer install metadata, including the
+/// script path for self-extracting installs rather than relying on CWD.
+pub(crate) fn detect_installation_init_system() -> Result<InitSystem, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let systemd_path = shuthost_common::systemd::get_service_path(BINARY_NAME);
+        if fs::metadata(&systemd_path).is_ok() {
+            return Ok(InitSystem::Systemd);
+        }
+
+        let openrc_path = shuthost_common::openrc::get_service_path(BINARY_NAME);
+        if fs::metadata(&openrc_path).is_ok() {
+            return Ok(InitSystem::OpenRC);
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let plist_path = shuthost_common::macos::get_service_path(BINARY_NAME);
+        if fs::metadata(&plist_path).is_ok() {
+            return Ok(InitSystem::Launchd);
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        let shell_path = format!("./{BINARY_NAME}_self_extracting");
+        if fs::metadata(&shell_path).is_ok() {
+            return Ok(InitSystem::SelfExtractingShell);
+        }
+    }
+
+    let pwsh_path = format!("./{BINARY_NAME}_self_extracting.ps1");
+    if fs::metadata(&pwsh_path).is_ok() {
+        return Ok(InitSystem::SelfExtractingPwsh);
+    }
+
+    Err("No existing host_agent installation detected for update.".to_string())
 }
 
 pub(crate) fn print_registration_config(config: &ServiceConfig) {
@@ -133,6 +196,7 @@ fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
     let mut port = None;
     let mut broadcast_port = None;
     let mut hostname = None;
+    let mut shutdown_command = None;
 
     for line in content.lines() {
         if let Some(value) = line.strip_prefix("Environment=SHUTHOST_SHARED_SECRET=") {
@@ -147,15 +211,19 @@ fn parse_systemd_content(content: &str) -> Result<ServiceConfig, String> {
         if let Some(value) = find_flag_value(line, "hostname", " ") {
             hostname = Some(value);
         }
+        if let Some(value) = find_flag_value(line, "shutdown-command", " ") {
+            shutdown_command = Some(value);
+        }
     }
 
-    match (secret, port, hostname) {
-        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
+    match (secret, port, hostname, shutdown_command) {
+        (Some(s), Some(p), Some(h), Some(cmd)) => Ok(ServiceConfig {
             secret: s,
             port: p,
             broadcast_port: broadcast_port
                 .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
+            shutdown_command: cmd,
         }),
         _ => {
             Err("Failed to parse secret, port, and hostname from systemd service file".to_string())
@@ -177,6 +245,7 @@ fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
     let mut port = None;
     let mut broadcast_port = None;
     let mut hostname = None;
+    let mut shutdown_command = None;
 
     for line in content.lines() {
         if line.starts_with("export SHUTHOST_SHARED_SECRET=") {
@@ -197,15 +266,19 @@ fn parse_openrc_content(content: &str) -> Result<ServiceConfig, String> {
         if let Some(value) = find_flag_value(line, "hostname", " ") {
             hostname = Some(value);
         }
+        if let Some(value) = find_flag_value(line, "shutdown-command", " ") {
+            shutdown_command = Some(value);
+        }
     }
 
-    match (secret, port, hostname) {
-        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
+    match (secret, port, hostname, shutdown_command) {
+        (Some(s), Some(p), Some(h), Some(cmd)) => Ok(ServiceConfig {
             secret: s,
             port: p,
             broadcast_port: broadcast_port
                 .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
+            shutdown_command: cmd,
         }),
         _ => Err("Failed to parse secret, port, and hostname from openrc service file".to_string()),
     }
@@ -247,6 +320,12 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
             .and_then(|s| s.strip_suffix("\""))?;
         s.parse().ok()
     });
+    let Some(shutdown_command) = content.lines().find_map(|line| {
+        let s = line.strip_prefix("export SHUTDOWN_COMMAND=\"")?;
+        s.strip_suffix("\"")
+    }) else {
+        return Err("SHUTDOWN_COMMAND not found in self-extracting script".to_string());
+    };
 
     Ok(ServiceConfig {
         secret: secret.to_string(),
@@ -254,6 +333,7 @@ fn parse_self_extracting_shell_content(content: &str) -> Result<ServiceConfig, S
         broadcast_port: broadcast_port
             .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
         hostname: hostname.to_string(),
+        shutdown_command: shutdown_command.to_string(),
     })
 }
 
@@ -291,6 +371,12 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
         let s = line.strip_prefix("$env:BROADCAST_PORT = \"")?;
         s.strip_suffix("\"")
     });
+    let Some(shutdown_command) = content.lines().find_map(|line| {
+        let s = line.strip_prefix("$env:SHUTDOWN_COMMAND = \"")?;
+        s.strip_suffix("\"")
+    }) else {
+        return Err("SHUTDOWN_COMMAND not found in self-extracting PowerShell script".to_string());
+    };
 
     Ok(ServiceConfig {
         secret: secret.to_string(),
@@ -299,6 +385,7 @@ fn parse_self_extracting_pwsh_content(content: &str) -> Result<ServiceConfig, St
             .and_then(|s| s.parse().ok())
             .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
         hostname: hostname.to_string(),
+        shutdown_command: shutdown_command.to_string(),
     })
 }
 
@@ -314,6 +401,7 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
     let mut port = None;
     let mut broadcast_port = None;
     let mut hostname = None;
+    let mut shutdown_command = None;
     let mut in_secret = false;
 
     for line in content.lines() {
@@ -331,6 +419,9 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
         if let Some(value) = find_flag_value(line, "broadcast-port", "</string>") {
             broadcast_port = value.parse().ok();
         }
+        if let Some(value) = find_flag_value(line, "shutdown-command", "</string>") {
+            shutdown_command = Some(value);
+        }
         if line.contains("--hostname")
             && let Some(value) = find_flag_value(line, "hostname", "</string>")
         {
@@ -338,13 +429,14 @@ fn parse_launchd_content(content: &str) -> Result<ServiceConfig, String> {
         }
     }
 
-    match (secret, port, hostname) {
-        (Some(s), Some(p), Some(h)) => Ok(ServiceConfig {
+    match (secret, port, hostname, shutdown_command) {
+        (Some(s), Some(p), Some(h), Some(cmd)) => Ok(ServiceConfig {
             secret: s,
             port: p,
             broadcast_port: broadcast_port
                 .unwrap_or(shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT),
             hostname: h,
+            shutdown_command: cmd,
         }),
         _ => Err("Failed to parse secret, port, and hostname from launchd plist file".to_string()),
     }
@@ -367,12 +459,13 @@ mod tests {
         let secret = "test_secret";
         let port = 1234;
         let hostname = "test_hostname";
+        let shutdown_command = "bash -lc 'echo shutdown && logger agent'";
         let content = install::bind_template_replacements(
             template,
             "test desc",
             port,
             /* broadcast_port */ port,
-            "test cmd",
+            shutdown_command,
             secret,
             hostname,
         );
@@ -382,6 +475,7 @@ mod tests {
         assert_eq!(config.port, port);
         assert_eq!(config.broadcast_port, port);
         assert_eq!(config.hostname, hostname);
+        assert_eq!(config.shutdown_command, shutdown_command);
         // ensure the generated template no longer contains the placeholder and that
         // the broadcast port value made it through as well.
         assert!(!content.contains("{ broadcast_port }"));
