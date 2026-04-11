@@ -88,6 +88,15 @@ pub struct Args {
     pub hostname: String,
 }
 
+/// Arguments for the `update` subcommand of `host_agent`.
+#[derive(Debug, Parser)]
+pub struct UpdateArgs {
+    /// Path to a self-extracting script. When provided, the update command skips
+    /// init-system autodetection and updates this script directly.
+    #[arg(long, short = 'p')]
+    pub script_path: Option<String>,
+}
+
 /// Supported init systems for installing the `host_agent`.
 #[derive(Debug, Clone, Copy, clap::ValueEnum, PartialEq, Eq)]
 pub enum InitSystem {
@@ -185,9 +194,20 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
 /// The agent should report the
 /// chosen init system / self-extracting install type, and ideally the install location
 /// for self-extracting agents, so the correct update/install command can be selected.
-pub(crate) fn update_host_agent() -> Result<(), String> {
+pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     let name = BINARY_NAME;
-    let init_system = registration::detect_installation_init_system()?;
+
+    let init_system = if let Some(script_path) = args.script_path.as_deref() {
+        if script_path.ends_with(".ps1") || script_path.ends_with(".PS1") {
+            InitSystem::SelfExtractingPwsh
+        } else {
+            InitSystem::SelfExtractingShell
+        }
+    } else {
+        registration::detect_installation_init_system()?
+    };
+
+    let script_path = args.script_path.as_deref();
 
     match init_system {
         #[cfg(target_os = "linux")]
@@ -195,8 +215,8 @@ pub(crate) fn update_host_agent() -> Result<(), String> {
         #[cfg(target_os = "linux")]
         InitSystem::OpenRC => update_openrc(name)?,
         #[cfg(unix)]
-        InitSystem::SelfExtractingShell => update_self_extracting_shell(name)?,
-        InitSystem::SelfExtractingPwsh => update_self_extracting_pwsh(name)?,
+        InitSystem::SelfExtractingShell => update_self_extracting_shell(name, script_path)?,
+        InitSystem::SelfExtractingPwsh => update_self_extracting_pwsh(name, script_path)?,
         #[cfg(target_os = "macos")]
         InitSystem::Launchd => update_launchd(name)?,
     }
@@ -347,10 +367,14 @@ fn update_launchd(name: &str) -> Result<(), String> {
 }
 
 #[cfg(unix)]
-fn update_self_extracting_shell(name: &str) -> Result<(), String> {
+fn update_self_extracting_shell(name: &str, script_path: Option<&str>) -> Result<(), String> {
+    let path = script_path
+        .map(ToString::to_string)
+        .unwrap_or_else(|| format!("./{name}_self_extracting"));
+
     let config = registration::parse_config(&registration::Args {
         init_system: InitSystem::SelfExtractingShell,
-        script_path: None,
+        script_path: Some(path.clone()),
     })?;
 
     let bind_known_vals = |arg: &str| {
@@ -365,13 +389,12 @@ fn update_self_extracting_shell(name: &str) -> Result<(), String> {
         )
     };
 
-    let target_script_path = format!("./{name}_self_extracting");
     self_extracting::generate_self_extracting_script_from_template(
         &bind_known_vals(SELF_EXTRACTING_SHELL_TEMPLATE),
-        &target_script_path,
+        &path,
     )?;
 
-    if let Err(e) = Command::new(&target_script_path).output() {
+    if let Err(e) = Command::new(&path).output() {
         eprintln!("Failed to start updated self-extracting script: {e}");
     } else {
         println!("Started updated self-extracting agent script in background.");
@@ -380,10 +403,14 @@ fn update_self_extracting_shell(name: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn update_self_extracting_pwsh(name: &str) -> Result<(), String> {
+fn update_self_extracting_pwsh(name: &str, script_path: Option<&str>) -> Result<(), String> {
+    let path = script_path
+        .map(ToString::to_string)
+        .unwrap_or_else(|| format!("./{name}_self_extracting.ps1"));
+
     let config = registration::parse_config(&registration::Args {
         init_system: InitSystem::SelfExtractingPwsh,
-        script_path: None,
+        script_path: Some(path.clone()),
     })?;
 
     let bind_known_vals = |arg: &str| {
@@ -398,10 +425,9 @@ fn update_self_extracting_pwsh(name: &str) -> Result<(), String> {
         )
     };
 
-    let target_script_path = format!("./{name}_self_extracting.ps1");
     self_extracting::generate_self_extracting_script_from_template(
         &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),
-        &target_script_path,
+        &path,
     )?;
 
     let powershell_cmd = if cfg!(target_os = "windows") {
@@ -414,7 +440,7 @@ fn update_self_extracting_pwsh(name: &str) -> Result<(), String> {
         .arg("-ExecutionPolicy")
         .arg("Bypass")
         .arg("-File")
-        .arg(&target_script_path)
+        .arg(&path)
         .spawn()
     {
         eprintln!("Failed to start updated self-extracting PowerShell script: {e}");

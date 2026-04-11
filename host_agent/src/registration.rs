@@ -107,17 +107,26 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
     })
 }
 
-/// Detects an existing installation by looking for the installed service or
-/// self-extracting script in the current working directory.
+/// Detects an installed `host_agent` by checking local self-extracting scripts first,
+/// then falling back to init-system service files.
 ///
-/// TODO: expose install metadata or report the install path so self-extracting
-/// agents do not depend on the current working directory.
-/// Detects an existing installation by looking for installed service files or
-/// self-extracting scripts in the current working directory.
+/// This allows `update` to operate on a locally present self-extracting script
+/// without needing sudo access to service files.
 ///
-/// TODO: this should eventually return richer install metadata, including the
-/// script path for self-extracting installs rather than relying on CWD.
+/// TODO: return richer install metadata for self-extracting installs, including
+/// the actual script path, instead of relying solely on current working directory
+/// heuristics.
 pub(crate) fn detect_installation_init_system() -> Result<InitSystem, String> {
+    let shell_path = format!("./{BINARY_NAME}_self_extracting");
+    if fs::metadata(&shell_path).is_ok() {
+        return Ok(InitSystem::SelfExtractingShell);
+    }
+
+    let pwsh_path = format!("./{BINARY_NAME}_self_extracting.ps1");
+    if fs::metadata(&pwsh_path).is_ok() {
+        return Ok(InitSystem::SelfExtractingPwsh);
+    }
+
     #[cfg(target_os = "linux")]
     {
         let systemd_path = shuthost_common::systemd::get_service_path(BINARY_NAME);
@@ -137,19 +146,6 @@ pub(crate) fn detect_installation_init_system() -> Result<InitSystem, String> {
         if fs::metadata(&plist_path).is_ok() {
             return Ok(InitSystem::Launchd);
         }
-    }
-
-    #[cfg(unix)]
-    {
-        let shell_path = format!("./{BINARY_NAME}_self_extracting");
-        if fs::metadata(&shell_path).is_ok() {
-            return Ok(InitSystem::SelfExtractingShell);
-        }
-    }
-
-    let pwsh_path = format!("./{BINARY_NAME}_self_extracting.ps1");
-    if fs::metadata(&pwsh_path).is_ok() {
-        return Ok(InitSystem::SelfExtractingPwsh);
     }
 
     Err("No existing host_agent installation detected for update.".to_string())
