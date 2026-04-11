@@ -22,10 +22,11 @@ use tracing::{debug, error, info, warn};
 
 use shuthost_common::{
     BroadcastMessage, HmacValidationResult, create_signed_message, parse_hmac_message,
+    protocol::{InitSystem, OsType},
     validate_hmac_message,
 };
 
-use super::state::{ConfigTx, HostState, HostStatusTx};
+use super::state::{ConfigTx, HostInstallInfo, HostState, HostStatusTx};
 use crate::{
     app::{
         AppState, LeaseMapRaw, LeaseRx, WsTx, config_watcher::watch_config_file, db,
@@ -43,7 +44,7 @@ use crate::app::host_control::HostWithName;
 pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
 
 /// Poll a single host for its online status.
-async fn poll_host_status(host: &HostWithName) -> (HostState, Option<String>) {
+async fn poll_host_status(host: &HostWithName) -> (HostState, Option<HostInstallInfo>) {
     let addr = format!("{}:{}", host.host.ip, host.host.port);
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
@@ -65,7 +66,7 @@ async fn poll_host_status(host: &HostWithName) -> (HostState, Option<String>) {
                     if resp.contains("ERROR") {
                         (HostState::Offline, None)
                     } else {
-                        (HostState::Online, parse_agent_version(&resp))
+                        (HostState::Online, parse_install_info(&resp))
                     }
                 }
                 _ => (HostState::Offline, None),
@@ -75,48 +76,73 @@ async fn poll_host_status(host: &HostWithName) -> (HostState, Option<String>) {
     }
 }
 
-fn parse_agent_version(resp: &str) -> Option<String> {
+fn parse_install_info(resp: &str) -> Option<HostInstallInfo> {
     const PREFIX: &str = "OK: status";
     let resp = resp.trim();
-    if resp == PREFIX {
-        return None;
-    }
     let suffix = resp.strip_prefix(PREFIX)?.trim_start();
     let suffix = suffix.strip_prefix(';')?.trim();
     if suffix.is_empty() {
         return None;
     }
+    let mut agent_version = None;
+    let mut init_system = None;
+    let mut os = None;
     for section in suffix.split(';') {
-        if let Some(value) = section.strip_prefix("agent_version=") {
-            return if value.is_empty() {
-                None
-            } else {
-                Some(value.to_string())
-            };
+        let section = section.trim();
+        if let Some(v) = section.strip_prefix("agent_version=") {
+            if !v.is_empty() {
+                agent_version = Some(v.to_string());
+            }
+        } else if let Some(v) = section.strip_prefix("init_system=") {
+            init_system = v.parse::<InitSystem>().ok();
+        } else if let Some(v) = section.strip_prefix("os=") {
+            os = v.parse::<OsType>().ok();
         }
     }
-    None
+    Some(HostInstallInfo {
+        agent_version,
+        init_system,
+        os,
+    })
 }
 
-async fn maybe_update_host_agent_version(
+async fn maybe_update_host_install_info(
     state: &AppState,
     hostname: &str,
-    agent_version: Option<String>,
+    agent_version: String,
+    init_system: InitSystem,
+    os: OsType,
 ) {
-    let mut versions = state.host_agent_versions.write().await;
-    let current = versions.get(hostname).cloned().unwrap_or(None);
-    if current == agent_version {
+    let new_info = HostInstallInfo {
+        agent_version: Some(agent_version.clone()),
+        init_system: Some(init_system),
+        os: Some(os),
+    };
+    let mut info_map = state.host_install_info.write().await;
+    let current = info_map.get(hostname);
+    let unchanged = current.is_some_and(|i| {
+        i.agent_version.as_deref() == Some(&agent_version)
+            && i.init_system == Some(init_system)
+            && i.os == Some(os)
+    });
+    if unchanged {
         return;
     }
 
-    versions.insert(hostname.to_string(), agent_version.clone());
-    drop(versions);
+    info_map.insert(hostname.to_string(), new_info);
+    drop(info_map);
 
-    if let (Some(pool), Some(version)) = (&state.db_pool, agent_version) {
-        if let Err(e) =
-            db::upsert_host_agent_version(pool.clone(), hostname.to_string(), version).await
+    if let Some(pool) = &state.db_pool {
+        if let Err(e) = db::upsert_host_install_info(
+            pool.clone(),
+            hostname.to_string(),
+            agent_version,
+            init_system,
+            os,
+        )
+        .await
         {
-            error!(host = %hostname, "Failed to persist host agent version: {e:#}");
+            error!(host = %hostname, "Failed to persist host install info: {e:#}");
         }
     }
 }
@@ -386,9 +412,14 @@ async fn poll_host_statuses(state: AppState) {
         let mut new_status = (*old_status).clone();
         let mut any_changed = false;
 
-        for (host_name, (new_state, agent_version)) in results {
-            if let Some(version) = agent_version {
-                maybe_update_host_agent_version(&state, &host_name, Some(version)).await;
+        for (host_name, (new_state, install_info)) in results {
+            if let Some(info) = install_info {
+                if let (Some(version), Some(init_system), Some(os)) =
+                    (info.agent_version, info.init_system, info.os)
+                {
+                    maybe_update_host_install_info(&state, &host_name, version, init_system, os)
+                        .await;
+                }
             }
             if old_status.get(&host_name) != Some(&new_state) {
                 new_status.insert(host_name.clone(), new_state);
@@ -625,7 +656,14 @@ async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppSt
     info!("Received valid startup broadcast from host '{hostname}' at {peer_addr}");
 
     mark_host_online(state, hostname);
-    maybe_update_host_agent_version(state, hostname, Some(startup.agent_version.clone())).await;
+    maybe_update_host_install_info(
+        state,
+        hostname,
+        startup.agent_version.clone(),
+        startup.init_system,
+        startup.os,
+    )
+    .await;
     persist_host_override_if_needed(state, hostname, &host_cfg, &startup).await;
 }
 
@@ -823,17 +861,28 @@ mod tests {
     }
 
     #[test]
-    fn parse_agent_version_accepts_extended_status() {
-        assert_eq!(parse_agent_version("OK: status"), None);
+    fn parse_install_info_accepts_extended_status() {
+        assert!(parse_install_info("OK: status").is_none());
         assert_eq!(
-            parse_agent_version("OK: status;agent_version=v1.2.3"),
-            Some("v1.2.3".to_string())
+            parse_install_info("OK: status;agent_version=v1.2.3").map(|i| i.agent_version),
+            Some(Some("v1.2.3".to_string()))
         );
         assert_eq!(
-            parse_agent_version("OK: status;agent_version=v1.2.3;foo=bar"),
-            Some("v1.2.3".to_string())
+            parse_install_info("OK: status;agent_version=v1.2.3; init_system=systemd; os=linux")
+                .map(|i| (i.agent_version, i.init_system, i.os)),
+            Some((
+                Some("v1.2.3".to_string()),
+                Some(InitSystem::Systemd),
+                Some(OsType::Linux)
+            ))
         );
-        assert_eq!(parse_agent_version("OK: status;agent_version="), None);
-        assert_eq!(parse_agent_version("OK: status;other=1"), None);
+        assert_eq!(
+            parse_install_info("OK: status;agent_version=").map(|i| i.agent_version),
+            Some(None)
+        );
+        assert_eq!(
+            parse_install_info("OK: status;other=1").map(|i| i.agent_version),
+            Some(None)
+        );
     }
 }

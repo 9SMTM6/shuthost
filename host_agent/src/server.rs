@@ -11,7 +11,7 @@ use miniserde::json;
 use secrecy::SecretString;
 use shuthost_common::{
     CoordinatorMessage, UnwrapToStringExt as _, create_signed_message,
-    protocol::{BroadcastMessage, StartupBroadcast},
+    protocol::{BroadcastMessage, OsType, StartupBroadcast},
 };
 
 use crate::{
@@ -104,6 +104,18 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
     }
 }
 
+fn get_os() -> OsType {
+    if cfg!(target_os = "linux") {
+        OsType::Linux
+    } else if cfg!(target_os = "macos") {
+        OsType::MacOS
+    } else if cfg!(target_os = "windows") {
+        OsType::Windows
+    } else {
+        unreachable!("Unsupported OS");
+    }
+}
+
 fn broadcast_startup(config: &ServiceOptions) {
     let interface = get_default_interface().unwrap_or_else(|| "unknown".to_string());
     let ip_address = get_ip(&interface).unwrap_or_else(|| "unknown".to_string());
@@ -119,6 +131,8 @@ fn broadcast_startup(config: &ServiceOptions) {
         mac_address,
         ip_address,
         timestamp,
+        init_system: config.init_system.into(),
+        os: get_os(),
     });
     // today we only send the raw startup structure; the enum exists for future
     // expansion but is not serialized directly because the JSON format hasn't
@@ -164,7 +178,7 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Option<Coord
                     let mut fields = vec![
                         format!("agent_version={}", VERSION),
                         format!("init_system={}", config.init_system),
-                        format!("os={}", env::consts::OS),
+                        format!("os={}", get_os()),
                     ];
                     if let Some(script_path) = &config.script_path {
                         fields.push(format!("script_path={}", script_path));

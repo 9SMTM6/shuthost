@@ -130,6 +130,26 @@ impl fmt::Display for InitSystem {
     }
 }
 
+impl From<InitSystem> for shuthost_common::InitSystem {
+    fn from(v: InitSystem) -> shuthost_common::InitSystem {
+        use InitSystem as tIS;
+        use shuthost_common::InitSystem as cIS;
+        match v {
+            tIS::Systemd => cIS::Systemd,
+            tIS::OpenRC => cIS::OpenRC,
+            tIS::Launchd => cIS::Launchd,
+            tIS::SelfExtractingShell => cIS::SelfExtractingShell,
+            tIS::SelfExtractingPwsh => cIS::SelfExtractingPwsh,
+        }
+    }
+}
+
+impl From<shuthost_common::InitSystem> for InitSystem {
+    fn from(v: shuthost_common::InitSystem) -> InitSystem {
+        v.into()
+    }
+}
+
 /// Performs `host_agent` installation based on provided arguments.
 ///
 /// Selects and invokes the appropriate init system installer or generates a script.
