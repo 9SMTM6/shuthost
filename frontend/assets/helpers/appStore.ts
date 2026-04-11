@@ -25,6 +25,11 @@ export type DbData = {
     hostStats: Record<string, HostStats>;
 };
 
+export type DbDataState =
+    | { status: 'disabled' }
+    | { status: 'available'; payload: DbData }
+    | { status: 'error'; payload: { message: string } };
+
 /** The configuration values (mapped to what the frontend can see) that the coordinator accepts runtime changes of */
 type DynamicConfig = {
     hosts: string[];
@@ -34,7 +39,7 @@ type DynamicConfig = {
 export type AppState = {
     statusMap: StatusMap;
     leaseMap: Record<string, LeaseSource[]>;
-    dbData: DbData | null;
+    dbData: DbDataState;
 } & DynamicConfig;
 
 // TODO:
@@ -57,24 +62,26 @@ const [state, setState] = createStore<AppState>({
     statusMap: {},
     leaseMap: {},
     clients: [],
-    dbData: null,
+    dbData: { status: 'disabled' },
 });
 
 export { state };
 
-export const hasDb = (s: AppState): s is AppState & { dbData: DbData } =>
-    s.dbData !== null;
+export const hasDb = (s: AppState): s is AppState & { dbData: { status: 'available'; payload: DbData } } =>
+    s.dbData.status === 'available';
 
 export const applyMessage = (message: WsMessage) => {
     switch (message.type) {
-        case 'Initial':
-            if ((message.payload.dbData !== null) !== serverData.dbEnabled) {
+        case 'Initial': {
+            const isDisabled = message.payload.dbData.status === 'disabled';
+            if (!serverData.dbEnabled && !isDisabled) {
                 throw new Error(
-                    `serverData.dbEnabled (${serverData.dbEnabled}) disagrees with received dbData (${message.payload.dbData === null ? 'null' : 'present'})`,
+                    `serverData.dbEnabled (${serverData.dbEnabled}) disagrees with received dbData status (${message.payload.dbData.status})`,
                 );
             }
             setState(message.payload);
             break;
+        }
         case 'HostStatus':
             setState('statusMap', message.payload);
             break;

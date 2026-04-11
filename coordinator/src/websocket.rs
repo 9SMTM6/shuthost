@@ -42,10 +42,14 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct DbData {
-    pub client_stats: HashMap<String, ClientStats>,
-    pub host_stats: HashMap<String, HostStats>,
+#[serde(rename_all = "camelCase", tag = "status", content = "payload")]
+pub enum DbDataState {
+    Disabled,
+    #[serde(rename_all = "camelCase")]
+    Available {
+        client_stats: HashMap<String, ClientStats>,
+        host_stats: HashMap<String, HostStats>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,7 +70,7 @@ pub enum WsMessage {
         clients: Vec<String>,
         status_map: HostStatus,
         lease_map: LeaseMapRaw,
-        db_data: Option<DbData>,
+        db_data: DbDataState,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
@@ -188,31 +192,32 @@ async fn send_startup_msg(
     let clients = config.clients.keys().cloned().collect();
     let leases = current_leases.borrow().as_ref().clone();
     let db_data = if let Some(pool) = db_pool {
-        let client_stats = match db::get_all_client_stats(pool).await {
-            Ok(stats) => stats,
-            Err(e) => {
-                error!(%e, "Failed to get client stats");
-                return Err(axum::Error::new(e));
+        let client_stats = db::get_all_client_stats(pool).await;
+        let host_stats = db::get_all_host_stats(pool).await;
+
+        match (client_stats, host_stats) {
+            (Ok(client_stats), Ok(mut host_stats)) => {
+                for (name, &state) in current_state.iter() {
+                    if state == HostState::Online {
+                        host_stats.entry(name.clone()).or_default().is_online = true;
+                    }
+                }
+                DbDataState::Available {
+                    client_stats,
+                    host_stats,
+                }
             }
-        };
-        let mut host_stats = match db::get_all_host_stats(pool).await {
-            Ok(map) => map,
-            Err(e) => {
-                error!(%e, "Failed to get host stats");
-                return Err(axum::Error::new(e));
-            }
-        };
-        for (name, &state) in current_state.iter() {
-            if state == HostState::Online {
-                host_stats.entry(name.clone()).or_default().is_online = true;
+            (client_err, host_err) => {
+                let err = client_err
+                    .err()
+                    .or_else(|| host_err.err())
+                    .expect("one of the DB futures must have failed");
+                error!(%err, "Failed to load db startup stats");
+                DbDataState::Disabled
             }
         }
-        Some(DbData {
-            client_stats,
-            host_stats,
-        })
     } else {
-        None
+        DbDataState::Disabled
     };
     let initial_msg = WsMessage::Initial {
         hosts,
