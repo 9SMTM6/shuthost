@@ -43,14 +43,14 @@ use crate::app::host_control::HostWithName;
 pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
 
 /// Poll a single host for its online status.
-async fn poll_host_status(host: &HostWithName) -> HostState {
+async fn poll_host_status(host: &HostWithName) -> (HostState, Option<String>) {
     let addr = format!("{}:{}", host.host.ip, host.host.port);
     match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
         Ok(Ok(mut stream)) => {
             let signed_message = create_signed_message("status", host.host.shared_secret.as_ref());
             if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
                 debug!("Failed to write to {}: {}", host.name, e);
-                return HostState::Offline;
+                return (HostState::Offline, None);
             }
             let mut buf = vec![0u8; 256];
             match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
@@ -63,15 +63,61 @@ async fn poll_host_status(host: &HostWithName) -> HostState {
                     let resp = String::from_utf8_lossy(data);
                     // Accept any non-error response as online
                     if resp.contains("ERROR") {
-                        HostState::Offline
+                        (HostState::Offline, None)
                     } else {
-                        HostState::Online
+                        (HostState::Online, parse_agent_version(&resp))
                     }
                 }
-                _ => HostState::Offline,
+                _ => (HostState::Offline, None),
             }
         }
-        _ => HostState::Offline,
+        _ => (HostState::Offline, None),
+    }
+}
+
+fn parse_agent_version(resp: &str) -> Option<String> {
+    const PREFIX: &str = "OK: status";
+    let resp = resp.trim();
+    if resp == PREFIX {
+        return None;
+    }
+    let suffix = resp.strip_prefix(PREFIX)?.trim_start();
+    let suffix = suffix.strip_prefix(';')?.trim();
+    if suffix.is_empty() {
+        return None;
+    }
+    for section in suffix.split(';') {
+        if let Some(value) = section.strip_prefix("agent_version=") {
+            return if value.is_empty() {
+                None
+            } else {
+                Some(value.to_string())
+            };
+        }
+    }
+    None
+}
+
+async fn maybe_update_host_agent_version(
+    state: &AppState,
+    hostname: &str,
+    agent_version: Option<String>,
+) {
+    let mut versions = state.host_agent_versions.write().await;
+    let current = versions.get(hostname).cloned().unwrap_or(None);
+    if current == agent_version {
+        return;
+    }
+
+    versions.insert(hostname.to_string(), agent_version.clone());
+    drop(versions);
+
+    if let (Some(pool), Some(version)) = (&state.db_pool, agent_version) {
+        if let Err(e) =
+            db::upsert_host_agent_version(pool.clone(), hostname.to_string(), version).await
+        {
+            error!(host = %hostname, "Failed to persist host agent version: {e:#}");
+        }
     }
 }
 
@@ -104,7 +150,7 @@ pub(super) async fn poll_until_host_state(
     loop {
         let poll_fut = poll_host_status(host);
         let tick_fut = ticker.tick();
-        let (current_state, _) = tokio::join!(poll_fut, tick_fut);
+        let ((current_state, _), _) = tokio::join!(poll_fut, tick_fut);
         // Update global state
         let mut status_map = hoststatus_tx.borrow().as_ref().clone();
         if status_map.get(host.name.as_str()) != Some(&current_state) {
@@ -327,7 +373,7 @@ async fn poll_host_statuses(state: AppState) {
                 let polled = poll_host_status(&host_with_name).await;
                 debug!(
                     "Polled {} at {}:{} - state: {:?}",
-                    host_with_name.name, host_with_name.host.ip, host_with_name.host.port, polled
+                    host_with_name.name, host_with_name.host.ip, host_with_name.host.port, polled.0
                 );
                 (name, polled)
             }
@@ -340,7 +386,10 @@ async fn poll_host_statuses(state: AppState) {
         let mut new_status = (*old_status).clone();
         let mut any_changed = false;
 
-        for (host_name, new_state) in results {
+        for (host_name, (new_state, agent_version)) in results {
+            if let Some(version) = agent_version {
+                maybe_update_host_agent_version(&state, &host_name, Some(version)).await;
+            }
             if old_status.get(&host_name) != Some(&new_state) {
                 new_status.insert(host_name.clone(), new_state);
                 state_timestamps.insert(host_name, poll_start);
@@ -576,6 +625,7 @@ async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppSt
     info!("Received valid startup broadcast from host '{hostname}' at {peer_addr}");
 
     mark_host_online(state, hostname);
+    maybe_update_host_agent_version(state, hostname, Some(startup.agent_version.clone())).await;
     persist_host_override_if_needed(state, hostname, &host_cfg, &startup).await;
 }
 
@@ -770,5 +820,20 @@ mod tests {
             current,
             ENFORCE_STABILIZATION_THRESHOLD
         ));
+    }
+
+    #[test]
+    fn parse_agent_version_accepts_extended_status() {
+        assert_eq!(parse_agent_version("OK: status"), None);
+        assert_eq!(
+            parse_agent_version("OK: status;agent_version=v1.2.3"),
+            Some("v1.2.3".to_string())
+        );
+        assert_eq!(
+            parse_agent_version("OK: status;agent_version=v1.2.3;foo=bar"),
+            Some("v1.2.3".to_string())
+        );
+        assert_eq!(parse_agent_version("OK: status;agent_version="), None);
+        assert_eq!(parse_agent_version("OK: status;other=1"), None);
     }
 }

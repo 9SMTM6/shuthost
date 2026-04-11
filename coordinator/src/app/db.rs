@@ -621,6 +621,22 @@ pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> e
     Ok(())
 }
 
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn upsert_host_agent_version(
+    pool: DbPool,
+    hostname: String,
+    agent_version: String,
+) -> eyre::Result<()> {
+    sqlx::query(
+        "INSERT INTO host_stats (hostname, last_online, agent_version) VALUES (?, datetime('now'), ?)\n         ON CONFLICT(hostname) DO UPDATE SET agent_version = excluded.agent_version",
+    )
+    .bind(hostname)
+    .bind(agent_version)
+    .execute(&pool)
+    .await?;
+    Ok(())
+}
+
 /// Loads all host stats from the database.
 ///
 /// # Errors

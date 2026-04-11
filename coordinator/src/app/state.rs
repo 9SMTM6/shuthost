@@ -59,6 +59,9 @@ pub(crate) struct AppState {
     /// Populated from the DB on startup and updated live when agent startup broadcasts arrive.
     pub host_overrides: Arc<RwLock<HashMap<String, db::HostOverride>>>,
 
+    /// Cached known agent versions from the DB and runtime events.
+    pub host_agent_versions: Arc<RwLock<HashMap<String, Option<String>>>>,
+
     /// Authentication runtime (mode and secrets)
     pub auth: Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
@@ -215,6 +218,18 @@ pub(super) async fn initialize_state(
     };
     let host_overrides = Arc::new(RwLock::new(host_overrides));
 
+    let host_agent_versions = if let Some(ref pool) = db_pool {
+        let host_stats = db::get_all_host_stats(pool).await?;
+        Arc::new(RwLock::new(
+            host_stats
+                .into_iter()
+                .map(|(hostname, stats)| (hostname, stats.agent_version))
+                .collect(),
+        ))
+    } else {
+        Arc::new(RwLock::new(HashMap::new()))
+    };
+
     let auth_runtime =
         Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
 
@@ -252,6 +267,7 @@ pub(super) async fn initialize_state(
         config_path: config_path.to_path_buf(),
         leases,
         host_overrides,
+        host_agent_versions,
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
         db_pool,
