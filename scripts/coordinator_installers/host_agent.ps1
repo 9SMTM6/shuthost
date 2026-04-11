@@ -10,6 +10,8 @@ param(
     [switch]$Help,
     [Parameter(Mandatory=$false)]
     [switch]$InstallHelp,
+    [Parameter(Mandatory=$false)]
+    [switch]$Update,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
@@ -24,7 +26,8 @@ function Print-Help {
     Write-Host "  remote_url        URL of the coordinator (required)"
     Write-Host "  -Port <port>      Port for WoL testing (default: 9090), also passed to install command"
     Write-Host "  -Help             Show this help message"
-    Write-Host "  -InstallHelp      Pass --help to the host agent install subcommand and exit"
+    Write-Host "  -InstallHelp      Pass --help to the host agent install/update subcommand and exit"
+    Write-Host "  -Update           Update an already installed agent in place instead of installing"
     Write-Host "  <install_args>    Additional arguments forwarded to the host agent install command."
     Write-Host "                   Example: --init-system=self-extracting-pwsh"
     Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
@@ -166,6 +169,11 @@ try {
         $binaryArgs += $Port.ToString()
     }
 
+    if ($Update -and $InstallerArgs.Count -gt 0) {
+        Write-Error "Update mode does not accept additional install arguments."
+        exit 1
+    }
+
     foreach ($arg in $InstallerArgs) {
         # a guard against accidentally passing --port, as in the shell script, doesnt make sense here
         # as the pwsh parser will handle that as script argument even if intermixed with arguments for the installer.
@@ -190,18 +198,25 @@ try {
     }
 
     if ($InstallHelp) {
-        & "./$script:FILENAME" install --help
+        if ($Update) {
+            & "./$script:FILENAME" update --help
+        } else {
+            & "./$script:FILENAME" install --help
+        }
     } else {
         Test-WolPacketReachability
 
-        # Run the installer
-        $installCmd = "./$script:FILENAME install"
-        if ($binaryArgs) {
-            $installCmd += " " + ($binaryArgs -join " ")
+        if ($Update) {
+            Run-As-Elevated "./$script:FILENAME update"
+        } else {
+            # Run the installer
+            $installCmd = "./$script:FILENAME install"
+            if ($binaryArgs) {
+                $installCmd += " " + ($binaryArgs -join " ")
+            }
+            Run-As-Elevated $installCmd
+            Write-Host "Installation complete!"
         }
-        Run-As-Elevated $installCmd
-
-        Write-Host "Installation complete!"
     }
 
 } finally {

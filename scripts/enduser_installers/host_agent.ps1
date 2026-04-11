@@ -10,6 +10,8 @@ param(
     [switch]$Help,
     [Parameter(Mandatory=$false)]
     [switch]$InstallHelp,
+    [Parameter(Mandatory=$false)]
+    [switch]$Update,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
@@ -23,7 +25,8 @@ function Print-Help {
     Write-Host "  -Tag <tag>       Specify a release tag to download."
     Write-Host "  -Branch <branch> Specify a branch; tag will be 'nightly_release<branch>'."
     Write-Host "  -Help            Show this help message."
-    Write-Host "  -InstallHelp     Pass --help to the host agent install subcommand and exit."
+    Write-Host "  -InstallHelp     Pass --help to the host agent install/update subcommand and exit."
+    Write-Host "  -Update          Update an already installed agent in place instead of installing."
     Write-Host "  <install_args>    Pass additional arguments to the agent install subcommand."
     Write-Host "                   Example: --init-system=self-extracting-pwsh"
     Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
@@ -191,16 +194,28 @@ try {
 
     # Run the installer
     if ($InstallHelp) {
-        & "./$BINARY_NAME" install --help
-    } else {
-        $installCmd = "./$BINARY_NAME install"
-        if ($InstallerArgs.Length -gt 0) {
-            $quotedArgs = $InstallerArgs | ForEach-Object { "`"$_`"" }
-            $installCmd += " " + ($quotedArgs -join " ")
+        if ($Update) {
+            & "./$BINARY_NAME" update --help
+        } else {
+            & "./$BINARY_NAME" install --help
         }
-        Run-As-Elevated $installCmd
-        Write-Host "Installation complete!"
-        Write-Host
+    } else {
+        if ($Update) {
+            if ($InstallerArgs.Length -gt 0) {
+                Write-Error "Update mode does not accept additional install arguments."
+                exit 1
+            }
+            Run-As-Elevated "./$BINARY_NAME update"
+        } else {
+            $installCmd = "./$BINARY_NAME install"
+            if ($InstallerArgs.Length -gt 0) {
+                $quotedArgs = $InstallerArgs | ForEach-Object { "`"$_`"" }
+                $installCmd += " " + ($quotedArgs -join " ")
+            }
+            Run-As-Elevated $installCmd
+            Write-Host "Installation complete!"
+            Write-Host
+        }
     }
 
     # Clean up the installer script itself
