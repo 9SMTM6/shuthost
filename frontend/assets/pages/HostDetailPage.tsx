@@ -11,7 +11,7 @@ import {
 import { createSignal, For, onMount, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { apiFetch } from '../helpers/apiFetch';
-import { state } from '../helpers/appStore';
+import { HostStats, state } from '../helpers/appStore';
 import { demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
     checkHostUnscheduledSubscription,
@@ -224,35 +224,59 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 // };
 
 const HostInfoSection = (props: {
-    lastOnline: string | null;
-    agentVersion: string | null;
+    hostStats: HostStats | undefined;
     isOnline: boolean;
-}) => (
-    <section
-        class="section-container p-4 mb-4"
-        aria-labelledby="host-info-title"
-    >
-        <h3 id="host-info-title" class="section-title text-base">
-            Information
-        </h3>
-        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-            <dt class="font-medium text-black dark:text-[#cccccc]">
-                Agent version
-            </dt>
-            <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                {props.agentVersion ?? `<= 1.7.1`}
-            </dd>
-            <dt class="font-medium text-black dark:text-[#cccccc]">
-                Last online
-            </dt>
-            <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                {props.isOnline
-                    ? 'Currently online'
-                    : formatRelativeTimestamp(props.lastOnline)}
-            </dd>
-        </dl>
-    </section>
-);
+}) => {
+    const lastOnline = props.hostStats?.lastOnline ?? null;
+    const agentVersion = props.hostStats?.agentVersion ?? null;
+
+    return (
+        <section
+            class="section-container p-4 mb-4"
+            aria-labelledby="host-info-title"
+        >
+            <h3 id="host-info-title" class="section-title text-base">
+                Information
+            </h3>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+                <dt class="font-medium text-black dark:text-[#cccccc]">
+                    Agent version
+                </dt>
+                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                    {agentVersion ?? `<= 1.7.1`}
+                </dd>
+                <dt class="font-medium text-black dark:text-[#cccccc]">
+                    Init system
+                </dt>
+                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                    {props.hostStats?.initSystem ?? 'Unknown'}
+                </dd>
+                <dt class="font-medium text-black dark:text-[#cccccc]">
+                    Operating system
+                </dt>
+                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                    {props.hostStats?.operatingSystem ?? 'Unknown'}
+                </dd>
+                <Show when={props.hostStats?.scriptPath != null}>
+                    <dt class="font-medium text-black dark:text-[#cccccc]">
+                        Install script
+                    </dt>
+                    <dd class="text-[#616161] dark:text-[#9d9d9d] break-all">
+                        {props.hostStats?.scriptPath}
+                    </dd>
+                </Show>
+                <dt class="font-medium text-black dark:text-[#cccccc]">
+                    Last online
+                </dt>
+                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                    {props.isOnline
+                        ? 'Currently online'
+                        : formatRelativeTimestamp(lastOnline)}
+                </dd>
+            </dl>
+        </section>
+    );
+};
 
 const HostLeasesSection = (props: {
     hasWebInterfaceLease: boolean;
@@ -348,14 +372,9 @@ export const HostDetailPage = (() => {
         leases().some((l) => l.type === 'WebInterface');
     const clientLeases = () =>
         leases().filter((l): l is ClientLease => l.type === 'Client');
-    const lastOnline = (): string | null | undefined =>
+    const hostStats = (): HostStats | undefined =>
         state.dbData.status === 'available'
-            ? (state.dbData.payload.hostStats[hostname()]?.lastOnline ?? null)
-            : undefined;
-
-    const agentVersion = (): string | null | undefined =>
-        state.dbData.status === 'available'
-            ? state.dbData.payload.hostStats[hostname()]?.agentVersion ?? null
+            ? state.dbData.payload.hostStats[hostname()]
             : undefined;
 
     const updateLease = async (action: 'take' | 'release') => {
@@ -412,10 +431,9 @@ export const HostDetailPage = (() => {
                     {/* <NotifyDurationButton hostname={hostname()} /> */}
                 </div>
 
-                <Show when={lastOnline() !== undefined && agentVersion() !== undefined}>
+                <Show when={state.dbData.status === 'available'}>
                     <HostInfoSection
-                        lastOnline={lastOnline() as string | null}
-                        agentVersion={agentVersion() as string | null}
+                        hostStats={hostStats()}
                         isOnline={status() === 'online'}
                     />
                 </Show>
