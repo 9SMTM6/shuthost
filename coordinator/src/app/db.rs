@@ -43,11 +43,12 @@ struct ClientStatsRecord {
     last_used: Option<chrono::NaiveDateTime>,
 }
 
-/// Represents a host last-online record from the database.
+/// Represents a host stats record from the database.
 #[derive(sqlx::FromRow)]
-struct HostLastOnlineRecord {
+struct HostStatsRecord {
     hostname: String,
     last_online: chrono::NaiveDateTime,
+    agent_version: Option<String>,
 }
 
 /// Represents a host IP override record from the database.
@@ -83,6 +84,7 @@ pub struct ClientStats {
 #[serde(rename_all = "camelCase")]
 pub struct HostStats {
     pub last_online: DateTime<Utc>,
+    pub agent_version: Option<String>,
     #[serde(default)]
     pub is_online: bool,
 }
@@ -611,7 +613,7 @@ pub(crate) async fn get_subscriptions_for_host_unscheduled(
 #[tracing::instrument(skip(pool), err)]
 pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> eyre::Result<()> {
     sqlx::query!(
-        "INSERT OR REPLACE INTO host_last_online (hostname, last_online) VALUES (?, datetime('now'))",
+        "INSERT INTO host_stats (hostname, last_online) VALUES (?, datetime('now'))\n        ON CONFLICT(hostname) DO UPDATE SET last_online = excluded.last_online",
         hostname,
     )
     .execute(&pool)
@@ -626,9 +628,9 @@ pub(crate) async fn upsert_host_last_online(pool: DbPool, hostname: String) -> e
 /// Returns an error if the database query fails.
 #[tracing::instrument(skip(pool), err)]
 pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<String, HostStats>> {
-    let records: Vec<HostLastOnlineRecord> = sqlx::query_as!(
-        HostLastOnlineRecord,
-        "SELECT hostname, last_online FROM host_last_online"
+    let records = sqlx::query_as!(
+        HostStatsRecord,
+        "SELECT hostname, last_online, agent_version FROM host_stats"
     )
     .fetch_all(pool)
     .await?;
@@ -641,6 +643,7 @@ pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<St
                 HostStats {
                     last_online: DateTime::<Utc>::from_naive_utc_and_offset(rec
                         .last_online, Utc),
+                    agent_version: rec.agent_version,
                     is_online: false,
                 },
             )
