@@ -65,9 +65,19 @@ case "$ACTION" in
 
         set -v
 
-        # Send the message via TCP and print response. Use -N so nc closes cleanly after stdin EOF,
-        # which avoids a non-zero exit status on macOS/BSD when the agent closes the socket.
-        printf "%s" "$FINAL_MESSAGE" | nc -N -w 2 "$HOST_IP" "$PORT"
+        # Send the message via TCP and print response. We treat the request as successful
+        # only when the agent returns the expected response prefix.
+        RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -w 2 "$HOST_IP" "$PORT" 2>/dev/null || true)
+
+        if [ -n "$RESPONSE" ] && {
+            printf "%s" "$RESPONSE" | grep -q '^OK: status' || \
+            printf "%s" "$RESPONSE" | grep -q '^Now executing command:'
+        }; then
+            printf "%s" "$RESPONSE"
+        else
+            printf 'Error: invalid or empty response from agent\n' >&2
+            false
+        fi
         ;;
     wake)
         echo "WOL via this script is in testing and may not work reliable across all platforms. Please report issues."
