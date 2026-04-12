@@ -41,7 +41,9 @@ const HeaderShell = ((
                     {props.leftExtra}
                     <A href={logoHref()} class="flex items-center gap-4">
                         <img
-                            src={`${demoSubpath}/favicon.${buildData.svgHashes['favicon']}.svg`}
+                            src={`${demoSubpath}/favicon.${encodeURIComponent(
+                                buildData.svgHashes['favicon'] ?? '',
+                            )}.svg`}
                             alt="ShutHost Logo"
                             class="h-6 sm:h-8 w-auto"
                         />

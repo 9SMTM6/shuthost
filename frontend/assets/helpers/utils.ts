@@ -17,6 +17,24 @@ export const showJSError = (message: string) => {
     }
 };
 
+export const safeExternalUrl = (href: string): string => {
+    const trimmed = href.trim();
+    if (!/^https?:\/\//i.test(trimmed)) {
+        console.error(`Rejected unsafe external URL: ${href}`);
+        return '#';
+    }
+    try {
+        const url = new URL(trimmed);
+        if (['https:', 'http:'].includes(url.protocol)) {
+            return url.href;
+        }
+    } catch {
+        // fall through
+    }
+    console.error(`Rejected invalid external URL: ${href}`);
+    return '#';
+};
+
 const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
 export const formatRelativeTimestamp = (

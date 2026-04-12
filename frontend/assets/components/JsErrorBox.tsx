@@ -1,4 +1,5 @@
 import { buildData } from '../helpers/buildData';
+import { safeExternalUrl } from '../helpers/utils';
 import type { AnyComponent } from '../helpers/utils';
 
 /** Inline error banner shown by the global error handlers in index.tsx. */
@@ -9,7 +10,7 @@ export const JsErrorBox = (() => (
         <p>
             <a
                 id="js-error-issue-link"
-                href={`${buildData.repository}/issues`}
+                href={safeExternalUrl(`${buildData.repository}/issues`)}
                 target="_blank"
                 rel="external noopener noreferrer"
                 class="underline text-sm"
