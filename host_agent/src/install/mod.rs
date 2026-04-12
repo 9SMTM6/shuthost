@@ -232,11 +232,6 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
 ///
 /// For self-extracting installs, the update command currently detects the generated
 /// script in the local working directory and regenerates that same script.
-///
-/// TODO: install scripts and GUI flows should expose an update path.
-/// The agent should report the
-/// chosen init system / self-extracting install type, and ideally the install location
-/// for self-extracting agents, so the correct update/install command can be selected.
 pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     let name = BINARY_NAME;
 
