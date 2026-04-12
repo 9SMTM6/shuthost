@@ -39,39 +39,51 @@ export const initDemoMode = () => {
             payload: {
                 hosts: ['archive', 'tarbean', 'junpui'],
                 clients: [],
-                statusMap: { tarbean: 'offline', archive: 'offline', junpui: 'offline' },
+                statusMap: {
+                    tarbean: 'offline',
+                    archive: 'offline',
+                    junpui: 'offline',
+                },
                 leaseMap: { archive: [] },
                 dbData: {
                     status: 'available',
                     payload: {
-                            clientStats: {},
-                            hostStats: {
-                                archive: {
-                                    agentVersion: '1.6.0',
-                                    lastOnline: new Date(Date.now() - 3_600_000).toISOString(),
-                                    isOnline: false,
-                                    initSystem: 'systemd',
-                                    operatingSystem: 'linux',
-                                    scriptPath: undefined,
-                                },
-                                tarbean: {
-                                    agentVersion: buildData.version,
-                                    lastOnline: new Date(Date.now() - 7_200_000).toISOString(),
-                                    initSystem: 'self-extracting-shell',
-                                    operatingSystem: 'linux',
-                                    scriptPath: '/home/user/shuthost_host_agent_self_extracting',
-                                    isOnline: false,
-                                },
-                                junpui: {
-                                    agentVersion: '1.6.0',
-                                    initSystem: 'self-extracting-pwsh',
-                                    operatingSystem: 'windows',
-                                    scriptPath: 'C:\\Users\\user\\AppData\\Roaming\\shuthost\\shuthost_host_agent_self_extracting.ps1',
-                                    lastOnline: new Date(Date.now() - 1_800_000).toISOString(),
-                                    isOnline: false,
-                                },
+                        clientStats: {},
+                        hostStats: {
+                            archive: {
+                                agentVersion: '1.6.0',
+                                lastOnline: new Date(
+                                    Date.now() - 3_600_000,
+                                ).toISOString(),
+                                isOnline: false,
+                                initSystem: 'systemd',
+                                operatingSystem: 'linux',
+                                scriptPath: undefined,
+                            },
+                            tarbean: {
+                                agentVersion: buildData.version,
+                                lastOnline: new Date(
+                                    Date.now() - 7_200_000,
+                                ).toISOString(),
+                                initSystem: 'self-extracting-shell',
+                                operatingSystem: 'linux',
+                                scriptPath:
+                                    '/home/user/shuthost_host_agent_self_extracting',
+                                isOnline: false,
+                            },
+                            junpui: {
+                                agentVersion: '1.6.0',
+                                initSystem: 'self-extracting-pwsh',
+                                operatingSystem: 'windows',
+                                scriptPath:
+                                    'C:\\Users\\user\\AppData\\Roaming\\shuthost\\shuthost_host_agent_self_extracting.ps1',
+                                lastOnline: new Date(
+                                    Date.now() - 1_800_000,
+                                ).toISOString(),
+                                isOnline: false,
                             },
                         },
+                    },
                 },
             },
         });

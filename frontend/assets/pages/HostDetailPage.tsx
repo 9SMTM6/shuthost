@@ -12,7 +12,7 @@ import { createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
-import { HostStats, state } from '../helpers/appStore';
+import { type HostStats, state } from '../helpers/appStore';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
@@ -30,11 +30,13 @@ type ClientLease = { type: 'Client'; value: string };
 const HostStatusBadge = (props: {
     status: 'online' | 'offline' | undefined;
 }) => (
-    <Switch fallback={
-        <span class="host-status-badge bg-gray-100 text-gray-500 dark:bg-[#2d2d30] dark:text-[#858585]">
-            unknown
-        </span>
-    }>
+    <Switch
+        fallback={
+            <span class="host-status-badge bg-gray-100 text-gray-500 dark:bg-[#2d2d30] dark:text-[#858585]">
+                unknown
+            </span>
+        }
+    >
         <Match when={props.status === 'online'}>
             <span class="host-status-badge bg-green-100 text-green-800 dark:bg-[rgba(46,193,100,0.15)] dark:text-[rgba(46,193,100,0.9)]">
                 online
@@ -139,7 +141,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 // const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
 // type DurationUnit = keyof typeof unitDefaults;
 
-// TODO: When I implement this, I want to extend it to allow both permanent subscriptions when a host was running for longer than x, as well as a one-time notification of that nature. 
+// TODO: When I implement this, I want to extend it to allow both permanent subscriptions when a host was running for longer than x, as well as a one-time notification of that nature.
 // const NotifyDurationButton = (_props: { hostname: string }) => {
 //     const [notifyDuration, setNotifyDuration] = createSignal(unitDefaults.minutes);
 //     const [notifyDurationUnit, setNotifyDurationUnit] = createSignal<DurationUnit>('minutes');
@@ -226,46 +228,52 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 //     );
 // };
 
+const buildHostUpdateCommands = (
+    hostStats: HostStats | undefined,
+): { sh?: string; ps1?: string } | null => {
+    if (hostStats == null || hostStats.agentVersion === buildData.version) {
+        return null;
+    }
+
+    const baseUrl = window.location.origin + demoSubpath;
+    const initSystem = hostStats.initSystem;
+    const scriptPath = hostStats.scriptPath;
+    const os = hostStats.operatingSystem;
+
+    let shScriptPathArg = '';
+    let ps1ScriptPathArg = '';
+    if (scriptPath != null) {
+        if (initSystem === 'self-extracting-shell') {
+            shScriptPathArg = ` --script-path '${scriptPath}'`;
+        } else if (initSystem === 'self-extracting-pwsh') {
+            ps1ScriptPathArg = ` -ScriptPath '${scriptPath}'`;
+        } else {
+            console.error(
+                `Host has scriptPath '${scriptPath}' but init system '${
+                    initSystem ?? 'unknown'
+                }' is not a self-extracting type`,
+            );
+        }
+    }
+
+    const shCmd = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --update${shScriptPathArg}`;
+    const ps1Cmd = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} -Update${ps1ScriptPathArg}`;
+
+    if (initSystem === 'self-extracting-pwsh' || os === 'windows') {
+        return { ps1: ps1Cmd };
+    } else if (os == null) {
+        return { sh: shCmd, ps1: ps1Cmd };
+    }
+
+    return { sh: shCmd };
+};
+
 const HostInfoSection = (props: {
     hostStats: HostStats | undefined;
     isOnline: boolean;
 }) => {
     const lastOnline = props.hostStats?.lastOnline ?? null;
     const agentVersion = props.hostStats?.agentVersion ?? null;
-
-    let updateCmds: { sh?: string; ps1?: string } | null = null;
-    if (props.hostStats != null && agentVersion !== buildData.version) {
-        const baseUrl = window.location.origin + demoSubpath;
-        const initSystem = props.hostStats.initSystem;
-        const scriptPath = props.hostStats.scriptPath;
-        const os = props.hostStats.operatingSystem;
-
-        let shScriptPathArg = '';
-        let ps1ScriptPathArg = '';
-        if (scriptPath != null) {
-            if (initSystem === 'self-extracting-shell') {
-                shScriptPathArg = ` --script-path '${scriptPath}'`;
-            } else if (initSystem === 'self-extracting-pwsh') {
-                ps1ScriptPathArg = ` -ScriptPath '${scriptPath}'`;
-            } else {
-                console.error(
-                    `Host has scriptPath '${scriptPath}' but init system '${initSystem ?? 'unknown'
-                    }' is not a self-extracting type`,
-                );
-            }
-        }
-
-        const shCmd = `curl -fsSL ${baseUrl}/download/host_agent_installer.sh | sh -s ${baseUrl} --update${shScriptPathArg}`;
-        const ps1Cmd = `curl.exe -sSLO '${baseUrl}/download/host_agent_installer.ps1'; powershell -ExecutionPolicy Bypass -File .\\host_agent_installer.ps1 ${baseUrl} -Update${ps1ScriptPathArg}`;
-
-        if (initSystem === 'self-extracting-pwsh' || os === 'windows') {
-            updateCmds = { ps1: ps1Cmd };
-        } else if (os == null) {
-            updateCmds = { sh: shCmd, ps1: ps1Cmd };
-        } else {
-            updateCmds = { sh: shCmd };
-        }
-    }
 
     return (
         <section
@@ -286,30 +294,36 @@ const HostInfoSection = (props: {
                     Init system
                 </dt>
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                    {props.hostStats?.initSystem != null
-                        ? ({
-                            systemd: 'systemd',
-                            openrc: 'OpenRC',
-                            'self-extracting-shell': 'Self-extracting (sh)',
-                            'self-extracting-pwsh':
-                                'Self-extracting (PowerShell)',
-                            launchd: 'launchd',
-                        } as const)[props.hostStats.initSystem]
-                        : 'Unknown'}
+                    {
+                        (
+                            {
+                                systemd: 'systemd',
+                                openrc: 'OpenRC',
+                                'self-extracting-shell': 'Self-extracting (sh)',
+                                'self-extracting-pwsh':
+                                    'Self-extracting (PowerShell)',
+                                launchd: 'launchd',
+                                unknown: 'Unknown',
+                            } as const
+                        )[props.hostStats?.initSystem ?? 'unknown']
+                    }
                 </dd>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Operating system
                 </dt>
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                    {props.hostStats?.operatingSystem != null
-                        ? ({
-                            linux: 'Linux',
-                            windows: 'Windows',
-                            macos: 'macOS',
-                        } as const)[props.hostStats.operatingSystem]
-                        : 'Unknown'}
+                    {
+                        (
+                            {
+                                linux: 'Linux',
+                                windows: 'Windows',
+                                macos: 'macOS',
+                                unknown: 'Unknown',
+                            } as const
+                        )[props.hostStats?.operatingSystem ?? 'unknown']
+                    }
                 </dd>
-                <Show when={props.hostStats?.scriptPath != null}>
+                <Show when={props.hostStats?.scriptPath}>
                     <dt class="font-medium text-black dark:text-[#cccccc]">
                         Install script
                     </dt>
@@ -326,46 +340,54 @@ const HostInfoSection = (props: {
                         : formatRelativeTimestamp(lastOnline)}
                 </dd>
             </dl>
-            <Show when={updateCmds != null}>
-                <div class="mt-3 pt-3 border-t border-[#e5e5e5] dark:border-[#3e3e42]">
-                    <p class="text-sm font-medium text-black dark:text-[#cccccc] mb-1">
-                        Update agent
-                    </p>
-                    <Show when={updateCmds?.sh != null}>
-                        <Show when={updateCmds?.ps1 != null}>
-                            <p class="text-xs font-semibold text-[#616161] dark:text-[#9d9d9d] mb-1">
-                                Linux/macOS:
-                            </p>
-                        </Show>
-                        <div class="code-container py-2">
-                            <CopyButton
-                                targetId="host-update-command-sh"
-                                label="Copy update command (sh)"
-                            />
-                            <code id="host-update-command-sh" class="code-block">
-                                {updateCmds?.sh}
-                            </code>
-                        </div>
-                    </Show>
-                    <Show when={updateCmds?.ps1 != null}>
-                        <Show when={updateCmds?.sh != null}>
-                            <p class="text-xs font-semibold text-[#616161] dark:text-[#9d9d9d] mb-1 mt-2">
-                                Windows (PowerShell):
-                            </p>
-                        </Show>
-                        <div class="code-container py-2">
-                            <CopyButton
-                                targetId="host-update-command-ps1"
-                                label="Copy update command (PowerShell)"
-                            />
-                            <code id="host-update-command-ps1" class="code-block">
-                                {updateCmds?.ps1}
-                            </code>
-                        </div>
-                    </Show>
-                </div>
-            </Show>
+            <HostUpdateCommands hostStats={props.hostStats} />
         </section>
+    );
+};
+
+const HostUpdateCommands = (props: { hostStats: HostStats | undefined }) => {
+    const updateCmds = buildHostUpdateCommands(props.hostStats);
+
+    return (
+        <Show when={updateCmds != null}>
+            <div class="mt-3 pt-3 border-t border-[#e5e5e5] dark:border-[#3e3e42]">
+                <p class="text-sm font-medium text-black dark:text-[#cccccc] mb-1">
+                    Update agent
+                </p>
+                <Show when={updateCmds?.sh != null}>
+                    <Show when={updateCmds?.ps1 != null}>
+                        <p class="text-xs font-semibold text-[#616161] dark:text-[#9d9d9d] mb-1">
+                            Linux/macOS:
+                        </p>
+                    </Show>
+                    <div class="code-container py-2">
+                        <CopyButton
+                            targetId="host-update-command-sh"
+                            label="Copy update command (sh)"
+                        />
+                        <code id="host-update-command-sh" class="code-block">
+                            {updateCmds?.sh}
+                        </code>
+                    </div>
+                </Show>
+                <Show when={updateCmds?.ps1 != null}>
+                    <Show when={updateCmds?.sh != null}>
+                        <p class="text-xs font-semibold text-[#616161] dark:text-[#9d9d9d] mb-1 mt-2">
+                            Windows (PowerShell):
+                        </p>
+                    </Show>
+                    <div class="code-container py-2">
+                        <CopyButton
+                            targetId="host-update-command-ps1"
+                            label="Copy update command (PowerShell)"
+                        />
+                        <code id="host-update-command-ps1" class="code-block">
+                            {updateCmds?.ps1}
+                        </code>
+                    </div>
+                </Show>
+            </div>
+        </Show>
     );
 };
 

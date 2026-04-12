@@ -164,10 +164,11 @@ fn write_index_html(generated_dir: &Path, data: &BuildData) -> eyre::Result<()> 
         .replace("{{ICON_HASH_128}}", &data.icon_hashes[&128])
         .replace("{{ICON_HASH_180}}", &data.icon_hashes[&180])
         .replace("{{FAVICON_SVG_HASH}}", &data.svg_hashes["favicon"])
-        .replace("{{DESCRIPTION}}", env!("CARGO_PKG_DESCRIPTION"))
+        .replace("{{DESCRIPTION}}", data.description)
         .replace("{{BUILD_DATA_JSON}}", &build_data_json)
         .replace("{{APP_JS_HASH}}", &data.app_js_hash)
-        .replace("{{APP_JS_INTEGRITY}}", &data.app_js_integrity);
+        .replace("{{APP_JS_INTEGRITY}}", &data.app_js_integrity)
+        .replace("{{REPOSITORY}}", data.repository);
 
     fs::write(generated_dir.join("index.html"), html)?;
     Ok(())

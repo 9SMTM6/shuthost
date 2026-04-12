@@ -60,11 +60,11 @@ define_enum_with_str! {
     pub enum InitSystem {
         /// Systemd init system (Linux).
         Systemd => "systemd",
-        /// OpenRC init system (Linux).
+        /// `OpenRC` init system (Linux).
         OpenRC => "openrc",
         /// Self-extracting shell script install (Unix).
         SelfExtractingShell => "self-extracting-shell",
-        /// Self-extracting PowerShell script install (Windows).
+        /// Self-extracting `PowerShell` script install (Windows).
         SelfExtractingPwsh => "self-extracting-pwsh",
         /// Launchd init system (macOS).
         Launchd => "launchd",
@@ -196,7 +196,6 @@ impl MiniSerialize for BroadcastMessage {
         }
     }
 }
-
 
 define_enum_with_str! {
     #[derive(Debug, Clone, PartialEq, Eq)]

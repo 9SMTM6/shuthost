@@ -1,6 +1,6 @@
 import { createStore, produce } from 'solid-js/store';
+import { type Infer, is } from './assertData';
 import { serverData } from './serverData';
-import { Infer, is } from './assertData';
 
 // ==========================
 // Types
@@ -19,7 +19,15 @@ export type ClientStats = {
 export const hostStatChecker = is.object({
     lastOnline: is.optional(is.string),
     agentVersion: is.optional(is.string),
-    initSystem: is.optional(is.oneOf('systemd', 'openrc', 'self-extracting-shell', 'self-extracting-pwsh', 'launchd')),
+    initSystem: is.optional(
+        is.oneOf(
+            'systemd',
+            'openrc',
+            'self-extracting-shell',
+            'self-extracting-pwsh',
+            'launchd',
+        ),
+    ),
     operatingSystem: is.optional(is.oneOf('windows', 'linux', 'macos')),
     scriptPath: is.optional(is.string),
     isOnline: is.optional(is.boolean),
