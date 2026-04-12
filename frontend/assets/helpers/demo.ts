@@ -4,12 +4,22 @@ import { serverData } from './serverData';
 
 export const isDemoMode = serverData.demoSubpath != null;
 
-/** Normalised demo subpath: `''` or `'/base'` (no trailing slash). */
-export const demoSubpath = (() => {
-    const raw = serverData.demoSubpath ?? '';
+const DEMO_SUBPATH_PATTERN = /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)$/;
+
+const sanitizeDemoSubpath = (raw: string): string => {
     if (!raw || raw === '/') return '';
-    return (raw.startsWith('/') ? raw : `/${raw}`).replace(/\/$/, '');
-})();
+
+    const candidate = raw.startsWith('/') ? raw : `/${raw}`;
+    if (!DEMO_SUBPATH_PATTERN.test(candidate)) {
+        console.error(`Rejected invalid demoSubpath from serverData: ${raw}`);
+        return '';
+    }
+
+    return candidate;
+};
+
+/** Normalised demo subpath: `''` or `'/base'` (no trailing slash). */
+export const demoSubpath = sanitizeDemoSubpath(serverData.demoSubpath ?? '');
 
 let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
 let statusTimeout: ReturnType<typeof setTimeout> | null = null;

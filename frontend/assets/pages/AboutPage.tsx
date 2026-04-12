@@ -4,6 +4,7 @@ import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath } from '../helpers/demo';
+import { safeExternalUrl } from '../helpers/utils';
 import type { AnyComponent } from '../helpers/utils';
 
 export type Author = {
@@ -72,7 +73,7 @@ export const AboutPage = (() => {
                             <p>{buildData.description}</p>
                             <p>
                                 <a
-                                    href={buildData.repository}
+                                    href={safeExternalUrl(buildData.repository)}
                                     class="link font-medium"
                                 >
                                     ShutHost v{buildData.version}
