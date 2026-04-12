@@ -58,18 +58,43 @@ export const killTestBackendProcess = async (key: ConfigKey) => {
         console.log(`no processes found for config ${key} on port ${port}`);
         return;
     }
+
+    const expectedPids: number[] = [];
+    const unexpectedPids: number[] = [];
+
     for (const pid of pids) {
         const isExpected = validatePidIsExpected(pid, BACKEND_PATH);
         if (isExpected) {
-            console.log(
-                `terminating coordinator pid ${pid} for config ${key} on port ${port}`,
-            );
-            await killPidGracefully(pid);
+            expectedPids.push(pid);
         } else {
-            console.warn(
-                `leaving pid ${pid} for config ${key} on port ${port} (not coordinator)`,
-            );
+            unexpectedPids.push(pid);
         }
+    }
+
+    if (unexpectedPids.length > 0) {
+        const details = unexpectedPids
+            .map((pid) => `${pid}: ${pidCommandLine(pid) ?? '<unknown>'}`)
+            .join('; ');
+        throw new Error(
+            `Port ${port} is occupied by non-coordinator PID(s): ${details}`,
+        );
+    }
+
+    for (const pid of expectedPids) {
+        console.log(
+            `terminating coordinator pid ${pid} for config ${key} on port ${port}`,
+        );
+        await killPidGracefully(pid);
+    }
+
+    const remaining = getPidsListeningOnPort(port);
+    if (remaining.length > 0) {
+        const details = remaining
+            .map((pid) => `${pid}: ${pidCommandLine(pid) ?? '<unknown>'}`)
+            .join('; ');
+        throw new Error(
+            `Port ${port} is still occupied after attempting to stop backend: ${details}`,
+        );
     }
 };
 
