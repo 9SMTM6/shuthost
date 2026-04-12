@@ -65,8 +65,9 @@ case "$ACTION" in
 
         set -v
 
-        # Send the message via TCP and print response
-        printf "%s" "$FINAL_MESSAGE" | nc "$HOST_IP" "$PORT"
+        # Send the message via TCP and print response. Use -N so nc closes cleanly after stdin EOF,
+        # which avoids a non-zero exit status on macOS/BSD when the agent closes the socket.
+        printf "%s" "$FINAL_MESSAGE" | nc -N -w 2 "$HOST_IP" "$PORT"
         ;;
     wake)
         echo "WOL via this script is in testing and may not work reliable across all platforms. Please report issues."
