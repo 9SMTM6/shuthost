@@ -32,6 +32,7 @@ use shuthost_common::{CoordinatorMessage, validate_hmac_message};
 /// # Examples
 ///
 /// ```
+/// # use clap::Parser;
 /// # use shuthost_host_agent::validation::validate_request;
 /// # use shuthost_common::create_signed_message;
 /// # use shuthost_host_agent::server::ServiceOptions;
@@ -39,7 +40,8 @@ use shuthost_common::{CoordinatorMessage, validate_hmac_message};
 /// # use secrecy::SecretString;
 ///
 /// let secret = SecretString::from("secret");
-/// # let args = ServiceOptions { port: 0, broadcast_port: 0, shutdown_command: "cmd".to_string(), shared_secret: Some(secret.clone()), hostname: "test".to_string() };
+/// # let mut args = ServiceOptions::try_parse_from(["shuthost_host_agent"]).unwrap();
+/// # args.shared_secret = Some(secret.clone());
 /// let signed = create_signed_message("status", &secret);
 /// let result = validate_request(signed.as_bytes(), &args);
 /// assert_eq!(result, Ok(CoordinatorMessage::Status));

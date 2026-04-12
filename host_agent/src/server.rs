@@ -125,8 +125,6 @@ fn broadcast_startup(config: &ServiceOptions) {
     let mac_address = get_mac(&interface).unwrap_or_else(|| "unknown".to_string());
     let agent_version = VERSION.to_string();
     let timestamp = shuthost_common::unix_time_seconds();
-    // TODO: Include install metadata here alongside agent_version so the coordinator
-    // can distinguish self-extracting installs and choose the appropriate update path.
     let broadcast = BroadcastMessage::AgentStartup(StartupBroadcast {
         hostname: config.hostname.clone(),
         agent_version,
@@ -234,7 +232,26 @@ pub(crate) fn get_default_shutdown_command() -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::io::{Read as _, Write as _};
+    use std::net::{TcpListener, TcpStream};
+    use std::thread;
+
+    use secrecy::SecretString;
+    use shuthost_common::create_signed_message;
+
     use super::*;
+
+    fn make_args(secret: SecretString) -> ServiceOptions {
+        ServiceOptions {
+            port: 0,
+            broadcast_port: 0,
+            shutdown_command: "shutdown_cmd".to_string(),
+            shared_secret: Some(secret),
+            hostname: "test_hostname".to_string(),
+            init_system: InitSystem::SelfExtractingShell,
+            script_path: None,
+        }
+    }
 
     #[test]
     fn service_options_default_ports() {
@@ -258,5 +275,36 @@ mod tests {
         ]);
         assert_eq!(opts.port, 1234);
         assert_eq!(opts.broadcast_port, 4321);
+    }
+
+    #[test]
+    fn status_response_includes_extended_info() {
+        let secret = SecretString::from("secret");
+        let config = make_args(secret.clone());
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let addr = listener.local_addr().expect("listener addr");
+        let server_config = config.clone();
+
+        let handle = thread::spawn(move || {
+            let (stream, _) = listener.accept().expect("accept connection");
+            let action = handle_client(stream, &server_config);
+            assert_eq!(action, None);
+        });
+
+        let mut stream = TcpStream::connect(addr).expect("connect to agent");
+        let signed = create_signed_message("status", config.shared_secret.as_ref().unwrap());
+        stream.write_all(signed.as_bytes()).expect("send status request");
+
+        let mut response = String::new();
+        stream
+            .read_to_string(&mut response)
+            .expect("read status response");
+
+        assert!(response.starts_with("OK: status;"));
+        assert!(response.contains("agent_version="));
+        assert!(response.contains("init_system="));
+        assert!(response.contains("os="));
+
+        handle.join().expect("server thread finished");
     }
 }

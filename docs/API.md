@@ -110,8 +110,8 @@ All messages sent to the agent follow this format:
 OK: status
 ```
 
-> New agents may optionally append `;agent_version=<version>` to the status success response.
-> For example: `OK: status;agent_version=1.2.3`
+> Newer agents append additional metadata to successful status responses.
+> For example: `OK: status;agent_version=1.2.3; init_system=systemd; os=linux`
 
 #### 2. Shutdown Request
 

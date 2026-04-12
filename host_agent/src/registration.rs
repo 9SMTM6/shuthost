@@ -129,9 +129,6 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
 /// This allows `update` to operate on a locally present self-extracting script
 /// without needing sudo access to service files.
 ///
-/// TODO: return richer install metadata for self-extracting installs, including
-/// the actual script path, instead of relying solely on current working directory
-/// heuristics.
 pub(crate) fn detect_installation_init_system() -> Result<InitSystem, String> {
     let shell_path = format!("./{BINARY_NAME}_self_extracting");
     if fs::metadata(&shell_path).is_ok() {
