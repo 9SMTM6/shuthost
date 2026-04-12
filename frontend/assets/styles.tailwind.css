@@ -98,6 +98,10 @@ body {
         }
     }
 
+    .host-status-badge {
+        @apply px-2 py-0.5 rounded-full text-xs font-semibold;
+    }
+
     /* Architecture documentation styles */
     .architecture-section {
         @apply mt-6;
