@@ -65,9 +65,12 @@ case "$ACTION" in
 
         set -v
 
-        # Send the message via TCP and print response. We treat the request as successful
-        # only when the agent returns the expected response prefix.
-        RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -w 2 "$HOST_IP" "$PORT" 2>/dev/null || true)
+        # Send the message via TCP and print response. On macOS/BSD, use -N so nc closes cleanly.
+        if [ "$(uname)" = "Darwin" ]; then
+            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -N -w 2 "$HOST_IP" "$PORT" 2>/dev/null || true)
+        else
+            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -w 2 "$HOST_IP" "$PORT" 2>/dev/null || true)
+        fi
 
         if [ -n "$RESPONSE" ] && {
             printf "%s" "$RESPONSE" | grep -q '^OK: status' || \
