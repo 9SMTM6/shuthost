@@ -74,7 +74,7 @@ mod tests {
     use secrecy::SecretString;
 
     use super::*;
-    use crate::server::ServiceOptions;
+    use crate::{install::InitSystem, server::ServiceOptions};
 
     fn make_args(secret: SecretString) -> ServiceOptions {
         ServiceOptions {
@@ -83,7 +83,7 @@ mod tests {
             shutdown_command: "shutdown_cmd".to_string(),
             shared_secret: Some(secret),
             hostname: "test_hostname".to_string(),
-            init_system: crate::install::InitSystem::SelfExtractingShell,
+            init_system: InitSystem::SelfExtractingShell,
             script_path: None,
         }
     }

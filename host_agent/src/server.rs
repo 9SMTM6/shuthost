@@ -17,7 +17,10 @@ use shuthost_common::{
 use crate::{
     VERSION,
     commands::execute_shutdown,
-    install::{default_hostname, get_inferred_init_system, get_default_interface, get_ip, get_mac, InitSystem},
+    install::{
+        InitSystem, default_hostname, get_default_interface, get_inferred_init_system, get_ip,
+        get_mac,
+    },
     validation::validate_request,
 };
 
@@ -180,11 +183,14 @@ fn handle_client(mut stream: TcpStream, config: &ServiceOptions) -> Option<Coord
                         format!("init_system={}", config.init_system),
                         format!("os={}", get_os()),
                     ];
-                    if let Some(script_path) = &config.script_path {
-                        fields.push(format!("script_path={}", script_path));
+                    if let &Some(ref script_path) = &config.script_path {
+                        fields.push(format!("script_path={script_path}"));
                     }
-                    (format!("OK: status;{}", fields.join("; ")).into_bytes(), None)
-                },
+                    (
+                        format!("OK: status;{}", fields.join("; ")).into_bytes(),
+                        None,
+                    )
+                }
                 Ok(M::Shutdown) => (
                     format!(
                         "Now executing command: {}. Hopefully goodbye.",

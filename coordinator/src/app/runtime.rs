@@ -132,8 +132,8 @@ async fn maybe_update_host_install_info(
     info_map.insert(hostname.to_string(), new_info);
     drop(info_map);
 
-    if let Some(pool) = &state.db_pool {
-        if let Err(e) = db::upsert_host_install_info(
+    if let &Some(ref pool) = &state.db_pool
+        && let Err(e) = db::upsert_host_install_info(
             pool.clone(),
             hostname.to_string(),
             agent_version,
@@ -141,9 +141,8 @@ async fn maybe_update_host_install_info(
             os,
         )
         .await
-        {
-            error!(host = %hostname, "Failed to persist host install info: {e:#}");
-        }
+    {
+        error!(host = %hostname, "Failed to persist host install info: {e:#}");
     }
 }
 
@@ -413,13 +412,11 @@ async fn poll_host_statuses(state: AppState) {
         let mut any_changed = false;
 
         for (host_name, (new_state, install_info)) in results {
-            if let Some(info) = install_info {
-                if let (Some(version), Some(init_system), Some(os)) =
+            if let Some(info) = install_info
+                && let (Some(version), Some(init_system), Some(os)) =
                     (info.agent_version, info.init_system, info.os)
-                {
-                    maybe_update_host_install_info(&state, &host_name, version, init_system, os)
-                        .await;
-                }
+            {
+                maybe_update_host_install_info(&state, &host_name, version, init_system, os).await;
             }
             if old_status.get(&host_name) != Some(&new_state) {
                 new_status.insert(host_name.clone(), new_state);

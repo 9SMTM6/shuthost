@@ -24,7 +24,8 @@ const loadBuildData = (): BuildData => {
         // template chain, so subsequent hash replacements resolve these too.
         return {
             svgHashes: { favicon: '{{FAVICON_SVG_HASH}}' },
-        } as unknown as BuildData;
+            repository: '{{REPOSITORY_URL}}',
+        } satisfies Partial<BuildData> as unknown as BuildData;
     }
     const el = document.getElementById('build-data');
     if (!el?.textContent) throw new Error('Missing #build-data element');

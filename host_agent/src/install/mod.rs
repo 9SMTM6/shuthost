@@ -5,7 +5,7 @@
 pub mod self_extracting;
 
 use core::iter;
-use std::process::Command;
+use std::{path::Path, process::Command};
 
 use clap::{Parser, ValueEnum as _};
 use core::fmt;
@@ -146,7 +146,15 @@ impl From<InitSystem> for shuthost_common::InitSystem {
 
 impl From<shuthost_common::InitSystem> for InitSystem {
     fn from(v: shuthost_common::InitSystem) -> InitSystem {
-        v.into()
+        use InitSystem as tIS;
+        use shuthost_common::InitSystem as cIS;
+        match v {
+            cIS::Systemd => tIS::Systemd,
+            cIS::OpenRC => tIS::OpenRC,
+            cIS::Launchd => tIS::Launchd,
+            cIS::SelfExtractingShell => tIS::SelfExtractingShell,
+            cIS::SelfExtractingPwsh => tIS::SelfExtractingPwsh,
+        }
     }
 }
 
@@ -233,7 +241,13 @@ pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     let name = BINARY_NAME;
 
     let init_system = if let Some(script_path) = args.script_path.as_deref() {
-        if script_path.ends_with(".ps1") || script_path.ends_with(".PS1") {
+        if Path::new(script_path)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("ps1"))
+            || Path::new(script_path)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("PS1"))
+        {
             InitSystem::SelfExtractingPwsh
         } else {
             InitSystem::SelfExtractingShell
@@ -403,7 +417,10 @@ fn update_systemd(name: &str) -> Result<(), String> {
         )
     };
 
-    shuthost_common::systemd::install_self_as_service(name, &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::systemd::install_self_as_service(
+        name,
+        &bind_known_vals(SYSTEMD_SERVICE_FILE_TEMPLATE),
+    )?;
     shuthost_common::systemd::start_and_enable_self_as_service(name)?;
     Ok(())
 }
@@ -427,7 +444,10 @@ fn update_openrc(name: &str) -> Result<(), String> {
         )
     };
 
-    shuthost_common::openrc::install_self_as_service(name, &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::openrc::install_self_as_service(
+        name,
+        &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE),
+    )?;
     shuthost_common::openrc::start_and_enable_self_as_service(name)?;
     Ok(())
 }
@@ -451,16 +471,17 @@ fn update_launchd(name: &str) -> Result<(), String> {
         )
     };
 
-    shuthost_common::macos::install_self_as_service(name, &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE))?;
+    shuthost_common::macos::install_self_as_service(
+        name,
+        &bind_known_vals(LAUNCHD_SERVICE_FILE_TEMPLATE),
+    )?;
     shuthost_common::macos::start_and_enable_self_as_service(name)?;
     Ok(())
 }
 
 #[cfg(unix)]
 fn update_self_extracting_shell(name: &str, script_path: Option<&str>) -> Result<(), String> {
-    let path = script_path
-        .map(ToString::to_string)
-        .unwrap_or_else(|| format!("./{name}_self_extracting"));
+    let path = script_path.map_or_else(|| format!("./{name}_self_extracting"), ToString::to_string);
 
     let config = registration::parse_config(&registration::Args {
         init_system: InitSystem::SelfExtractingShell,
@@ -494,9 +515,10 @@ fn update_self_extracting_shell(name: &str, script_path: Option<&str>) -> Result
 }
 
 fn update_self_extracting_pwsh(name: &str, script_path: Option<&str>) -> Result<(), String> {
-    let path = script_path
-        .map(ToString::to_string)
-        .unwrap_or_else(|| format!("./{name}_self_extracting.ps1"));
+    let path = script_path.map_or_else(
+        || format!("./{name}_self_extracting.ps1"),
+        ToString::to_string,
+    );
 
     let config = registration::parse_config(&registration::Args {
         init_system: InitSystem::SelfExtractingPwsh,
