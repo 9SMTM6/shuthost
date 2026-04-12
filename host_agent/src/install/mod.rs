@@ -108,7 +108,7 @@ pub enum InitSystem {
     OpenRC,
     /// Generates a self-extracting shell script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. You'll have to start the script yourself. [aliases: sh]
     #[cfg_attr(not(unix), clap(skip))]
-    #[clap(alias = "sh")]
+    #[cfg_attr(unix, clap(alias = "sh"))]
     SelfExtractingShell,
     /// Generates a self-extracting `PowerShell` script that embeds the compiled binary. The purpose is to keep the configuration readable (and editable) while being a single file that can be managed as one unit. Note: Unlike the shell variant, the `PowerShell` script runs attached to the service process and does not automatically background itself. The installer will spawn the script in the background. [aliases: pwsh]
     #[clap(alias = "pwsh")]
