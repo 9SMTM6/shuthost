@@ -8,7 +8,7 @@ import {
     Power,
     PowerOff,
 } from 'lucide-solid';
-import { createSignal, For, onMount, Show } from 'solid-js';
+import { createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
@@ -30,23 +30,22 @@ type ClientLease = { type: 'Client'; value: string };
 const HostStatusBadge = (props: {
     status: 'online' | 'offline' | undefined;
 }) => (
-    <>
-        <Show when={props.status === 'online'}>
-            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-[rgba(46,193,100,0.15)] dark:text-[rgba(46,193,100,0.9)]">
+    <Switch fallback={
+        <span class="host-status-badge bg-gray-100 text-gray-500 dark:bg-[#2d2d30] dark:text-[#858585]">
+            unknown
+        </span>
+    }>
+        <Match when={props.status === 'online'}>
+            <span class="host-status-badge bg-green-100 text-green-800 dark:bg-[rgba(46,193,100,0.15)] dark:text-[rgba(46,193,100,0.9)]">
                 online
             </span>
-        </Show>
-        <Show when={props.status === 'offline'}>
-            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-[rgba(244,135,113,0.15)] dark:text-[rgba(244,135,113,0.9)]">
+        </Match>
+        <Match when={props.status === 'offline'}>
+            <span class="host-status-badge bg-red-100 text-red-800 dark:bg-[rgba(244,135,113,0.15)] dark:text-[rgba(244,135,113,0.9)]">
                 offline
             </span>
-        </Show>
-        <Show when={props.status === undefined}>
-            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-[#2d2d30] dark:text-[#858585]">
-                unknown
-            </span>
-        </Show>
-    </>
+        </Match>
+    </Switch>
 );
 
 const NotifyUnscheduledButton = (props: { hostname: string }) => {
@@ -103,19 +102,21 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
                 disabled={isChecking() || loading()}
                 onClick={handleClick}
             >
-                <Show when={isChecking() || loading()}>
-                    <LoaderCircle
-                        size={16}
-                        class="animate-spin"
-                        aria-hidden="true"
-                    />
-                </Show>
-                <Show when={!isChecking() && !loading() && isSubscribed()}>
-                    <BellOff size={20} aria-hidden="true" />
-                </Show>
-                <Show when={!isChecking() && !loading() && !isSubscribed()}>
-                    <Bell size={20} aria-hidden="true" />
-                </Show>
+                <Switch>
+                    <Match when={isChecking() || loading()}>
+                        <LoaderCircle
+                            size={16}
+                            class="animate-spin"
+                            aria-hidden="true"
+                        />
+                    </Match>
+                    <Match when={isSubscribed()}>
+                        <BellOff size={20} aria-hidden="true" />
+                    </Match>
+                    <Match when={!isSubscribed()}>
+                        <Bell size={20} aria-hidden="true" />
+                    </Match>
+                </Switch>
                 <span class="flex flex-col text-center leading-tight">
                     <span>
                         {isSubscribed() ? 'Unsubscribe from' : 'Subscribe to'}
@@ -248,8 +249,7 @@ const HostInfoSection = (props: {
                 ps1ScriptPathArg = ` -ScriptPath '${scriptPath}'`;
             } else {
                 console.error(
-                    `Host has scriptPath '${scriptPath}' but init system '${
-                        initSystem ?? 'unknown'
+                    `Host has scriptPath '${scriptPath}' but init system '${initSystem ?? 'unknown'
                     }' is not a self-extracting type`,
                 );
             }
@@ -288,13 +288,13 @@ const HostInfoSection = (props: {
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
                     {props.hostStats?.initSystem != null
                         ? ({
-                              systemd: 'systemd',
-                              openrc: 'OpenRC',
-                              'self-extracting-shell': 'Self-extracting (sh)',
-                              'self-extracting-pwsh':
-                                  'Self-extracting (PowerShell)',
-                              launchd: 'launchd',
-                          } as const)[props.hostStats.initSystem]
+                            systemd: 'systemd',
+                            openrc: 'OpenRC',
+                            'self-extracting-shell': 'Self-extracting (sh)',
+                            'self-extracting-pwsh':
+                                'Self-extracting (PowerShell)',
+                            launchd: 'launchd',
+                        } as const)[props.hostStats.initSystem]
                         : 'Unknown'}
                 </dd>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
@@ -303,10 +303,10 @@ const HostInfoSection = (props: {
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
                     {props.hostStats?.operatingSystem != null
                         ? ({
-                              linux: 'Linux',
-                              windows: 'Windows',
-                              macos: 'macOS',
-                          } as const)[props.hostStats.operatingSystem]
+                            linux: 'Linux',
+                            windows: 'Windows',
+                            macos: 'macOS',
+                        } as const)[props.hostStats.operatingSystem]
                         : 'Unknown'}
                 </dd>
                 <Show when={props.hostStats?.scriptPath != null}>
@@ -486,55 +486,55 @@ export const HostDetailPage = (() => {
     return (
         <AppLayout>
             <Title>{hostname()} - ShutHost Coordinator</Title>
-            <Show when={isLoading()}>
-                <p class="description-text">Loading…</p>
-            </Show>
+            <Switch>
+                <Match when={isLoading()}>
+                    <p class="description-text">Loading…</p>
+                </Match>
+                <Match when={!isLoading() && !isKnown()}>
+                    <div class="alert alert-error">
+                        <p class="alert-title">Host not found</p>
+                        <p>
+                            No host named <strong>{hostname()}</strong> is known
+                            to this coordinator.
+                        </p>
+                    </div>
+                </Match>
+                <Match when={!isLoading() && isKnown()}>
+                    {/* Name + status badge — acts as back-navigation link */}
+                    <A
+                        href="/hosts"
+                        aria-label={`Back to hosts list — currently viewing ${hostname()}`}
+                        class="group flex items-center gap-3 mb-6 flex-wrap hover:opacity-80 transition-opacity cursor-pointer"
+                    >
+                        <ArrowLeft
+                            size={18}
+                            aria-hidden="true"
+                            class="shrink-0 text-[#616161] dark:text-[#9d9d9d] group-hover:-translate-x-0.5 transition-transform"
+                        />
+                        <h2 class="section-title mb-0">{hostname()}</h2>
+                        <HostStatusBadge status={status()} />
+                    </A>
 
-            <Show when={!isLoading() && !isKnown()}>
-                <div class="alert alert-error">
-                    <p class="alert-title">Host not found</p>
-                    <p>
-                        No host named <strong>{hostname()}</strong> is known to
-                        this coordinator.
-                    </p>
-                </div>
-            </Show>
+                    {/* Notifications — centered, prominent, above information */}
+                    <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
+                        <NotifyUnscheduledButton hostname={hostname()} />
+                        {/* <NotifyDurationButton hostname={hostname()} /> */}
+                    </div>
 
-            <Show when={!isLoading() && isKnown()}>
-                {/* Name + status badge — acts as back-navigation link */}
-                <A
-                    href="/hosts"
-                    aria-label={`Back to hosts list — currently viewing ${hostname()}`}
-                    class="group flex items-center gap-3 mb-6 flex-wrap hover:opacity-80 transition-opacity cursor-pointer"
-                >
-                    <ArrowLeft
-                        size={18}
-                        aria-hidden="true"
-                        class="shrink-0 text-[#616161] dark:text-[#9d9d9d] group-hover:-translate-x-0.5 transition-transform"
+                    <Show when={state.dbData.status === 'available'}>
+                        <HostInfoSection
+                            hostStats={hostStats()}
+                            isOnline={status() === 'online'}
+                        />
+                    </Show>
+
+                    <HostLeasesSection
+                        hasWebInterfaceLease={hasWebInterfaceLease()}
+                        clientLeases={clientLeases()}
+                        updateLease={updateLease}
                     />
-                    <h2 class="section-title mb-0">{hostname()}</h2>
-                    <HostStatusBadge status={status()} />
-                </A>
-
-                {/* Notifications — centered, prominent, above information */}
-                <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
-                    <NotifyUnscheduledButton hostname={hostname()} />
-                    {/* <NotifyDurationButton hostname={hostname()} /> */}
-                </div>
-
-                <Show when={state.dbData.status === 'available'}>
-                    <HostInfoSection
-                        hostStats={hostStats()}
-                        isOnline={status() === 'online'}
-                    />
-                </Show>
-
-                <HostLeasesSection
-                    hasWebInterfaceLease={hasWebInterfaceLease()}
-                    clientLeases={clientLeases()}
-                    updateLease={updateLease}
-                />
-            </Show>
+                </Match>
+            </Switch>
         </AppLayout>
     );
 }) satisfies AnyComponent;

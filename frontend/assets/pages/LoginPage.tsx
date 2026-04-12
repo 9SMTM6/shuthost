@@ -1,7 +1,7 @@
 import { Title } from '@solidjs/meta';
 import { useSearchParams } from '@solidjs/router';
 import { Eye, EyeOff, LogIn } from 'lucide-solid';
-import { createSignal, Show } from 'solid-js';
+import { createSignal, Show, Switch, Match } from 'solid-js';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { JsErrorBox } from '../components/JsErrorBox';
@@ -132,12 +132,14 @@ export const LoginPage = (() => {
                             </h1>
                         </header>
                         <div class="p-4">
-                            <Show when={serverData.authMode === 'token'}>
-                                <TokenLoginForm />
-                            </Show>
-                            <Show when={serverData.authMode === 'oidc'}>
-                                <OidcLoginForm />
-                            </Show>
+                            <Switch fallback={<>Unsupported authentication mode for this page</>}>
+                                <Match when={serverData.authMode === 'token'}>
+                                    <TokenLoginForm />
+                                </Match>
+                                <Match when={serverData.authMode === 'oidc'}>
+                                    <OidcLoginForm />
+                                </Match>
+                            </Switch>
                         </div>
                     </section>
                 </div>
