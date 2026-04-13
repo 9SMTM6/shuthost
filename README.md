@@ -219,6 +219,8 @@ These are generated or validated automatically as part of the test suite, and th
 * add tests for push agents notifications
   * copilot:
     > New UDP startup broadcast handling (parsing, HMAC validation, override persistence, and status marking) is introduced without tests, while this module already has unit tests. Adding tests for valid/invalid packets, timestamp/HMAC failures, and the override update/clear behavior would help prevent regressions.
+  * These tests, at least when implemented as integration tests, kinda would profit from more configuration options, which is to be added in the future. After that we hopefully will get back to this.
+* either included in the unexpected event notification, or as a separate notification, we should notify the user when a host that is supposed to be on isn't responding to WOL packets.
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik, dex
   * (add tests for OIDC refresh flow) currently not active code
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
