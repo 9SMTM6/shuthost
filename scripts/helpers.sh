@@ -100,6 +100,11 @@ verify_checksum() {
     echo "Please verify this checksum against the one provided for $FILENAME on the releases page:"
     echo "$BASE_URL"
     echo
+    if [ -n "${CI_MODE:-}" ] || [ -n "${CI:-}" ] || [ -n "${NO_VERIFY_CHECKSUM:-}" ]; then
+        echo "CI mode detected: skipping checksum verification prompt."
+        return
+    fi
+
     if [ -t 0 ]; then
         printf "Have you verified the checksum? (y/N): "
         read REPLY

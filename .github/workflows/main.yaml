@@ -370,6 +370,88 @@ jobs:
 
           Write-Host "Direct host_agent installation and direct_control test completed successfully!"
 
+  test-installer-update-linux:
+    name: Test Installer Update (Linux)
+    runs-on: ubuntu-latest
+    needs: [build-coordinators]
+    steps:
+      - uses: *checkout
+
+      - name: Download coordinator binary
+        uses: *download-artifact
+        with:
+          name: coordinator-x86_64-unknown-linux-gnu
+
+      - name: Prepare coordinator binary
+        run: |
+          chmod +x shuthost_coordinator
+
+      - name: Run installer update tests in docker
+        run: |
+          chmod +x ./scripts/tests/installer-update-ubuntu.sh
+          ./scripts/tests/installer-update-ubuntu.sh ./shuthost_coordinator
+
+  test-installer-update-alpine:
+    name: Test Installer Update (Alpine)
+    runs-on: ubuntu-latest
+    needs: [build-coordinators]
+    steps:
+      - uses: *checkout
+
+      - name: Download coordinator binaries
+        uses: *download-artifact
+        with:
+          name: coordinator-x86_64-unknown-linux-musl
+          path: ./rehydrate
+
+      - name: Prepare coordinator binary
+        run: |
+          chmod +x rehydrate/shuthost_coordinator
+
+      - name: Run installer update tests in docker
+        run: |
+          chmod +x ./scripts/tests/installer-update-alpine.sh
+          ./scripts/tests/installer-update-alpine.sh ./rehydrate/shuthost_coordinator
+
+  test-installer-update-macos:
+    name: Test Installer Update (macOS)
+    runs-on: macos-latest
+    needs: [build-coordinators]
+    steps:
+      - uses: *checkout
+
+      - name: Download coordinator binary
+        uses: *download-artifact
+        with:
+          name: coordinator-aarch64-apple-darwin
+
+      - name: Prepare coordinator binary
+        run: |
+          chmod +x shuthost_coordinator
+
+      - name: Test coordinator installer update
+        run: |
+          ./scripts/tests/installer-update-coordinator.sh ./shuthost_coordinator
+
+  test-installer-update-windows:
+    name: Test Installer Update (Windows)
+    runs-on: windows-latest
+    needs: [build-coordinator-windows]
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: *checkout
+
+      - name: Download coordinator binary
+        uses: *download-artifact
+        with:
+          name: coordinator-x86_64-pc-windows-msvc
+
+      - name: Test installer update on Windows
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\installer-update-windows.ps1
+
   test-direct-control:
     name: Test Direct Control (virtual)
     runs-on: ubuntu-latest
@@ -942,6 +1024,10 @@ jobs:
       - test-service-installation-launchd
       - test-direct-control-unix
       - test-direct-control-windows
+      - test-installer-update-linux
+      - test-installer-update-alpine
+      - test-installer-update-macos
+      - test-installer-update-windows
       - test-coordinator-compatibility
       - test-agent-compatibility
     steps: *grouping
@@ -981,6 +1067,10 @@ jobs:
       ### test-direct-control
       - test-direct-control-unix
       - test-direct-control-windows
+      - test-installer-update-linux
+      - test-installer-update-alpine
+      - test-installer-update-macos
+      - test-installer-update-windows
       - test-coordinator-compatibility
       - test-agent-compatibility
       ### test-client-scripts
