@@ -293,7 +293,9 @@ mod tests {
 
         let mut stream = TcpStream::connect(addr).expect("connect to agent");
         let signed = create_signed_message("status", config.shared_secret.as_ref().unwrap());
-        stream.write_all(signed.as_bytes()).expect("send status request");
+        stream
+            .write_all(signed.as_bytes())
+            .expect("send status request");
 
         let mut response = String::new();
         stream
