@@ -168,7 +168,7 @@ fn write_index_html(generated_dir: &Path, data: &BuildData) -> eyre::Result<()> 
         .replace("{{BUILD_DATA_JSON}}", &build_data_json)
         .replace("{{APP_JS_HASH}}", &data.app_js_hash)
         .replace("{{APP_JS_INTEGRITY}}", &data.app_js_integrity)
-        .replace("{{REPOSITORY}}", data.repository);
+        .replace("{{REPOSITORY_URL}}", data.repository);
 
     fs::write(generated_dir.join("index.html"), html)?;
     Ok(())
