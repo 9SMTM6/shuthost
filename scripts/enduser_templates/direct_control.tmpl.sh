@@ -65,11 +65,11 @@ case "$ACTION" in
 
         set -v
 
-        # Send the message via TCP and print response. On macOS/BSD, use -N so nc closes cleanly.
+        # Send the message via TCP and capture response. On macOS/BSD, use -N so nc closes cleanly.
         if [ "$(uname)" = "Darwin" ]; then
-            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -N -w 2 "$HOST_IP" "$PORT" 2>/dev/null || true)
+            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -N -w 2 "$HOST_IP" "$PORT" 2>&1 || true)
         else
-            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -w 2 "$HOST_IP" "$PORT" 2>/dev/null || true)
+            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -w 2 "$HOST_IP" "$PORT" 2>&1 || true)
         fi
 
         if [ -n "$RESPONSE" ] && {
@@ -78,7 +78,11 @@ case "$ACTION" in
         }; then
             printf "%s" "$RESPONSE"
         else
-            printf 'Error: invalid or empty response from agent\n' >&2
+            if [ -n "$RESPONSE" ]; then
+                printf 'Error: unexpected response from agent:\n%s\n' "$RESPONSE" >&2
+            else
+                printf 'Error: no response from agent\n' >&2
+            fi
             false
         fi
         ;;
