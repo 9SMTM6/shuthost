@@ -9,7 +9,7 @@ const DEMO_SUBPATH_PATTERN = /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)$/;
 const sanitizeDemoSubpath = (raw: string): string => {
     if (!raw || raw === '/') return '';
 
-    const candidate = raw.startsWith('/') ? raw : `/${raw}`;
+    const candidate = raw.replace(/^\/+/, '/').replace(/\/+$/, ''); // trim leading/trailing slashes, ensure leading slash
     if (!DEMO_SUBPATH_PATTERN.test(candidate)) {
         console.error(`Rejected invalid demoSubpath from serverData: ${raw}`);
         return '';
