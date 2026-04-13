@@ -34,13 +34,13 @@ while getopts "t:b:ih" opt; do
 done
 
 # Shift away the options parsed by getopts so remaining args start at first non-option.
-# getopts leaves OPTIND pointing to the next positional argument. We subtract 2 here
-# because we want to keep the optional "--" separator in the remaining args (so
-# we can validate that the user passed it).
+# getopts leaves OPTIND pointing to the next positional argument after the
+# option and its value. Use OPTIND-1 so any literal "--" separator remains
+# available for later parsing.
 #
 # `shift` rejects negative values; when no options are provided, OPTIND=1, so the
 # computed shift count would be negative.
-shift_count=$((OPTIND - 2))
+shift_count=$((OPTIND - 1))
 if [ "$shift_count" -lt 0 ]; then
     shift_count=0
 fi
