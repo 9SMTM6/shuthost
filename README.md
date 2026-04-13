@@ -206,6 +206,7 @@ These are generated or validated automatically as part of the test suite, and th
 - 🗑️ **Uninstalls**
 - 🔄 **Agent update flow**: Currently, updating an agent requires manually re-running the installer with the correct flags (e.g. `--shared-secret`) or re-generating the install command from the coordinator. A dedicated update flow that handles this automatically would improve the experience.
 - ✅ **Validate broadcast port configuration on agent install**
+- **Direct control script download** from the coordinator. IDK if thats actually a good idea. It means that that direct control script might interfere with the coordinator and/or cause unexpected event notifications, and the primary reason direct control scripts exist is for users who dont want to use the coordinator at all. This also introduces the ability to extract the shared secrets from just the coordinator GUI, this ability didn't previously exist.
 - 📝 **Self-registration endpoint** for host agents
   - ❓ Unclear how to deal with authorization:
     - Server secret?
