@@ -49,6 +49,10 @@ SECRET="{shared_secret}"
 MAC_ADDRESS="{mac_address}"
 BROADCAST_IP="255.255.255.255"
 
+send_tcp_payload() {
+    nc -w 2 "$HOST_IP" "$PORT"
+}
+
 ################## Boring setup complete ------------- Interesting stuff is starting here
 
 case "$ACTION" in
@@ -65,12 +69,8 @@ case "$ACTION" in
 
         set -v
 
-        # Send the message via TCP and capture response. On macOS/BSD, use -N so nc closes cleanly.
-        if [ "$(uname)" = "Darwin" ]; then
-            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -N -w 2 "$HOST_IP" "$PORT" 2>&1 || true)
-        else
-            RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | nc -w 2 "$HOST_IP" "$PORT" 2>&1 || true)
-        fi
+        # Send the message via TCP and capture response.
+        RESPONSE=$(printf "%s" "$FINAL_MESSAGE" | send_tcp_payload 2>&1 || true)
 
         if [ -n "$RESPONSE" ] && {
             printf "%s" "$RESPONSE" | grep -q '^OK: status' || \
