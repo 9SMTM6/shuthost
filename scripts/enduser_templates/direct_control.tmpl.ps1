@@ -67,7 +67,9 @@ switch ($Action) {
         # Send the message via TCP and print response
         try {
             $tcpClient = New-Object System.Net.Sockets.TcpClient
-            $tcpClient.Connect($HOST_IP, $PORT)
+            $ipAddress = [System.Net.IPAddress]::Parse($HOST_IP)
+            $endpoint = New-Object System.Net.IPEndPoint($ipAddress, $PORT)
+            $tcpClient.Connect($endpoint)
             $stream = $tcpClient.GetStream()
             $writer = New-Object System.IO.StreamWriter($stream)
             $writer.Write($finalMessage)
