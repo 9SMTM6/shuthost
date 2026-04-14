@@ -199,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-host_agents, build-coordinators]
 
-    container:
+    container: &openrc-container
       image: docker.io/heywoodlh/openrc:latest
       options: --privileged --memory=2g
     steps:
@@ -212,10 +212,11 @@ jobs:
 
       - run: chmod +x shuthost_coordinator
 
-      - name: Install dependencies
-        run: |
+      - name: Prepare OpenRC container
+        run: &openrc-prepare |
           apk update
-          apk --no-cache add curl
+          apk --no-cache add curl openssl doas
+          echo 'permit nopass root' >> /etc/doas.conf
 
       - name: Run test script
         run: |
@@ -265,9 +266,7 @@ jobs:
           - init: openrc
             runner: ubuntu-latest
             binary: host_agent-x86_64-unknown-linux-musl
-            container:
-              image: docker.io/heywoodlh/openrc:latest
-              options: --privileged --memory=2g
+            container: *openrc-container
           - init: launchd
             runner: macos-latest
             binary: host_agent-x86_64-apple-darwin
@@ -283,12 +282,9 @@ jobs:
         with:
           name: ${{ matrix.binary }}
 
-      - name: Prepare
-        if: matrix.container != null
-        run: |
-          apk update
-          apk add --no-cache curl openssl doas
-          echo 'permit nopass root' >> /etc/doas.conf
+      - name: Prepare OpenRC container
+        if: matrix.init == 'openrc'
+        run: *openrc-prepare
 
       - name: Test direct control
         run: |
@@ -386,19 +382,19 @@ jobs:
         run: |
           chmod +x shuthost_coordinator
 
-      - name: Run installer update tests in docker
+      - name: Run installer update test on host
         run: |
-          chmod +x ./scripts/tests/installer-update-ubuntu.sh
-          ./scripts/tests/installer-update-ubuntu.sh ./shuthost_coordinator
+          ./scripts/tests/installer-update-coordinator.sh ./shuthost_coordinator
 
   test-installer-update-alpine:
     name: Test Installer Update (Alpine)
     runs-on: ubuntu-latest
     needs: [build-coordinators]
+    container: *openrc-container
     steps:
       - uses: *checkout
 
-      - name: Download coordinator binaries
+      - name: Download coordinator binary
         uses: *download-artifact
         with:
           name: coordinator-x86_64-unknown-linux-musl
@@ -408,10 +404,12 @@ jobs:
         run: |
           chmod +x rehydrate/shuthost_coordinator
 
-      - name: Run installer update tests in docker
+      - name: Prepare OpenRC container
+        run: *openrc-prepare
+
+      - name: Run installer update test
         run: |
-          chmod +x ./scripts/tests/installer-update-alpine.sh
-          ./scripts/tests/installer-update-alpine.sh ./rehydrate/shuthost_coordinator
+          ./scripts/tests/installer-update-coordinator.sh ./rehydrate/shuthost_coordinator
 
   test-installer-update-macos:
     name: Test Installer Update (macOS)
@@ -613,9 +611,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-coordinators]
 
-    container:
-      image: docker.io/heywoodlh/openrc:latest
-      options: --privileged --memory=2g
+    container: *openrc-container
     steps:
       - uses: *checkout
 
@@ -624,11 +620,12 @@ jobs:
         with:
           name: coordinator-x86_64-unknown-linux-musl
 
-      - name: Prepare
+      - name: Prepare OpenRC container
+        run: *openrc-prepare
+
+      - name: Install additional dependencies
         run: |
-          apk update
-          apk add --no-cache curl openssl busybox-extras doas
-          echo "permit nopass root" >> /etc/doas.conf
+          apk add --no-cache busybox-extras
 
       - name: Start controller service (background)
         run: |
