@@ -224,6 +224,7 @@ These are generated or validated automatically as part of the test suite, and th
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik, dex
   * (add tests for OIDC refresh flow) currently not active code
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
+* need tests for the self-extracting update flow. Though annoyingly even these need local admin rights. At first I thought that we sdhoudl be able to remove that requirement from installers, but in that case the agent would not - in default setups - have the rights to shutdown the machine at all, so we probably should keep that around. But that also means that testing the update flow cant be done without admin rights (and/or docker), which is a bit of a pain. 
 * reconciler currently leads to a bunch of calls to handle_host_state every poll. This should be deduplicated.
   * we might want to emit multiple WOL calls during the waiting period instead (they are UDP after all)
   * we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
