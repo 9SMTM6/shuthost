@@ -4,14 +4,19 @@
 
 pub mod self_extracting;
 
-use core::iter;
-use std::{io::{Read as _, Write as _}, net::TcpStream, path::Path, process::Command, thread, time::Duration};
+use core::{fmt, iter, time::Duration};
+use std::{
+    io::{Read as _, Write as _},
+    net::TcpStream,
+    path::Path,
+    process::Command,
+    thread,
+};
 
 use clap::{Parser, ValueEnum as _};
-use core::fmt;
 use rand::{RngExt as _, distr, rng};
 use secrecy::SecretString;
-use shuthost_common::{create_signed_message, ResultMapErrExt};
+use shuthost_common::{ResultMapErrExt as _, create_signed_message};
 
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -519,7 +524,7 @@ fn shutdown_self_extracting_service(config: &registration::ServiceConfig) -> Res
     let message = create_signed_message("shutdown", &secret);
     let address = format!("127.0.0.1:{}", config.port);
     let mut stream = TcpStream::connect(&address)
-        .map_err_to_string(&format!("Failed to connect to agent at {}", address))?;
+        .map_err_to_string(&format!("Failed to connect to agent at {address}"))?;
     stream
         .write_all(message.as_bytes())
         .map_err_to_string("Failed to write shutdown request")?;
@@ -528,13 +533,13 @@ fn shutdown_self_extracting_service(config: &registration::ServiceConfig) -> Res
         .read_to_string(&mut response)
         .map_err_to_string("Failed to read shutdown response")?;
     if !response.contains("Hopefully goodbye") {
-        return Err(format!("Unexpected shutdown response: {}", response));
+        return Err(format!("Unexpected shutdown response: {response}"));
     }
     Ok(())
 }
 
 fn wait_for_port_to_free(port: u16) -> Result<(), String> {
-    let address = format!("127.0.0.1:{}", port);
+    let address = format!("127.0.0.1:{port}");
     for _ in 0..10 {
         match TcpStream::connect(&address) {
             Ok(stream) => {
@@ -544,7 +549,7 @@ fn wait_for_port_to_free(port: u16) -> Result<(), String> {
             Err(_) => return Ok(()),
         }
     }
-    Err(format!("Port {} did not free in time", port))
+    Err(format!("Port {port} did not free in time"))
 }
 
 fn update_self_extracting_pwsh(name: &str, script_path: Option<&str>) -> Result<(), String> {
