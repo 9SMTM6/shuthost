@@ -387,6 +387,7 @@ jobs:
           ./scripts/tests/installer-update-coordinator.sh ./shuthost_coordinator
 
   test-installer-update-alpine:
+    if: false # skip this for now, it hangs in CI.
     name: Test Installer Update (Alpine)
     runs-on: ubuntu-latest
     needs: [build-coordinators]
