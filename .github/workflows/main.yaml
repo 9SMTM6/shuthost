@@ -407,6 +407,13 @@ jobs:
       - name: Prepare OpenRC container
         run: *openrc-prepare
 
+      - name: Configure loopback interface
+        run: |
+          cat >/etc/network/interfaces <<'EOF'
+          auto lo
+          iface lo inet loopback
+          EOF
+
       - name: Run installer update test
         run: |
           ./scripts/tests/installer-update-coordinator.sh ./rehydrate/shuthost_coordinator
