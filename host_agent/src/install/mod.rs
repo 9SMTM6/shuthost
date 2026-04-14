@@ -5,11 +5,13 @@
 pub mod self_extracting;
 
 use core::iter;
-use std::{path::Path, process::Command};
+use std::{io::{Read as _, Write as _}, net::TcpStream, path::Path, process::Command, thread, time::Duration};
 
 use clap::{Parser, ValueEnum as _};
 use core::fmt;
 use rand::{RngExt as _, distr, rng};
+use secrecy::SecretString;
+use shuthost_common::{create_signed_message, ResultMapErrExt};
 
 #[cfg(target_os = "linux")]
 use shuthost_common::{is_openrc, is_systemd};
@@ -367,7 +369,7 @@ fn install_self_extracting_pwsh(
 
     // Start the PowerShell script in the background
     // Unlike the shell script, the PowerShell script doesn't self-background,
-    // so we need to background it here by spawning without waiting
+    // so we need to background it here by spawning without waiting.
 
     if let Err(e) = Command::new(powershell_cmd)
         .arg("-ExecutionPolicy")
@@ -500,6 +502,9 @@ fn update_self_extracting_shell(name: &str, script_path: Option<&str>) -> Result
         &path,
     )?;
 
+    shutdown_self_extracting_service(&config)?;
+    wait_for_port_to_free(config.port)?;
+
     if let Err(e) = Command::new(&path).output() {
         eprintln!("Failed to start updated self-extracting script: {e}");
     } else {
@@ -507,6 +512,39 @@ fn update_self_extracting_shell(name: &str, script_path: Option<&str>) -> Result
     }
 
     Ok(())
+}
+
+fn shutdown_self_extracting_service(config: &registration::ServiceConfig) -> Result<(), String> {
+    let secret = SecretString::from(config.secret.clone());
+    let message = create_signed_message("shutdown", &secret);
+    let address = format!("127.0.0.1:{}", config.port);
+    let mut stream = TcpStream::connect(&address)
+        .map_err_to_string(&format!("Failed to connect to agent at {}", address))?;
+    stream
+        .write_all(message.as_bytes())
+        .map_err_to_string("Failed to write shutdown request")?;
+    let mut response = String::new();
+    stream
+        .read_to_string(&mut response)
+        .map_err_to_string("Failed to read shutdown response")?;
+    if !response.contains("Hopefully goodbye") {
+        return Err(format!("Unexpected shutdown response: {}", response));
+    }
+    Ok(())
+}
+
+fn wait_for_port_to_free(port: u16) -> Result<(), String> {
+    let address = format!("127.0.0.1:{}", port);
+    for _ in 0..10 {
+        match TcpStream::connect(&address) {
+            Ok(stream) => {
+                drop(stream);
+                thread::sleep(Duration::from_secs(1));
+            }
+            Err(_) => return Ok(()),
+        }
+    }
+    Err(format!("Port {} did not free in time", port))
 }
 
 fn update_self_extracting_pwsh(name: &str, script_path: Option<&str>) -> Result<(), String> {
@@ -536,6 +574,9 @@ fn update_self_extracting_pwsh(name: &str, script_path: Option<&str>) -> Result<
         &bind_known_vals(SELF_EXTRACTING_PWSH_TEMPLATE),
         &path,
     )?;
+
+    shutdown_self_extracting_service(&config)?;
+    wait_for_port_to_free(config.port)?;
 
     let powershell_cmd = if cfg!(target_os = "windows") {
         "powershell.exe"
