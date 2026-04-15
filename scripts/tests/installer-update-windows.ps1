@@ -61,26 +61,30 @@ Write-Host "Using temporary enduser installer script: $HostInstaller"
 Write-Host "Using temporary coordinator installer script: $CoordinatorInstaller"
 
 Write-Host "Installing old release $TargetTag via enduser installer"
-& pwsh -NoProfile -ExecutionPolicy Bypass -File $HostInstaller -Tag $TargetTag
+& pwsh -NoProfile -ExecutionPolicy Bypass -File "$HostInstaller" -Tag $TargetTag
 
 Wait-ForAgentReady
 
 Write-Host 'Updating host agent using enduser installer update mode'
-& pwsh -NoProfile -ExecutionPolicy Bypass -File $HostInstaller -Update
+& pwsh -NoProfile -ExecutionPolicy Bypass -File "$HostInstaller" -Update
 
 Wait-ForAgentReady
 
-Write-Host 'Starting local coordinator as service'
-& $CoordinatorBinary install $env:USERNAME --port 8080 --bind 127.0.0.1
+Write-Host 'Starting local coordinator service in background'
+Start-Process -FilePath $CoordinatorBinary -ArgumentList @('control-service', '--port', '8080', '--bind', '127.0.0.1') -NoNewWindow | Out-Null
 
 Wait-ForCoordinatorReady
 
 Write-Host 'Updating host agent using coordinator installer update mode'
-& pwsh -NoProfile -ExecutionPolicy Bypass -File $CoordinatorInstaller http://127.0.0.1:8080 -Update
+& pwsh -NoProfile -ExecutionPolicy Bypass -File "$CoordinatorInstaller" http://127.0.0.1:8080 -Update
 
 Wait-ForAgentReady
 
 Write-Host 'Verifying host agent process remains running after update'
-Get-Process -Name shuthost_host_agent -ErrorAction Stop | Out-Null
+$proc = Get-Process -Name shuthost_host_agent -ErrorAction SilentlyContinue
+if (-not $proc) {
+    $proc = Get-Process -Name host_agent -ErrorAction Stop
+}
+$proc | Out-Null
 
 Write-Host 'Windows installer update test completed successfully!'
