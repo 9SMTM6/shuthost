@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # ShutHost Host Agent Installer (PowerShell)
 # Installs the host agent by downloading from the coordinator
 

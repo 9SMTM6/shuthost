@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # ShutHost Host Agent Binary Installer (PowerShell)
 # Works on Windows and Unix systems with PowerShell Core
 
