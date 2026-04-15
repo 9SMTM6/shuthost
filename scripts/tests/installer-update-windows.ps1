@@ -7,9 +7,12 @@ $ErrorActionPreference = 'Stop'
 function Wait-ForAgentReady {
     param([int]$TimeoutSeconds = 30)
 
-    Write-Host "Waiting for shuthost_host_agent.exe to start (up to $TimeoutSeconds seconds)..."
+    Write-Host "Waiting for shuthost_host_agent.exe or host_agent.exe to start (up to $TimeoutSeconds seconds)..."
     for ($i = 1; $i -le $TimeoutSeconds; $i++) {
         $proc = Get-Process -Name shuthost_host_agent -ErrorAction SilentlyContinue
+        if (-not $proc) {
+            $proc = Get-Process -Name host_agent -ErrorAction SilentlyContinue
+        }
         if ($proc) {
             Write-Host 'Host agent process is running.'
             return
