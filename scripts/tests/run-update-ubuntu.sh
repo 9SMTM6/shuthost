@@ -32,4 +32,4 @@ docker run --rm -t --privileged \
   --workdir /repo \
   --env-file scripts/tests/coverage.env \
   -e CI_MODE=true \
-  shuthost-installer-update-systemd /bin/sh -c "./scripts/tests/installer-update-coordinator.sh ./target/x86_64-unknown-linux-gnu/debug/shuthost_coordinator"
+  shuthost-installer-update-systemd /bin/sh -c "./scripts/tests/installer-update-nix.sh ./target/x86_64-unknown-linux-gnu/debug/shuthost_coordinator"
