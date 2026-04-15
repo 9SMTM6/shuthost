@@ -33,17 +33,6 @@ if [ ! -x "$COORDINATOR_BINARY" ]; then
 fi
 
 find_free_port() {
-    if command -v nc >/dev/null 2>&1; then
-        port=8080
-        while [ "$port" -le 65535 ]; do
-            if ! nc -z 127.0.0.1 "$port" >/dev/null 2>&1; then
-                printf '%s' "$port"
-                return 0
-            fi
-            port=$((port + 1))
-        done
-    fi
-
     python3 - <<'PY'
 import socket
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
