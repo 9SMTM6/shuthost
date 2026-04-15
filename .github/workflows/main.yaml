@@ -250,6 +250,16 @@ jobs:
         run: |
           launchctl print system/com.github_9smtm6.shuthost_host_agent
 
+  test-service-installation:
+    name: Test Service Installation (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-service-installation-systemd
+      - test-service-installation-openrc
+      - test-service-installation-launchd
+    steps: &grouping
+      - run: echo "grouping job — nothing to run"
+
   test-direct-control-unix:
     name: Test Direct Control (${{ matrix.init }})
     runs-on: ${{ matrix.runner }}
@@ -366,6 +376,14 @@ jobs:
 
           Write-Host "Direct host_agent installation and direct_control test completed successfully!"
 
+  test-direct-control:
+    name: Test Direct Control (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-direct-control-unix
+      - test-direct-control-windows
+    steps: *grouping
+
   test-installer-update-linux:
     name: Test Installer Update (Linux)
     runs-on: ubuntu-latest
@@ -458,14 +476,15 @@ jobs:
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\installer-update-windows.ps1
 
-  test-direct-control:
-    name: Test Direct Control (virtual)
+  test-installer-update:
+    name: Test Installer Update (virtual)
     runs-on: ubuntu-latest
     needs:
-      - test-direct-control-unix
-      - test-direct-control-windows
-    steps: &grouping
-      - run: echo "grouping job — nothing to run"
+      - test-installer-update-linux
+      - test-installer-update-alpine
+      - test-installer-update-macos
+      - test-installer-update-windows
+    steps: *grouping
 
   validate-file-snapshots:
     name: Validate File Snapshots
@@ -741,6 +760,16 @@ jobs:
             Write-Error "Client request failed!"; exit 1
           }
 
+  test-client-scripts:
+    name: Test Client Scripts (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-client-scripts-macos
+      - test-client-scripts-ubuntu
+      # - test-client-scripts-alpine
+      - test-client-scripts-windows
+    steps: *grouping
+
   container-build:
     name: Build & Push Alpine Containers (SHA only)
     needs:
@@ -845,6 +874,14 @@ jobs:
         run: |
           docker run --rm ${{ steps.release_image_name.outputs.image_base }}:amd64-${{ github.sha }} shuthost_coordinator --help
 
+  container-readiness:
+    name: Container Readiness (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - container-merge
+      - container-test
+    steps: *grouping
+
   test-coordinator-compatibility:
     name: Test Coordinator Compatibility on Older OS Releases
     needs: build-coordinators
@@ -937,6 +974,14 @@ jobs:
           chmod +x "$BINARY" || true
           "$BINARY" --help
 
+  test-binary-compatibility:
+    name: Test Binary Compatibility (virtual)
+    runs-on: ubuntu-latest
+    needs:
+      - test-coordinator-compatibility
+      - test-agent-compatibility
+    steps: *grouping
+
   playwright-tests:
     name: Run Playwright (Web GUI) tests
     runs-on: ubuntu-latest
@@ -997,52 +1042,15 @@ jobs:
             frontend/test-results
           compression-level: 9
 
-  test-client-scripts:
-    name: Test Client Scripts (virtual)
-    runs-on: ubuntu-latest
-    needs:
-      - test-client-scripts-macos
-      - test-client-scripts-ubuntu
-      - test-client-scripts-alpine
-      - test-client-scripts-windows
-    steps: *grouping
-
-  test-service-installation:
-    name: Test Service Installation (virtual)
-    runs-on: ubuntu-latest
-    needs:
-      - test-service-installation-systemd
-      - test-service-installation-openrc
-      - test-service-installation-launchd
-    steps: *grouping
-
   ci-only-tests:
     name: CI-only Tests (virtual)
     runs-on: ubuntu-latest
     needs:
-      - test-client-scripts-macos
-      - test-client-scripts-ubuntu
-      - test-client-scripts-alpine
-      - test-client-scripts-windows
-      - test-service-installation-systemd
-      - test-service-installation-openrc
-      - test-service-installation-launchd
-      - test-direct-control-unix
-      - test-direct-control-windows
-      - test-installer-update-linux
-      - test-installer-update-alpine
-      - test-installer-update-macos
-      - test-installer-update-windows
-      - test-coordinator-compatibility
-      - test-agent-compatibility
-    steps: *grouping
-
-  container-readiness:
-    name: Container Readiness (virtual)
-    runs-on: ubuntu-latest
-    needs:
-      - container-merge
-      - container-test
+      - test-client-scripts
+      - test-service-installation
+      - test-direct-control
+      - test-installer-update
+      - test-binary-compatibility
     steps: *grouping
 
   tests-aggregate:
@@ -1072,10 +1080,12 @@ jobs:
       ### test-direct-control
       - test-direct-control-unix
       - test-direct-control-windows
+      ### test-installer-update
       - test-installer-update-linux
-      - test-installer-update-alpine
       - test-installer-update-macos
       - test-installer-update-windows
+      # - test-installer-update-alpine
+      ### test-binary-compatibility
       - test-coordinator-compatibility
       - test-agent-compatibility
       ### test-client-scripts
