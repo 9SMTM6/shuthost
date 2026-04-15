@@ -402,10 +402,9 @@ jobs:
 
       - name: Run installer update test on host
         run: |
-          ./scripts/tests/installer-update-coordinator.sh ./shuthost_coordinator
+          ./scripts/tests/installer-update-nix.sh ./shuthost_coordinator
 
   test-installer-update-alpine:
-    if: false # skip this for now, it hangs in CI.
     name: Test Installer Update (Alpine)
     runs-on: ubuntu-latest
     needs: [build-coordinators]
@@ -435,7 +434,7 @@ jobs:
 
       - name: Run installer update test
         run: |
-          ./scripts/tests/installer-update-coordinator.sh ./rehydrate/shuthost_coordinator
+          ./scripts/tests/installer-update-nix.sh ./rehydrate/shuthost_coordinator
 
   test-installer-update-macos:
     name: Test Installer Update (macOS)
@@ -455,7 +454,7 @@ jobs:
 
       - name: Test coordinator installer update
         run: |
-          ./scripts/tests/installer-update-coordinator.sh ./shuthost_coordinator
+          ./scripts/tests/installer-update-nix.sh ./shuthost_coordinator
 
   test-installer-update-windows:
     name: Test Installer Update (Windows)
@@ -1084,7 +1083,7 @@ jobs:
       - test-installer-update-linux
       - test-installer-update-macos
       - test-installer-update-windows
-      # - test-installer-update-alpine
+      - test-installer-update-alpine
       ### test-binary-compatibility
       - test-coordinator-compatibility
       - test-agent-compatibility

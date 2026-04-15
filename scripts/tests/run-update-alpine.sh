@@ -36,4 +36,4 @@ docker run --rm -t --privileged \
 auto lo
 iface lo inet loopback
 EOF
-./scripts/tests/installer-update-coordinator.sh ./target/x86_64-unknown-linux-musl/debug/shuthost_coordinator"
+./scripts/tests/installer-update-nix.sh ./target/x86_64-unknown-linux-musl/debug/shuthost_coordinator"
