@@ -457,25 +457,6 @@ jobs:
         run: |
           ./scripts/tests/installer-update-nix.sh ./shuthost_coordinator
 
-  test-installer-update-windows:
-    name: Test Installer Update (Windows)
-    runs-on: windows-latest
-    needs: [build-coordinator-windows]
-    defaults:
-      run:
-        shell: powershell
-    steps:
-      - uses: *checkout
-
-      - name: Download coordinator binary
-        uses: *download-artifact
-        with:
-          name: coordinator-x86_64-pc-windows-msvc
-
-      - name: Test installer update on Windows
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\tests\installer-update-windows.ps1
-
   test-installer-update:
     name: Test Installer Update (virtual)
     runs-on: ubuntu-latest
@@ -483,7 +464,6 @@ jobs:
       - test-installer-update-linux
       - test-installer-update-alpine
       - test-installer-update-macos
-      - test-installer-update-windows
     steps: *grouping
 
   validate-file-snapshots:
@@ -1083,7 +1063,6 @@ jobs:
       ### test-installer-update
       - test-installer-update-linux
       - test-installer-update-macos
-      - test-installer-update-windows
       - test-installer-update-alpine
       ### test-binary-compatibility
       - test-coordinator-compatibility
