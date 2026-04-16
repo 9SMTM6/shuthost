@@ -194,6 +194,7 @@ These are generated or validated automatically as part of the test suite, and th
 - 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
 - 🛡️ **Rate limiting of requests by shuthost clients**
+- **Per-user leases in WebUI**: When user authentication is supported (e.g., via OIDC), leases in the WebUI could be tracked per user instead of globally for all users. This would allow for more granular control and visibility over which user holds a lease on a host.
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
 
