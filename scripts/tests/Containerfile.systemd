@@ -1,6 +1,6 @@
 FROM docker.io/heywoodlh/systemd:latest
 
-RUN apt-get update && apt-get install -y curl openssl sudo bsdmainutils netcat-openbsd
+RUN apt-get update && apt-get install -y curl openssl sudo bsdmainutils netcat-openbsd python3
 
 COPY scripts /repo/scripts
 
