@@ -215,7 +215,7 @@ jobs:
       - name: Prepare OpenRC container
         run: &openrc-prepare |
           apk update
-          apk --no-cache add curl openssl doas
+          apk --no-cache add curl openssl doas python3
           echo 'permit nopass root' >> /etc/doas.conf
 
       - name: Run test script
