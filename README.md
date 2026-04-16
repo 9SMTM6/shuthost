@@ -195,8 +195,11 @@ These are generated or validated automatically as part of the test suite, and th
 - 📊 **Host state tracking for statistics**
 - 🛡️ **Rate limiting of requests by shuthost clients**
 - **Per-user leases in WebUI**: When user authentication is supported (e.g., via OIDC), leases in the WebUI could be tracked per user instead of globally for all users. This would allow for more granular control and visibility over which user holds a lease on a host.
+- 🛑 **Notifications on failed operations**: Notify users if a shutdown or startup operation does not complete within the expected time window (e.g., host fails to power off or on as requested).
+- ⏰ **Notifications for hosts online too long**: Notify when a host remains online for longer than a configurable threshold. Support both one-time notifications and/or persistent ("always") notifications until the state changes.
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
+  - this is already supported, but not well tested, and disabling polling is not currently supported.
 
 ### 🖥️ Platform Support
 - 🐡 **BSD support** might happen
