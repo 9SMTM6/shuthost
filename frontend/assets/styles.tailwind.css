@@ -79,6 +79,16 @@ body {
         @apply mt-2 text-[#616161] dark:text-[#9d9d9d] text-sm sm:text-base;
     }
 
+    .touch-description {
+        display: none;
+    }
+
+    @media (hover: none), (pointer: coarse) {
+        .touch-description {
+            display: block;
+        }
+    }
+
     .btn {
         @apply inline-flex items-center justify-center gap-1 w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer;
         &.btn-green {

@@ -51,6 +51,8 @@ const HostStatusBadge = (props: {
 );
 
 const NotifyUnscheduledButton = (props: { hostname: string }) => {
+    const notifyUnscheduledDescription =
+        'Get a push notification when this host starts up or shuts down without being triggered by ShutHost.';
     const [subscribed, setSubscribed] = createSignal<boolean | null>(null);
     const [loading, setLoading] = createSignal(false);
     const [error, setError] = createSignal<string | null>(null);
@@ -94,15 +96,14 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
     const isSubscribed = () => subscribed() === true;
 
     return (
-        <div
-            class="flex flex-col items-center gap-1"
-            title="Get a push notification when this host starts up or shuts down without being triggered by ShutHost."
-        >
+        <div class="flex flex-col items-center gap-1">
             <button
                 type="button"
                 class={`btn sm:px-5 sm:py-3 sm:text-base ${isSubscribed() ? 'btn-red' : 'btn-green'}`}
                 disabled={isChecking() || loading()}
                 onClick={handleClick}
+                aria-describedby="notify-unscheduled-description"
+                title={notifyUnscheduledDescription}
             >
                 <Switch>
                     <Match when={isChecking() || loading()}>
@@ -126,6 +127,12 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
                     <span>unscheduled events</span>
                 </span>
             </button>
+            <p
+                id="notify-unscheduled-description"
+                class="text-xs text-[#616161] dark:text-[#9d9d9d] text-center max-w-[20rem] touch-description"
+            >
+                {notifyUnscheduledDescription}
+            </p>
             <Show when={error() !== null}>
                 <span
                     class="text-xs text-red-500 dark:text-[#f48771]"
