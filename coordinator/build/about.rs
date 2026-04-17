@@ -37,9 +37,7 @@ fn about_config() -> eyre::Result<config::Config> {
             .into_iter()
             .map(|s| s.parse::<Licensee>().expect("valid license"))
             .collect(),
-        targets: deny
-            .graph
-            .targets,
+        targets: deny.graph.targets,
         ..Default::default()
     })
 }
