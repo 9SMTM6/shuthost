@@ -57,106 +57,83 @@ impl PartialEq for Client {
 }
 
 /// HTTP server binding configuration section.
-#[derive(Debug, Deserialize, Default, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(default)]
 pub(crate) struct ServerConfig {
     /// TCP port for the web control service.
     pub port: u16,
     /// UDP port the coordinator listens on for agent startup broadcasts.
-    #[serde(default = "default_broadcast_port")]
     pub broadcast_port: u16,
     /// Bind address for the HTTP listener.
     pub bind: String,
     /// Optional TLS configuration for serving HTTPS.
-    #[serde(default)]
     pub tls: Option<TlsConfig>,
     /// Authentication configuration (defaults to no auth when omitted)
-    #[serde(default)]
     pub auth: AuthConfig,
 }
 
-const fn default_broadcast_port() -> u16 {
-    shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            port: 8080,
+            bind: "127.0.0.1".to_string(),
+            broadcast_port: shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
+            tls: None,
+            auth: AuthConfig::default(),
+        }
+    }
 }
 
 /// TLS configuration for the HTTP server.
 ///
 /// Paths in the config are interpreted relative to the config file when not absolute.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(default)]
 pub(crate) struct TlsConfig {
     /// Optional path to a certificate PEM file. If present, enables TLS when paired with `key_path`.
-    #[serde(default = "relative_cert_path")]
     pub cert_path: String,
 
     /// Optional path to a private key PEM file. If present, enables TLS when paired with `cert_path`.
-    #[serde(default = "relative_key_path")]
     pub key_path: String,
 
     /// When true (default), if no cert/key are provided a self-signed
     /// certificate will be generated and written next to the coordinator
     /// config so it persists across restarts.
-    #[serde(default = "do_persist_self_signed")]
     pub persist_self_signed: bool,
     /// Whether TLS is enabled. When false the server will serve plain HTTP even if the
     /// `tls` table is present. Defaults to true.
-    #[serde(default = "do_tls_enable")]
     pub enable: bool,
 }
 
 impl Default for TlsConfig {
     fn default() -> Self {
         Self {
-            cert_path: relative_cert_path(),
-            key_path: relative_key_path(),
-            persist_self_signed: do_persist_self_signed(),
-            enable: do_tls_enable(),
+            cert_path: "./tls_cert.pem".to_string(),
+            key_path: "./tls_key.pem".to_string(),
+            persist_self_signed: true,
+            enable: true,
         }
     }
 }
 
 /// Configuration for an optional local `SQLite` database.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(default)]
 pub(crate) struct DbConfig {
     /// Path to the `SQLite` database file. Relative paths are resolved relative to the config file.
-    #[serde(default = "default_db_path")]
     pub path: String,
     /// Whether the local DB is enabled. When false the coordinator will act as if
     /// no DB is configured even if this table exists in the config file.
-    #[serde(default = "do_db_enable")]
     pub enable: bool,
 }
 
 impl Default for DbConfig {
     fn default() -> Self {
         Self {
-            path: default_db_path(),
-            enable: do_db_enable(),
+            path: "./shuthost.db".to_string(),
+            enable: true,
         }
     }
-}
-
-fn relative_cert_path() -> String {
-    // Relative default path next to config file (must not be empty)
-    "./tls_cert.pem".to_string()
-}
-
-fn relative_key_path() -> String {
-    "./tls_key.pem".to_string()
-}
-
-const fn do_persist_self_signed() -> bool {
-    true
-}
-
-const fn do_tls_enable() -> bool {
-    true
-}
-
-fn default_db_path() -> String {
-    "./shuthost.db".to_string()
-}
-
-const fn do_db_enable() -> bool {
-    true
 }
 
 /// Resolves a path to an absolute one.
