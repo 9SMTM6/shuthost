@@ -14,6 +14,7 @@ use crate::assets;
 #[derive(Deserialize)]
 struct DenyConfig {
     licenses: Licenses,
+    graph: Graph,
 }
 
 #[derive(Deserialize)]
@@ -21,27 +22,24 @@ struct Licenses {
     allow: Vec<String>,
 }
 
+#[derive(Deserialize)]
+struct Graph {
+    targets: Vec<String>,
+}
+
 fn about_config() -> eyre::Result<config::Config> {
     let deny: DenyConfig = toml_from_str(include_str!("../../deny.toml"))?;
-    let accepted: Vec<Licensee> = deny
-        .licenses
-        .allow
-        .into_iter()
-        .map(|s| s.parse::<Licensee>().expect("valid license"))
-        .collect();
 
     Ok(config::Config {
-        accepted,
-        targets: vec![
-            "x86_64-unknown-linux-gnu".to_string(),
-            "aarch64-unknown-linux-gnu".to_string(),
-            "x86_64-unknown-linux-musl".to_string(),
-            "aarch64-unknown-linux-musl".to_string(),
-            "x86_64-apple-darwin".to_string(),
-            "aarch64-apple-darwin".to_string(),
-            "x86_64-pc-windows-msvc".to_string(),
-            "aarch64-pc-windows-msvc".to_string(),
-        ],
+        accepted: deny
+            .licenses
+            .allow
+            .into_iter()
+            .map(|s| s.parse::<Licensee>().expect("valid license"))
+            .collect(),
+        targets: deny
+            .graph
+            .targets,
         ..Default::default()
     })
 }
