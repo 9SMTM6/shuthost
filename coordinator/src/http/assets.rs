@@ -29,7 +29,7 @@ fn IMMUTABLE_HEADER() -> TypedHeader<CacheControl> {
         CacheControl::new()
             .with_immutable()
             .with_public()
-            .with_max_age(Duration::from_secs(31_536_000)),
+            .with_max_age(Duration::from_hours(8760)),
     )
 }
 

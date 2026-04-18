@@ -126,7 +126,7 @@ fn process_entry(
         let license_str = license.to_string();
         license_html = license_html.replace(
             &license_str,
-            &format!("<a href=\"#license-{license_str}\" class=\"link\">{license_str}</a>",),
+            &format!("<a href=\"#license-{license_str}\" class=\"link\">{license_str}</a>"),
         );
     }
 

@@ -69,7 +69,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
 
     // sadly, due to the installation running under sudo, I can't use $XDG_CONFIG_HOME
     #[cfg(target_os = "linux")]
-    let new_config_location = PathBuf::from(format!("/home/{user}/.config/{name}/config.toml",));
+    let new_config_location = PathBuf::from(format!("/home/{user}/.config/{name}/config.toml"));
     #[cfg(target_os = "macos")]
     let new_config_location = PathBuf::from(format!("/Users/{user}/.config/{name}/config.toml"));
 
@@ -148,7 +148,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
                 Some(user_info.gid.into()),
             )?;
 
-            println!("Chowned config directory at {parent_dir:?} for {user}",);
+            println!("Chowned config directory at {parent_dir:?} for {user}");
         }
 
         nix_fs::chown(
@@ -157,7 +157,7 @@ pub(crate) fn setup(args: Args) -> eyre::Result<()> {
             Some(user_info.gid.into()),
         )?;
 
-        println!("Chowned config file at {config_location:?} for {user}",);
+        println!("Chowned config file at {config_location:?} for {user}");
     }
 
     #[cfg(target_os = "macos")]

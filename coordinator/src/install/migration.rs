@@ -87,7 +87,7 @@ pub fn migrate_old_config(user: &str, new_config_location: &Path) -> eyre::Resul
                 Some(user_info.gid.into()),
             )?;
 
-            println!("Chowned migrated config directory at {parent_dir:?} for {user}",);
+            println!("Chowned migrated config directory at {parent_dir:?} for {user}");
         }
     }
 

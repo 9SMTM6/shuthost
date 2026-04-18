@@ -46,7 +46,7 @@ async fn m2m_lease_take_and_release() {
     wait_for_listening(coord_port, 5).await;
 
     // Take a lease via M2M endpoint
-    let take_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take",);
+    let take_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take");
 
     let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
@@ -83,7 +83,7 @@ async fn m2m_lease_take_and_release() {
     take_lease_req.await.unwrap();
 
     // Release the lease
-    let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release",);
+    let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release");
 
     let signed_message = create_signed_message("release", &SecretString::from(client_secret));
 
@@ -152,7 +152,7 @@ async fn m2m_lease_async_take_and_release() {
 
     // Take a lease via M2M endpoint
     let take_url =
-        format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take?async=true",);
+        format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take?async=true");
 
     let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
@@ -185,7 +185,7 @@ async fn m2m_lease_async_take_and_release() {
 
     // Release the lease
     let release_url =
-        format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release?async=true",);
+        format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release?async=true");
 
     let signed_message = create_signed_message("release", &SecretString::from(client_secret));
 
@@ -243,7 +243,7 @@ async fn api_reset_client_leases() {
 
     // Take a lease via M2M
     let take_url =
-        format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take?async=true",);
+        format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take?async=true");
 
     let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
@@ -327,7 +327,7 @@ async fn m2m_lease_sync_take_timeout_when_host_offline() {
     wait_for_listening(coord_port, 5).await;
 
     // Take a lease synchronously (host remains offline)
-    let take_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take",);
+    let take_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/take");
 
     let signed_message = create_signed_message("take", &SecretString::from(client_secret));
 
@@ -398,7 +398,7 @@ async fn m2m_lease_sync_release_timeout_when_host_online() {
     );
 
     // Try to release a lease synchronously when host is online but no lease exists
-    let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release",);
+    let release_url = format!("http://127.0.0.1:{coord_port}/api/m2m/lease/{agent_id}/release");
 
     let signed_message = create_signed_message("release", &SecretString::from(client_secret));
 

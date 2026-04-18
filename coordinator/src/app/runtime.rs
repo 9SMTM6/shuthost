@@ -612,7 +612,7 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
 /// propagated at runtime (the config watcher only applies `[hosts]` and `[clients]` changes),
 /// so no port-change handling is needed here.
 async fn listen_for_agent_startup(state: AppState, socket: UdpSocket) {
-    let bound_port = socket.local_addr().map(|a| a.port()).unwrap_or(0);
+    let bound_port = socket.local_addr().map_or(0, |a| a.port());
     let mut buf = vec![0u8; 4096];
     loop {
         match socket.recv_from(&mut buf).await {
