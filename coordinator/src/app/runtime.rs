@@ -16,7 +16,7 @@ use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpStream, UdpSocket},
     task::JoinSet,
-    time::{Instant, MissedTickBehavior, interval, timeout},
+    time::{Instant, MissedTickBehavior, interval, timeout_at},
 };
 use tracing::{debug, error, info, warn};
 
@@ -46,33 +46,29 @@ pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
 /// Poll a single host for its online status.
 async fn poll_host_status(host: &HostWithName) -> (HostState, Option<HostInstallInfo>) {
     let addr = format!("{}:{}", host.host.ip, host.host.port);
-    match timeout(Duration::from_millis(500), TcpStream::connect(&addr)).await {
-        Ok(Ok(mut stream)) => {
-            let signed_message = create_signed_message("status", host.host.shared_secret.as_ref());
-            if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
-                debug!("Failed to write to {}: {}", host.name, e);
-                return (HostState::Offline, None);
-            }
-            let mut buf = vec![0u8; 256];
-            match timeout(Duration::from_millis(400), stream.read(&mut buf)).await {
-                Ok(Ok(n)) if n > 0 => {
-                    let Some(data) = buf.get(..n) else {
-                        unreachable!(
-                            "Read data size should always be valid, as its >= buffer size"
-                        );
-                    };
-                    let resp = String::from_utf8_lossy(data);
-                    // Accept any non-error response as online
-                    if resp.contains("ERROR") {
-                        (HostState::Offline, None)
-                    } else {
-                        (HostState::Online, parse_install_info(&resp))
-                    }
-                }
-                _ => (HostState::Offline, None),
-            }
-        }
-        _ => (HostState::Offline, None),
+    let deadline = Instant::now() + Duration::from_millis(900);
+
+    let Ok(Ok(mut stream)) = timeout_at(deadline, TcpStream::connect(&addr)).await else {
+        return (HostState::Offline, None);
+    };
+
+    let signed_message = create_signed_message("status", host.host.shared_secret.as_ref());
+    if let Err(e) = stream.write_all(signed_message.as_bytes()).await {
+        debug!("Failed to write to {}: {}", host.name, e);
+        return (HostState::Offline, None);
+    }
+
+    let mut buf = vec![0u8; 256];
+    let Ok(Ok(n)) = timeout_at(deadline, stream.read(&mut buf)).await else {
+        return (HostState::Offline, None);
+    };
+
+    let resp = String::from_utf8_lossy(&buf[..n]);
+    // Accept any non-error response as online
+    if resp.contains("ERROR") {
+        (HostState::Offline, None)
+    } else {
+        (HostState::Online, parse_install_info(&resp))
     }
 }
 
@@ -165,13 +161,12 @@ pub(super) enum PollError {
 pub(super) async fn poll_until_host_state(
     host: &HostWithName,
     desired_state: HostState,
-    timeout_secs: u64,
+    deadline: Instant,
     poll_interval_ms: u64,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), PollError> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
-    let start = Instant::now();
     loop {
         let poll_fut = poll_host_status(host);
         let tick_fut = ticker.tick();
@@ -188,7 +183,7 @@ pub(super) async fn poll_until_host_state(
         if current_state == desired_state {
             return Ok(());
         }
-        if start.elapsed().as_secs() >= timeout_secs {
+        if Instant::now() >= deadline {
             return Err(PollError::Timeout {
                 host_name: host.name.clone(),
                 desired_state,

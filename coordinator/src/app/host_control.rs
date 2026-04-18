@@ -12,7 +12,7 @@ use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
     sync::{Mutex, watch},
-    time::timeout,
+    time::{Instant, timeout_at},
 };
 use tracing::{Instrument as _, debug, info};
 
@@ -130,7 +130,7 @@ pub enum LeaseSource {
 }
 
 /// Poll timeout used by wrappers that wait for a host to reach a desired state.
-const DEFAULT_POLL_TIMEOUT_SECS: u64 = 60;
+const DEFAULT_POLL_TIMEOUT: Duration = Duration::from_mins(1);
 const DEFAULT_POLL_INTERVAL_MS: u64 = 200;
 
 /// Errors returned by high-level host control operations.
@@ -211,8 +211,10 @@ async fn send_shutdown_to_address(
     let addr = format!("{ip}:{port}");
     debug!(%addr, "Connecting to host for shutdown");
 
-    // Connect with timeout
-    let conn = timeout(Duration::from_secs(2), TcpStream::connect(&addr)).await;
+    let deadline = Instant::now() + Duration::from_secs(6);
+
+    // Connect
+    let conn = timeout_at(deadline, TcpStream::connect(&addr)).await;
     let mut stream = match conn {
         Ok(Ok(s)) => s,
         Ok(e @ Err(_)) => e.wrap_err(format!("TCP connect error for {addr}"))?,
@@ -224,21 +226,16 @@ async fn send_shutdown_to_address(
         secret,
     );
 
-    // Write with timeout
-    match timeout(
-        Duration::from_secs(2),
-        stream.write_all(signed_message.as_bytes()),
-    )
-    .await
-    {
+    // Write
+    match timeout_at(deadline, stream.write_all(signed_message.as_bytes())).await {
         Ok(Ok(())) => {}
         Ok(e @ Err(_)) => e.wrap_err("Failed to write request to stream")?,
         Err(elapsed) => Err(elapsed).wrap_err("Timeout writing request to stream")?,
     }
 
-    // Read with timeout
+    // Read
     let mut buf = vec![0u8; 1024];
-    let n = match timeout(Duration::from_secs(2), stream.read(&mut buf)).await {
+    let n = match timeout_at(deadline, stream.read(&mut buf)).await {
         Ok(Ok(n)) => n,
         Ok(e @ Err(_)) => e.wrap_err("Failed to read response from stream")?,
         Err(elapsed) => Err(elapsed).wrap_err("Timeout reading response from stream")?,
@@ -301,10 +298,11 @@ pub(crate) async fn poll_and_wait(
     hoststatus_tx: &HostStatusTx,
     desired_state: HostState,
 ) -> Result<(), HostControlError> {
+    let deadline = Instant::now() + DEFAULT_POLL_TIMEOUT;
     match poll_until_host_state(
         host_with_name,
         desired_state,
-        DEFAULT_POLL_TIMEOUT_SECS,
+        deadline,
         DEFAULT_POLL_INTERVAL_MS,
         hoststatus_tx,
     )
