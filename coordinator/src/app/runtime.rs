@@ -26,7 +26,7 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigTx, HostInstallInfo, HostState, HostStatusTx};
+use super::state::{ConfigTx, HostInstallInfo, HostState, HostStatus, HostStatusState};
 use crate::{
     app::{
         AppState, LeaseMapRaw, LeaseRx, WsTx, config_watcher::watch_config_file, db,
@@ -163,23 +163,16 @@ pub(super) async fn poll_until_host_state(
     desired_state: HostState,
     deadline: Instant,
     poll_interval_ms: u64,
-    hoststatus_tx: &HostStatusTx,
+    hoststatus: &HostStatusState,
 ) -> Result<(), PollError> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
         let (current_state, _) = poll_host_status(host).await;
         let tick_fut = ticker.tick();
-        // Update global state
-        let mut status_map = hoststatus_tx.borrow().as_ref().clone();
-        if status_map.get(host.name.as_str()) != Some(&current_state) {
-            status_map.insert(host.name.clone(), current_state);
-            if hoststatus_tx.send(Arc::new(status_map)).is_err() {
-                debug!("Host status receiver dropped, stopping polling");
-                return Err(PollError::CoordinatorShuttingDown);
-            }
-        }
         if current_state == desired_state {
+            // Transition complete: write definitive stable state, clearing Waking/ShuttingDown.
+            hoststatus.force_set(&host.name, current_state).await;
             return Ok(());
         }
         tick_fut.await; // wait for next tick before polling again
@@ -222,7 +215,7 @@ pub(super) fn start_background_tasks(
     // Forwards host status updates to the websocket client loops
     {
         let ws_tx = state.ws_tx.clone();
-        let mut hoststatus_rx = state.hoststatus_tx.subscribe();
+        let mut hoststatus_rx = state.hoststatus.subscribe();
         tasks.spawn(async move {
             while hoststatus_rx.changed().await.is_ok() {
                 let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
@@ -235,7 +228,7 @@ pub(super) fn start_background_tasks(
 
     // Log host state transitions.
     {
-        let mut hoststatus_rx = state.hoststatus_tx.subscribe();
+        let mut hoststatus_rx = state.hoststatus.subscribe();
         tasks.spawn(async move {
             let mut prev = hoststatus_rx.borrow().clone();
             while hoststatus_rx.changed().await.is_ok() {
@@ -250,15 +243,15 @@ pub(super) fn start_background_tasks(
         });
     }
 
-    // Persist last-online timestamps on every host status transition.
+    // Persist last-online timestamps when a host transitions to Online.
     if let Some(pool) = state.db_pool.clone() {
-        let mut hoststatus_rx = state.hoststatus_tx.subscribe();
+        let mut hoststatus_rx = state.hoststatus.subscribe();
         tasks.spawn(async move {
             let mut prev = hoststatus_rx.borrow().clone();
             while hoststatus_rx.changed().await.is_ok() {
                 let current = hoststatus_rx.borrow().clone();
                 for (host, h_state) in current.iter() {
-                    if prev.get(host) != Some(h_state) {
+                    if prev.get(host) != Some(h_state) && *h_state == HostState::Online {
                         let pool = pool.clone();
                         let host = host.clone();
                         tokio::spawn(async move {
@@ -342,6 +335,11 @@ fn should_enforce_action(
         return false;
     }
 
+    // Don't trigger while a control task is already in-flight.
+    if current_state.is_transitioning() {
+        return false;
+    }
+
     let desired_running = !lease_set.is_empty();
     let is_running = current_state == HostState::Online;
     let needs_action = (desired_running && !is_running) || (!desired_running && is_running);
@@ -401,33 +399,27 @@ async fn poll_host_statuses(state: AppState) {
 
         let results = future::join_all(futures).await;
 
-        // Update the status map, recording the poll_start timestamp for any state changes.
-        let old_status = state.hoststatus_tx.borrow().clone();
-        let mut new_status = (*old_status).clone();
-        let mut any_changed = false;
-
-        for (host_name, (new_state, install_info)) in results {
-            if let Some(info) = install_info
+        // Update install info from poll results.
+        for (host_name, (_, install_info)) in &results {
+            if let Some(info) = install_info.clone()
                 && let (Some(version), Some(init_system), Some(os)) =
                     (info.agent_version, info.init_system, info.os)
             {
-                maybe_update_host_install_info(&state, &host_name, version, init_system, os).await;
-            }
-            if old_status.get(&host_name) != Some(&new_state) {
-                new_status.insert(host_name.clone(), new_state);
-                state_timestamps.insert(host_name, poll_start);
-                any_changed = true;
+                maybe_update_host_install_info(&state, host_name, version, init_system, os).await;
             }
         }
 
-        if any_changed {
-            if state
-                .hoststatus_tx
-                .send(Arc::new(new_status.clone()))
-                .is_err()
-            {
-                debug!("Host status receiver dropped, stopping polling");
-                break;
+        // Apply polled states to the status map, skipping hosts in transition.
+        let poll_iter = results
+            .iter()
+            .map(|(name, (polled_state, _))| (name.as_str(), *polled_state));
+        if let Some((old_status, new_status)) = state.hoststatus.apply_poll_results(poll_iter).await
+        {
+            // Record timestamps for changed hosts (used by the enforce stabilisation timer).
+            for (host, new_state) in new_status.iter() {
+                if old_status.get(host) != Some(new_state) {
+                    state_timestamps.insert(host.clone(), poll_start);
+                }
             }
 
             // Fire push notifications for unscheduled state transitions.
@@ -447,7 +439,7 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         // Enforce state for hosts that opt in, after a stabilization delay.
-        let current_status = state.hoststatus_tx.borrow().clone();
+        let current_status = state.hoststatus.borrow().clone();
         let leases_snapshot = state.leases.borrow().clone();
         for (host_name, host_cfg) in &config.hosts {
             let lease_set = leases_snapshot.get(host_name).cloned().unwrap_or_default();
@@ -475,8 +467,8 @@ async fn poll_host_statuses(state: AppState) {
 /// - A host transitions `Offline → Online` with no active leases (`ShutHost` did not wake it up).
 /// - A host transitions `Online → Offline` while leases are held (`ShutHost` did not shut it down).
 fn spawn_push_notifications_for_unscheduled(
-    old_status: &Arc<HashMap<String, HostState>>,
-    new_status: &HashMap<String, HostState>,
+    old_status: &HostStatus,
+    new_status: &HostStatus,
     leases: &Arc<LeaseMapRaw>,
     pool: &db::DbPool,
     vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
@@ -501,6 +493,7 @@ fn spawn_push_notifications_for_unscheduled(
         let body = match new_state {
             HostState::Online => format!("{host_name} started up unexpectedly"),
             HostState::Offline => format!("{host_name} shut down unexpectedly"),
+            HostState::Waking | HostState::ShuttingDown => continue,
         };
         let pool = pool.clone();
         let vapid_key = vapid_key.clone();
@@ -571,7 +564,7 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
     while leases_rx.changed().await.is_ok() {
         let new_leases = leases_rx.borrow_and_update();
         let new_desired_offline = get_hosts_desired_offline(&new_leases);
-        let hoststatus = state.hoststatus_tx.borrow();
+        let hoststatus = state.hoststatus.borrow();
 
         let changed_desired_state: HashSet<_> = prev_desired_offline
             .symmetric_difference(&new_desired_offline)
@@ -581,6 +574,11 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
             let desired_running = !new_desired_offline.contains(host_name);
 
             let current_state = *hoststatus.get(host_name).unwrap_or(&HostState::Offline);
+
+            // Skip hosts already in a transition — the in-flight task re-checks on completion.
+            if current_state.is_transitioning() {
+                continue;
+            }
 
             let is_running = current_state == HostState::Online;
 
@@ -643,7 +641,11 @@ async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppSt
 
     info!("Received valid startup broadcast from host '{hostname}' at {peer_addr}");
 
-    mark_host_online(state, hostname);
+    state
+        .hoststatus
+        .force_set(hostname, HostState::Online)
+        .await;
+
     maybe_update_host_install_info(
         state,
         hostname,
@@ -700,16 +702,6 @@ fn validate_startup_hmac(
         debug!("Invalid HMAC on startup broadcast from {peer_addr} claiming to be '{hostname}'");
     }
     mac_is_valid
-}
-
-fn mark_host_online(state: &AppState, hostname: &str) {
-    let mut status_map = state.hoststatus_tx.borrow().as_ref().clone();
-    if status_map.get(hostname) != Some(&HostState::Online) {
-        status_map.insert(hostname.to_string(), HostState::Online);
-        if state.hoststatus_tx.send(Arc::new(status_map)).is_err() {
-            debug!("Host status channel closed");
-        }
-    }
 }
 
 async fn persist_host_override_if_needed(

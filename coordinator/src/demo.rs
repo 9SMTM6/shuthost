@@ -14,7 +14,7 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    app::{AppState, LeaseMapRaw, LeaseState, shutdown_signal},
+    app::{AppState, HostStatusState, LeaseMapRaw, LeaseState, shutdown_signal},
     config::{AuthConfig, ControllerConfig},
     http::{
         assets::{UiMode, render_ui_html},
@@ -45,13 +45,12 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         }
     };
 
-    let (hoststatus_tx, hoststatus_rx) = watch::channel(Arc::new(HashMap::new()));
+    let (hoststatus, _) = HostStatusState::new(HashMap::new());
 
     let app_state = AppState {
         config_path: path::PathBuf::from("demo"),
         config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
-        hoststatus_rx,
-        hoststatus_tx,
+        hoststatus,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseState::new(LeaseMapRaw::default()).0,
         host_overrides: Arc::new(RwLock::new(HashMap::new())),
@@ -64,7 +63,6 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         tls_enabled: false,
         db_pool: None,
         vapid_key: None,
-        host_transition_locks: Arc::new(std::sync::Mutex::new(HashMap::new())),
     };
 
     let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);

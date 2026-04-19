@@ -20,8 +20,8 @@ use tracing::error;
 
 use crate::{
     app::{
-        AppState, HostControlError, HostState, LeaseSource, db, lookup_host_with_overrides,
-        poll_and_wait, DEFAULT_SHUTDOWN_TIMEOUT_SECS, DEFAULT_WAKE_TIMEOUT_SECS,
+        AppState, DEFAULT_SHUTDOWN_TIMEOUT_SECS, DEFAULT_WAKE_TIMEOUT_SECS, HostControlError,
+        HostState, LeaseSource, db, lookup_host_with_overrides, poll_and_wait,
     },
     http::api::{LeaseAction, update_lease},
     wol,
@@ -144,10 +144,7 @@ async fn handle_m2m_lease_action(
         // case a release should leave the host Online and we should not poll for Offline.
         let desired_state = {
             let post_update_leases = state.leases.borrow();
-            if post_update_leases
-                .get(&host)
-                .is_some_and(|s| !s.is_empty())
-            {
+            if post_update_leases.get(&host).is_some_and(|s| !s.is_empty()) {
                 HS::Online
             } else {
                 HS::Offline
@@ -156,7 +153,7 @@ async fn handle_m2m_lease_action(
 
         // Short-circuit if the host is already in the desired state.
         let current_state = state
-            .hoststatus_rx
+            .hoststatus
             .borrow()
             .get(host.as_str())
             .copied()
@@ -187,10 +184,9 @@ async fn handle_m2m_lease_action(
                 .shutdown_timeout_secs
                 .unwrap_or(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
         };
-        let deadline =
-            tokio::time::Instant::now() + core::time::Duration::from_secs(timeout_secs);
+        let deadline = tokio::time::Instant::now() + core::time::Duration::from_secs(timeout_secs);
 
-        match poll_and_wait(&host_with_name, &state.hoststatus_tx, desired_state, deadline).await {
+        match poll_and_wait(&host_with_name, &state.hoststatus, desired_state, deadline).await {
             Ok(()) => {}
             Err(err) => {
                 return Err((

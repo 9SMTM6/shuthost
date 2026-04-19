@@ -41,7 +41,11 @@ const makeInstallCommands = () => {
 
 const HostRow = ((props: { hostName: string }) => {
     const leases = () => state.leaseMap[props.hostName] ?? [];
-    const status = () => state.statusMap[props.hostName] ?? 'Loading...';
+    const status = () => {
+        const raw = state.statusMap[props.hostName];
+        if (raw === 'shutting_down') return 'shutting down';
+        return raw ?? 'Loading...';
+    };
     const hasWebInterfaceLease = () =>
         leases().some((l) => l.type === 'WebInterface');
     const hasClients = () => state.clients.length > 0;

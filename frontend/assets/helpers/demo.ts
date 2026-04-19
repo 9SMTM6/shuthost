@@ -115,33 +115,45 @@ export const demoUpdateLease = async (
 ) => {
     if (action === 'take') {
         if (leaseTimeout) clearTimeout(leaseTimeout);
+        if (statusTimeout) clearTimeout(statusTimeout);
         leaseTimeout = setTimeout(() => {
             applyMessage({
                 type: 'LeaseUpdate',
                 payload: { host, leases: [{ type: 'WebInterface' }] },
             });
-        }, 500);
-        if (statusTimeout) clearTimeout(statusTimeout);
+        }, 300);
         statusTimeout = setTimeout(() => {
             applyMessage({
                 type: 'HostStatus',
-                payload: { tarbean: 'offline', archive: 'online' },
+                payload: { tarbean: 'offline', archive: 'waking' },
             });
-        }, 1200);
+            statusTimeout = setTimeout(() => {
+                applyMessage({
+                    type: 'HostStatus',
+                    payload: { tarbean: 'offline', archive: 'online' },
+                });
+            }, 1500);
+        }, 300);
     } else {
         if (leaseTimeout) clearTimeout(leaseTimeout);
+        if (statusTimeout) clearTimeout(statusTimeout);
         leaseTimeout = setTimeout(() => {
             applyMessage({
                 type: 'LeaseUpdate',
                 payload: { host, leases: [] },
             });
-        }, 500);
-        if (statusTimeout) clearTimeout(statusTimeout);
+        }, 300);
         statusTimeout = setTimeout(() => {
             applyMessage({
                 type: 'HostStatus',
-                payload: { tarbean: 'offline', archive: 'offline' },
+                payload: { tarbean: 'offline', archive: 'shutting_down' },
             });
-        }, 1200);
+            statusTimeout = setTimeout(() => {
+                applyMessage({
+                    type: 'HostStatus',
+                    payload: { tarbean: 'offline', archive: 'offline' },
+                });
+            }, 1500);
+        }, 300);
     }
 };
