@@ -31,6 +31,21 @@ pub(crate) struct HostWithName {
     pub host: Host,
 }
 
+/// A [`HostWithName`] that has had runtime IP/port overrides applied.
+///
+/// The private field prevents construction outside of this module; the only
+/// way to obtain a `ResolvedHost` is via [`lookup_host_with_overrides`], which
+/// guarantees the overrides have been applied.
+#[derive(Debug, Clone)]
+pub(crate) struct ResolvedHost(HostWithName);
+
+impl core::ops::Deref for ResolvedHost {
+    type Target = HostWithName;
+    fn deref(&self) -> &HostWithName {
+        &self.0
+    }
+}
+
 /// The set of lease sources for a single host
 pub(crate) type LeaseSources = HashSet<LeaseSource>;
 
@@ -100,7 +115,7 @@ impl LeaseState {
 pub(crate) async fn lookup_host_with_overrides(
     state: &AppState,
     host: &str,
-) -> Option<HostWithName> {
+) -> Option<ResolvedHost> {
     let cfg_snapshot = state.config_rx.borrow().clone();
     let mut host_cfg = match cfg_snapshot.hosts.get(host) {
         Some(h) => h.clone(),
@@ -113,10 +128,10 @@ pub(crate) async fn lookup_host_with_overrides(
         host_cfg.port = o.port;
     }
 
-    Some(HostWithName {
+    Some(ResolvedHost(HostWithName {
         name: host.to_string(),
         host: host_cfg,
-    })
+    }))
 }
 
 /// Represents a source that holds a lease on a host.
@@ -202,12 +217,11 @@ pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, stat
     );
 }
 
-/// Send a shutdown message to a host address and return the textual response.
-async fn send_shutdown_to_address(
-    ip: &str,
-    port: u16,
-    secret: &secrecy::SecretString,
-) -> Result<String, Report> {
+/// Send a shutdown message to the host described by `host_with_name` and return the textual response.
+async fn send_shutdown_to_address(host_with_name: &ResolvedHost) -> Result<String, Report> {
+    let ip = &host_with_name.host.ip;
+    let port = host_with_name.host.port;
+    let secret = host_with_name.host.shared_secret.as_ref();
     let addr = format!("{ip}:{port}");
     debug!(%addr, "Connecting to host for shutdown");
 
@@ -251,7 +265,7 @@ async fn send_shutdown_to_address(
 /// Send a `WoL` packet (via crate-level `wol` helper) and then wait until the
 /// host becomes online by polling runtime state.
 async fn wake_host_and_wait(
-    host_with_name: &HostWithName,
+    host_with_name: &ResolvedHost,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
@@ -274,27 +288,28 @@ async fn wake_host_and_wait(
 
 /// Send shutdown command to host and wait until offline.
 async fn shutdown_host_and_wait(
-    host_with_name: &HostWithName,
+    host_with_name: &ResolvedHost,
     hoststatus_tx: &HostStatusTx,
 ) -> Result<(), HostControlError> {
     // Send shutdown to the address
-    let _resp = match send_shutdown_to_address(
-        &host_with_name.host.ip,
-        host_with_name.host.port,
-        host_with_name.host.shared_secret.as_ref(),
-    )
-    .await
-    {
+    let resp = match send_shutdown_to_address(host_with_name).await {
         Ok(r) => r,
         Err(e) => return Err(HostControlError::OperationFailed(HostState::Offline, e)),
     };
+
+    if resp.contains("ERROR") {
+        return Err(HostControlError::OperationFailed(
+            HostState::Offline,
+            eyre::eyre!("Agent rejected shutdown command: {resp}"),
+        ));
+    }
 
     poll_and_wait(host_with_name, hoststatus_tx, HostState::Offline).await
 }
 
 /// Poll for the desired host state and handle errors uniformly.
 pub(crate) async fn poll_and_wait(
-    host_with_name: &HostWithName,
+    host_with_name: &ResolvedHost,
     hoststatus_tx: &HostStatusTx,
     desired_state: HostState,
 ) -> Result<(), HostControlError> {
