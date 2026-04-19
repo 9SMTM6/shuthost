@@ -35,7 +35,7 @@ pub enum HostState {
 
 impl HostState {
     /// Returns `true` for `Waking` and `ShuttingDown`.
-    pub(crate) fn is_transitioning(&self) -> bool {
+    pub(crate) const fn is_transitioning(self) -> bool {
         matches!(self, Self::Waking | Self::ShuttingDown)
     }
 }
@@ -83,7 +83,11 @@ impl HostStatusState {
             "try_begin_transition called with non-transition state"
         );
         let mut inner = self.inner.lock().await;
-        if inner.get(host).is_some_and(HostState::is_transitioning) {
+        if inner
+            .get(host)
+            .copied()
+            .is_some_and(HostState::is_transitioning)
+        {
             return false;
         }
         inner.insert(host.to_string(), state);
@@ -109,15 +113,19 @@ impl HostStatusState {
     ///
     /// Returns `Some((old_snapshot, new_snapshot))` if any entry changed, or
     /// `None` if nothing was updated (allows callers to skip downstream work).
-    pub(crate) async fn apply_poll_results<'a>(
+    pub(crate) async fn apply_poll_results<'result_life>(
         &self,
-        results: impl Iterator<Item = (&'a str, HostState)>,
+        results: impl Iterator<Item = (&'result_life str, HostState)>,
     ) -> Option<(Arc<HostStatus>, Arc<HostStatus>)> {
         let old = self.tx.borrow().clone();
         let mut inner = self.inner.lock().await;
         let mut any_changed = false;
         for (host, new_state) in results {
-            if inner.get(host).is_some_and(HostState::is_transitioning) {
+            if inner
+                .get(host)
+                .copied()
+                .is_some_and(HostState::is_transitioning)
+            {
                 continue;
             }
             if inner.get(host) != Some(&new_state) {

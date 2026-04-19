@@ -7,6 +7,8 @@
 
 mod validation;
 
+use core::time::Duration;
+
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -16,6 +18,7 @@ use axum::{
 };
 use chrono::Utc;
 use serde_json::json;
+use tokio::time::Instant;
 use tracing::error;
 
 use crate::{
@@ -142,13 +145,10 @@ async fn handle_m2m_lease_action(
         // Derive the desired state from the post-update lease set, not from the
         // action alone: another concurrent client may still hold a lease, in which
         // case a release should leave the host Online and we should not poll for Offline.
-        let desired_state = {
-            let post_update_leases = state.leases.borrow();
-            if post_update_leases.get(&host).is_some_and(|s| !s.is_empty()) {
-                HS::Online
-            } else {
-                HS::Offline
-            }
+        let desired_state = if state.leases.host_has_leases(&host) {
+            HS::Online
+        } else {
+            HS::Offline
         };
 
         // Short-circuit if the host is already in the desired state.
@@ -184,7 +184,7 @@ async fn handle_m2m_lease_action(
                 .shutdown_timeout_secs
                 .unwrap_or(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
         };
-        let deadline = tokio::time::Instant::now() + core::time::Duration::from_secs(timeout_secs);
+        let deadline = Instant::now() + Duration::from_secs(timeout_secs);
 
         match poll_and_wait(&host_with_name, &state.hoststatus, desired_state, deadline).await {
             Ok(()) => {}

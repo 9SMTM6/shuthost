@@ -31,7 +31,7 @@ pub(crate) struct Host {
     /// if no lease change occurred.  Defaults to `false` (edge-triggered only).
     #[serde(default)]
     pub enforce_state: bool,
-    /// Maximum seconds to wait for the host to come online after sending WoL packets.
+    /// Maximum seconds to wait for the host to come online after sending `WoL` packets.
     /// Defaults to [`DEFAULT_WAKE_TIMEOUT_SECS`](crate::app::host_control::DEFAULT_WAKE_TIMEOUT_SECS) when `None`.
     #[serde(default)]
     pub wake_timeout_secs: Option<u64>,

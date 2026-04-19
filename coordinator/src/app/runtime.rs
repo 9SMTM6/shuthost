@@ -154,8 +154,6 @@ pub(super) enum PollError {
         host_name: String,
         desired_state: HostState,
     },
-    #[error("Coordinator shutting down")]
-    CoordinatorShuttingDown,
 }
 
 pub(super) async fn poll_until_host_state(
@@ -400,7 +398,7 @@ async fn poll_host_statuses(state: AppState) {
         let results = future::join_all(futures).await;
 
         // Update install info from poll results.
-        for (host_name, (_, install_info)) in &results {
+        for &(ref host_name, (_, ref install_info)) in &results {
             if let Some(info) = install_info.clone()
                 && let (Some(version), Some(init_system), Some(os)) =
                     (info.agent_version, info.init_system, info.os)
@@ -412,7 +410,7 @@ async fn poll_host_statuses(state: AppState) {
         // Apply polled states to the status map, skipping hosts in transition.
         let poll_iter = results
             .iter()
-            .map(|(name, (polled_state, _))| (name.as_str(), *polled_state));
+            .map(|&(ref name, (polled_state, _))| (name.as_str(), polled_state));
         if let Some((old_status, new_status)) = state.hoststatus.apply_poll_results(poll_iter).await
         {
             // Record timestamps for changed hosts (used by the enforce stabilisation timer).
@@ -425,7 +423,7 @@ async fn poll_host_statuses(state: AppState) {
             // Fire push notifications for unscheduled state transitions.
             if let (Some(pool), Some(vapid_key)) = (state.db_pool.clone(), state.vapid_key.clone())
             {
-                let leases_snapshot = state.leases.borrow().clone();
+                let leases_snapshot = state.leases.snapshot();
                 spawn_push_notifications_for_unscheduled(
                     &old_status,
                     &new_status,
@@ -440,7 +438,7 @@ async fn poll_host_statuses(state: AppState) {
 
         // Enforce state for hosts that opt in, after a stabilization delay.
         let current_status = state.hoststatus.borrow().clone();
-        let leases_snapshot = state.leases.borrow().clone();
+        let leases_snapshot = state.leases.snapshot();
         for (host_name, host_cfg) in &config.hosts {
             let lease_set = leases_snapshot.get(host_name).cloned().unwrap_or_default();
             let current_state = current_status

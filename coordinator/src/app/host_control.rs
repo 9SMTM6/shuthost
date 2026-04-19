@@ -107,6 +107,21 @@ impl LeaseState {
         self.tx.borrow()
     }
 
+    /// Clone the current snapshot of the entire lease map.
+    pub(crate) fn snapshot(&self) -> Arc<LeaseMapRaw> {
+        self.borrow().clone()
+    }
+
+    /// Return the current lease set for `host`, defaulting to an empty set.
+    pub(crate) fn get_host(&self, host: &str) -> LeaseSources {
+        self.borrow().get(host).cloned().unwrap_or_default()
+    }
+
+    /// Return `true` if `host` currently has at least one active lease.
+    pub(crate) fn host_has_leases(&self, host: &str) -> bool {
+        self.borrow().get(host).is_some_and(|s| !s.is_empty())
+    }
+
     /// Subscribe to future changes of the lease map.
     pub(crate) fn subscribe(&self) -> LeaseRx {
         self.tx.subscribe()
@@ -150,7 +165,7 @@ pub enum LeaseSource {
 
 const DEFAULT_POLL_INTERVAL_MS: u64 = 200;
 
-/// Default wake timeout: how long to wait for a host to come online after sending WoL packets.
+/// Default wake timeout: how long to wait for a host to come online after sending `WoL` packets.
 /// Can be overridden per host via `wake_timeout_secs` in the config.
 pub(crate) const DEFAULT_WAKE_TIMEOUT_SECS: u64 = 120;
 
@@ -158,7 +173,7 @@ pub(crate) const DEFAULT_WAKE_TIMEOUT_SECS: u64 = 120;
 /// Can be overridden per host via `shutdown_timeout_secs` in the config.
 pub(crate) const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 20;
 
-/// Interval between WoL re-sends during a wake transition.
+/// Interval between `WoL` re-sends during a wake transition.
 #[cfg(not(any(coverage, test)))]
 const WOL_RESEND_INTERVAL: Duration = Duration::from_millis(500);
 
@@ -174,7 +189,7 @@ pub(crate) enum HostControlError {
 }
 
 /// High-level application entrypoint for handling host state transitions.
-/// Called with the already-claimed transition state (Waking or ShuttingDown)
+/// Called with the already-claimed transition state (Waking or `ShuttingDown`)
 /// having been atomically set before this function is invoked. Because
 /// `try_begin_transition` already serialises concurrent calls, there is no
 /// need to re-check the current status; we just act on the lease set.
@@ -213,9 +228,7 @@ async fn handle_host_state(
 /// control task is already in-flight for this host the call is a no-op (the
 /// existing task will re-check lease state on completion and re-trigger if needed).
 pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
-    let lease_set = state.leases.borrow().get(host).cloned().unwrap_or_default();
-    let desired_running = !lease_set.is_empty();
-    let transition_state = if desired_running {
+    let transition_state = if state.leases.host_has_leases(host) {
         HostState::Waking
     } else {
         HostState::ShuttingDown
@@ -236,12 +249,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                 return;
             }
             // Re-read current lease state now that we've claimed the slot.
-            let lease_set = state
-                .leases
-                .borrow()
-                .get(&host)
-                .cloned()
-                .unwrap_or_default();
+            let lease_set = state.leases.get_host(&host);
             let result = handle_host_state(&host, &state, &lease_set)
                 .in_current_span()
                 .await;
@@ -250,13 +258,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             }
             // On completion, re-check whether the actual state matches the desired state.
             // This handles the race where the lease changed while we were transitioning.
-            let desired_running = !state
-                .leases
-                .borrow()
-                .get(&host)
-                .cloned()
-                .unwrap_or_default()
-                .is_empty();
+            let desired_running = state.leases.host_has_leases(&host);
             let current = state
                 .hoststatus
                 .borrow()
@@ -317,7 +319,7 @@ async fn send_shutdown_to_address(host_with_name: &ResolvedHost) -> Result<Strin
     Ok(String::from_utf8_lossy(data).to_string())
 }
 
-/// Send WoL packets and poll until the host comes online, re-sending the WoL
+/// Send `WoL` packets and poll until the host comes online, re-sending the `WoL`
 /// magic packet every [`WOL_RESEND_INTERVAL`] until the deadline to account for
 /// UDP packet loss during boot. The re-send task is aborted as soon as the host
 /// is confirmed online or the deadline is reached.
@@ -393,10 +395,6 @@ async fn wake_host_and_wait(
                 .await;
             match e {
                 PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
-                PollError::CoordinatorShuttingDown => Err(HostControlError::OperationFailed(
-                    HostState::Online,
-                    e.into(),
-                )),
             }
         }
     }
@@ -452,10 +450,6 @@ async fn shutdown_host_and_wait(
                 .await;
             match e {
                 PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
-                PollError::CoordinatorShuttingDown => Err(HostControlError::OperationFailed(
-                    HostState::Offline,
-                    e.into(),
-                )),
             }
         }
     }
@@ -481,9 +475,6 @@ pub(crate) async fn poll_and_wait(
         Ok(()) => Ok(()),
         Err(e) => match e {
             PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
-            PollError::CoordinatorShuttingDown => {
-                Err(HostControlError::OperationFailed(desired_state, e.into()))
-            }
         },
     }
 }
