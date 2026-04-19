@@ -2,7 +2,7 @@
 //! operations for waking/shutting hosts and polling their state.
 
 use alloc::sync::Arc;
-use core::time::Duration;
+use core::{ops, time::Duration};
 use std::collections::{HashMap, HashSet};
 
 use eyre::{Context as _, Report};
@@ -39,7 +39,7 @@ pub(crate) struct HostWithName {
 #[derive(Debug, Clone)]
 pub(crate) struct ResolvedHost(HostWithName);
 
-impl core::ops::Deref for ResolvedHost {
+impl ops::Deref for ResolvedHost {
     type Target = HostWithName;
     fn deref(&self) -> &HostWithName {
         &self.0

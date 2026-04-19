@@ -63,7 +63,7 @@ async fn poll_host_status(host: &HostWithName) -> (HostState, Option<HostInstall
         return (HostState::Offline, None);
     };
 
-    let resp = String::from_utf8_lossy(&buf[..n]);
+    let resp = String::from_utf8_lossy(buf.get(..n).expect("n <= buf.len() by definition"));
     // Accept any non-error response as online
     if resp.contains("ERROR") {
         (HostState::Offline, None)
