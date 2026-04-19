@@ -213,22 +213,26 @@ async fn handle_host_state(
 
 /// Attempt to spawn a host state transition task.
 ///
-/// Determines the desired direction from the current lease set, then atomically
-/// claims the transition via [`HostStatusState::try_begin_transition`]. If a
-/// control task is already in-flight for this host the call is a no-op (the
-/// existing task will re-check lease state on completion and re-trigger if needed).
+/// Determines the desired direction from the current lease set immediately before
+/// claiming the transition slot via [`HostStatusState::try_begin_transition`], so
+/// the published transition direction matches the action taken. If a control task is
+/// already in-flight for this host the call is a no-op (the existing task will
+/// re-check lease state on completion and re-trigger if needed).
 pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
-    let transition_state = if state.leases.host_has_leases(host) {
-        HostState::Waking
-    } else {
-        HostState::ShuttingDown
-    };
-
     let host = host.to_string();
     let state = state.clone();
 
     tokio::spawn(
         async move {
+            // Determine direction from lease state immediately before claiming the
+            // transition slot, so the published transition direction matches the action taken.
+            let lease_set = state.leases.get_host(&host);
+            let transition_state = if !lease_set.is_empty() {
+                HostState::Waking
+            } else {
+                HostState::ShuttingDown
+            };
+
             // Atomically claim the transition slot. Returns false if already transitioning.
             if !state
                 .hoststatus
@@ -238,25 +242,22 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                 debug!(host = %host, "Transition already in-flight, skipping");
                 return;
             }
-            // Re-read current lease state now that we've claimed the slot.
-            let lease_set = state.leases.get_host(&host);
             let result = handle_host_state(&host, &state, &lease_set)
                 .in_current_span()
                 .await;
             if let Err(ref e) = result {
                 debug!(host = %host, error = ?e, "Host state transition failed");
             }
-            // On completion, re-check whether the actual state matches the desired state.
-            // This handles the race where the lease changed while we were transitioning.
-            let desired_running = state.leases.host_has_leases(&host);
-            let current = state
-                .hoststatus
-                .borrow()
-                .get(&host)
-                .copied()
-                .unwrap_or(HostState::Offline);
-            let is_running = matches!(current, HostState::Online);
-            if desired_running != is_running {
+            // On completion, re-trigger only if the desired direction changed during our
+            // transition. This handles the race where the lease changed while we were
+            // transitioning, without creating a tight retry loop when a transition times
+            // out or fails and the desired state never changed.
+            let desired_transition_state = if state.leases.host_has_leases(&host) {
+                HostState::Waking
+            } else {
+                HostState::ShuttingDown
+            };
+            if desired_transition_state != transition_state {
                 spawn_handle_host_state(&host, &state);
             }
         }
@@ -326,7 +327,10 @@ async fn wake_host_and_wait(
         hoststatus
             .force_set(&host_with_name.name, HostState::Offline)
             .await;
-        return Ok(());
+        return Err(HostControlError::OperationFailed(
+            HostState::Online,
+            Report::msg("Wake-on-LAN is disabled or unsupported for host"),
+        ));
     }
 
     let wake_secs = host_with_name

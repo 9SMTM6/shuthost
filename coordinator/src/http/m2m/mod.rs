@@ -158,62 +158,62 @@ async fn handle_m2m_lease_action(
             .get(host.as_str())
             .copied()
             .unwrap_or(HS::Offline);
-        if current_state == desired_state {
-            return Ok(match action {
-                LA::Take => "Lease taken, host is online",
-                LA::Release => "Lease released, host is offline",
-            });
-        }
 
-        // Lookup host config for per-host timeout values.
-        let Some(host_with_name) = lookup_host_with_overrides(&state, &host).await else {
-            return Err((
-                SC::NOT_FOUND,
-                format!("No configuration found for host {host}"),
-            ));
-        };
-
-        let timeout_secs = if desired_state == HS::Online {
-            host_with_name
-                .host
-                .wake_timeout_secs
-                .unwrap_or(state.runtime.default_wake_timeout_secs)
-        } else {
-            host_with_name
-                .host
-                .shutdown_timeout_secs
-                .unwrap_or(state.runtime.default_shutdown_timeout_secs)
-        };
-        let deadline = Instant::now() + Duration::from_secs(timeout_secs);
-
-        match poll_and_wait(
-            &host_with_name,
-            &state.hoststatus,
-            desired_state,
-            deadline,
-            &state.runtime,
-        )
-        .await
-        {
-            Ok(()) => {}
-            Err(err) => {
+        if current_state != desired_state {
+            // Lookup host config for per-host timeout values.
+            let Some(host_with_name) = lookup_host_with_overrides(&state, &host).await else {
                 return Err((
-                    match err {
-                        HCE::NotFound(_) => SC::NOT_FOUND,
-                        HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
-                        HCE::OperationFailed(_, _) => SC::INTERNAL_SERVER_ERROR,
-                    },
-                    err.to_string(),
+                    SC::NOT_FOUND,
+                    format!("No configuration found for host {host}"),
                 ));
+            };
+
+            let timeout_secs = if desired_state == HS::Online {
+                host_with_name
+                    .host
+                    .wake_timeout_secs
+                    .unwrap_or(state.runtime.default_wake_timeout_secs)
+            } else {
+                host_with_name
+                    .host
+                    .shutdown_timeout_secs
+                    .unwrap_or(state.runtime.default_shutdown_timeout_secs)
+            };
+            let deadline = Instant::now() + Duration::from_secs(timeout_secs);
+
+            match poll_and_wait(
+                &host_with_name,
+                &state.hoststatus,
+                desired_state,
+                deadline,
+                &state.runtime,
+            )
+            .await
+            {
+                Ok(()) => {}
+                Err(err) => {
+                    return Err((
+                        match err {
+                            HCE::NotFound(_) => SC::NOT_FOUND,
+                            HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
+                            HCE::OperationFailed(_, _) => SC::INTERNAL_SERVER_ERROR,
+                        },
+                        err.to_string(),
+                    ));
+                }
             }
         }
+
+        return Ok(match (action, desired_state) {
+            (LA::Take, _) => "Lease taken, host is online",
+            (LA::Release, HS::Online) => "Lease released, host is online",
+            (LA::Release, _) => "Lease released, host is offline",
+        });
     }
     // In async mode, the lease map update already published a watch event;
     // the reconciler background task will handle the host control action.
-    Ok(match (action, is_async) {
-        (LA::Take, true) => "Lease taken (async)",
-        (LA::Take, false) => "Lease taken, host is online",
-        (LA::Release, true) => "Lease released (async)",
-        (LA::Release, false) => "Lease released, host is offline",
+    Ok(match action {
+        LA::Take => "Lease taken (async)",
+        LA::Release => "Lease released (async)",
     })
 }
