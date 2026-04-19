@@ -204,16 +204,17 @@ async fn handle_m2m_lease_action(
             }
         }
 
-        return Ok(match (action, desired_state) {
+        Ok(match (action, desired_state) {
             (LA::Take, _) => "Lease taken, host is online",
             (LA::Release, HS::Online) => "Lease released, host is online",
             (LA::Release, _) => "Lease released, host is offline",
-        });
+        })
+    } else {
+        // In async mode, the lease map update already published a watch event;
+        // the reconciler background task will handle the host control action.
+        Ok(match action {
+            LA::Take => "Lease taken (async)",
+            LA::Release => "Lease released (async)",
+        })
     }
-    // In async mode, the lease map update already published a watch event;
-    // the reconciler background task will handle the host control action.
-    Ok(match action {
-        LA::Take => "Lease taken (async)",
-        LA::Release => "Lease released (async)",
-    })
 }
