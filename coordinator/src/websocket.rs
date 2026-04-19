@@ -84,7 +84,7 @@ pub(crate) async fn ws_handler(
     headers: HeaderMap,
     State(AppState {
         ws_tx,
-        hoststatus_rx,
+        hoststatus,
         config_rx,
         leases,
         db_pool,
@@ -99,7 +99,6 @@ pub(crate) async fn ws_handler(
     // Defer reading current state until inside the startup sender so we get the
     // freshest values at the moment of sending. Clone the receivers/leases to
     // move into the upgrade task.
-    let hoststatus_rx = hoststatus_rx.clone();
     let config_rx = config_rx.clone();
     let current_leases = leases.clone();
     let db_pool_clone = db_pool.clone();
@@ -112,7 +111,7 @@ pub(crate) async fn ws_handler(
         debug!("WebSocket upgrade completed; starting event loop");
         match send_startup_msg(
             &mut socket,
-            hoststatus_rx,
+            hoststatus.subscribe(),
             config_rx,
             current_leases,
             db_pool_clone.as_ref(),

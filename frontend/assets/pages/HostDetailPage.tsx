@@ -28,7 +28,7 @@ type ClientLease = { type: 'Client'; value: string };
 // --- Sub-components ---
 
 const HostStatusBadge = (props: {
-    status: 'online' | 'offline' | undefined;
+    status: 'online' | 'offline' | 'waking' | 'shutting_down' | undefined;
 }) => (
     <Switch
         fallback={
@@ -45,6 +45,16 @@ const HostStatusBadge = (props: {
         <Match when={props.status === 'offline'}>
             <span class="host-status-badge bg-red-100 text-red-800 dark:bg-[rgba(244,135,113,0.15)] dark:text-[rgba(244,135,113,0.9)]">
                 offline
+            </span>
+        </Match>
+        <Match when={props.status === 'waking'}>
+            <span class="host-status-badge bg-yellow-100 text-yellow-800 dark:bg-[rgba(234,179,8,0.15)] dark:text-[rgba(234,179,8,0.9)]">
+                waking
+            </span>
+        </Match>
+        <Match when={props.status === 'shutting_down'}>
+            <span class="host-status-badge bg-orange-100 text-orange-800 dark:bg-[rgba(249,115,22,0.15)] dark:text-[rgba(249,115,22,0.9)]">
+                shutting down
             </span>
         </Match>
     </Switch>

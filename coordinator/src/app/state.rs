@@ -21,20 +21,129 @@ use crate::{
     websocket::WsMessage,
 };
 
-/// Host online/offline state.
+/// Host online/offline state, including active transition states.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum HostState {
     Online,
     Offline,
+    /// Wake-on-LAN sent; waiting for the host to respond.
+    Waking,
+    /// Shutdown command sent; waiting for the host to stop responding.
+    ShuttingDown,
+}
+
+impl HostState {
+    /// Returns `true` for `Waking` and `ShuttingDown`.
+    pub(crate) fn is_transitioning(&self) -> bool {
+        matches!(self, Self::Waking | Self::ShuttingDown)
+    }
 }
 
 pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
 pub(super) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
 pub type HostStatus = HashMap<String, HostState>;
 pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
-pub(crate) type HostStatusTx = watch::Sender<Arc<HostStatus>>;
 pub(crate) type WsTx = broadcast::Sender<WsMessage>;
+
+/// Shared, atomically-updated host status store.
+///
+/// Combines a [`tokio::sync::Mutex`] over the `HostStatus` map (so callers can
+/// atomically check-and-set transition states) with a [`watch`] channel that
+/// broadcasts every committed snapshot to all subscribers.
+///
+/// This is intentionally analogous to [`crate::app::LeaseState`].
+pub(crate) struct HostStatusState {
+    inner: AsyncMutex<HostStatus>,
+    tx: watch::Sender<Arc<HostStatus>>,
+}
+
+impl HostStatusState {
+    /// Create a new `HostStatusState` from an initial status map.
+    /// Returns an `Arc<HostStatusState>` and an initial [`HostStatusRx`] receiver.
+    pub(crate) fn new(initial: HostStatus) -> (Arc<Self>, HostStatusRx) {
+        let (tx, rx) = watch::channel(Arc::new(initial.clone()));
+        (
+            Arc::new(Self {
+                inner: AsyncMutex::new(initial),
+                tx,
+            }),
+            rx,
+        )
+    }
+
+    /// Atomically begin a transition.
+    ///
+    /// Sets `host` to `state` (`Waking` or `ShuttingDown`) and broadcasts.
+    /// Returns `false` — without modifying anything — if the host is already in
+    /// any transition state, meaning a control task is already in-flight.
+    pub(crate) async fn try_begin_transition(&self, host: &str, state: HostState) -> bool {
+        debug_assert!(
+            state.is_transitioning(),
+            "try_begin_transition called with non-transition state"
+        );
+        let mut inner = self.inner.lock().await;
+        if inner.get(host).is_some_and(HostState::is_transitioning) {
+            return false;
+        }
+        inner.insert(host.to_string(), state);
+        drop(self.tx.send(Arc::new(inner.clone())));
+        true
+    }
+
+    /// Forcefully write a definitive state (`Online` or `Offline`).
+    ///
+    /// Used by the control task on completion / error and by startup broadcasts.
+    /// Skips the write (no broadcast) if the current state is already `state`.
+    pub(crate) async fn force_set(&self, host: &str, state: HostState) {
+        let mut inner = self.inner.lock().await;
+        if inner.get(host) == Some(&state) {
+            return;
+        }
+        inner.insert(host.to_string(), state);
+        drop(self.tx.send(Arc::new(inner.clone())));
+    }
+
+    /// Apply a batch of polled (`Online`/`Offline`) results, skipping any host
+    /// currently in a transition state (the control task is authoritative for those).
+    ///
+    /// Returns `Some((old_snapshot, new_snapshot))` if any entry changed, or
+    /// `None` if nothing was updated (allows callers to skip downstream work).
+    pub(crate) async fn apply_poll_results<'a>(
+        &self,
+        results: impl Iterator<Item = (&'a str, HostState)>,
+    ) -> Option<(Arc<HostStatus>, Arc<HostStatus>)> {
+        let old = self.tx.borrow().clone();
+        let mut inner = self.inner.lock().await;
+        let mut any_changed = false;
+        for (host, new_state) in results {
+            if inner.get(host).is_some_and(HostState::is_transitioning) {
+                continue;
+            }
+            if inner.get(host) != Some(&new_state) {
+                inner.insert(host.to_string(), new_state);
+                any_changed = true;
+            }
+        }
+        if any_changed {
+            let new = Arc::new(inner.clone());
+            drop(self.tx.send(Arc::clone(&new)));
+            Some((old, new))
+        } else {
+            None
+        }
+    }
+
+    /// Borrow the current snapshot without acquiring the write mutex.
+    pub(crate) fn borrow(&self) -> watch::Ref<'_, Arc<HostStatus>> {
+        self.tx.borrow()
+    }
+
+    /// Subscribe to future snapshots.
+    pub(crate) fn subscribe(&self) -> HostStatusRx {
+        self.tx.subscribe()
+    }
+}
 
 /// Cached install metadata for a host, populated from the DB on startup
 /// and updated live when agent startup broadcasts arrive.
@@ -54,10 +163,8 @@ pub(crate) struct AppState {
     /// Receiver for updated `ControllerConfig` when the file changes.
     pub config_rx: ConfigRx,
 
-    /// Receiver for host online/offline status updates.
-    pub hoststatus_rx: HostStatusRx,
-    /// Sender for host online/offline status updates.
-    pub hoststatus_tx: HostStatusTx,
+    /// Shared, atomically-updated host status (online/offline/transition).
+    pub hoststatus: Arc<HostStatusState>,
 
     /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: WsTx,
@@ -83,11 +190,6 @@ pub(crate) struct AppState {
     /// VAPID key builder for signing web push notifications.
     /// `None` when DB persistence is disabled.
     pub vapid_key: Option<Arc<PartialVapidSignatureBuilder>>,
-
-    /// Per-host serialization lock: ensures at most one wake/shutdown task is active
-    /// per host at a time. A task queued behind this lock re-reads the current lease
-    /// state on entry, so it always acts on the most up-to-date desired state.
-    pub host_transition_locks: Arc<std::sync::Mutex<HashMap<String, Arc<AsyncMutex<()>>>>>,
 }
 
 /// Initialize database pool based on configuration.
@@ -193,8 +295,7 @@ pub(super) async fn initialize_state(
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
-    let initial_status = Arc::new(HostStatus::new());
-    let (hoststatus_tx, hoststatus_rx) = watch::channel(initial_status);
+    let (hoststatus, _) = HostStatusState::new(HostStatus::new());
 
     let (ws_tx, _) = broadcast::channel(32);
 
@@ -285,8 +386,7 @@ pub(super) async fn initialize_state(
 
     let app_state = AppState {
         config_rx,
-        hoststatus_rx,
-        hoststatus_tx,
+        hoststatus,
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases,
@@ -296,7 +396,6 @@ pub(super) async fn initialize_state(
         tls_enabled: tls_opt.is_some(),
         db_pool,
         vapid_key,
-        host_transition_locks: Arc::new(std::sync::Mutex::new(HashMap::new())),
     };
 
     emit_startup_warnings(&app_state, &initial_config);

@@ -6,7 +6,10 @@ import { serverData } from './serverData';
 // Types
 // ==========================
 
-export type StatusMap = Record<string, 'online' | 'offline'>;
+export type StatusMap = Record<
+    string,
+    'online' | 'offline' | 'waking' | 'shutting_down'
+>;
 
 export type LeaseSource =
     | { type: 'WebInterface' }
