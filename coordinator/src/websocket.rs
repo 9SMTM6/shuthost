@@ -189,7 +189,7 @@ async fn send_startup_msg(
 
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
-    let leases = current_leases.borrow().as_ref().clone();
+    let leases = (*current_leases.snapshot()).clone();
     let db_data = if let Some(pool) = db_pool {
         let client_stats = db::get_all_client_stats(pool).await;
         let host_stats = db::get_all_host_stats(pool).await;
