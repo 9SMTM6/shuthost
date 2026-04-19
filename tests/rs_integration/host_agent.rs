@@ -4,8 +4,8 @@ use core::time::Duration;
 use std::{env, fs as fs_sync, process};
 
 use crate::common::{
-    get_free_port, host_agent_bin_path, spawn_coordinator_with_config, spawn_host_agent,
-    wait_for_agent_ready, wait_for_host_state, wait_for_listening,
+    get_free_port, host_agent_bin_path, runtime_test_config, spawn_coordinator_with_config,
+    spawn_host_agent, wait_for_agent_ready, wait_for_host_state, wait_for_listening,
 };
 use secrecy::SecretString;
 use shuthost_coordinator::app::HostState;
@@ -31,7 +31,7 @@ async fn shutdown_command_execution() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -45,7 +45,7 @@ async fn shutdown_command_execution() {
 
         [clients]
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 

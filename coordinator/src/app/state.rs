@@ -16,7 +16,7 @@ use crate::{
         LeaseMapRaw, LeaseState,
         db::{self, DbPool},
     },
-    config::{ControllerConfig, DbConfig, TlsConfig, load, resolve_config_relative_paths},
+    config::{ControllerConfig, DbConfig, RuntimeConfig, TlsConfig, load, resolve_config_relative_paths},
     http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth},
     websocket::WsMessage,
 };
@@ -191,6 +191,10 @@ pub(crate) struct AppState {
     pub auth: Arc<auth::Runtime>,
     /// Whether the HTTP server was started with TLS enabled (true for HTTPS)
     pub tls_enabled: bool,
+
+    /// Runtime tuning parameters (poll intervals, default timeouts, etc.).
+    /// Snapshotted at startup; a restart is required to apply changes.
+    pub runtime: RuntimeConfig,
 
     /// Database connection pool for persistent storage.
     pub db_pool: Option<DbPool>,
@@ -402,6 +406,7 @@ pub(super) async fn initialize_state(
         host_install_info,
         auth: auth_runtime.clone(),
         tls_enabled: tls_opt.is_some(),
+        runtime: initial_config.server.runtime.clone(),
         db_pool,
         vapid_key,
     };

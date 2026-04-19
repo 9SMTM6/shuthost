@@ -66,6 +66,39 @@ impl PartialEq for Client {
     }
 }
 
+/// Runtime tuning parameters for the coordinator.
+///
+/// These are read once at startup (restart required to change them).
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(default)]
+pub(crate) struct RuntimeConfig {
+    /// Default seconds to wait for a host to come online after sending WoL packets.
+    /// Can be overridden per host with `wake_timeout_secs`.
+    pub default_wake_timeout_secs: u64,
+    /// Default seconds to wait for a host to go offline after sending a shutdown command.
+    /// Can be overridden per host with `shutdown_timeout_secs`.
+    pub default_shutdown_timeout_secs: u64,
+    /// Interval in seconds between background host-status poll cycles.
+    pub status_poll_interval_secs: u64,
+    /// Interval in milliseconds between state checks during a wake/shutdown transition.
+    pub transition_poll_interval_ms: u64,
+    /// Seconds a diverged enforced-host state must be stable before the enforcer
+    /// re-triggers a wake / shutdown (prevents hammering during transitions).
+    pub enforce_stabilization_threshold_secs: u64,
+}
+
+impl Default for RuntimeConfig {
+    fn default() -> Self {
+        Self {
+            default_wake_timeout_secs: 120,
+            default_shutdown_timeout_secs: 20,
+            status_poll_interval_secs: 2,
+            transition_poll_interval_ms: 200,
+            enforce_stabilization_threshold_secs: 5,
+        }
+    }
+}
+
 /// HTTP server binding configuration section.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 #[serde(default)]
@@ -80,6 +113,8 @@ pub(crate) struct ServerConfig {
     pub tls: Option<TlsConfig>,
     /// Authentication configuration (defaults to no auth when omitted)
     pub auth: AuthConfig,
+    /// Runtime tuning parameters (poll intervals, default timeouts, etc.).
+    pub runtime: RuntimeConfig,
 }
 
 impl Default for ServerConfig {
@@ -90,6 +125,7 @@ impl Default for ServerConfig {
             broadcast_port: shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
             tls: None,
             auth: AuthConfig::default(),
+            runtime: RuntimeConfig::default(),
         }
     }
 }

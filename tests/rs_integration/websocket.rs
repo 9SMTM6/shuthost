@@ -9,8 +9,8 @@ use tokio::{fs, time};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::common::{
-    get_free_port, spawn_coordinator_with_config, spawn_coordinator_with_config_file,
-    spawn_host_agent_default, wait_for_listening,
+    get_free_port, runtime_test_config, spawn_coordinator_with_config,
+    spawn_coordinator_with_config_file, spawn_host_agent_default, wait_for_listening,
 };
 
 #[tokio::test]
@@ -105,7 +105,7 @@ async fn websocket_host_status_changes() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -119,7 +119,7 @@ async fn websocket_host_status_changes() {
 
         [clients]
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 

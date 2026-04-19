@@ -328,6 +328,7 @@ fn should_enforce_action(
     lease_set: &super::host_control::LeaseSources,
     current_state: HostState,
     stable_for: Duration,
+    threshold: Duration,
 ) -> bool {
     if !host_cfg.enforce_state {
         return false;
@@ -342,7 +343,7 @@ fn should_enforce_action(
     let is_running = current_state == HostState::Online;
     let needs_action = (desired_running && !is_running) || (!desired_running && is_running);
 
-    needs_action && stable_for >= ENFORCE_STABILIZATION_THRESHOLD
+    needs_action && stable_for >= threshold
 }
 
 /// Background task: periodically polls each host for status by attempting a TCP connection and HMAC ping.
@@ -352,7 +353,8 @@ fn should_enforce_action(
 /// The logic determining whether an enforcement action should be triggered is
 /// factored into `should_enforce_action` which makes it easy to unit test.
 async fn poll_host_statuses(state: AppState) {
-    let poll_interval = Duration::from_secs(2);
+    let poll_interval = Duration::from_secs(state.runtime.status_poll_interval_secs);
+    let enforce_threshold = Duration::from_secs(state.runtime.enforce_stabilization_threshold_secs);
     let mut ticker = interval(poll_interval);
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     // Tracks when each host's state last changed (to enforce stability when updates come in from multiple sources).
@@ -448,9 +450,9 @@ async fn poll_host_statuses(state: AppState) {
 
             let stable_for = state_timestamps
                 .get(host_name)
-                .map_or(ENFORCE_STABILIZATION_THRESHOLD, Instant::elapsed);
+                .map_or(enforce_threshold, Instant::elapsed);
 
-            if should_enforce_action(host_cfg, &lease_set, current_state, stable_for) {
+            if should_enforce_action(host_cfg, &lease_set, current_state, stable_for, enforce_threshold) {
                 spawn_handle_host_state(host_name, &state);
             }
         }
@@ -798,7 +800,8 @@ mod tests {
             &cfg,
             &lease_set,
             HostState::Offline,
-            Duration::ZERO
+            Duration::ZERO,
+            ENFORCE_STABILIZATION_THRESHOLD,
         ));
 
         let cfg = make_host(true);
@@ -807,7 +810,8 @@ mod tests {
             &cfg,
             &lease_set,
             HostState::Offline,
-            Duration::from_secs(100)
+            Duration::from_secs(100),
+            ENFORCE_STABILIZATION_THRESHOLD,
         ));
         // mismatch but short stable time
         let lease_set: LeaseSources = vec![LeaseSource::WebInterface].into_iter().collect();
@@ -815,7 +819,8 @@ mod tests {
             &cfg,
             &lease_set,
             HostState::Offline,
-            Duration::from_secs(1)
+            Duration::from_secs(1),
+            ENFORCE_STABILIZATION_THRESHOLD,
         ));
     }
 
@@ -830,13 +835,15 @@ mod tests {
             current,
             ENFORCE_STABILIZATION_THRESHOLD
                 .checked_sub(Duration::from_secs(1))
-                .unwrap()
+                .unwrap(),
+            ENFORCE_STABILIZATION_THRESHOLD,
         ));
         assert!(should_enforce_action(
             &cfg,
             &lease_set,
             current,
-            ENFORCE_STABILIZATION_THRESHOLD
+            ENFORCE_STABILIZATION_THRESHOLD,
+            ENFORCE_STABILIZATION_THRESHOLD,
         ));
     }
 

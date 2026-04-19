@@ -38,6 +38,23 @@ pub(crate) const fn host_agent_bin_path() -> &'static str {
     env!("CARGO_BIN_EXE_host_agent")
 }
 
+/// Enforce-state stabilization threshold used in tests. Kept short so the
+/// `enforce_state` integration tests complete quickly.
+pub(crate) const TEST_ENFORCE_THRESHOLD_SECS: u64 = 2;
+
+/// Returns a `[server.runtime]` TOML block with shortened timeouts/intervals
+/// suitable for integration tests. Paste this into coordinator config strings.
+pub(crate) fn runtime_test_config() -> String {
+    format!(
+        r#"
+[server.runtime]
+status_poll_interval_secs = 1
+transition_poll_interval_ms = 100
+enforce_stabilization_threshold_secs = {TEST_ENFORCE_THRESHOLD_SECS}
+"#
+    )
+}
+
 pub(crate) fn get_free_port() -> u16 {
     // Bind to port 0 to let the OS pick a free port, then release it and return
     // the port number for the coordinator/agent to bind to.

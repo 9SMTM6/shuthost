@@ -8,7 +8,7 @@ mod state;
 // Re-export a curated crate-visible surface for consumers of `crate::app`
 pub(crate) use db::DbPool;
 pub(crate) use host_control::{
-    DEFAULT_SHUTDOWN_TIMEOUT_SECS, DEFAULT_WAKE_TIMEOUT_SECS, HostControlError, LeaseMapRaw,
+    HostControlError, LeaseMapRaw,
     LeaseRx, LeaseSource, LeaseSources, LeaseState, lookup_host_with_overrides, poll_and_wait,
 };
 pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
