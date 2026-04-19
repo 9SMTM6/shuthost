@@ -7,7 +7,7 @@ use std::{
 use eyre::WrapErr as _;
 use serde::{Deserialize, Serialize};
 use shuthost_common::protocol::{InitSystem, OsType};
-use tokio::sync::{RwLock, broadcast, watch};
+use tokio::sync::{Mutex as AsyncMutex, RwLock, broadcast, watch};
 use tracing::info;
 use web_push::PartialVapidSignatureBuilder;
 
@@ -83,6 +83,11 @@ pub(crate) struct AppState {
     /// VAPID key builder for signing web push notifications.
     /// `None` when DB persistence is disabled.
     pub vapid_key: Option<Arc<PartialVapidSignatureBuilder>>,
+
+    /// Per-host serialization lock: ensures at most one wake/shutdown task is active
+    /// per host at a time. A task queued behind this lock re-reads the current lease
+    /// state on entry, so it always acts on the most up-to-date desired state.
+    pub host_transition_locks: Arc<std::sync::Mutex<HashMap<String, Arc<AsyncMutex<()>>>>>,
 }
 
 /// Initialize database pool based on configuration.
@@ -291,6 +296,7 @@ pub(super) async fn initialize_state(
         tls_enabled: tls_opt.is_some(),
         db_pool,
         vapid_key,
+        host_transition_locks: Arc::new(std::sync::Mutex::new(HashMap::new())),
     };
 
     emit_startup_warnings(&app_state, &initial_config);

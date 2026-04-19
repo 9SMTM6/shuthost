@@ -9,6 +9,7 @@ mod state;
 pub(crate) use db::DbPool;
 pub(crate) use host_control::{
     HostControlError, LeaseMapRaw, LeaseRx, LeaseSource, LeaseSources, LeaseState,
+    DEFAULT_SHUTDOWN_TIMEOUT_SECS, DEFAULT_WAKE_TIMEOUT_SECS,
     lookup_host_with_overrides, poll_and_wait,
 };
 pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;

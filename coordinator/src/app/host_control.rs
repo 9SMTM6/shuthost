@@ -14,6 +14,8 @@ use tokio::{
     sync::{Mutex, watch},
     time::{Instant, timeout_at},
 };
+#[cfg(not(any(coverage, test)))]
+use tokio::time::{MissedTickBehavior, interval};
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{AppState, runtime::PollError, runtime::poll_until_host_state, state::HostState};
@@ -144,9 +146,19 @@ pub enum LeaseSource {
     Client(String),
 }
 
-/// Poll timeout used by wrappers that wait for a host to reach a desired state.
-const DEFAULT_POLL_TIMEOUT: Duration = Duration::from_mins(1);
 const DEFAULT_POLL_INTERVAL_MS: u64 = 200;
+
+/// Default wake timeout: how long to wait for a host to come online after sending WoL packets.
+/// Can be overridden per host via `wake_timeout_secs` in the config.
+pub(crate) const DEFAULT_WAKE_TIMEOUT_SECS: u64 = 120;
+
+/// Default shutdown timeout: how long to wait for a host to go offline after sending a shutdown command.
+/// Can be overridden per host via `shutdown_timeout_secs` in the config.
+pub(crate) const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 20;
+
+/// Interval between WoL re-sends during a wake transition.
+#[cfg(not(any(coverage, test)))]
+const WOL_RESEND_INTERVAL: Duration = Duration::from_millis(500);
 
 /// Errors returned by high-level host control operations.
 #[derive(Debug, ThisError)]
@@ -199,14 +211,30 @@ async fn handle_host_state(
 }
 
 /// Helper function to spawn an async task that handles host state changes.
-/// This clones the necessary state fields and spawns a background task to handle the host state change.
-pub(crate) fn spawn_handle_host_state(host: &str, lease_set: &LeaseSources, state: &AppState) {
+/// Acquires a per-host serialization lock before acting, so at most one
+/// wake/shutdown task runs at a time for a given host. The task re-reads the
+/// current lease state under the lock, ensuring it acts on the most recent
+/// desired state rather than whatever was current at call time.
+pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
     let host = host.to_string();
-    let lease_set = lease_set.clone();
     let state = state.clone();
+
+    // Get-or-create the per-host transition lock (outer std::Mutex held only briefly).
+    let lock = {
+        let mut locks = state
+            .host_transition_locks
+            .lock()
+            .expect("host_transition_locks poisoned");
+        Arc::clone(locks.entry(host.clone()).or_insert_with(|| Arc::new(Mutex::new(()))))
+    };
 
     tokio::spawn(
         async move {
+            // Serialize: queue behind any in-flight wake or shutdown for this host.
+            let _guard = lock.lock().await;
+            // Re-derive current desired state once we hold the lock, so we act on
+            // the most recent lease snapshot rather than a potentially stale one.
+            let lease_set = state.leases.borrow().get(&host).cloned().unwrap_or_default();
             drop(
                 handle_host_state(&host, &state, &lease_set)
                     .in_current_span()
@@ -262,8 +290,10 @@ async fn send_shutdown_to_address(host_with_name: &ResolvedHost) -> Result<Strin
     Ok(String::from_utf8_lossy(data).to_string())
 }
 
-/// Send a `WoL` packet (via crate-level `wol` helper) and then wait until the
-/// host becomes online by polling runtime state.
+/// Send WoL packets and poll until the host comes online, re-sending the WoL
+/// magic packet every [`WOL_RESEND_INTERVAL`] until the deadline to account for
+/// UDP packet loss during boot. The re-send task is aborted as soon as the host
+/// is confirmed online or the deadline is reached.
 async fn wake_host_and_wait(
     host_with_name: &ResolvedHost,
     hoststatus_tx: &HostStatusTx,
@@ -272,9 +302,15 @@ async fn wake_host_and_wait(
         info!(host = %host_with_name.name, "WOL disabled for host");
         return Ok(());
     }
+
+    let wake_secs = host_with_name
+        .host
+        .wake_timeout_secs
+        .unwrap_or(DEFAULT_WAKE_TIMEOUT_SECS);
+    let deadline = Instant::now() + Duration::from_secs(wake_secs);
+
     info!(host = %host_with_name.name, mac = %host_with_name.host.mac, "Sending WoL packet");
 
-    // send_magic_packet is behind cfg flags in some builds; call the wrapper
     #[cfg(not(any(coverage, test)))]
     if let Err(e) = wol::send_magic_packet(&host_with_name.host.mac, "255.255.255.255") {
         return Err(HostControlError::OperationFailed(
@@ -283,7 +319,45 @@ async fn wake_host_and_wait(
         ));
     }
 
-    poll_and_wait(host_with_name, hoststatus_tx, HostState::Online).await
+    // Re-send WoL every WOL_RESEND_INTERVAL in a background task until we know the host
+    // is online. Aborted when the poll future returns (success or timeout).
+    #[cfg(not(any(coverage, test)))]
+    let wol_resend_handle = {
+        let mac = host_with_name.host.mac.clone();
+        tokio::spawn(async move {
+            let mut ticker = interval(WOL_RESEND_INTERVAL);
+            ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+            ticker.tick().await; // skip the immediate tick; first re-send is after one interval
+            loop {
+                ticker.tick().await;
+                if let Err(e) = wol::send_magic_packet(&mac, "255.255.255.255") {
+                    debug!("WoL re-send failed: {e}");
+                }
+            }
+        })
+    };
+
+    let poll_result = poll_until_host_state(
+        host_with_name,
+        HostState::Online,
+        deadline,
+        DEFAULT_POLL_INTERVAL_MS,
+        hoststatus_tx,
+    )
+    .await;
+
+    #[cfg(not(any(coverage, test)))]
+    wol_resend_handle.abort();
+
+    match poll_result {
+        Ok(()) => Ok(()),
+        Err(e) => match e {
+            PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
+            PollError::CoordinatorShuttingDown => {
+                Err(HostControlError::OperationFailed(HostState::Online, e.into()))
+            }
+        },
+    }
 }
 
 /// Send shutdown command to host and wait until offline.
@@ -304,16 +378,38 @@ async fn shutdown_host_and_wait(
         ));
     }
 
-    poll_and_wait(host_with_name, hoststatus_tx, HostState::Offline).await
+    let shutdown_secs = host_with_name
+        .host
+        .shutdown_timeout_secs
+        .unwrap_or(DEFAULT_SHUTDOWN_TIMEOUT_SECS);
+    let deadline = Instant::now() + Duration::from_secs(shutdown_secs);
+    match poll_until_host_state(
+        host_with_name,
+        HostState::Offline,
+        deadline,
+        DEFAULT_POLL_INTERVAL_MS,
+        hoststatus_tx,
+    )
+    .await
+    {
+        Ok(()) => Ok(()),
+        Err(e) => match e {
+            PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
+            PollError::CoordinatorShuttingDown => {
+                Err(HostControlError::OperationFailed(HostState::Offline, e.into()))
+            }
+        },
+    }
 }
 
 /// Poll for the desired host state and handle errors uniformly.
+/// Used by the M2M API sync path to wait for a host to reach the desired state.
 pub(crate) async fn poll_and_wait(
     host_with_name: &ResolvedHost,
     hoststatus_tx: &HostStatusTx,
     desired_state: HostState,
+    deadline: Instant,
 ) -> Result<(), HostControlError> {
-    let deadline = Instant::now() + DEFAULT_POLL_TIMEOUT;
     match poll_until_host_state(
         host_with_name,
         desired_state,

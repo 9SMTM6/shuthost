@@ -64,6 +64,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         tls_enabled: false,
         db_pool: None,
         vapid_key: None,
+        host_transition_locks: Arc::new(std::sync::Mutex::new(HashMap::new())),
     };
 
     let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);
