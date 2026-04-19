@@ -168,9 +168,8 @@ pub(super) async fn poll_until_host_state(
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
-        let poll_fut = poll_host_status(host);
+        let (current_state, _) = poll_host_status(host).await;
         let tick_fut = ticker.tick();
-        let ((current_state, _), _) = tokio::join!(poll_fut, tick_fut);
         // Update global state
         let mut status_map = hoststatus_tx.borrow().as_ref().clone();
         if status_map.get(host.name.as_str()) != Some(&current_state) {
@@ -183,6 +182,7 @@ pub(super) async fn poll_until_host_state(
         if current_state == desired_state {
             return Ok(());
         }
+        tick_fut.await; // wait for next tick before polling again
         if Instant::now() >= deadline {
             return Err(PollError::Timeout {
                 host_name: host.name.clone(),
