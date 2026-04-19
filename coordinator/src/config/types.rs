@@ -31,6 +31,14 @@ pub(crate) struct Host {
     /// if no lease change occurred.  Defaults to `false` (edge-triggered only).
     #[serde(default)]
     pub enforce_state: bool,
+    /// Maximum seconds to wait for the host to come online after sending WoL packets.
+    /// Defaults to [`DEFAULT_WAKE_TIMEOUT_SECS`](crate::app::host_control::DEFAULT_WAKE_TIMEOUT_SECS) when `None`.
+    #[serde(default)]
+    pub wake_timeout_secs: Option<u64>,
+    /// Maximum seconds to wait for the host to go offline after sending a shutdown command.
+    /// Defaults to [`DEFAULT_SHUTDOWN_TIMEOUT_SECS`](crate::app::host_control::DEFAULT_SHUTDOWN_TIMEOUT_SECS) when `None`.
+    #[serde(default)]
+    pub shutdown_timeout_secs: Option<u64>,
 }
 
 impl PartialEq for Host {
@@ -39,6 +47,8 @@ impl PartialEq for Host {
             && self.mac == other.mac
             && self.port == other.port
             && self.enforce_state == other.enforce_state
+            && self.wake_timeout_secs == other.wake_timeout_secs
+            && self.shutdown_timeout_secs == other.shutdown_timeout_secs
             && self.shared_secret.expose_secret() == other.shared_secret.expose_secret()
     }
 }

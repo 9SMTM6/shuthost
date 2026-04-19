@@ -21,7 +21,7 @@ use tracing::error;
 use crate::{
     app::{
         AppState, HostControlError, HostState, LeaseSource, db, lookup_host_with_overrides,
-        poll_and_wait,
+        poll_and_wait, DEFAULT_SHUTDOWN_TIMEOUT_SECS, DEFAULT_WAKE_TIMEOUT_SECS,
     },
     http::api::{LeaseAction, update_lease},
     wol,
@@ -110,6 +110,8 @@ async fn handle_m2m_lease_action(
     let lease_source = LeaseSource::Client(client_id);
 
     let is_async = query.r#async.unwrap_or(false);
+    use LeaseAction as LA;
+    use StatusCode as SC;
 
     // In sync mode, validate that the host exists and has configuration
     // before mutating lease state. This avoids leaving behind leases/DB
@@ -117,7 +119,7 @@ async fn handle_m2m_lease_action(
     if !is_async {
         let Some(_host_with_name) = lookup_host_with_overrides(&state, &host).await else {
             return Err((
-                StatusCode::NOT_FOUND,
+                SC::NOT_FOUND,
                 format!("No configuration found for host {host}"),
             ));
         };
@@ -128,24 +130,45 @@ async fn handle_m2m_lease_action(
         .map_err(|e| {
             error!("Failed to update lease: {}", e);
             (
-                StatusCode::INTERNAL_SERVER_ERROR,
+                SC::INTERNAL_SERVER_ERROR,
                 "Failed to update lease".to_string(),
             )
         })?;
 
-    use HostControlError as HCE;
-    use HostState as HS;
-    use LeaseAction as LA;
-    use StatusCode as SC;
-
     if !is_async {
-        // In sync mode, wait for the reconciler triggered signal to make the host reach the desired state.
-        let desired_state = match action {
-            LA::Take => HS::Online,
-            LA::Release => HS::Offline,
+        use HostControlError as HCE;
+        use HostState as HS;
+
+        // Derive the desired state from the post-update lease set, not from the
+        // action alone: another concurrent client may still hold a lease, in which
+        // case a release should leave the host Online and we should not poll for Offline.
+        let desired_state = {
+            let post_update_leases = state.leases.borrow();
+            if post_update_leases
+                .get(&host)
+                .is_some_and(|s| !s.is_empty())
+            {
+                HS::Online
+            } else {
+                HS::Offline
+            }
         };
 
-        // Lookup host config and apply runtime overrides via shared helper.
+        // Short-circuit if the host is already in the desired state.
+        let current_state = state
+            .hoststatus_rx
+            .borrow()
+            .get(host.as_str())
+            .copied()
+            .unwrap_or(HS::Offline);
+        if current_state == desired_state {
+            return Ok(match action {
+                LA::Take => "Lease taken, host is online",
+                LA::Release => "Lease released, host is offline",
+            });
+        }
+
+        // Lookup host config for per-host timeout values.
         let Some(host_with_name) = lookup_host_with_overrides(&state, &host).await else {
             return Err((
                 SC::NOT_FOUND,
@@ -153,7 +176,21 @@ async fn handle_m2m_lease_action(
             ));
         };
 
-        match poll_and_wait(&host_with_name, &state.hoststatus_tx, desired_state).await {
+        let timeout_secs = if desired_state == HS::Online {
+            host_with_name
+                .host
+                .wake_timeout_secs
+                .unwrap_or(DEFAULT_WAKE_TIMEOUT_SECS)
+        } else {
+            host_with_name
+                .host
+                .shutdown_timeout_secs
+                .unwrap_or(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+        };
+        let deadline =
+            tokio::time::Instant::now() + core::time::Duration::from_secs(timeout_secs);
+
+        match poll_and_wait(&host_with_name, &state.hoststatus_tx, desired_state, deadline).await {
             Ok(()) => {}
             Err(err) => {
                 return Err((

@@ -461,7 +461,7 @@ async fn poll_host_statuses(state: AppState) {
                 .map_or(ENFORCE_STABILIZATION_THRESHOLD, Instant::elapsed);
 
             if should_enforce_action(host_cfg, &lease_set, current_state, stable_for) {
-                spawn_handle_host_state(host_name, &lease_set, &state);
+                spawn_handle_host_state(host_name, &state);
             }
         }
 
@@ -578,10 +578,6 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
             .collect();
 
         for host_name in changed_desired_state {
-            let empty = HashSet::new();
-
-            let lease_set = new_leases.get(host_name).unwrap_or(&empty);
-
             let desired_running = !new_desired_offline.contains(host_name);
 
             let current_state = *hoststatus.get(host_name).unwrap_or(&HostState::Offline);
@@ -591,7 +587,7 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
             let needs_action = desired_running != is_running;
 
             if needs_action {
-                spawn_handle_host_state(host_name, lease_set, &state);
+                spawn_handle_host_state(host_name, &state);
             }
         }
 
@@ -797,6 +793,8 @@ mod tests {
             port: 0,
             shared_secret: Arc::new(secrecy::SecretString::new(String::new().into())),
             enforce_state: enforce,
+            wake_timeout_secs: None,
+            shutdown_timeout_secs: None,
         }
     }
 
