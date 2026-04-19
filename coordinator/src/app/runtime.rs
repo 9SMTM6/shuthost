@@ -452,7 +452,13 @@ async fn poll_host_statuses(state: AppState) {
                 .get(host_name)
                 .map_or(enforce_threshold, Instant::elapsed);
 
-            if should_enforce_action(host_cfg, &lease_set, current_state, stable_for, enforce_threshold) {
+            if should_enforce_action(
+                host_cfg,
+                &lease_set,
+                current_state,
+                stable_for,
+                enforce_threshold,
+            ) {
                 spawn_handle_host_state(host_name, &state);
             }
         }

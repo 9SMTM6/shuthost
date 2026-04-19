@@ -72,7 +72,7 @@ impl PartialEq for Client {
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 #[serde(default)]
 pub(crate) struct RuntimeConfig {
-    /// Default seconds to wait for a host to come online after sending WoL packets.
+    /// Default seconds to wait for a host to come online after sending `WoL` packets.
     /// Can be overridden per host with `wake_timeout_secs`.
     pub default_wake_timeout_secs: u64,
     /// Default seconds to wait for a host to go offline after sending a shutdown command.

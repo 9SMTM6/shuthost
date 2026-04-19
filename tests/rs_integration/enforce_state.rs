@@ -9,8 +9,8 @@ use core::time::Duration;
 use std::{env, fs};
 
 use crate::common::{
-    get_free_port, runtime_test_config, spawn_coordinator_with_config, spawn_host_agent,
-    wait_for_agent_ready, wait_for_host_state, wait_for_listening, TEST_ENFORCE_THRESHOLD_SECS,
+    TEST_ENFORCE_THRESHOLD_SECS, get_free_port, runtime_test_config, spawn_coordinator_with_config,
+    spawn_host_agent, wait_for_agent_ready, wait_for_host_state, wait_for_listening,
 };
 use secrecy::SecretString;
 use shuthost_coordinator::app::HostState;
