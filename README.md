@@ -228,6 +228,9 @@ These are generated or validated automatically as part of the test suite, and th
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik, dex
   * (add tests for OIDC refresh flow) currently not active code
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
+* > WoL always broadcasts to 255.255.255.255
+  > The WoL packet is always sent to the global broadcast address. For hosts on a different subnet (common in home-lab setups), this won't work. The config already stores the host's IP, which could be used to derive a directed subnet broadcast.
+  * investigate
 * need tests for the self-extracting update flow. Though annoyingly even these need local admin rights. At first I thought that we should be able to remove that requirement from installers, but in that case the agent would not - in default setups - have the rights to shutdown the machine at all, so we probably should keep that around. But that also means that testing the update flow cant be done without admin rights (and/or docker), which is a bit of a pain.
   * I could just require sudo and make them primarily CI tests, like some other tests.
 * reconciler currently leads to a bunch of calls to handle_host_state every poll. This should be deduplicated.
