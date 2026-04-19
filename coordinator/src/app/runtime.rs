@@ -558,7 +558,7 @@ async fn broadcast_lease_updates(mut leases_rx: LeaseRx, ws_tx: WsTx) {
 
 /// Background task: reconcile host control on every lease-map change (edge-triggered, all hosts).
 async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
-    fn get_hosts_desired_online(leases: &LeaseMapRaw) -> HashSet<String> {
+    fn get_hosts_desired_offline(leases: &LeaseMapRaw) -> HashSet<String> {
         leases
             .iter()
             .filter(|&(_, lease_set)| lease_set.is_empty())
@@ -566,15 +566,15 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
             .collect()
     }
 
-    let mut prev_desired_online = get_hosts_desired_online(&leases_rx.borrow_and_update());
+    let mut prev_desired_offline = get_hosts_desired_offline(&leases_rx.borrow_and_update());
 
     while leases_rx.changed().await.is_ok() {
         let new_leases = leases_rx.borrow_and_update();
-        let new_desired_online = get_hosts_desired_online(&new_leases);
+        let new_desired_offline = get_hosts_desired_offline(&new_leases);
         let hoststatus = state.hoststatus_tx.borrow();
 
-        let changed_desired_state: HashSet<_> = prev_desired_online
-            .symmetric_difference(&new_desired_online)
+        let changed_desired_state: HashSet<_> = prev_desired_offline
+            .symmetric_difference(&new_desired_offline)
             .collect();
 
         for host_name in changed_desired_state {
@@ -582,7 +582,7 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
 
             let lease_set = new_leases.get(host_name).unwrap_or(&empty);
 
-            let desired_running = !new_desired_online.contains(host_name);
+            let desired_running = !new_desired_offline.contains(host_name);
 
             let current_state = *hoststatus.get(host_name).unwrap_or(&HostState::Offline);
 
@@ -595,7 +595,7 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
             }
         }
 
-        prev_desired_online = new_desired_online;
+        prev_desired_offline = new_desired_offline;
     }
 }
 
