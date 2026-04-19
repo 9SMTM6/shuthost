@@ -9,8 +9,8 @@ use shuthost_coordinator::app::HostState;
 use tokio::time;
 
 use crate::common::{
-    get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
-    wait_for_host_state, wait_for_listening,
+    get_free_port, runtime_test_config, spawn_coordinator_with_config, spawn_host_agent_default,
+    wait_for_agent_ready, wait_for_host_state, wait_for_listening,
 };
 
 #[tokio::test]
@@ -26,7 +26,7 @@ async fn m2m_lease_take_and_release() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -41,7 +41,7 @@ async fn m2m_lease_take_and_release() {
         [clients."{client_id}"]
         shared_secret = "{client_secret}"
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 
@@ -131,7 +131,7 @@ async fn m2m_lease_async_take_and_release() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -146,7 +146,7 @@ async fn m2m_lease_async_take_and_release() {
         [clients."{client_id}"]
         shared_secret = "{client_secret}"
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 
@@ -220,7 +220,7 @@ async fn api_reset_client_leases() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -235,7 +235,7 @@ async fn api_reset_client_leases() {
         [clients."{client_id}"]
         shared_secret = "{client_secret}"
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 
@@ -307,7 +307,7 @@ async fn m2m_lease_sync_take_timeout_when_host_offline() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -318,11 +318,12 @@ async fn m2m_lease_sync_take_timeout_when_host_offline() {
         mac = "00:00:00:00:00:00"
         port = {agent_port}
         shared_secret = "{agent_secret}"
+        wake_timeout_secs = 3
 
         [clients."{client_id}"]
         shared_secret = "{client_secret}"
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 
@@ -364,7 +365,7 @@ async fn m2m_lease_sync_release_timeout_when_host_online() {
 
     let _coordinator_child = spawn_coordinator_with_config(
         coord_port,
-        &format!(
+        &(format!(
             r#"
         [server]
         port = {coord_port}
@@ -375,11 +376,12 @@ async fn m2m_lease_sync_release_timeout_when_host_online() {
         mac = "disableWOL"
         port = {agent_port}
         shared_secret = "{agent_secret}"
+        shutdown_timeout_secs = 3
 
         [clients."{client_id}"]
         shared_secret = "{client_secret}"
     "#
-        ),
+        ) + &runtime_test_config()),
     );
     wait_for_listening(coord_port, 5).await;
 

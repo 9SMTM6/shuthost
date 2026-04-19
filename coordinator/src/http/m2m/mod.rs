@@ -23,7 +23,7 @@ use tracing::error;
 
 use crate::{
     app::{
-        AppState, DEFAULT_SHUTDOWN_TIMEOUT_SECS, DEFAULT_WAKE_TIMEOUT_SECS, HostControlError,
+        AppState, HostControlError,
         HostState, LeaseSource, db, lookup_host_with_overrides, poll_and_wait,
     },
     http::api::{LeaseAction, update_lease},
@@ -177,16 +177,16 @@ async fn handle_m2m_lease_action(
             host_with_name
                 .host
                 .wake_timeout_secs
-                .unwrap_or(DEFAULT_WAKE_TIMEOUT_SECS)
+                .unwrap_or(state.runtime.default_wake_timeout_secs)
         } else {
             host_with_name
                 .host
                 .shutdown_timeout_secs
-                .unwrap_or(DEFAULT_SHUTDOWN_TIMEOUT_SECS)
+                .unwrap_or(state.runtime.default_shutdown_timeout_secs)
         };
         let deadline = Instant::now() + Duration::from_secs(timeout_secs);
 
-        match poll_and_wait(&host_with_name, &state.hoststatus, desired_state, deadline).await {
+        match poll_and_wait(&host_with_name, &state.hoststatus, desired_state, deadline, &state.runtime).await {
             Ok(()) => {}
             Err(err) => {
                 return Err((

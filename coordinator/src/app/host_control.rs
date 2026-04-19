@@ -22,7 +22,7 @@ use crate::app::{
     AppState, HostStatusState, runtime::PollError, runtime::poll_until_host_state, state::HostState,
 };
 
-use crate::config::Host;
+use crate::config::{Host, RuntimeConfig};
 #[cfg(not(any(coverage, test)))]
 use crate::wol;
 
@@ -163,16 +163,6 @@ pub enum LeaseSource {
     Client(String),
 }
 
-const DEFAULT_POLL_INTERVAL_MS: u64 = 200;
-
-/// Default wake timeout: how long to wait for a host to come online after sending `WoL` packets.
-/// Can be overridden per host via `wake_timeout_secs` in the config.
-pub(crate) const DEFAULT_WAKE_TIMEOUT_SECS: u64 = 120;
-
-/// Default shutdown timeout: how long to wait for a host to go offline after sending a shutdown command.
-/// Can be overridden per host via `shutdown_timeout_secs` in the config.
-pub(crate) const DEFAULT_SHUTDOWN_TIMEOUT_SECS: u64 = 20;
-
 /// Interval between `WoL` re-sends during a wake transition.
 #[cfg(not(any(coverage, test)))]
 const WOL_RESEND_INTERVAL: Duration = Duration::from_millis(500);
@@ -215,9 +205,9 @@ async fn handle_host_state(
     // ensures at most one control task runs at a time, so we unconditionally
     // perform the requested action.
     if should_be_running {
-        wake_host_and_wait(&host_with_name, &state.hoststatus).await
+        wake_host_and_wait(&host_with_name, &state.hoststatus, &state.runtime).await
     } else {
-        shutdown_host_and_wait(&host_with_name, &state.hoststatus).await
+        shutdown_host_and_wait(&host_with_name, &state.hoststatus, &state.runtime).await
     }
 }
 
@@ -329,6 +319,7 @@ async fn send_shutdown_to_address(host_with_name: &ResolvedHost) -> Result<Strin
 async fn wake_host_and_wait(
     host_with_name: &ResolvedHost,
     hoststatus: &HostStatusState,
+    runtime: &RuntimeConfig,
 ) -> Result<(), HostControlError> {
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
         info!(host = %host_with_name.name, "WOL disabled for host");
@@ -341,7 +332,7 @@ async fn wake_host_and_wait(
     let wake_secs = host_with_name
         .host
         .wake_timeout_secs
-        .unwrap_or(DEFAULT_WAKE_TIMEOUT_SECS);
+        .unwrap_or(runtime.default_wake_timeout_secs);
     let deadline = Instant::now() + Duration::from_secs(wake_secs);
 
     info!(host = %host_with_name.name, mac = %host_with_name.host.mac, "Sending WoL packet");
@@ -379,7 +370,7 @@ async fn wake_host_and_wait(
         host_with_name,
         HostState::Online,
         deadline,
-        DEFAULT_POLL_INTERVAL_MS,
+        runtime.transition_poll_interval_ms,
         hoststatus,
     )
     .await;
@@ -407,6 +398,7 @@ async fn wake_host_and_wait(
 async fn shutdown_host_and_wait(
     host_with_name: &ResolvedHost,
     hoststatus: &HostStatusState,
+    runtime: &RuntimeConfig,
 ) -> Result<(), HostControlError> {
     // Send shutdown to the address
     let resp = match send_shutdown_to_address(host_with_name).await {
@@ -432,13 +424,13 @@ async fn shutdown_host_and_wait(
     let shutdown_secs = host_with_name
         .host
         .shutdown_timeout_secs
-        .unwrap_or(DEFAULT_SHUTDOWN_TIMEOUT_SECS);
+        .unwrap_or(runtime.default_shutdown_timeout_secs);
     let deadline = Instant::now() + Duration::from_secs(shutdown_secs);
     match poll_until_host_state(
         host_with_name,
         HostState::Offline,
         deadline,
-        DEFAULT_POLL_INTERVAL_MS,
+        runtime.transition_poll_interval_ms,
         hoststatus,
     )
     .await
@@ -462,12 +454,13 @@ pub(crate) async fn poll_and_wait(
     hoststatus: &HostStatusState,
     desired_state: HostState,
     deadline: Instant,
+    runtime: &RuntimeConfig,
 ) -> Result<(), HostControlError> {
     match poll_until_host_state(
         host_with_name,
         desired_state,
         deadline,
-        DEFAULT_POLL_INTERVAL_MS,
+        runtime.transition_poll_interval_ms,
         hoststatus,
     )
     .await

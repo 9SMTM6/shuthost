@@ -15,7 +15,7 @@ use tracing::info;
 
 use crate::{
     app::{AppState, HostStatusState, LeaseMapRaw, LeaseState, shutdown_signal},
-    config::{AuthConfig, ControllerConfig},
+    config::{AuthConfig, ControllerConfig, RuntimeConfig},
     http::{
         assets::{UiMode, render_ui_html},
         auth,
@@ -61,6 +61,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
                 .expect("failed to initialize auth runtime"),
         ),
         tls_enabled: false,
+        runtime: RuntimeConfig::default(),
         db_pool: None,
         vapid_key: None,
     };

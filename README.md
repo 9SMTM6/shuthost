@@ -231,6 +231,7 @@ These are generated or validated automatically as part of the test suite, and th
 * > WoL always broadcasts to 255.255.255.255
   > The WoL packet is always sent to the global broadcast address. For hosts on a different subnet (common in home-lab setups), this won't work. The config already stores the host's IP, which could be used to derive a directed subnet broadcast.
   * investigate
+* update example config and printed host config with timeouts
 * need to reword/work the main poll interval, as the interval is more likely to be limited by the timeouts on the hosts.
 * add transition host states to the frontend etc.
 * need tests for the self-extracting update flow. Though annoyingly even these need local admin rights. At first I thought that we should be able to remove that requirement from installers, but in that case the agent would not - in default setups - have the rights to shutdown the machine at all, so we probably should keep that around. But that also means that testing the update flow cant be done without admin rights (and/or docker), which is a bit of a pain.

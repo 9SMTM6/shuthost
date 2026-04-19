@@ -102,6 +102,33 @@ bind = "127.0.0.1"
 # [server.auth.external]
 # exceptions_version = 0
 
+# # =============================================================================
+# # RUNTIME CONFIGURATION
+# # =============================================================================
+# # The [server.runtime] table tunes coordinator timeouts and poll rates.
+# # All values take effect only after a coordinator restart.
+# [server.runtime]
+# # Default seconds to wait for a host to come online after sending WoL packets.
+# # Can be overridden per host with `wake_timeout_secs` in [hosts.<name>].
+# # Default: 120
+# default_wake_timeout_secs = 120
+# # Default seconds to wait for a host to go offline after sending a shutdown command.
+# # Can be overridden per host with `shutdown_timeout_secs` in [hosts.<name>].
+# # Default: 20
+# default_shutdown_timeout_secs = 20
+# # Interval in seconds between background host-status poll cycles.
+# # Shorter values mean faster detection of spontaneous state changes at the cost of more traffic.
+# # Default: 2
+# status_poll_interval_secs = 2
+# # Interval in milliseconds between state checks during an active wake or shutdown transition.
+# # Default: 200
+# transition_poll_interval_ms = 200
+# # Seconds a diverged enforced-host state must be stable before the enforcer
+# # re-triggers a wake / shutdown. Prevents rapid hammering during transitions.
+# # Only relevant when `enforce_state = true` on one or more hosts.
+# # Default: 5
+# enforce_stabilization_threshold_secs = 5
+
 # =============================================================================
 # DATABASE CONFIGURATION
 # =============================================================================

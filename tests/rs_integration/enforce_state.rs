@@ -9,14 +9,12 @@ use core::time::Duration;
 use std::{env, fs};
 
 use crate::common::{
-    get_free_port, spawn_coordinator_with_config, spawn_host_agent, wait_for_agent_ready,
-    wait_for_host_state, wait_for_listening,
+    get_free_port, runtime_test_config, spawn_coordinator_with_config, spawn_host_agent,
+    wait_for_agent_ready, wait_for_host_state, wait_for_listening, TEST_ENFORCE_THRESHOLD_SECS,
 };
 use secrecy::SecretString;
-use shuthost_coordinator::app::{ENFORCE_STABILIZATION_THRESHOLD, HostState};
+use shuthost_coordinator::app::HostState;
 use tokio::time;
-
-const SLEEP_EXTRA: Duration = Duration::from_secs(2);
 
 async fn run_enforce_test(enforce: bool) -> bool {
     let coord_port = get_free_port();
@@ -37,8 +35,8 @@ async fn run_enforce_test(enforce: bool) -> bool {
         enforce_state = {enforce}
 
         [clients]
-    "#
-    );
+        "#
+    ) + &runtime_test_config();
 
     let _coord = spawn_coordinator_with_config(coord_port, &config);
     wait_for_listening(coord_port, 5).await;
@@ -62,7 +60,8 @@ async fn run_enforce_test(enforce: bool) -> bool {
     );
 
     // wait long enough for the enforcer to notice the mismatch
-    time::sleep(ENFORCE_STABILIZATION_THRESHOLD + SLEEP_EXTRA).await;
+    // (threshold + one extra poll cycle to ensure it fires)
+    time::sleep(Duration::from_secs(TEST_ENFORCE_THRESHOLD_SECS + 1)).await;
 
     let exists = shutdown_file.exists();
     drop(fs::remove_file(&shutdown_file));
