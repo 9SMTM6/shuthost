@@ -46,12 +46,12 @@ pub(crate) const TEST_ENFORCE_THRESHOLD_SECS: u64 = 2;
 /// suitable for integration tests. Paste this into coordinator config strings.
 pub(crate) fn runtime_test_config() -> String {
     format!(
-        r#"
+        "
 [server.runtime]
 status_poll_interval_secs = 1
 transition_poll_interval_ms = 100
 enforce_stabilization_threshold_secs = {TEST_ENFORCE_THRESHOLD_SECS}
-"#
+"
     )
 }
 

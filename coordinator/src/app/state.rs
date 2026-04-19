@@ -16,7 +16,9 @@ use crate::{
         LeaseMapRaw, LeaseState,
         db::{self, DbPool},
     },
-    config::{ControllerConfig, DbConfig, RuntimeConfig, TlsConfig, load, resolve_config_relative_paths},
+    config::{
+        ControllerConfig, DbConfig, RuntimeConfig, TlsConfig, load, resolve_config_relative_paths,
+    },
     http::{EXPECTED_AUTH_EXCEPTIONS_VERSION, auth},
     websocket::WsMessage,
 };
