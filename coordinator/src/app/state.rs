@@ -149,6 +149,16 @@ impl HostStatusState {
         self.tx.borrow()
     }
 
+    /// Get the current state of a host.
+    pub(crate) fn get_current_state(&self, host: &str) -> HostState {
+        self.tx
+            .borrow()
+            .get(host)
+            .copied()
+            // if there is no entry for this host, its considered offline
+            .unwrap_or(HostState::Offline)
+    }
+
     /// Subscribe to future snapshots.
     pub(crate) fn subscribe(&self) -> HostStatusRx {
         self.tx.subscribe()

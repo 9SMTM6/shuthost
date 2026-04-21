@@ -87,19 +87,19 @@ impl LeaseState {
     /// DB writes), then publish the new snapshot and return it.
     ///
     /// If `f` returns an error the map is not published and the error is forwarded.
-    pub(crate) async fn update<F, E>(&self, f: F) -> Result<(), E>
+    pub(crate) async fn update<F, E, R>(&self, f: F) -> Result<R, E>
     where
-        F: AsyncFnOnce(&mut LeaseMapRaw) -> Result<(), E>,
+        F: AsyncFnOnce(&mut LeaseMapRaw) -> Result<R, E>,
     {
         let mut guard = self.inner.lock().await;
         let mut snapshot = guard.clone();
-        f(&mut snapshot).await?;
+        let result = f(&mut snapshot).await?;
         guard.clone_from(&snapshot);
         drop(guard);
         let snapshot = Arc::new(snapshot);
         // Ignore send error: it means all receivers were dropped (e.g. during shutdown).
         drop(self.tx.send(snapshot));
-        Ok(())
+        Ok(result)
     }
 
     /// Read the current snapshot cheaply without acquiring the write mutex.
@@ -128,6 +128,11 @@ impl LeaseState {
     }
 }
 
+pub(crate) fn lookup_host(state: &AppState, host: &str) -> Option<Host> {
+    let cfg_snapshot = state.config_rx.borrow().clone();
+    cfg_snapshot.hosts.get(host).cloned()
+}
+
 /// Lookup a host's config from the runtime config and apply any runtime IP/port
 /// overrides stored in `AppState`. Returns `None` if the host is not present
 /// in the configuration.
@@ -135,11 +140,7 @@ pub(crate) async fn lookup_host_with_overrides(
     state: &AppState,
     host: &str,
 ) -> Option<ResolvedHost> {
-    let cfg_snapshot = state.config_rx.borrow().clone();
-    let mut host_cfg = match cfg_snapshot.hosts.get(host) {
-        Some(h) => h.clone(),
-        None => return None,
-    };
+    let mut host_cfg = lookup_host(state, host)?;
 
     let overrides = state.host_overrides.read().await;
     if let Some(o) = overrides.get(host) {
@@ -249,12 +250,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             // On completion, re-check whether the actual state matches the desired state.
             // This handles the race where the lease changed while we were transitioning.
             let desired_running = state.leases.host_has_leases(&host);
-            let current = state
-                .hoststatus
-                .borrow()
-                .get(&host)
-                .copied()
-                .unwrap_or(HostState::Offline);
+            let current = state.hoststatus.get_current_state(&host);
             let is_running = matches!(current, HostState::Online);
             if desired_running != is_running {
                 spawn_handle_host_state(&host, &state);
