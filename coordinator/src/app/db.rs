@@ -289,7 +289,7 @@ pub(crate) async fn add_lease(
     pool: &DbPool,
     hostname: &str,
     lease_source: &LeaseSource,
-) -> eyre::Result<()> {
+) -> sqlx::Result<()> {
     match *lease_source {
         LeaseSource::WebInterface => {
             sqlx::query!(
@@ -328,7 +328,7 @@ pub(crate) async fn remove_lease(
     pool: &DbPool,
     hostname: &str,
     lease_source: &LeaseSource,
-) -> eyre::Result<()> {
+) -> sqlx::Result<()> {
     match *lease_source {
         LeaseSource::WebInterface => {
             sqlx::query!(

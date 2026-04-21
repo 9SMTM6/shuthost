@@ -439,14 +439,10 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         // Enforce state for hosts that opt in, after a stabilization delay.
-        let current_status = state.hoststatus.borrow().clone();
         let leases_snapshot = state.leases.snapshot();
         for (host_name, host_cfg) in &config.hosts {
             let lease_set = leases_snapshot.get(host_name).cloned().unwrap_or_default();
-            let current_state = current_status
-                .get(host_name)
-                .copied()
-                .unwrap_or(HostState::Offline);
+            let current_state = state.hoststatus.get_current_state(host_name);
 
             let stable_for = state_timestamps
                 .get(host_name)

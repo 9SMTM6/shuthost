@@ -1,6 +1,5 @@
 use core::{
     convert::Infallible,
-    error,
     fmt::{self, Display},
 };
 
@@ -16,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::{
-    app::{AppState, LeaseSource, db},
+    app::{AppState, LeaseSource, db, lookup_host},
     include_utf8_asset,
 };
 
@@ -56,6 +55,14 @@ impl Display for LeaseSource {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum UpdateLeaseError {
+    #[error("Host not found: {hostname}")]
+    HostNotFound { hostname: String },
+    #[error(transparent)]
+    DatabaseError(#[from] sqlx::Error),
+}
+
 /// Updates the lease set for a host and persists to database if available.
 #[tracing::instrument(skip(state))]
 pub(crate) async fn update_lease(
@@ -63,7 +70,11 @@ pub(crate) async fn update_lease(
     lease_source: LeaseSource,
     action: LeaseAction,
     state: &AppState,
-) -> Result<(), Box<dyn error::Error + Send + Sync>> {
+) -> Result<bool, UpdateLeaseError> {
+    // Ensure that the host exists, to avoid creating lease entries for non-existent hosts.
+    lookup_host(state, hostname).ok_or_else(|| UpdateLeaseError::HostNotFound {
+        hostname: hostname.to_string(),
+    })?;
     state
         .leases
         .update({
@@ -89,7 +100,7 @@ pub(crate) async fn update_lease(
                         }
                     }
                 }
-                Ok(())
+                Ok(lease_set.is_empty())
             }
         })
         .await
