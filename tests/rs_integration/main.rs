@@ -95,6 +95,9 @@ async fn coordinator_and_agent_online_status() {
 async fn lease_persistence_across_restarts() {
     let coord_port = get_free_port();
     let db_path = env::temp_dir().join(format!("shuthost_test_{coord_port}.db"));
+    let agent_id = "testhost";
+    let agent_port = get_free_port();
+    let agent_secret = "testsecret";
 
     // Ensure clean start
     drop(fs::remove_file(&db_path));
@@ -107,6 +110,11 @@ async fn lease_persistence_across_restarts() {
         db_path = "{}"
 
         [hosts]
+        [hosts."{agent_id}"]
+        ip = "127.0.0.1"
+        mac = "disableWOL"
+        port = {agent_port}
+        shared_secret = "{agent_secret}"
 
         [clients]
     "#,
@@ -120,7 +128,7 @@ async fn lease_persistence_across_restarts() {
     let client = Client::new();
 
     // Take a lease via API
-    let lease_url = format!("http://127.0.0.1:{coord_port}/api/lease/testhost/take");
+    let lease_url = format!("http://127.0.0.1:{coord_port}/api/lease/{agent_id}/take");
     let resp = client
         .post(&lease_url)
         .send()
@@ -137,7 +145,7 @@ async fn lease_persistence_across_restarts() {
     wait_for_listening(coord_port, 5).await;
 
     // Verify lease still exists after restart by trying to release it
-    let release_url = format!("http://127.0.0.1:{coord_port}/api/lease/testhost/release");
+    let release_url = format!("http://127.0.0.1:{coord_port}/api/lease/{agent_id}/release");
     let resp = client
         .post(&release_url)
         .send()
@@ -150,4 +158,35 @@ async fn lease_persistence_across_restarts() {
 
     // Clean up
     drop(fs::remove_file(&db_path));
+}
+
+#[tokio::test]
+async fn lease_non_existing_host_errors() {
+    let port = get_free_port();
+    let _child = spawn_coordinator_with_config(
+        port,
+        &format!(
+            r#"
+        [server]
+        port = {port}
+        bind = "127.0.0.1"
+
+        [hosts]
+
+        [clients]
+        "#
+        ),
+    );
+    wait_for_listening(port, 2).await;
+
+    let client = Client::new();
+
+    // Try to take lease for non-existing host
+    let lease_url = format!("http://127.0.0.1:{port}/api/lease/nonexistinghost/take");
+    let resp = client
+        .post(&lease_url)
+        .send()
+        .await
+        .expect("failed to send request");
+    assert!(!resp.status().is_success(), "Taking lease for non-existing host should fail");
 }
