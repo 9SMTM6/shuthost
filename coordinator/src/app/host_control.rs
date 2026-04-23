@@ -176,7 +176,11 @@ pub(crate) enum HostControlError {
     #[error(transparent)]
     Timeout(Report),
     #[error("Operation failed")]
-    OperationFailed(HostState, #[source] Report),
+    OperationFailed {
+        target: HostState,
+        #[source]
+        report: Report,
+    },
 }
 
 /// High-level application entrypoint for handling host state transitions.
@@ -247,13 +251,18 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             if let Err(ref e) = result {
                 debug!(host = %host, error = ?e, "Host state transition failed");
             }
-            // On completion, re-check whether the actual state matches the desired state.
-            // This handles the race where the lease changed while we were transitioning.
-            let desired_running = state.leases.host_has_leases(&host);
-            let current = state.hoststatus.get_current_state(&host);
-            let is_running = matches!(current, HostState::Online);
-            if desired_running != is_running {
-                spawn_handle_host_state(&host, &state);
+            // Only re-check on success. If the transition failed or was a no-op,
+            // immediately spawning another transition can create a tight retry loop.
+            // On successful completion, re-check whether the actual state matches the
+            // desired state to handle the race where the lease changed while we were
+            // transitioning.
+            if result.is_ok() {
+                let desired_running = state.leases.host_has_leases(&host);
+                let current = state.hoststatus.get_current_state(&host);
+                let is_running = matches!(current, HostState::Online);
+                if desired_running != is_running {
+                    spawn_handle_host_state(&host, &state);
+                }
             }
         }
         .in_current_span(),
@@ -319,9 +328,6 @@ async fn wake_host_and_wait(
 ) -> Result<(), HostControlError> {
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
         info!(host = %host_with_name.name, "WOL disabled for host");
-        hoststatus
-            .force_set(&host_with_name.name, HostState::Offline)
-            .await;
         return Ok(());
     }
 
@@ -338,10 +344,10 @@ async fn wake_host_and_wait(
         hoststatus
             .force_set(&host_with_name.name, HostState::Offline)
             .await;
-        return Err(HostControlError::OperationFailed(
-            HostState::Online,
-            e.wrap_err("Failed to send WoL packet"),
-        ));
+        return Err(HostControlError::OperationFailed{
+            target: HostState::Online,
+            report: e.wrap_err("Failed to send WoL packet"),
+        });
     }
 
     // Re-send WoL every WOL_RESEND_INTERVAL in a background task until we know the host
@@ -403,7 +409,10 @@ async fn shutdown_host_and_wait(
             hoststatus
                 .force_set(&host_with_name.name, HostState::Online)
                 .await;
-            return Err(HostControlError::OperationFailed(HostState::Offline, e));
+            return Err(HostControlError::OperationFailed{
+                target: HostState::Offline,
+                report: e,
+            });
         }
     };
 
@@ -411,10 +420,10 @@ async fn shutdown_host_and_wait(
         hoststatus
             .force_set(&host_with_name.name, HostState::Online)
             .await;
-        return Err(HostControlError::OperationFailed(
-            HostState::Offline,
-            eyre::eyre!("Agent rejected shutdown command: {resp}"),
-        ));
+        return Err(HostControlError::OperationFailed{
+            target: HostState::Offline,
+            report: eyre::eyre!("Agent rejected shutdown command: {resp}"),
+        });
     }
 
     let shutdown_secs = host_with_name
