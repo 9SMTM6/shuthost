@@ -7,8 +7,6 @@ use crate::install::{
 };
 use shuthost_common::{ResultMapErrExt as _, UnwrapToStringExt as _};
 
-const CONFIG_ENTRY: &str = r#""{name}" = { ip = "{ip}", mac = "{mac}", port = {port}, shared_secret = "{secret}", enforce_state = false }"#;
-
 /// Helper function to find and extract flag values from service file lines.
 ///
 /// # Arguments
@@ -164,39 +162,44 @@ pub(crate) fn detect_installation_init_system() -> Result<InitSystem, String> {
     Err("No existing host_agent installation detected for update.".to_string())
 }
 
-pub(crate) fn print_registration_config(config: &ServiceConfig) {
+pub(crate) fn print_registration_config(
+    ServiceConfig {
+        hostname,
+        port,
+        secret,
+        broadcast_port,
+        ..
+    }: &ServiceConfig,
+) {
     let interface = &get_default_interface();
     if interface.is_none() {
         eprintln!(
             "Failed to determine the default network interface. Continuing on assuming docker or similar environment."
         );
     }
+    let ip = interface
+        .as_ref()
+        .and_then(|it| get_ip(it))
+        .unwrap_or("unrecognized".to_string());
+    let mac = interface
+        .as_ref()
+        .and_then(|it| get_mac(it))
+        .unwrap_or("unrecognized".to_string());
+    let default_broadcast_port = shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT;
     println!(
-        "Place the following in the coordinator:\n{config_entry}",
-        config_entry = CONFIG_ENTRY
-            .replace("{name}", &config.hostname)
-            .replace(
-                "{ip}",
-                &interface
-                    .as_ref()
-                    .and_then(|it| get_ip(it))
-                    .unwrap_or("unrecognized".to_string())
-            )
-            .replace(
-                "{mac}",
-                &interface
-                    .as_ref()
-                    .and_then(|it| get_mac(it))
-                    .unwrap_or("unrecognized".to_string())
-            )
-            .replace("{port}", &config.port.to_string())
-            .replace("{secret}", &config.secret)
-    );
-    println!(
-        "Ensure the coordinator sets `broadcast_port` to {} for this host (defaults to {}).",
-        config.broadcast_port,
-        shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT
-    );
+        r#"Ensure the coordinator sets `broadcast_port` to {broadcast_port} to receive broadcasts from this host (coordinator defaults to {default_broadcast_port}).
+
+Place the following in the coordinator's [hosts] section:
+
+[hosts."{hostname}"]
+ip = "{ip}"
+mac = "{mac}"
+port = {port}
+shared_secret = "{secret}"
+enforce_state = false
+# wake_timeout_secs = 120
+# shutdown_timeout_secs = 20
+"#);
 }
 
 #[cfg(any(target_os = "linux", test))]
