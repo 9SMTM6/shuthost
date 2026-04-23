@@ -147,7 +147,9 @@ async fn handle_m2m_lease_action(
         return Ok(match (action, ultimately_desired_state) {
             (LA::Take, HS::Online) => "Lease taken, host is already online",
             (LA::Release, HS::Offline) => "Lease released, host is already offline",
-            _ => unreachable!("unexpected (action, ultimately_desired_state) combination"),
+            (LA::Release, HS::Online) => "Lease released, but host remains online",
+            (LA::Take, HS::Offline) => unreachable!("taking a lease on an offline host should not assure that the lease_set is not empty"),
+            (_, _) => unreachable!("we should've handled all possible combinations of (action, ultimately_desired_state) by this point"),
         }
         .into_response());
     }
