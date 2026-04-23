@@ -163,10 +163,10 @@ pub(crate) fn detect_installation_init_system() -> Result<InitSystem, String> {
 }
 
 pub(crate) fn print_registration_config(
-    ServiceConfig {
-        hostname,
+    &ServiceConfig {
+        ref hostname,
         port,
-        secret,
+        ref secret,
         broadcast_port,
         ..
     }: &ServiceConfig,
@@ -199,7 +199,8 @@ shared_secret = "{secret}"
 enforce_state = false
 # wake_timeout_secs = 120
 # shutdown_timeout_secs = 20
-"#);
+"#
+    );
 }
 
 #[cfg(any(target_os = "linux", test))]

@@ -205,7 +205,7 @@ async fn handle_m2m_lease_action(
                     match err {
                         HCE::NotFound(_) => SC::NOT_FOUND,
                         HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
-                        HCE::OperationFailed{..} => SC::INTERNAL_SERVER_ERROR,
+                        HCE::OperationFailed { .. } => SC::INTERNAL_SERVER_ERROR,
                     },
                     err.to_string(),
                 ))
