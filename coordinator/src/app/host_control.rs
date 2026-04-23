@@ -261,7 +261,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             // On successful completion, re-check whether the actual state matches the
             // desired state to handle the race where the lease changed while we were
             // transitioning.
-            if result.is_ok() && matches!(result.unwrap(), OperationOrNoop::Executed) {
+            if result.is_ok() && matches!(result, Ok(OperationOrNoop::Executed)) {
                 let desired_running = state.leases.host_has_leases(&host);
                 let current = state.hoststatus.get_current_state(&host);
                 let is_running = matches!(current, HostState::Online);
@@ -349,7 +349,7 @@ async fn wake_host_and_wait(
         hoststatus
             .force_set(&host_with_name.name, HostState::Offline)
             .await;
-        return Err(HostControlError::OperationFailed{
+        return Err(HostControlError::OperationFailed {
             target: HostState::Online,
             report: e.wrap_err("Failed to send WoL packet"),
         });
@@ -414,7 +414,7 @@ async fn shutdown_host_and_wait(
             hoststatus
                 .force_set(&host_with_name.name, HostState::Online)
                 .await;
-            return Err(HostControlError::OperationFailed{
+            return Err(HostControlError::OperationFailed {
                 target: HostState::Offline,
                 report: e,
             });
@@ -425,7 +425,7 @@ async fn shutdown_host_and_wait(
         hoststatus
             .force_set(&host_with_name.name, HostState::Online)
             .await;
-        return Err(HostControlError::OperationFailed{
+        return Err(HostControlError::OperationFailed {
             target: HostState::Offline,
             report: eyre::eyre!("Agent rejected shutdown command: {resp}"),
         });

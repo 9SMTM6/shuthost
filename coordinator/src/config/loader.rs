@@ -194,7 +194,7 @@ mod tests {
         assert!(cfg.clients.contains_key("my-client-name"));
     }
 
-        #[tokio::test]
+    #[tokio::test]
     async fn load_example_config_with_runtime_config() {
         let temp_file = env::temp_dir().join("test_example_config_with_runtime_config.toml");
         fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
