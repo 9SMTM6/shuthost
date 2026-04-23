@@ -32,11 +32,11 @@ pub(crate) struct Host {
     #[serde(default)]
     pub enforce_state: bool,
     /// Maximum seconds to wait for the host to come online after sending `WoL` packets.
-    /// Defaults to [`DEFAULT_WAKE_TIMEOUT_SECS`](crate::app::host_control::DEFAULT_WAKE_TIMEOUT_SECS) when `None`.
+    /// When `None`, the runtime-configured default wake timeout is used.
     #[serde(default)]
     pub wake_timeout_secs: Option<u64>,
     /// Maximum seconds to wait for the host to go offline after sending a shutdown command.
-    /// Defaults to [`DEFAULT_SHUTDOWN_TIMEOUT_SECS`](crate::app::host_control::DEFAULT_SHUTDOWN_TIMEOUT_SECS) when `None`.
+    /// When `None`, the runtime-configured default shutdown timeout is used.
     #[serde(default)]
     pub shutdown_timeout_secs: Option<u64>,
 }
