@@ -40,7 +40,7 @@ mod tests {
     use secrecy::{ExposeSecret as _, SecretString};
 
     use super::*;
-    use crate::config::{AuthMode, DbConfig, OidcConfig};
+    use crate::config::{AuthMode, DbConfig, OidcConfig, RuntimeConfig};
 
     #[tokio::test]
     async fn load_coordinator_config_file() {
@@ -192,6 +192,23 @@ mod tests {
             .expect("Failed to load example_config_with_client_and_host.toml");
         assert!(cfg.hosts.contains_key("my-host-name"));
         assert!(cfg.clients.contains_key("my-client-name"));
+    }
+
+        #[tokio::test]
+    async fn load_example_config_with_runtime_config() {
+        let temp_file = env::temp_dir().join("test_example_config_with_runtime_config.toml");
+        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
+        Command::new("patch")
+            .arg("-i")
+            .arg("../docs/examples/example_config_runtime_config.toml.patch")
+            .arg(&temp_file)
+            .status()
+            .unwrap();
+        let cfg = load(&temp_file)
+            .await
+            .expect("Failed to load example_config_with_runtime_config.toml");
+        let defaults = RuntimeConfig::default();
+        assert_eq!(cfg.server.runtime, defaults);
     }
 
     #[tokio::test]
