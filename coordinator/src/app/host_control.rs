@@ -183,6 +183,11 @@ pub(crate) enum HostControlError {
     },
 }
 
+enum OperationOrNoop {
+    Executed,
+    Noop,
+}
+
 /// High-level application entrypoint for handling host state transitions.
 /// Called with the already-claimed transition state (Waking or `ShuttingDown`)
 /// having been atomically set before this function is invoked. Because
@@ -193,7 +198,7 @@ async fn handle_host_state(
     host: &str,
     state: &AppState,
     lease_set: &LeaseSources,
-) -> Result<(), HostControlError> {
+) -> Result<OperationOrNoop, HostControlError> {
     let should_be_running = !lease_set.is_empty();
 
     debug!(
@@ -252,11 +257,11 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                 debug!(host = %host, error = ?e, "Host state transition failed");
             }
             // Only re-check on success. If the transition failed or was a no-op,
-            // immediately spawning another transition can create a tight retry loop.
+            // immediately spawning another transition would create a tight retry loop.
             // On successful completion, re-check whether the actual state matches the
             // desired state to handle the race where the lease changed while we were
             // transitioning.
-            if result.is_ok() {
+            if result.is_ok() && matches!(result.unwrap(), OperationOrNoop::Executed) {
                 let desired_running = state.leases.host_has_leases(&host);
                 let current = state.hoststatus.get_current_state(&host);
                 let is_running = matches!(current, HostState::Online);
@@ -325,10 +330,10 @@ async fn wake_host_and_wait(
     host_with_name: &ResolvedHost,
     hoststatus: &HostStatusState,
     runtime: &RuntimeConfig,
-) -> Result<(), HostControlError> {
+) -> Result<OperationOrNoop, HostControlError> {
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
         info!(host = %host_with_name.name, "WOL disabled for host");
-        return Ok(());
+        return Ok(OperationOrNoop::Noop);
     }
 
     let wake_secs = host_with_name
@@ -381,7 +386,7 @@ async fn wake_host_and_wait(
     wol_resend_handle.abort();
 
     match poll_result {
-        Ok(()) => Ok(()),
+        Ok(()) => Ok(OperationOrNoop::Executed),
         Err(e) => {
             hoststatus
                 .force_set(&host_with_name.name, HostState::Offline)
@@ -401,7 +406,7 @@ async fn shutdown_host_and_wait(
     host_with_name: &ResolvedHost,
     hoststatus: &HostStatusState,
     runtime: &RuntimeConfig,
-) -> Result<(), HostControlError> {
+) -> Result<OperationOrNoop, HostControlError> {
     // Send shutdown to the address
     let resp = match send_shutdown_to_address(host_with_name).await {
         Ok(r) => r,
@@ -440,7 +445,7 @@ async fn shutdown_host_and_wait(
     )
     .await
     {
-        Ok(()) => Ok(()),
+        Ok(()) => Ok(OperationOrNoop::Executed),
         Err(e) => {
             hoststatus
                 .force_set(&host_with_name.name, HostState::Online)
