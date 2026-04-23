@@ -25,7 +25,7 @@ use std::{env, fs};
 
 use secrecy::SecretString;
 
-use reqwest::Client;
+use reqwest::{Client, StatusCode};
 
 use common::{
     get_free_port, spawn_coordinator_with_config, spawn_host_agent_default, wait_for_agent_ready,
@@ -188,5 +188,9 @@ async fn lease_non_existing_host_errors() {
         .send()
         .await
         .expect("failed to send request");
-    assert!(!resp.status().is_success(), "Taking lease for non-existing host should fail");
+    assert_eq!(
+        resp.status(),
+        StatusCode::NOT_FOUND,
+        "Taking lease for non-existing host should return 404"
+    );
 }

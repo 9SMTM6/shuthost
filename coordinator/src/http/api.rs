@@ -12,7 +12,7 @@ use axum::{
 use axum_extra::{TypedHeader, headers::ContentType};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{
     app::{AppState, LeaseSource, db, lookup_host},
@@ -121,14 +121,22 @@ async fn handle_web_lease_action(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let lease_source = LeaseSource::WebInterface;
-    if let Err(e) = update_lease(&hostname, lease_source, action, &state).await {
-        error!("Failed to update lease: {}", e);
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    }
-    // Reconciler task handles the host control action.
-    match action {
-        LeaseAction::Take => "Lease taken (async)".into_response(),
-        LeaseAction::Release => "Lease released (async)".into_response(),
+    match update_lease(&hostname, lease_source, action, &state).await {
+        Ok(_) => {
+            // Reconciler task handles the host control action.
+            match action {
+                LeaseAction::Take => "Lease taken (async)".into_response(),
+                LeaseAction::Release => "Lease released (async)".into_response(),
+            }
+        }
+        Err(UpdateLeaseError::HostNotFound { .. }) => {
+            warn!("Attempted to {action:?} lease for unknown host: {hostname}",);
+            return StatusCode::NOT_FOUND.into_response();
+        }
+        Err(e) => {
+            error!("Failed to update lease: {}", e);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
     }
 }
 
