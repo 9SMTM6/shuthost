@@ -1,6 +1,6 @@
---- example_config.toml	2026-03-01 16:31:27.908295225 +0100
-+++ example_config_with_client_and_host.toml	2026-04-11 13:06:51.432167548 +0200
-@@ -129,27 +129,28 @@
+--- example_config.toml	2026-04-23 11:51:15.994693705 +0200
++++ example_config_with_client_and_host.toml	2026-04-23 12:28:41.548007128 +0200
+@@ -156,33 +156,34 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [hosts]
@@ -25,6 +25,12 @@
 -#     # if no lease change occurred. Defaults to `false` (edge-triggered only).
 -#     # For more details on the `enforce_state` field, see the [enforce_state behavior example](https://github.com/9SMTM6/shuthost/blob/main/docs/examples/enforce_state_behavior.md).
 -#     enforce_state = false
+-#     # Maximum seconds to wait for the host to come online after sending WoL packets.
+-#     # When omitted, the coordinator's `default_wake_timeout_secs` is used.
+-#     wake_timeout_secs = 120
+-#     # Maximum seconds to wait for the host to go offline after sending a shutdown command.
+-#     # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
+-#     shutdown_timeout_secs = 20
 +[hosts.my-host-name] 
 +    # IP address of the host where the agent is running.
 +    # This should be reachable from the coordinator.
@@ -46,11 +52,17 @@
 +    # if no lease change occurred. Defaults to `false` (edge-triggered only).
 +    # For more details on the `enforce_state` field, see the [enforce_state behavior example](https://github.com/9SMTM6/shuthost/blob/main/docs/examples/enforce_state_behavior.md).
 +    enforce_state = false
++    # Maximum seconds to wait for the host to come online after sending WoL packets.
++    # When omitted, the coordinator's `default_wake_timeout_secs` is used.
++    wake_timeout_secs = 120
++    # Maximum seconds to wait for the host to go offline after sending a shutdown command.
++    # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
++    shutdown_timeout_secs = 20
 +
  
  # =============================================================================
  # CLIENT CONFIGURATION
-@@ -160,9 +161,9 @@
+@@ -193,9 +194,9 @@
  # The client installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [clients]
