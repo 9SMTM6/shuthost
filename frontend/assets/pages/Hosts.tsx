@@ -4,7 +4,7 @@ import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
-import type { LeaseSource } from '../helpers/appStore';
+import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
@@ -21,6 +21,34 @@ const getFormattedLeases = (leases: LeaseSource[]) => {
         ? clientLeases.map(formatLeaseSource).join(', ')
         : 'None';
 };
+
+const statusDisplayMap = {
+    online: 'online',
+    offline: 'offline',
+    waking: 'waking',
+    shutting_down: 'shutting down',
+} as const satisfies Record<Status, string>;
+
+const getStatusLabel = (status?: Status) =>
+    status === undefined ? 'Loading...' : statusDisplayMap[status];
+
+const statusReserveLabel = (
+    [getStatusLabel(), ...Object.values(statusDisplayMap)] as const
+).reduce(
+    (longest, label) =>
+        label.length > longest.length ? label : longest,
+    getStatusLabel(),
+);
+
+const actionReserveLabel = [
+    'Start',
+    'Take Lease',
+    'Shutdown',
+    'Release Lease',
+].reduce((longest, label) =>
+    label.length > longest.length ? label : longest,
+    'Start',
+);
 
 // ==========================
 // Installer commands
@@ -41,11 +69,7 @@ const makeInstallCommands = () => {
 
 const HostRow = ((props: { hostName: string }) => {
     const leases = () => state.leaseMap[props.hostName] ?? [];
-    const status = () => {
-        const raw = state.statusMap[props.hostName];
-        if (raw === 'shutting_down') return 'shutting down';
-        return raw ?? 'Loading...';
-    };
+    const status = () => getStatusLabel(state.statusMap[props.hostName]);
     const hasWebInterfaceLease = () =>
         leases().some((l) => l.type === 'WebInterface');
     const hasClients = () => state.clients.length > 0;
@@ -87,7 +111,7 @@ const HostRow = ((props: { hostName: string }) => {
                     {getFormattedLeases(leases())}
                 </td>
             </Show>
-            <td class="table-cell" aria-label="Actions">
+            <td class="table-cell actions" aria-label="Actions">
                 <div class="actions-cell">
                     <button
                         class="btn btn-green take-lease"
@@ -236,8 +260,11 @@ export const HostsPage = (() => {
                                 <th class="table-header" scope="col">
                                     Host
                                 </th>
-                                <th class="table-header" scope="col">
+                                <th class="table-header status-column" scope="col">
                                     Status
+                                    <span aria-hidden="true" class="reserve-label">
+                                        {statusReserveLabel}
+                                    </span>
                                 </th>
                                 <Show when={hasClients()}>
                                     <th
@@ -248,8 +275,11 @@ export const HostsPage = (() => {
                                         Leases
                                     </th>
                                 </Show>
-                                <th class="table-header" scope="col">
+                                <th class="table-header actions-column" scope="col">
                                     Actions
+                                    <span aria-hidden="true" class="reserve-label">
+                                        {actionReserveLabel}
+                                    </span>
                                 </th>
                             </tr>
                         </thead>

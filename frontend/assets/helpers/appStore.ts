@@ -6,10 +6,9 @@ import { serverData } from './serverData';
 // Types
 // ==========================
 
-export type StatusMap = Record<
-    string,
-    'online' | 'offline' | 'waking' | 'shutting_down'
->;
+export const statusOptions = ['online', 'offline', 'waking', 'shutting_down'] as const;
+export type Status = (typeof statusOptions)[number];
+export type StatusMap = Record<string, Status>;
 
 export type LeaseSource =
     | { type: 'WebInterface' }

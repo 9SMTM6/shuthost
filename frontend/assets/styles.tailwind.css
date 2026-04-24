@@ -146,7 +146,15 @@ body {
 
     table.actions-table {
         @apply border-collapse w-full;
-        table-layout: auto;
+        table-layout: fixed;
+        .status-column,
+        .actions-column,
+        .table-cell.status,
+        .table-cell.actions {
+            width: max-content;
+            min-width: max-content;
+            white-space: nowrap;
+        }
         .table-header {
             @apply px-4 py-3 bg-[#f3f3f3] dark:bg-[#252526] text-left font-semibold text-black dark:text-[#cccccc] text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42];
         }
@@ -180,6 +188,17 @@ body {
                 visibility: hidden;
             }
         }
+
+        .table-cell.status {
+            white-space: nowrap;
+        }
+
+        .reserve-label {
+            visibility: hidden;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
         tr[data-has-lease="true"] {
             .actions-cell {
                 .take-lease {
