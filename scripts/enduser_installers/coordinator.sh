@@ -3,7 +3,11 @@
 set -eu
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-cd "$SCRIPT_DIR/../.."
+# Only change into the repository root during local testing when the
+# repository marker exists adjacent to this script.
+if [ -f "$SCRIPT_DIR/../helpers.sh" ] || [ -f "$SCRIPT_DIR/helpers.sh" ]; then
+    cd "$SCRIPT_DIR/../.."
+fi
 
 # Print help (does not exit)
 print_help() {
