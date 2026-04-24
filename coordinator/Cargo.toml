@@ -128,11 +128,11 @@ workspace = true
 
 [build-dependencies]
 base64.workspace = true
-cargo-about = "0.8.4"
+cargo-about = "0.9"
 eyre.workspace = true
 git-version.workspace = true
 hex.workspace = true
-krates = "0.20.0"
+krates = "0.21.1"
 regex.workspace = true
 # Generate PNG favicons from SVG at build time (no external browser)
 resvg = "0.47"
