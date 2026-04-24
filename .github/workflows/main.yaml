@@ -176,6 +176,8 @@ jobs:
   test-service-installation-systemd:
     name: Test Service Installation (systemd)
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: [build-host_agents, build-coordinators]
 
     steps:
@@ -197,6 +199,8 @@ jobs:
   test-service-installation-openrc:
     name: Test Service Installation (openrc)
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: [build-host_agents, build-coordinators]
 
     container: &openrc-container
@@ -229,6 +233,8 @@ jobs:
   test-service-installation-launchd:
     name: Test Service Installation (launchd)
     runs-on: macos-latest
+    env:
+      CI_MODE: true
     needs: [build-host_agents, build-coordinators]
 
     steps:
@@ -263,6 +269,8 @@ jobs:
   test-direct-control-unix:
     name: Test Direct Control (${{ matrix.init }})
     runs-on: ${{ matrix.runner }}
+    env:
+      CI_MODE: true
     needs: [build-host_agents]
     container: ${{ matrix.container }}
 
@@ -305,6 +313,8 @@ jobs:
   test-direct-control-windows:
     name: Test Direct Control (Windows)
     runs-on: windows-latest
+    env:
+      CI_MODE: true
     needs: [build-host_agents]
     defaults:
       run:
@@ -387,6 +397,8 @@ jobs:
   test-installer-update-linux:
     name: Test Installer Update (Linux)
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinators]
     steps:
       - uses: *checkout
@@ -407,6 +419,8 @@ jobs:
   test-installer-update-alpine:
     name: Test Installer Update (Alpine)
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinators]
     container: *openrc-container
     steps:
@@ -439,6 +453,8 @@ jobs:
   test-installer-update-macos:
     name: Test Installer Update (macOS)
     runs-on: macos-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinators]
     steps:
       - uses: *checkout
@@ -468,6 +484,8 @@ jobs:
   validate-file-snapshots:
     name: Validate File Snapshots
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: build-coordinators
 
     strategy:
@@ -513,6 +531,8 @@ jobs:
   test-client-scripts-macos:
     name: Test Client Scripts on macOS
     runs-on: macos-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinators]
 
     steps:
@@ -592,6 +612,8 @@ jobs:
   test-client-scripts-ubuntu:
     name: Test Client Scripts on Ubuntu
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinators]
 
     steps:
@@ -615,6 +637,8 @@ jobs:
   test-client-scripts-alpine:
     name: Test Client Scripts on Alpine (Docker)
     runs-on: ubuntu-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinators]
 
     container: *openrc-container
@@ -649,6 +673,8 @@ jobs:
   test-client-scripts-windows:
     name: Test Client Scripts on Windows
     runs-on: windows-latest
+    env:
+      CI_MODE: true
     needs: [build-coordinator-windows]
     defaults:
       run:
@@ -863,6 +889,8 @@ jobs:
 
   test-coordinator-compatibility:
     name: Test Coordinator Compatibility on Older OS Releases
+    env:
+      CI_MODE: true
     needs: build-coordinators
     runs-on: ${{ matrix.runner }}
 
@@ -907,6 +935,8 @@ jobs:
 
   test-agent-compatibility:
     name: Test Agent Compatibility on Older OS Releases
+    env:
+      CI_MODE: true
     needs: build-host_agents
     runs-on: ${{ matrix.runner }}
 
