@@ -791,17 +791,41 @@ pub(crate) fn default_hostname() -> String {
 pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
     let socket = shuthost_common::create_broadcast_socket(port)?;
 
+    // Don't block forever in environments where one of the test packets
+    // (direct vs broadcast) may be dropped. Use a small read timeout
+    // and treat at least one received packet as success.
+    socket
+        .set_read_timeout(Some(Duration::from_secs(1)))
+        .map_err(|e| format!("Failed to set socket timeout: {e}"))?;
+
     println!("Listening for WOL test packets on port {port}...");
 
     let mut buf = [0u8; 32];
+    let mut received = 0u8;
     for _ in 0..2 {
-        // Wait for both direct and broadcast tests
-        if let Ok((_, addr)) = socket.recv_from(&mut buf) {
-            // Echo back to confirm receipt
-            socket
-                .send_to(b"SHUTHOST_AGENT RECEIVED", addr)
-                .map_err(|e| format!("Failed to send confirmation: {e}"))?;
+        match socket.recv_from(&mut buf) {
+            Ok((_n, addr)) => {
+                // Echo back to confirm receipt
+                socket
+                    .send_to(b"SHUTHOST_AGENT RECEIVED", addr)
+                    .map_err(|e| format!("Failed to send confirmation: {e}"))?;
+                received = received.saturating_add(1);
+            }
+            Err(e) => {
+                // On timeout/other read errors, stop waiting further.
+                // If we already received at least one packet, consider it success;
+                // otherwise propagate the error.
+                if received > 0 {
+                    break;
+                } else {
+                    return Err(format!("Failed to receive WOL packet: {e}"));
+                }
+            }
         }
+    }
+
+    if received == 0 {
+        return Err("No WOL packets received".to_string());
     }
 
     Ok(())
