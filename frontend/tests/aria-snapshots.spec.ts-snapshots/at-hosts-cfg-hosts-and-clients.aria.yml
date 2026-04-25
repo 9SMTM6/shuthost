@@ -6,25 +6,25 @@
     - heading "Hosts Table" [level=2]
     - table:
       - rowgroup:
-        - row "Host Status Leases Actions":
+        - row "Host Status Actions Leases":
           - columnheader "Host"
           - columnheader "Status"
-          - columnheader "Leases"
           - columnheader "Actions"
+          - columnheader "Leases"
       - rowgroup:
-        - row "archive Status Leases Actions":
+        - row "archive Status Actions Leases":
           - rowheader "archive":
             - link "archive":
               - /url: /hosts/archive
           - cell "Status": offline
-          - cell "Leases"
           - cell "Actions":
             - button "Take Lease"
-        - row "tarbean Status Leases Actions":
+          - cell "Leases"
+        - row "tarbean Status Actions Leases":
           - rowheader "tarbean":
             - link "tarbean":
               - /url: /hosts/tarbean
           - cell "Status": offline
-          - cell "Leases"
           - cell "Actions":
             - button "Take Lease"
+          - cell "Leases"
