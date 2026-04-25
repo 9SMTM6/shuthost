@@ -146,7 +146,7 @@ body {
 
     table.actions-table {
         @apply border-collapse w-full;
-        table-layout: fixed;
+        table-layout: auto;
         .status-column,
         .actions-column,
         .table-cell.status,
@@ -193,10 +193,18 @@ body {
             white-space: nowrap;
         }
 
-        .reserve-label {
-            visibility: hidden;
-            display: inline-block;
-            white-space: nowrap;
+        .reserve-container {
+            display: inline-grid;
+            align-items: center;
+
+            > .reserve-label {
+                visibility: hidden;
+                white-space: nowrap;
+            }
+            > .reserve-label,
+            > span:first-child {
+                grid-area: 1 / 1;
+            }
         }
 
         tr[data-has-lease="true"] {

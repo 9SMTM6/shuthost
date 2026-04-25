@@ -35,8 +35,7 @@ const getStatusLabel = (status?: Status) =>
 const statusReserveLabel = (
     [getStatusLabel(), ...Object.values(statusDisplayMap)] as const
 ).reduce(
-    (longest, label) =>
-        label.length > longest.length ? label : longest,
+    (longest, label) => (label.length > longest.length ? label : longest),
     getStatusLabel(),
 );
 
@@ -45,8 +44,8 @@ const actionReserveLabel = [
     'Take Lease',
     'Shutdown',
     'Release Lease',
-].reduce((longest, label) =>
-    label.length > longest.length ? label : longest,
+].reduce(
+    (longest, label) => (label.length > longest.length ? label : longest),
     'Start',
 );
 
@@ -106,11 +105,6 @@ const HostRow = ((props: { hostName: string }) => {
             <td class="table-cell status" aria-label="Status">
                 {status()}
             </td>
-            <Show when={hasClients()}>
-                <td class="table-cell leases" aria-label="Leases">
-                    {getFormattedLeases(leases())}
-                </td>
-            </Show>
             <td class="table-cell actions" aria-label="Actions">
                 <div class="actions-cell">
                     <button
@@ -133,6 +127,11 @@ const HostRow = ((props: { hostName: string }) => {
                     </button>
                 </div>
             </td>
+            <Show when={hasClients()}>
+                <td class="table-cell leases" aria-label="Leases">
+                    {getFormattedLeases(leases())}
+                </td>
+            </Show>
         </tr>
     );
 }) satisfies AnyComponent;
@@ -260,10 +259,32 @@ export const HostsPage = (() => {
                                 <th class="table-header" scope="col">
                                     Host
                                 </th>
-                                <th class="table-header status-column" scope="col">
-                                    Status
-                                    <span aria-hidden="true" class="reserve-label">
-                                        {statusReserveLabel}
+                                <th
+                                    class="table-header status-column"
+                                    scope="col"
+                                >
+                                    <span class="reserve-container">
+                                        <span>Status</span>
+                                        <span
+                                            aria-hidden="true"
+                                            class="reserve-label"
+                                        >
+                                            {statusReserveLabel}
+                                        </span>
+                                    </span>
+                                </th>
+                                <th
+                                    class="table-header actions-column"
+                                    scope="col"
+                                >
+                                    <span class="reserve-container">
+                                        <span>Actions</span>
+                                        <span
+                                            aria-hidden="true"
+                                            class="reserve-label"
+                                        >
+                                            {actionReserveLabel}
+                                        </span>
                                     </span>
                                 </th>
                                 <Show when={hasClients()}>
@@ -275,12 +296,6 @@ export const HostsPage = (() => {
                                         Leases
                                     </th>
                                 </Show>
-                                <th class="table-header actions-column" scope="col">
-                                    Actions
-                                    <span aria-hidden="true" class="reserve-label">
-                                        {actionReserveLabel}
-                                    </span>
-                                </th>
                             </tr>
                         </thead>
                         <tbody
