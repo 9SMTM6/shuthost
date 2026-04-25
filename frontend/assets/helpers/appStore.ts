@@ -6,7 +6,12 @@ import { serverData } from './serverData';
 // Types
 // ==========================
 
-export const statusOptions = ['online', 'offline', 'waking', 'shutting_down'] as const;
+export const statusOptions = [
+    'online',
+    'offline',
+    'waking',
+    'shutting_down',
+] as const;
 export type Status = (typeof statusOptions)[number];
 export type StatusMap = Record<string, Status>;
 

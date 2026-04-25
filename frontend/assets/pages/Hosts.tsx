@@ -26,7 +26,7 @@ const statusDisplayMap = {
     online: 'online',
     offline: 'offline',
     waking: 'waking',
-    shutting_down: 'shutting down',
+    shutting_down: 'shutting',
 } as const satisfies Record<Status, string>;
 
 const getStatusLabel = (status?: Status) =>
@@ -37,16 +37,6 @@ const statusReserveLabel = (
 ).reduce(
     (longest, label) => (label.length > longest.length ? label : longest),
     getStatusLabel(),
-);
-
-const actionReserveLabel = [
-    'Start',
-    'Take Lease',
-    'Shutdown',
-    'Release Lease',
-].reduce(
-    (longest, label) => (label.length > longest.length ? label : longest),
-    'Start',
 );
 
 // ==========================
@@ -147,6 +137,16 @@ export const HostsPage = (() => {
 
     const cmds = createMemo(() => makeInstallCommands());
     const hasClients = () => state.clients.length > 0;
+    const actionReserveLabel = createMemo(() => {
+        const labels = hasClients()
+            ? ['Take Lease', 'Release Lease']
+            : ['Start', 'Shutdown'];
+        return labels.reduce(
+            (longest, label) =>
+                label.length > longest.length ? label : longest,
+            labels[0] ?? 'Start',
+        );
+    });
 
     return (
         <AppLayout>
@@ -283,7 +283,7 @@ export const HostsPage = (() => {
                                             aria-hidden="true"
                                             class="reserve-label"
                                         >
-                                            {actionReserveLabel}
+                                            {actionReserveLabel()}
                                         </span>
                                     </span>
                                 </th>
