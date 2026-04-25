@@ -205,7 +205,7 @@ jobs:
 
     container: &openrc-container
       image: docker.io/heywoodlh/openrc:latest
-      options: --privileged --memory=2g --network=host
+      options: --privileged --memory=2g
     steps:
       - uses: *checkout
 
