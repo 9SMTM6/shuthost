@@ -688,7 +688,7 @@ const HostLeasesSection = (props: {
                         <td class="table-cell">
                             <div class="actions-cell">
                                 <button
-                                    class="btn btn-green take-lease"
+                                    class="btn btn-height btn-green take-lease"
                                     type="button"
                                     onClick={() => props.updateLease('take')}
                                     aria-label="Take web interface lease"
@@ -697,7 +697,7 @@ const HostLeasesSection = (props: {
                                     Take
                                 </button>
                                 <button
-                                    class="btn btn-red release-lease"
+                                    class="btn btn-height btn-red release-lease"
                                     type="button"
                                     onClick={() => props.updateLease('release')}
                                     aria-label="Release web interface lease"
