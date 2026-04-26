@@ -126,6 +126,35 @@ export const demoUnsubscribeFromHostOperationFailed = (
     demoOperationFailedSubscriptions.delete(hostname);
 };
 
+// Online-for subscriptions (permanent: hostname → duration_secs)
+const demoOnlineForSubs = new Map<string, number>();
+
+export const demoCheckHostOnlineForSubscription = (
+    hostname: string,
+): number | null => demoOnlineForSubs.get(hostname) ?? null;
+
+export const demoSubscribeToHostOnlineFor = (
+    hostname: string,
+    durationSecs: number,
+): void => {
+    demoOnlineForSubs.set(hostname, durationSecs);
+};
+
+export const demoUnsubscribeFromHostOnlineFor = (hostname: string): void => {
+    demoOnlineForSubs.delete(hostname);
+};
+
+// Online-for one-shot subscriptions (hostname → duration_secs)
+// In demo mode these just record that a subscription was requested.
+const demoOneshotOnlineForSubs = new Map<string, number>();
+
+export const demoSubscribeToHostOnlineForOneshot = (
+    hostname: string,
+    durationSecs: number,
+): void => {
+    demoOneshotOnlineForSubs.set(hostname, durationSecs);
+};
+
 export const demoUpdateLease = async (
     host: string,
     action: 'take' | 'release',

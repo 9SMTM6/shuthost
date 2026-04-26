@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO push_subscription_host_online_for (subscription_id, hostname, duration_secs) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "dafef1fb8af4283c6d5decca40dcfdbf58ef59660f5e9ee1eb711947f1cb9219"
+}

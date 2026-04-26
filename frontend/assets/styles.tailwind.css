@@ -108,6 +108,12 @@ body {
                 @apply bg-[#c13a3a] dark:bg-[#b85a62];
             }
         }
+        &.btn-yellow {
+            @apply bg-[#a16207] dark:bg-[rgba(234,179,8,0.75)] text-white dark:text-black;
+            &:hover {
+                @apply bg-[#854d0e] dark:bg-[rgba(234,179,8,0.90)];
+            }
+        }
         &:disabled {
             @apply cursor-not-allowed bg-[#e5e5e5] dark:bg-[#2d2d30] text-[#616161] dark:text-[#858585];
         }

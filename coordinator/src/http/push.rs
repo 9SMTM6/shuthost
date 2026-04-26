@@ -4,6 +4,7 @@
 //! unscheduled-event push notifications.
 
 use alloc::sync::Arc;
+use core::time::Duration;
 
 use axum::{
     Router,
@@ -53,6 +54,16 @@ pub(crate) fn routes() -> Router<AppState> {
                 .post(subscribe_host_operation_failed)
                 .delete(unsubscribe_host_operation_failed),
         )
+        .route(
+            "/subscribe-host-online-for",
+            get(check_host_online_for_subscription)
+                .post(subscribe_host_online_for)
+                .delete(unsubscribe_host_online_for),
+        )
+        .route(
+            "/subscribe-host-online-for-oneshot",
+            axum::routing::post(subscribe_host_online_for_oneshot),
+        )
 }
 
 // ──────────────────────────────────────────────
@@ -86,6 +97,20 @@ struct HostSubscriptionData {
 #[derive(Serialize)]
 struct CheckHostSubscriptionResponse {
     subscribed: bool,
+}
+
+#[derive(Deserialize)]
+struct HostOnlineForRequest {
+    subscription: PushSubscriptionJson,
+    hostname: String,
+    duration_secs: i64,
+}
+
+#[derive(Serialize)]
+struct CheckHostOnlineForResponse {
+    subscribed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration_secs: Option<i64>,
 }
 
 #[derive(Serialize)]
@@ -257,6 +282,148 @@ async fn unsubscribe_host_operation_failed(
         error!("Failed to unsubscribe from host operation-failed events: {e:#}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
+
+    StatusCode::NO_CONTENT
+}
+
+// ──────────────────────────────────────────────
+// Handlers: host online-for subscriptions
+// ──────────────────────────────────────────────
+
+/// Returns whether the given push endpoint is subscribed to online-for notifications
+/// for the given host, and if so, the configured duration in seconds.
+#[axum::debug_handler]
+async fn check_host_online_for_subscription(
+    State(state): State<AppState>,
+    Query(params): Query<HostSubscriptionData>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(response; state);
+
+    match db::is_subscribed_to_host_online_for(pool, &params.endpoint, &params.hostname).await {
+        Ok(duration_secs) => axum::Json(CheckHostOnlineForResponse {
+            subscribed: duration_secs.is_some(),
+            duration_secs,
+        })
+        .into_response(),
+        Err(e) => {
+            error!("Failed to check online-for push subscription: {e:#}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Registers a browser push subscription for recurring online-for notifications.
+#[axum::debug_handler]
+async fn subscribe_host_online_for(
+    State(state): State<AppState>,
+    axum::Json(body): axum::Json<HostOnlineForRequest>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(state);
+
+    let sub_id = match db::upsert_push_subscription(
+        pool,
+        &body.subscription.endpoint,
+        &body.subscription.keys.p256dh,
+        &body.subscription.keys.auth,
+    )
+    .await
+    {
+        Ok(id) => id,
+        Err(e) => {
+            error!("Failed to upsert push subscription: {e:#}");
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+    };
+
+    if let Err(e) =
+        db::subscribe_host_online_for(pool, sub_id, &body.hostname, body.duration_secs).await
+    {
+        error!("Failed to subscribe to host online-for events: {e:#}");
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    StatusCode::NO_CONTENT
+}
+
+/// Removes the online-for subscription link for a specific endpoint + host pair.
+#[axum::debug_handler]
+async fn unsubscribe_host_online_for(
+    State(state): State<AppState>,
+    axum::Json(body): axum::Json<HostSubscriptionData>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(state);
+
+    if let Err(e) =
+        db::unsubscribe_host_online_for(pool, &body.endpoint, &body.hostname).await
+    {
+        error!("Failed to unsubscribe from host online-for events: {e:#}");
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    StatusCode::NO_CONTENT
+}
+
+/// Registers a one-shot push notification that fires once the given host has been
+/// online for `duration_secs` seconds. The host must currently be online; if not,
+/// returns 409 Conflict.
+///
+/// Because one-shot subscriptions are not persisted, they are lost if the coordinator
+/// restarts between subscription time and notification time.
+#[axum::debug_handler]
+async fn subscribe_host_online_for_oneshot(
+    State(state): State<AppState>,
+    axum::Json(body): axum::Json<HostOnlineForRequest>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(state);
+    let pool = pool.clone();
+    let Some(vapid_key) = state.vapid_key.clone() else {
+        return StatusCode::SERVICE_UNAVAILABLE;
+    };
+
+    let session_start = {
+        let guard = state.online_since.read().await;
+        let Some(&instant) = guard.get(&body.hostname) else {
+            return StatusCode::CONFLICT;
+        };
+        instant
+    };
+
+    let sub = db::PushSubscription {
+        endpoint: body.subscription.endpoint.clone(),
+        p256dh: body.subscription.keys.p256dh.clone(),
+        auth: body.subscription.keys.auth.clone(),
+    };
+    let duration = Duration::from_secs(u64::try_from(body.duration_secs).unwrap_or(0));
+    let online_since = state.online_since.clone();
+    let hostname = body.hostname.clone();
+    let duration_secs = body.duration_secs;
+
+    // Upsert the push subscription so future sends work correctly.
+    if let Err(e) = db::upsert_push_subscription(
+        &pool,
+        &body.subscription.endpoint,
+        &body.subscription.keys.p256dh,
+        &body.subscription.keys.auth,
+    )
+    .await
+    {
+        error!("Failed to upsert push subscription for oneshot: {e:#}");
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    tokio::spawn(async move {
+        tokio::time::sleep(duration).await;
+        if online_since.read().await.get(&hostname) != Some(&session_start) {
+            return;
+        }
+        let payload = serde_json::json!({
+            "title": "ShutHost",
+            "body": format!("{hostname} has been online for {} seconds", duration_secs),
+            "data": { "hostname": hostname },
+        })
+        .to_string();
+        send_push_notifications(&vapid_key, &pool, &[sub], &payload).await;
+    });
 
     StatusCode::NO_CONTENT
 }

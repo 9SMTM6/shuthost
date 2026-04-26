@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT ps.endpoint, ps.p256dh, ps.auth, phof.duration_secs\n         FROM push_subscriptions ps\n         JOIN push_subscription_host_online_for phof ON phof.subscription_id = ps.id\n         WHERE phof.hostname = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "endpoint",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "p256dh",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "auth",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_secs",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "111f13e3689196d64b84e5d9d9af1c6128583f9bf2de849e299ea02792c60e77"
+}

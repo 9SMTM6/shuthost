@@ -1,9 +1,13 @@
 import { apiFetch } from './apiFetch';
 import {
+    demoCheckHostOnlineForSubscription,
     demoCheckHostOperationFailedSubscription,
     demoCheckHostUnscheduledSubscription,
+    demoSubscribeToHostOnlineFor,
+    demoSubscribeToHostOnlineForOneshot,
     demoSubscribeToHostOperationFailed,
     demoSubscribeToHostUnscheduled,
+    demoUnsubscribeFromHostOnlineFor,
     demoUnsubscribeFromHostOperationFailed,
     demoUnsubscribeFromHostUnscheduled,
     isDemoMode,
@@ -212,5 +216,102 @@ export const unsubscribeFromHostOperationFailed = async (
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: existing.endpoint, hostname }),
+    });
+};
+
+/**
+ * Subscribes the current browser to recurring push notifications when the given
+ * host has been online for `durationSecs` seconds. Replaces any existing
+ * subscription for this host with the new duration.
+ */
+export const subscribeToHostOnlineFor = async (
+    hostname: string,
+    durationSecs: number,
+): Promise<void> => {
+    if (isDemoMode) {
+        demoSubscribeToHostOnlineFor(hostname, durationSecs);
+        return;
+    }
+    const subscription = await getOrCreatePushSubscription();
+    const subJson = subscription.toJSON();
+
+    await apiFetch('/api/push/subscribe-host-online-for', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subJson, hostname, duration_secs: durationSecs }),
+    });
+};
+
+/**
+ * Checks whether the current browser is subscribed to recurring online-for
+ * notifications for the given host. Returns the duration in seconds if subscribed,
+ * or `null` if not.
+ */
+export const checkHostOnlineForSubscription = async (
+    hostname: string,
+): Promise<number | null> => {
+    if (isDemoMode) {
+        return demoCheckHostOnlineForSubscription(hostname);
+    }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return null;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return null;
+
+    const endpoint = encodeURIComponent(existing.endpoint);
+    const resp = await fetch(
+        `/api/push/subscribe-host-online-for?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
+    );
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as { subscribed: boolean; duration_secs?: number };
+    return data.subscribed && data.duration_secs != null ? data.duration_secs : null;
+};
+
+/**
+ * Removes the recurring online-for subscription link for the current browser + host pair.
+ */
+export const unsubscribeFromHostOnlineFor = async (
+    hostname: string,
+): Promise<void> => {
+    if (isDemoMode) {
+        demoUnsubscribeFromHostOnlineFor(hostname);
+        return;
+    }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return;
+
+    await apiFetch('/api/push/subscribe-host-online-for', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint, hostname }),
+    });
+};
+
+/**
+ * Registers a one-shot push notification that fires once the given host has been
+ * online for `durationSecs` seconds. The host must currently be online on the
+ * coordinator; if not, throws an error.
+ */
+export const subscribeToHostOnlineForOneshot = async (
+    hostname: string,
+    durationSecs: number,
+): Promise<void> => {
+    if (isDemoMode) {
+        demoSubscribeToHostOnlineForOneshot(hostname, durationSecs);
+        return;
+    }
+    const subscription = await getOrCreatePushSubscription();
+    const subJson = subscription.toJSON();
+
+    await apiFetch('/api/push/subscribe-host-online-for-oneshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subJson, hostname, duration_secs: durationSecs }),
     });
 };
