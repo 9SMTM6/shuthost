@@ -52,6 +52,7 @@ fn run_command_with_timeout(
                 thread::sleep(Duration::from_millis(50));
             }
             Ok(None) => {
+                println!("DEBUG: command timed out after {:?}, killing child pid={:?}", timeout, child.id());
                 drop(child.kill());
                 return child
                     .wait_with_output()
