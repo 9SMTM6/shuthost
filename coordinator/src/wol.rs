@@ -73,7 +73,19 @@ pub(crate) fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
         .set_read_timeout(Some(Duration::from_secs(1)))
         .wrap_err("Failed to set timeout")?;
 
+    let local_addr = socket.local_addr().ok();
+    println!("DEBUG: coordinator WOL socket local_addr={:?}", local_addr);
+
     let test_message = b"SHUTHOST_WOL_TEST_BROADCAST";
+    println!(
+        "DEBUG: coordinator sending WOL test message len={} to 255.255.255.255:{}",
+        test_message.len(),
+        target_port
+    );
+    println!(
+        "DEBUG: first bytes={:?}",
+        &test_message[..test_message.len().min(16)]
+    );
     socket
         .send_to(test_message, format!("255.255.255.255:{target_port}"))
         .wrap_err(format!(
@@ -81,9 +93,16 @@ pub(crate) fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
         ))?;
 
     let mut buf = [0u8; 32];
-    let broadcast_works = socket.recv(&mut buf).is_ok();
-
-    Ok(broadcast_works)
+    match socket.recv(&mut buf) {
+        Ok(n) => {
+            println!("DEBUG: coordinator received reply len={} bytes={:?}", n, &buf[..n]);
+            Ok(true)
+        }
+        Err(e) => {
+            println!("DEBUG: coordinator recv error: {e}");
+            Ok(false)
+        }
+    }
 }
 
 #[cfg(test)]

@@ -152,16 +152,24 @@ test_wol_packet_reachability() {
     WOL_TEST_PORT=$((DEFAULT_PORT + 1))
 
     # Start the test receiver in background
+    echo "DEBUG: launching host_agent WOL receiver with: ./$OUTFILE test-wol --port $WOL_TEST_PORT"
     ./"$OUTFILE" test-wol --port $WOL_TEST_PORT &
     RECEIVER_PID=$!
+    echo "DEBUG: receiver pid=$RECEIVER_PID"
 
     # Give it time to start
     sleep 1
 
     # Test via coordinator API
-    TEST_RESULT=$(curl $CURL_OPTS -s -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT" 2>/dev/null || echo "")
+    echo "DEBUG: POSTing to $REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT"
+    TEST_RESULT=$(curl $CURL_OPTS -s -S -X POST "$REMOTE_URL/api/m2m/test_wol?port=$WOL_TEST_PORT" 2>&1)
+    CURL_EXIT=$?
+    echo "DEBUG: curl exit=$CURL_EXIT"
+    echo "DEBUG: coordinator test_wol response: $TEST_RESULT"
     # kill the agent test process, if its still running.
     kill $RECEIVER_PID || true
+    wait $RECEIVER_PID 2>/dev/null || true
+    echo "DEBUG: receiver process finished"
 
     if echo "$TEST_RESULT" | grep -q "\"broadcast\":true"; then
         echo "✓ Broadcast WoL packets working"
@@ -225,6 +233,7 @@ else
     test_wol_packet_reachability
 
     if $UPDATE_MODE; then
+        echo "DEBUG: running elevated update on $OUTFILE"
         if [ -n "$SCRIPT_PATH" ]; then
             run_as_elevated "./$OUTFILE update --script-path \"$SCRIPT_PATH\""
         else
@@ -232,6 +241,7 @@ else
             run_as_elevated ./$OUTFILE update
         fi
     else
+        echo "DEBUG: running elevated install on $OUTFILE with args: $BINARY_ARGS"
         # shellcheck disable=SC2090,SC2086
         run_as_elevated ./$OUTFILE install $BINARY_ARGS
     fi

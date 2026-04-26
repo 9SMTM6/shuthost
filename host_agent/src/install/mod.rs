@@ -798,23 +798,21 @@ pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
         .set_read_timeout(Some(Duration::from_secs(1)))
         .map_err(|e| format!("Failed to set socket timeout: {e}"))?;
 
-    println!("Listening for WOL test packets on port {port}...");
+    println!("DEBUG: Listening for WOL test packets on port {port}...");
 
     let mut buf = [0u8; 32];
     let mut received = 0u8;
     for _ in 0..2 {
         match socket.recv_from(&mut buf) {
             Ok((_n, addr)) => {
-                // Echo back to confirm receipt
+                println!("DEBUG: received WOL packet from {addr}");
                 socket
                     .send_to(b"SHUTHOST_AGENT RECEIVED", addr)
                     .map_err(|e| format!("Failed to send confirmation: {e}"))?;
                 received = received.saturating_add(1);
             }
             Err(e) => {
-                // On timeout/other read errors, stop waiting further.
-                // If we already received at least one packet, consider it success;
-                // otherwise propagate the error.
+                println!("DEBUG: recv_from error after {received} packets: {e}");
                 if received > 0 {
                     break;
                 }
@@ -823,6 +821,7 @@ pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
         }
     }
 
+    println!("DEBUG: WOL listener received {received} packet(s)");
     if received == 0 {
         return Err("No WOL packets received".to_string());
     }

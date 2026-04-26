@@ -44,12 +44,19 @@ pub(crate) struct WolTestQuery {
 #[cfg(not(coverage))]
 #[axum::debug_handler]
 async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
+    tracing::info!(port = params.port, "received test_wol request");
     match wol::test_wol_reachability(params.port) {
-        Ok(broadcast) => Ok(Json(json!({
-            "broadcast": broadcast
-        }))
-        .into_response()),
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()),
+        Ok(broadcast) => {
+            tracing::info!(broadcast = broadcast, "test_wol result");
+            Ok(Json(json!({
+                "broadcast": broadcast
+            }))
+            .into_response())
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "test_wol failure");
+            Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())
+        }
     }
 }
 
