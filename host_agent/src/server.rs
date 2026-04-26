@@ -4,10 +4,12 @@ use std::{
     env,
     io::{Read as _, Write as _},
     net::{TcpListener, TcpStream},
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 use clap::Parser;
 use miniserde::json;
+use nix::sys::signal::{self, SaFlags, SigAction, SigHandler, SigSet, Signal};
 use secrecy::SecretString;
 use shuthost_common::{
     CoordinatorMessage, UnwrapToStringExt as _, create_signed_message,
@@ -23,6 +25,29 @@ use crate::{
     },
     validation::validate_request,
 };
+
+static SIGTERM_RECEIVED: AtomicBool = AtomicBool::new(false);
+
+extern "C" fn sigterm_handler(_: i32) {
+    SIGTERM_RECEIVED.store(true, Ordering::SeqCst);
+}
+
+fn setup_sigterm_handler() -> Result<(), String> {
+    let handler = SigHandler::Handler(sigterm_handler);
+    // SaFlags::empty() => `SaFlags::SA_RESTART = 0` here. If the listener
+    // is blocked in `accept()` when SIGTERM arrives, we want the syscall to
+    // return `Err(Interrupted)` rather than automatically restarting.
+    // That allows the loop to observe `SIGTERM_RECEIVED` and break cleanly.
+    //
+    // `SigSet::empty()` means no additional signals are blocked while handling
+    // SIGTERM.
+    let action = SigAction::new(handler, SaFlags::empty(), SigSet::empty());
+    unsafe {
+        signal::sigaction(Signal::SIGTERM, &action)
+            .map_err(|e| format!("Failed to register SIGTERM handler: {e}"))?;
+    }
+    Ok(())
+}
 
 /// Configuration options for running the `host_agent` service.
 #[derive(Debug, Parser, Clone)]
@@ -72,6 +97,10 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
                 .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected"),
         )
     });
+    if let Err(e) = setup_sigterm_handler() {
+        eprintln!("WARN: failed to set SIGTERM handler: {e}");
+    }
+
     let port = config.port;
     let addr = format!("0.0.0.0:{port}");
     let listener =
@@ -81,6 +110,18 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
     broadcast_startup(&config);
 
     for stream in listener.incoming() {
+        // `listener.incoming()` is blocked inside `accept()` while waiting for
+        // a new connection. If SIGTERM arrives during that wait, the underlying
+        // syscall can be interrupted and the iterator yields an error.
+        //
+        // We also check the flag before processing each new connection so that
+        // a SIGTERM delivered after `accept()` returns successfully still
+        // causes a graceful shutdown before handling another client.
+        if SIGTERM_RECEIVED.load(Ordering::SeqCst) {
+            println!("SIGTERM received, shutting down host_agent service.");
+            break;
+        }
+
         match stream {
             Ok(stream) => {
                 let action = handle_client(stream, &config);
@@ -101,6 +142,17 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
                 }
             }
             Err(e) => {
+                // If `accept()` was interrupted by SIGTERM, the error kind will
+                // be `Interrupted`. In that case we re-check the flag and break.
+                // If SIGTERM was not actually received, we simply continue waiting
+                // for connections.
+                if SIGTERM_RECEIVED.load(Ordering::SeqCst) {
+                    println!("SIGTERM received during accept, shutting down host_agent service.");
+                    break;
+                }
+                if e.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                }
                 eprintln!("Connection failed: {e}");
             }
         }

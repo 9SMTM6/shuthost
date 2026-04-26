@@ -70,7 +70,7 @@ hex.workspace = true
 hmac.workspace = true
 hyper = "1.x"
 mime = "0.3.17"
-nix.workspace = true
+nix = { workspace = true, features = ["user", "fs"]}
 notify = "8.0.0"
 oauth2-reqwest = "0.1.0-alpha.3"
 openidconnect = { version = "4.x", default-features = false, features = [

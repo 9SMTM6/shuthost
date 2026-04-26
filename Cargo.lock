@@ -4165,6 +4165,7 @@ dependencies = [
  "clap",
  "git-version",
  "miniserde",
+ "nix",
  "rand 0.10.1",
  "secrecy",
  "shuthost_common",

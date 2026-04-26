@@ -15,6 +15,7 @@ base64.workspace = true
 clap.workspace = true
 git-version.workspace = true
 miniserde.workspace = true
+nix = { workspace = true, features = ["signal"] }
 rand.workspace = true
 secrecy.workspace = true
 shuthost_common = { workspace = true, features = ["agent"] }
