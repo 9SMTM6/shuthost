@@ -41,17 +41,23 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     // Stop and remove any existing service
     // Attempt to stop the service if it's running, but don't fail if it isn't
     println!("DEBUG: running rc-service {} stop", name);
-    match Command::new("rc-service")
+    let stop_output = Command::new("rc-service")
         .arg(name)
         .arg("stop")
-        .stderr(Stdio::null())
-        .status()
-    {
-        Ok(status) if status.success() => {
-            println!("Stopped existing service {name}.");
-        }
-        Ok(status) => {
-            println!("Service {name} stop returned status: {}", status);
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .output();
+
+    match stop_output {
+        Ok(output) => {
+            println!("DEBUG: rc-service stop status={}", output.status);
+            println!("DEBUG: rc-service stop stdout={:?}", String::from_utf8_lossy(&output.stdout));
+            println!("DEBUG: rc-service stop stderr={:?}", String::from_utf8_lossy(&output.stderr));
+            if output.status.success() {
+                println!("Stopped existing service {name}.");
+            } else {
+                println!("Service {name} stop returned status: {}", output.status);
+            }
         }
         Err(e) => {
             return Err(format!("Failed to execute rc-service stop: {e}"));
@@ -93,21 +99,29 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 /// Returns `Err` if the `rc-update` or `rc-service` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     println!("DEBUG: running rc-update add {} default", name);
-    let add_status = Command::new("rc-update")
+    let add_output = Command::new("rc-update")
         .arg("add")
         .arg(name)
         .arg("default")
-        .status()
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .output()
         .map_err_to_string_simple()?;
-    println!("DEBUG: rc-update add status={}", add_status);
+    println!("DEBUG: rc-update add status={}", add_output.status);
+    println!("DEBUG: rc-update add stdout={:?}", String::from_utf8_lossy(&add_output.stdout));
+    println!("DEBUG: rc-update add stderr={:?}", String::from_utf8_lossy(&add_output.stderr));
 
     println!("DEBUG: running rc-service {} start", name);
-    let start_status = Command::new("rc-service")
+    let start_output = Command::new("rc-service")
         .arg(name)
         .arg("start")
-        .status()
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .output()
         .map_err_to_string_simple()?;
-    println!("DEBUG: rc-service start status={}", start_status);
+    println!("DEBUG: rc-service start status={}", start_output.status);
+    println!("DEBUG: rc-service start stdout={:?}", String::from_utf8_lossy(&start_output.stdout));
+    println!("DEBUG: rc-service start stderr={:?}", String::from_utf8_lossy(&start_output.stderr));
 
     println!("Service {name} started and added to default runlevel.");
     Ok(())
