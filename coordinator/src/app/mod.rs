@@ -15,4 +15,5 @@ pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
 pub(crate) use startup::{shutdown_signal, start};
 pub(crate) use state::{AppState, ConfigRx, HostStatusRx, HostStatusState, WsTx};
 
-pub use state::{HostState, HostStatus};
+pub(crate) use state::OperationFailureState;
+pub use state::{HostState, HostStatus, OperationFailure, OperationFailureMap, OperationKind};

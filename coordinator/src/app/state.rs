@@ -165,6 +165,72 @@ impl HostStatusState {
     }
 }
 
+/// The kind of control operation that failed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OperationKind {
+    Shutdown,
+    Startup,
+}
+
+/// Records the last failed control operation for a host.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationFailure {
+    pub operation: OperationKind,
+}
+
+/// Map of `host_name → OperationFailure` for hosts whose last operation failed.
+pub type OperationFailureMap = HashMap<String, OperationFailure>;
+
+/// Watch-channel-based store for per-host operation failure state.
+///
+/// Updates are serialized through the inner `Mutex`; all commits are broadcast
+/// via the watch channel to subscribers.
+pub(crate) struct OperationFailureState {
+    inner: tokio::sync::Mutex<OperationFailureMap>,
+    tx: watch::Sender<Arc<OperationFailureMap>>,
+}
+
+impl OperationFailureState {
+    /// Create a new, empty `OperationFailureState`.
+    pub(crate) fn new() -> (Arc<Self>, watch::Receiver<Arc<OperationFailureMap>>) {
+        let initial = OperationFailureMap::new();
+        let (tx, rx) = watch::channel(Arc::new(initial.clone()));
+        (
+            Arc::new(Self {
+                inner: tokio::sync::Mutex::new(initial),
+                tx,
+            }),
+            rx,
+        )
+    }
+
+    /// Record a failure for `host`.
+    pub(crate) async fn set(&self, host: &str, failure: OperationFailure) {
+        let mut inner = self.inner.lock().await;
+        inner.insert(host.to_string(), failure);
+        drop(self.tx.send(Arc::new(inner.clone())));
+    }
+
+    /// Clear any recorded failure for `host` (e.g. on a successful operation).
+    pub(crate) async fn clear(&self, host: &str) {
+        let mut inner = self.inner.lock().await;
+        if inner.remove(host).is_some() {
+            drop(self.tx.send(Arc::new(inner.clone())));
+        }
+    }
+
+    /// Borrow the current snapshot without acquiring the write mutex.
+    pub(crate) fn borrow(&self) -> watch::Ref<'_, Arc<OperationFailureMap>> {
+        self.tx.borrow()
+    }
+
+    /// Subscribe to future snapshots.
+    pub(crate) fn subscribe(&self) -> watch::Receiver<Arc<OperationFailureMap>> {
+        self.tx.subscribe()
+    }
+}
+
 /// Cached install metadata for a host, populated from the DB on startup
 /// and updated live when agent startup broadcasts arrive.
 #[derive(Debug, Clone, Default)]
@@ -214,6 +280,9 @@ pub(crate) struct AppState {
     /// VAPID key builder for signing web push notifications.
     /// `None` when DB persistence is disabled.
     pub vapid_key: Option<Arc<PartialVapidSignatureBuilder>>,
+
+    /// Per-host record of the last failed control operation (ephemeral, not persisted).
+    pub operation_failures: Arc<OperationFailureState>,
 }
 
 /// Initialize database pool based on configuration.
@@ -323,6 +392,8 @@ pub(super) async fn initialize_state(
 
     let (ws_tx, _) = broadcast::channel(32);
 
+    let (operation_failures, _) = OperationFailureState::new();
+
     let db_pool = initialize_database(&initial_config, config_path).await?;
 
     let mut initial_leases = LeaseMapRaw::default();
@@ -421,6 +492,7 @@ pub(super) async fn initialize_state(
         runtime: initial_config.server.runtime.clone(),
         db_pool,
         vapid_key,
+        operation_failures,
     };
 
     emit_startup_warnings(&app_state, &initial_config);

@@ -94,6 +94,17 @@ const HostRow = ((props: { hostName: string }) => {
             </th>
             <td class="table-cell status" aria-label="Status">
                 {status()}
+                <Show
+                    when={state.operationFailures[props.hostName] !== undefined}
+                >
+                    <span
+                        class="ml-1.5 text-xs text-amber-600 dark:text-[rgba(245,158,11,0.9)]"
+                        title={`Last ${state.operationFailures[props.hostName]?.operation} command failed`}
+                        aria-label={`Last ${state.operationFailures[props.hostName]?.operation} command failed`}
+                    >
+                        ⚠
+                    </span>
+                </Show>
             </td>
             <td class="table-cell actions" aria-label="Actions">
                 <div class="actions-cell">

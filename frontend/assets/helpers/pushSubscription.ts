@@ -1,7 +1,10 @@
 import { apiFetch } from './apiFetch';
 import {
+    demoCheckHostOperationFailedSubscription,
     demoCheckHostUnscheduledSubscription,
+    demoSubscribeToHostOperationFailed,
     demoSubscribeToHostUnscheduled,
+    demoUnsubscribeFromHostOperationFailed,
     demoUnsubscribeFromHostUnscheduled,
     isDemoMode,
 } from './demo';
@@ -137,6 +140,75 @@ export const unsubscribeFromHostUnscheduled = async (
     if (!existing) return;
 
     await apiFetch('/api/push/subscribe-host-unscheduled', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint, hostname }),
+    });
+};
+
+/**
+ * Subscribes the current browser to push notifications for operation-failed events
+ * on the given host (when a shutdown or startup command times out or errors).
+ */
+export const subscribeToHostOperationFailed = async (hostname: string) => {
+    if (isDemoMode) {
+        demoSubscribeToHostOperationFailed(hostname);
+        return;
+    }
+    const subscription = await getOrCreatePushSubscription();
+    const subJson = subscription.toJSON();
+
+    await apiFetch('/api/push/subscribe-host-operation-failed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: subJson, hostname }),
+    });
+};
+
+/**
+ * Checks whether the current browser is already subscribed to operation-failed
+ * push notifications for the given host.
+ */
+export const checkHostOperationFailedSubscription = async (
+    hostname: string,
+): Promise<boolean> => {
+    if (isDemoMode) {
+        return demoCheckHostOperationFailedSubscription(hostname);
+    }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return false;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return false;
+
+    const endpoint = encodeURIComponent(existing.endpoint);
+    const resp = await fetch(
+        `/api/push/subscribe-host-operation-failed?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
+    );
+    if (!resp.ok) return false;
+    const { subscribed } = (await resp.json()) as { subscribed: boolean };
+    return subscribed;
+};
+
+/**
+ * Removes the operation-failed subscription link for the current browser + host pair.
+ */
+export const unsubscribeFromHostOperationFailed = async (
+    hostname: string,
+): Promise<void> => {
+    if (isDemoMode) {
+        demoUnsubscribeFromHostOperationFailed(hostname);
+        return;
+    }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    if (!existing) return;
+
+    await apiFetch('/api/push/subscribe-host-operation-failed', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: existing.endpoint, hostname }),

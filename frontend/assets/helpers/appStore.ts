@@ -62,7 +62,12 @@ export type AppState = {
     statusMap: StatusMap;
     leaseMap: Record<string, LeaseSource[]>;
     dbData: DbDataState;
+    operationFailures: Record<string, OperationFailure>;
 } & DynamicConfig;
+
+export type OperationFailure = {
+    operation: 'shutdown' | 'startup';
+};
 
 // TODO:
 // * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
@@ -73,7 +78,8 @@ export type WsMessage =
           type: 'Initial';
           payload: AppState;
       }
-    | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } };
+    | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } }
+    | { type: 'OperationFailed'; payload: Record<string, OperationFailure> };
 
 // ==========================
 // Store
@@ -85,6 +91,7 @@ const [state, setState] = createStore<AppState>({
     leaseMap: {},
     clients: [],
     dbData: { status: 'disabled' },
+    operationFailures: {},
 });
 
 export { state };
@@ -119,6 +126,9 @@ export const applyMessage = (message: WsMessage) => {
                     s.leaseMap[message.payload.host] = message.payload.leases;
                 }),
             );
+            break;
+        case 'OperationFailed':
+            setState('operationFailures', message.payload);
             break;
         default: {
             const _exhaustive: never = message;

@@ -224,6 +224,20 @@ pub(super) fn start_background_tasks(
         });
     }
 
+    // Forwards operation failure state changes to websocket client loops
+    {
+        let ws_tx = state.ws_tx.clone();
+        let mut op_failure_rx = state.operation_failures.subscribe();
+        tasks.spawn(async move {
+            while op_failure_rx.changed().await.is_ok() {
+                let msg = WsMessage::OperationFailed(op_failure_rx.borrow().as_ref().clone());
+                if ws_tx.send(msg).is_err() {
+                    debug!("No Websocket Subscribers");
+                }
+            }
+        });
+    }
+
     // Log host state transitions.
     {
         let mut hoststatus_rx = state.hoststatus.subscribe();

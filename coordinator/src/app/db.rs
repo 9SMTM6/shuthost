@@ -767,6 +767,104 @@ pub(crate) async fn delete_push_subscription(pool: &DbPool, endpoint: &str) -> e
     Ok(())
 }
 
+// ──────────────────────────────────────────────
+// Push subscriptions: host operation-failed events
+// ──────────────────────────────────────────────
+
+/// Adds a push subscription–host link for operation-failed notifications.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn add_push_subscription_host_operation_failed(
+    pool: &DbPool,
+    subscription_id: i64,
+    hostname: &str,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "INSERT OR IGNORE INTO push_subscription_host_operation_failed (subscription_id, hostname) VALUES (?, ?)",
+        subscription_id,
+        hostname,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Returns all push subscriptions interested in operation-failed events for a specific host.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn get_subscriptions_for_host_operation_failed(
+    pool: &DbPool,
+    hostname: &str,
+) -> eyre::Result<Vec<PushSubscription>> {
+    let records = sqlx::query_as!(
+        PushSubscription,
+        "SELECT ps.endpoint, ps.p256dh, ps.auth
+         FROM push_subscriptions ps
+         JOIN push_subscription_host_operation_failed phof ON phof.subscription_id = ps.id
+         WHERE phof.hostname = ?",
+        hostname,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(records)
+}
+
+/// Returns whether a push subscription (identified by its endpoint) is subscribed to
+/// operation-failed notifications for a specific host.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn is_subscribed_to_host_operation_failed(
+    pool: &DbPool,
+    endpoint: &str,
+    hostname: &str,
+) -> eyre::Result<bool> {
+    let result = sqlx::query!(
+        "SELECT EXISTS(
+            SELECT 1 FROM push_subscriptions ps
+            JOIN push_subscription_host_operation_failed phof ON phof.subscription_id = ps.id
+            WHERE ps.endpoint = ? AND phof.hostname = ?
+        ) AS subscribed",
+        endpoint,
+        hostname,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(result.subscribed != 0)
+}
+
+/// Removes the operation-failed subscription link for a specific endpoint + host pair.
+/// Leaves the `push_subscriptions` row intact (it may still be used by other hosts).
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn unsubscribe_host_operation_failed(
+    pool: &DbPool,
+    endpoint: &str,
+    hostname: &str,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "DELETE FROM push_subscription_host_operation_failed
+         WHERE subscription_id = (SELECT id FROM push_subscriptions WHERE endpoint = ?)
+           AND hostname = ?",
+        endpoint,
+        hostname,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

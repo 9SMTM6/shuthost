@@ -17,7 +17,7 @@ use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
     AppState, ConfigRx, DbPool, HostState, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources,
-    LeaseState,
+    LeaseState, OperationFailureMap,
     db::{self, ClientStats, HostStats},
 };
 
@@ -71,9 +71,12 @@ pub enum WsMessage {
         status_map: HostStatus,
         lease_map: LeaseMapRaw,
         db_data: DbDataState,
+        operation_failures: OperationFailureMap,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
+    /// Gets sent when a host's last control operation failure state changes.
+    OperationFailed(OperationFailureMap),
 }
 
 /// Gets called for every new web client and spins up an event loop
@@ -88,6 +91,7 @@ pub(crate) async fn ws_handler(
         config_rx,
         leases,
         db_pool,
+        operation_failures,
         ..
     }): State<AppState>,
 ) -> impl IntoResponse {
@@ -107,6 +111,8 @@ pub(crate) async fn ws_handler(
     // happens asynchronously when the client completes the handshake.
     debug!("Registering WebSocket upgrade handler");
 
+    let op_failures_snapshot = operation_failures.borrow().clone();
+
     ws.on_upgrade(async move |mut socket| {
         debug!("WebSocket upgrade completed; starting event loop");
         match send_startup_msg(
@@ -115,6 +121,7 @@ pub(crate) async fn ws_handler(
             config_rx,
             current_leases,
             db_pool_clone.as_ref(),
+            op_failures_snapshot,
         )
         .await
         {
@@ -182,6 +189,7 @@ async fn send_startup_msg(
     config_rx: ConfigRx,
     current_leases: Arc<LeaseState>,
     db_pool: Option<&DbPool>,
+    operation_failures: Arc<OperationFailureMap>,
 ) -> Result<(), axum::Error> {
     // Read freshest values from the receivers just before sending.
     let current_state = hoststatus_rx.borrow().clone();
@@ -224,6 +232,7 @@ async fn send_startup_msg(
         status_map: current_state.as_ref().clone(),
         lease_map: leases,
         db_data,
+        operation_failures: operation_failures.as_ref().clone(),
     };
 
     send_ws_message(socket, &initial_msg)

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM push_subscription_host_operation_failed\n         WHERE subscription_id = (SELECT id FROM push_subscriptions WHERE endpoint = ?)\n           AND hostname = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f41cab1b27e5cde02c95655bf6e105591712bedc9ef066907c79d4fe235003d2"
+}
