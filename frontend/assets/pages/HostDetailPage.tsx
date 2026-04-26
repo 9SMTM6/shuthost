@@ -4,6 +4,7 @@ import {
     ArrowLeft,
     Bell,
     BellOff,
+    BellRing,
     LoaderCircle,
     Power,
     PowerOff,
@@ -162,7 +163,6 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
     );
 };
 
-// const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
 const OperationFailureBadge = (props: {
     failure: OperationFailure | undefined;
 }) => (
@@ -271,94 +271,219 @@ const NotifyOperationFailedButton = (props: { hostname: string }) => {
         </div>
     );
 };
-// type DurationUnit = keyof typeof unitDefaults;
+
+const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
+
+type DurationUnit = keyof typeof unitDefaults;
+
+type PermanentSubState =
+    | { subscribed: false }
+    | { subscribed: true; duration: number; unit: DurationUnit };
 
 // TODO: When I implement this, I want to extend it to allow both permanent subscriptions when a host was running for longer than x, as well as a one-time notification of that nature.
-// const NotifyDurationButton = (_props: { hostname: string }) => {
-//     const [notifyDuration, setNotifyDuration] = createSignal(unitDefaults.minutes);
-//     const [notifyDurationUnit, setNotifyDurationUnit] = createSignal<DurationUnit>('minutes');
-//     const [notifyDurationModified, setNotifyDurationModified] = createSignal(false);
-//     const [notifyState, setNotifyState] = createSignal<NotifyState>('idle');
+const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) => {
+    const [duration, setDuration] = createSignal(unitDefaults.minutes);
+    const [unit, setUnit] = createSignal<DurationUnit>('minutes');
+    const [durationModified, setDurationModified] = createSignal(false);
 
-//     const handleDurationInput = (value: string) => {
-//         setNotifyDuration(Number(value));
-//         setNotifyDurationModified(true);
-//     };
+    // Permanent subscription state (null = still loading)
+    const [permanentSub, setPermanentSub] =
+        createSignal<PermanentSubState | null>(null);
+    const [permanentLoading, setPermanentLoading] = createSignal(false);
+    const [permanentError, setPermanentError] = createSignal<string | null>(
+        null,
+    );
 
-//     const handleUnitChange = (unit: DurationUnit) => {
-//         setNotifyDurationUnit(unit);
-//         if (!notifyDurationModified()) {
-//             setNotifyDuration(unitDefaults[unit]);
-//         }
-//     };
+    // One-shot subscribe state
+    const [oneshotLoading, setOneshotLoading] = createSignal(false);
+    const [oneshotSuccess, setOneshotSuccess] = createSignal(false);
+    const [oneshotError, setOneshotError] = createSignal<string | null>(null);
 
-//     const handle = async () => {
-//         setNotifyState('loading');
-//         try {
-//             // TODO: Replace with actual "online for longer than duration" subscription endpoint
-//             throw new Error('Not yet implemented');
-//         } catch {
-//             setNotifyState('error');
-//         }
-//     };
+    onMount(async () => {
+        // TODO: replace with real check once backend is implemented
+        // When subscribed, also call setDuration/setUnit to pre-fill the existing values
+        setPermanentSub({ subscribed: false });
+    });
 
-//     return (
-//         <div
-//             class="flex flex-col items-center gap-1"
-//             title="Get a push notification when this host has been continuously online for longer than the given duration."
-//         >
-//             <div class="flex items-center gap-1.5">
-//                 <button
-//                     type="button"
-//                     class="btn btn-green sm:px-5 sm:py-3 sm:text-base"
-//                     disabled={notifyState() === 'loading' || notifyState() === 'subscribed'}
-//                     onClick={handle}
-//                     aria-label="Subscribe to online-too-long notification"
-//                 >
-//                     <Show when={notifyState() === 'loading'}>
-//                         <LoaderCircle size={16} class="animate-spin" aria-hidden="true" />
-//                     </Show>
-//                     <Show when={notifyState() !== 'loading'}>
-//                         <Bell size={16} aria-hidden="true" />
-//                     </Show>
-//                     Notify after online for
-//                 </button>
-//                 <input
-//                     type="number"
-//                     min="1"
-//                     class="w-16 px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
-//                     value={notifyDuration()}
-//                     onInput={(e) => handleDurationInput(e.currentTarget.value)}
-//                     aria-label="Duration"
-//                 />
-//                 <select
-//                     class="px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
-//                     value={notifyDurationUnit()}
-//                     onChange={(e) => handleUnitChange(e.currentTarget.value as DurationUnit)}
-//                     aria-label="Duration unit"
-//                 >
-//                     <option value="minutes">min</option>
-//                     <option value="hours">hr</option>
-//                     <option value="days">day</option>
-//                 </select>
-//             </div>
-//             <Show when={notifyState() === 'subscribed'}>
-//                 <span
-//                     class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
-//                     aria-live="polite"
-//                 >
-//                     <BellRing size={12} aria-hidden="true" />
-//                     Subscribed
-//                 </span>
-//             </Show>
-//             <Show when={notifyState() === 'error'}>
-//                 <span class="text-xs text-red-500 dark:text-[#f48771]" aria-live="polite">
-//                     Not yet implemented
-//                 </span>
-//             </Show>
-//         </div>
-//     );
-// };
+    const handleUnitChange = (newUnit: DurationUnit) => {
+        setUnit(newUnit);
+        if (!durationModified()) {
+            setDuration(unitDefaults[newUnit]);
+        }
+    };
+
+    const handleDurationInput = (value: string) => {
+        const parsed = Number(value);
+        if (parsed > 0) setDuration(parsed);
+        setDurationModified(true);
+    };
+
+    const handleOneshotClick = async () => {
+        if (oneshotLoading()) return;
+        setOneshotLoading(true);
+        setOneshotError(null);
+        setOneshotSuccess(false);
+        try {
+            // TODO: replace with real API call
+            await new Promise<void>((r) => setTimeout(r, 300));
+            setOneshotSuccess(true);
+            setTimeout(() => setOneshotSuccess(false), 4000);
+        } catch {
+            setOneshotError('Failed. Please try again.');
+        } finally {
+            setOneshotLoading(false);
+        }
+    };
+
+    const handlePermanentClick = async () => {
+        const current = permanentSub();
+        if (current === null || permanentLoading()) return;
+        setPermanentLoading(true);
+        setPermanentError(null);
+        try {
+            if (current.subscribed) {
+                // TODO: replace with real unsubscribe call
+                await new Promise<void>((r) => setTimeout(r, 300));
+                setPermanentSub({ subscribed: false });
+            } else {
+                // TODO: replace with real subscribe call
+                await new Promise<void>((r) => setTimeout(r, 300));
+                setPermanentSub({
+                    subscribed: true,
+                    duration: duration(),
+                    unit: unit(),
+                });
+            }
+        } catch {
+            setPermanentError('Failed. Please try again.');
+        } finally {
+            setPermanentLoading(false);
+        }
+    };
+
+    const isCheckingPermanent = () => permanentSub() === null;
+    const isPermanentlySubscribed = () => permanentSub()?.subscribed === true;
+
+    return (
+        <div class="flex flex-col items-center gap-2">
+            {/* Lückentext: "Notify me after online for [30] [min]" */}
+            <div class="flex items-center gap-1.5 flex-wrap justify-center text-sm text-black dark:text-[#cccccc]">
+                <span>Notify me after online for</span>
+                <input
+                    type="number"
+                    min="1"
+                    class="w-16 px-2 py-1.5 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+                    value={duration()}
+                    onInput={(e) => handleDurationInput(e.currentTarget.value)}
+                    aria-label="Duration"
+                />
+                <select
+                    class="px-2 py-1.5 text-sm border border-[#e5e5e5] dark:border-[#3e3e42] rounded bg-white dark:bg-[#252526] text-black dark:text-[#cccccc]"
+                    value={unit()}
+                    onChange={(e) =>
+                        handleUnitChange(e.currentTarget.value as DurationUnit)
+                    }
+                    aria-label="Duration unit"
+                >
+                    <option value="minutes">min</option>
+                    <option value="hours">hr</option>
+                    <option value="days">day</option>
+                </select>
+            </div>
+            {/* Action buttons */}
+            <div class="flex gap-2 flex-wrap justify-center">
+                <button
+                    type="button"
+                    class="btn btn-green sm:px-4 sm:py-2 sm:text-base"
+                    disabled={oneshotLoading() || !props.isOnline}
+                    onClick={handleOneshotClick}
+                    title={
+                        props.isOnline
+                            ? 'Get a one-time notification when this host has been online for the given duration'
+                            : 'Host is not currently online'
+                    }
+                >
+                    <Show
+                        when={oneshotLoading()}
+                        fallback={<Bell size={16} aria-hidden="true" />}
+                    >
+                        <LoaderCircle
+                            size={16}
+                            class="animate-spin"
+                            aria-hidden="true"
+                        />
+                    </Show>
+                    once
+                </button>
+                <button
+                    type="button"
+                    class={`btn sm:px-4 sm:py-2 sm:text-base ${
+                        isPermanentlySubscribed() ? 'btn-red' : 'btn-green'
+                    }`}
+                    disabled={isCheckingPermanent() || permanentLoading()}
+                    onClick={handlePermanentClick}
+                    title={
+                        isPermanentlySubscribed()
+                            ? 'Unsubscribe from recurring online-too-long notifications'
+                            : 'Subscribe to recurring notifications when this host stays online longer than the given duration'
+                    }
+                >
+                    <Switch>
+                        <Match when={isCheckingPermanent() || permanentLoading()}>
+                            <LoaderCircle
+                                size={16}
+                                class="animate-spin"
+                                aria-hidden="true"
+                            />
+                        </Match>
+                        <Match when={isPermanentlySubscribed()}>
+                            <BellOff size={16} aria-hidden="true" />
+                        </Match>
+                        <Match when={!isPermanentlySubscribed()}>
+                            <Bell size={16} aria-hidden="true" />
+                        </Match>
+                    </Switch>
+                    {isPermanentlySubscribed() ? 'unsubscribe' : 'always'}
+                </button>
+            </div>
+            {/* Feedback */}
+            <Show when={oneshotSuccess()}>
+                <span
+                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
+                    aria-live="polite"
+                >
+                    <BellRing size={12} aria-hidden="true" />
+                    Subscribed — you'll be notified once
+                </span>
+            </Show>
+            <Show when={isPermanentlySubscribed()}>
+                <span
+                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
+                    aria-live="polite"
+                >
+                    <BellRing size={12} aria-hidden="true" />
+                    Recurring notifications active
+                </span>
+            </Show>
+            <Show when={oneshotError() !== null}>
+                <span
+                    class="text-xs text-red-500 dark:text-[#f48771]"
+                    aria-live="polite"
+                >
+                    {oneshotError()}
+                </span>
+            </Show>
+            <Show when={permanentError() !== null}>
+                <span
+                    class="text-xs text-red-500 dark:text-[#f48771]"
+                    aria-live="polite"
+                >
+                    {permanentError()}
+                </span>
+            </Show>
+        </div>
+    );
+};
 
 const buildHostUpdateCommands = (
     hostStats: HostStats | undefined,
@@ -675,8 +800,11 @@ export const HostDetailPage = (() => {
                     {/* Notifications — centered, prominent, above information */}
                     <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
                         <NotifyUnscheduledButton hostname={hostname()} />
+                        <NotifyDurationButton
+                            hostname={hostname()}
+                            isOnline={status() === 'online'}
+                        />
                         <NotifyOperationFailedButton hostname={hostname()} />
-                        {/* <NotifyDurationButton hostname={hostname()} /> */}
                     </div>
 
                     <Show when={state.dbData.status === 'available'}>
