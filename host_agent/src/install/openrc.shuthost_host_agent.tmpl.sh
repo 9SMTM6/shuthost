@@ -14,3 +14,12 @@ export SHUTHOST_SHARED_SECRET="{ secret }"
 depend() {
     need net
 }
+
+stop() {
+    # Send SIGTERM first for graceful shutdown
+    start-stop-daemon --stop --pidfile "${pidfile}" --signal TERM --retry 5
+    # If still running after 5 seconds, force-kill with SIGKILL
+    if start-stop-daemon --test --stop --pidfile "${pidfile}"; then
+        start-stop-daemon --stop --pidfile "${pidfile}" --signal KILL
+    fi
+}
