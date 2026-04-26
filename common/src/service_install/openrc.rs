@@ -9,6 +9,8 @@ use std::{
     os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    thread,
+    time::{Duration, Instant},
 };
 
 use crate::{ResultMapErrExt as _, is_superuser};
@@ -29,6 +31,39 @@ pub fn get_service_path(name: &str) -> String {
 /// # Errors
 ///
 /// Returns `Err` if not running as superuser or if filesystem operations fail.
+fn run_command_with_timeout(
+    mut command: Command,
+    timeout: Duration,
+) -> Result<std::process::Output, String> {
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn command: {e}"))?;
+    let deadline = Instant::now() + timeout;
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                return child
+                    .wait_with_output()
+                    .map_err(|e| format!("Failed to collect command output: {e}"));
+            }
+            Ok(None) if Instant::now() < deadline => {
+                thread::sleep(Duration::from_millis(50));
+            }
+            Ok(None) => {
+                drop(child.kill());
+                return child
+                    .wait_with_output()
+                    .map_err(|e| format!("Failed to collect command output after timeout: {e}"));
+            }
+            Err(e) => {
+                return Err(format!("Failed to wait for command: {e}"));
+            }
+        }
+    }
+}
+
 pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
@@ -41,18 +76,24 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     // Stop and remove any existing service
     // Attempt to stop the service if it's running, but don't fail if it isn't
     println!("DEBUG: running rc-service {} stop", name);
-    let stop_output = Command::new("rc-service")
-        .arg(name)
-        .arg("stop")
-        .stderr(Stdio::piped())
-        .stdout(Stdio::piped())
-        .output();
+    let stop_cmd = {
+        let mut cmd = Command::new("rc-service");
+        cmd.arg(name).arg("stop");
+        cmd
+    };
+    let stop_output = run_command_with_timeout(stop_cmd, Duration::from_secs(10));
 
     match stop_output {
         Ok(output) => {
             println!("DEBUG: rc-service stop status={}", output.status);
-            println!("DEBUG: rc-service stop stdout={:?}", String::from_utf8_lossy(&output.stdout));
-            println!("DEBUG: rc-service stop stderr={:?}", String::from_utf8_lossy(&output.stderr));
+            println!(
+                "DEBUG: rc-service stop stdout={:?}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            println!(
+                "DEBUG: rc-service stop stderr={:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
             if output.status.success() {
                 println!("Stopped existing service {name}.");
             } else {
@@ -108,8 +149,14 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
         .output()
         .map_err_to_string_simple()?;
     println!("DEBUG: rc-update add status={}", add_output.status);
-    println!("DEBUG: rc-update add stdout={:?}", String::from_utf8_lossy(&add_output.stdout));
-    println!("DEBUG: rc-update add stderr={:?}", String::from_utf8_lossy(&add_output.stderr));
+    println!(
+        "DEBUG: rc-update add stdout={:?}",
+        String::from_utf8_lossy(&add_output.stdout)
+    );
+    println!(
+        "DEBUG: rc-update add stderr={:?}",
+        String::from_utf8_lossy(&add_output.stderr)
+    );
 
     println!("DEBUG: running rc-service {} start", name);
     let start_output = Command::new("rc-service")
@@ -120,8 +167,14 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
         .output()
         .map_err_to_string_simple()?;
     println!("DEBUG: rc-service start status={}", start_output.status);
-    println!("DEBUG: rc-service start stdout={:?}", String::from_utf8_lossy(&start_output.stdout));
-    println!("DEBUG: rc-service start stderr={:?}", String::from_utf8_lossy(&start_output.stderr));
+    println!(
+        "DEBUG: rc-service start stdout={:?}",
+        String::from_utf8_lossy(&start_output.stdout)
+    );
+    println!(
+        "DEBUG: rc-service start stderr={:?}",
+        String::from_utf8_lossy(&start_output.stderr)
+    );
 
     println!("Service {name} started and added to default runlevel.");
     Ok(())

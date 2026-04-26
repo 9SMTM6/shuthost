@@ -95,7 +95,11 @@ pub(crate) fn test_wol_reachability(target_port: u16) -> eyre::Result<bool> {
     let mut buf = [0u8; 32];
     match socket.recv(&mut buf) {
         Ok(n) => {
-            println!("DEBUG: coordinator received reply len={} bytes={:?}", n, &buf[..n]);
+            println!(
+                "DEBUG: coordinator received reply len={} bytes={:?}",
+                n,
+                &buf[..n]
+            );
             Ok(true)
         }
         Err(e) => {

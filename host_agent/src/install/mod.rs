@@ -264,7 +264,10 @@ pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     };
 
     let script_path = args.script_path.as_deref();
-    println!("DEBUG: final init_system = {:?}, script_path={:?}", init_system, script_path);
+    println!(
+        "DEBUG: final init_system = {:?}, script_path={:?}",
+        init_system, script_path
+    );
 
     match init_system {
         InitSystem::Systemd => {
@@ -448,7 +451,10 @@ fn update_openrc(name: &str) -> Result<(), String> {
         init_system: InitSystem::OpenRC,
         script_path: None,
     })?;
-    println!("DEBUG: parsed OpenRC config: port={}, broadcast_port={}, hostname={}, shutdown_command={}", config.port, config.broadcast_port, config.hostname, config.shutdown_command);
+    println!(
+        "DEBUG: parsed OpenRC config: port={}, broadcast_port={}, hostname={}, shutdown_command={}",
+        config.port, config.broadcast_port, config.hostname, config.shutdown_command
+    );
 
     let bind_known_vals = |arg: &str| {
         bind_template_replacements(
