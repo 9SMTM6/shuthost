@@ -45,6 +45,7 @@ export const initDemoMode = () => {
                     junpui: 'offline',
                 },
                 leaseMap: { archive: [] },
+                operationFailures: {},
                 dbData: {
                     status: 'available',
                     payload: {
@@ -107,6 +108,22 @@ export const demoSubscribeToHostUnscheduled = (hostname: string): void => {
 
 export const demoUnsubscribeFromHostUnscheduled = (hostname: string): void => {
     demoPushSubscriptions.delete(hostname);
+};
+
+const demoOperationFailedSubscriptions = new Set<string>();
+
+export const demoCheckHostOperationFailedSubscription = (
+    hostname: string,
+): boolean => demoOperationFailedSubscriptions.has(hostname);
+
+export const demoSubscribeToHostOperationFailed = (hostname: string): void => {
+    demoOperationFailedSubscriptions.add(hostname);
+};
+
+export const demoUnsubscribeFromHostOperationFailed = (
+    hostname: string,
+): void => {
+    demoOperationFailedSubscriptions.delete(hostname);
 };
 
 export const demoUpdateLease = async (

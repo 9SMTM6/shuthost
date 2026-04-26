@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS(\n            SELECT 1 FROM push_subscriptions ps\n            JOIN push_subscription_host_operation_failed phof ON phof.subscription_id = ps.id\n            WHERE ps.endpoint = ? AND phof.hostname = ?\n        ) AS subscribed",
+  "describe": {
+    "columns": [
+      {
+        "name": "subscribed",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e4940cc8ec3b17e0afb9d755f89aa965492409bd220b22d50232203ca59d3595"
+}

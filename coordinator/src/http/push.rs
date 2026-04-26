@@ -23,6 +23,21 @@ use web_push::{
 
 use crate::app::{AppState, db};
 
+macro_rules! require_db_pool {
+    ($state:expr) => {{
+        let Some(ref pool) = $state.db_pool else {
+            return StatusCode::SERVICE_UNAVAILABLE;
+        };
+        pool
+    }};
+    (response; $state:expr) => {{
+        let Some(ref pool) = $state.db_pool else {
+            return StatusCode::SERVICE_UNAVAILABLE.into_response();
+        };
+        pool
+    }};
+}
+
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/vapid-public-key", get(get_vapid_public_key))
@@ -31,6 +46,12 @@ pub(crate) fn routes() -> Router<AppState> {
             get(check_host_unscheduled_subscription)
                 .post(subscribe_host_unscheduled)
                 .delete(unsubscribe_host_unscheduled),
+        )
+        .route(
+            "/subscribe-host-operation-failed",
+            get(check_host_operation_failed_subscription)
+                .post(subscribe_host_operation_failed)
+                .delete(unsubscribe_host_operation_failed),
         )
 }
 
@@ -51,26 +72,20 @@ struct PushSubscriptionJson {
 }
 
 #[derive(Deserialize)]
-struct SubscribeHostUnscheduledRequest {
+struct HostSubscriptionRequest {
     subscription: PushSubscriptionJson,
     hostname: String,
 }
 
 #[derive(Deserialize)]
-struct CheckHostUnscheduledQuery {
+struct HostSubscriptionData {
     endpoint: String,
     hostname: String,
 }
 
 #[derive(Serialize)]
-struct CheckHostUnscheduledResponse {
+struct CheckHostSubscriptionResponse {
     subscribed: bool,
-}
-
-#[derive(Deserialize)]
-struct UnsubscribeHostUnscheduledRequest {
-    endpoint: String,
-    hostname: String,
 }
 
 #[derive(Serialize)]
@@ -112,14 +127,12 @@ async fn get_vapid_public_key(State(state): State<AppState>) -> impl IntoRespons
 #[axum::debug_handler]
 async fn check_host_unscheduled_subscription(
     State(state): State<AppState>,
-    Query(params): Query<CheckHostUnscheduledQuery>,
+    Query(params): Query<HostSubscriptionData>,
 ) -> impl IntoResponse {
-    let Some(ref pool) = state.db_pool else {
-        return StatusCode::SERVICE_UNAVAILABLE.into_response();
-    };
+    let pool = require_db_pool!(response; state);
 
     match db::is_subscribed_to_host_unscheduled(pool, &params.endpoint, &params.hostname).await {
-        Ok(subscribed) => axum::Json(CheckHostUnscheduledResponse { subscribed }).into_response(),
+        Ok(subscribed) => axum::Json(CheckHostSubscriptionResponse { subscribed }).into_response(),
         Err(e) => {
             error!("Failed to check push subscription: {e:#}");
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -131,11 +144,9 @@ async fn check_host_unscheduled_subscription(
 #[axum::debug_handler]
 async fn unsubscribe_host_unscheduled(
     State(state): State<AppState>,
-    axum::Json(body): axum::Json<UnsubscribeHostUnscheduledRequest>,
+    axum::Json(body): axum::Json<HostSubscriptionData>,
 ) -> impl IntoResponse {
-    let Some(ref pool) = state.db_pool else {
-        return StatusCode::SERVICE_UNAVAILABLE;
-    };
+    let pool = require_db_pool!(state);
 
     if let Err(e) = db::unsubscribe_host_unscheduled(pool, &body.endpoint, &body.hostname).await {
         error!("Failed to unsubscribe from host unscheduled events: {e:#}");
@@ -149,11 +160,9 @@ async fn unsubscribe_host_unscheduled(
 #[axum::debug_handler]
 async fn subscribe_host_unscheduled(
     State(state): State<AppState>,
-    axum::Json(body): axum::Json<SubscribeHostUnscheduledRequest>,
+    axum::Json(body): axum::Json<HostSubscriptionRequest>,
 ) -> impl IntoResponse {
-    let Some(ref pool) = state.db_pool else {
-        return StatusCode::SERVICE_UNAVAILABLE;
-    };
+    let pool = require_db_pool!(state);
 
     let sub_id = match db::upsert_push_subscription(
         pool,
@@ -172,6 +181,80 @@ async fn subscribe_host_unscheduled(
 
     if let Err(e) = db::subscribe_host_unscheduled(pool, sub_id, &body.hostname).await {
         error!("Failed to subscribe to host unscheduled events: {e:#}");
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    StatusCode::NO_CONTENT
+}
+
+// ──────────────────────────────────────────────
+// Handlers: host operation-failed subscriptions
+// ──────────────────────────────────────────────
+
+/// Returns whether the given push endpoint is subscribed to operation-failed notifications
+/// for the given host.
+#[axum::debug_handler]
+async fn check_host_operation_failed_subscription(
+    State(state): State<AppState>,
+    Query(params): Query<HostSubscriptionData>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(response; state);
+
+    match db::is_subscribed_to_host_operation_failed(pool, &params.endpoint, &params.hostname).await
+    {
+        Ok(subscribed) => axum::Json(CheckHostSubscriptionResponse { subscribed }).into_response(),
+        Err(e) => {
+            error!("Failed to check operation-failed push subscription: {e:#}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Registers a browser push subscription for operation-failed notifications.
+#[axum::debug_handler]
+async fn subscribe_host_operation_failed(
+    State(state): State<AppState>,
+    axum::Json(body): axum::Json<HostSubscriptionRequest>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(state);
+
+    let sub_id = match db::upsert_push_subscription(
+        pool,
+        &body.subscription.endpoint,
+        &body.subscription.keys.p256dh,
+        &body.subscription.keys.auth,
+    )
+    .await
+    {
+        Ok(id) => id,
+        Err(e) => {
+            error!("Failed to upsert push subscription: {e:#}");
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+    };
+
+    if let Err(e) =
+        db::add_push_subscription_host_operation_failed(pool, sub_id, &body.hostname).await
+    {
+        error!("Failed to subscribe to host operation-failed events: {e:#}");
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    StatusCode::NO_CONTENT
+}
+
+/// Removes the operation-failed subscription link for a specific endpoint + host pair.
+#[axum::debug_handler]
+async fn unsubscribe_host_operation_failed(
+    State(state): State<AppState>,
+    axum::Json(body): axum::Json<HostSubscriptionData>,
+) -> impl IntoResponse {
+    let pool = require_db_pool!(state);
+
+    if let Err(e) =
+        db::unsubscribe_host_operation_failed(pool, &body.endpoint, &body.hostname).await
+    {
+        error!("Failed to unsubscribe from host operation-failed events: {e:#}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
 

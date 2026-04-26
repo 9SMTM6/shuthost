@@ -12,12 +12,19 @@ import { createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
-import { type HostStats, state } from '../helpers/appStore';
+import {
+    type HostStats,
+    type OperationFailure,
+    state,
+} from '../helpers/appStore';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
+    checkHostOperationFailedSubscription,
     checkHostUnscheduledSubscription,
+    subscribeToHostOperationFailed,
     subscribeToHostUnscheduled,
+    unsubscribeFromHostOperationFailed,
     unsubscribeFromHostUnscheduled,
 } from '../helpers/pushSubscription';
 import type { AnyComponent } from '../helpers/utils';
@@ -156,6 +163,114 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
 };
 
 // const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
+const OperationFailureBadge = (props: {
+    failure: OperationFailure | undefined;
+}) => (
+    <Show when={props.failure !== undefined}>
+        <span class="host-status-badge bg-amber-100 text-amber-800 dark:bg-[rgba(245,158,11,0.15)] dark:text-[rgba(245,158,11,0.9)]">
+            {props.failure?.operation} failed
+        </span>
+    </Show>
+);
+
+const NotifyOperationFailedButton = (props: { hostname: string }) => {
+    const description =
+        'Get a push notification when a shutdown or startup command for this host fails or times out.';
+    const [subscribed, setSubscribed] = createSignal<boolean | null>(null);
+    const [loading, setLoading] = createSignal(false);
+    const [error, setError] = createSignal<string | null>(null);
+
+    onMount(async () => {
+        try {
+            const result = await checkHostOperationFailedSubscription(
+                props.hostname,
+            );
+            setSubscribed(result);
+        } catch {
+            setSubscribed(false);
+        }
+    });
+
+    const handleClick = async () => {
+        if (subscribed() === null || loading()) return;
+        setLoading(true);
+        setError(null);
+        const wasSubscribed = subscribed();
+        try {
+            if (wasSubscribed) {
+                await unsubscribeFromHostOperationFailed(props.hostname);
+                setSubscribed(false);
+            } else {
+                await subscribeToHostOperationFailed(props.hostname);
+                setSubscribed(true);
+            }
+        } catch (err) {
+            console.error(
+                `Failed to ${
+                    wasSubscribed ? 'unsubscribe from' : 'subscribe to'
+                } operation-failed events for ${props.hostname}:`,
+                err,
+            );
+            setError('Failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const isChecking = () => subscribed() === null;
+    const isSubscribed = () => subscribed() === true;
+
+    return (
+        <div class="flex flex-col items-center gap-1">
+            <button
+                type="button"
+                class={`btn sm:px-5 sm:py-3 sm:text-base ${
+                    isSubscribed() ? 'btn-red' : 'btn-green'
+                }`}
+                disabled={isChecking() || loading()}
+                onClick={handleClick}
+                aria-describedby="notify-operation-failed-description"
+                title={description}
+            >
+                <Switch>
+                    <Match when={isChecking() || loading()}>
+                        <LoaderCircle
+                            size={16}
+                            class="animate-spin"
+                            aria-hidden="true"
+                        />
+                    </Match>
+                    <Match when={isSubscribed()}>
+                        <BellOff size={20} aria-hidden="true" />
+                    </Match>
+                    <Match when={!isSubscribed()}>
+                        <Bell size={20} aria-hidden="true" />
+                    </Match>
+                </Switch>
+                <span class="flex flex-col text-center leading-tight">
+                    <span>
+                        {isSubscribed() ? 'Unsubscribe from' : 'Subscribe to'}
+                    </span>
+                    <span>failed operations</span>
+                </span>
+            </button>
+            <p
+                id="notify-operation-failed-description"
+                class="text-xs text-[#616161] dark:text-[#9d9d9d] text-center max-w-[20rem] touch-description"
+            >
+                {description}
+            </p>
+            <Show when={error() !== null}>
+                <span
+                    class="text-xs text-red-500 dark:text-[#f48771]"
+                    aria-live="polite"
+                >
+                    {error()}
+                </span>
+            </Show>
+        </div>
+    );
+};
 // type DurationUnit = keyof typeof unitDefaults;
 
 // TODO: When I implement this, I want to extend it to allow both permanent subscriptions when a host was running for longer than x, as well as a one-time notification of that nature.
@@ -552,11 +667,15 @@ export const HostDetailPage = (() => {
                         />
                         <h2 class="section-title mb-0">{hostname()}</h2>
                         <HostStatusBadge status={status()} />
+                        <OperationFailureBadge
+                            failure={state.operationFailures[hostname()]}
+                        />
                     </A>
 
                     {/* Notifications — centered, prominent, above information */}
                     <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
                         <NotifyUnscheduledButton hostname={hostname()} />
+                        <NotifyOperationFailedButton hostname={hostname()} />
                         {/* <NotifyDurationButton hostname={hostname()} /> */}
                     </div>
 

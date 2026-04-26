@@ -14,7 +14,9 @@ use tokio::{
 use tracing::info;
 
 use crate::{
-    app::{AppState, HostStatusState, LeaseMapRaw, LeaseState, shutdown_signal},
+    app::{
+        AppState, HostStatusState, LeaseMapRaw, LeaseState, OperationFailureState, shutdown_signal,
+    },
     config::{AuthConfig, ControllerConfig, RuntimeConfig},
     http::{
         assets::{UiMode, render_ui_html},
@@ -64,6 +66,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         runtime: RuntimeConfig::default(),
         db_pool: None,
         vapid_key: None,
+        operation_failures: OperationFailureState::new().0,
     };
 
     let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);

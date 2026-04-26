@@ -19,8 +19,10 @@ use tokio::{
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{
-    AppState, HostStatusState, runtime::PollError, runtime::poll_until_host_state, state::HostState,
+    AppState, HostStatusState, OperationFailure, OperationKind, db, runtime::PollError,
+    runtime::poll_until_host_state, state::HostState,
 };
+use crate::http::push;
 
 use crate::config::{Host, RuntimeConfig};
 #[cfg(not(any(coverage, test)))]
@@ -233,6 +235,11 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
     } else {
         HostState::ShuttingDown
     };
+    let operation_kind = if matches!(transition_state, HostState::Waking) {
+        OperationKind::Startup
+    } else {
+        OperationKind::Shutdown
+    };
 
     let host = host.to_string();
     let state = state.clone();
@@ -253,6 +260,48 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             let result = handle_host_state(&host, &state, &lease_set)
                 .in_current_span()
                 .await;
+
+            // Update the per-host operation failure record.
+            match &result {
+                Ok(_) => {
+                    state.operation_failures.clear(&host).await;
+                }
+                Err(HostControlError::Timeout(_) | HostControlError::OperationFailed { .. }) => {
+                    state.operation_failures.set(&host, OperationFailure { operation: operation_kind }).await;
+
+                    // Fire push notifications for subscribers.
+                    if let (Some(pool), Some(vapid_key)) =
+                        (state.db_pool.clone(), state.vapid_key.clone())
+                    {
+                        let host_clone = host.clone();
+                        let body = match operation_kind {
+                            OperationKind::Shutdown => format!("{host} failed to shut down"),
+                            OperationKind::Startup => format!("{host} failed to start up"),
+                        };
+                        tokio::spawn(async move {
+                            match db::get_subscriptions_for_host_operation_failed(&pool, &host_clone).await {
+                                Ok(subs) if !subs.is_empty() => {
+                                    let payload = serde_json::json!({
+                                        "title": "ShutHost",
+                                        "body": body,
+                                        "data": { "hostname": host_clone },
+                                    })
+                                    .to_string();
+                                    push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
+                                }
+                                Ok(_) => {}
+                                Err(e) => {
+                                    tracing::error!(host = %host_clone, "Failed to fetch operation-failed push subscriptions: {e:#}");
+                                }
+                            }
+                        });
+                    }
+                }
+                Err(HostControlError::NotFound(_)) => {
+                    // Config issue, not a runtime failure — leave existing failure state unchanged.
+                }
+            }
+
             if let Err(ref e) = result {
                 debug!(host = %host, error = ?e, "Host state transition failed");
             }
