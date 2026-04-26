@@ -65,6 +65,58 @@ fn run_command_with_timeout(
     }
 }
 
+fn cleanup_stale_openrc_service(name: &str) -> Result<(), String> {
+    let pidfile = Path::new("/run").join(format!("{name}.pid"));
+    if !pidfile.exists() {
+        return Ok(());
+    }
+
+    println!("DEBUG: found stale OpenRC pidfile at {pidfile:?}");
+    let pid_text = fs::read_to_string(&pidfile)
+        .map_err(|e| format!("Failed to read pidfile {pidfile:?}: {e}"))?;
+    let pid = pid_text
+        .trim()
+        .parse::<u32>()
+        .map_err(|e| format!("Invalid pid in pidfile {pidfile:?}: {e}"))?;
+    let pid_arg = pid.to_string();
+
+    let pid_running = Command::new("kill")
+        .arg("-0")
+        .arg(&pid_arg)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    if pid_running {
+        println!("DEBUG: stale OpenRC service pid {pid} still running, terminating...");
+        drop(
+            Command::new("kill")
+                .arg("-TERM")
+                .arg(&pid_arg)
+                .status(),
+        );
+        thread::sleep(Duration::from_secs(1));
+        let still_running = Command::new("kill")
+            .arg("-0")
+            .arg(&pid_arg)
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+        if still_running {
+            println!("DEBUG: stale OpenRC service pid {pid} still running after TERM, sending KILL");
+            drop(
+                Command::new("kill")
+                    .arg("-KILL")
+                    .arg(&pid_arg)
+                    .status(),
+            );
+        }
+    }
+
+    drop(fs::remove_file(&pidfile));
+    Ok(())
+}
+
 pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<(), String> {
     if !is_superuser() {
         return Err("You must run this command as root or with sudo.".to_string());
@@ -102,8 +154,12 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
             }
         }
         Err(e) => {
-            return Err(format!("Failed to execute rc-service stop: {e}"));
+            println!("DEBUG: rc-service stop failed: {e}");
         }
+    }
+
+    if let Err(e) = cleanup_stale_openrc_service(name) {
+        println!("DEBUG: cleanup_stale_openrc_service: {e}");
     }
 
     fs::copy(&binary_path, &target_bin).map_err_to_string_simple()?;
