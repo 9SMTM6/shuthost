@@ -278,6 +278,52 @@ pub(super) fn start_background_tasks(
         });
     }
 
+    // Track online_since timestamps and fire permanent online-for push notifications.
+    {
+        let state = state.clone();
+        let mut hoststatus_rx = state.hoststatus.subscribe();
+        tasks.spawn(async move {
+            let mut prev = hoststatus_rx.borrow().clone();
+            while hoststatus_rx.changed().await.is_ok() {
+                let current = hoststatus_rx.borrow().clone();
+                for (host, h_state) in current.iter() {
+                    if prev.get(host) == Some(h_state) {
+                        continue;
+                    }
+                    match h_state {
+                        HostState::Online => {
+                            let now = Instant::now();
+                            state.online_since.write().await.insert(host.clone(), now);
+
+                            // Spawn deferred push notifications for permanent subscribers.
+                            if let (Some(pool), Some(vapid_key)) =
+                                (state.db_pool.clone(), state.vapid_key.clone())
+                            {
+                                let host_clone = host.clone();
+                                let online_since = state.online_since.clone();
+                                tokio::spawn(async move {
+                                    spawn_online_for_notifications(
+                                        &host_clone,
+                                        now,
+                                        &online_since,
+                                        &pool,
+                                        &vapid_key,
+                                    )
+                                    .await;
+                                });
+                            }
+                        }
+                        HostState::Offline => {
+                            state.online_since.write().await.remove(host);
+                        }
+                        HostState::Waking | HostState::ShuttingDown => {}
+                    }
+                }
+                prev = current;
+            }
+        });
+    }
+
     // Forwards config changes to the websocket client loops
     {
         let ws_tx = state.ws_tx.clone();
@@ -474,6 +520,48 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         ticker.tick().await;
+    }
+}
+
+/// Fetches permanent online-for subscriptions for `hostname` and spawns a deferred
+/// task for each one. Each task sleeps for the subscribed duration, then checks that
+/// the host is still in the same online session (via `online_since`) before sending
+/// the push notification.
+async fn spawn_online_for_notifications(
+    hostname: &str,
+    session_start: Instant,
+    online_since: &Arc<tokio::sync::RwLock<std::collections::HashMap<String, Instant>>>,
+    pool: &db::DbPool,
+    vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
+) {
+    match db::get_subscriptions_for_host_online_for(pool, hostname).await {
+        Ok(subs) if !subs.is_empty() => {
+            for (sub, duration_secs) in subs {
+                let duration = Duration::from_secs(u64::try_from(duration_secs).unwrap_or(0));
+                let hostname = hostname.to_string();
+                let online_since = online_since.clone();
+                let vapid_key = vapid_key.clone();
+                let pool = pool.clone();
+                tokio::spawn(async move {
+                    tokio::time::sleep(duration).await;
+                    // Only fire if the host is still in the same online session.
+                    if online_since.read().await.get(&hostname) != Some(&session_start) {
+                        return;
+                    }
+                    let payload = serde_json::json!({
+                        "title": "ShutHost",
+                        "body": format!("{hostname} has been online for {} seconds", duration_secs),
+                        "data": { "hostname": hostname },
+                    })
+                    .to_string();
+                    push::send_push_notifications(&vapid_key, &pool, &[sub], &payload).await;
+                });
+            }
+        }
+        Ok(_) => {}
+        Err(e) => {
+            error!(host = %hostname, "Failed to fetch online-for push subscriptions: {e:#}");
+        }
     }
 }
 

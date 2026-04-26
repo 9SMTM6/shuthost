@@ -8,6 +8,7 @@ import {
     LoaderCircle,
     Power,
     PowerOff,
+    RefreshCw,
 } from 'lucide-solid';
 import { createSignal, For, Match, onMount, Show, Switch } from 'solid-js';
 import { AppLayout } from '../components/App';
@@ -21,10 +22,14 @@ import {
 import { buildData } from '../helpers/buildData';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
 import {
+    checkHostOnlineForSubscription,
     checkHostOperationFailedSubscription,
     checkHostUnscheduledSubscription,
+    subscribeToHostOnlineFor,
+    subscribeToHostOnlineForOneshot,
     subscribeToHostOperationFailed,
     subscribeToHostUnscheduled,
+    unsubscribeFromHostOnlineFor,
     unsubscribeFromHostOperationFailed,
     unsubscribeFromHostUnscheduled,
 } from '../helpers/pushSubscription';
@@ -276,11 +281,16 @@ const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
 
 type DurationUnit = keyof typeof unitDefaults;
 
+const secondsPerUnit: Record<DurationUnit, number> = {
+    minutes: 60,
+    hours: 3600,
+    days: 86400,
+};
+
 type PermanentSubState =
     | { subscribed: false }
     | { subscribed: true; duration: number; unit: DurationUnit };
 
-// TODO: When I implement this, I want to extend it to allow both permanent subscriptions when a host was running for longer than x, as well as a one-time notification of that nature.
 const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) => {
     const [duration, setDuration] = createSignal(unitDefaults.minutes);
     const [unit, setUnit] = createSignal<DurationUnit>('minutes');
@@ -300,9 +310,28 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
     const [oneshotError, setOneshotError] = createSignal<string | null>(null);
 
     onMount(async () => {
-        // TODO: replace with real check once backend is implemented
-        // When subscribed, also call setDuration/setUnit to pre-fill the existing values
-        setPermanentSub({ subscribed: false });
+        try {
+            const durationSecs = await checkHostOnlineForSubscription(props.hostname);
+            if (durationSecs != null) {
+                // Pre-fill the UI with the existing subscription's duration.
+                let unit: DurationUnit = 'minutes';
+                let value = durationSecs / 60;
+                if (durationSecs % 86400 === 0) {
+                    unit = 'days';
+                    value = durationSecs / 86400;
+                } else if (durationSecs % 3600 === 0) {
+                    unit = 'hours';
+                    value = durationSecs / 3600;
+                }
+                setUnit(unit);
+                setDuration(value);
+                setPermanentSub({ subscribed: true, duration: value, unit });
+            } else {
+                setPermanentSub({ subscribed: false });
+            }
+        } catch {
+            setPermanentSub({ subscribed: false });
+        }
     });
 
     const handleUnitChange = (newUnit: DurationUnit) => {
@@ -324,8 +353,10 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
         setOneshotError(null);
         setOneshotSuccess(false);
         try {
-            // TODO: replace with real API call
-            await new Promise<void>((r) => setTimeout(r, 300));
+            await subscribeToHostOnlineForOneshot(
+                props.hostname,
+                duration() * secondsPerUnit[unit()],
+            );
             setOneshotSuccess(true);
             setTimeout(() => setOneshotSuccess(false), 4000);
         } catch {
@@ -342,12 +373,11 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
         setPermanentError(null);
         try {
             if (current.subscribed) {
-                // TODO: replace with real unsubscribe call
-                await new Promise<void>((r) => setTimeout(r, 300));
+                await unsubscribeFromHostOnlineFor(props.hostname);
                 setPermanentSub({ subscribed: false });
             } else {
-                // TODO: replace with real subscribe call
-                await new Promise<void>((r) => setTimeout(r, 300));
+                const durationSecs = duration() * secondsPerUnit[unit()];
+                await subscribeToHostOnlineFor(props.hostname, durationSecs);
                 setPermanentSub({
                     subscribed: true,
                     duration: duration(),
@@ -361,8 +391,34 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
         }
     };
 
+    const handleResubscribeClick = async () => {
+        if (permanentLoading()) return;
+        setPermanentLoading(true);
+        setPermanentError(null);
+        try {
+            const durationSecs = duration() * secondsPerUnit[unit()];
+            await subscribeToHostOnlineFor(props.hostname, durationSecs);
+            setPermanentSub({
+                subscribed: true,
+                duration: duration(),
+                unit: unit(),
+            });
+        } catch {
+            setPermanentError('Failed. Please try again.');
+        } finally {
+            setPermanentLoading(false);
+        }
+    };
+
     const isCheckingPermanent = () => permanentSub() === null;
     const isPermanentlySubscribed = () => permanentSub()?.subscribed === true;
+    const isPermanentDurationDifferent = () => {
+        const sub = permanentSub();
+        return (
+            sub?.subscribed === true &&
+            (duration() !== sub.duration || unit() !== sub.unit)
+        );
+    };
 
     return (
         <div class="flex flex-col items-center gap-2">
@@ -415,6 +471,27 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
                     </Show>
                     once
                 </button>
+                <Show when={isPermanentDurationDifferent()}>
+                    <button
+                        type="button"
+                        class="btn btn-yellow sm:px-4 sm:py-2 sm:text-base"
+                        disabled={permanentLoading()}
+                        onClick={handleResubscribeClick}
+                        title="Update the recurring notification to use the currently selected duration"
+                    >
+                        <Show
+                            when={permanentLoading()}
+                            fallback={<RefreshCw size={16} aria-hidden="true" />}
+                        >
+                            <LoaderCircle
+                                size={16}
+                                class="animate-spin"
+                                aria-hidden="true"
+                            />
+                        </Show>
+                        update
+                    </button>
+                </Show>
                 <button
                     type="button"
                     class={`btn sm:px-4 sm:py-2 sm:text-base ${
@@ -422,11 +499,13 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
                     }`}
                     disabled={isCheckingPermanent() || permanentLoading()}
                     onClick={handlePermanentClick}
-                    title={
-                        isPermanentlySubscribed()
-                            ? 'Unsubscribe from recurring online-too-long notifications'
-                            : 'Subscribe to recurring notifications when this host stays online longer than the given duration'
-                    }
+                    title={(() => {
+                        const sub = permanentSub();
+                        if (sub?.subscribed === true) {
+                            return `Unsubscribe from recurring notifications (currently set to ${sub.duration} ${sub.unit})`;
+                        }
+                        return 'Subscribe to recurring notifications when this host stays online longer than the given duration';
+                    })()}
                 >
                     <Switch>
                         <Match when={isCheckingPermanent() || permanentLoading()}>
@@ -457,13 +536,18 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
                 </span>
             </Show>
             <Show when={isPermanentlySubscribed()}>
-                <span
-                    class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
-                    aria-live="polite"
-                >
-                    <BellRing size={12} aria-hidden="true" />
-                    Recurring notifications active
-                </span>
+                {(() => {
+                    const sub = permanentSub() as { subscribed: true; duration: number; unit: string };
+                    return (
+                        <span
+                            class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
+                            aria-live="polite"
+                        >
+                            <BellRing size={12} aria-hidden="true" />
+                            Recurring notifications active (every {sub.duration} {sub.unit})
+                        </span>
+                    );
+                })()}
             </Show>
             <Show when={oneshotError() !== null}>
                 <span

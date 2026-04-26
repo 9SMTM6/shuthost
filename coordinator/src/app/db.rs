@@ -865,6 +865,119 @@ pub(crate) async fn unsubscribe_host_operation_failed(
     Ok(())
 }
 
+// ──────────────────────────────────────────────
+// Push subscriptions: host online-for events
+// ──────────────────────────────────────────────
+
+/// Adds (or updates) a push subscription–host link for online-for notifications.
+/// Uses `INSERT OR REPLACE` so that changing the duration for an existing
+/// subscription is handled transparently.
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn subscribe_host_online_for(
+    pool: &DbPool,
+    subscription_id: i64,
+    hostname: &str,
+    duration_secs: i64,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "INSERT OR REPLACE INTO push_subscription_host_online_for (subscription_id, hostname, duration_secs) VALUES (?, ?, ?)",
+        subscription_id,
+        hostname,
+        duration_secs,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Returns all push subscriptions interested in online-for events for a specific host,
+/// along with the requested duration in seconds.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn get_subscriptions_for_host_online_for(
+    pool: &DbPool,
+    hostname: &str,
+) -> eyre::Result<Vec<(PushSubscription, i64)>> {
+    let records = sqlx::query!(
+        "SELECT ps.endpoint, ps.p256dh, ps.auth, phof.duration_secs
+         FROM push_subscriptions ps
+         JOIN push_subscription_host_online_for phof ON phof.subscription_id = ps.id
+         WHERE phof.hostname = ?",
+        hostname,
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(records
+        .into_iter()
+        .map(|r| {
+            (
+                PushSubscription {
+                    endpoint: r.endpoint,
+                    p256dh: r.p256dh,
+                    auth: r.auth,
+                },
+                r.duration_secs,
+            )
+        })
+        .collect())
+}
+
+/// Returns whether a push subscription (identified by its endpoint) is subscribed to
+/// online-for notifications for a specific host, and if so, for how many seconds.
+///
+/// # Errors
+///
+/// Returns an error if the database query fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn is_subscribed_to_host_online_for(
+    pool: &DbPool,
+    endpoint: &str,
+    hostname: &str,
+) -> eyre::Result<Option<i64>> {
+    let result = sqlx::query!(
+        "SELECT phof.duration_secs
+         FROM push_subscriptions ps
+         JOIN push_subscription_host_online_for phof ON phof.subscription_id = ps.id
+         WHERE ps.endpoint = ? AND phof.hostname = ?",
+        endpoint,
+        hostname,
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(result.map(|r| r.duration_secs))
+}
+
+/// Removes the online-for subscription link for a specific endpoint + host pair.
+/// Leaves the `push_subscriptions` row intact (it may still be used by other hosts).
+///
+/// # Errors
+///
+/// Returns an error if the database operation fails.
+#[tracing::instrument(skip(pool), err)]
+pub(crate) async fn unsubscribe_host_online_for(
+    pool: &DbPool,
+    endpoint: &str,
+    hostname: &str,
+) -> eyre::Result<()> {
+    sqlx::query!(
+        "DELETE FROM push_subscription_host_online_for
+         WHERE subscription_id = (SELECT id FROM push_subscriptions WHERE endpoint = ?)
+           AND hostname = ?",
+        endpoint,
+        hostname,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

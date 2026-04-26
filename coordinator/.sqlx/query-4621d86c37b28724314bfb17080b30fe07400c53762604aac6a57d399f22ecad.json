@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT phof.duration_secs\n         FROM push_subscriptions ps\n         JOIN push_subscription_host_online_for phof ON phof.subscription_id = ps.id\n         WHERE ps.endpoint = ? AND phof.hostname = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "duration_secs",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4621d86c37b28724314bfb17080b30fe07400c53762604aac6a57d399f22ecad"
+}

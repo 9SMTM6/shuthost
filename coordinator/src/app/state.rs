@@ -3,6 +3,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
+use tokio::time::Instant;
 
 use eyre::WrapErr as _;
 use serde::{Deserialize, Serialize};
@@ -283,6 +284,12 @@ pub(crate) struct AppState {
 
     /// Per-host record of the last failed control operation (ephemeral, not persisted).
     pub operation_failures: Arc<OperationFailureState>,
+
+    /// Tracks when each host most recently transitioned to Online (ephemeral, not persisted).
+    /// Used to validate deferred online-for notifications — if the `Instant` at notification
+    /// time matches the one recorded at subscribe time, the host is still in the same online
+    /// session.
+    pub online_since: Arc<RwLock<HashMap<String, Instant>>>,
 }
 
 /// Initialize database pool based on configuration.
@@ -493,6 +500,7 @@ pub(super) async fn initialize_state(
         db_pool,
         vapid_key,
         operation_failures,
+        online_since: Arc::new(RwLock::new(HashMap::new())),
     };
 
     emit_startup_warnings(&app_state, &initial_config);
