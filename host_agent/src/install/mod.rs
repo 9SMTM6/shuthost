@@ -817,9 +817,8 @@ pub(crate) fn test_wol_reachability(port: u16) -> Result<(), String> {
                 // otherwise propagate the error.
                 if received > 0 {
                     break;
-                } else {
-                    return Err(format!("Failed to receive WOL packet: {e}"));
                 }
+                return Err(format!("Failed to receive WOL packet: {e}"));
             }
         }
     }
