@@ -89,8 +89,13 @@ body {
         }
     }
 
+    /* Vertical padding shared by buttons and peer row items (e.g. host name link) */
+    .btn-height {
+        @apply py-1 sm:py-2;
+    }
+
     .btn {
-        @apply inline-flex items-center justify-center gap-1 w-full sm:w-auto text-white px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm rounded transition-colors cursor-pointer;
+        @apply inline-flex items-center justify-center gap-1 w-full sm:w-auto text-white px-2 sm:px-3 text-xs sm:text-sm rounded transition-colors cursor-pointer;
         &.btn-green {
             @apply bg-[#007a4d] dark:bg-[rgba(46,193,100,0.85)] dark:text-black;
             &:hover {

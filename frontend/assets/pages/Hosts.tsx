@@ -88,7 +88,7 @@ const HostRow = ((props: { hostName: string }) => {
             data-has-lease={String(hasWebInterfaceLease())}
         >
             <th class="table-cell" scope="row">
-                <A href={`/hosts/${props.hostName}`} class="link block">
+                <A href={`/hosts/${props.hostName}`} class="link block btn-height">
                     {props.hostName}
                 </A>
             </th>
@@ -109,7 +109,7 @@ const HostRow = ((props: { hostName: string }) => {
             <td class="table-cell actions" aria-label="Actions">
                 <div class="actions-cell">
                     <button
-                        class="btn btn-green take-lease"
+                        class="btn btn-height btn-green take-lease"
                         type="button"
                         onClick={() => updateLease('take')}
                         aria-label={hasClients() ? 'Take Lease' : 'Start'}
@@ -118,7 +118,7 @@ const HostRow = ((props: { hostName: string }) => {
                         {hasClients() ? 'Take Lease' : 'Start'}
                     </button>
                     <button
-                        class="btn btn-red release-lease"
+                        class="btn btn-height btn-red release-lease"
                         type="button"
                         onClick={() => updateLease('release')}
                         aria-label={hasClients() ? 'Release Lease' : 'Shutdown'}
