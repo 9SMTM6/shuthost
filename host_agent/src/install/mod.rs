@@ -242,6 +242,9 @@ pub(crate) fn install_host_agent(arguments: &Args) -> Result<(), String> {
 pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     let name = BINARY_NAME;
 
+    println!("DEBUG: starting update_host_agent");
+    println!("DEBUG: update args script_path={:?}", args.script_path);
+
     let init_system = if let Some(script_path) = args.script_path.as_deref() {
         if Path::new(script_path)
             .extension()
@@ -255,32 +258,42 @@ pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
             InitSystem::SelfExtractingShell
         }
     } else {
-        registration::detect_installation_init_system()?
+        let detected = registration::detect_installation_init_system()?;
+        println!("DEBUG: detected init system = {:?}", detected);
+        detected
     };
 
     let script_path = args.script_path.as_deref();
+    println!("DEBUG: final init_system = {:?}, script_path={:?}", init_system, script_path);
 
     match init_system {
         InitSystem::Systemd => {
+            println!("DEBUG: update path Systemd");
             #[cfg(target_os = "linux")]
             update_systemd(name)?;
             #[cfg(not(target_os = "linux"))]
             unreachable!("Systemd updates are not supported on this platform");
         }
         InitSystem::OpenRC => {
+            println!("DEBUG: update path OpenRC");
             #[cfg(target_os = "linux")]
             update_openrc(name)?;
             #[cfg(not(target_os = "linux"))]
             unreachable!("OpenRC updates are not supported on this platform");
         }
         InitSystem::SelfExtractingShell => {
+            println!("DEBUG: update path SelfExtractingShell");
             #[cfg(unix)]
             update_self_extracting_shell(name, script_path)?;
             #[cfg(not(unix))]
             unreachable!("Self-extracting shell updates are not supported on this platform");
         }
-        InitSystem::SelfExtractingPwsh => update_self_extracting_pwsh(name, script_path)?,
+        InitSystem::SelfExtractingPwsh => {
+            println!("DEBUG: update path SelfExtractingPwsh");
+            update_self_extracting_pwsh(name, script_path)?;
+        }
         InitSystem::Launchd => {
+            println!("DEBUG: update path Launchd");
             #[cfg(target_os = "macos")]
             update_launchd(name)?;
             #[cfg(not(target_os = "macos"))]
@@ -288,6 +301,7 @@ pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
         }
     }
 
+    println!("DEBUG: update_host_agent completed successfully");
     Ok(())
 }
 
@@ -429,10 +443,12 @@ fn update_systemd(name: &str) -> Result<(), String> {
 
 #[cfg(target_os = "linux")]
 fn update_openrc(name: &str) -> Result<(), String> {
+    println!("DEBUG: update_openrc start");
     let config = registration::parse_config(&registration::Args {
         init_system: InitSystem::OpenRC,
         script_path: None,
     })?;
+    println!("DEBUG: parsed OpenRC config: port={}, broadcast_port={}, hostname={}, shutdown_command={}", config.port, config.broadcast_port, config.hostname, config.shutdown_command);
 
     let bind_known_vals = |arg: &str| {
         bind_template_replacements(
@@ -446,11 +462,16 @@ fn update_openrc(name: &str) -> Result<(), String> {
         )
     };
 
+    println!("DEBUG: invoking openrc::install_self_as_service");
     shuthost_common::openrc::install_self_as_service(
         name,
         &bind_known_vals(OPENRC_SERVICE_FILE_TEMPLATE),
     )?;
+    println!("DEBUG: openrc::install_self_as_service returned successfully");
+
+    println!("DEBUG: invoking openrc::start_and_enable_self_as_service");
     shuthost_common::openrc::start_and_enable_self_as_service(name)?;
+    println!("DEBUG: openrc::start_and_enable_self_as_service returned successfully");
     Ok(())
 }
 

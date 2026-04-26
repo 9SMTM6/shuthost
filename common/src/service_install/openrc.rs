@@ -40,6 +40,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     // Stop and remove any existing service
     // Attempt to stop the service if it's running, but don't fail if it isn't
+    println!("DEBUG: running rc-service {} stop", name);
     match Command::new("rc-service")
         .arg(name)
         .arg("stop")
@@ -49,8 +50,8 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
         Ok(status) if status.success() => {
             println!("Stopped existing service {name}.");
         }
-        Ok(_) => {
-            println!("Service {name} was not running or could not be stopped.");
+        Ok(status) => {
+            println!("Service {name} stop returned status: {}", status);
         }
         Err(e) => {
             return Err(format!("Failed to execute rc-service stop: {e}"));
@@ -91,18 +92,22 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 ///
 /// Returns `Err` if the `rc-update` or `rc-service` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
-    Command::new("rc-update")
+    println!("DEBUG: running rc-update add {} default", name);
+    let add_status = Command::new("rc-update")
         .arg("add")
         .arg(name)
         .arg("default")
         .status()
         .map_err_to_string_simple()?;
+    println!("DEBUG: rc-update add status={}", add_status);
 
-    Command::new("rc-service")
+    println!("DEBUG: running rc-service {} start", name);
+    let start_status = Command::new("rc-service")
         .arg(name)
         .arg("start")
         .status()
         .map_err_to_string_simple()?;
+    println!("DEBUG: rc-service start status={}", start_status);
 
     println!("Service {name} started and added to default runlevel.");
     Ok(())
