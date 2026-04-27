@@ -11,13 +11,13 @@ import {
     registerServiceWorker,
 } from './helpers/serviceWorker';
 import { showJSError } from './helpers/utils';
-import { AboutPage } from './pages/AboutPage';
+import { AboutPage } from './pages/About';
 import { ArchitecturePage } from './pages/Architecture';
 import { ClientsPage } from './pages/Clients';
-import { HostDetailPage } from './pages/HostDetailPage';
+import { HostDetailPage } from './pages/HostDetail';
 import { HostsPage } from './pages/Hosts';
-import { LoginPage } from './pages/LoginPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+import { LoginPage } from './pages/Login';
+import { NotFoundPage } from './pages/NotFound';
 
 const [updateAvailable, setUpdateAvailable] = createSignal(false);
 
