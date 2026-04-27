@@ -614,7 +614,7 @@ const HostInfoSection = (props: {
     isOnline: boolean;
 }) => {
     const lastOnline = props.hostStats?.lastOnline ?? null;
-    const agentVersion = props.hostStats?.agentVersion ?? null;
+    const agentVersion = props.hostStats ? props.hostStats.agentVersion ?? `<= 1.7.1` : "unknown";
 
     return (
         <section
@@ -629,7 +629,7 @@ const HostInfoSection = (props: {
                     Agent version
                 </dt>
                 <dd class="text-[#616161] dark:text-[#9d9d9d]">
-                    {agentVersion ?? `<= 1.7.1`}
+                    {agentVersion}
                 </dd>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Init system
