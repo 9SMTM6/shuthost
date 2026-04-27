@@ -73,7 +73,7 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => {
             <td class="table-cell" aria-label="Actions">
                 <div class="actions-cell">
                     <button
-                        class="btn btn-red reset-client"
+                        class="btn btn-height btn-red reset-client"
                         type="button"
                         disabled={props.leases.length === 0}
                         onClick={resetLeases}
