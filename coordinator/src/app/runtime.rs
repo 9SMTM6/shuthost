@@ -5,10 +5,7 @@ use core::{
     net::{IpAddr, SocketAddr},
     time::Duration,
 };
-use std::{
-    collections::{HashMap, HashSet},
-    path::Path,
-};
+use std::collections::{HashMap, HashSet};
 
 use futures::future;
 use thiserror::Error as ThisError;
@@ -27,11 +24,12 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigTx, HostInstallInfo, HostState, HostStatus, HostStatusStore};
+use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus, HostStatusStore};
 use crate::{
     app::{
-        AppState, LeaseMapRaw, LeaseRx, WsTx, config_watcher::watch_config_file, db,
-        host_control::spawn_handle_host_state,
+        AppState, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
+        config_watcher::watch_config_file, db, host_control::spawn_handle_host_state,
+        shared_watch_store::SharedWatchRx,
     },
     config::Host,
     http::push,
@@ -205,193 +203,182 @@ pub(super) async fn poll_until_host_state(
 
 /// Start all background tasks for the HTTP server.
 /// Returns a [`JoinSet`] that owns all spawned tasks; dropping it aborts them all.
-#[expect(
-    clippy::too_many_lines,
-    reason = "This function is just a collection of task spawns, which is hard to break down further without unnecessary indirection."
-)]
 pub(super) fn start_background_tasks(
     state: &AppState,
     config_tx: &ConfigTx,
-    config_path: &Path,
     broadcast_socket: UdpSocket,
 ) -> JoinSet<()> {
     let mut tasks = JoinSet::new();
 
-    // Start host status polling task
-    {
-        let state = state.clone();
-        tasks.spawn(async move {
-            poll_host_statuses(state).await;
-        });
-    }
+    tasks.spawn(poll_host_statuses(state.clone()));
 
-    // Start config file watcher
-    {
-        let path = config_path.to_path_buf();
-        let config_tx = config_tx.clone();
-        tasks.spawn(async move {
-            watch_config_file(path, config_tx).await;
-        });
-    }
+    tasks.spawn(watch_config_file(
+        state.config_path.clone(),
+        config_tx.clone(),
+    ));
 
+    // Reconcile host state on lease changes (edge-triggered, all hosts)
+    tasks.spawn(reconcile_on_lease_change(
+        state.leases.subscribe(),
+        state.clone(),
+    ));
+
+    tasks.spawn(listen_for_agent_startup(state.clone(), broadcast_socket));
+
+    spawn_websocket_forwarders(
+        &mut tasks,
+        &state.ws_tx,
+        state.hoststatus.subscribe(),
+        state.operation_failures.subscribe(),
+        state.config_rx.clone(),
+        state.leases.subscribe(),
+    );
+
+    tasks.spawn(log_host_transitions(state.hoststatus.subscribe()));
+
+    tasks.spawn(persist_last_online(
+        state.db_pool.clone(),
+        state.hoststatus.subscribe(),
+    ));
+
+    tasks.spawn(notify_for_online_durations(
+        state.hoststatus.subscribe(),
+        state.online_since.clone(),
+        state.db_pool.clone(),
+        state.vapid_key.clone(),
+    ));
+
+    tasks
+}
+
+fn spawn_websocket_forwarders(
+    tasks: &mut JoinSet<()>,
+    ws_tx: &WsTx,
+    mut hoststatus_rx: SharedWatchRx<HostStatus>,
+    mut op_failure_rx: SharedWatchRx<OperationFailureMap>,
+    config_rx: ConfigRx,
+    leases_rx: LeaseRx,
+) {
     // Forwards host status updates to the websocket client loops
-    {
-        let ws_tx = state.ws_tx.clone();
-        let mut hoststatus_rx = state.hoststatus.subscribe();
-        tasks.spawn(async move {
-            while hoststatus_rx.changed().await.is_ok() {
-                let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
-                if ws_tx.send(msg).is_err() {
-                    debug!("No Websocket Subscribers");
-                }
+    let ws_tx_status = ws_tx.clone();
+    tasks.spawn(async move {
+        while hoststatus_rx.changed().await.is_ok() {
+            let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
+            if ws_tx_status.send(msg).is_err() {
+                debug!("No Websocket Subscribers");
             }
-        });
-    }
+        }
+    });
 
     // Forwards operation failure state changes to websocket client loops
-    {
-        let ws_tx = state.ws_tx.clone();
-        let mut op_failure_rx = state.operation_failures.subscribe();
-        tasks.spawn(async move {
-            while op_failure_rx.changed().await.is_ok() {
-                let msg = WsMessage::OperationFailed(op_failure_rx.borrow().as_ref().clone());
-                if ws_tx.send(msg).is_err() {
-                    debug!("No Websocket Subscribers");
+    let ws_tx_failure = ws_tx.clone();
+    tasks.spawn(async move {
+        while op_failure_rx.changed().await.is_ok() {
+            let msg = WsMessage::OperationFailed(op_failure_rx.borrow().as_ref().clone());
+            if ws_tx_failure.send(msg).is_err() {
+                debug!("No Websocket Subscribers");
+            }
+        }
+    });
+
+    let mut config_rx = config_rx;
+    let ws_tx_config = ws_tx.clone();
+    tasks.spawn(async move {
+        while config_rx.changed().await.is_ok() {
+            let config = config_rx.borrow();
+            let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
+            let clients = config.clients.keys().cloned().collect::<Vec<_>>();
+            let msg = WsMessage::ConfigChanged { hosts, clients };
+            if ws_tx_config.send(msg).is_err() {
+                debug!("No Websocket Subscribers");
+            }
+        }
+    });
+
+    let ws_tx_leases = ws_tx.clone();
+    tasks.spawn(async move {
+        broadcast_lease_updates(leases_rx, ws_tx_leases).await;
+    });
+}
+
+async fn persist_last_online(
+    db_pool: Option<db::DbPool>,
+    mut hoststatus_rx: SharedWatchRx<HostStatus>,
+) {
+    if let Some(pool) = db_pool {
+        let mut prev = hoststatus_rx.borrow().clone();
+        while hoststatus_rx.changed().await.is_ok() {
+            let current = hoststatus_rx.borrow().clone();
+            for (host, h_state) in current.iter() {
+                if prev.get(host) != Some(h_state) && *h_state == HostState::Online {
+                    let pool = pool.clone();
+                    let host = host.clone();
+                    tokio::spawn(async move {
+                        if let Err(e) = db::upsert_host_last_online(pool, host.clone()).await {
+                            error!(host = %host, "Failed to upsert host last_online: {e:#}");
+                        }
+                    });
                 }
             }
-        });
+            prev = current;
+        }
     }
+}
 
-    // Log host state transitions.
-    {
-        let mut hoststatus_rx = state.hoststatus.subscribe();
-        tasks.spawn(async move {
-            let mut prev = hoststatus_rx.borrow().clone();
-            while hoststatus_rx.changed().await.is_ok() {
-                let current = hoststatus_rx.borrow().clone();
-                for (host, h_state) in current.iter() {
-                    if prev.get(host) != Some(h_state) {
-                        info!(host = %host, state = ?h_state, "Host status changed");
-                    }
-                }
-                prev = current;
+async fn log_host_transitions(mut hoststatus_rx: SharedWatchRx<HostStatus>) {
+    let mut prev = hoststatus_rx.borrow().clone();
+    while hoststatus_rx.changed().await.is_ok() {
+        let current = hoststatus_rx.borrow().clone();
+        for (host, h_state) in current.iter() {
+            if prev.get(host) != Some(h_state) {
+                info!(host = %host, state = ?h_state, "Host status changed");
             }
-        });
+        }
+        prev = current;
     }
+}
 
-    // Persist last-online timestamps when a host transitions to Online.
-    if let Some(pool) = state.db_pool.clone() {
-        let mut hoststatus_rx = state.hoststatus.subscribe();
-        tasks.spawn(async move {
-            let mut prev = hoststatus_rx.borrow().clone();
-            while hoststatus_rx.changed().await.is_ok() {
-                let current = hoststatus_rx.borrow().clone();
-                for (host, h_state) in current.iter() {
-                    if prev.get(host) != Some(h_state) && *h_state == HostState::Online {
-                        let pool = pool.clone();
-                        let host = host.clone();
+async fn notify_for_online_durations(
+    mut hoststatus_rx: SharedWatchRx<HostStatus>,
+    online_since: Arc<RwLock<HashMap<String, Instant>>>,
+    db_pool: Option<db::DbPool>,
+    vapid_key: Option<Arc<web_push::PartialVapidSignatureBuilder>>,
+) {
+    let mut prev = hoststatus_rx.borrow().clone();
+    while hoststatus_rx.changed().await.is_ok() {
+        let current = hoststatus_rx.borrow().clone();
+        for (host, h_state) in current.iter() {
+            if prev.get(host) == Some(h_state) {
+                continue;
+            }
+            match *h_state {
+                HostState::Online => {
+                    let now = Instant::now();
+                    online_since.write().await.insert(host.clone(), now);
+
+                    if let (Some(pool), Some(vapid_key)) = (db_pool.clone(), vapid_key.clone()) {
+                        let host_clone = host.clone();
+                        let online_since = online_since.clone();
                         tokio::spawn(async move {
-                            if let Err(e) = db::upsert_host_last_online(pool, host.clone()).await {
-                                error!(host = %host, "Failed to upsert host last_online: {e:#}");
-                            }
+                            spawn_online_for_notifications(
+                                &host_clone,
+                                now,
+                                &online_since,
+                                &pool,
+                                &vapid_key,
+                            )
+                            .await;
                         });
                     }
                 }
-                prev = current;
-            }
-        });
-    }
-
-    // Track online_since timestamps and fire permanent online-for push notifications.
-    {
-        let state = state.clone();
-        let mut hoststatus_rx = state.hoststatus.subscribe();
-        tasks.spawn(async move {
-            let mut prev = hoststatus_rx.borrow().clone();
-            while hoststatus_rx.changed().await.is_ok() {
-                let current = hoststatus_rx.borrow().clone();
-                for (host, h_state) in current.iter() {
-                    if prev.get(host) == Some(h_state) {
-                        continue;
-                    }
-                    match *h_state {
-                        HostState::Online => {
-                            let now = Instant::now();
-                            state.online_since.write().await.insert(host.clone(), now);
-
-                            // Spawn deferred push notifications for permanent subscribers.
-                            if let (Some(pool), Some(vapid_key)) =
-                                (state.db_pool.clone(), state.vapid_key.clone())
-                            {
-                                let host_clone = host.clone();
-                                let online_since = state.online_since.clone();
-                                tokio::spawn(async move {
-                                    spawn_online_for_notifications(
-                                        &host_clone,
-                                        now,
-                                        &online_since,
-                                        &pool,
-                                        &vapid_key,
-                                    )
-                                    .await;
-                                });
-                            }
-                        }
-                        HostState::Offline => {
-                            state.online_since.write().await.remove(host);
-                        }
-                        HostState::Waking | HostState::ShuttingDown => {}
-                    }
+                HostState::Offline => {
+                    online_since.write().await.remove(host);
                 }
-                prev = current;
+                HostState::Waking | HostState::ShuttingDown => {}
             }
-        });
+        }
+        prev = current;
     }
-
-    // Forwards config changes to the websocket client loops
-    {
-        let ws_tx = state.ws_tx.clone();
-        let mut config_rx = state.config_rx.clone();
-        tasks.spawn(async move {
-            while config_rx.changed().await.is_ok() {
-                let config = config_rx.borrow();
-                let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
-                let clients = config.clients.keys().cloned().collect::<Vec<_>>();
-                let msg = WsMessage::ConfigChanged { hosts, clients };
-                if ws_tx.send(msg).is_err() {
-                    debug!("No Websocket Subscribers");
-                }
-            }
-        });
-    }
-
-    // Reconcile host state on lease changes (edge-triggered, all hosts)
-    {
-        let leases_rx = state.leases.subscribe();
-        let state = state.clone();
-        tasks.spawn(async move {
-            reconcile_on_lease_change(leases_rx, state).await;
-        });
-    }
-
-    // Forwards per-host lease changes to the websocket client loops
-    {
-        let leases_rx = state.leases.subscribe();
-        let ws_tx = state.ws_tx.clone();
-        tasks.spawn(async move {
-            broadcast_lease_updates(leases_rx, ws_tx).await;
-        });
-    }
-
-    // Listens for UDP startup broadcasts from agents and persists IP overrides.
-    {
-        let state = state.clone();
-        tasks.spawn(async move {
-            listen_for_agent_startup(state, broadcast_socket).await;
-        });
-    }
-
-    tasks
 }
 
 /// Determine whether the given host configuration and observed runtime state
