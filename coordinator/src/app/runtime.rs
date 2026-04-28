@@ -137,18 +137,33 @@ async fn maybe_update_host_install_info(
     info_map.insert(hostname.to_string(), new_info);
     drop(info_map);
 
-    if let &Some(ref pool) = &state.db_pool
-        && let Err(e) = db::upsert_host_install_info(
+    if let &Some(ref pool) = &state.db_pool {
+        if let Err(e) = db::upsert_host_install_info(
             pool.clone(),
             hostname.to_string(),
-            agent_version,
+            agent_version.clone(),
             init_system,
             os,
-            script_path,
+            script_path.clone(),
         )
         .await
-    {
-        error!(host = %hostname, "Failed to persist host install info: {e:#}");
+        {
+            error!(host = %hostname, "Failed to persist host install info: {e:#}");
+        }
+
+        if let Ok(mut host_stats) = db::get_all_host_stats(pool).await {
+            if let Some(mut stats) = host_stats.remove(hostname) {
+                if state.hoststatus.get_current_state(hostname) == HostState::Online {
+                    stats.is_online = true;
+                }
+                if let Err(_err) = state.ws_tx.send(WsMessage::HostStats {
+                    host: hostname.to_string(),
+                    stats,
+                }) {
+                    debug!("No Websocket Subscribers for host stats");
+                }
+            }
+        }
     }
 }
 
