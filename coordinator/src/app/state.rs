@@ -181,7 +181,7 @@ impl SharedWatchStore<OperationFailureMap> {
 
 /// Cached install metadata for a host, populated from the DB on startup
 /// and updated live when agent startup broadcasts arrive.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct HostInstallInfo {
     pub agent_version: Option<String>,
     pub init_system: Option<InitSystem>,
