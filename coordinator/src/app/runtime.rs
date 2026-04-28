@@ -83,6 +83,7 @@ fn parse_install_info(resp: &str) -> Option<HostInstallInfo> {
     let mut agent_version = None;
     let mut init_system = None;
     let mut os = None;
+    let mut script_path = None;
     for section in suffix.split(';') {
         let section = section.trim();
         if let Some(v) = section.strip_prefix("agent_version=") {
@@ -93,12 +94,17 @@ fn parse_install_info(resp: &str) -> Option<HostInstallInfo> {
             init_system = v.parse::<InitSystem>().ok();
         } else if let Some(v) = section.strip_prefix("os=") {
             os = v.parse::<OsType>().ok();
+        } else if let Some(v) = section.strip_prefix("script_path=") {
+            if !v.is_empty() {
+                script_path = Some(v.to_string());
+            }
         }
     }
     Some(HostInstallInfo {
         agent_version,
         init_system,
         os,
+        script_path,
     })
 }
 
@@ -108,11 +114,13 @@ async fn maybe_update_host_install_info(
     agent_version: String,
     init_system: InitSystem,
     os: OsType,
+    script_path: Option<String>,
 ) {
     let new_info = HostInstallInfo {
         agent_version: Some(agent_version.clone()),
         init_system: Some(init_system),
         os: Some(os),
+        script_path: script_path.clone(),
     };
     let mut info_map = state.host_install_info.write().await;
     let current = info_map.get(hostname);
@@ -120,6 +128,7 @@ async fn maybe_update_host_install_info(
         i.agent_version.as_deref() == Some(&agent_version)
             && i.init_system == Some(init_system)
             && i.os == Some(os)
+            && i.script_path == script_path
     });
     if unchanged {
         return;
@@ -135,6 +144,7 @@ async fn maybe_update_host_install_info(
             agent_version,
             init_system,
             os,
+            script_path,
         )
         .await
     {
@@ -465,7 +475,15 @@ async fn poll_host_statuses(state: AppState) {
                 && let (Some(version), Some(init_system), Some(os)) =
                     (info.agent_version, info.init_system, info.os)
             {
-                maybe_update_host_install_info(&state, host_name, version, init_system, os).await;
+                maybe_update_host_install_info(
+                    &state,
+                    host_name,
+                    version,
+                    init_system,
+                    os,
+                    info.script_path,
+                )
+                .await;
             }
         }
 
@@ -756,6 +774,7 @@ async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppSt
         startup.agent_version.clone(),
         startup.init_system,
         startup.os,
+        None,
     )
     .await;
     persist_host_override_if_needed(state, hostname, &host_cfg, &startup).await;
@@ -960,12 +979,18 @@ mod tests {
         );
         assert_eq!(
             parse_install_info("OK: status;agent_version=v1.2.3; init_system=systemd; os=linux")
-                .map(|i| (i.agent_version, i.init_system, i.os)),
+                .map(|i| (i.agent_version, i.init_system, i.os, i.script_path)),
             Some((
                 Some("v1.2.3".to_string()),
                 Some(InitSystem::Systemd),
-                Some(OsType::Linux)
+                Some(OsType::Linux),
+                None,
             ))
+        );
+        assert_eq!(
+            parse_install_info("OK: status;agent_version=v1.2.3; script_path=/tmp/foo.sh")
+                .map(|i| (i.agent_version, i.script_path)),
+            Some((Some("v1.2.3".to_string()), Some("/tmp/foo.sh".to_string())))
         );
         assert_eq!(
             parse_install_info("OK: status;agent_version=").map(|i| i.agent_version),
