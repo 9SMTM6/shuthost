@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT hostname, last_online, agent_version, init_system, os FROM host_stats",
+  "query": "SELECT hostname, last_online, agent_version, init_system, os, script_path FROM host_stats",
   "describe": {
     "columns": [
       {
@@ -27,6 +27,11 @@
         "name": "os",
         "ordinal": 4,
         "type_info": "Text"
+      },
+      {
+        "name": "script_path",
+        "ordinal": 5,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -37,8 +42,9 @@
       false,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "f260933abf3169709ca9bce45a6d5b0b9a7ac453b906b88c58377aed58816b8b"
+  "hash": "cb41c7a678390cba09b01fa029032946bb0e62553cb7a8e8422ff5ceee00a55e"
 }

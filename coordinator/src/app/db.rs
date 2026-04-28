@@ -52,6 +52,7 @@ struct HostStatsRecord {
     agent_version: Option<String>,
     init_system: Option<String>,
     os: Option<String>,
+    script_path: Option<String>,
 }
 
 /// Represents a host IP override record from the database.
@@ -92,6 +93,8 @@ pub struct HostStats {
     pub init_system: Option<InitSystem>,
     #[serde(default)]
     pub operating_system: Option<OsType>,
+    #[serde(default)]
+    pub script_path: Option<String>,
     #[serde(default)]
     pub is_online: bool,
 }
@@ -640,21 +643,24 @@ pub(crate) async fn upsert_host_install_info(
     agent_version: String,
     init_system: InitSystem,
     os: OsType,
+    script_path: Option<String>,
 ) -> eyre::Result<()> {
     let init_system_str = init_system.to_string();
     let os_str = os.to_string();
     sqlx::query(
-        "INSERT INTO host_stats (hostname, last_online, agent_version, init_system, os) \
-         VALUES (?, datetime('now'), ?, ?, ?) \
+        "INSERT INTO host_stats (hostname, last_online, agent_version, init_system, os, script_path) \
+         VALUES (?, datetime('now'), ?, ?, ?, ?) \
          ON CONFLICT(hostname) DO UPDATE SET \
              agent_version = excluded.agent_version, \
              init_system = excluded.init_system, \
-             os = excluded.os",
+             os = excluded.os, \
+             script_path = excluded.script_path",
     )
     .bind(hostname)
     .bind(agent_version)
     .bind(init_system_str)
     .bind(os_str)
+    .bind(script_path)
     .execute(&pool)
     .await?;
     Ok(())
@@ -669,7 +675,7 @@ pub(crate) async fn upsert_host_install_info(
 pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<String, HostStats>> {
     let records = sqlx::query_as!(
         HostStatsRecord,
-        "SELECT hostname, last_online, agent_version, init_system, os FROM host_stats"
+        "SELECT hostname, last_online, agent_version, init_system, os, script_path FROM host_stats"
     )
     .fetch_all(pool)
     .await?;
@@ -694,6 +700,7 @@ pub(crate) async fn get_all_host_stats(pool: &DbPool) -> eyre::Result<HashMap<St
                     agent_version: rec.agent_version,
                     init_system,
                     operating_system,
+                    script_path: rec.script_path,
                     is_online: false,
                 },
             )

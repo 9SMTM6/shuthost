@@ -239,6 +239,7 @@ pub(crate) struct HostInstallInfo {
     pub agent_version: Option<String>,
     pub init_system: Option<InitSystem>,
     pub os: Option<OsType>,
+    pub script_path: Option<String>,
 }
 
 /// Application state shared across request handlers and background tasks.
@@ -448,6 +449,7 @@ pub(super) async fn initialize_state(
                             agent_version: stats.agent_version,
                             init_system: stats.init_system,
                             os: stats.operating_system,
+                            script_path: stats.script_path,
                         },
                     )
                 })
