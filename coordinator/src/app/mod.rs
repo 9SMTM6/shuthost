@@ -2,6 +2,7 @@ mod config_watcher;
 pub mod db;
 mod host_control;
 mod runtime;
+mod shared_watch_store;
 mod startup;
 mod state;
 

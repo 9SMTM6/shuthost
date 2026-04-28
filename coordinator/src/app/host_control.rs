@@ -13,14 +13,15 @@ use tokio::time::{MissedTickBehavior, interval};
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
-    sync::{Mutex as AsyncMutex, watch},
     time::{Instant, timeout_at},
 };
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{
-    AppState, HostStatusStore, OperationFailure, OperationKind, db, runtime::PollError,
-    runtime::poll_until_host_state, state::HostState,
+    AppState, HostStatusStore, OperationFailure, OperationKind, db,
+    runtime::{PollError, poll_until_host_state},
+    shared_watch_store::{SharedWatchRx, SharedWatchStore},
+    state::HostState,
 };
 use crate::http::push;
 
@@ -58,33 +59,10 @@ pub(crate) type LeaseSources = HashSet<LeaseSource>;
 /// `host_name` => set of lease sources holding lease
 pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
 
-/// Watch channel sender for the lease map.
-pub(crate) type LeaseTx = watch::Sender<Arc<LeaseMapRaw>>;
-/// Watch channel receiver for the lease map.
-pub(crate) type LeaseRx = watch::Receiver<Arc<LeaseMapRaw>>;
+pub(crate) type LeaseStore = SharedWatchStore<LeaseMapRaw>;
+pub(crate) type LeaseRx = SharedWatchRx<LeaseMapRaw>;
 
-/// Serialized lease map state: writes are serialized via a [`Mutex`], and all
-/// mutations are published to a [`watch`] channel so background tasks can
-/// subscribe to changes.
-pub(crate) struct LeaseStore {
-    inner: AsyncMutex<LeaseMapRaw>,
-    tx: LeaseTx,
-}
-
-impl LeaseStore {
-    /// Create a new `LeaseStore` from an initial map.
-    /// Returns an `Arc<LeaseStore>` and an initial [`LeaseRx`] receiver.
-    pub(crate) fn new(initial: LeaseMapRaw) -> (Arc<Self>, LeaseRx) {
-        let (tx, rx) = watch::channel(Arc::new(initial.clone()));
-        (
-            Arc::new(Self {
-                inner: AsyncMutex::new(initial),
-                tx,
-            }),
-            rx,
-        )
-    }
-
+impl SharedWatchStore<LeaseMapRaw> {
     /// Lock the map, run `f` against the mutable map (may do async work such as
     /// DB writes), then publish the new snapshot and return it.
     ///
@@ -104,29 +82,14 @@ impl LeaseStore {
         Ok(result)
     }
 
-    /// Read the current snapshot cheaply without acquiring the write mutex.
-    pub(crate) fn borrow(&self) -> watch::Ref<'_, Arc<LeaseMapRaw>> {
-        self.tx.borrow()
-    }
-
-    /// Clone the current snapshot of the entire lease map.
-    pub(crate) fn snapshot(&self) -> Arc<LeaseMapRaw> {
-        self.borrow().clone()
-    }
-
     /// Return the current lease set for `host`, defaulting to an empty set.
     pub(crate) fn get_host(&self, host: &str) -> LeaseSources {
-        self.borrow().get(host).cloned().unwrap_or_default()
+        self.tx.borrow().get(host).cloned().unwrap_or_default()
     }
 
     /// Return `true` if `host` currently has at least one active lease.
     pub(crate) fn host_has_leases(&self, host: &str) -> bool {
-        self.borrow().get(host).is_some_and(|s| !s.is_empty())
-    }
-
-    /// Subscribe to future changes of the lease map.
-    pub(crate) fn subscribe(&self) -> LeaseRx {
-        self.tx.subscribe()
+        self.tx.borrow().get(host).is_some_and(|s| !s.is_empty())
     }
 }
 

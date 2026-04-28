@@ -353,9 +353,7 @@ async fn unsubscribe_host_online_for(
 ) -> impl IntoResponse {
     let pool = require_db_pool!(state);
 
-    if let Err(e) =
-        db::unsubscribe_host_online_for(pool, &body.endpoint, &body.hostname).await
-    {
+    if let Err(e) = db::unsubscribe_host_online_for(pool, &body.endpoint, &body.hostname).await {
         error!("Failed to unsubscribe from host online-for events: {e:#}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }

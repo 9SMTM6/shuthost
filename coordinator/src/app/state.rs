@@ -8,14 +8,16 @@ use tokio::time::Instant;
 use eyre::WrapErr as _;
 use serde::{Deserialize, Serialize};
 use shuthost_common::protocol::{InitSystem, OsType};
-use tokio::sync::{Mutex as AsyncMutex, RwLock, broadcast, watch};
+use tokio::sync::{RwLock, broadcast, watch};
 use tracing::info;
 use web_push::PartialVapidSignatureBuilder;
 
+use super::shared_watch_store::{SharedWatchRx, SharedWatchStore};
 use crate::{
     app::{
-        LeaseMapRaw, LeaseStore,
+        LeaseMapRaw,
         db::{self, DbPool},
+        host_control::LeaseStore,
     },
     config::{
         ControllerConfig, DbConfig, RuntimeConfig, TlsConfig, load, resolve_config_relative_paths,
@@ -46,7 +48,9 @@ impl HostState {
 pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
 pub(super) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
 pub type HostStatus = HashMap<String, HostState>;
-pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
+pub(crate) type HostStatusStore = SharedWatchStore<HostStatus>;
+pub(crate) type HostStatusRx = SharedWatchRx<HostStatus>;
+pub(crate) type OperationFailureStore = SharedWatchStore<OperationFailureMap>;
 pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 
 /// Shared, atomically-updated host status store.
@@ -56,25 +60,10 @@ pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 /// broadcasts every committed snapshot to all subscribers.
 ///
 /// This is intentionally analogous to [`crate::app::LeaseStore`].
-pub(crate) struct HostStatusStore {
-    inner: AsyncMutex<HostStatus>,
-    tx: watch::Sender<Arc<HostStatus>>,
-}
+///
+/// The actual implementation is provided by [`SharedWatchStore`].
 
-impl HostStatusStore {
-    /// Create a new `HostStatusStore` from an initial status map.
-    /// Returns an `Arc<HostStatusStore>` and an initial [`HostStatusRx`] receiver.
-    pub(crate) fn new(initial: HostStatus) -> (Arc<Self>, HostStatusRx) {
-        let (tx, rx) = watch::channel(Arc::new(initial.clone()));
-        (
-            Arc::new(Self {
-                inner: AsyncMutex::new(initial),
-                tx,
-            }),
-            rx,
-        )
-    }
-
+impl SharedWatchStore<HostStatus> {
     /// Atomically begin a transition.
     ///
     /// Sets `host` to `state` (`Waking` or `ShuttingDown`) and broadcasts.
@@ -145,11 +134,6 @@ impl HostStatusStore {
         }
     }
 
-    /// Borrow the current snapshot without acquiring the write mutex.
-    pub(crate) fn borrow(&self) -> watch::Ref<'_, Arc<HostStatus>> {
-        self.tx.borrow()
-    }
-
     /// Get the current state of a host.
     pub(crate) fn get_current_state(&self, host: &str) -> HostState {
         self.tx
@@ -158,11 +142,6 @@ impl HostStatusStore {
             .copied()
             // if there is no entry for this host, its considered offline
             .unwrap_or(HostState::Offline)
-    }
-
-    /// Subscribe to future snapshots.
-    pub(crate) fn subscribe(&self) -> HostStatusRx {
-        self.tx.subscribe()
     }
 }
 
@@ -183,29 +162,7 @@ pub struct OperationFailure {
 /// Map of `host_name → OperationFailure` for hosts whose last operation failed.
 pub type OperationFailureMap = HashMap<String, OperationFailure>;
 
-/// Watch-channel-based store for per-host operation failure state.
-///
-/// Updates are serialized through the inner `Mutex`; all commits are broadcast
-/// via the watch channel to subscribers.
-pub(crate) struct OperationFailureStore {
-    inner: AsyncMutex<OperationFailureMap>,
-    tx: watch::Sender<Arc<OperationFailureMap>>,
-}
-
-impl OperationFailureStore {
-    /// Create a new, empty `OperationFailureStore`.
-    pub(crate) fn new() -> (Arc<Self>, watch::Receiver<Arc<OperationFailureMap>>) {
-        let initial = OperationFailureMap::new();
-        let (tx, rx) = watch::channel(Arc::new(initial.clone()));
-        (
-            Arc::new(Self {
-                inner: AsyncMutex::new(initial),
-                tx,
-            }),
-            rx,
-        )
-    }
-
+impl SharedWatchStore<OperationFailureMap> {
     /// Record a failure for `host`.
     pub(crate) async fn set(&self, host: &str, failure: OperationFailure) {
         let mut inner = self.inner.lock().await;
@@ -219,16 +176,6 @@ impl OperationFailureStore {
         if inner.remove(host).is_some() {
             drop(self.tx.send(Arc::new(inner.clone())));
         }
-    }
-
-    /// Borrow the current snapshot without acquiring the write mutex.
-    pub(crate) fn borrow(&self) -> watch::Ref<'_, Arc<OperationFailureMap>> {
-        self.tx.borrow()
-    }
-
-    /// Subscribe to future snapshots.
-    pub(crate) fn subscribe(&self) -> watch::Receiver<Arc<OperationFailureMap>> {
-        self.tx.subscribe()
     }
 }
 
@@ -400,7 +347,7 @@ pub(super) async fn initialize_state(
 
     let (ws_tx, _) = broadcast::channel(32);
 
-    let (operation_failures, _) = OperationFailureStore::new();
+    let (operation_failures, _) = OperationFailureStore::new(OperationFailureMap::new());
 
     let db_pool = initialize_database(&initial_config, config_path).await?;
 

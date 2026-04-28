@@ -66,7 +66,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         runtime: RuntimeConfig::default(),
         db_pool: None,
         vapid_key: None,
-        operation_failures: OperationFailureStore::new().0,
+        operation_failures: OperationFailureStore::new(HashMap::new()).0,
         online_since: Arc::new(RwLock::new(HashMap::new())),
     };
 
