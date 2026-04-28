@@ -124,13 +124,7 @@ async fn maybe_update_host_install_info(
     };
     let mut info_map = state.host_install_info.write().await;
     let current = info_map.get(hostname);
-    let unchanged = current.is_some_and(|i| {
-        i.agent_version.as_deref() == Some(&agent_version)
-            && i.init_system == Some(init_system)
-            && i.os == Some(os)
-            && i.script_path == script_path
-    });
-    if unchanged {
+    if current == Some(&new_info) {
         return;
     }
 
