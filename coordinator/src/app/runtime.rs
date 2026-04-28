@@ -26,7 +26,7 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigTx, HostInstallInfo, HostState, HostStatus, HostStatusState};
+use super::state::{ConfigTx, HostInstallInfo, HostState, HostStatus, HostStatusStore};
 use crate::{
     app::{
         AppState, LeaseMapRaw, LeaseRx, WsTx, config_watcher::watch_config_file, db,
@@ -186,7 +186,7 @@ pub(super) async fn poll_until_host_state(
     desired_state: HostState,
     deadline: Instant,
     poll_interval_ms: u64,
-    hoststatus: &HostStatusState,
+    hoststatus: &HostStatusStore,
 ) -> Result<(), PollError> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);

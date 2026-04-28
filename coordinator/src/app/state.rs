@@ -14,7 +14,7 @@ use web_push::PartialVapidSignatureBuilder;
 
 use crate::{
     app::{
-        LeaseMapRaw, LeaseState,
+        LeaseMapRaw, LeaseStore,
         db::{self, DbPool},
     },
     config::{
@@ -55,15 +55,15 @@ pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 /// atomically check-and-set transition states) with a [`watch`] channel that
 /// broadcasts every committed snapshot to all subscribers.
 ///
-/// This is intentionally analogous to [`crate::app::LeaseState`].
-pub(crate) struct HostStatusState {
+/// This is intentionally analogous to [`crate::app::LeaseStore`].
+pub(crate) struct HostStatusStore {
     inner: AsyncMutex<HostStatus>,
     tx: watch::Sender<Arc<HostStatus>>,
 }
 
-impl HostStatusState {
-    /// Create a new `HostStatusState` from an initial status map.
-    /// Returns an `Arc<HostStatusState>` and an initial [`HostStatusRx`] receiver.
+impl HostStatusStore {
+    /// Create a new `HostStatusStore` from an initial status map.
+    /// Returns an `Arc<HostStatusStore>` and an initial [`HostStatusRx`] receiver.
     pub(crate) fn new(initial: HostStatus) -> (Arc<Self>, HostStatusRx) {
         let (tx, rx) = watch::channel(Arc::new(initial.clone()));
         (
@@ -187,19 +187,19 @@ pub type OperationFailureMap = HashMap<String, OperationFailure>;
 ///
 /// Updates are serialized through the inner `Mutex`; all commits are broadcast
 /// via the watch channel to subscribers.
-pub(crate) struct OperationFailureState {
-    inner: tokio::sync::Mutex<OperationFailureMap>,
+pub(crate) struct OperationFailureStore {
+    inner: AsyncMutex<OperationFailureMap>,
     tx: watch::Sender<Arc<OperationFailureMap>>,
 }
 
-impl OperationFailureState {
-    /// Create a new, empty `OperationFailureState`.
+impl OperationFailureStore {
+    /// Create a new, empty `OperationFailureStore`.
     pub(crate) fn new() -> (Arc<Self>, watch::Receiver<Arc<OperationFailureMap>>) {
         let initial = OperationFailureMap::new();
         let (tx, rx) = watch::channel(Arc::new(initial.clone()));
         (
             Arc::new(Self {
-                inner: tokio::sync::Mutex::new(initial),
+                inner: AsyncMutex::new(initial),
                 tx,
             }),
             rx,
@@ -252,13 +252,13 @@ pub(crate) struct AppState {
     pub config_rx: ConfigRx,
 
     /// Shared, atomically-updated host status (online/offline/transition).
-    pub hoststatus: Arc<HostStatusState>,
+    pub hoststatus: Arc<HostStatusStore>,
 
     /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: WsTx,
 
     /// In-memory map of current leases for hosts (write-serialized, watch-observable).
-    pub leases: Arc<LeaseState>,
+    pub leases: Arc<LeaseStore>,
 
     /// Runtime IP/port overrides for hosts whose address differs from the static config.
     /// Populated from the DB on startup and updated live when agent startup broadcasts arrive.
@@ -284,7 +284,7 @@ pub(crate) struct AppState {
     pub vapid_key: Option<Arc<PartialVapidSignatureBuilder>>,
 
     /// Per-host record of the last failed control operation (ephemeral, not persisted).
-    pub operation_failures: Arc<OperationFailureState>,
+    pub operation_failures: Arc<OperationFailureStore>,
 
     /// Tracks when each host most recently transitioned to Online (ephemeral, not persisted).
     /// Used to validate deferred online-for notifications — if the `Instant` at notification
@@ -396,11 +396,11 @@ pub(super) async fn initialize_state(
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
 
-    let (hoststatus, _) = HostStatusState::new(HostStatus::new());
+    let (hoststatus, _) = HostStatusStore::new(HostStatus::new());
 
     let (ws_tx, _) = broadcast::channel(32);
 
-    let (operation_failures, _) = OperationFailureState::new();
+    let (operation_failures, _) = OperationFailureStore::new();
 
     let db_pool = initialize_database(&initial_config, config_path).await?;
 
@@ -413,7 +413,7 @@ pub(super) async fn initialize_state(
         info!("Skipping lease load: DB persistence disabled");
     }
 
-    let (leases, _) = LeaseState::new(initial_leases);
+    let (leases, _) = LeaseStore::new(initial_leases);
 
     let host_overrides = if let Some(ref pool) = db_pool {
         let overrides = db::load_host_ip_overrides(pool).await?;

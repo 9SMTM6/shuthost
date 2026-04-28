@@ -17,7 +17,7 @@ use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
     AppState, ConfigRx, DbPool, HostState, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources,
-    LeaseState, OperationFailureMap,
+    LeaseStore, OperationFailureMap,
     db::{self, ClientStats, HostStats},
 };
 
@@ -191,7 +191,7 @@ async fn send_startup_msg(
     socket: &mut WebSocket,
     hoststatus_rx: HostStatusRx,
     config_rx: ConfigRx,
-    current_leases: Arc<LeaseState>,
+    current_leases: Arc<LeaseStore>,
     db_pool: Option<&DbPool>,
     operation_failures: Arc<OperationFailureMap>,
 ) -> Result<(), axum::Error> {
