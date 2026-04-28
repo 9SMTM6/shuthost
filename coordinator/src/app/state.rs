@@ -333,37 +333,24 @@ fn emit_startup_warnings(app_state: &AppState, app_config: &ControllerConfig) {
     emit_warning_on_unsaved_sync_state(app_config);
 }
 
-/// Initialize application state and start background tasks.
-#[tracing::instrument(skip_all)]
-pub(super) async fn initialize_state(
-    config_path: &Path,
-) -> eyre::Result<(AppState, Option<TlsConfig>, ConfigTx)> {
-    let initial_config = Arc::new(load(config_path).await?);
-
-    let (config_tx, config_rx) = watch::channel(initial_config.clone());
-
-    let (hoststatus, _) = HostStatusStore::new(HostStatus::new());
-
-    let (ws_tx, _) = broadcast::channel(32);
-
-    let (operation_failures, _) = OperationFailureStore::new(OperationFailureMap::new());
-
-    let db_pool = initialize_database(&initial_config, config_path).await?;
-
+async fn load_leases(db_pool: Option<&DbPool>) -> eyre::Result<Arc<LeaseStore>> {
     let mut initial_leases = LeaseMapRaw::default();
-
-    if let Some(ref pool) = db_pool {
+    if let Some(pool) = db_pool {
         db::load_leases(pool, &mut initial_leases).await?;
         info!("Loaded leases from database");
     } else {
         info!("Skipping lease load: DB persistence disabled");
     }
-
     let (leases, _) = LeaseStore::new(initial_leases);
+    Ok(leases)
+}
 
-    let host_overrides = if let Some(ref pool) = db_pool {
+async fn load_host_overrides(
+    db_pool: Option<&DbPool>,
+    initial_config: &ControllerConfig,
+) -> eyre::Result<Arc<RwLock<HashMap<String, db::HostOverride>>>> {
+    let overrides = if let Some(pool) = db_pool {
         let overrides = db::load_host_ip_overrides(pool).await?;
-        // Warn for every override that differs from the current config.
         for (name, o) in &overrides {
             if let Some(h) = initial_config.hosts.get(name)
                 && (h.ip != o.ip || h.port != o.port)
@@ -379,11 +366,15 @@ pub(super) async fn initialize_state(
         }
         overrides
     } else {
-        HashMap::new()
+        HashMap::default()
     };
-    let host_overrides = Arc::new(RwLock::new(host_overrides));
+    Ok(Arc::new(RwLock::new(overrides)))
+}
 
-    let host_install_info = if let Some(ref pool) = db_pool {
+async fn load_host_install_info(
+    db_pool: Option<&DbPool>,
+) -> eyre::Result<Arc<RwLock<HashMap<String, HostInstallInfo>>>> {
+    let host_install_info = if let Some(pool) = db_pool {
         let host_stats = db::get_all_host_stats(pool).await?;
         Arc::new(RwLock::new(
             host_stats
@@ -402,18 +393,15 @@ pub(super) async fn initialize_state(
                 .collect(),
         ))
     } else {
-        Arc::new(RwLock::new(HashMap::new()))
+        Arc::default()
     };
+    Ok(host_install_info)
+}
 
-    let auth_runtime =
-        Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
-
-    let tls_opt = match initial_config.server.tls {
-        Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg.clone()),
-        _ => None,
-    };
-
-    let vapid_key = if let Some(ref pool) = db_pool {
+async fn load_vapid_key(
+    db_pool: Option<&DbPool>,
+) -> eyre::Result<Option<Arc<PartialVapidSignatureBuilder>>> {
+    if let Some(pool) = db_pool {
         let pem = match db::get_kv(pool, db::KV_VAPID_PRIVATE_KEY_PEM).await? {
             Some(pem) => pem,
             None => {
@@ -425,14 +413,41 @@ pub(super) async fn initialize_state(
                 pem
             }
         };
-        Some(Arc::new(
+        Ok(Some(Arc::new(
             web_push::VapidSignatureBuilder::from_pem_no_sub(pem.as_bytes())
                 .wrap_err("Failed to load VAPID private key from PEM")?,
-        ))
+        )))
     } else {
         info!("VAPID key unavailable: DB persistence disabled");
-        None
+        Ok(None)
+    }
+}
+/// Initialize application state and start background tasks.
+#[tracing::instrument(skip_all)]
+pub(super) async fn initialize_state(
+    config_path: &Path,
+) -> eyre::Result<(AppState, Option<TlsConfig>, ConfigTx)> {
+    let initial_config = Arc::new(load(config_path).await?);
+
+    let (config_tx, config_rx) = watch::channel(initial_config.clone());
+    let (hoststatus, _) = HostStatusStore::new(HostStatus::new());
+    let (ws_tx, _) = broadcast::channel(32);
+    let (operation_failures, _) = OperationFailureStore::new(OperationFailureMap::new());
+
+    let db_pool = initialize_database(&initial_config, config_path).await?;
+    let leases = load_leases(db_pool.as_ref()).await?;
+    let host_overrides = load_host_overrides(db_pool.as_ref(), &initial_config).await?;
+    let host_install_info = load_host_install_info(db_pool.as_ref()).await?;
+
+    let auth_runtime =
+        Arc::new(auth::Runtime::from_config(&initial_config.server.auth, db_pool.as_ref()).await?);
+
+    let tls_opt = match initial_config.server.tls {
+        Some(ref tls_cfg @ TlsConfig { enable: true, .. }) => Some(tls_cfg.clone()),
+        _ => None,
     };
+
+    let vapid_key = load_vapid_key(db_pool.as_ref()).await?;
 
     let app_state = AppState {
         config_rx,
