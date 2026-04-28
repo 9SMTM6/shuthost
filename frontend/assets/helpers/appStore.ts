@@ -133,7 +133,9 @@ export const applyMessage = (message: WsMessage) => {
             setState(
                 produce((s: AppState) => {
                     if (s.dbData.status === 'available') {
-                        for (const [clientId, stats] of Object.entries(message.payload)) {
+                        for (const [clientId, stats] of Object.entries(
+                            message.payload,
+                        )) {
                             s.dbData.payload.clientStats[clientId] = stats;
                         }
                     }

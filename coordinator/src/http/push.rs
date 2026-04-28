@@ -5,12 +5,13 @@
 
 use alloc::sync::Arc;
 use core::time::Duration;
+use tokio::time::sleep;
 
 use axum::{
     Router,
     extract::{Query, State},
     response::IntoResponse,
-    routing::get,
+    routing::{get, post},
 };
 use axum_extra::{TypedHeader, headers::ContentType};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
@@ -62,7 +63,7 @@ pub(crate) fn routes() -> Router<AppState> {
         )
         .route(
             "/subscribe-host-online-for-oneshot",
-            axum::routing::post(subscribe_host_online_for_oneshot),
+            post(subscribe_host_online_for_oneshot),
         )
 }
 
@@ -410,7 +411,7 @@ async fn subscribe_host_online_for_oneshot(
     }
 
     tokio::spawn(async move {
-        tokio::time::sleep(duration).await;
+        sleep(duration).await;
         if online_since.read().await.get(&hostname) != Some(&session_start) {
             return;
         }
