@@ -13,13 +13,13 @@ use tokio::time::{MissedTickBehavior, interval};
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
-    sync::{Mutex, watch},
+    sync::{Mutex as AsyncMutex, watch},
     time::{Instant, timeout_at},
 };
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{
-    AppState, HostStatusState, OperationFailure, OperationKind, db, runtime::PollError,
+    AppState, HostStatusStore, OperationFailure, OperationKind, db, runtime::PollError,
     runtime::poll_until_host_state, state::HostState,
 };
 use crate::http::push;
@@ -66,19 +66,19 @@ pub(crate) type LeaseRx = watch::Receiver<Arc<LeaseMapRaw>>;
 /// Serialized lease map state: writes are serialized via a [`Mutex`], and all
 /// mutations are published to a [`watch`] channel so background tasks can
 /// subscribe to changes.
-pub(crate) struct LeaseState {
-    inner: Mutex<LeaseMapRaw>,
+pub(crate) struct LeaseStore {
+    inner: AsyncMutex<LeaseMapRaw>,
     tx: LeaseTx,
 }
 
-impl LeaseState {
-    /// Create a new `LeaseState` from an initial map.
-    /// Returns an `Arc<LeaseState>` and an initial [`LeaseRx`] receiver.
+impl LeaseStore {
+    /// Create a new `LeaseStore` from an initial map.
+    /// Returns an `Arc<LeaseStore>` and an initial [`LeaseRx`] receiver.
     pub(crate) fn new(initial: LeaseMapRaw) -> (Arc<Self>, LeaseRx) {
         let (tx, rx) = watch::channel(Arc::new(initial.clone()));
         (
             Arc::new(Self {
-                inner: Mutex::new(initial),
+                inner: AsyncMutex::new(initial),
                 tx,
             }),
             rx,
@@ -226,7 +226,7 @@ async fn handle_host_state(
 /// Attempt to spawn a host state transition task.
 ///
 /// Determines the desired direction from the current lease set, then atomically
-/// claims the transition via [`HostStatusState::try_begin_transition`]. If a
+/// claims the transition via [`HostStatusStore::try_begin_transition`]. If a
 /// control task is already in-flight for this host the call is a no-op (the
 /// existing task will re-check lease state on completion and re-trigger if needed).
 pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
@@ -377,7 +377,7 @@ async fn send_shutdown_to_address(host_with_name: &ResolvedHost) -> Result<Strin
 /// the wake did not succeed.
 async fn wake_host_and_wait(
     host_with_name: &ResolvedHost,
-    hoststatus: &HostStatusState,
+    hoststatus: &HostStatusStore,
     runtime: &RuntimeConfig,
 ) -> Result<OperationOrNoop, HostControlError> {
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
@@ -453,7 +453,7 @@ async fn wake_host_and_wait(
 /// the shutdown did not succeed.
 async fn shutdown_host_and_wait(
     host_with_name: &ResolvedHost,
-    hoststatus: &HostStatusState,
+    hoststatus: &HostStatusStore,
     runtime: &RuntimeConfig,
 ) -> Result<OperationOrNoop, HostControlError> {
     // Send shutdown to the address
@@ -510,7 +510,7 @@ async fn shutdown_host_and_wait(
 /// Used by the M2M API sync path to wait for a host to reach the desired state.
 pub(crate) async fn poll_and_wait(
     host_with_name: &ResolvedHost,
-    hoststatus: &HostStatusState,
+    hoststatus: &HostStatusStore,
     desired_state: HostState,
     deadline: Instant,
     runtime: &RuntimeConfig,

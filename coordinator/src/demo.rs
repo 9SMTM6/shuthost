@@ -15,7 +15,7 @@ use tracing::info;
 
 use crate::{
     app::{
-        AppState, HostStatusState, LeaseMapRaw, LeaseState, OperationFailureState, shutdown_signal,
+        AppState, HostStatusStore, LeaseMapRaw, LeaseStore, OperationFailureStore, shutdown_signal,
     },
     config::{AuthConfig, ControllerConfig, RuntimeConfig},
     http::{
@@ -47,14 +47,14 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         }
     };
 
-    let (hoststatus, _) = HostStatusState::new(HashMap::new());
+    let (hoststatus, _) = HostStatusStore::new(HashMap::new());
 
     let app_state = AppState {
         config_path: path::PathBuf::from("demo"),
         config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
         hoststatus,
         ws_tx: broadcast::channel(1).0,
-        leases: LeaseState::new(LeaseMapRaw::default()).0,
+        leases: LeaseStore::new(LeaseMapRaw::default()).0,
         host_overrides: Arc::new(RwLock::new(HashMap::new())),
         host_install_info: Arc::new(RwLock::new(HashMap::new())),
         auth: Arc::new(
@@ -66,7 +66,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         runtime: RuntimeConfig::default(),
         db_pool: None,
         vapid_key: None,
-        operation_failures: OperationFailureState::new().0,
+        operation_failures: OperationFailureStore::new().0,
         online_since: Arc::new(RwLock::new(HashMap::new())),
     };
 
