@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router';
-import { Power, PowerOff } from 'lucide-solid';
+import { Power, PowerOff, TriangleAlert } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
@@ -88,7 +88,10 @@ const HostRow = ((props: { hostName: string }) => {
             data-has-lease={String(hasWebInterfaceLease())}
         >
             <th class="table-cell" scope="row">
-                <A href={`/hosts/${props.hostName}`} class="link block btn-height">
+                <A
+                    href={`/hosts/${props.hostName}`}
+                    class="link block btn-height"
+                >
                     {props.hostName}
                 </A>
             </th>
@@ -98,11 +101,15 @@ const HostRow = ((props: { hostName: string }) => {
                     when={state.operationFailures[props.hostName] !== undefined}
                 >
                     <span
-                        class="ml-1.5 text-xs text-amber-600 dark:text-[rgba(245,158,11,0.9)]"
+                        class="ml-1.5 inline-flex"
                         title={`Last ${state.operationFailures[props.hostName]?.operation} command failed`}
-                        aria-label={`Last ${state.operationFailures[props.hostName]?.operation} command failed`}
                     >
-                        ⚠
+                        <TriangleAlert
+                            size={16}
+                            class="text-amber-600 dark:text-[rgba(245,158,11,0.9)]"
+                            aria-label={`Last ${state.operationFailures[props.hostName]?.operation} command failed`}
+                            role="img"
+                        />
                     </span>
                 </Show>
             </td>

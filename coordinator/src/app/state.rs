@@ -62,7 +62,6 @@ pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 /// This is intentionally analogous to [`crate::app::LeaseStore`].
 ///
 /// The actual implementation is provided by [`SharedWatchStore`].
-
 impl SharedWatchStore<HostStatus> {
     /// Atomically begin a transition.
     ///

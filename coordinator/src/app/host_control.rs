@@ -225,7 +225,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                 .await;
 
             // Update the per-host operation failure record.
-            match &result {
+            match result {
                 Ok(_) => {
                     state.operation_failures.clear(&host).await;
                 }

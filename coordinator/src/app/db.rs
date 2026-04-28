@@ -477,16 +477,6 @@ pub(crate) async fn get_all_client_stats(
         .collect())
 }
 
-/// Retrieves statistics for a specific client.
-// this lint seems to have false negatives with pub(crate)
-// #[expect(
-//     clippy::missing_errors_doc,
-//     reason = "This function is only used in tests."
-// )]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "This function is only used in tests.")
-)]
 #[tracing::instrument(err)]
 pub(crate) async fn get_client_stats(
     pool: &DbPool,

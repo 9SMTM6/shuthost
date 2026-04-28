@@ -7,7 +7,7 @@
 
 mod validation;
 
-use core::time::Duration;
+use core::{iter, time::Duration};
 
 use axum::{
     Json,
@@ -107,12 +107,12 @@ async fn handle_m2m_lease_action(
     // Update client's last used timestamp
     if let Some(ref pool) = state.db_pool {
         match db::update_client_last_used(pool, &client_id, Utc::now()).await {
-            Ok(_) => {
-                let stats = db::get_client_stats(pool, &client_id).await;
-                match stats {
-                    Ok(Some(stats)) => {
+            Ok(()) => {
+                let info = db::get_client_stats(pool, &client_id).await;
+                match info {
+                    Ok(Some(info)) => {
                         if let Err(_err) = state.ws_tx.send(WsMessage::ClientStats(
-                            std::iter::once((client_id.clone(), stats)).collect(),
+                            iter::once((client_id.clone(), info)).collect(),
                         )) {
                             debug!("No Websocket Subscribers for client stats");
                         }

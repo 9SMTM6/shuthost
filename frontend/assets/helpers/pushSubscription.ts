@@ -238,7 +238,11 @@ export const subscribeToHostOnlineFor = async (
     await apiFetch('/api/push/subscribe-host-online-for', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: subJson, hostname, duration_secs: durationSecs }),
+        body: JSON.stringify({
+            subscription: subJson,
+            hostname,
+            duration_secs: durationSecs,
+        }),
     });
 };
 
@@ -266,8 +270,13 @@ export const checkHostOnlineForSubscription = async (
         `/api/push/subscribe-host-online-for?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
     );
     if (!resp.ok) return null;
-    const data = (await resp.json()) as { subscribed: boolean; duration_secs?: number };
-    return data.subscribed && data.duration_secs != null ? data.duration_secs : null;
+    const data = (await resp.json()) as {
+        subscribed: boolean;
+        duration_secs?: number;
+    };
+    return data.subscribed && data.duration_secs != null
+        ? data.duration_secs
+        : null;
 };
 
 /**
@@ -312,6 +321,10 @@ export const subscribeToHostOnlineForOneshot = async (
     await apiFetch('/api/push/subscribe-host-online-for-oneshot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: subJson, hostname, duration_secs: durationSecs }),
+        body: JSON.stringify({
+            subscription: subJson,
+            hostname,
+            duration_secs: durationSecs,
+        }),
     });
 };

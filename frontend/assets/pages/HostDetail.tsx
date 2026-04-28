@@ -291,7 +291,10 @@ type PermanentSubState =
     | { subscribed: false }
     | { subscribed: true; duration: number; unit: DurationUnit };
 
-const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) => {
+const NotifyDurationButton = (props: {
+    hostname: string;
+    isOnline: boolean;
+}) => {
     const [duration, setDuration] = createSignal(unitDefaults.minutes);
     const [unit, setUnit] = createSignal<DurationUnit>('minutes');
     const [durationModified, setDurationModified] = createSignal(false);
@@ -311,7 +314,9 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
 
     onMount(async () => {
         try {
-            const durationSecs = await checkHostOnlineForSubscription(props.hostname);
+            const durationSecs = await checkHostOnlineForSubscription(
+                props.hostname,
+            );
             if (durationSecs != null) {
                 // Pre-fill the UI with the existing subscription's duration.
                 let unit: DurationUnit = 'minutes';
@@ -481,7 +486,9 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
                     >
                         <Show
                             when={permanentLoading()}
-                            fallback={<RefreshCw size={16} aria-hidden="true" />}
+                            fallback={
+                                <RefreshCw size={16} aria-hidden="true" />
+                            }
                         >
                             <LoaderCircle
                                 size={16}
@@ -508,7 +515,9 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
                     })()}
                 >
                     <Switch>
-                        <Match when={isCheckingPermanent() || permanentLoading()}>
+                        <Match
+                            when={isCheckingPermanent() || permanentLoading()}
+                        >
                             <LoaderCircle
                                 size={16}
                                 class="animate-spin"
@@ -537,14 +546,19 @@ const NotifyDurationButton = (props: { hostname: string; isOnline: boolean }) =>
             </Show>
             <Show when={isPermanentlySubscribed()}>
                 {(() => {
-                    const sub = permanentSub() as { subscribed: true; duration: number; unit: string };
+                    const sub = permanentSub() as {
+                        subscribed: true;
+                        duration: number;
+                        unit: string;
+                    };
                     return (
                         <span
                             class="text-xs text-green-600 dark:text-[rgba(46,193,100,0.9)] inline-flex items-center gap-1"
                             aria-live="polite"
                         >
                             <BellRing size={12} aria-hidden="true" />
-                            Recurring notifications active (every {sub.duration} {sub.unit})
+                            Recurring notifications active (every {sub.duration}{' '}
+                            {sub.unit})
                         </span>
                     );
                 })()}
@@ -614,7 +628,9 @@ const HostInfoSection = (props: {
     isOnline: boolean;
 }) => {
     const lastOnline = props.hostStats?.lastOnline ?? null;
-    const agentVersion = props.hostStats ? props.hostStats.agentVersion ?? `<= 1.7.1` : "unknown";
+    const agentVersion = props.hostStats
+        ? (props.hostStats.agentVersion ?? `<= 1.7.1`)
+        : 'unknown';
 
     return (
         <section

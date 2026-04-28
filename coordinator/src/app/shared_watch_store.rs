@@ -5,7 +5,7 @@ pub(crate) type SharedWatchTx<T> = watch::Sender<Arc<T>>;
 pub(crate) type SharedWatchRx<T> = watch::Receiver<Arc<T>>;
 
 /// A store for controlled shared access to its values:
-/// 
+///
 /// Writes are serialized via a [`AsyncMutex`], and all
 /// mutations are published to a [`watch`] channel so background tasks can
 /// subscribe to changes.

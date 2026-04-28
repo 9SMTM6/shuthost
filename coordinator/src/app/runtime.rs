@@ -15,8 +15,9 @@ use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpStream, UdpSocket},
+    sync::RwLock,
     task::JoinSet,
-    time::{Instant, MissedTickBehavior, interval, timeout_at},
+    time::{Instant, MissedTickBehavior, interval, sleep, timeout_at},
 };
 use tracing::{debug, error, info, warn};
 
@@ -94,10 +95,10 @@ fn parse_install_info(resp: &str) -> Option<HostInstallInfo> {
             init_system = v.parse::<InitSystem>().ok();
         } else if let Some(v) = section.strip_prefix("os=") {
             os = v.parse::<OsType>().ok();
-        } else if let Some(v) = section.strip_prefix("script_path=") {
-            if !v.is_empty() {
-                script_path = Some(v.to_string());
-            }
+        } else if let Some(v) = section.strip_prefix("script_path=")
+            && !v.is_empty()
+        {
+            script_path = Some(v.to_string());
         }
     }
     Some(HostInstallInfo {
@@ -145,17 +146,17 @@ async fn maybe_update_host_install_info(
             error!(host = %hostname, "Failed to persist host install info: {e:#}");
         }
 
-        if let Ok(mut host_stats) = db::get_all_host_stats(pool).await {
-            if let Some(mut stats) = host_stats.remove(hostname) {
-                if state.hoststatus.get_current_state(hostname) == HostState::Online {
-                    stats.is_online = true;
-                }
-                if let Err(_err) = state.ws_tx.send(WsMessage::HostStats {
-                    host: hostname.to_string(),
-                    stats,
-                }) {
-                    debug!("No Websocket Subscribers for host stats");
-                }
+        if let Ok(mut host_stats) = db::get_all_host_stats(pool).await
+            && let Some(mut stats) = host_stats.remove(hostname)
+        {
+            if state.hoststatus.get_current_state(hostname) == HostState::Online {
+                stats.is_online = true;
+            }
+            if let Err(_err) = state.ws_tx.send(WsMessage::HostStats {
+                host: hostname.to_string(),
+                stats,
+            }) {
+                debug!("No Websocket Subscribers for host stats");
             }
         }
     }
@@ -204,6 +205,10 @@ pub(super) async fn poll_until_host_state(
 
 /// Start all background tasks for the HTTP server.
 /// Returns a [`JoinSet`] that owns all spawned tasks; dropping it aborts them all.
+#[expect(
+    clippy::too_many_lines,
+    reason = "This function is just a collection of task spawns, which is hard to break down further without unnecessary indirection."
+)]
 pub(super) fn start_background_tasks(
     state: &AppState,
     config_tx: &ConfigTx,
@@ -309,7 +314,7 @@ pub(super) fn start_background_tasks(
                     if prev.get(host) == Some(h_state) {
                         continue;
                     }
-                    match h_state {
+                    match *h_state {
                         HostState::Online => {
                             let now = Instant::now();
                             state.online_since.write().await.insert(host.clone(), now);
@@ -557,7 +562,7 @@ async fn poll_host_statuses(state: AppState) {
 async fn spawn_online_for_notifications(
     hostname: &str,
     session_start: Instant,
-    online_since: &Arc<tokio::sync::RwLock<std::collections::HashMap<String, Instant>>>,
+    online_since: &Arc<RwLock<HashMap<String, Instant>>>,
     pool: &db::DbPool,
     vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
 ) {
@@ -570,7 +575,7 @@ async fn spawn_online_for_notifications(
                 let vapid_key = vapid_key.clone();
                 let pool = pool.clone();
                 tokio::spawn(async move {
-                    tokio::time::sleep(duration).await;
+                    sleep(duration).await;
                     // Only fire if the host is still in the same online session.
                     if online_since.read().await.get(&hostname) != Some(&session_start) {
                         return;
