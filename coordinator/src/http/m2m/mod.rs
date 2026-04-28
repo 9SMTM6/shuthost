@@ -12,8 +12,8 @@ use core::{iter, time::Duration};
 use axum::{
     Json,
     extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
-    response::IntoResponse,
+    http::{HeaderMap, StatusCode as SC},
+    response::{IntoResponse, Response},
     routing::post,
 };
 use chrono::Utc;
@@ -23,10 +23,10 @@ use tracing::{debug, error};
 
 use crate::{
     app::{
-        AppState, HostControlError, HostState, LeaseSource, db, lookup_host_with_overrides,
+        AppState, HostControlError, HostState as HS, LeaseSource, db, lookup_host_with_overrides,
         poll_and_wait,
     },
-    http::api::{LeaseAction, UpdateLeaseError, update_lease},
+    http::api::{LeaseAction as LA, UpdateLeaseError, update_lease},
     websocket::WsMessage,
     wol,
 };
@@ -50,18 +50,14 @@ async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
             "broadcast": broadcast
         }))
         .into_response()),
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()),
+        Err(e) => Err((SC::INTERNAL_SERVER_ERROR, e.to_string()).into_response()),
     }
 }
 
 #[cfg(coverage)]
 #[axum::debug_handler]
 async fn test_wol() -> impl IntoResponse {
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Unimplemented in coverage",
-    )
-        .into_response()
+    (SC::INTERNAL_SERVER_ERROR, "Unimplemented in coverage").into_response()
 }
 
 #[derive(serde::Deserialize)]
@@ -92,7 +88,7 @@ pub(crate) struct LeaseActionQuery {
 #[axum::debug_handler]
 #[tracing::instrument(skip(headers, state, query))]
 async fn handle_m2m_lease_action(
-    Path((host, action)): Path<(String, LeaseAction)>,
+    Path((host, action)): Path<(String, LA)>,
     headers: HeaderMap,
     State(state): State<AppState>,
     Query(query): Query<LeaseActionQuery>,
@@ -103,53 +99,31 @@ async fn handle_m2m_lease_action(
     };
 
     tracing::info!(%client_id, "Accepted m2m request");
-
-    // Update client's last used timestamp
-    if let Some(ref pool) = state.db_pool {
-        match db::update_client_last_used(pool, &client_id, Utc::now()).await {
-            Ok(()) => {
-                let info = db::get_client_stats(pool, &client_id).await;
-                match info {
-                    Ok(Some(info)) => {
-                        if let Err(_err) = state.ws_tx.send(WsMessage::ClientStats(
-                            iter::once((client_id.clone(), info)).collect(),
-                        )) {
-                            debug!("No Websocket Subscribers for client stats");
-                        }
-                    }
-                    Ok(None) => {}
-                    Err(e) => tracing::error!("Failed to load updated client stats: {}", e),
-                }
-            }
-            Err(e) => tracing::error!("Failed to update client last used: {}", e),
-        }
-    }
+    update_client_usage(&state, &client_id).await;
 
     let lease_source = LeaseSource::Client(client_id);
-
     let is_async = query.r#async.unwrap_or(false);
-
-    use LeaseAction as LA;
-    use StatusCode as SC;
-    use UpdateLeaseError as ULE;
 
     let lease_set_empty = update_lease(&host, lease_source, action, &state)
         .await
-        .map_err(|e| match e {
-            ULE::HostNotFound { hostname: _ } => (
-                SC::NOT_FOUND,
-                format!("No configuration found for host {host}"),
-            ),
-            ULE::DatabaseError(_) => {
-                error!("Failed to update lease: {}", e);
-                (
-                    SC::INTERNAL_SERVER_ERROR,
-                    "Failed to update lease".to_string(),
-                )
+        .map_err(|error| {
+            use UpdateLeaseError as ULE;
+
+            match error {
+                ULE::HostNotFound { hostname: _ } => (
+                    SC::NOT_FOUND,
+                    format!("No configuration found for host {host}"),
+                ),
+                ULE::DatabaseError(_) => {
+                    error!("Failed to update lease: {}", error);
+                    (
+                        SC::INTERNAL_SERVER_ERROR,
+                        "Failed to update lease".to_string(),
+                    )
+                }
             }
         })?;
 
-    use HostState as HS;
     let ultimately_desired_state = if lease_set_empty {
         HS::Offline
     } else {
@@ -158,83 +132,104 @@ async fn handle_m2m_lease_action(
 
     let current_state = state.hoststatus.get_current_state(&host);
     if current_state == ultimately_desired_state {
-        // Short-circuit if the host is already in the desired state.
-        return Ok(match (action, ultimately_desired_state) {
-            (LA::Take, HS::Online) => "Lease taken, host is already online",
-            (LA::Release, HS::Offline) => "Lease released, host is already offline",
-            (LA::Release, HS::Online) => "Lease released, but host remains online",
-            (LA::Take, HS::Offline) => unreachable!("taking a lease on an offline host should not assure that the lease_set is not empty"),
-            (_, _) => unreachable!("we should've handled all possible combinations of (action, ultimately_desired_state) by this point"),
-        }
-        .into_response());
+        return Ok(current_state_response(action, ultimately_desired_state).into_response());
     }
+
     if is_async {
-        Ok(match action {
-            LA::Take => "Lease taken (async)",
-            LA::Release => "Lease released (async)",
-        }
-        .into_response())
-    } else {
-        // Lookup host config for per-host timeout values.
-        let Some(host_with_name) = lookup_host_with_overrides(&state, &host).await else {
-            return Err((
-                SC::NOT_FOUND,
-                format!("No configuration found for host {host}"),
-            ));
-        };
+        return Ok(async_response(action).into_response());
+    }
 
-        let timeout_secs = if ultimately_desired_state == HS::Online {
-            host_with_name
-                .host
-                .wake_timeout_secs
-                .unwrap_or(state.runtime.default_wake_timeout_secs)
-        } else {
-            host_with_name
-                .host
-                .shutdown_timeout_secs
-                .unwrap_or(state.runtime.default_shutdown_timeout_secs)
-        };
-        let deadline = Instant::now() + Duration::from_secs(timeout_secs);
-
-        match poll_and_wait(
-            &host_with_name,
-            &state.hoststatus,
-            ultimately_desired_state,
-            deadline,
-            &state.runtime,
-        )
+    perform_sync_wait(&state, &host, action, ultimately_desired_state)
         .await
-        {
+        .map(IntoResponse::into_response)
+}
+
+async fn update_client_usage(state: &AppState, client_id: &str) {
+    if let Some(ref pool) = state.db_pool {
+        match db::update_client_last_used(pool, client_id, Utc::now()).await {
             Ok(()) => {
-                // Host reached the desired state within the timeout.
-                Ok(match (action, ultimately_desired_state) {
-                    (LA::Take, HS::Online) => "Lease taken, host is now online",
-                    (LA::Release, HS::Offline) => "Lease released, host is now offline",
-                    _ => unreachable!("unexpected (action, ultimately_desired_state) combination"),
+                if let Ok(Some(info)) = db::get_client_stats(pool, client_id).await
+                    && let Err(_err) = state.ws_tx.send(WsMessage::ClientStats(
+                        iter::once((client_id.to_string(), info)).collect(),
+                    ))
+                {
+                    debug!("No Websocket Subscribers for client stats");
                 }
-                .into_response())
             }
-            Err(err) => {
-                use HostControlError as HCE;
-                Err((
-                    match err {
-                        HCE::NotFound(_) => SC::NOT_FOUND,
-                        HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
-                        HCE::OperationFailed { .. } => SC::INTERNAL_SERVER_ERROR,
-                    },
-                    err.to_string(),
-                ))
-            }
+            Err(e) => tracing::error!("Failed to update client last used: {}", e),
         }
     }
-    // In async mode, the lease map update already published a watch event;
-    // the reconciler background task will handle the host control action.
-    // Ok(match (action, desired_state) {
-    //     (LA::Take, HS::Online) => "Lease taken, host is online",
-    //     (LA::Take, HS::Waking) => "Lease taken (async)",
-    //     (LA::Release, HS::Online) => "Lease released, host remains online",
-    //     (LA::Release, HS::Offline) => "Lease released, host is offline",
-    //     (LA::Release, HS::ShuttingDown) => "Lease released (async)",
-    //     _ => unreachable!("unexpected (action, desired_state) combination"),
-    // })
+}
+
+fn current_state_response(action: LA, state: HS) -> &'static str {
+    match (action, state) {
+        (LA::Take, HS::Online) => "Lease taken, host is already online",
+        (LA::Release, HS::Offline) => "Lease released, host is already offline",
+        (LA::Release, HS::Online) => "Lease released, but host remains online",
+        (LA::Take, HS::Offline) => unreachable!(
+            "taking a lease on an offline host should not assure that the lease_set is not empty"
+        ),
+        _ => unreachable!("current_state_response can only be called for stable host states"),
+    }
+}
+
+const fn async_response(action: LA) -> &'static str {
+    match action {
+        LA::Take => "Lease taken (async)",
+        LA::Release => "Lease released (async)",
+    }
+}
+
+async fn perform_sync_wait(
+    state: &AppState,
+    host: &str,
+    action: LA,
+    ultimately_desired_state: HS,
+) -> Result<Response, (SC, String)> {
+    use HostControlError as HCE;
+
+    let Some(host_with_name) = lookup_host_with_overrides(state, host).await else {
+        return Err((
+            SC::NOT_FOUND,
+            format!("No configuration found for host {host}"),
+        ));
+    };
+
+    let timeout_secs = if ultimately_desired_state == HS::Online {
+        host_with_name
+            .host
+            .wake_timeout_secs
+            .unwrap_or(state.runtime.default_wake_timeout_secs)
+    } else {
+        host_with_name
+            .host
+            .shutdown_timeout_secs
+            .unwrap_or(state.runtime.default_shutdown_timeout_secs)
+    };
+    let deadline = Instant::now() + Duration::from_secs(timeout_secs);
+
+    poll_and_wait(
+        &host_with_name,
+        &state.hoststatus,
+        ultimately_desired_state,
+        deadline,
+        &state.runtime,
+    )
+    .await
+    .map(|()| {
+        match (action, ultimately_desired_state) {
+            (LA::Take, HS::Online) => "Lease taken, host is now online",
+            (LA::Release, HS::Offline) => "Lease released, host is now offline",
+            _ => unreachable!("unexpected (action, ultimately_desired_state) combination"),
+        }
+        .into_response()
+    })
+    .map_err(|err| {
+        let status = match err {
+            HCE::NotFound(_) => SC::NOT_FOUND,
+            HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
+            HCE::OperationFailed { .. } => SC::INTERNAL_SERVER_ERROR,
+        };
+        (status, err.to_string())
+    })
 }
