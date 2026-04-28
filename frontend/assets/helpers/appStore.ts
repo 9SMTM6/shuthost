@@ -73,6 +73,8 @@ export type OperationFailure = {
 // * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
 export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
+    | { type: 'ClientStats'; payload: Record<string, ClientStats> }
+    | { type: 'HostStats'; payload: { host: string; stats: HostStats } }
     | { type: 'ConfigChanged'; payload: DynamicConfig }
     | {
           type: 'Initial';
@@ -124,6 +126,27 @@ export const applyMessage = (message: WsMessage) => {
             setState(
                 produce((s) => {
                     s.leaseMap[message.payload.host] = message.payload.leases;
+                }),
+            );
+            break;
+        case 'ClientStats':
+            setState(
+                produce((s: AppState) => {
+                    if (s.dbData.status === 'available') {
+                        for (const [clientId, stats] of Object.entries(message.payload)) {
+                            s.dbData.payload.clientStats[clientId] = stats;
+                        }
+                    }
+                }),
+            );
+            break;
+        case 'HostStats':
+            setState(
+                produce((s: AppState) => {
+                    if (s.dbData.status === 'available') {
+                        s.dbData.payload.hostStats[message.payload.host] =
+                            message.payload.stats;
+                    }
                 }),
             );
             break;

@@ -19,7 +19,7 @@ use axum::{
 use chrono::Utc;
 use serde_json::json;
 use tokio::time::Instant;
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     app::{
@@ -27,6 +27,7 @@ use crate::{
         poll_and_wait,
     },
     http::api::{LeaseAction, UpdateLeaseError, update_lease},
+    websocket::WsMessage,
     wol,
 };
 
@@ -104,10 +105,24 @@ async fn handle_m2m_lease_action(
     tracing::info!(%client_id, "Accepted m2m request");
 
     // Update client's last used timestamp
-    if let Some(ref pool) = state.db_pool
-        && let Err(e) = db::update_client_last_used(pool, &client_id, Utc::now()).await
-    {
-        tracing::error!("Failed to update client last used: {}", e);
+    if let Some(ref pool) = state.db_pool {
+        match db::update_client_last_used(pool, &client_id, Utc::now()).await {
+            Ok(_) => {
+                let stats = db::get_client_stats(pool, &client_id).await;
+                match stats {
+                    Ok(Some(stats)) => {
+                        if let Err(_err) = state.ws_tx.send(WsMessage::ClientStats(
+                            std::iter::once((client_id.clone(), stats)).collect(),
+                        )) {
+                            debug!("No Websocket Subscribers for client stats");
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(e) => tracing::error!("Failed to load updated client stats: {}", e),
+                }
+            }
+            Err(e) => tracing::error!("Failed to update client last used: {}", e),
+        }
     }
 
     let lease_source = LeaseSource::Client(client_id);

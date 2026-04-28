@@ -57,6 +57,10 @@ pub enum DbDataState {
 pub enum WsMessage {
     /// Gets sent on host status changes
     HostStatus(HostStatus),
+    /// Gets sent when client stats are updated.
+    ClientStats(HashMap<String, ClientStats>),
+    /// Gets sent when host stats are updated.
+    HostStats { host: String, stats: HostStats },
     /// We watch for select config changes and update the `WebUI` to immediately
     /// reflect additions to hosts/clients.
     ConfigChanged {
