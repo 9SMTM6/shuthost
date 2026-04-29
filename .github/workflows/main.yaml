@@ -443,7 +443,6 @@ jobs:
     name: Test Installer Update (Alpine)
     runs-on: ubuntu-latest
     needs: [build-coordinator-alpine-only]
-    container: *openrc-container
     steps:
       - uses: *checkout
 
@@ -457,63 +456,10 @@ jobs:
         run: |
           chmod +x rehydrate/shuthost_coordinator
 
-      - name: Prepare OpenRC container
-        run: *openrc-prepare
-
-      - name: Configure loopback interface
+      - name: Run Alpine update test using Docker
         run: |
-          cat >/etc/network/interfaces <<'EOF'
-          auto lo
-          iface lo inet loopback
-          EOF
-
-      - name: Debug Alpine container networking
-        run: |
-          set -eux
-          ip -4 addr show
-          ip -4 route show
-          cat /etc/network/interfaces
-          python3 - <<'PY'
-          import socket
-          import threading
-          import time
-
-          PORT = 9999
-          received = []
-
-          sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-          sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-          sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-          sock.bind(('0.0.0.0', PORT))
-
-
-          def receiver():
-              try:
-                  data, addr = sock.recvfrom(4096)
-                  print('received', data, 'from', addr)
-                  received.append((data, addr))
-              except Exception as exc:
-                  print('recv error', exc)
-              finally:
-                  sock.close()
-
-          thread = threading.Thread(target=receiver, daemon=True)
-          thread.start()
-
-          time.sleep(1)
-
-          sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-          sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-          sender.sendto(b'ping', ('255.255.255.255', PORT))
-          sender.close()
-
-          thread.join(5)
-          print('done, received count:', len(received))
-          PY
-
-      - name: Run installer update test
-        run: |
-          ./scripts/tests/installer-update-nix.sh ./rehydrate/shuthost_coordinator
+          chmod +x ./scripts/tests/run-update-alpine.sh
+          ./scripts/tests/run-update-alpine.sh ./rehydrate/shuthost_coordinator
 
   test-installer-update-macos:
     name: Test Installer Update (macOS)
