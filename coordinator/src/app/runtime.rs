@@ -568,12 +568,11 @@ async fn spawn_online_for_notifications(
                     if online_since.read().await.get(&hostname) != Some(&session_start) {
                         return;
                     }
-                    let payload = serde_json::json!({
-                        "title": "ShutHost",
-                        "body": format!("{hostname} has been online for {} seconds", duration_secs),
-                        "data": { "hostname": hostname },
-                    })
-                    .to_string();
+                    let payload = push::NotificationPayload::with_data(
+                        format!("{hostname} has been online for {duration_secs} seconds"),
+                        push::HostSpecificNotificationData { hostname },
+                    )
+                    .into_json();
                     push::send_push_notifications(&vapid_key, &pool, &[sub], &payload).await;
                 });
             }
@@ -625,12 +624,13 @@ fn spawn_push_notifications_for_unscheduled(
         tokio::spawn(async move {
             match db::get_subscriptions_for_host_unscheduled(&pool, &host_name).await {
                 Ok(subs) if !subs.is_empty() => {
-                    let payload = serde_json::json!({
-                        "title": "ShutHost",
-                        "body": body,
-                        "data": { "hostname": host_name },
-                    })
-                    .to_string();
+                    let payload = push::NotificationPayload::with_data(
+                        body,
+                        push::HostSpecificNotificationData {
+                            hostname: host_name,
+                        },
+                    )
+                    .into_json();
                     push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
                 }
                 Ok(_) => {}

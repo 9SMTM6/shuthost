@@ -244,12 +244,11 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                         tokio::spawn(async move {
                             match db::get_subscriptions_for_host_operation_failed(&pool, &host_clone).await {
                                 Ok(subs) if !subs.is_empty() => {
-                                    let payload = serde_json::json!({
-                                        "title": "ShutHost",
-                                        "body": body,
-                                        "data": { "hostname": host_clone },
-                                    })
-                                    .to_string();
+                                    let payload = push::NotificationPayload::with_data(
+                                        body,
+                                        push::HostSpecificNotificationData { hostname: host_clone },
+                                    )
+                                    .into_json();
                                     push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
                                 }
                                 Ok(_) => {}

@@ -235,19 +235,23 @@ sw.addEventListener('push', (event) => {
 sw.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
+    const hostname = event.notification.data?.['hostname'];
+    const targetUrl = new URL(
+        hostname ? `/hosts/${encodeURIComponent(String(hostname))}` : '/',
+        sw.registration.scope,
+    ).href;
+
     event.waitUntil(
         sw.clients
             .matchAll({ type: 'window', includeUncontrolled: true })
-            .then((clientList) => {
-                for (const client of clientList) {
-                    if ('focus' in client) {
-                        return client.focus();
+            .then(async (clientList) => {
+                for (const windowClient of clientList) {
+                    if (windowClient.url !== targetUrl) {
+                        await windowClient.navigate?.(targetUrl);
                     }
+                    return windowClient.focus();
                 }
-                if (sw.clients.openWindow) {
-                    return sw.clients.openWindow(sw.registration.scope);
-                }
-                return undefined;
+                return sw.clients.openWindow(targetUrl);
             }),
     );
 });

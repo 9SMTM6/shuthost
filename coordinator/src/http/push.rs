@@ -140,6 +140,39 @@ struct CheckHostOnlineForResponse {
 }
 
 #[derive(Serialize)]
+pub(crate) struct HostSpecificNotificationData {
+    pub(crate) hostname: String,
+}
+
+#[derive(Serialize)]
+pub(crate) struct NotificationPayload<D = ()>
+where
+    D: Serialize,
+{
+    title: &'static str,
+    body: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<D>,
+}
+
+impl<D> NotificationPayload<D>
+where
+    D: Serialize,
+{
+    pub(crate) const fn with_data(body: String, data: D) -> Self {
+        Self {
+            title: "ShutHost",
+            body,
+            data: Some(data),
+        }
+    }
+
+    pub(crate) fn into_json(self) -> String {
+        serde_json::to_string(&self).expect("push notification payload serialization must not fail")
+    }
+}
+
+#[derive(Serialize)]
 struct VapidPublicKeyResponse {
     #[serde(rename = "publicKey")]
     public_key: String,
@@ -452,12 +485,11 @@ async fn subscribe_host_online_for_oneshot(
         if online_since.read().await.get(&hostname) != Some(&session_start) {
             return;
         }
-        let payload = serde_json::json!({
-            "title": "ShutHost",
-            "body": format!("{hostname} has been online for {} seconds", duration_secs),
-            "data": { "hostname": hostname },
-        })
-        .to_string();
+        let payload = NotificationPayload::with_data(
+            format!("{hostname} has been online for {duration_secs} seconds"),
+            HostSpecificNotificationData { hostname },
+        )
+        .into_json();
         send_push_notifications(&vapid_key, &pool, &[sub], &payload).await;
     });
 
