@@ -34,7 +34,7 @@ import {
     unsubscribeFromHostUnscheduled,
 } from '../helpers/pushSubscription';
 import type { AnyComponent } from '../helpers/utils';
-import { formatRelativeTimestamp } from '../helpers/utils';
+import { formatRelativeTimestamp, safeExternalUrl } from '../helpers/utils';
 
 type ClientLease = { type: 'Client'; value: string };
 
@@ -264,6 +264,25 @@ const NotifyOperationFailedButton = (props: { hostname: string }) => {
                 class="text-xs text-[#616161] dark:text-[#9d9d9d] text-center max-w-[20rem] touch-description"
             >
                 {description}
+            </p>
+            <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] text-center max-w-[20rem]">
+                Experimental: subscriptions for failed operations are still experimental.
+                <a
+                    class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
+                    href={
+                        safeExternalUrl(
+                            `${buildData.repository}/issues/new?title=${encodeURIComponent(
+                                `Feedback: failed operations subscription for ${props.hostname}`,
+                            )}&body=${encodeURIComponent(
+                                'Describe what happened and include steps to reproduce if possible.',
+                            )}`,
+                        )
+                    }
+                    target="_blank"
+                    rel="external noopener noreferrer"
+                >
+                    Give feedback
+                </a>
             </p>
             <Show when={error() !== null}>
                 <span
@@ -534,6 +553,25 @@ const NotifyDurationButton = (props: {
                     {isPermanentlySubscribed() ? 'unsubscribe' : 'always'}
                 </button>
             </div>
+            <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] text-center max-w-[20rem]">
+                Experimental: recurring and one-time "notify after online" subscriptions are still experimental.
+                <a
+                    class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
+                    href={
+                        safeExternalUrl(
+                            `${buildData.repository}/issues/new?title=${encodeURIComponent(
+                                `Feedback: notify-after-online subscription for ${props.hostname}`,
+                            )}&body=${encodeURIComponent(
+                                'Describe what happened and include steps to reproduce if possible.',
+                            )}`,
+                        )
+                    }
+                    target="_blank"
+                    rel="external noopener noreferrer"
+                >
+                    Give feedback
+                </a>
+            </p>
             {/* Feedback */}
             <Show when={oneshotSuccess()}>
                 <span
@@ -710,6 +748,25 @@ const HostUpdateCommands = (props: { hostStats: HostStats | undefined }) => {
             <div class="mt-3 pt-3 border-t border-[#e5e5e5] dark:border-[#3e3e42]">
                 <p class="text-sm font-medium text-black dark:text-[#cccccc] mb-1">
                     Update agent
+                </p>
+                <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-2">
+                    Experimental: agent updates — self-extracting variants especially — are experimental; use with caution.
+                    <a
+                        class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
+                        href={
+                            safeExternalUrl(
+                                `${buildData.repository}/issues/new?title=${encodeURIComponent(
+                                    'Feedback: agent update (self-extracting)',
+                                )}&body=${encodeURIComponent(
+                                    'Describe what happened and include steps to reproduce if possible.',
+                                )}`,
+                            )
+                        }
+                        target="_blank"
+                        rel="external noopener noreferrer"
+                    >
+                        Give feedback
+                    </a>
                 </p>
                 <Show when={updateCmds?.sh != null}>
                     <Show when={updateCmds?.ps1 != null}>
