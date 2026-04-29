@@ -17,6 +17,19 @@ test.describe('main page(s)', () => {
         await expect(page.locator('body')).toHaveScreenshot(`at_hosts.png`);
     });
 
+    test('host detail page', async ({ page }) => {
+        await page.goto(`${base}/hosts/archive`);
+        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('section[aria-labelledby="host-info-title"]', {
+            state: 'visible',
+        });
+        await sanitizeEnvironmentDependents(page);
+        await sanitizeVersion(page);
+        await expect(page.locator('#main-content')).toHaveScreenshot(
+            `at_host_detail.png`,
+        );
+    });
+
     test('expanded host install', async ({ page }) => {
         await page.goto(`${base}/hosts`);
         await expand_and_sanitize_host_install(page, cfg);
