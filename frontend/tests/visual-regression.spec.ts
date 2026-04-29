@@ -20,9 +20,12 @@ test.describe('main page(s)', () => {
     test('host detail page', async ({ page }) => {
         await page.goto(`${base}/hosts/archive`);
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('section[aria-labelledby="host-info-title"]', {
-            state: 'visible',
-        });
+        await page.waitForSelector(
+            'section[aria-labelledby="host-info-title"]',
+            {
+                state: 'visible',
+            },
+        );
         await sanitizeEnvironmentDependents(page);
         await sanitizeVersion(page);
         await expect(page.locator('#main-content')).toHaveScreenshot(

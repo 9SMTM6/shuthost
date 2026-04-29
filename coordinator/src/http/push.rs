@@ -10,7 +10,7 @@ use tokio::time::sleep;
 use axum::{
     Router,
     extract::{Query, State},
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     routing::{get, post},
 };
 use axum_extra::{TypedHeader, headers::ContentType};
@@ -102,21 +102,27 @@ struct CheckHostSubscriptionResponse {
 
 const MAX_HOST_ONLINE_FOR_DURATION_SECS: i64 = 86_400 * 30; // 30 days
 
-fn validate_host_online_for_duration_secs(
-    duration_secs: i64,
-) -> Result<u64, axum::response::Response> {
+fn validate_host_online_for_duration_secs(duration_secs: i64) -> Result<u64, Box<Response>> {
     if duration_secs <= 0 {
-        return Err((StatusCode::BAD_REQUEST, "duration_secs must be greater than 0").into_response());
+        return Err(Box::new(
+            (
+                StatusCode::BAD_REQUEST,
+                "duration_secs must be greater than 0",
+            )
+                .into_response(),
+        ));
     }
     if duration_secs > MAX_HOST_ONLINE_FOR_DURATION_SECS {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            "duration_secs must be 30 days or less",
-        )
-        .into_response());
+        return Err(Box::new(
+            (
+                StatusCode::BAD_REQUEST,
+                "duration_secs must be 30 days or less",
+            )
+                .into_response(),
+        ));
     }
 
-    Ok(duration_secs as u64)
+    Ok(duration_secs.cast_unsigned())
 }
 
 #[derive(Deserialize)]
@@ -337,11 +343,13 @@ async fn check_host_online_for_subscription(
 async fn subscribe_host_online_for(
     State(state): State<AppState>,
     axum::Json(body): axum::Json<HostOnlineForRequest>,
-) -> axum::response::Response {
+) -> Response {
     let pool = require_db_pool!(response; state);
 
-    if let Err(error_response) = validate_host_online_for_duration_secs(body.duration_secs).map(|_| ()) {
-        return error_response;
+    if let Err(error_response) =
+        validate_host_online_for_duration_secs(body.duration_secs).map(|_| ())
+    {
+        return *error_response;
     }
 
     let sub_id = match db::upsert_push_subscription(
@@ -395,14 +403,14 @@ async fn unsubscribe_host_online_for(
 async fn subscribe_host_online_for_oneshot(
     State(state): State<AppState>,
     axum::Json(body): axum::Json<HostOnlineForRequest>,
-) -> axum::response::Response {
+) -> Response {
     let pool = require_db_pool!(response; state);
     let pool = pool.clone();
 
     let duration_secs = body.duration_secs;
     let duration = match validate_host_online_for_duration_secs(duration_secs) {
         Ok(duration) => duration,
-        Err(error_response) => return error_response,
+        Err(error_response) => return *error_response,
     };
 
     let Some(vapid_key) = state.vapid_key.clone() else {
@@ -425,7 +433,6 @@ async fn subscribe_host_online_for_oneshot(
     let duration = Duration::from_secs(duration);
     let online_since = state.online_since.clone();
     let hostname = body.hostname.clone();
-    let duration_secs = body.duration_secs;
 
     // Upsert the push subscription so future sends work correctly.
     if let Err(e) = db::upsert_push_subscription(
