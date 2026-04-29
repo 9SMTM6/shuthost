@@ -100,6 +100,25 @@ struct CheckHostSubscriptionResponse {
     subscribed: bool,
 }
 
+const MAX_HOST_ONLINE_FOR_DURATION_SECS: i64 = 86_400 * 30; // 30 days
+
+fn validate_host_online_for_duration_secs(
+    duration_secs: i64,
+) -> Result<u64, axum::response::Response> {
+    if duration_secs <= 0 {
+        return Err((StatusCode::BAD_REQUEST, "duration_secs must be greater than 0").into_response());
+    }
+    if duration_secs > MAX_HOST_ONLINE_FOR_DURATION_SECS {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "duration_secs must be 30 days or less",
+        )
+        .into_response());
+    }
+
+    Ok(duration_secs as u64)
+}
+
 #[derive(Deserialize)]
 struct HostOnlineForRequest {
     subscription: PushSubscriptionJson,
@@ -318,8 +337,12 @@ async fn check_host_online_for_subscription(
 async fn subscribe_host_online_for(
     State(state): State<AppState>,
     axum::Json(body): axum::Json<HostOnlineForRequest>,
-) -> impl IntoResponse {
-    let pool = require_db_pool!(state);
+) -> axum::response::Response {
+    let pool = require_db_pool!(response; state);
+
+    if let Err(error_response) = validate_host_online_for_duration_secs(body.duration_secs).map(|_| ()) {
+        return error_response;
+    }
 
     let sub_id = match db::upsert_push_subscription(
         pool,
@@ -332,7 +355,7 @@ async fn subscribe_host_online_for(
         Ok(id) => id,
         Err(e) => {
             error!("Failed to upsert push subscription: {e:#}");
-            return StatusCode::INTERNAL_SERVER_ERROR;
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
 
@@ -340,10 +363,10 @@ async fn subscribe_host_online_for(
         db::subscribe_host_online_for(pool, sub_id, &body.hostname, body.duration_secs).await
     {
         error!("Failed to subscribe to host online-for events: {e:#}");
-        return StatusCode::INTERNAL_SERVER_ERROR;
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    StatusCode::NO_CONTENT
+    StatusCode::NO_CONTENT.into_response()
 }
 
 /// Removes the online-for subscription link for a specific endpoint + host pair.
@@ -372,17 +395,24 @@ async fn unsubscribe_host_online_for(
 async fn subscribe_host_online_for_oneshot(
     State(state): State<AppState>,
     axum::Json(body): axum::Json<HostOnlineForRequest>,
-) -> impl IntoResponse {
-    let pool = require_db_pool!(state);
+) -> axum::response::Response {
+    let pool = require_db_pool!(response; state);
     let pool = pool.clone();
+
+    let duration_secs = body.duration_secs;
+    let duration = match validate_host_online_for_duration_secs(duration_secs) {
+        Ok(duration) => duration,
+        Err(error_response) => return error_response,
+    };
+
     let Some(vapid_key) = state.vapid_key.clone() else {
-        return StatusCode::SERVICE_UNAVAILABLE;
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
 
     let session_start = {
         let guard = state.online_since.read().await;
         let Some(&instant) = guard.get(&body.hostname) else {
-            return StatusCode::CONFLICT;
+            return StatusCode::CONFLICT.into_response();
         };
         instant
     };
@@ -392,7 +422,7 @@ async fn subscribe_host_online_for_oneshot(
         p256dh: body.subscription.keys.p256dh.clone(),
         auth: body.subscription.keys.auth.clone(),
     };
-    let duration = Duration::from_secs(u64::try_from(body.duration_secs).unwrap_or(0));
+    let duration = Duration::from_secs(duration);
     let online_since = state.online_since.clone();
     let hostname = body.hostname.clone();
     let duration_secs = body.duration_secs;
@@ -407,7 +437,7 @@ async fn subscribe_host_online_for_oneshot(
     .await
     {
         error!("Failed to upsert push subscription for oneshot: {e:#}");
-        return StatusCode::INTERNAL_SERVER_ERROR;
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
     tokio::spawn(async move {
@@ -424,7 +454,7 @@ async fn subscribe_host_online_for_oneshot(
         send_push_notifications(&vapid_key, &pool, &[sub], &payload).await;
     });
 
-    StatusCode::NO_CONTENT
+    StatusCode::NO_CONTENT.into_response()
 }
 
 // ──────────────────────────────────────────────
