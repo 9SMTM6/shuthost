@@ -210,8 +210,6 @@ pub(super) fn start_background_tasks(
 ) -> JoinSet<()> {
     let mut tasks = JoinSet::new();
 
-    tasks.spawn(poll_host_statuses(state.clone()));
-
     tasks.spawn(watch_config_file(
         state.config_path.clone(),
         config_tx.clone(),
@@ -247,6 +245,9 @@ pub(super) fn start_background_tasks(
         state.db_pool.clone(),
         state.vapid_key.clone(),
     ));
+
+    // Spawn this last since other tasks may depend on some changes triggered by this task, e.g. last-online.
+    tasks.spawn(poll_host_statuses(state.clone()));
 
     tasks
 }
