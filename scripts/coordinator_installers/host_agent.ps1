@@ -216,6 +216,10 @@ try {
         Test-WolPacketReachability
 
         if ($Update) {
+            if ($InstallerArgs.Length -gt 0) {
+                Write-Error "Update mode does not accept additional install arguments."
+                exit 1
+            }
             if ($ScriptPath) {
                 Run-As-Elevated "./$script:FILENAME update --script-path `"$ScriptPath`""
             } else {

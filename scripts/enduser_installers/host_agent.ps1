@@ -13,6 +13,8 @@ param(
     [switch]$InstallHelp,
     [Parameter(Mandatory=$false)]
     [switch]$Update,
+    [Parameter(Mandatory=$false)]
+    [string]$ScriptPath,
     [Parameter(ValueFromRemainingArguments=$true)]
     [string[]]$InstallerArgs
 )
@@ -28,6 +30,7 @@ function Print-Help {
     Write-Host "  -Help            Show this help message."
     Write-Host "  -InstallHelp     Pass --help to the host agent install/update subcommand and exit."
     Write-Host "  -Update          Update an already installed agent in place instead of installing."
+    Write-Host "  -ScriptPath <path>   Path to the self-extracting script (update mode only; passed to 'update --script-path')"
     Write-Host "  <install_args>    Pass additional arguments to the agent install subcommand."
     Write-Host "                   Example: --init-system=self-extracting-pwsh"
     Write-Host "                   Do NOT pass a bare '--' (PowerShell treats it as a parameter name)."
@@ -36,6 +39,11 @@ function Print-Help {
 }
 
 if ($Help) { Print-Help; exit 0 }
+
+if (-not $Update -and $ScriptPath) {
+    Write-Error "-ScriptPath may only be used with -Update"
+    exit 1
+}
 
 # This script can be configured with parameters to specify a release tag or branch.
 
@@ -206,7 +214,11 @@ try {
                 Write-Error "Update mode does not accept additional install arguments."
                 exit 1
             }
-            Run-As-Elevated "./$BINARY_NAME update"
+            if ($ScriptPath) {
+                Run-As-Elevated "./$BINARY_NAME update --script-path `"$ScriptPath`""
+            } else {
+                Run-As-Elevated "./$BINARY_NAME update"
+            }
         } else {
             $installCmd = "./$BINARY_NAME install"
             if ($InstallerArgs.Length -gt 0) {

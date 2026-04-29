@@ -10,13 +10,14 @@ if [ -f "$SCRIPT_DIR/../helpers.sh" ] || [ -f "$SCRIPT_DIR/helpers.sh" ]; then
 fi
 
 print_help() {
-    echo "Usage: $0 [-t tag] [-b branch] [-u] [-i] [-h] [-- <binary-args>]"
+    echo "Usage: $0 [-t tag] [-b branch] [-u] [-i] [-h] [--script-path PATH] [-- <binary-args>]"
     echo "Install or update ShutHost host agent binary."
     echo "Options:"
     echo "  -t tag       Specify a release tag to download."
     echo "  -b branch    Specify a branch; tag will be 'nightly_release<branch>'."
     echo "  -u           Update an already installed agent in place instead of installing."
     echo "  -i           Pass --help to the host agent install/update subcommand and exit."
+    echo "  --script-path PATH  Path to the self-extracting script (update mode only; passed to 'update --script-path')"
     echo "  -h           Show this help message."
     echo "  -- <args>    Pass additional arguments to the agent install subcommand."
     echo "               Use -i to see available install subcommand arguments."
@@ -41,6 +42,7 @@ TAG=""
 BRANCH=""
 INSTALL_HELP=false
 UPDATE_MODE=false
+SCRIPT_PATH=""
 while getopts "t:b:ihu" opt; do
     case $opt in
         t) TAG="$OPTARG" ;;
@@ -65,7 +67,33 @@ if [ "$shift_count" -lt 0 ]; then
 fi
 shift "$shift_count"
 
-# Parse binary args (remaining args after literal --)
+# Parse optional update-specific options and binary args (remaining args after literal --)
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --script-path=*)
+            SCRIPT_PATH="${1#--script-path=}"
+            shift
+            ;;
+        --script-path)
+            shift
+            if [ $# -eq 0 ]; then
+                echo "Error: --script-path requires an argument." >&2
+                print_help
+                exit 1
+            fi
+            SCRIPT_PATH="$1"
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+ done
+
 BINARY_ARGS=""
 if [ $# -gt 0 ]; then
     if [ "$1" = "--" ]; then
@@ -76,6 +104,11 @@ if [ $# -gt 0 ]; then
         print_help
         exit 1
     fi
+fi
+
+if [ -n "$SCRIPT_PATH" ] && [ "$UPDATE_MODE" != true ]; then
+    echo "Error: --script-path may only be used with -u." >&2
+    exit 1
 fi
 
 echo "ShutHost Host Agent Binary Installer"
@@ -136,7 +169,11 @@ if $INSTALL_HELP; then
                 echo "Error: update mode does not accept additional install arguments." >&2
                 exit 1
             fi
-            run_as_elevated ./shuthost_host_agent update
+            if [ -n "$SCRIPT_PATH" ]; then
+                run_as_elevated ./shuthost_host_agent update --script-path "$SCRIPT_PATH"
+            else
+                run_as_elevated ./shuthost_host_agent update
+            fi
         else
             # shellcheck disable=SC2086
             run_as_elevated ./shuthost_host_agent install $BINARY_ARGS
