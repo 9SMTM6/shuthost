@@ -456,6 +456,20 @@ jobs:
         run: |
           chmod +x rehydrate/shuthost_coordinator
 
+      - name: Download Alpine host_agent binary
+        uses: *download-artifact
+        with:
+          name: host_agent-x86_64-unknown-linux-musl
+          path: ./rehydrate
+
+      - name: Rehydrate host_agent into target dir
+        run: |
+          set -eux
+          mkdir -p target/x86_64-unknown-linux-musl/release
+          chmod +x ./rehydrate/shuthost_host_agent || true
+          cp ./rehydrate/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/shuthost_host_agent
+          cp ./rehydrate/shuthost_host_agent ./target/debug/shuthost_host_agent
+
       - name: Run Alpine update test using Docker
         run: |
           chmod +x ./scripts/tests/run-update-alpine.sh
