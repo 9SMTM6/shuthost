@@ -406,10 +406,8 @@ jobs:
 
   test-installer-update-alpine:
     name: Test Installer Update (Alpine)
-    if: false # skipping for now, seems to be in some kind of deadlock or some other stuck condition.
     runs-on: ubuntu-latest
     needs: [build-coordinators]
-    container: *openrc-container
     steps:
       - uses: *checkout
 
@@ -423,19 +421,9 @@ jobs:
         run: |
           chmod +x rehydrate/shuthost_coordinator
 
-      - name: Prepare OpenRC container
-        run: *openrc-prepare
-
-      - name: Configure loopback interface
+      - name: Run Alpine update test using Docker
         run: |
-          cat >/etc/network/interfaces <<'EOF'
-          auto lo
-          iface lo inet loopback
-          EOF
-
-      - name: Run installer update test
-        run: |
-          ./scripts/tests/installer-update-nix.sh ./rehydrate/shuthost_coordinator
+          ./scripts/tests/run-update-alpine.sh ./rehydrate/shuthost_coordinator
 
   test-installer-update-macos:
     name: Test Installer Update (macOS)
