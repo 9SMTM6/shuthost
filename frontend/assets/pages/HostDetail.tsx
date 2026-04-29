@@ -122,7 +122,7 @@ const NotifyUnscheduledButton = (props: { hostname: string }) => {
         <div class="flex flex-col items-center gap-1">
             <button
                 type="button"
-                class={`btn sm:px-5 sm:py-3 sm:text-base ${isSubscribed() ? 'btn-red' : 'btn-green'}`}
+                class={`btn btn-height sm:px-5 sm:py-3 sm:text-base ${isSubscribed() ? 'btn-red' : 'btn-green'}`}
                 disabled={isChecking() || loading()}
                 onClick={handleClick}
                 aria-describedby="notify-unscheduled-description"
@@ -229,7 +229,7 @@ const NotifyOperationFailedButton = (props: { hostname: string }) => {
         <div class="flex flex-col items-center gap-1">
             <button
                 type="button"
-                class={`btn sm:px-5 sm:py-3 sm:text-base ${
+                class={`btn btn-height sm:px-5 sm:py-3 sm:text-base ${
                     isSubscribed() ? 'btn-red' : 'btn-green'
                 }`}
                 disabled={isChecking() || loading()}
@@ -266,18 +266,17 @@ const NotifyOperationFailedButton = (props: { hostname: string }) => {
                 {description}
             </p>
             <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] text-center max-w-[20rem]">
-                Experimental: subscriptions for failed operations are still experimental.
+                Experimental: subscriptions for failed operations are still
+                experimental.
                 <a
                     class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
-                    href={
-                        safeExternalUrl(
-                            `${buildData.repository}/issues/new?title=${encodeURIComponent(
-                                `Feedback: failed operations subscription for ${props.hostname}`,
-                            )}&body=${encodeURIComponent(
-                                'Describe what happened and include steps to reproduce if possible.',
-                            )}`,
-                        )
-                    }
+                    href={safeExternalUrl(
+                        `${buildData.repository}/issues/new?title=${encodeURIComponent(
+                            `Feedback: failed operations subscription for ${props.hostname}`,
+                        )}&body=${encodeURIComponent(
+                            'Describe what happened and include steps to reproduce if possible.',
+                        )}`,
+                    )}
                     target="_blank"
                     rel="external noopener noreferrer"
                 >
@@ -520,7 +519,7 @@ const NotifyDurationButton = (props: {
                 </Show>
                 <button
                     type="button"
-                    class={`btn sm:px-4 sm:py-2 sm:text-base ${
+                    class={`btn btn-height sm:px-4 sm:py-2 sm:text-base ${
                         isPermanentlySubscribed() ? 'btn-red' : 'btn-green'
                     }`}
                     disabled={isCheckingPermanent() || permanentLoading()}
@@ -554,18 +553,17 @@ const NotifyDurationButton = (props: {
                 </button>
             </div>
             <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] text-center max-w-[20rem]">
-                Experimental: recurring and one-time "notify after online" subscriptions are still experimental.
+                Experimental: recurring and one-time "notify after online"
+                subscriptions are still experimental.
                 <a
                     class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
-                    href={
-                        safeExternalUrl(
-                            `${buildData.repository}/issues/new?title=${encodeURIComponent(
-                                `Feedback: notify-after-online subscription for ${props.hostname}`,
-                            )}&body=${encodeURIComponent(
-                                'Describe what happened and include steps to reproduce if possible.',
-                            )}`,
-                        )
-                    }
+                    href={safeExternalUrl(
+                        `${buildData.repository}/issues/new?title=${encodeURIComponent(
+                            `Feedback: notify-after-online subscription for ${props.hostname}`,
+                        )}&body=${encodeURIComponent(
+                            'Describe what happened and include steps to reproduce if possible.',
+                        )}`,
+                    )}
                     target="_blank"
                     rel="external noopener noreferrer"
                 >
@@ -750,18 +748,17 @@ const HostUpdateCommands = (props: { hostStats: HostStats | undefined }) => {
                     Update agent
                 </p>
                 <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-2">
-                    Experimental: agent updates — self-extracting variants especially — are experimental; use with caution.
+                    Experimental: agent updates — self-extracting variants
+                    especially — are experimental; use with caution.
                     <a
                         class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
-                        href={
-                            safeExternalUrl(
-                                `${buildData.repository}/issues/new?title=${encodeURIComponent(
-                                    'Feedback: agent update (self-extracting)',
-                                )}&body=${encodeURIComponent(
-                                    'Describe what happened and include steps to reproduce if possible.',
-                                )}`,
-                            )
-                        }
+                        href={safeExternalUrl(
+                            `${buildData.repository}/issues/new?title=${encodeURIComponent(
+                                'Feedback: agent update (self-extracting)',
+                            )}&body=${encodeURIComponent(
+                                'Describe what happened and include steps to reproduce if possible.',
+                            )}`,
+                        )}
                         target="_blank"
                         rel="external noopener noreferrer"
                     >
