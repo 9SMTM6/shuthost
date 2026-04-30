@@ -85,7 +85,6 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         --)
-            shift
             break
             ;;
         *)
@@ -98,12 +97,15 @@ BINARY_ARGS=""
 if [ $# -gt 0 ]; then
     if [ "$1" = "--" ]; then
         shift
-        BINARY_ARGS="$*"
-    else
-        echo "Unexpected arguments: $*" >&2
-        print_help
-        exit 1
     fi
+    if [ $# -gt 0 ]; then
+        BINARY_ARGS="$*"
+    fi
+fi
+
+if [ "$UPDATE_MODE" = true ] && [ -n "$BINARY_ARGS" ]; then
+    echo "Error: update mode does not accept additional install arguments." >&2
+    exit 1
 fi
 
 if [ -n "$SCRIPT_PATH" ] && [ "$UPDATE_MODE" != true ]; then
