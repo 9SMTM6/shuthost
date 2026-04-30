@@ -12,17 +12,22 @@ export PORT="{ port }"
 export BROADCAST_PORT="{ broadcast_port }"
 export SHUTDOWN_COMMAND="{ shutdown_command }"
 
+# Resolve $0 to a canonical absolute path.
+# This avoids passing a relative script path to --script-path, which the
+# extracted binary requires for self-extracting update/reload operations.
+SCRIPT_PATH="$(cd -- "$(dirname -- "$0")" >/dev/null 2>&1 && pwd -P)/$(basename -- "$0")"
+
 OUT=$(mktemp /tmp/selfbin.shuthost_host_agent.XXXXXX)
 BINARY_PAYLOAD="{ encoded }"
 echo "$BINARY_PAYLOAD" | base64 -d > "$OUT"
 chmod +x "$OUT"
 if [ "$#" -gt 0 ] && [ "${1#-}" = "$1" ]; then
     if [ "$1" = "generate-direct-control" ] || [ "$1" = "registration" ]; then
-        "$OUT" "$@" --script-path "$0" --init-system self-extracting-shell
+        "$OUT" "$@" --script-path "$SCRIPT_PATH" --init-system self-extracting-shell
     else
         "$OUT" "$@"
     fi
 else
-    nohup "$OUT" service --port="$PORT" --broadcast-port="$BROADCAST_PORT" --shutdown-command="$SHUTDOWN_COMMAND" --hostname="$SHUTHOST_HOSTNAME" "$@" --script-path "$0" --init-system self-extracting-shell >"$OUT.log" 2>&1 &
+    nohup "$OUT" service --port="$PORT" --broadcast-port="$BROADCAST_PORT" --shutdown-command="$SHUTDOWN_COMMAND" --hostname="$SHUTHOST_HOSTNAME" "$@" --script-path "$SCRIPT_PATH" --init-system self-extracting-shell >"$OUT.log" 2>&1 &
 fi
 exit 0

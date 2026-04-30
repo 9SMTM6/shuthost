@@ -243,6 +243,10 @@ pub(crate) fn update_host_agent(args: &UpdateArgs) -> Result<(), String> {
     let name = BINARY_NAME;
 
     let init_system = if let Some(script_path) = args.script_path.as_deref() {
+        if !Path::new(script_path).is_absolute() {
+            return Err("--script-path must be an absolute path".to_string());
+        }
+
         if Path::new(script_path)
             .extension()
             .is_some_and(|ext| ext.eq_ignore_ascii_case("ps1"))
@@ -838,5 +842,17 @@ mod tests {
     fn generate_secret_works() {
         let secret = generate_secret();
         assert_eq!(secret.len(), 32);
+    }
+
+    #[test]
+    fn update_host_agent_rejects_relative_script_path() {
+        let args = UpdateArgs {
+            script_path: Some("relative/path/to/script".to_string()),
+        };
+
+        assert_eq!(
+            update_host_agent(&args),
+            Err("--script-path must be an absolute path".to_string())
+        );
     }
 }

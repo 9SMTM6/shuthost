@@ -43,15 +43,17 @@ if ($IsLinux -or $IsMacOS) {
     & chmod +x $tempFile
 }
 
+$scriptPath = [System.IO.Path]::GetFullPath($MyInvocation.MyCommand.Path)
+
 # Run the binary
 if ($args.Count -gt 0 -and -not $args[0].StartsWith("-")) {
     if ($args[0] -eq "generate-direct-control" -or $args[0] -eq "registration") {
-        & $tempFile ($args + @("--script-path", $MyInvocation.MyCommand.Path, "--init-system", "self-extracting-pwsh"))
+        & $tempFile ($args + @("--script-path", $scriptPath, "--init-system", "self-extracting-pwsh"))
     } else {
         & $tempFile $args
     }
 } else {
     # Run the service attached to this script
     # Unlike the shell script, we don't background here - the caller should background this script instead
-    & $tempFile service --port=$env:PORT --broadcast-port=$env:BROADCAST_PORT --shutdown-command=$env:SHUTDOWN_COMMAND --hostname=$env:SHUTHOST_HOSTNAME @args --script-path $MyInvocation.MyCommand.Path --init-system self-extracting-pwsh
+    & $tempFile service --port=$env:PORT --broadcast-port=$env:BROADCAST_PORT --shutdown-command=$env:SHUTDOWN_COMMAND --hostname=$env:SHUTHOST_HOSTNAME @args --script-path $scriptPath --init-system self-extracting-pwsh
 }

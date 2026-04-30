@@ -4,6 +4,7 @@ use std::{
     env,
     io::{Read as _, Write as _},
     net::{TcpListener, TcpStream},
+    process,
 };
 
 use clap::Parser;
@@ -21,6 +22,7 @@ use crate::{
         InitSystem, default_hostname, get_default_interface, get_inferred_init_system, get_ip,
         get_mac,
     },
+    registration,
     validation::validate_request,
 };
 
@@ -55,7 +57,7 @@ pub struct ServiceOptions {
     #[arg(long, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
-    /// Path to the self-extracting script, only used for self-extracting installs.
+    /// Path to the self-extracting script, only used and allowed for self-extracting installs. Must be absolute.
     #[arg(long)]
     pub script_path: Option<String>,
 }
@@ -72,6 +74,15 @@ pub(crate) fn start_host_agent(mut config: ServiceOptions) {
                 .expect("SHUTHOST_SHARED_SECRET environment variable must be set or injected"),
         )
     });
+    registration::validate_script_path_args(&registration::Args {
+        init_system: config.init_system,
+        script_path: config.script_path.clone(),
+    })
+    .unwrap_or_else(|err| {
+        eprintln!("Error: {err}");
+        process::exit(1);
+    });
+
     let port = config.port;
     let addr = format!("0.0.0.0:{port}");
     let listener =
@@ -308,5 +319,36 @@ mod tests {
         assert!(response.contains("os="));
 
         handle.join().expect("server thread finished");
+    }
+
+    #[test]
+    fn validate_script_path_args_rejects_relative_script_path() {
+        let mut config = make_args(SecretString::from("secret"));
+        config.script_path = Some("relative/path/to/script".to_string());
+        let args = registration::Args {
+            init_system: config.init_system,
+            script_path: config.script_path.clone(),
+        };
+
+        assert_eq!(
+            registration::validate_script_path_args(&args),
+            Err("--script-path must be an absolute path".to_string())
+        );
+    }
+
+    #[test]
+    fn validate_script_path_args_rejects_script_path_with_non_self_extracting_init_system() {
+        let mut config = make_args(SecretString::from("secret"));
+        config.init_system = InitSystem::Systemd;
+        config.script_path = Some("/absolute/path/to/script".to_string());
+        let args = registration::Args {
+            init_system: config.init_system,
+            script_path: config.script_path.clone(),
+        };
+
+        assert_eq!(
+            registration::validate_script_path_args(&args),
+            Err("--script-path may only be used with self-extracting init systems".to_string())
+        );
     }
 }

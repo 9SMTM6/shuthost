@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::Path};
 
 use clap::Parser;
 
@@ -59,7 +59,7 @@ pub struct Args {
     #[arg(long, short, default_value_t = get_inferred_init_system())]
     pub init_system: InitSystem,
 
-    /// Path to the self-extracting script, only used if init-system is `self-extracting-*`.
+    /// Path to the self-extracting script, only used if init-system is `self-extracting-*`, must be absolute.
     #[arg(long, short = 'p')]
     pub script_path: Option<String>,
 }
@@ -73,7 +73,25 @@ pub(crate) struct ServiceConfig {
     pub shutdown_command: String,
 }
 
+pub(crate) fn validate_script_path_args(args: &Args) -> Result<(), String> {
+    if let Some(ref path) = args.script_path {
+        if !matches!(
+            args.init_system,
+            InitSystem::SelfExtractingShell | InitSystem::SelfExtractingPwsh
+        ) {
+            return Err(
+                "--script-path may only be used with self-extracting init systems".to_string(),
+            );
+        }
+        if !Path::new(path).is_absolute() {
+            return Err("--script-path must be an absolute path".to_string());
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
+    validate_script_path_args(args)?;
     let custom_path = match args.init_system {
         InitSystem::SelfExtractingPwsh => args
             .script_path
@@ -84,12 +102,7 @@ pub(crate) fn parse_config(args: &Args) -> Result<ServiceConfig, String> {
             .script_path
             .clone()
             .unwrap_or_to_string(&format!("{BINARY_NAME}_self_extracting")),
-        _ => {
-            if args.script_path.is_some() {
-                return Err("Script path is only valid for SelfExtracting* init system".to_string());
-            }
-            String::new()
-        }
+        _ => String::new(),
     };
 
     Ok(match args.init_system {
