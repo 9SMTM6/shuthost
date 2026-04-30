@@ -86,70 +86,138 @@ const notifyClients = async () => {
     }
 };
 
-// Stale-while-revalidate for non-hashed assets (HTML pages, sw.js, etc.).
+// Network-first with cache fallback, used for navigation requests (refreshes).
 //
-// responsePromise: serves the cached response immediately, or fetches on first load.
-// bgWorkPromise:   when a cached version existed, revalidates in the background;
-//                  if the HTML changed, prefetches newly referenced hashed assets
-//                  and posts NEW_VERSION_AVAILABLE to all window clients.
-const staleWhileRevalidate = (
+// networkRequest is the original browser navigate request; it preserves the real
+// Sec-Fetch-Mode/Dest headers so the server handles it like a browser navigation
+// (auth redirects, OIDC flows, etc.) rather than a sub-resource fetch.
+//
+// cacheKey is the canonical URL used for cache storage and lookup; all SPA routes
+// are stored under a single entry (the scope root) to avoid cache fragmentation.
+//
+// Falls back to the cached SPA shell when the network returns a non-ok response
+// or throws; the SPA then handles auth/routing itself.
+const networkFirstWithCacheFallback = async (
+    networkRequest: Request,
+    cacheKey: Request,
+): Promise<Response> => {
+    const cache = await caches.open(CACHE_NAME);
+    let networkResponse: Response | null = null;
+    try {
+        networkResponse = await fetch(networkRequest);
+        if (networkResponse.ok) {
+            await cache.put(cacheKey, networkResponse.clone());
+            return networkResponse;
+        }
+    } catch {
+        // network failure – fall through to cache
+    }
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+    // No cached copy: return whatever the network gave us (or an error response).
+    return networkResponse ?? Response.error();
+};
+
+// How long to wait for the network before falling back to the cached response.
+const REVALIDATE_TIMEOUT_MS = 250;
+
+// Fastest-of strategy for non-hashed assets: races cache vs network with a timeout deadline.
+//
+// responsePromise: serves whichever of cache (hit) or network responds first.
+//                  If the timeout fires before the network, falls back to the cached response
+//                  (or waits for the network on a cache miss).
+// bgWorkPromise:   if a cached response was served, keeps the in-flight network request alive
+//                  to revalidate in the background; if the HTML changed, prefetches newly
+//                  referenced hashed assets and posts NEW_VERSION_AVAILABLE to all clients.
+const fastestOfWithTimeout = (
     request: Request,
-): {
-    responsePromise: Promise<Response>;
-    bgWorkPromise: Promise<void>;
-} => {
-    // Serve from cache immediately; populate cache on first load.
+): { responsePromise: Promise<Response>; bgWorkPromise: Promise<void> } => {
+    // Fire network fetch immediately so it runs in parallel with cache lookup.
+    const networkFetchPromise = fetch(request.clone());
+    const cacheMatchPromise = caches
+        .open(CACHE_NAME)
+        .then((c) => c.match(request));
+    let servedFromCache = false;
+
     const responsePromise = (async () => {
         const cache = await caches.open(CACHE_NAME);
-        const cached = await cache.match(request);
-        if (cached) return cached;
-        const response = await fetch(request);
-        if (response.ok) await cache.put(request, response.clone());
+
+        // Only resolves on a cache hit; never resolves on a miss so it drops
+        // out of the race and network or timeout can win instead.
+        const cacheHit = new Promise<Response>((resolve) => {
+            cacheMatchPromise
+                .then((r) => {
+                    if (r) resolve(r);
+                })
+                .catch(() => {});
+        });
+
+        const first = await Promise.race([
+            cacheHit.then((r) => ({ from: 'cache' as const, r })),
+            networkFetchPromise.then((r) => ({ from: 'network' as const, r })),
+            new Promise<{ from: 'timeout' }>((resolve) => {
+                setTimeout(
+                    () => resolve({ from: 'timeout' }),
+                    REVALIDATE_TIMEOUT_MS,
+                );
+            }),
+        ]);
+
+        if (first.from === 'network') {
+            if (first.r.ok) await cache.put(request.clone(), first.r.clone());
+            return first.r;
+        }
+
+        if (first.from === 'cache') {
+            servedFromCache = true;
+            return first.r;
+        }
+
+        // Timeout fired: use cache if available, otherwise wait for network.
+        const cached = await cacheMatchPromise;
+        if (cached) {
+            servedFromCache = true;
+            return cached;
+        }
+
+        const response = await networkFetchPromise;
+        if (response.ok) await cache.put(request.clone(), response.clone());
         return response;
     })();
 
-    // Revalidate + diff in the background (skip on first load).
     const bgWorkPromise = (async () => {
+        await responsePromise;
+        if (!servedFromCache) return;
+
+        // We served a stale cached response; revalidate with the in-flight network request.
         const cache = await caches.open(CACHE_NAME);
         // Independent cache.match — each call returns a fresh Response handle.
         const cachedEntry = await cache.match(request);
-        if (!cachedEntry) {
-            // First load: responsePromise handles caching; nothing to compare yet.
-            await responsePromise;
-            return;
-        }
-        const cachedText = await cachedEntry.text();
+        const cachedText = cachedEntry ? await cachedEntry.text() : null;
 
-        // Wait until the stale response has been handed to the browser.
-        await responsePromise;
+        const networkResponse = await networkFetchPromise.catch(() => null);
+        if (!networkResponse?.ok) return;
 
-        const response = await fetch(request);
-        if (!response.ok) return;
-
-        const ct = response.headers.get('content-type') ?? '';
+        const ct = networkResponse.headers.get('content-type') ?? '';
         if (ct.includes('text/html')) {
-            const freshText = await response.text();
+            const freshText = await networkResponse.text();
             await cache.put(
                 request,
                 new Response(freshText, {
-                    status: response.status,
+                    status: networkResponse.status,
                     headers: { 'content-type': ct },
                 }),
             );
             await prefetchHashedAssets(cache, freshText, request.url);
-            if (freshText !== cachedText) {
-                await notifyClients();
-            }
+            if (freshText !== cachedText) await notifyClients();
         } else {
-            await cache.put(request, response);
+            await cache.put(request, networkResponse);
         }
     })();
 
     return {
         responsePromise,
-        bgWorkPromise: bgWorkPromise
-            .then(() => undefined)
-            .catch(() => undefined),
+        bgWorkPromise: bgWorkPromise.then(() => undefined).catch(() => undefined),
     };
 };
 
@@ -169,19 +237,20 @@ sw.addEventListener('fetch', (event) => {
 
     // Navigation requests (SPA page loads) all return the same HTML; canonicalize
     // to the scope root so we only keep one cached HTML entry instead of one per route.
+    // On refresh: network-first (using the real navigate request so the server sees
+    // Sec-Fetch-Mode: navigate), cache fallback.
     if (event.request.mode === 'navigate') {
-        const rootRequest = new Request(sw.registration.scope);
-        const { responsePromise, bgWorkPromise } =
-            staleWhileRevalidate(rootRequest);
-        event.respondWith(responsePromise);
-        event.waitUntil(bgWorkPromise);
+        const cacheKey = new Request(sw.registration.scope);
+        event.respondWith(
+            networkFirstWithCacheFallback(event.request, cacheKey),
+        );
         return;
     }
 
     if (isHashedAsset(url)) {
         event.respondWith(cacheFirst(event.request, url));
     } else {
-        const { responsePromise, bgWorkPromise } = staleWhileRevalidate(
+        const { responsePromise, bgWorkPromise } = fastestOfWithTimeout(
             event.request,
         );
         event.respondWith(responsePromise);
