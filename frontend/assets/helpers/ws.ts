@@ -1,13 +1,25 @@
-import { apiFetch } from './apiFetch';
 import { applyMessage, type WsMessage } from './appStore';
 
 let currentSocket: WebSocket | null = null;
+let _heartbeatIntervalId: number | null = null;
+let _heartbeatTimeoutId: number | null = null;
+const HEARTBEAT_INTERVAL_MS = 30000; // send ping every 30s
+const HEARTBEAT_TIMEOUT_MS = 10000; // wait 10s for pong
 
 const checkAuthThenReconnect = async () => {
     try {
-        await apiFetch('/api/hosts_status', { credentials: 'same-origin' });
+        const resp = await fetch('/api/hosts_status', {
+            method: 'HEAD',
+            credentials: 'same-origin',
+        });
+        if (resp.status === 401) {
+            console.warn(`Auth probe: received ${resp.status} (expected for unauthenticated users)`);
+            return;
+        }
+        if (!resp.ok) {
+            console.error('Auth check failed:', `HTTP ${resp.status}`);
+        }
     } catch (err) {
-        if (err instanceof Error && err.message === 'Unauthorized') return;
         console.error('Auth check failed:', err);
     }
     setTimeout(connectWebSocket, 2000);
@@ -29,6 +41,26 @@ export const connectWebSocket = () => {
     socket.onopen = () => console.info('WebSocket connected to', url);
     socket.onmessage = (event: MessageEvent) => {
         try {
+            // Try to parse app-level control frames (ping/pong) first.
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(event.data);
+            } catch {
+                parsed = null;
+            }
+
+            if (parsed && typeof parsed === 'object' && 'type' in (parsed as any)) {
+                const t = (parsed as any).type;
+                if (t === 'pong') {
+                    // Received heartbeat response from server.
+                    if (_heartbeatTimeoutId) {
+                        clearTimeout(_heartbeatTimeoutId);
+                        _heartbeatTimeoutId = null;
+                    }
+                    return;
+                }
+            }
+
             applyMessage(JSON.parse(event.data) as WsMessage);
         } catch (err) {
             console.error('Error handling WS message:', err);
@@ -45,8 +77,40 @@ export const connectWebSocket = () => {
             wasClean: ev.wasClean,
         });
         currentSocket = null;
+        // Clear heartbeat timers
+        if (_heartbeatIntervalId) {
+            clearInterval(_heartbeatIntervalId);
+            _heartbeatIntervalId = null;
+        }
+        if (_heartbeatTimeoutId) {
+            clearTimeout(_heartbeatTimeoutId);
+            _heartbeatTimeoutId = null;
+        }
         checkAuthThenReconnect();
     };
+
+    // Start application-level heartbeat: send ping periodically and expect a pong.
+    // Use a small delay to avoid racing open events in quick reconnect loops.
+    if (_heartbeatIntervalId) {
+        clearInterval(_heartbeatIntervalId);
+        _heartbeatIntervalId = null;
+    }
+    _heartbeatIntervalId = window.setInterval(() => {
+        if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) return;
+        try {
+            currentSocket.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
+            // Set a timeout; if no pong arrives in time, force reconnect.
+            if (_heartbeatTimeoutId) clearTimeout(_heartbeatTimeoutId);
+            _heartbeatTimeoutId = window.setTimeout(() => {
+                console.warn('Heartbeat timeout — closing socket to trigger reconnect');
+                try {
+                    currentSocket?.close();
+                } catch {}
+            }, HEARTBEAT_TIMEOUT_MS);
+        } catch (e) {
+            console.error('Failed sending heartbeat ping', e);
+        }
+    }, HEARTBEAT_INTERVAL_MS);
 };
 
 export const closeWebSocket = () => {

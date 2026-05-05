@@ -13,6 +13,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tracing::{Instrument as _, debug, error, info, warn};
+use serde_json::Value as JsonValue;
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
@@ -176,12 +177,58 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                     }
                 }
             }
-            // Detect when the WebSocket is closed
-            // Note that this doesn't seem to be catching all (or even any) closed connections.
-            None = socket.recv() => {
-                debug!("WebSocket connection closed");
-                break;
-            }
+                // Handle incoming messages from the client, including control pings.
+                incoming = socket.recv() => {
+                    match incoming {
+                        Some(Ok(msg)) => {
+                            match msg {
+                                Message::Text(t) => {
+                                    // Try to parse as JSON control frame { type: 'ping' }
+                                    if let Ok(json) = serde_json::from_str::<JsonValue>(&t) {
+                                        if let Some(tp) = json.get("type").and_then(|v| v.as_str()) {
+                                            if tp == "ping" {
+                                                // Reply with an app-level pong
+                                                let pong = serde_json::json!({"type": "pong"}).to_string();
+                                                if let Err(e) = socket.send(Message::Text(pong.into())).await {
+                                                    warn!(%e, "Failed to send pong");
+                                                    break;
+                                                }
+                                                // don't propagate further
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    // Not a control message — ignore here (server only expects to send broadcasts)
+                                }
+                                Message::Ping(payload) => {
+                                    // Respond at protocol level
+                                    if let Err(e) = socket.send(Message::Pong(payload)).await {
+                                        warn!(%e, "Failed to send protocol Pong");
+                                        break;
+                                    }
+                                }
+                                Message::Pong(_) => {
+                                    // client answered a server ping — nothing to do on server side
+                                }
+                                Message::Binary(_) => {
+                                    // ignore binary control messages
+                                }
+                                Message::Close(_) => {
+                                    debug!("WebSocket connection closed by client");
+                                    break;
+                                }
+                            }
+                        }
+                        Some(Err(e)) => {
+                            warn!(%e, "WebSocket recv error");
+                            break;
+                        }
+                        None => {
+                            debug!("WebSocket connection closed");
+                            break;
+                        }
+                    }
+                }
         }
     }
 }

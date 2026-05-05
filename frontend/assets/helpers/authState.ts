@@ -18,7 +18,14 @@ if (needsProbe) {
         method: 'HEAD',
         credentials: 'same-origin',
     })
-        .then((res) => setAuthStatus(res.status === 401 ? 'no' : 'yes'))
+        .then((res) => {
+            if (res.status === 401) {
+                console.warn(`Auth probe: received ${res.status} (expected for unauthenticated users)`);
+                setAuthStatus('no');
+            } else {
+                setAuthStatus('yes');
+            }
+        })
         .catch(() => {
             /* leave 'unknown' on network error */
         });
