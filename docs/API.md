@@ -64,6 +64,30 @@ https://{coordinator_host}:{port}/api
 
 ---
 
+### M2M Host Status
+
+**Endpoint:** `GET /api/m2m/status/{hostname}`
+
+**Description:** Query the current state of a host (machine-to-machine)
+
+**Path Parameters:**
+- `hostname` (string): Target host identifier
+
+**Headers:**
+- `X-Client-ID` (required): Client identifier
+- `X-Request` (required): HMAC-signed request in format `{timestamp}|status|{signature}`
+
+**Request Body:** None
+
+**Response:**
+- **200 OK**: Plain-text host state, one of: `online`, `offline`, `waking`, `shutting_down`
+- **400 Bad Request**: Invalid request format or parameters
+- **401 Unauthorized**: Invalid HMAC signature or timestamp
+- **403 Forbidden**: Unknown client ID
+- **404 Not Found**: Unknown hostname
+
+---
+
 ## Agent Protocol
 
 The host agent accepts TCP connections for status checks and shutdown commands. This protocol can be used by the coordinator or any other system that needs to communicate with the agent.
@@ -225,6 +249,9 @@ Convenience scripts are provided for M2M lease management via the coordinator AP
 
 # Take lease asynchronously with custom coordinator URL
 ./shuthost_client_myclient.sh take myhost https://coordinator.example.com --async
+
+# Query current host state
+./shuthost_client_myclient.sh status myhost
 ```
 
 ### Direct Control Scripts

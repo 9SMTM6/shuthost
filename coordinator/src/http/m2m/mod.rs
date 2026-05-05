@@ -14,7 +14,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{HeaderMap, StatusCode as SC},
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
 };
 use chrono::Utc;
 use serde_json::json;
@@ -34,6 +34,7 @@ use crate::{
 pub(crate) fn routes() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/lease/{hostname}/{action}", post(handle_m2m_lease_action))
+        .route("/status/{hostname}", get(handle_m2m_status))
         .route("/test_wol", post(test_wol))
 }
 
@@ -58,6 +59,30 @@ async fn test_wol(Query(params): Query<WolTestQuery>) -> impl IntoResponse {
 #[axum::debug_handler]
 async fn test_wol() -> impl IntoResponse {
     (SC::INTERNAL_SERVER_ERROR, "Unimplemented in coverage").into_response()
+}
+
+#[axum::debug_handler]
+#[tracing::instrument(skip(headers, state))]
+async fn handle_m2m_status(
+    Path(host): Path<String>,
+    headers: HeaderMap,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let client_id = match validation::validate_m2m_status_request(&headers, &state) {
+        Ok(id) => id,
+        Err((sc, err)) => return Err((sc, err.to_owned())),
+    };
+
+    tracing::info!(%client_id, "Accepted m2m status request");
+
+    let host_exists = state.config_rx.borrow().hosts.contains_key(&host);
+    if !host_exists {
+        return Err((SC::NOT_FOUND, format!("No configuration found for host {host}")));
+    }
+
+    let state_str = serde_plain::to_string(&state.hoststatus.get_current_state(&host))
+        .expect("HostState serialization is infallible");
+    Ok(state_str.into_response())
 }
 
 #[derive(serde::Deserialize)]

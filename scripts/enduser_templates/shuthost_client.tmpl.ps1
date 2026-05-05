@@ -5,7 +5,7 @@
 
 param(
     [Parameter(Mandatory=$true, Position=0)]
-    [ValidateSet("take", "release")]
+    [ValidateSet("take", "release", "status")]
     [string]$Action,
 
     [Parameter(Mandatory=$true, Position=1)]
@@ -26,15 +26,15 @@ $curlCmd = if ($isUnix) { "curl" } else { "curl.exe" }
 
 function Show-Help {
     $helpText = @"
-Usage: $($MyInvocation.MyCommand.Name) <take|release> <host> [remote_url] [-Async]
+Usage: $($MyInvocation.MyCommand.Name) <take|release|status> <host> [remote_url] [-Async]
 
 Requires: PowerShell 6+ (on Linux/macOS or Windows)
 
 Arguments:
-    <take|release>   Action to perform (required)
-    <host>           Target host (required)
-    [remote_url]     Coordinator base URL (optional)
-    [-Async]         Perform action asynchronously (optional)
+    <take|release|status>   Action to perform (required)
+    <host>                  Target host (required)
+    [remote_url]            Coordinator base URL (optional)
+    [-Async]                Perform action asynchronously (optional; ignored for status)
 
 Options:
     -h, --help       Show this help message and exit
@@ -43,6 +43,7 @@ Examples:
     $($MyInvocation.MyCommand.Name) take myhost
     $($MyInvocation.MyCommand.Name) release myhost https://coordinator.example.com -Async
     $($MyInvocation.MyCommand.Name) -Async take myhost
+    $($MyInvocation.MyCommand.Name) status myhost
 "@
     Write-Host $helpText
 }
@@ -71,14 +72,26 @@ $signature = [BitConverter]::ToString($signatureBytes).Replace('-', '').ToLower(
 $xRequest = "$timestamp|$Action|$signature"
 
 # Build coordinator URL with optional async parameter
-$coordinatorUrl = "$RemoteUrl/api/m2m/lease/$TargetHost/$Action"
-if ($Async) {
-    $coordinatorUrl += "?async=true"
+$httpMethod = "POST"
+if ($Action -eq "status") {
+    if ($Async) {
+        Write-Warning "-Async is ignored for the status action"
+    }
+    $coordinatorUrl = "$RemoteUrl/api/m2m/status/$TargetHost"
+    $httpMethod = "GET"
+} else {
+    $coordinatorUrl = "$RemoteUrl/api/m2m/lease/$TargetHost/$Action"
+    if ($Async) {
+        $coordinatorUrl += "?async=true"
+    }
 }
 
 # Output request details (equivalent to bash set -v/-x)
-Write-Host "$curlCmd --fail-with-body -sS -X POST $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
+# Write-Host "$curlCmd --fail-with-body -sS -X $httpMethod $coordinatorUrl -H `"X-Client-ID: $CLIENT_ID`" -H `"X-Request: $xRequest`""
 
 # Make the request
-& $curlCmd --fail-with-body -sS -X POST $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
+& $curlCmd --fail-with-body -sS -X $httpMethod $coordinatorUrl -H "X-Client-ID: $CLIENT_ID" -H "X-Request: $xRequest"
 if ($LASTEXITCODE -ne 0) { exit 1 }
+
+Write-Host "
+"

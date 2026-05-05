@@ -7,15 +7,15 @@ set -eu
 
 print_help() {
         cat <<EOF
-Usage: $0 <take|release> <host> [remote_url] [--async]
+Usage: $0 <take|release|status> <host> [remote_url] [--async]
 
 Requires: curl, openssl, date, hexdump
 
 Arguments:
-    <take|release>   Action to perform (required)
-    <host>           Target host (required)
-    [remote_url]     Coordinator base URL (optional)
-    [--async]        Perform action asynchronously (optional, can be anywhere)
+    <take|release|status>   Action to perform (required)
+    <host>                  Target host (required)
+    [remote_url]            Coordinator base URL (optional)
+    [--async]               Perform action asynchronously (optional, can be anywhere; ignored for status)
 
 Options:
     -h, --help       Show this help message and exit
@@ -24,6 +24,7 @@ Examples:
     $0 take myhost
     $0 release myhost https://coordinator.example.com --async
     $0 --async take myhost
+    $0 status myhost
 EOF
 }
 
@@ -67,10 +68,19 @@ ACTION="$1"
 TARGET_HOST="$2"
 REMOTE_URL="${3:-"{embedded_remote_url}"}"
 
-# Build coordinator URL with optional async parameter
-COORDINATOR_URL="${REMOTE_URL}/api/m2m/lease/${TARGET_HOST}/${ACTION}"
-if [ "$ASYNC_MODE" = true ]; then
-    COORDINATOR_URL="${COORDINATOR_URL}?async=true"
+# Build coordinator URL depending on action
+if [ "$ACTION" = "status" ]; then
+    if [ "$ASYNC_MODE" = true ]; then
+        echo "Warning: --async is ignored for the status action" >&2
+    fi
+    COORDINATOR_URL="${REMOTE_URL}/api/m2m/status/${TARGET_HOST}"
+    HTTP_METHOD="GET"
+else
+    COORDINATOR_URL="${REMOTE_URL}/api/m2m/lease/${TARGET_HOST}/${ACTION}"
+    if [ "$ASYNC_MODE" = true ]; then
+        COORDINATOR_URL="${COORDINATOR_URL}?async=true"
+    fi
+    HTTP_METHOD="POST"
 fi
 
 CLIENT_ID="{client_id}"
@@ -86,13 +96,13 @@ MESSAGE="${TIMESTAMP}|${ACTION}"
 SIGNATURE=$(printf "%s" "$MESSAGE" | openssl dgst -sha256 -hmac "$SECRET" -binary | hexdump -ve '/1 "%02x"')
 
 # Combine into final X-Request header
-set -v
-
 X_REQUEST="${TIMESTAMP}|${ACTION}|${SIGNATURE}"
 
-set -x
-
+# set -xv
 # Make the request
-curl -sS --fail-with-body -X POST "$COORDINATOR_URL" \
+curl -sS --fail-with-body -X "$HTTP_METHOD" "$COORDINATOR_URL" \
   -H "X-Client-ID: $CLIENT_ID" \
   -H "X-Request: $X_REQUEST"
+# set +xv
+
+printf "\n"
