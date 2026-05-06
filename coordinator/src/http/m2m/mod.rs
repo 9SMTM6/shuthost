@@ -80,9 +80,17 @@ async fn handle_m2m_status(
         return Err((SC::NOT_FOUND, format!("No configuration found for host {host}")));
     }
 
-    let state_str = serde_plain::to_string(&state.hoststatus.get_current_state(&host))
-        .expect("HostState serialization is infallible");
-    Ok(state_str.into_response())
+    let host_state = state.hoststatus.get_current_state(&host);
+    let lease_held = state
+        .leases
+        .get_host(&host)
+        .contains(&LeaseSource::Client(client_id));
+
+    Ok(Json(json!({
+        "host_state": host_state,
+        "lease_held": lease_held,
+    }))
+    .into_response())
 }
 
 #[derive(serde::Deserialize)]

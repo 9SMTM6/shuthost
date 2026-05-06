@@ -80,7 +80,12 @@ https://{coordinator_host}:{port}/api
 **Request Body:** None
 
 **Response:**
-- **200 OK**: Plain-text host state, one of: `online`, `offline`, `waking`, `shutting_down`
+- **200 OK**: JSON object with host state and client lease status
+  ```json
+  { "host_state": "online", "lease_held": true }
+  ```
+  - `host_state`: one of `online`, `offline`, `waking`, `shutting_down`
+  - `lease_held`: whether the calling client currently holds a lease on this host
 - **400 Bad Request**: Invalid request format or parameters
 - **401 Unauthorized**: Invalid HMAC signature or timestamp
 - **403 Forbidden**: Unknown client ID
