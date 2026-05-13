@@ -11,9 +11,9 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use tokio::sync::broadcast;
 use tracing::{Instrument as _, debug, error, info, warn};
-use serde_json::Value as JsonValue;
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
@@ -92,7 +92,7 @@ pub(crate) async fn ws_handler(
     headers: HeaderMap,
     State(AppState {
         ws_tx,
-        hoststatus,
+        host_actor,
         config_rx,
         leases,
         db_pool,
@@ -122,7 +122,7 @@ pub(crate) async fn ws_handler(
         debug!("WebSocket upgrade completed; starting event loop");
         match send_startup_msg(
             &mut socket,
-            hoststatus.subscribe(),
+            host_actor.subscribe_status(),
             config_rx,
             current_leases,
             db_pool_clone.as_ref(),
@@ -245,6 +245,10 @@ async fn send_startup_msg(
     // Read freshest values from the receivers just before sending.
     let current_state = hoststatus_rx.borrow().clone();
     let config = config_rx.borrow().clone();
+    let mut status_map = current_state.as_ref().clone();
+    for host in config.hosts.keys() {
+        status_map.entry(host.clone()).or_insert(HostState::Offline);
+    }
 
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
@@ -280,7 +284,7 @@ async fn send_startup_msg(
     let initial_msg = WsMessage::Initial {
         hosts,
         clients,
-        status_map: current_state.as_ref().clone(),
+        status_map,
         lease_map: leases,
         db_data,
         operation_failures: operation_failures.as_ref().clone(),

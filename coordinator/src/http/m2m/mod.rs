@@ -24,7 +24,7 @@ use tracing::{debug, error};
 use crate::{
     app::{
         AppState, HostControlError, HostState as HS, LeaseSource, db, lookup_host_with_overrides,
-        poll_and_wait,
+        wait_for_transition,
     },
     http::api::{LeaseAction as LA, UpdateLeaseError, update_lease},
     websocket::WsMessage,
@@ -77,10 +77,13 @@ async fn handle_m2m_status(
 
     let host_exists = state.config_rx.borrow().hosts.contains_key(&host);
     if !host_exists {
-        return Err((SC::NOT_FOUND, format!("No configuration found for host {host}")));
+        return Err((
+            SC::NOT_FOUND,
+            format!("No configuration found for host {host}"),
+        ));
     }
 
-    let host_state = state.hoststatus.get_current_state(&host);
+    let host_state = state.host_actor.get_current_state(&host);
     let lease_held = state
         .leases
         .get_host(&host)
@@ -163,7 +166,7 @@ async fn handle_m2m_lease_action(
         HS::Online
     };
 
-    let current_state = state.hoststatus.get_current_state(&host);
+    let current_state = state.host_actor.get_current_state(&host);
     if current_state == ultimately_desired_state {
         return Ok(current_state_response(action, ultimately_desired_state).into_response());
     }
@@ -241,28 +244,22 @@ async fn perform_sync_wait(
     };
     let deadline = Instant::now() + Duration::from_secs(timeout_secs);
 
-    poll_and_wait(
-        &host_with_name,
-        &state.hoststatus,
-        ultimately_desired_state,
-        deadline,
-        &state.runtime,
-    )
-    .await
-    .map(|()| {
-        match (action, ultimately_desired_state) {
-            (LA::Take, HS::Online) => "Lease taken, host is now online",
-            (LA::Release, HS::Offline) => "Lease released, host is now offline",
-            _ => unreachable!("unexpected (action, ultimately_desired_state) combination"),
-        }
-        .into_response()
-    })
-    .map_err(|err| {
-        let status = match err {
-            HCE::NotFound(_) => SC::NOT_FOUND,
-            HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
-            HCE::OperationFailed { .. } => SC::INTERNAL_SERVER_ERROR,
-        };
-        (status, err.to_string())
-    })
+    wait_for_transition(host, &state.host_actor, ultimately_desired_state, deadline)
+        .await
+        .map(|()| {
+            match (action, ultimately_desired_state) {
+                (LA::Take, HS::Online) => "Lease taken, host is now online",
+                (LA::Release, HS::Offline) => "Lease released, host is now offline",
+                _ => unreachable!("unexpected (action, ultimately_desired_state) combination"),
+            }
+            .into_response()
+        })
+        .map_err(|err| {
+            let status = match err {
+                HCE::NotFound(_) => SC::NOT_FOUND,
+                HCE::Timeout(_) => SC::GATEWAY_TIMEOUT,
+                HCE::OperationFailed { .. } => SC::INTERNAL_SERVER_ERROR,
+            };
+            (status, err.to_string())
+        })
 }

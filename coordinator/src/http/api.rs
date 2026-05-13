@@ -184,6 +184,6 @@ async fn handle_reset_client_leases(
 /// Returns the online status of all hosts as a JSON object.
 #[axum::debug_handler]
 async fn get_hosts_status(State(state): State<AppState>) -> impl IntoResponse {
-    let hoststatus = state.hoststatus.borrow().clone();
+    let hoststatus = state.host_actor.borrow().clone();
     axum::Json((*hoststatus).clone())
 }

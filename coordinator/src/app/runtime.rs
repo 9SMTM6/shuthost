@@ -12,7 +12,10 @@ use thiserror::Error as ThisError;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::{TcpStream, UdpSocket},
-    sync::RwLock,
+    sync::{
+        RwLock,
+        broadcast::{self, error::RecvError},
+    },
     task::JoinSet,
     time::{Instant, MissedTickBehavior, interval, sleep, timeout_at},
 };
@@ -24,12 +27,12 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus, HostStatusStore};
+use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus};
 use crate::{
     app::{
         AppState, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
-        config_watcher::watch_config_file, db, host_control::spawn_handle_host_state,
-        shared_watch_store::SharedWatchRx,
+        config_watcher::watch_config_file, db, host_actor::HostEvent,
+        host_control::spawn_handle_host_state, shared_watch_store::SharedWatchRx,
     },
     config::Host,
     http::push,
@@ -147,7 +150,7 @@ async fn maybe_update_host_install_info(
         if let Ok(mut host_stats) = db::get_all_host_stats(pool).await
             && let Some(mut stats) = host_stats.remove(hostname)
         {
-            if state.hoststatus.get_current_state(hostname) == HostState::Online {
+            if state.host_actor.get_current_state(hostname) == HostState::Online {
                 stats.is_online = true;
             }
             if let Err(_err) = state.ws_tx.send(WsMessage::HostStats {
@@ -179,7 +182,6 @@ pub(super) async fn poll_until_host_state(
     desired_state: HostState,
     deadline: Instant,
     poll_interval_ms: u64,
-    hoststatus: &HostStatusStore,
 ) -> Result<(), PollError> {
     let mut ticker = interval(Duration::from_millis(poll_interval_ms));
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -187,8 +189,8 @@ pub(super) async fn poll_until_host_state(
         let (current_state, _) = poll_host_status(host).await;
         let tick_fut = ticker.tick();
         if current_state == desired_state {
-            // Transition complete: write definitive stable state, clearing Waking/ShuttingDown.
-            hoststatus.force_set(&host.name, current_state).await;
+            // State reached: the caller is responsible for informing the actor
+            // (via transition_complete or apply_poll_results).
             return Ok(());
         }
         tick_fut.await; // wait for next tick before polling again
@@ -226,24 +228,39 @@ pub(super) fn start_background_tasks(
     spawn_websocket_forwarders(
         &mut tasks,
         &state.ws_tx,
-        state.hoststatus.subscribe(),
+        state.host_actor.subscribe_status(),
         state.operation_failures.subscribe(),
         state.config_rx.clone(),
         state.leases.subscribe(),
     );
 
-    tasks.spawn(log_host_transitions(state.hoststatus.subscribe()));
+    tasks.spawn(log_host_transitions(state.host_actor.subscribe_status()));
 
     tasks.spawn(persist_last_online(
         state.db_pool.clone(),
-        state.hoststatus.subscribe(),
+        state.host_actor.subscribe_status(),
     ));
 
     tasks.spawn(notify_for_online_durations(
-        state.hoststatus.subscribe(),
+        state.host_actor.subscribe_status(),
         state.online_since.clone(),
         state.db_pool.clone(),
         state.vapid_key.clone(),
+    ));
+
+    // Forward lease changes into the HostActor event stream.
+    tasks.spawn(forward_lease_events(
+        state.leases.subscribe(),
+        state.host_actor.clone(),
+    ));
+
+    // Consume the HostEvent stream to fire unscheduled push notifications.
+    tasks.spawn(handle_host_events(
+        state.host_actor.subscribe_events(),
+        state.leases.snapshot(),
+        state.db_pool.clone(),
+        state.vapid_key.clone(),
+        state.leases.subscribe(),
     ));
 
     // Spawn this last since other tasks may depend on some changes triggered by this task, e.g. last-online.
@@ -262,9 +279,15 @@ fn spawn_websocket_forwarders(
 ) {
     // Forwards host status updates to the websocket client loops
     let ws_tx_status = ws_tx.clone();
+    let config_rx_for_status = config_rx.clone();
     tasks.spawn(async move {
         while hoststatus_rx.changed().await.is_ok() {
-            let msg = WsMessage::HostStatus(hoststatus_rx.borrow().as_ref().clone());
+            let mut status_map = hoststatus_rx.borrow().as_ref().clone();
+            let config = config_rx_for_status.borrow();
+            for host in config.hosts.keys() {
+                status_map.entry(host.clone()).or_insert(HostState::Offline);
+            }
+            let msg = WsMessage::HostStatus(status_map);
             if ws_tx_status.send(msg).is_err() {
                 debug!("No Websocket Subscribers");
             }
@@ -435,6 +458,8 @@ async fn poll_host_statuses(state: AppState) {
     loop {
         let poll_start = Instant::now();
         let config = state.config_rx.borrow().clone();
+        // Snapshot the current status before polling so we can detect changes.
+        let pre_poll_status = state.host_actor.snapshot();
 
         // Read IP/port overrides once per poll cycle into an owned map so the
         // read-guard is dropped before the async join_all below.
@@ -489,40 +514,28 @@ async fn poll_host_statuses(state: AppState) {
             }
         }
 
-        // Apply polled states to the status map, skipping hosts in transition.
+        // Apply polled states to the actor, which will skip any host with an active control task.
         let poll_iter = results
             .iter()
-            .map(|&(ref name, (polled_state, _))| (name.as_str(), polled_state));
-        if let Some((old_status, new_status)) = state.hoststatus.apply_poll_results(poll_iter).await
+            .map(|(name, (polled_state, _))| (name.clone(), *polled_state));
+        state.host_actor.apply_poll_results(poll_iter).await;
+
+        // Record timestamps for state-changed hosts (for enforce stabilization timer).
+        // We compare the current watch snapshot with the pre-poll snapshot.
         {
-            // Record timestamps for changed hosts (used by the enforce stabilisation timer).
-            for (host, new_state) in new_status.iter() {
-                if old_status.get(host) != Some(new_state) {
+            let current_status = state.host_actor.snapshot();
+            for (host, new_state) in current_status.iter() {
+                if pre_poll_status.get(host) != Some(new_state) {
                     state_timestamps.insert(host.clone(), poll_start);
                 }
             }
-
-            // Fire push notifications for unscheduled state transitions.
-            if let (Some(pool), Some(vapid_key)) = (state.db_pool.clone(), state.vapid_key.clone())
-            {
-                let leases_snapshot = state.leases.snapshot();
-                spawn_push_notifications_for_unscheduled(
-                    &old_status,
-                    &new_status,
-                    &leases_snapshot,
-                    &pool,
-                    &vapid_key,
-                );
-            }
-        } else {
-            debug!("No change in host status");
         }
 
         // Enforce state for hosts that opt in, after a stabilization delay.
         let leases_snapshot = state.leases.snapshot();
         for (host_name, host_cfg) in &config.hosts {
             let lease_set = leases_snapshot.get(host_name).cloned().unwrap_or_default();
-            let current_state = state.hoststatus.get_current_state(host_name);
+            let current_state = state.host_actor.get_current_state(host_name);
 
             let stable_for = state_timestamps
                 .get(host_name)
@@ -584,61 +597,120 @@ async fn spawn_online_for_notifications(
     }
 }
 
-/// Spawns push-notification tasks for unscheduled host state transitions.
+/// Background task: consumes the [`HostEvent`] stream and fires push notifications
+/// for unscheduled host state transitions.
 ///
-/// An event is considered unscheduled when:
-/// - A host transitions `Offline → Online` with no active leases (`ShutHost` did not wake it up).
-/// - A host transitions `Online → Offline` while leases are held (`ShutHost` did not shut it down).
-fn spawn_push_notifications_for_unscheduled(
-    old_status: &HostStatus,
-    new_status: &HostStatus,
-    leases: &Arc<LeaseMapRaw>,
-    pool: &db::DbPool,
-    vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
+/// An event is "unscheduled" when:
+/// - `Offline → Online` with no active leases (host booted without coordinator involvement).
+/// - `Online → Offline` while leases are held (host went offline unexpectedly).
+async fn handle_host_events(
+    mut events_rx: broadcast::Receiver<HostEvent>,
+    initial_leases: Arc<LeaseMapRaw>,
+    db_pool: Option<db::DbPool>,
+    vapid_key: Option<Arc<web_push::PartialVapidSignatureBuilder>>,
+    mut leases_rx: LeaseRx,
 ) {
-    for (host_name, &new_state) in new_status {
-        let old_state = old_status
-            .get(host_name)
-            .copied()
-            .unwrap_or(HostState::Offline);
-        if old_state == new_state {
-            continue;
-        }
-        let has_leases = leases.get(host_name).is_some_and(|s| !s.is_empty());
-        let is_unscheduled = match (old_state, new_state) {
-            (HostState::Offline, HostState::Online) => !has_leases,
-            (HostState::Online, HostState::Offline) => has_leases,
-            _ => false,
-        };
-        if !is_unscheduled {
-            continue;
-        }
-        let body = match new_state {
-            HostState::Online => format!("{host_name} started up unexpectedly"),
-            HostState::Offline => format!("{host_name} shut down unexpectedly"),
-            HostState::Waking | HostState::ShuttingDown => continue,
-        };
-        let pool = pool.clone();
-        let vapid_key = vapid_key.clone();
-        let host_name = host_name.clone();
-        tokio::spawn(async move {
-            match db::get_subscriptions_for_host_unscheduled(&pool, &host_name).await {
-                Ok(subs) if !subs.is_empty() => {
-                    let payload = push::NotificationPayload::with_data(
-                        body,
-                        push::HostSpecificNotificationData {
-                            hostname: host_name,
-                        },
-                    )
-                    .into_json();
-                    push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
+    // Keep a local copy of the lease map so we can check it at event time without
+    // holding a lock on the LeaseStore.
+    let mut current_leases = initial_leases;
+
+    loop {
+        tokio::select! {
+            // Update our local lease snapshot whenever it changes.
+            result = leases_rx.changed() => {
+                if result.is_err() {
+                    break;
                 }
-                Ok(_) => {}
-                Err(e) => {
-                    error!(host = %host_name, "Failed to fetch push subscriptions: {e:#}");
-                }
+                current_leases = leases_rx.borrow().clone();
             }
-        });
+            // React to host state transitions.
+            event = events_rx.recv() => {
+                let event = match event {
+                    Ok(e) => e,
+                    Err(RecvError::Lagged(n)) => {
+                        warn!("handle_host_events: missed {n} events (broadcast channel lagged)");
+                        continue;
+                    }
+                    Err(RecvError::Closed) => break,
+                };
+
+                let HostEvent::StateChanged { host: host_name, from, to, .. } = event else {
+                    continue;
+                };
+
+                let has_leases = current_leases
+                    .get(&host_name)
+                    .is_some_and(|s| !s.is_empty());
+
+                let is_unscheduled = match (from, to) {
+                    // Host came online without the coordinator waking it.
+                    (HostState::Offline, HostState::Online) => !has_leases,
+                    // Host went offline while the coordinator expected it to stay up.
+                    (HostState::Online, HostState::Offline) => has_leases,
+                    _ => false,
+                };
+
+                if !is_unscheduled {
+                    continue;
+                }
+
+                let body = match to {
+                    HostState::Online => format!("{host_name} started up unexpectedly"),
+                    HostState::Offline => format!("{host_name} shut down unexpectedly"),
+                    HostState::Waking | HostState::ShuttingDown => continue,
+                };
+
+                let (Some(pool), Some(vapid_key)) = (db_pool.clone(), vapid_key.clone()) else {
+                    continue;
+                };
+
+                tokio::spawn(async move {
+                    match db::get_subscriptions_for_host_unscheduled(&pool, &host_name).await {
+                        Ok(subs) if !subs.is_empty() => {
+                            let payload = push::NotificationPayload::with_data(
+                                body,
+                                push::HostSpecificNotificationData {
+                                    hostname: host_name,
+                                },
+                            )
+                            .into_json();
+                            push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!(host = %host_name, "Failed to fetch push subscriptions: {e:#}");
+                        }
+                    }
+                });
+            }
+        }
+    }
+}
+
+/// Background task: watches the lease store and forwards per-host lease changes
+/// into the [`HostActorHandle`] event stream so all consumers can use a single stream.
+async fn forward_lease_events(
+    mut leases_rx: LeaseRx,
+    host_actor: crate::app::host_actor::HostActorHandle,
+) {
+    let mut prev_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
+    while leases_rx.changed().await.is_ok() {
+        let new_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
+        // Notify the actor for each host whose lease set changed.
+        let all_hosts: std::collections::HashSet<&str> = prev_leases
+            .keys()
+            .chain(new_leases.keys())
+            .map(String::as_str)
+            .collect();
+        for host in all_hosts {
+            if prev_leases.get(host) != new_leases.get(host) {
+                let leases = new_leases.get(host).cloned().unwrap_or_default();
+                host_actor
+                    .notify_lease_changed(host.to_string(), leases)
+                    .await;
+            }
+        }
+        prev_leases = new_leases;
     }
 }
 
@@ -688,7 +760,7 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
     while leases_rx.changed().await.is_ok() {
         let new_leases = leases_rx.borrow_and_update();
         let new_desired_offline = get_hosts_desired_offline(&new_leases);
-        let hoststatus = state.hoststatus.borrow();
+        let hoststatus = state.host_actor.borrow();
 
         let changed_desired_state: HashSet<_> = prev_desired_offline
             .symmetric_difference(&new_desired_offline)
@@ -765,10 +837,7 @@ async fn handle_startup_packet(data: &[u8], peer_addr: SocketAddr, state: &AppSt
 
     info!("Received valid startup broadcast from host '{hostname}' at {peer_addr}");
 
-    state
-        .hoststatus
-        .force_set(hostname, HostState::Online)
-        .await;
+    state.host_actor.startup_broadcast(hostname).await;
 
     maybe_update_host_install_info(
         state,
