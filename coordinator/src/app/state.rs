@@ -12,11 +12,12 @@ use tokio::sync::{RwLock, broadcast, watch};
 use tracing::info;
 use web_push::PartialVapidSignatureBuilder;
 
-use super::shared_watch_store::{SharedWatchRx, SharedWatchStore};
+use super::shared_watch_store::SharedWatchStore;
 use crate::{
     app::{
         LeaseMapRaw,
         db::{self, DbPool},
+        host_actor::HostActorHandle,
         host_control::LeaseStore,
     },
     config::{
@@ -48,101 +49,10 @@ impl HostState {
 pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
 pub(super) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
 pub type HostStatus = HashMap<String, HostState>;
-pub(crate) type HostStatusStore = SharedWatchStore<HostStatus>;
-pub(crate) type HostStatusRx = SharedWatchRx<HostStatus>;
+/// Alias kept for compatibility with existing watch subscribers.
+pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
 pub(crate) type OperationFailureStore = SharedWatchStore<OperationFailureMap>;
 pub(crate) type WsTx = broadcast::Sender<WsMessage>;
-
-/// Shared, atomically-updated host status store.
-///
-/// Combines a [`tokio::sync::Mutex`] over the `HostStatus` map (so callers can
-/// atomically check-and-set transition states) with a [`watch`] channel that
-/// broadcasts every committed snapshot to all subscribers.
-///
-/// This is intentionally analogous to [`crate::app::LeaseStore`].
-///
-/// The actual implementation is provided by [`SharedWatchStore`].
-impl SharedWatchStore<HostStatus> {
-    /// Atomically begin a transition.
-    ///
-    /// Sets `host` to `state` (`Waking` or `ShuttingDown`) and broadcasts.
-    /// Returns `false` — without modifying anything — if the host is already in
-    /// any transition state, meaning a control task is already in-flight.
-    pub(crate) async fn try_begin_transition(&self, host: &str, state: HostState) -> bool {
-        debug_assert!(
-            state.is_transitioning(),
-            "try_begin_transition called with non-transition state"
-        );
-        let mut inner = self.inner.lock().await;
-        if inner
-            .get(host)
-            .copied()
-            .is_some_and(HostState::is_transitioning)
-        {
-            return false;
-        }
-        inner.insert(host.to_string(), state);
-        drop(self.tx.send(Arc::new(inner.clone())));
-        true
-    }
-
-    /// Forcefully write a definitive state (`Online` or `Offline`).
-    ///
-    /// Used by the control task on completion / error and by startup broadcasts.
-    /// Skips the write (no broadcast) if the current state is already `state`.
-    pub(crate) async fn force_set(&self, host: &str, state: HostState) {
-        let mut inner = self.inner.lock().await;
-        if inner.get(host) == Some(&state) {
-            return;
-        }
-        inner.insert(host.to_string(), state);
-        drop(self.tx.send(Arc::new(inner.clone())));
-    }
-
-    /// Apply a batch of polled (`Online`/`Offline`) results, skipping any host
-    /// currently in a transition state (the control task is authoritative for those).
-    ///
-    /// Returns `Some((old_snapshot, new_snapshot))` if any entry changed, or
-    /// `None` if nothing was updated (allows callers to skip downstream work).
-    pub(crate) async fn apply_poll_results<'result_life>(
-        &self,
-        results: impl Iterator<Item = (&'result_life str, HostState)>,
-    ) -> Option<(Arc<HostStatus>, Arc<HostStatus>)> {
-        let old = self.tx.borrow().clone();
-        let mut inner = self.inner.lock().await;
-        let mut any_changed = false;
-        for (host, new_state) in results {
-            if inner
-                .get(host)
-                .copied()
-                .is_some_and(HostState::is_transitioning)
-            {
-                continue;
-            }
-            if inner.get(host) != Some(&new_state) {
-                inner.insert(host.to_string(), new_state);
-                any_changed = true;
-            }
-        }
-        if any_changed {
-            let new = Arc::new(inner.clone());
-            drop(self.tx.send(Arc::clone(&new)));
-            Some((old, new))
-        } else {
-            None
-        }
-    }
-
-    /// Get the current state of a host.
-    pub(crate) fn get_current_state(&self, host: &str) -> HostState {
-        self.tx
-            .borrow()
-            .get(host)
-            .copied()
-            // if there is no entry for this host, its considered offline
-            .unwrap_or(HostState::Offline)
-    }
-}
 
 /// The kind of control operation that failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -197,8 +107,8 @@ pub(crate) struct AppState {
     /// Receiver for updated `ControllerConfig` when the file changes.
     pub config_rx: ConfigRx,
 
-    /// Shared, atomically-updated host status (online/offline/transition).
-    pub hoststatus: Arc<HostStatusStore>,
+    /// Single-owner host state machine actor.
+    pub host_actor: HostActorHandle,
 
     /// Broadcast sender for distributing WebSocket messages.
     pub ws_tx: WsTx,
@@ -430,7 +340,7 @@ pub(super) async fn initialize_state(
     let initial_config = Arc::new(load(config_path).await?);
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
-    let (hoststatus, _) = HostStatusStore::new(HostStatus::new());
+    let host_actor = HostActorHandle::spawn(HostStatus::new());
     let (ws_tx, _) = broadcast::channel(32);
     let (operation_failures, _) = OperationFailureStore::new(OperationFailureMap::new());
 
@@ -451,7 +361,7 @@ pub(super) async fn initialize_state(
 
     let app_state = AppState {
         config_rx,
-        hoststatus,
+        host_actor,
         ws_tx,
         config_path: config_path.to_path_buf(),
         leases,

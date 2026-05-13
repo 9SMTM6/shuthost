@@ -18,7 +18,8 @@ use tokio::{
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{
-    AppState, HostStatusStore, OperationFailure, OperationKind, db,
+    AppState, OperationFailure, OperationKind, db,
+    host_actor::{HostActorHandle, TransitionResult},
     runtime::{PollError, poll_until_host_state},
     shared_watch_store::{SharedWatchRx, SharedWatchStore},
     state::HostState,
@@ -156,7 +157,7 @@ enum OperationOrNoop {
 /// High-level application entrypoint for handling host state transitions.
 /// Called with the already-claimed transition state (Waking or `ShuttingDown`)
 /// having been atomically set before this function is invoked. Because
-/// `try_begin_transition` already serialises concurrent calls, there is no
+/// `begin_transition` already serialises concurrent calls, there is no
 /// need to re-check the current status; we just act on the lease set.
 #[tracing::instrument(skip(state), err(Debug))]
 async fn handle_host_state(
@@ -176,13 +177,13 @@ async fn handle_host_state(
         return Err(HostControlError::NotFound(host.to_string()));
     };
 
-    // try_begin_transition already set the Waking/ShuttingDown marker and
+    // begin_transition already set the Waking/ShuttingDown marker and
     // ensures at most one control task runs at a time, so we unconditionally
     // perform the requested action.
     if should_be_running {
-        wake_host_and_wait(&host_with_name, &state.hoststatus, &state.runtime).await
+        wake_host_and_wait(&host_with_name, &state.runtime).await
     } else {
-        shutdown_host_and_wait(&host_with_name, &state.hoststatus, &state.runtime).await
+        shutdown_host_and_wait(&host_with_name, &state.runtime).await
     }
 }
 
@@ -193,12 +194,7 @@ async fn handle_host_state(
 /// control task is already in-flight for this host the call is a no-op (the
 /// existing task will re-check lease state on completion and re-trigger if needed).
 pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
-    let transition_state = if state.leases.host_has_leases(host) {
-        HostState::Waking
-    } else {
-        HostState::ShuttingDown
-    };
-    let operation_kind = if matches!(transition_state, HostState::Waking) {
+    let operation_kind = if state.leases.host_has_leases(host) {
         OperationKind::Startup
     } else {
         OperationKind::Shutdown
@@ -209,10 +205,11 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
 
     tokio::spawn(
         async move {
-            // Atomically claim the transition slot. Returns false if already transitioning.
+            // Atomically claim the transition slot via the actor.
+            // Returns false if already transitioning or a control task is in-flight.
             if !state
-                .hoststatus
-                .try_begin_transition(&host, transition_state)
+                .host_actor
+                .begin_transition(&host, operation_kind)
                 .await
             {
                 debug!(host = %host, "Transition already in-flight, skipping");
@@ -222,6 +219,37 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             let lease_set = state.leases.get_host(&host);
             let result = handle_host_state(&host, &state, &lease_set)
                 .in_current_span()
+                .await;
+
+            // Translate the operation result into a TransitionResult and inform the actor.
+            // The actor will update the visible state and release control_active.
+            let transition_result = match &result {
+                Ok(OperationOrNoop::Executed) => match operation_kind {
+                    OperationKind::Startup => TransitionResult::WakeOk,
+                    OperationKind::Shutdown => TransitionResult::ShutdownOk,
+                },
+                // WoL disabled (Noop): release the slot; let poller determine actual state.
+                Ok(OperationOrNoop::Noop) => match operation_kind {
+                    OperationKind::Startup => TransitionResult::WakeErr,
+                    OperationKind::Shutdown => TransitionResult::ShutdownOk,
+                },
+                Err(HostControlError::Timeout(_) | HostControlError::OperationFailed { .. }) => {
+                    match operation_kind {
+                        OperationKind::Startup => TransitionResult::WakeErr,
+                        OperationKind::Shutdown => TransitionResult::ShutdownErr,
+                    }
+                }
+                Err(HostControlError::NotFound(_)) => {
+                    // Config issue; fall back to a "failed" result to release the slot.
+                    match operation_kind {
+                        OperationKind::Startup => TransitionResult::WakeErr,
+                        OperationKind::Shutdown => TransitionResult::ShutdownErr,
+                    }
+                }
+            };
+            state
+                .host_actor
+                .transition_complete(&host, transition_result)
                 .await;
 
             // Update the per-host operation failure record.
@@ -267,14 +295,14 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             if let Err(ref e) = result {
                 debug!(host = %host, error = ?e, "Host state transition failed");
             }
-            // Only re-check on success. If the transition failed or was a no-op,
+            // Only re-check on success (Executed). If the transition failed or was a no-op,
             // immediately spawning another transition would create a tight retry loop.
             // On successful completion, re-check whether the actual state matches the
             // desired state to handle the race where the lease changed while we were
             // transitioning.
-            if result.is_ok() && matches!(result, Ok(OperationOrNoop::Executed)) {
+            if matches!(result, Ok(OperationOrNoop::Executed)) {
                 let desired_running = state.leases.host_has_leases(&host);
-                let current = state.hoststatus.get_current_state(&host);
+                let current = state.host_actor.get_current_state(&host);
                 let is_running = matches!(current, HostState::Online);
                 if desired_running != is_running {
                     spawn_handle_host_state(&host, &state);
@@ -335,11 +363,9 @@ async fn send_shutdown_to_address(host_with_name: &ResolvedHost) -> Result<Strin
 /// UDP packet loss during boot. The re-send task is aborted as soon as the host
 /// is confirmed online or the deadline is reached.
 ///
-/// On any error (including timeout), the host status is reset to `Offline` since
-/// the wake did not succeed.
+/// State writes must be handled by the caller via [`HostActorHandle::transition_complete`].
 async fn wake_host_and_wait(
     host_with_name: &ResolvedHost,
-    hoststatus: &HostStatusStore,
     runtime: &RuntimeConfig,
 ) -> Result<OperationOrNoop, HostControlError> {
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
@@ -357,9 +383,6 @@ async fn wake_host_and_wait(
 
     #[cfg(not(any(coverage, test)))]
     if let Err(e) = wol::send_magic_packet(&host_with_name.host.mac, "255.255.255.255") {
-        hoststatus
-            .force_set(&host_with_name.name, HostState::Offline)
-            .await;
         return Err(HostControlError::OperationFailed {
             target: HostState::Online,
             report: e.wrap_err("Failed to send WoL packet"),
@@ -389,7 +412,6 @@ async fn wake_host_and_wait(
         HostState::Online,
         deadline,
         runtime.transition_poll_interval_ms,
-        hoststatus,
     )
     .await;
 
@@ -398,33 +420,23 @@ async fn wake_host_and_wait(
 
     match poll_result {
         Ok(()) => Ok(OperationOrNoop::Executed),
-        Err(e) => {
-            hoststatus
-                .force_set(&host_with_name.name, HostState::Offline)
-                .await;
-            match e {
-                PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
-            }
-        }
+        Err(e) => match e {
+            PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
+        },
     }
 }
 
 /// Send shutdown command to host and wait until offline.
 ///
-/// On any error (including timeout), the host status is reset to `Online` since
-/// the shutdown did not succeed.
+/// State writes must be handled by the caller via [`HostActorHandle::transition_complete`].
 async fn shutdown_host_and_wait(
     host_with_name: &ResolvedHost,
-    hoststatus: &HostStatusStore,
     runtime: &RuntimeConfig,
 ) -> Result<OperationOrNoop, HostControlError> {
     // Send shutdown to the address
     let resp = match send_shutdown_to_address(host_with_name).await {
         Ok(r) => r,
         Err(e) => {
-            hoststatus
-                .force_set(&host_with_name.name, HostState::Online)
-                .await;
             return Err(HostControlError::OperationFailed {
                 target: HostState::Offline,
                 report: e,
@@ -433,9 +445,6 @@ async fn shutdown_host_and_wait(
     };
 
     if resp.contains("ERROR") {
-        hoststatus
-            .force_set(&host_with_name.name, HostState::Online)
-            .await;
         return Err(HostControlError::OperationFailed {
             target: HostState::Offline,
             report: eyre::eyre!("Agent rejected shutdown command: {resp}"),
@@ -452,43 +461,49 @@ async fn shutdown_host_and_wait(
         HostState::Offline,
         deadline,
         runtime.transition_poll_interval_ms,
-        hoststatus,
     )
     .await
     {
         Ok(()) => Ok(OperationOrNoop::Executed),
-        Err(e) => {
-            hoststatus
-                .force_set(&host_with_name.name, HostState::Online)
-                .await;
-            match e {
-                PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
-            }
-        }
-    }
-}
-
-/// Poll for the desired host state and handle errors uniformly.
-/// Used by the M2M API sync path to wait for a host to reach the desired state.
-pub(crate) async fn poll_and_wait(
-    host_with_name: &ResolvedHost,
-    hoststatus: &HostStatusStore,
-    desired_state: HostState,
-    deadline: Instant,
-    runtime: &RuntimeConfig,
-) -> Result<(), HostControlError> {
-    match poll_until_host_state(
-        host_with_name,
-        desired_state,
-        deadline,
-        runtime.transition_poll_interval_ms,
-        hoststatus,
-    )
-    .await
-    {
-        Ok(()) => Ok(()),
         Err(e) => match e {
             PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
         },
+    }
+}
+
+/// Wait for a host to reach `desired_state` by watching the actor's status channel.
+///
+/// Used by the M2M API sync path. Unlike [`poll_until_host_state`] this does not
+/// do independent TCP polling; it relies on the background poller and control tasks
+/// to update the actor, which then publishes updates on the watch channel.
+pub(crate) async fn wait_for_transition(
+    host: &str,
+    host_actor: &HostActorHandle,
+    desired_state: HostState,
+    deadline: Instant,
+) -> Result<(), HostControlError> {
+    // Fast path: already in the desired state.
+    if host_actor.get_current_state(host) == desired_state {
+        return Ok(());
+    }
+    let mut rx = host_actor.subscribe_status();
+    loop {
+        match tokio::time::timeout_at(deadline, rx.changed()).await {
+            Ok(Ok(())) => {
+                if host_actor.get_current_state(host) == desired_state {
+                    return Ok(());
+                }
+            }
+            Ok(Err(_)) => {
+                // Watch channel closed (coordinator shutting down); treat as success to
+                // avoid surfacing a spurious error to the client.
+                return Ok(());
+            }
+            Err(_) => {
+                return Err(HostControlError::Timeout(eyre::eyre!(
+                    "Timeout waiting for host '{host}' to become {desired_state:?}"
+                )));
+            }
+        }
     }
 }
