@@ -35,9 +35,12 @@ pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::
     let socket = shuthost_common::create_broadcast_socket(0)
         .map_err(|e| eyre::eyre!("Failed to create broadcast socket: {e}"))?;
 
-    socket
-        .send_to(&packet, format!("{broadcast_ip}:9"))
-        .wrap_err(format!("Failed to send magic packet to {broadcast_ip}:9"))?;
+    const BURST_COUNT: usize = 3;
+    for _ in 0..BURST_COUNT {
+        socket
+            .send_to(&packet, format!("{broadcast_ip}:9"))
+            .wrap_err(format!("Failed to send magic packet to {broadcast_ip}:9"))?;
+    }
 
     Ok(())
 }
