@@ -380,7 +380,7 @@ impl HostActorHandle {
 mod tests {
     use super::*;
     use crate::app::host_control::LeaseSource;
-    use std::collections::{HashSet, HashMap};
+    use std::collections::{HashMap, HashSet};
 
     // Helper: build a minimal actor (not spawned, runs in-process via handle_cmd)
     fn make_actor() -> HostActor {

@@ -258,10 +258,11 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                     state.operation_failures.clear(&host).await;
                 }
                 Err(HostControlError::Timeout(_) | HostControlError::OperationFailed { .. }) => {
-                    state.operation_failures.set(&host, OperationFailure { operation: operation_kind }).await;
+                    let is_new_failure = state.operation_failures.set(&host, OperationFailure { operation: operation_kind }).await;
 
-                    // Fire push notifications for subscribers.
-                    if let (Some(pool), Some(vapid_key)) =
+                    // Fire push notifications only when the failure is new or the operation kind
+                    // changed — not on every enforce-state retry for an already-failing host.
+                    if is_new_failure && let (Some(pool), Some(vapid_key)) =
                         (state.db_pool.clone(), state.vapid_key.clone())
                     {
                         let host_clone = host.clone();

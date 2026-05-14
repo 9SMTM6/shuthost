@@ -73,10 +73,19 @@ pub type OperationFailureMap = HashMap<String, OperationFailure>;
 
 impl SharedWatchStore<OperationFailureMap> {
     /// Record a failure for `host`.
-    pub(crate) async fn set(&self, host: &str, failure: OperationFailure) {
+    ///
+    /// Returns `true` if this is a new failure or the operation kind changed
+    /// (i.e. a push notification should be sent). Returns `false` if the
+    /// identical failure was already recorded, suppressing repeated notifications
+    /// for hosts that are retried periodically.
+    pub(crate) async fn set(&self, host: &str, failure: OperationFailure) -> bool {
         let mut inner = self.inner.lock().await;
+        let is_new = inner
+            .get(host)
+            .map_or(true, |existing| existing.operation != failure.operation);
         inner.insert(host.to_string(), failure);
         drop(self.tx.send(Arc::new(inner.clone())));
+        is_new
     }
 
     /// Clear any recorded failure for `host` (e.g. on a successful operation).
