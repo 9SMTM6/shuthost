@@ -526,6 +526,8 @@ pub(crate) async fn update_client_last_used(
 }
 
 /// A push subscription record from the database.
+/// See structs in [`crate::http::push`] - `PushSubscriptionJson` and `PushSubscriptionKeys` -
+/// for extended info.
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub(crate) struct PushSubscription {
     pub endpoint: String,
