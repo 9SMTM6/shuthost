@@ -19,7 +19,6 @@ default = [
     "compression-deflate",
     "compression-gzip",
     "compression-zstd",
-    "vendored-openssl",
 ]
 compression-br = ["tower-http/compression-br", "reqwest/brotli", "rustls/brotli"]
 compression-deflate = ["tower-http/compression-deflate", "reqwest/deflate"]
@@ -48,7 +47,6 @@ include_macos_aarch64_agent = []
 include_macos_x86_64_agent = []
 include_windows_aarch64_agent = []
 include_windows_x86_64_agent = []
-vendored-openssl = ["rustls-openssl/vendored"]
 
 [dependencies]
 axum = { version = "0.8.3", features = ["macros", "ws"] }
@@ -75,17 +73,16 @@ notify = "8.0.0"
 oauth2-reqwest = "0.1.0-alpha.3"
 openidconnect = { version = "4.x", default-features = false, features = [
     "reqwest",
-    # TLS is provided via the global rustls-openssl provider (installed in lib.rs before any HTTP calls),
+    # TLS is provided via the global aws_lc_rs rustls provider (installed in lib.rs before any HTTP calls),
     # and reqwest is configured with rustls-tls-webpki-roots-no-provider, so we keep the rustls-tls feature disabled.
     # OIDC provider discovery and token exchange flows should be covered by integration tests to verify this setup.
     # "rustls-tls",
 ] }
 rand.workspace = true
-rcgen = "0.14.x"
+rcgen = { version = "0.14.x", default-features = false, features = ["pem", "crypto", "aws_lc_rs"] }
 regex.workspace = true
 reqwest = { workspace = true, features = ["http2", "charset"] }
-rustls = { version = "0.23.x", default-features = false, features = ["logging", "std", "tls12"] }
-rustls-openssl = "0.3.0"
+rustls = { version = "0.23.x", default-features = false, features = ["logging", "std", "tls12", "aws_lc_rs"] }
 secrecy = { workspace = true, features = ["serde"] }
 serde.workspace = true
 serde_json.workspace = true
@@ -105,7 +102,7 @@ tokio = { workspace = true, features = [
 ]}
 toml.workspace = true
 tower = "0.5"
-web-push = { version = "0.11.0", default-features = false, features = ["hyper-client"] }
+web-push-native = "0.4.0"
 tower-http = { version = "0.6", features = [
     "request-id",
     "sensitive-headers",

@@ -20,6 +20,7 @@ use tokio::{
     time::{Instant, MissedTickBehavior, interval, sleep, timeout_at},
 };
 use tracing::{debug, error, info, warn};
+use web_push_native::jwt_simple::algorithms::ES256KeyPair;
 
 use shuthost_common::{
     BroadcastMessage, HmacValidationResult, create_signed_message, parse_hmac_message,
@@ -366,7 +367,7 @@ async fn notify_for_online_durations(
     mut hoststatus_rx: SharedWatchRx<HostStatus>,
     online_since: Arc<RwLock<HashMap<String, Instant>>>,
     db_pool: Option<db::DbPool>,
-    vapid_key: Option<Arc<web_push::PartialVapidSignatureBuilder>>,
+    vapid_key: Option<Arc<ES256KeyPair>>,
 ) {
     let mut prev = hoststatus_rx.borrow().clone();
     while hoststatus_rx.changed().await.is_ok() {
@@ -565,7 +566,7 @@ async fn spawn_online_for_notifications(
     session_start: Instant,
     online_since: &Arc<RwLock<HashMap<String, Instant>>>,
     pool: &db::DbPool,
-    vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
+    vapid_key: &Arc<ES256KeyPair>,
 ) {
     match db::get_subscriptions_for_host_online_for(pool, hostname).await {
         Ok(subs) if !subs.is_empty() => {
@@ -607,7 +608,7 @@ async fn handle_host_events(
     mut events_rx: broadcast::Receiver<HostEvent>,
     initial_leases: Arc<LeaseMapRaw>,
     db_pool: Option<db::DbPool>,
-    vapid_key: Option<Arc<web_push::PartialVapidSignatureBuilder>>,
+    vapid_key: Option<Arc<ES256KeyPair>>,
     mut leases_rx: LeaseRx,
 ) {
     // Keep a local copy of the lease map so we can check it at event time without

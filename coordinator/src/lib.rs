@@ -51,7 +51,7 @@ static INIT_RUSTLS: Once = Once::new();
 ///
 /// # Panics
 ///
-/// Panics if the OpenSSL crypto provider cannot be installed.
+/// Panics if the aws-lc-rs crypto provider cannot be installed.
 pub async fn inner_main(invocation: Cli) -> Result<()> {
     match invocation.command {
         #[cfg(unix)]
@@ -95,7 +95,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             let _startup_enter = startup_span.enter();
 
             INIT_RUSTLS.call_once(|| {
-                rustls_openssl::default_provider()
+                rustls::crypto::aws_lc_rs::default_provider()
                     .install_default()
                     .expect("failed to install default rustls provider");
             });
