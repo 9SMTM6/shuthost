@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use shuthost_common::protocol::{InitSystem, OsType};
 use tokio::sync::{RwLock, broadcast, watch};
 use tracing::info;
-use web_push::PartialVapidSignatureBuilder;
+use web_push_native::jwt_simple::algorithms::ES256KeyPair;
 
 use super::shared_watch_store::SharedWatchStore;
 use crate::{
@@ -146,7 +146,7 @@ pub(crate) struct AppState {
 
     /// VAPID key builder for signing web push notifications.
     /// `None` when DB persistence is disabled.
-    pub vapid_key: Option<Arc<PartialVapidSignatureBuilder>>,
+    pub vapid_key: Option<Arc<ES256KeyPair>>,
 
     /// Per-host record of the last failed control operation (ephemeral, not persisted).
     pub operation_failures: Arc<OperationFailureStore>,
@@ -317,9 +317,7 @@ async fn load_host_install_info(
     Ok(host_install_info)
 }
 
-async fn load_vapid_key(
-    db_pool: Option<&DbPool>,
-) -> eyre::Result<Option<Arc<PartialVapidSignatureBuilder>>> {
+async fn load_vapid_key(db_pool: Option<&DbPool>) -> eyre::Result<Option<Arc<ES256KeyPair>>> {
     if let Some(pool) = db_pool {
         let pem = match db::get_kv(pool, db::KV_VAPID_PRIVATE_KEY_PEM).await? {
             Some(pem) => pem,
@@ -332,10 +330,9 @@ async fn load_vapid_key(
                 pem
             }
         };
-        Ok(Some(Arc::new(
-            web_push::VapidSignatureBuilder::from_pem_no_sub(pem.as_bytes())
-                .wrap_err("Failed to load VAPID private key from PEM")?,
-        )))
+        Ok(Some(Arc::new(ES256KeyPair::from_pem(&pem).map_err(
+            |e| eyre::eyre!("Failed to load VAPID private key from PEM: {e:?}"),
+        )?)))
     } else {
         info!("VAPID key unavailable: DB persistence disabled");
         Ok(None)

@@ -15,12 +15,14 @@ use axum::{
 };
 use axum_extra::{TypedHeader, headers::ContentType};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use hyper::StatusCode;
+use hyper::{StatusCode, Uri};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use tracing::{error, warn};
-use web_push::{
-    ContentEncoding, HyperWebPushClient, SubscriptionInfo, SubscriptionKeys, WebPushClient as _,
-    WebPushMessageBuilder,
+use web_push_native::{
+    Auth, WebPushBuilder,
+    jwt_simple::algorithms::{ECDSAP256KeyPairLike as _, ES256KeyPair},
+    p256::PublicKey,
 };
 
 use crate::app::{AppState, db};
@@ -37,6 +39,21 @@ macro_rules! require_db_pool {
             return StatusCode::SERVICE_UNAVAILABLE.into_response();
         };
         pool
+    }};
+}
+
+macro_rules! validate_push_subscription {
+    ($sub:expr) => {{
+        if let Err(e) = build_web_push_builder(&$sub.endpoint, &$sub.keys.p256dh, &$sub.keys.auth) {
+            warn!("Invalid push subscription: {e}");
+            return StatusCode::BAD_REQUEST;
+        }
+    }};
+    (response; $sub:expr) => {{
+        if let Err(e) = build_web_push_builder(&$sub.endpoint, &$sub.keys.p256dh, &$sub.keys.auth) {
+            warn!("Invalid push subscription: {e}");
+            return (StatusCode::BAD_REQUEST, e.to_string()).into_response();
+        }
     }};
 }
 
@@ -204,7 +221,7 @@ async fn get_vapid_public_key(State(state): State<AppState>) -> impl IntoRespons
             .into_response();
     };
 
-    let public_key_bytes = vapid_key.get_public_key();
+    let public_key_bytes = vapid_key.key_pair().public_key().to_bytes_uncompressed();
     let public_key_b64 = URL_SAFE_NO_PAD.encode(&public_key_bytes);
 
     (
@@ -257,6 +274,8 @@ async fn subscribe_host_unscheduled(
     axum::Json(body): axum::Json<HostSubscriptionRequest>,
 ) -> impl IntoResponse {
     let pool = require_db_pool!(state);
+
+    validate_push_subscription!(body.subscription);
 
     let sub_id = match db::upsert_push_subscription(
         pool,
@@ -311,6 +330,8 @@ async fn subscribe_host_operation_failed(
     axum::Json(body): axum::Json<HostSubscriptionRequest>,
 ) -> impl IntoResponse {
     let pool = require_db_pool!(state);
+
+    validate_push_subscription!(body.subscription);
 
     let sub_id = match db::upsert_push_subscription(
         pool,
@@ -395,6 +416,8 @@ async fn subscribe_host_online_for(
         return *error_response;
     }
 
+    validate_push_subscription!(response; body.subscription);
+
     let sub_id = match db::upsert_push_subscription(
         pool,
         &body.subscription.endpoint,
@@ -456,6 +479,8 @@ async fn subscribe_host_online_for_oneshot(
         Err(error_response) => return *error_response,
     };
 
+    validate_push_subscription!(response; body.subscription);
+
     let Some(vapid_key) = state.vapid_key.clone() else {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     };
@@ -510,15 +535,55 @@ async fn subscribe_host_online_for_oneshot(
 // Shared push-sending helper
 // ──────────────────────────────────────────────
 
+#[derive(Debug, Error)]
+enum PushSubscriptionError {
+    #[error("invalid p256dh base64: {0}")]
+    P256dhBase64(base64::DecodeError),
+    #[error("invalid p256dh key: {0}")]
+    P256dhKey(web_push_native::p256::elliptic_curve::Error),
+    #[error("auth secret must be 16 bytes, got {0}")]
+    AuthLength(usize),
+    #[error("invalid auth base64: {0}")]
+    AuthBase64(base64::DecodeError),
+    #[error("invalid endpoint URI: {0}")]
+    Endpoint(hyper::http::uri::InvalidUri),
+}
+
+/// Constructs a [`WebPushBuilder`] from the raw base64url-encoded fields stored in the database.
+fn build_web_push_builder(
+    endpoint: &str,
+    p256dh: &str,
+    auth: &str,
+) -> Result<WebPushBuilder, PushSubscriptionError> {
+    let p256dh_bytes = URL_SAFE_NO_PAD
+        .decode(p256dh)
+        .map_err(PushSubscriptionError::P256dhBase64)?;
+    let ua_public =
+        PublicKey::from_sec1_bytes(&p256dh_bytes).map_err(PushSubscriptionError::P256dhKey)?;
+
+    let auth_bytes = URL_SAFE_NO_PAD
+        .decode(auth)
+        .map_err(PushSubscriptionError::AuthBase64)?;
+    if auth_bytes.len() != 16 {
+        return Err(PushSubscriptionError::AuthLength(auth_bytes.len()));
+    }
+    let mut ua_auth = Auth::default();
+    ua_auth.copy_from_slice(&auth_bytes);
+
+    let endpoint: Uri = endpoint.parse().map_err(PushSubscriptionError::Endpoint)?;
+
+    Ok(WebPushBuilder::new(endpoint, ua_public, ua_auth))
+}
+
 /// Sends `payload` as a push notification to each subscription in `subscriptions`.
 /// Subscriptions that return 404/410 (expired) are removed from the database.
 pub(crate) async fn send_push_notifications(
-    vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
+    vapid_key: &Arc<ES256KeyPair>,
     pool: &db::DbPool,
     subscriptions: &[db::PushSubscription],
     payload: &str,
 ) {
-    let client = HyperWebPushClient::new();
+    let client = reqwest::Client::new();
 
     for sub in subscriptions {
         send_one_push_notification(&client, vapid_key, pool, sub, payload).await;
@@ -526,58 +591,54 @@ pub(crate) async fn send_push_notifications(
 }
 
 async fn send_one_push_notification(
-    client: &HyperWebPushClient,
-    vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
+    client: &reqwest::Client,
+    vapid_key: &Arc<ES256KeyPair>,
     pool: &db::DbPool,
     sub: &db::PushSubscription,
     payload: &str,
 ) {
-    let subscription_info = SubscriptionInfo {
-        endpoint: sub.endpoint.clone(),
-        keys: SubscriptionKeys {
-            p256dh: sub.p256dh.clone(),
-            auth: sub.auth.clone(),
-        },
+    let builder = match build_web_push_builder(&sub.endpoint, &sub.p256dh, &sub.auth) {
+        Ok(b) => b,
+        Err(e) => {
+            error!(endpoint = %sub.endpoint, "{e}");
+            return;
+        }
     };
 
-    let sig = match vapid_key
-        .as_ref()
-        .clone()
-        .add_sub_info(&subscription_info)
-        .build()
+    let request = match builder
+        .with_vapid(vapid_key, "mailto:push@localhost")
+        .build(payload.as_bytes())
     {
-        Ok(s) => s,
+        Ok(r) => r,
         Err(e) => {
-            error!(endpoint = %sub.endpoint, "Failed to build VAPID signature: {e:?}");
+            error!(endpoint = %sub.endpoint, "Failed to build push request: {e:?}");
             return;
         }
     };
 
-    let mut builder = WebPushMessageBuilder::new(&subscription_info);
-    builder.set_payload(ContentEncoding::Aes128Gcm, payload.as_bytes());
-    builder.set_vapid_signature(sig);
-
-    let message = match builder.build() {
-        Ok(m) => m,
+    let reqwest_req = match reqwest::Request::try_from(request) {
+        Ok(r) => r,
         Err(e) => {
-            error!(endpoint = %sub.endpoint, "Failed to build push message: {e:?}");
+            error!(endpoint = %sub.endpoint, "Failed to convert push request: {e}");
             return;
         }
     };
 
-    match client.send(message).await {
-        Ok(()) => {}
-        Err(
-            web_push::WebPushError::EndpointNotValid(_)
-            | web_push::WebPushError::EndpointNotFound(_),
-        ) => {
-            warn!(endpoint = %sub.endpoint, "Push subscription expired, removing");
-            if let Err(e) = db::delete_push_subscription(pool, &sub.endpoint).await {
-                error!("Failed to delete expired subscription: {e:#}");
+    match client.execute(reqwest_req).await {
+        Ok(resp) => match resp.status().as_u16() {
+            200..=299 => {}
+            404 | 410 => {
+                warn!(endpoint = %sub.endpoint, "Push subscription expired, removing");
+                if let Err(e) = db::delete_push_subscription(pool, &sub.endpoint).await {
+                    error!("Failed to delete expired subscription: {e:#}");
+                }
             }
-        }
+            status => {
+                error!(endpoint = %sub.endpoint, "Push notification failed with status {status}");
+            }
+        },
         Err(e) => {
-            error!(endpoint = %sub.endpoint, "Failed to send push notification: {e:?}");
+            error!(endpoint = %sub.endpoint, "Failed to send push notification: {e}");
         }
     }
 }

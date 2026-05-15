@@ -10,6 +10,11 @@ targets = [
     "aarch64-pc-windows-msvc",
 ]
 all-features = true
+# cargo-about is a build-dependency that transitively pulls in `ring`.
+# Excluding it removes ring (and its exclusive transitive deps) from the graph,
+# so the `ring` ban below won't trigger for build-deps while still catching
+# any accidental ring usage introduced via normal dependencies.
+exclude = ["cargo-about"]
 
 [sources]
 unknown-registry = "deny"
@@ -29,6 +34,11 @@ ignore = [
 # Is a duplicate of rustc::multiple_crate_versions
 multiple-versions = "warn"
 
+deny = [
+    { name = "openssl" },
+    { name = "ring" },
+]
+
 skip-tree = [
     { crate = "windows-sys:<0.61.2", depth = 3, reason = "several crates use outdated versions" },
 ]
@@ -38,18 +48,19 @@ duplicates = 'deny'
 include-path-dependencies = true
 unused = 'deny'
 
+# TODO: investigate in the future. But this has issues, as listed in the cargo deny book, and doesnt get checked befofe execution, so its certainly not perfect. 
+# [bans.build]
+# allow-build-scripts = []
+
 [licenses]
 allow = [
     "Apache-2.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "CC0-1.0",
-    "CDLA-Permissive-2.0",
     "GPL-2.0-only",
     "ISC",
     "MIT",
-    "MPL-2.0",
-    "OpenSSL",
     "Unicode-3.0",
     "Zlib",
 ]
