@@ -69,7 +69,7 @@ git-version.workspace = true
 hex.workspace = true
 hmac.workspace = true
 hyper = "1.x"
-mime = "0.3.17"
+mime = "0.3.5"
 nix.workspace = true
 notify = "8.0.0"
 oauth2-reqwest = "0.1.0-alpha.3"
@@ -105,7 +105,7 @@ tokio = { workspace = true, features = [
 ]}
 toml.workspace = true
 tower = "0.5"
-web-push = "0.11.0"
+web-push = { version = "0.11.0", default-features = false, features = ["hyper-client"] }
 tower-http = { version = "0.6", features = [
     "request-id",
     "sensitive-headers",

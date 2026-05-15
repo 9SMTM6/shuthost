@@ -19,7 +19,7 @@ use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
 use web_push::{
-    ContentEncoding, IsahcWebPushClient, SubscriptionInfo, SubscriptionKeys, WebPushClient as _,
+    ContentEncoding, HyperWebPushClient, SubscriptionInfo, SubscriptionKeys, WebPushClient as _,
     WebPushMessageBuilder,
 };
 
@@ -508,13 +508,7 @@ pub(crate) async fn send_push_notifications(
     subscriptions: &[db::PushSubscription],
     payload: &str,
 ) {
-    let client = match IsahcWebPushClient::new() {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Failed to create web push client: {e:?}");
-            return;
-        }
-    };
+    let client = HyperWebPushClient::new();
 
     for sub in subscriptions {
         send_one_push_notification(&client, vapid_key, pool, sub, payload).await;
@@ -522,7 +516,7 @@ pub(crate) async fn send_push_notifications(
 }
 
 async fn send_one_push_notification(
-    client: &IsahcWebPushClient,
+    client: &HyperWebPushClient,
     vapid_key: &Arc<web_push::PartialVapidSignatureBuilder>,
     pool: &db::DbPool,
     sub: &db::PushSubscription,
