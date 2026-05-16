@@ -10,11 +10,6 @@ targets = [
     "aarch64-pc-windows-msvc",
 ]
 all-features = true
-# cargo-about is a build-dependency that transitively pulls in `ring`.
-# Excluding it removes ring (and its exclusive transitive deps) from the graph,
-# so the `ring` ban below won't trigger for build-deps while still catching
-# any accidental ring usage introduced via normal dependencies.
-exclude = ["cargo-about"]
 
 [sources]
 unknown-registry = "deny"
@@ -34,14 +29,50 @@ ignore = [
 # Is a duplicate of rustc::multiple_crate_versions
 multiple-versions = "warn"
 
-deny = [
-    { name = "openssl" },
-    { name = "ring" },
-]
-
 skip-tree = [
     { crate = "windows-sys:<0.61.2", depth = 3, reason = "several crates use outdated versions" },
 ]
+
+[[bans.deny]]
+name = "ring"
+use-instead = "aws-lc-rs"
+wrappers = [
+    # cargo-about is a build-dependency that pulls in `ring`.
+    "cargo-about",
+    # come in via indirect dependency of cargo-about
+    "rustls", "rustls-webpki"
+]
+
+[[bans.deny]]
+name = "openssl"
+use-instead = "aws-lc-rs"
+
+[[bans.deny]]
+name = "syn"
+# deny-multiple-versions makes this essentially a blacklist for multiple versions of the crate
+# instead of blacklisting the crate in general.
+deny-multiple-versions = true
+reason = "multiple versions of this increases build time significantly"
+
+[[bans.deny]]
+name = "proc-macro2"
+deny-multiple-versions = true
+reason = "multiple versions of this increases build time significantly"
+
+[[bans.deny]]
+name = "rustls"
+deny-multiple-versions = true
+reason = "multiple versions of this could lead to subtle bugs or unpredicted panics"
+
+[[bans.deny]]
+name = "tracing"
+deny-multiple-versions = true
+reason = "multiple versions of this could lead to subtle bugs or unpredicted panics"
+
+[[bans.deny]]
+name = "tokio"
+deny-multiple-versions = true
+reason = "multiple versions of this could lead to subtle bugs or unpredicted panics"
 
 [bans.workspace-dependencies]
 duplicates = 'deny'
