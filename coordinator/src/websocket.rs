@@ -184,20 +184,16 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                             match msg {
                                 Message::Text(t) => {
                                     // Try to parse as JSON control frame { type: 'ping' }
-                                    if let Ok(json) = serde_json::from_str::<JsonValue>(&t) {
-                                        if let Some(tp) = json.get("type").and_then(|v| v.as_str()) {
-                                            if tp == "ping" {
+                                    if let Ok(json) = serde_json::from_str::<JsonValue>(&t)
+                                        && let Some(tp) = json.get("type").and_then(|v| v.as_str())
+                                            && tp == "ping" {
                                                 // Reply with an app-level pong
                                                 let pong = serde_json::json!({"type": "pong"}).to_string();
                                                 if let Err(e) = socket.send(Message::Text(pong.into())).await {
                                                     warn!(%e, "Failed to send pong");
                                                     break;
                                                 }
-                                                // don't propagate further
-                                                continue;
                                             }
-                                        }
-                                    }
                                     // Not a control message — ignore here (server only expects to send broadcasts)
                                 }
                                 Message::Ping(payload) => {
@@ -207,11 +203,8 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                                         break;
                                     }
                                 }
-                                Message::Pong(_) => {
+                                Message::Pong(_) | Message::Binary(_) => {
                                     // client answered a server ping — nothing to do on server side
-                                }
-                                Message::Binary(_) => {
-                                    // ignore binary control messages
                                 }
                                 Message::Close(_) => {
                                     debug!("WebSocket connection closed by client");

@@ -31,7 +31,7 @@ use shuthost_common::{
 use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus};
 use crate::{
     app::{
-        AppState, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
+        AppState, HostActorHandle, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
         config_watcher::watch_config_file, db, host_actor::HostEvent,
         host_control::spawn_handle_host_state, shared_watch_store::SharedWatchRx,
     },
@@ -518,7 +518,7 @@ async fn poll_host_statuses(state: AppState) {
         // Apply polled states to the actor, which will skip any host with an active control task.
         let poll_iter = results
             .iter()
-            .map(|(name, (polled_state, _))| (name.clone(), *polled_state));
+            .map(|&(ref name, (ref polled_state, _))| (name.clone(), *polled_state));
         state.host_actor.apply_poll_results(poll_iter).await;
 
         // Record timestamps for state-changed hosts (for enforce stabilization timer).
@@ -690,15 +690,12 @@ async fn handle_host_events(
 
 /// Background task: watches the lease store and forwards per-host lease changes
 /// into the [`HostActorHandle`] event stream so all consumers can use a single stream.
-async fn forward_lease_events(
-    mut leases_rx: LeaseRx,
-    host_actor: crate::app::host_actor::HostActorHandle,
-) {
+async fn forward_lease_events(mut leases_rx: LeaseRx, host_actor: HostActorHandle) {
     let mut prev_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
     while leases_rx.changed().await.is_ok() {
         let new_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
         // Notify the actor for each host whose lease set changed.
-        let all_hosts: std::collections::HashSet<&str> = prev_leases
+        let all_hosts: HashSet<&str> = prev_leases
             .keys()
             .chain(new_leases.keys())
             .map(String::as_str)

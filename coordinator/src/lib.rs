@@ -28,6 +28,7 @@ use std::{env, fs, process, sync::Once};
 use nix::sys::stat;
 // for use in integration tests
 use eyre::{Result, WrapErr as _};
+use rustls::crypto::aws_lc_rs;
 use tracing::{Instrument as _, info, warn};
 use tracing_subscriber::{EnvFilter, fmt::time::ChronoLocal};
 
@@ -95,7 +96,7 @@ pub async fn inner_main(invocation: Cli) -> Result<()> {
             let _startup_enter = startup_span.enter();
 
             INIT_RUSTLS.call_once(|| {
-                rustls::crypto::aws_lc_rs::default_provider()
+                aws_lc_rs::default_provider()
                     .install_default()
                     .expect("failed to install default rustls provider");
             });

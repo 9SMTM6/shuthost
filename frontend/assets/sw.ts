@@ -217,7 +217,9 @@ const fastestOfWithTimeout = (
 
     return {
         responsePromise,
-        bgWorkPromise: bgWorkPromise.then(() => undefined).catch(() => undefined),
+        bgWorkPromise: bgWorkPromise
+            .then(() => undefined)
+            .catch(() => undefined),
     };
 };
 

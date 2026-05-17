@@ -10,6 +10,7 @@ use tokio::time::sleep;
 use axum::{
     Router,
     extract::{Query, State},
+    http::uri::InvalidUri,
     response::{IntoResponse, Response},
     routing::{get, post},
 };
@@ -22,7 +23,7 @@ use tracing::{error, warn};
 use web_push_native::{
     Auth, WebPushBuilder,
     jwt_simple::algorithms::{ECDSAP256KeyPairLike as _, ES256KeyPair},
-    p256::PublicKey,
+    p256::{PublicKey, elliptic_curve::Error as P256Error},
 };
 
 use crate::app::{AppState, db};
@@ -540,13 +541,13 @@ enum PushSubscriptionError {
     #[error("invalid p256dh base64: {0}")]
     P256dhBase64(base64::DecodeError),
     #[error("invalid p256dh key: {0}")]
-    P256dhKey(web_push_native::p256::elliptic_curve::Error),
+    P256dhKey(P256Error),
     #[error("auth secret must be 16 bytes, got {0}")]
     AuthLength(usize),
     #[error("invalid auth base64: {0}")]
     AuthBase64(base64::DecodeError),
     #[error("invalid endpoint URI: {0}")]
-    Endpoint(hyper::http::uri::InvalidUri),
+    Endpoint(InvalidUri),
 }
 
 /// Constructs a [`WebPushBuilder`] from the raw base64url-encoded fields stored in the database.
