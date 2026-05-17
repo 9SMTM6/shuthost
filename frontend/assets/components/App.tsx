@@ -1,7 +1,9 @@
 import { Title } from '@solidjs/meta';
+import { useNavigate } from '@solidjs/router';
 import type { ParentProps } from 'solid-js';
-import { onMount, Show } from 'solid-js';
+import { createEffect, onMount, Show } from 'solid-js';
 import { initDemoMode, isDemoMode } from '../helpers/demo';
+import { isLoggedIn } from '../helpers/authState';
 import { serverData } from '../helpers/serverData';
 import type { AnyComponent } from '../helpers/utils';
 import { connectWebSocket } from '../helpers/ws';
@@ -11,6 +13,12 @@ import { Header } from './Header';
 import { JsErrorBox } from './JsErrorBox';
 
 export const AppLayout = ((props: ParentProps) => {
+    const navigate = useNavigate();
+    createEffect(() => {
+        if (isLoggedIn() === false) {
+            navigate('/login', { replace: true });
+        }
+    });
     onMount(() => {
         if (isDemoMode) {
             initDemoMode();

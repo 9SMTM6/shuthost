@@ -16,6 +16,7 @@ const checkAuthThenReconnect = async () => {
             console.warn(
                 `Auth probe: received ${resp.status} (expected for unauthenticated users)`,
             );
+            window.location.assign('/login');
             return;
         }
         if (!resp.ok) {
