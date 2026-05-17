@@ -82,7 +82,7 @@ impl SharedWatchStore<OperationFailureMap> {
         let mut inner = self.inner.lock().await;
         let is_new = inner
             .get(host)
-            .map_or(true, |existing| existing.operation != failure.operation);
+            .is_none_or(|existing| existing.operation != failure.operation);
         inner.insert(host.to_string(), failure);
         drop(self.tx.send(Arc::new(inner.clone())));
         is_new

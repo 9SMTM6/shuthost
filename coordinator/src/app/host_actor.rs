@@ -46,7 +46,7 @@ pub(crate) enum TransitionResult {
 ///
 /// Subscribers can use this stream to react to transitions in a single, ordered
 /// place rather than watching multiple independent channels.
-#[allow(dead_code)]
+#[expect(dead_code)]
 #[derive(Debug, Clone)]
 pub(crate) enum HostEvent {
     /// A host's visible [`HostState`] changed.
@@ -407,7 +407,7 @@ mod tests {
             direction: OperationKind::Startup,
             reply: tx,
         });
-        assert_eq!(rx.try_recv().unwrap(), true);
+        assert!(rx.try_recv().unwrap());
         assert_eq!(*actor.states.get("srv").unwrap(), HostState::Waking,);
         assert!(actor.control_active.contains("srv"));
         assert_eq!(
@@ -433,7 +433,7 @@ mod tests {
             direction: OperationKind::Startup,
             reply: tx2,
         });
-        assert_eq!(rx2.try_recv().unwrap(), false);
+        assert!(!rx2.try_recv().unwrap());
         // State unchanged
         assert_eq!(*actor.states.get("srv").unwrap(), HostState::Waking);
     }
@@ -511,8 +511,8 @@ mod tests {
     // Flicker fix: the core regression test
     // -------------------------------------------------------------------
 
-    /// Verifies that a StartupBroadcast during Waking does NOT allow a subsequent
-    /// PollResults to set the host Offline (the control-active guard must hold).
+    /// Verifies that a `StartupBroadcast` during Waking does NOT allow a subsequent
+    /// `PollResults` to set the host Offline (the control-active guard must hold).
     #[test]
     fn poll_results_ignored_while_control_active_even_after_startup_broadcast() {
         let mut actor = make_actor();
@@ -585,7 +585,7 @@ mod tests {
                 assert_eq!(from, HostState::Offline);
                 assert_eq!(to, HostState::Waking);
             }
-            _ => panic!("unexpected event"),
+            HostEvent::LeaseChanged { .. } => panic!("unexpected event"),
         }
     }
 
@@ -610,7 +610,7 @@ mod tests {
                 assert_eq!(host, "srv");
                 assert_eq!(got_leases, leases);
             }
-            _ => panic!("unexpected event"),
+            HostEvent::StateChanged { .. } => panic!("unexpected event"),
         }
     }
 

@@ -13,7 +13,9 @@ const checkAuthThenReconnect = async () => {
             credentials: 'same-origin',
         });
         if (resp.status === 401) {
-            console.warn(`Auth probe: received ${resp.status} (expected for unauthenticated users)`);
+            console.warn(
+                `Auth probe: received ${resp.status} (expected for unauthenticated users)`,
+            );
             return;
         }
         if (!resp.ok) {
@@ -49,7 +51,11 @@ export const connectWebSocket = () => {
                 parsed = null;
             }
 
-            if (parsed && typeof parsed === 'object' && 'type' in (parsed as any)) {
+            if (
+                parsed &&
+                typeof parsed === 'object' &&
+                'type' in (parsed as any)
+            ) {
                 const t = (parsed as any).type;
                 if (t === 'pong') {
                     // Received heartbeat response from server.
@@ -96,13 +102,18 @@ export const connectWebSocket = () => {
         _heartbeatIntervalId = null;
     }
     _heartbeatIntervalId = window.setInterval(() => {
-        if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) return;
+        if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN)
+            return;
         try {
-            currentSocket.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
+            currentSocket.send(
+                JSON.stringify({ type: 'ping', ts: Date.now() }),
+            );
             // Set a timeout; if no pong arrives in time, force reconnect.
             if (_heartbeatTimeoutId) clearTimeout(_heartbeatTimeoutId);
             _heartbeatTimeoutId = window.setTimeout(() => {
-                console.warn('Heartbeat timeout — closing socket to trigger reconnect');
+                console.warn(
+                    'Heartbeat timeout — closing socket to trigger reconnect',
+                );
                 try {
                     currentSocket?.close();
                 } catch {}

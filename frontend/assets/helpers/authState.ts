@@ -20,7 +20,9 @@ if (needsProbe) {
     })
         .then((res) => {
             if (res.status === 401) {
-                console.warn(`Auth probe: received ${res.status} (expected for unauthenticated users)`);
+                console.warn(
+                    `Auth probe: received ${res.status} (expected for unauthenticated users)`,
+                );
                 setAuthStatus('no');
             } else {
                 setAuthStatus('yes');

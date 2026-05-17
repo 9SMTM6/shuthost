@@ -223,7 +223,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
 
             // Translate the operation result into a TransitionResult and inform the actor.
             // The actor will update the visible state and release control_active.
-            let transition_result = match &result {
+            let transition_result = match result {
                 Ok(OperationOrNoop::Executed) => match operation_kind {
                     OperationKind::Startup => TransitionResult::WakeOk,
                     OperationKind::Shutdown => TransitionResult::ShutdownOk,
@@ -489,7 +489,7 @@ pub(crate) async fn wait_for_transition(
     }
     let mut rx = host_actor.subscribe_status();
     loop {
-        match tokio::time::timeout_at(deadline, rx.changed()).await {
+        match timeout_at(deadline, rx.changed()).await {
             Ok(Ok(())) => {
                 if host_actor.get_current_state(host) == desired_state {
                     return Ok(());
