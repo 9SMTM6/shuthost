@@ -204,7 +204,8 @@ async fn start_webui_ws_loop(mut socket: WebSocket, mut rx: broadcast::Receiver<
                                     }
                                 }
                                 Message::Pong(_) | Message::Binary(_) => {
-                                    // client answered a server ping — nothing to do on server side
+                                    // Pong: client answered a server ping — nothing to do on server side
+                                    // Binary: we don't expect to receive any binary messages
                                 }
                                 Message::Close(_) => {
                                     debug!("WebSocket connection closed by client");
