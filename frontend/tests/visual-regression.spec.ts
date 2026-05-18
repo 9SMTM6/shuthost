@@ -76,6 +76,7 @@ test.describe('main page(s)', () => {
         );
     });
 
+    // WARN: This is a bit brittle since the licenses list changes on updates etc, leading to different distributions between column widths
     test('license table header', async ({ page }) => {
         await page.goto(`${base}/about`);
         await page.waitForLoadState('networkidle');
