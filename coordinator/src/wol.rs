@@ -36,13 +36,29 @@ pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::
         .map_err(|e| eyre::eyre!("Failed to create broadcast socket: {e}"))?;
 
     const BURST_COUNT: usize = 3;
-    for _ in 0..BURST_COUNT {
-        socket
-            .send_to(&packet, format!("{broadcast_ip}:9"))
-            .wrap_err(format!("Failed to send magic packet to {broadcast_ip}:9"))?;
+    const BURST_DELAY: Duration = Duration::from_millis(100);
+    let destination = format!("{broadcast_ip}:9");
+    let mut send_succeeded = false;
+    let mut last_send_error = None;
+
+    for attempt in 0..BURST_COUNT {
+        match socket.send_to(&packet, &destination) {
+            Ok(_) => send_succeeded = true,
+            Err(error) => last_send_error = Some(error),
+        }
+
+        if attempt + 1 < BURST_COUNT {
+            std::thread::sleep(BURST_DELAY);
+        }
     }
 
-    Ok(())
+    if send_succeeded {
+        Ok(())
+    } else {
+        Err(last_send_error
+            .expect("A send error should be recorded when all send attempts fail"))
+        .wrap_err(format!("Failed to send magic packet to {destination}")))
+    }
 }
 
 fn parse_mac(mac: &str) -> eyre::Result<[u8; MAC_ADDRESS_LENGTH]> {
