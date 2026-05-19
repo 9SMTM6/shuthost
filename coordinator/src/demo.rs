@@ -9,13 +9,14 @@ use std::{collections::HashMap, path};
 use axum::{http::Response, response::IntoResponse as _};
 use tokio::{
     net::TcpListener,
-    sync::{RwLock, broadcast, watch},
+    sync::{broadcast, watch},
 };
 use tracing::info;
 
 use crate::{
     app::{
-        AppState, HostActorHandle, LeaseMapRaw, LeaseStore, OperationFailureStore, shutdown_signal,
+        AppState, HostActorHandle, LeaseMapRaw, LeaseStore, OperationFailureStore, RwMap,
+        shutdown_signal,
     },
     config::{AuthConfig, ControllerConfig, RuntimeConfig},
     http::{
@@ -55,8 +56,8 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         host_actor: hoststatus,
         ws_tx: broadcast::channel(1).0,
         leases: LeaseStore::new(LeaseMapRaw::default()).0,
-        host_overrides: Arc::new(RwLock::new(HashMap::new())),
-        host_install_info: Arc::new(RwLock::new(HashMap::new())),
+        host_overrides: RwMap::default(),
+        host_install_info: RwMap::default(),
         auth: Arc::new(
             auth::Runtime::from_config(&AuthConfig::default(), None)
                 .await
@@ -67,7 +68,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         db_pool: None,
         vapid_key: None,
         operation_failures: OperationFailureStore::new(HashMap::new()).0,
-        online_since: Arc::new(RwLock::new(HashMap::new())),
+        online_since: RwMap::default(),
     };
 
     let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);

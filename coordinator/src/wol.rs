@@ -55,9 +55,8 @@ pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::
     if send_succeeded {
         Ok(())
     } else {
-        Err(last_send_error
-            .expect("A send error should be recorded when all send attempts fail"))
-        .wrap_err(format!("Failed to send magic packet to {destination}"))
+        Err(last_send_error.expect("A send error should be recorded when all send attempts fail"))
+            .wrap_err(format!("Failed to send magic packet to {destination}"))
     }
 }
 

@@ -107,6 +107,8 @@ pub(crate) struct HostInstallInfo {
     pub script_path: Option<String>,
 }
 
+pub(crate) type RwMap<V> = Arc<RwLock<HashMap<String, V>>>;
+
 /// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -127,10 +129,10 @@ pub(crate) struct AppState {
 
     /// Runtime IP/port overrides for hosts whose address differs from the static config.
     /// Populated from the DB on startup and updated live when agent startup broadcasts arrive.
-    pub host_overrides: Arc<RwLock<HashMap<String, db::HostOverride>>>,
+    pub host_overrides: RwMap<db::HostOverride>,
 
     /// Cached known agent install info from the DB and runtime events.
-    pub host_install_info: Arc<RwLock<HashMap<String, HostInstallInfo>>>,
+    pub host_install_info: RwMap<HostInstallInfo>,
 
     /// Authentication runtime (mode and secrets)
     pub auth: Arc<auth::Runtime>,
@@ -155,7 +157,7 @@ pub(crate) struct AppState {
     /// Used to validate deferred online-for notifications — if the `Instant` at notification
     /// time matches the one recorded at subscribe time, the host is still in the same online
     /// session.
-    pub online_since: Arc<RwLock<HashMap<String, Instant>>>,
+    pub online_since: RwMap<Instant>,
 }
 
 /// Initialize database pool based on configuration.
@@ -379,7 +381,7 @@ pub(super) async fn initialize_state(
         db_pool,
         vapid_key,
         operation_failures,
-        online_since: Arc::new(RwLock::new(HashMap::new())),
+        online_since: RwMap::default(),
     };
 
     emit_startup_warnings(&app_state, &initial_config);
