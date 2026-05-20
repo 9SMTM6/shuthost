@@ -80,8 +80,45 @@ include-path-dependencies = true
 unused = 'deny'
 
 # TODO: investigate in the future. But this has issues, as listed in the cargo deny book, and doesnt get checked befofe execution, so its certainly not perfect. 
-# [bans.build]
-# allow-build-scripts = []
+[bans.build]
+# comments describe findings of a cursory scan on 20.05.26
+allow-build-scripts = [
+    # damned system crates
+    "windows_aarch64_msvc", "windows_x86_64_msvc", "windows_aarch64_gnu", "windows_x86_64_gnu",
+    # clib bindings
+    "libc", "libm",
+    # system headers
+    "getrandom",
+    # TODO: remove once they released the current main branch without build.rs
+    "cookie@<=0.18.1", "httparse@<=1.10.1",
+    # uses crypto algos in C
+    "rustls", "aws-lc-rs", "aws-lc-sys", "ring", "crc32fast", "curve25519-dalek",
+    # build.rs in these crates does, mostly checks about the environment and rustc capabilities.
+    "anyhow", "eyre", "thiserror",
+    # seems to do some strange thing with placing a module in a patch specific path
+    "miniserde",
+    # seems to set up some cfg macro aliases, and add some custom cfg values
+    "nix",
+    # -sys wraps zstd, -safe does: `Force the `std` feature in some cases`
+    "zstd-safe", "zstd-sys",
+    # seems to have a large build.rs that just sets up some cfg flags.
+    "zerocopy",
+    # sets rustc-check-cfg based on rustc version, hides private module
+    "serde", "serde_core",
+    # sets up the rustc version "cfg" macros (rustc-check-cfg)
+    "rustversion",
+    # makes sure that there is only one version of itself
+    "rayon-core",
+    # just does rustc-check-cfg
+    "quote", "proc-macro2",
+    # add respectively cfg(tsan_enabled), cfg(nightly), cfg(crossbeam_no_atomic,crossbeam_sanitize_thread,crossbeam_atomic_cell_force_fallback)
+    "parking_lot_core", "slotmap", "crossbeam-utils",
+    "camino", "icu_normalizer_data", "icu_properties_data", "zmij",
+    "fs-err", "generic-array",
+    # needs to bind to sqlite headers
+    "libsqlite3-sys",
+    "serde_json", "num-traits", "num-bigint-dig",
+]
 
 [licenses]
 allow = [
