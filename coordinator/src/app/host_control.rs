@@ -301,11 +301,19 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
             // On successful completion, re-check whether the actual state matches the
             // desired state to handle the race where the lease changed while we were
             // transitioning.
+            //
+            // We derive the expected final state from `operation_kind` rather than
+            // reading it from the actor.  `transition_complete` only *queues* the
+            // completion message; the actor may not have published the new state to the
+            // watch channel yet.  Reading `get_current_state()` here would see the
+            // stale `Waking`/`ShuttingDown` value, wrongly conclude there is a
+            // mismatch, and spawn a redundant control task that immediately succeeds and
+            // spawns yet another — creating an infinite loop that keeps the host stuck
+            // at `Waking` even when it is online.
             if matches!(result, Ok(OperationOrNoop::Executed)) {
                 let desired_running = state.leases.host_has_leases(&host);
-                let current = state.host_actor.get_current_state(&host);
-                let is_running = matches!(current, HostState::Online);
-                if desired_running != is_running {
+                let will_be_running = matches!(operation_kind, OperationKind::Startup);
+                if desired_running != will_be_running {
                     spawn_handle_host_state(&host, &state);
                 }
             }

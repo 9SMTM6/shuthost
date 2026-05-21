@@ -211,6 +211,7 @@ pub(super) fn start_background_tasks(
     config_tx: &ConfigTx,
     broadcast_socket: UdpSocket,
 ) -> JoinSet<()> {
+    // TODO: move enforce_state handling into a dedicated task that watches host changes instead of inlining it into the polling task etc.
     let mut tasks = JoinSet::new();
 
     tasks.spawn(watch_config_file(
@@ -745,27 +746,37 @@ async fn broadcast_lease_updates(mut leases_rx: LeaseRx, ws_tx: WsTx) {
 
 /// Background task: reconcile host control on every lease-map change (edge-triggered, all hosts).
 async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
-    fn get_hosts_desired_offline(leases: &LeaseMapRaw) -> HashSet<String> {
+    // Build a map from host → desired_running for every host currently in the lease map.
+    // A host absent from this map has never been seen in the lease map (treated as None).
+    //
+    // Using a full HashMap rather than a subset-set (e.g. "desired_offline" or "desired_online")
+    // means ALL transitions are detected:
+    //   None  → Some(true)  – first-ever lease added          → trigger startup
+    //   None  → Some(false) – first explicit release (no prior lease) → shutdown check
+    //   Some(true)  → Some(false) – lease released            → trigger shutdown
+    //   Some(false) → Some(true)  – new lease                 → trigger startup
+    // The old "desired_offline" approach missed the None→Some(true) case (Bug #1).
+    // The "desired_online" approach missed the None→Some(false) case.
+    fn get_desired_map(leases: &LeaseMapRaw) -> HashMap<String, bool> {
         leases
             .iter()
-            .filter(|&(_, lease_set)| lease_set.is_empty())
-            .map(|(host, _)| host.clone())
+            .map(|(host, lease_set)| (host.clone(), !lease_set.is_empty()))
             .collect()
     }
 
-    let mut prev_desired_offline = get_hosts_desired_offline(&leases_rx.borrow_and_update());
+    let mut prev_desired = get_desired_map(&leases_rx.borrow_and_update());
 
     while leases_rx.changed().await.is_ok() {
         let new_leases = leases_rx.borrow_and_update();
-        let new_desired_offline = get_hosts_desired_offline(&new_leases);
+        let new_desired = get_desired_map(&new_leases);
         let hoststatus = state.host_actor.borrow();
 
-        let changed_desired_state: HashSet<_> = prev_desired_offline
-            .symmetric_difference(&new_desired_offline)
-            .collect();
-
-        for host_name in changed_desired_state {
-            let desired_running = !new_desired_offline.contains(host_name);
+        for (host_name, &desired_running) in &new_desired {
+            let prev = prev_desired.get(host_name).copied();
+            // Act if: newly added to lease map (None), or desired running changed.
+            if prev == Some(desired_running) {
+                continue;
+            }
 
             let current_state = *hoststatus.get(host_name).unwrap_or(&HostState::Offline);
 
@@ -776,14 +787,12 @@ async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
 
             let is_running = current_state == HostState::Online;
 
-            let needs_action = desired_running != is_running;
-
-            if needs_action {
+            if desired_running != is_running {
                 spawn_handle_host_state(host_name, &state);
             }
         }
 
-        prev_desired_offline = new_desired_offline;
+        prev_desired = new_desired;
     }
 }
 
