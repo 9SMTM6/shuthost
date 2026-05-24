@@ -2,7 +2,7 @@ import { A, useLocation, useNavigate } from '@solidjs/router';
 import { LogOut } from 'lucide-solid';
 import type { JSX, ParentProps } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
-import { isLoggedIn } from '../helpers/authState';
+import { authStatus } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { type ServerData, serverData } from '../helpers/serverData';
@@ -32,7 +32,7 @@ const TAB_ROUTES = {
 const HeaderShell = ((
     props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>,
 ) => {
-    const logoHref = () => (isLoggedIn() === false ? '/login' : '/');
+    const logoHref = () => (authStatus() === 'unauthenticated' ? '/login' : '/');
     return (
         <header class="bg-white dark:bg-[#1e1e1e] shadow-md">
             {props.topBanner}
@@ -69,7 +69,7 @@ const SHOW_LOGOUT_FOR = {
 export const SimpleHeader = (() => (
     <HeaderShell>
         <Show
-            when={isLoggedIn() === true && SHOW_LOGOUT_FOR[serverData.authMode]}
+            when={authStatus() === 'authenticated' && SHOW_LOGOUT_FOR[serverData.authMode]}
         >
             <form method="post" action="/logout">
                 <button

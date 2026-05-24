@@ -2,15 +2,15 @@ import { createSignal } from 'solid-js';
 import { demoSubpath, isDemoMode } from './demo';
 import { serverData } from './serverData';
 
-type AuthStatus = 'unknown' | 'yes' | 'no';
+export type AuthStatus = 'probing' | 'authenticated' | 'unauthenticated';
 
 // In demo mode there is no real backend — treat the user as authenticated.
 const needsProbe =
     !isDemoMode &&
     (serverData.authMode === 'token' || serverData.authMode === 'oidc');
 
-const [_authStatus, setAuthStatus] = createSignal<AuthStatus>(
-    needsProbe ? 'unknown' : 'yes',
+const [authStatus, setAuthStatus] = createSignal<AuthStatus>(
+    needsProbe ? 'probing' : 'authenticated',
 );
 
 if (needsProbe) {
@@ -23,21 +23,14 @@ if (needsProbe) {
                 console.warn(
                     `Auth probe: received ${res.status} (expected for unauthenticated users)`,
                 );
-                setAuthStatus('no');
+                setAuthStatus('unauthenticated');
             } else {
-                setAuthStatus('yes');
+                setAuthStatus('authenticated');
             }
         })
         .catch(() => {
-            /* leave 'unknown' on network error */
+            /* leave 'probing' on network error */
         });
 }
 
-/**
- * Reactive: `true` = logged in, `false` = not logged in, `undefined` = probe still in flight.
- */
-export const isLoggedIn = (): boolean | undefined => {
-    const s = _authStatus();
-    if (s === 'unknown') return undefined;
-    return s === 'yes';
-};
+export { authStatus };
