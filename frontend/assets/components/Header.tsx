@@ -32,7 +32,8 @@ const TAB_ROUTES = {
 const HeaderShell = ((
     props: ParentProps<{ topBanner?: JSX.Element; leftExtra?: JSX.Element }>,
 ) => {
-    const logoHref = () => (authStatus() === 'unauthenticated' ? '/login' : '/');
+    const logoHref = () =>
+        authStatus() === 'unauthenticated' ? '/login' : '/';
     return (
         <header class="bg-white dark:bg-[#1e1e1e] shadow-md">
             {props.topBanner}
@@ -69,7 +70,10 @@ const SHOW_LOGOUT_FOR = {
 export const SimpleHeader = (() => (
     <HeaderShell>
         <Show
-            when={authStatus() === 'authenticated' && SHOW_LOGOUT_FOR[serverData.authMode]}
+            when={
+                authStatus() === 'authenticated' &&
+                SHOW_LOGOUT_FOR[serverData.authMode]
+            }
         >
             <form method="post" action="/logout">
                 <button

@@ -52,12 +52,8 @@ export const connectWebSocket = () => {
                 parsed = null;
             }
 
-            if (
-                parsed &&
-                typeof parsed === 'object' &&
-                'type' in (parsed as any)
-            ) {
-                const t = (parsed as any).type;
+            if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+                const t = parsed.type;
                 if (t === 'pong') {
                     // Received heartbeat response from server.
                     if (_heartbeatTimeoutId) {

@@ -391,7 +391,7 @@ async fn wake_host_and_wait(
     info!(host = %host_with_name.name, mac = %host_with_name.host.mac, "Sending WoL packet");
 
     #[cfg(not(any(coverage, test)))]
-    if let Err(e) = wol::send_magic_packet(&host_with_name.host.mac, "255.255.255.255") {
+    if let Err(e) = wol::send_magic_packet(&host_with_name.host.mac, "255.255.255.255").await {
         return Err(HostControlError::OperationFailed {
             target: HostState::Online,
             report: e.wrap_err("Failed to send WoL packet"),
@@ -409,7 +409,7 @@ async fn wake_host_and_wait(
             ticker.tick().await; // skip the immediate tick; first re-send is after one interval
             loop {
                 ticker.tick().await;
-                if let Err(e) = wol::send_magic_packet(&mac, "255.255.255.255") {
+                if let Err(e) = wol::send_magic_packet(&mac, "255.255.255.255").await {
                     debug!("WoL re-send failed: {e}");
                 }
             }

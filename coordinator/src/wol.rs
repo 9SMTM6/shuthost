@@ -7,6 +7,7 @@
 use core::time::Duration;
 
 use eyre::Context as _;
+use tokio::time::sleep;
 
 const MAC_ADDRESS_LENGTH: usize = 6;
 
@@ -18,7 +19,7 @@ const MAC_ADDRESS_LENGTH: usize = 6;
     test,
     expect(dead_code, reason = "This function is not used in tests.")
 )]
-pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::Result<()> {
+pub(crate) async fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::Result<()> {
     let mac_bytes = parse_mac(mac_address)?;
     const MAC_REPETITIONS: usize = 16;
     let mut packet = [0xFFu8; MAC_ADDRESS_LENGTH + MAC_REPETITIONS * MAC_ADDRESS_LENGTH];
@@ -48,7 +49,7 @@ pub(crate) fn send_magic_packet(mac_address: &str, broadcast_ip: &str) -> eyre::
         }
 
         if attempt + 1 < BURST_COUNT {
-            std::thread::sleep(BURST_DELAY);
+            sleep(BURST_DELAY).await;
         }
     }
 
