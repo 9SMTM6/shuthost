@@ -95,7 +95,10 @@ export const Header = (() => {
     const navigate = useNavigate();
 
     const activeTab = (): TabId => {
-        const path = location.pathname;
+        const fullPath = location.pathname;
+        const path = demoSubpath
+            ? fullPath.slice(demoSubpath.length) || '/'
+            : fullPath;
         if (path === '/clients' || path.startsWith('/clients/'))
             return 'clients';
         if (path === '/docs') return 'architecture';
