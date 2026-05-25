@@ -21,8 +21,8 @@ const sanitizeDemoSubpath = (raw: string): string => {
 /** Normalised demo subpath: `''` or `'/base'` (no trailing slash). */
 export const demoSubpath = sanitizeDemoSubpath(serverData.demoSubpath ?? '');
 
-let leaseTimeout: ReturnType<typeof setTimeout> | null = null;
-let statusTimeout: ReturnType<typeof setTimeout> | null = null;
+const leaseTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const statusTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 let _demoInitialized = false;
 
@@ -159,47 +159,70 @@ export const demoUpdateLease = async (
     host: string,
     action: 'take' | 'release',
 ) => {
+    const clearHostTimeouts = () => {
+        const lt = leaseTimeouts.get(host);
+        if (lt != null) clearTimeout(lt);
+        const st = statusTimeouts.get(host);
+        if (st != null) clearTimeout(st);
+    };
+
     if (action === 'take') {
-        if (leaseTimeout) clearTimeout(leaseTimeout);
-        if (statusTimeout) clearTimeout(statusTimeout);
-        leaseTimeout = setTimeout(() => {
-            applyMessage({
-                type: 'LeaseUpdate',
-                payload: { host, leases: [{ type: 'WebInterface' }] },
-            });
-        }, 300);
-        statusTimeout = setTimeout(() => {
-            applyMessage({
-                type: 'HostStatus',
-                payload: { tarbean: 'offline', archive: 'waking' },
-            });
-            statusTimeout = setTimeout(() => {
+        clearHostTimeouts();
+        leaseTimeouts.set(
+            host,
+            setTimeout(() => {
+                applyMessage({
+                    type: 'LeaseUpdate',
+                    payload: { host, leases: [{ type: 'WebInterface' }] },
+                });
+            }, 300),
+        );
+        statusTimeouts.set(
+            host,
+            setTimeout(() => {
                 applyMessage({
                     type: 'HostStatus',
-                    payload: { tarbean: 'offline', archive: 'online' },
+                    payload: { [host]: 'waking' },
                 });
-            }, 1500);
-        }, 300);
+                statusTimeouts.set(
+                    host,
+                    setTimeout(() => {
+                        applyMessage({
+                            type: 'HostStatus',
+                            payload: { [host]: 'online' },
+                        });
+                    }, 1500),
+                );
+            }, 300),
+        );
     } else {
-        if (leaseTimeout) clearTimeout(leaseTimeout);
-        if (statusTimeout) clearTimeout(statusTimeout);
-        leaseTimeout = setTimeout(() => {
-            applyMessage({
-                type: 'LeaseUpdate',
-                payload: { host, leases: [] },
-            });
-        }, 300);
-        statusTimeout = setTimeout(() => {
-            applyMessage({
-                type: 'HostStatus',
-                payload: { tarbean: 'offline', archive: 'shutting_down' },
-            });
-            statusTimeout = setTimeout(() => {
+        clearHostTimeouts();
+        leaseTimeouts.set(
+            host,
+            setTimeout(() => {
+                applyMessage({
+                    type: 'LeaseUpdate',
+                    payload: { host, leases: [] },
+                });
+            }, 300),
+        );
+        statusTimeouts.set(
+            host,
+            setTimeout(() => {
                 applyMessage({
                     type: 'HostStatus',
-                    payload: { tarbean: 'offline', archive: 'offline' },
+                    payload: { [host]: 'shutting_down' },
                 });
-            }, 1500);
-        }, 300);
+                statusTimeouts.set(
+                    host,
+                    setTimeout(() => {
+                        applyMessage({
+                            type: 'HostStatus',
+                            payload: { [host]: 'offline' },
+                        });
+                    }, 1500),
+                );
+            }, 300),
+        );
     }
 };
