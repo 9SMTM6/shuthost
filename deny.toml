@@ -29,6 +29,10 @@ ignore = [
 # Is a duplicate of rustc::multiple_crate_versions
 multiple-versions = "warn"
 
+skip-tree = [
+    { crate = "windows-sys:<0.61.2", depth = 3, reason = "several crates use outdated versions" },
+]
+
 # https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html#the-workspace-dependencies-field-optional
 [bans.workspace-dependencies]
 # Determines what happens when more than 1 direct workspace dependency is resolved to the same crate and 1 or more declarations do not use workspace = true
@@ -36,10 +40,6 @@ duplicates = 'deny'
 include-path-dependencies = true
 # Determines what happens when a dependency in [workspace.dependencies] is not used in the workspace.
 unused = 'deny'
-
-skip-tree = [
-    { crate = "windows-sys:<0.61.2", depth = 3, reason = "several crates use outdated versions" },
-]
 
 [[bans.deny]]
 name = "ring"
