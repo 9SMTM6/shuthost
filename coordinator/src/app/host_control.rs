@@ -228,7 +228,7 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                     OperationKind::Startup => TransitionResult::WakeOk,
                     OperationKind::Shutdown => TransitionResult::ShutdownOk,
                 },
-                // WoL disabled (Noop): release the slot; let poller determine actual state.
+                // WoL disabled (Noop): release the slot.
                 Ok(OperationOrNoop::Noop) => match operation_kind {
                     OperationKind::Startup => TransitionResult::WakeErr,
                     OperationKind::Shutdown => TransitionResult::ShutdownOk,

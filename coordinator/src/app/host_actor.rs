@@ -72,7 +72,11 @@ pub(crate) enum HostEvent {
 pub(crate) enum HostCmd {
     /// Batch of polled (Online/Offline) observations from the background poller.
     /// Ignored for any host currently under control-task ownership.
-    PollResults(Vec<(String, HostState)>),
+    /// The actor sends the resulting snapshot back via `reply` once processed.
+    PollResults {
+        results: Vec<(String, HostState)>,
+        reply: oneshot::Sender<Arc<HostStatus>>,
+    },
 
     /// A valid startup broadcast was received from a host agent.
     /// Sets the host Online (even during `Waking`) but does NOT release
@@ -148,7 +152,7 @@ impl HostActor {
 
     fn handle_cmd(&mut self, cmd: HostCmd) {
         match cmd {
-            HostCmd::PollResults(results) => {
+            HostCmd::PollResults { results, reply } => {
                 for (host, new_state) in results {
                     // Ignore if a control task is in-flight for this host.
                     if self.control_active.contains(&host) {
@@ -173,6 +177,9 @@ impl HostActor {
                     }
                     self.apply_state_change(&host, new_state);
                 }
+                // Reply with the post-apply snapshot so the caller observes the
+                // definitive state without a separate watch read.
+                drop(reply.send(self.status_tx.borrow().clone()));
             }
 
             HostCmd::StartupBroadcast { host } => {
@@ -313,12 +320,27 @@ impl HostActorHandle {
     /// Submit a batch of polled (Online/Offline) observations.
     ///
     /// Hosts with an active control task are silently skipped by the actor.
+    /// Returns the post-apply host-status snapshot (via a oneshot reply from
+    /// the actor), so the caller sees the definitive state synchronously.
     pub(crate) async fn apply_poll_results(
         &self,
         results: impl IntoIterator<Item = (String, HostState)>,
-    ) {
+    ) -> Arc<HostStatus> {
         let vec: Vec<_> = results.into_iter().collect();
-        drop(self.tx.send(HostCmd::PollResults(vec)).await);
+        let (reply_tx, reply_rx) = oneshot::channel();
+        if self
+            .tx
+            .send(HostCmd::PollResults {
+                results: vec,
+                reply: reply_tx,
+            })
+            .await
+            .is_err()
+        {
+            // Actor has shut down; fall back to the current watch value.
+            return self.snapshot();
+        }
+        reply_rx.await.unwrap_or_else(|_| self.snapshot())
     }
 
     /// Signal that a valid startup broadcast was received for `host`.
@@ -535,10 +557,11 @@ mod tests {
         assert!(actor.control_active.contains("srv"));
 
         // Step 3: poller fires and observes Offline (early poll during boot) → must be IGNORED
-        actor.handle_cmd(HostCmd::PollResults(vec![(
-            "srv".to_string(),
-            HostState::Offline,
-        )]));
+        let (reply_tx, _reply_rx) = oneshot::channel();
+        actor.handle_cmd(HostCmd::PollResults {
+            results: vec![("srv".to_string(), HostState::Offline)],
+            reply: reply_tx,
+        });
         // State must remain Online, not flicker to Offline
         assert_eq!(
             *actor.states.get("srv").unwrap(),
@@ -555,10 +578,11 @@ mod tests {
         assert!(!actor.control_active.contains("srv"));
 
         // Step 5: now poller can write (control_active cleared)
-        actor.handle_cmd(HostCmd::PollResults(vec![(
-            "srv".to_string(),
-            HostState::Offline,
-        )]));
+        let (reply_tx, _reply_rx) = oneshot::channel();
+        actor.handle_cmd(HostCmd::PollResults {
+            results: vec![("srv".to_string(), HostState::Offline)],
+            reply: reply_tx,
+        });
         assert_eq!(*actor.states.get("srv").unwrap(), HostState::Offline);
     }
 
@@ -621,10 +645,11 @@ mod tests {
         let mut ev_rx = actor.event_tx.subscribe();
 
         // Poll result for same state → no event
-        actor.handle_cmd(HostCmd::PollResults(vec![(
-            "srv".to_string(),
-            HostState::Online,
-        )]));
+        let (reply_tx, _reply_rx) = oneshot::channel();
+        actor.handle_cmd(HostCmd::PollResults {
+            results: vec![("srv".to_string(), HostState::Online)],
+            reply: reply_tx,
+        });
         assert!(
             ev_rx.try_recv().is_err(),
             "no event expected for no-op state write"

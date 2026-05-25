@@ -517,19 +517,20 @@ async fn poll_host_statuses(state: AppState) {
         }
 
         // Apply polled states to the actor, which will skip any host with an active control task.
+        // The oneshot reply carries the post-apply snapshot, so the change comparison below
+        // is guaranteed to observe the updates from this poll cycle rather than potentially
+        // stale watch state.
         let poll_iter = results
             .iter()
             .map(|&(ref name, (ref polled_state, _))| (name.clone(), *polled_state));
-        state.host_actor.apply_poll_results(poll_iter).await;
+        let post_poll_status = state.host_actor.apply_poll_results(poll_iter).await;
 
+        // TODO: move this elsewhere, into a consumer of the host status stream.
         // Record timestamps for state-changed hosts (for enforce stabilization timer).
-        // We compare the current watch snapshot with the pre-poll snapshot.
-        {
-            let current_status = state.host_actor.snapshot();
-            for (host, new_state) in current_status.iter() {
-                if pre_poll_status.get(host) != Some(new_state) {
-                    state_timestamps.insert(host.clone(), poll_start);
-                }
+        // We compare the post-poll snapshot with the pre-poll snapshot.
+        for (host, new_state) in post_poll_status.iter() {
+            if pre_poll_status.get(host) != Some(new_state) {
+                state_timestamps.insert(host.clone(), poll_start);
             }
         }
 
