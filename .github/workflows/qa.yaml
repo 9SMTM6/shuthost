@@ -90,7 +90,12 @@ jobs:
       - *latest-node-lts
       - run: rustup update stable
       - run: cargo install sqlx-cli --no-default-features --features sqlite --locked
-      - run: cargo sqlx prepare --check --workspace
+      - run: |
+          cd coordinator;
+          export DATABASE_URL=sqlite:./shuthost.db
+          cargo sqlx database create;
+          cargo sqlx migrate run --source migrations
+          cargo sqlx prepare --check --workspace
 
   coverage:
     name: Coverage report (llvm-cov)
