@@ -10,13 +10,13 @@
     )
 )]
 
+use alloc::sync::Arc;
 use core::time::Duration;
 use std::{
     env, fs,
     io::Write as _,
-    net::{TcpListener, TcpStream as StdTcpStream},
+    net::{TcpListener as StdTcpListener, TcpStream as StdTcpStream},
     path::Path,
-    sync::Arc,
     thread,
     time::Instant,
 };
@@ -29,7 +29,7 @@ use shuthost_coordinator::cli::Cli as CoordinatorCli;
 use shuthost_host_agent::Cli as AgentCli;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
-    net::TcpStream,
+    net::{TcpListener, TcpStream},
     sync::Mutex,
     task,
     time::{self, timeout},
@@ -78,7 +78,7 @@ pub(crate) fn get_free_port() -> u16 {
     // coordinator/agent — would eliminate the race entirely but requires
     // production code changes. The current approach is the accepted industry
     // standard for test port allocation.
-    TcpListener::bind("127.0.0.1:0")
+    StdTcpListener::bind("127.0.0.1:0")
         .expect("failed to bind to port 0")
         .local_addr()
         .expect("failed to get local addr")
@@ -273,7 +273,7 @@ pub(crate) async fn wait_for_host_state(
     false
 }
 
-/// A minimal in-process HTTP server that collects JSON webhook payloads POSTed to it.
+/// A minimal in-process HTTP server that collects JSON webhook payloads `POSTed` to it.
 ///
 /// Used by notification integration tests to verify that the coordinator fires
 /// the correct webhook payload for each event kind.
@@ -300,13 +300,13 @@ impl MockWebhookServer {
             }),
         );
 
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        let listener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("failed to bind mock webhook server");
         let port = listener.local_addr().expect("no local addr").port();
 
         tokio::spawn(async move {
-            axum::serve(listener, app).await.ok();
+            axum::serve(listener, app).await.unwrap();
         });
 
         Self { port, payloads }
@@ -333,7 +333,7 @@ impl MockWebhookServer {
         loop {
             {
                 let mut payloads = self.payloads.lock().await;
-                if let Some(pos) = payloads.iter().position(|p| predicate(p)) {
+                if let Some(pos) = payloads.iter().position(&predicate) {
                     return Some(payloads.remove(pos));
                 }
             }

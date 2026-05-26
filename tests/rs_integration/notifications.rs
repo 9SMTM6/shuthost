@@ -17,6 +17,8 @@ use crate::common::{
     wait_for_listening,
 };
 
+// TODO: add tests for, or harden the existing tests, to detect wrong notifications
+
 // ─────────────────────────────────────────────────────────────────
 // unscheduled.startup
 // ─────────────────────────────────────────────────────────────────
@@ -117,7 +119,9 @@ async fn webhook_fires_for_unscheduled_shutdown() {
 
     let client = reqwest::Client::new();
     client
-        .post(format!("http://127.0.0.1:{coord_port}/api/lease/myhost/take"))
+        .post(format!(
+            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+        ))
         .send()
         .await
         .expect("failed to take lease");
@@ -189,7 +193,9 @@ async fn webhook_fires_for_operation_failed_startup() {
     // No agent is started — taking a lease triggers a wake attempt that will
     // never succeed, resulting in an operation_failed notification.
     reqwest::Client::new()
-        .post(format!("http://127.0.0.1:{coord_port}/api/lease/myhost/take"))
+        .post(format!(
+            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+        ))
         .send()
         .await
         .expect("failed to take lease");
@@ -253,7 +259,9 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
 
     // No agent — every wake attempt will time out.
     reqwest::Client::new()
-        .post(format!("http://127.0.0.1:{coord_port}/api/lease/myhost/take"))
+        .post(format!(
+            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+        ))
         .send()
         .await
         .expect("failed to take lease");
@@ -266,7 +274,10 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
         )
         .await
         .expect("expected first operation_failed-startup webhook");
-    assert_eq!(first["is_repeat"], false, "first failure should not be a repeat");
+    assert_eq!(
+        first["is_repeat"], false,
+        "first failure should not be a repeat"
+    );
 
     // enforce_state re-triggers the wake; the second attempt also fails.
     let second = webhook
@@ -276,7 +287,10 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
         )
         .await
         .expect("expected second operation_failed-startup webhook (repeat)");
-    assert_eq!(second["is_repeat"], true, "second failure should be a repeat");
+    assert_eq!(
+        second["is_repeat"], true,
+        "second failure should be a repeat"
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -331,7 +345,9 @@ async fn webhook_fires_for_operation_failed_shutdown() {
 
     // Take a lease so the host is "under coordinator control".
     client
-        .post(format!("http://127.0.0.1:{coord_port}/api/lease/myhost/take"))
+        .post(format!(
+            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+        ))
         .send()
         .await
         .expect("failed to take lease");

@@ -582,12 +582,10 @@ fn spawn_webhook_online_for_timers(
         .iter()
         .flat_map(|webhook| {
             webhook.events.iter().flatten().filter_map(|f| match f {
-                &WebhookEventFilter::Structured(
-                    StructuredEventFilter::OnlineFor {
-                        duration_secs,
-                        ref hosts,
-                    },
-                ) if hosts.is_none()
+                &WebhookEventFilter::Structured(StructuredEventFilter::OnlineFor {
+                    duration_secs,
+                    ref hosts,
+                }) if hosts.is_none()
                     || hosts
                         .as_ref()
                         .is_some_and(|hs| hs.iter().any(|h| h == host)) =>
