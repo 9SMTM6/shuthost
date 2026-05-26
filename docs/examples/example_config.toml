@@ -197,8 +197,7 @@ bind = "127.0.0.1"
 # # When set, each POST includes an `X-ShutHost-Signature: sha256=<hex>` header.
 # secret = "your-webhook-secret"
 # # Optional extra HTTP headers (e.g. for bearer-token auth).
-# [notifications.webhooks.headers]
-# Authorization = "Bearer your-token-here"
+# headers = { Authorization = "Bearer your-token-here" }
 # # Which events fire this webhook.
 # # Absent (omitted): fires for `unscheduled` and `operation_failed` on all hosts.
 # #   Since `online_for` needs a time, it is not included by default.
