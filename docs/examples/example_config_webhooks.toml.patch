@@ -1,6 +1,6 @@
---- example_config.toml	2026-05-26 12:39:20.708819911 +0200
-+++ example_config_webhooks.toml	2026-05-26 12:39:28.594859403 +0200
-@@ -184,38 +184,38 @@
+--- example_config.toml	2026-05-26 13:03:48.259742928 +0200
++++ example_config_webhooks.toml	2026-05-26 13:02:26.982748296 +0200
+@@ -184,37 +184,37 @@
  #     # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
  #     shutdown_timeout_secs = 20
  
@@ -17,8 +17,7 @@
 -# # When set, each POST includes an `X-ShutHost-Signature: sha256=<hex>` header.
 -# secret = "your-webhook-secret"
 -# # Optional extra HTTP headers (e.g. for bearer-token auth).
--# [notifications.webhooks.headers]
--# Authorization = "Bearer your-token-here"
+-# headers = { Authorization = "Bearer your-token-here" }
 -# # Which events fire this webhook.
 -# # Absent (omitted): fires for `unscheduled` and `operation_failed` on all hosts.
 -# #   Since `online_for` needs a time, it is not included by default.
@@ -49,8 +48,7 @@
 +# When set, each POST includes an `X-ShutHost-Signature: sha256=<hex>` header.
 +secret = "your-webhook-secret"
 +# Optional extra HTTP headers (e.g. for bearer-token auth).
-+[notifications.webhooks.headers]
-+Authorization = "Bearer your-token-here"
++headers = { Authorization = "Bearer your-token-here" }
 +# Which events fire this webhook.
 +# Absent (omitted): fires for `unscheduled` and `operation_failed` on all hosts.
 +#   Since `online_for` needs a time, it is not included by default.
@@ -64,7 +62,7 @@
 +    "unscheduled",
 +    # Structured: same event, scoped to specific hosts
 +    { type = "operation_failed", hosts = ["my-host", "other-host"] },
-+    # online_for has no string shorthand — duration_secs is always required
++    # online_for has no shorthand — duration_secs is always required
 +    { type = "online_for", duration_secs = 300 },
 +    { type = "online_for", duration_secs = 3600, hosts = ["my-host"] },
 +]

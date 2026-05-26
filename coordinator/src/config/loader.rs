@@ -40,7 +40,15 @@ mod tests {
     use secrecy::{ExposeSecret as _, SecretString};
 
     use super::*;
-    use crate::config::{AuthMode, DbConfig, OidcConfig, RuntimeConfig};
+    use crate::config::{
+        AuthMode,
+        DbConfig,
+        OidcConfig,
+        RuntimeConfig,
+        SimpleEventFilter,
+        StructuredEventFilter,
+        WebhookEventFilter,
+    };
 
     #[tokio::test]
     async fn load_coordinator_config_file() {
@@ -175,6 +183,42 @@ mod tests {
         assert_eq!(cfg.server.bind, "127.0.0.1");
         assert_eq!(cfg.db, Some(DbConfig::default()));
         assert!(matches!(cfg.server.auth.mode, AuthMode::Token { .. }));
+    }
+
+    #[tokio::test]
+    async fn load_example_config_webhooks() {
+        let temp_file = env::temp_dir().join("test_example_config_webhooks.toml");
+        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
+                Command::new("patch")
+            .arg("-i")
+            .arg("../docs/examples/example_config_webhooks.toml.patch")
+            .arg(&temp_file)
+            .status()
+            .unwrap();
+
+        let cfg = load(&temp_file)
+            .await
+            .expect("Failed to load example_config_webhooks.toml");
+
+        assert_eq!(cfg.notifications.webhooks.len(), 1);
+        let webhook = &cfg.notifications.webhooks[0];
+        assert_eq!(webhook.url, "https://example.com/webhook");
+        assert_eq!(webhook.secret.as_ref().unwrap().expose_secret(), "your-webhook-secret");
+        assert_eq!(webhook.headers.len(), 1);
+        assert_eq!(webhook.headers["Authorization"].expose_secret(), "Bearer your-token-here");
+        assert_eq!(webhook.events.as_ref().unwrap().len(), 4);
+        assert_eq!(webhook.events.as_ref().unwrap()[0], WebhookEventFilter::Simple(SimpleEventFilter::Unscheduled));
+        assert_eq!(webhook.events.as_ref().unwrap()[1], WebhookEventFilter::Structured(StructuredEventFilter::OperationFailed {
+            hosts: Some(vec!["my-host".to_string(), "other-host".to_string()]),
+        }));
+        assert_eq!(webhook.events.as_ref().unwrap()[2], WebhookEventFilter::Structured(StructuredEventFilter::OnlineFor {
+            duration_secs: 300,
+            hosts: None,
+        }));
+        assert_eq!(webhook.events.as_ref().unwrap()[3], WebhookEventFilter::Structured(StructuredEventFilter::OnlineFor {
+            duration_secs: 3600,
+            hosts: Some(vec!["my-host".to_string()]),
+        }));
     }
 
     #[tokio::test]
