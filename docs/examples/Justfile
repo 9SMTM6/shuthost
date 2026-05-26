@@ -14,6 +14,7 @@ update_test_config_diffs:
     diff -u example_config.toml example_config_oidc.toml > example_config_oidc.toml.patch || true
     diff -u example_config.toml example_config_external.toml > example_config_external.toml.patch || true
     diff -u example_config.toml example_config_runtime_config.toml > example_config_runtime_config.toml.patch || true
+    diff -u example_config.toml example_config_webhooks.toml > example_config_webhooks.toml.patch || true
 
 [group('setup')]
 patch_test_configs:
@@ -21,3 +22,4 @@ patch_test_configs:
     patch example_config.toml -o example_config_oidc.toml < example_config_oidc.toml.patch
     patch example_config.toml -o example_config_external.toml < example_config_external.toml.patch
     patch example_config.toml -o example_config_runtime_config.toml < example_config_runtime_config.toml.patch
+    patch example_config.toml -o example_config_webhooks.toml < example_config_webhooks.toml.patch
