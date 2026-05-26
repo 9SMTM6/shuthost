@@ -40,26 +40,28 @@ async fn process_config_change(path: &Path, tx: &ConfigTx, rx: &ConfigRx) -> Res
     let effective = ControllerConfig {
         hosts: new_config.hosts.clone(),
         clients: new_config.clients.clone(),
+        notifications: new_config.notifications.clone(),
         ..prev.as_ref().clone()
     };
     // Determine what changed
     let uneffective_change = effective != new_config;
     let hosts_changed = new_config.hosts != prev.hosts;
     let clients_changed = new_config.clients != prev.clients;
+    let notifications_changed = new_config.notifications != prev.notifications;
 
     if uneffective_change {
         warn!(
-            "Detected change outside of [hosts] and [clients] during runtime. Such changes are unsupported and will be ignored."
+            "Detected change outside of [hosts], [clients], and [notifications] during runtime. Such changes are unsupported and will be ignored."
         );
     }
 
-    if hosts_changed || clients_changed {
+    if hosts_changed || clients_changed || notifications_changed {
         emit_warning_on_unsaved_sync_state(&effective);
 
         // Only apply hosts/clients updates; keep prior server config
         tx.send(Arc::new(effective))
             .wrap_err("Failed to send updated config through watch channel")?;
-        info!("Applied hosts/clients changes from config file.");
+        info!("Applied hosts/clients/notifications changes from config file.");
     } else if uneffective_change {
         // Only unsupported changes were made; nothing to apply
         info!("No applicable (hosts/clients) changes detected; ignoring unsupported updates.");
