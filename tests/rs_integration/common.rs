@@ -16,10 +16,12 @@ use std::{
     io::Write as _,
     net::{TcpListener, TcpStream as StdTcpStream},
     path::Path,
+    sync::Arc,
     thread,
     time::Instant,
 };
 
+use axum::{Router, body::Bytes, http::StatusCode, routing::post};
 use clap::Parser as _;
 use secrecy::SecretString;
 use shuthost_common::CoordinatorMessage;
@@ -28,6 +30,7 @@ use shuthost_host_agent::Cli as AgentCli;
 use tokio::{
     io::{AsyncReadExt as _, AsyncWriteExt as _},
     net::TcpStream,
+    sync::Mutex,
     task,
     time::{self, timeout},
 };
@@ -268,4 +271,76 @@ pub(crate) async fn wait_for_host_state(
         time::sleep(Duration::from_millis(300)).await;
     }
     false
+}
+
+/// A minimal in-process HTTP server that collects JSON webhook payloads POSTed to it.
+///
+/// Used by notification integration tests to verify that the coordinator fires
+/// the correct webhook payload for each event kind.
+pub(crate) struct MockWebhookServer {
+    port: u16,
+    payloads: Arc<Mutex<Vec<serde_json::Value>>>,
+}
+
+impl MockWebhookServer {
+    pub(crate) async fn start() -> Self {
+        let payloads: Arc<Mutex<Vec<serde_json::Value>>> = Arc::new(Mutex::new(Vec::new()));
+        let payloads_task = payloads.clone();
+
+        let app = Router::new().route(
+            "/",
+            post(move |body: Bytes| {
+                let payloads = payloads_task.clone();
+                async move {
+                    if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&body) {
+                        payloads.lock().await.push(v);
+                    }
+                    StatusCode::OK
+                }
+            }),
+        );
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("failed to bind mock webhook server");
+        let port = listener.local_addr().expect("no local addr").port();
+
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.ok();
+        });
+
+        Self { port, payloads }
+    }
+
+    pub(crate) fn url(&self) -> String {
+        format!("http://127.0.0.1:{}", self.port)
+    }
+
+    /// Poll until a payload satisfying `predicate` arrives, or `timeout` elapses.
+    ///
+    /// Non-matching payloads are left in the queue so that ordering between
+    /// different event kinds does not matter (e.g. an `unscheduled.startup`
+    /// that fires before the `unscheduled.shutdown` we actually care about).
+    pub(crate) async fn wait_for_matching_payload<F>(
+        &self,
+        predicate: F,
+        timeout: Duration,
+    ) -> Option<serde_json::Value>
+    where
+        F: Fn(&serde_json::Value) -> bool,
+    {
+        let deadline = time::Instant::now() + timeout;
+        loop {
+            {
+                let mut payloads = self.payloads.lock().await;
+                if let Some(pos) = payloads.iter().position(|p| predicate(p)) {
+                    return Some(payloads.remove(pos));
+                }
+            }
+            if time::Instant::now() >= deadline {
+                return None;
+            }
+            time::sleep(Duration::from_millis(100)).await;
+        }
+    }
 }

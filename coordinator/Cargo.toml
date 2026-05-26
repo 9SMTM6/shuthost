@@ -49,7 +49,7 @@ include_windows_aarch64_agent = []
 include_windows_x86_64_agent = []
 
 [dependencies]
-axum = { version = "0.8.3", features = ["macros", "ws"] }
+axum.workspace = true
 axum-extra = { version = "0.12", features = [
     "cookie",
     "cookie-signed",

@@ -17,6 +17,7 @@ mod enforce_state;
 mod host_agent;
 mod leases;
 mod login_error_redirects;
+mod notifications;
 mod token_login;
 mod websocket;
 
