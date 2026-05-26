@@ -28,19 +28,19 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus};
+use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus, OperationKind};
 use crate::{
     app::{
         AppState, HostActorHandle, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
         config_watcher::watch_config_file, db, host_actor::HostEvent,
         host_control::spawn_handle_host_state, shared_watch_store::SharedWatchRx,
     },
-    config::Host,
+    config::{Host, StructuredEventFilter, WebhookEventFilter},
     http::push,
     websocket::WsMessage,
 };
 
-use crate::app::host_control::HostWithName;
+use crate::app::{host_control::HostWithName, notifications};
 
 /// How long a diverged enforced-host state must be stable before the enforcer
 /// re-triggers a wake / shutdown (prevents hammering during transitions).
@@ -248,6 +248,7 @@ pub(super) fn start_background_tasks(
         state.online_since.clone(),
         state.db_pool.clone(),
         state.vapid_key.clone(),
+        state.config_rx.clone(),
     ));
 
     // Forward lease changes into the HostActor event stream.
@@ -263,6 +264,7 @@ pub(super) fn start_background_tasks(
         state.db_pool.clone(),
         state.vapid_key.clone(),
         state.leases.subscribe(),
+        state.config_rx.clone(),
     ));
 
     // Spawn this last since other tasks may depend on some changes triggered by this task, e.g. last-online.
@@ -369,6 +371,7 @@ async fn notify_for_online_durations(
     online_since: Arc<RwLock<HashMap<String, Instant>>>,
     db_pool: Option<db::DbPool>,
     vapid_key: Option<Arc<ES256KeyPair>>,
+    config_rx: ConfigRx,
 ) {
     let mut prev = hoststatus_rx.borrow().clone();
     while hoststatus_rx.changed().await.is_ok() {
@@ -384,18 +387,21 @@ async fn notify_for_online_durations(
 
                     if let (Some(pool), Some(vapid_key)) = (db_pool.clone(), vapid_key.clone()) {
                         let host_clone = host.clone();
-                        let online_since = online_since.clone();
+                        let online_since_clone = online_since.clone();
+                        let vapid_key_clone = vapid_key.clone();
+                        let pool_clone = pool.clone();
                         tokio::spawn(async move {
-                            spawn_online_for_notifications(
+                            spawn_push_online_for_timers(
                                 &host_clone,
                                 now,
-                                &online_since,
-                                &pool,
-                                &vapid_key,
+                                &online_since_clone,
+                                &pool_clone,
+                                &vapid_key_clone,
                             )
                             .await;
                         });
                     }
+                    spawn_webhook_online_for_timers(host, now, &online_since, &config_rx);
                 }
                 HostState::Offline => {
                     online_since.write().await.remove(host);
@@ -559,11 +565,72 @@ async fn poll_host_statuses(state: AppState) {
     }
 }
 
-/// Fetches permanent online-for subscriptions for `hostname` and spawns a deferred
-/// task for each one. Each task sleeps for the subscribed duration, then checks that
-/// the host is still in the same online session (via `online_since`) before sending
-/// the push notification.
-async fn spawn_online_for_notifications(
+/// Reads the current webhook config for `hostname` and spawns a deferred timer task
+/// for each `OnlineFor` filter that matches. Each task sleeps until the configured
+/// duration elapses, re-reads the live webhook config (to respect hot-reloads), then
+/// verifies the host is still in the same online session before firing.
+fn spawn_webhook_online_for_timers(
+    host: &str,
+    session_start: Instant,
+    online_since: &Arc<RwLock<HashMap<String, Instant>>>,
+    config_rx: &ConfigRx,
+) {
+    let durations: Vec<u64> = config_rx
+        .borrow()
+        .notifications
+        .webhooks
+        .iter()
+        .flat_map(|webhook| {
+            webhook.events.iter().flatten().filter_map(|f| match f {
+                &WebhookEventFilter::Structured(
+                    StructuredEventFilter::OnlineFor {
+                        duration_secs,
+                        ref hosts,
+                    },
+                ) if hosts.is_none()
+                    || hosts
+                        .as_ref()
+                        .is_some_and(|hs| hs.iter().any(|h| h == host)) =>
+                {
+                    Some(duration_secs)
+                }
+                _ => None,
+            })
+        })
+        .collect();
+
+    for duration_secs in durations {
+        let host_name = host.to_string();
+        let online_since = online_since.clone();
+        let config_rx = config_rx.clone();
+        tokio::spawn(async move {
+            sleep(Duration::from_secs(duration_secs)).await;
+            // Only fire if the host is still in the same online session.
+            if online_since.read().await.get(&host_name) != Some(&session_start) {
+                return;
+            }
+            let webhooks = config_rx.borrow().notifications.webhooks.clone();
+            notifications::dispatch(
+                notifications::NotificationEvent {
+                    host: host_name,
+                    kind: notifications::EventKind::OnlineFor {
+                        online_for_secs: duration_secs,
+                    },
+                },
+                &webhooks,
+                None,
+                None,
+            )
+            .await;
+        });
+    }
+}
+
+/// Fetches PWA push subscriptions for `hostname` from the database and spawns a
+/// deferred timer task for each one. Each task sleeps for the subscribed duration,
+/// then checks that the host is still in the same online session (via `online_since`)
+/// before sending the push notification.
+async fn spawn_push_online_for_timers(
     hostname: &str,
     session_start: Instant,
     online_since: &Arc<RwLock<HashMap<String, Instant>>>,
@@ -612,6 +679,7 @@ async fn handle_host_events(
     db_pool: Option<db::DbPool>,
     vapid_key: Option<Arc<ES256KeyPair>>,
     mut leases_rx: LeaseRx,
+    config_rx: ConfigRx,
 ) {
     // Keep a local copy of the lease map so we can check it at event time without
     // holding a lock on the LeaseStore.
@@ -657,34 +725,32 @@ async fn handle_host_events(
                     continue;
                 }
 
-                let body = match to {
-                    HostState::Online => format!("{host_name} started up unexpectedly"),
-                    HostState::Offline => format!("{host_name} shut down unexpectedly"),
+                let notification_event = match to {
+                    HostState::Online => notifications::NotificationEvent {
+                        host: host_name.clone(),
+                        kind: notifications::EventKind::Unscheduled {
+                            kind: OperationKind::Startup,
+                        },
+                    },
+                    HostState::Offline => notifications::NotificationEvent {
+                        host: host_name.clone(),
+                        kind: notifications::EventKind::Unscheduled {
+                            kind: OperationKind::Shutdown,
+                        },
+                    },
                     HostState::Waking | HostState::ShuttingDown => continue,
                 };
 
-                let (Some(pool), Some(vapid_key)) = (db_pool.clone(), vapid_key.clone()) else {
-                    continue;
-                };
-
-                tokio::spawn(async move {
-                    match db::get_subscriptions_for_host_unscheduled(&pool, &host_name).await {
-                        Ok(subs) if !subs.is_empty() => {
-                            let payload = push::NotificationPayload::with_data(
-                                body,
-                                push::HostSpecificNotificationData {
-                                    hostname: host_name,
-                                },
-                            )
-                            .into_json();
-                            push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
-                        }
-                        Ok(_) => {}
-                        Err(e) => {
-                            error!(host = %host_name, "Failed to fetch push subscriptions: {e:#}");
-                        }
-                    }
-                });
+                let webhooks = config_rx.borrow().notifications.webhooks.clone();
+                let pool_ref = db_pool.as_ref();
+                let vapid_ref = vapid_key.as_ref();
+                notifications::dispatch(
+                    notification_event,
+                    &webhooks,
+                    pool_ref,
+                    vapid_ref,
+                )
+                .await;
             }
         }
     }

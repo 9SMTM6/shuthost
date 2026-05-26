@@ -329,6 +329,100 @@ impl PartialEq for AuthConfig {
     }
 }
 
+/// A simple (string) event filter that matches all hosts for that event type.
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum SimpleEventFilter {
+    Unscheduled,
+    OperationFailed,
+}
+
+pub(crate) type Hosts = Option<Vec<String>>;
+
+/// A structured (table) event filter, allowing host scoping and carrying
+/// extra data for event types that need it (e.g. `OnlineFor`).
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub(crate) enum StructuredEventFilter {
+    Unscheduled {
+        #[serde(default)]
+        hosts: Hosts,
+    },
+    OperationFailed {
+        #[serde(default)]
+        hosts: Hosts,
+    },
+    OnlineFor {
+        duration_secs: u64,
+        #[serde(default)]
+        hosts: Hosts,
+    },
+}
+
+/// A webhook event filter — either a plain string (`"unscheduled"`) or an inline
+/// table (`{ type = "online_for", duration_secs = 300 }`).
+///
+/// Serde tries `Simple` first (string match) and falls back to `Structured` (table).
+/// Note: `#[serde(untagged)]` produces poor error messages on typos — acceptable for
+/// a config file where the operator can inspect the file directly.
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub(crate) enum WebhookEventFilter {
+    /// Plain string shorthand for events that don't require extra data and match all hosts.
+    Simple(SimpleEventFilter),
+    /// Inline table, needed for `OnlineFor` or to scope by host.
+    Structured(StructuredEventFilter),
+}
+
+/// Configuration for a single webhook endpoint.
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct WebhookConfig {
+    /// The URL to POST notifications to.
+    pub url: String,
+    /// Which events to fire for.
+    ///
+    /// - Absent (`None`): fires for `unscheduled` and `operation_failed` events for all hosts.
+    ///   `online_for` is never included by default — it must be listed explicitly.
+    /// - Empty list: fires for nothing (effectively disables the webhook).
+    /// - Non-empty list: fires only for the listed filters.
+    #[serde(default)]
+    pub events: Option<Vec<WebhookEventFilter>>,
+    /// Optional extra HTTP headers (e.g. `Authorization = "Bearer token"`).
+    #[serde(default)]
+    pub headers: HashMap<String, Arc<SecretString>>,
+    /// Optional shared secret. When set, each POST includes an
+    /// `X-ShutHost-Signature: sha256=<hex>` header containing the HMAC-SHA256
+    /// of the raw JSON body, signed with this secret.
+    pub secret: Option<Arc<SecretString>>,
+}
+
+impl PartialEq for WebhookConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.url == other.url
+            && self.events == other.events
+            && self.headers.len() == other.headers.len()
+            && self.headers.iter().all(|(k, v)| {
+                other
+                    .headers
+                    .get(k)
+                    .is_some_and(|ov| ov.expose_secret() == v.expose_secret())
+            })
+            && match (self.secret.as_ref(), other.secret.as_ref()) {
+                (Some(a), Some(b)) => a.expose_secret() == b.expose_secret(),
+                (None, None) => true,
+                _ => false,
+            }
+    }
+}
+
+/// Top-level notifications configuration block.
+#[derive(Debug, Deserialize, Clone, PartialEq, Default)]
+#[serde(default)]
+pub(crate) struct NotificationsConfig {
+    /// List of webhook endpoints to fire on notification events.
+    pub webhooks: Vec<WebhookConfig>,
+}
+
 /// Root config structure for the coordinator, including server settings, hosts, and clients.
 /// ```
 #[derive(Debug, Deserialize, Default, Clone, PartialEq)]
@@ -342,4 +436,7 @@ pub(crate) struct ControllerConfig {
     /// Optional top-level database configuration. When omitted DB persistence is disabled.
     #[serde(default)]
     pub db: Option<DbConfig>,
+    /// Notification delivery configuration (webhooks, etc.).
+    #[serde(default)]
+    pub notifications: NotificationsConfig,
 }

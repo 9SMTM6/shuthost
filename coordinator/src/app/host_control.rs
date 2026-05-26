@@ -18,13 +18,13 @@ use tokio::{
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{
-    AppState, OperationFailure, OperationKind, db,
+    AppState, OperationFailure, OperationKind,
     host_actor::{HostActorHandle, TransitionResult},
+    notifications,
     runtime::{PollError, poll_until_host_state},
     shared_watch_store::{SharedWatchRx, SharedWatchStore},
     state::HostState,
 };
-use crate::http::push;
 
 use crate::config::{Host, RuntimeConfig};
 #[cfg(not(any(coverage, test)))]
@@ -258,35 +258,37 @@ pub(crate) fn spawn_handle_host_state(host: &str, state: &AppState) {
                     state.operation_failures.clear(&host).await;
                 }
                 Err(HostControlError::Timeout(_) | HostControlError::OperationFailed { .. }) => {
-                    let is_new_failure = state.operation_failures.set(&host, OperationFailure { operation: operation_kind }).await;
+                    let is_new_failure = state
+                        .operation_failures
+                        .set(
+                            &host,
+                            OperationFailure {
+                                operation: operation_kind,
+                            },
+                        )
+                        .await;
 
-                    // Fire push notifications only when the failure is new or the operation kind
-                    // changed — not on every enforce-state retry for an already-failing host.
-                    if is_new_failure && let (Some(pool), Some(vapid_key)) =
-                        (state.db_pool.clone(), state.vapid_key.clone())
-                    {
-                        let host_clone = host.clone();
-                        let body = match operation_kind {
-                            OperationKind::Shutdown => format!("{host} failed to shut down"),
-                            OperationKind::Startup => format!("{host} failed to start up"),
-                        };
-                        tokio::spawn(async move {
-                            match db::get_subscriptions_for_host_operation_failed(&pool, &host_clone).await {
-                                Ok(subs) if !subs.is_empty() => {
-                                    let payload = push::NotificationPayload::with_data(
-                                        body,
-                                        push::HostSpecificNotificationData { hostname: host_clone },
-                                    )
-                                    .into_json();
-                                    push::send_push_notifications(&vapid_key, &pool, &subs, &payload).await;
-                                }
-                                Ok(_) => {}
-                                Err(e) => {
-                                    tracing::error!(host = %host_clone, "Failed to fetch operation-failed push subscriptions: {e:#}");
-                                }
-                            }
-                        });
-                    }
+                    // Webhooks fire on every failure; PWA push is suppressed for repeats
+                    // (is_repeat = !is_new_failure) to avoid spamming the user on retries.
+                    let host_clone = host.clone();
+                    let webhooks = state.config_rx.borrow().notifications.webhooks.clone();
+                    let db_pool = state.db_pool.clone();
+                    let vapid_key = state.vapid_key.clone();
+                    tokio::spawn(async move {
+                        notifications::dispatch(
+                            notifications::NotificationEvent {
+                                host: host_clone,
+                                kind: notifications::EventKind::OperationFailed {
+                                    kind: operation_kind,
+                                    is_repeat: !is_new_failure,
+                                },
+                            },
+                            &webhooks,
+                            db_pool.as_ref(),
+                            vapid_key.as_ref(),
+                        )
+                        .await;
+                    });
                 }
                 Err(HostControlError::NotFound(_)) => {
                     // Config issue, not a runtime failure — leave existing failure state unchanged.

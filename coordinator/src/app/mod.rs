@@ -2,6 +2,7 @@ mod config_watcher;
 pub mod db;
 pub(crate) mod host_actor;
 mod host_control;
+pub(crate) mod notifications;
 mod runtime;
 mod shared_watch_store;
 mod startup;
