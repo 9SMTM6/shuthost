@@ -185,16 +185,21 @@ mod tests {
         assert!(matches!(cfg.server.auth.mode, AuthMode::Token { .. }));
     }
 
-    #[tokio::test]
-    async fn load_example_config_webhooks() {
-        let temp_file = env::temp_dir().join("test_example_config_webhooks.toml");
+    fn apply_patch_to_example_config(name: &str) -> std::path::PathBuf {
+        let temp_file = env::temp_dir().join(format!("test_example_config_{name}.toml"));
         fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
-                Command::new("patch")
+        Command::new("patch")
             .arg("-i")
-            .arg("../docs/examples/example_config_webhooks.toml.patch")
+            .arg(format!("../docs/examples/example_config_{name}.toml.patch"))
             .arg(&temp_file)
             .status()
             .unwrap();
+        temp_file
+    }
+
+    #[tokio::test]
+    async fn load_example_config_webhooks() {
+        let temp_file = apply_patch_to_example_config("webhooks");
 
         let cfg = load(&temp_file)
             .await
@@ -223,14 +228,7 @@ mod tests {
 
     #[tokio::test]
     async fn load_example_config_with_client_and_host() {
-        let temp_file = env::temp_dir().join("test_example_config_with_client_and_host.toml");
-        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
-        Command::new("patch")
-            .arg("-i")
-            .arg("../docs/examples/example_config_with_client_and_host.toml.patch")
-            .arg(&temp_file)
-            .status()
-            .unwrap();
+        let temp_file = apply_patch_to_example_config("with_client_and_host");
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_with_client_and_host.toml");
@@ -240,14 +238,7 @@ mod tests {
 
     #[tokio::test]
     async fn load_example_config_with_runtime_config() {
-        let temp_file = env::temp_dir().join("test_example_config_with_runtime_config.toml");
-        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
-        Command::new("patch")
-            .arg("-i")
-            .arg("../docs/examples/example_config_runtime_config.toml.patch")
-            .arg(&temp_file)
-            .status()
-            .unwrap();
+        let temp_file = apply_patch_to_example_config("runtime_config");
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_with_runtime_config.toml");
@@ -257,14 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn load_example_config_external() {
-        let temp_file = env::temp_dir().join("test_example_config_external.toml");
-        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
-        Command::new("patch")
-            .arg("-i")
-            .arg("../docs/examples/example_config_external.toml.patch")
-            .arg(&temp_file)
-            .status()
-            .unwrap();
+        let temp_file = apply_patch_to_example_config("external");
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_external.toml");
@@ -278,14 +262,7 @@ mod tests {
 
     #[tokio::test]
     async fn load_example_config_oidc() {
-        let temp_file = env::temp_dir().join("test_example_config_oidc.toml");
-        fs::copy("../docs/examples/example_config.toml", &temp_file).unwrap();
-        Command::new("patch")
-            .arg("-i")
-            .arg("../docs/examples/example_config_oidc.toml.patch")
-            .arg(&temp_file)
-            .status()
-            .unwrap();
+        let temp_file = apply_patch_to_example_config("oidc");
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_oidc.toml");
