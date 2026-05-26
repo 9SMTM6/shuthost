@@ -1,0 +1,73 @@
+--- example_config.toml	2026-05-26 12:39:20.708819911 +0200
++++ example_config_webhooks.toml	2026-05-26 12:39:28.594859403 +0200
+@@ -184,38 +184,38 @@
+ #     # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
+ #     shutdown_timeout_secs = 20
+ 
+-# # =============================================================================
+-# # NOTIFICATIONS CONFIGURATION
+-# # =============================================================================
+-# # Configures webhook endpoints that POST a signed JSON payload on host events.
+-# # For a full walkthrough including payload shapes and filter options, see:
+-# #   https://github.com/9SMTM6/shuthost/blob/main/docs/examples/webhooks.md
+-# [[notifications.webhooks]]
+-# # The URL to HTTP POST the JSON payload to.
+-# url = "https://example.com/webhook"
+-# # Optional HMAC-SHA256 signing secret.
+-# # When set, each POST includes an `X-ShutHost-Signature: sha256=<hex>` header.
+-# secret = "your-webhook-secret"
+-# # Optional extra HTTP headers (e.g. for bearer-token auth).
+-# [notifications.webhooks.headers]
+-# Authorization = "Bearer your-token-here"
+-# # Which events fire this webhook.
+-# # Absent (omitted): fires for `unscheduled` and `operation_failed` on all hosts.
+-# #   Since `online_for` needs a time, it is not included by default.
+-# # List: fires only for the listed filters.
+-# #
+-# # Simple strings match all hosts; inline tables allow host scoping and are
+-# # required for `online_for` (which needs a `duration_secs`).
+-# # Both forms can be mixed in a single list:
+-# events = [
+-#     # Simple: match all hosts
+-#     "unscheduled",
+-#     # Structured: same event, scoped to specific hosts
+-#     { type = "operation_failed", hosts = ["my-host", "other-host"] },
+-#     # online_for has no string shorthand — duration_secs is always required
+-#     { type = "online_for", duration_secs = 300 },
+-#     { type = "online_for", duration_secs = 3600, hosts = ["my-host"] },
+-# ]
++# =============================================================================
++# NOTIFICATIONS CONFIGURATION
++# =============================================================================
++# Configures webhook endpoints that POST a signed JSON payload on host events.
++# For a full walkthrough including payload shapes and filter options, see:
++#   https://github.com/9SMTM6/shuthost/blob/main/docs/examples/webhooks.md
++[[notifications.webhooks]]
++# The URL to HTTP POST the JSON payload to.
++url = "https://example.com/webhook"
++# Optional HMAC-SHA256 signing secret.
++# When set, each POST includes an `X-ShutHost-Signature: sha256=<hex>` header.
++secret = "your-webhook-secret"
++# Optional extra HTTP headers (e.g. for bearer-token auth).
++[notifications.webhooks.headers]
++Authorization = "Bearer your-token-here"
++# Which events fire this webhook.
++# Absent (omitted): fires for `unscheduled` and `operation_failed` on all hosts.
++#   Since `online_for` needs a time, it is not included by default.
++# List: fires only for the listed filters.
++#
++# Simple strings match all hosts; inline tables allow host scoping and are
++# required for `online_for` (which needs a `duration_secs`).
++# Both forms can be mixed in a single list:
++events = [
++    # Simple: match all hosts
++    "unscheduled",
++    # Structured: same event, scoped to specific hosts
++    { type = "operation_failed", hosts = ["my-host", "other-host"] },
++    # online_for has no string shorthand — duration_secs is always required
++    { type = "online_for", duration_secs = 300 },
++    { type = "online_for", duration_secs = 3600, hosts = ["my-host"] },
++]
+ 
+ # =============================================================================
+ # CLIENT CONFIGURATION

@@ -1,6 +1,6 @@
---- example_config.toml	2026-04-23 20:42:23.642651283 +0200
-+++ example_config_with_client_and_host.toml	2026-04-23 12:28:41.548007128 +0200
-@@ -156,33 +156,34 @@
+--- example_config.toml	2026-05-26 12:39:20.708819911 +0200
++++ example_config_with_client_and_host.toml	2026-05-26 12:41:54.513582017 +0200
+@@ -156,33 +156,33 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [hosts]
@@ -58,11 +58,10 @@
 +    # Maximum seconds to wait for the host to go offline after sending a shutdown command.
 +    # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
 +    shutdown_timeout_secs = 20
-+
  
- # =============================================================================
- # CLIENT CONFIGURATION
-@@ -193,9 +194,9 @@
+ # # =============================================================================
+ # # NOTIFICATIONS CONFIGURATION
+@@ -226,9 +226,9 @@
  # The client installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [clients]
