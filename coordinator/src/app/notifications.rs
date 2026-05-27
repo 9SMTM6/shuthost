@@ -6,8 +6,9 @@
 //! and also forwards to the existing PWA push infrastructure.
 
 use alloc::sync::Arc;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
+use futures::future::join_all;
 use secrecy::ExposeSecret as _;
 use serde::Serialize;
 use tracing::{error, warn};
@@ -70,6 +71,8 @@ struct WebhookPayload {
 // Entry point
 // ─────────────────────────────────────────────────────────────────
 
+const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);
+
 /// Dispatch a notification event to all configured channels.
 ///
 /// - Fires matching webhooks from the current (hot-reloaded) config snapshot.
@@ -81,7 +84,8 @@ pub(crate) async fn dispatch(
     pool: Option<&db::DbPool>,
     vapid_key: Option<&Arc<ES256KeyPair>>,
 ) {
-    fire_matching_webhooks(&event, webhooks).await;
+    let client = reqwest::Client::new();
+    fire_matching_webhooks(&event, webhooks, &client).await;
     fire_push_notifications(event, pool, vapid_key).await;
 }
 
@@ -89,18 +93,23 @@ pub(crate) async fn dispatch(
 // Webhook dispatch
 // ─────────────────────────────────────────────────────────────────
 
-async fn fire_matching_webhooks(event: &NotificationEvent, webhooks: &[WebhookConfig]) {
+async fn fire_matching_webhooks(
+    event: &NotificationEvent,
+    webhooks: &[WebhookConfig],
+    client: &reqwest::Client,
+) {
     let at_unix = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
 
-    for webhook in webhooks {
-        if filter_matches(event, webhook) {
-            let payload = build_payload(event, at_unix);
-            send_webhook(webhook, payload).await;
-        }
-    }
+    let sends: Vec<_> = webhooks
+        .iter()
+        .filter(|w| filter_matches(event, w))
+        .map(|w| send_webhook(w, build_payload(event, at_unix), client))
+        .collect();
+
+    join_all(sends).await;
 }
 
 /// Returns `true` if `webhook` should fire for `event`.
@@ -168,12 +177,12 @@ fn build_payload(event: &NotificationEvent, at_unix: u64) -> WebhookPayload {
     }
 }
 
-async fn send_webhook(webhook: &WebhookConfig, payload: WebhookPayload) {
+async fn send_webhook(webhook: &WebhookConfig, payload: WebhookPayload, client: &reqwest::Client) {
     let body = serde_json::to_string(&payload).expect("WebhookPayload serialization must not fail");
 
-    let client = reqwest::Client::new();
     let mut req = client
         .post(&webhook.url)
+        .timeout(WEBHOOK_TIMEOUT)
         .header("Content-Type", "application/json");
 
     // Attach configured headers (e.g. Authorization).
