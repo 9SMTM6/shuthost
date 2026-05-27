@@ -89,7 +89,6 @@ pub(crate) enum HostCmd {
     /// Replies `true` if the slot was claimed (host is now `Waking` or
     /// `ShuttingDown` and added to `control_active`), `false` if already
     /// claimed or already in a transition state.
-    /// TODO: Switch to a pattern that can abort at least selected in-flight transitions, e.g. waking / shutting down.
     BeginTransition {
         host: String,
         direction: OperationKind,

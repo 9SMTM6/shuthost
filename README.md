@@ -224,7 +224,6 @@ These are generated or validated automatically as part of the test suite, and th
   * copilot:
     > New UDP startup broadcast handling (parsing, HMAC validation, override persistence, and status marking) is introduced without tests, while this module already has unit tests. Adding tests for valid/invalid packets, timestamp/HMAC failures, and the override update/clear behavior would help prevent regressions.
   * These tests, at least when implemented as integration tests, kinda would profit from more configuration options, which is to be added in the future. After that we hopefully will get back to this.
-* either included in the unexpected event notification, or as a separate notification, we should notify the user when a host that is supposed to be on isn't responding to WOL packets.
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik, dex
   * (add tests for OIDC refresh flow) currently not active code
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
@@ -232,14 +231,7 @@ These are generated or validated automatically as part of the test suite, and th
   > The WoL packet is always sent to the global broadcast address. For hosts on a different subnet (common in home-lab setups), this won't work. The config already stores the host's IP, which could be used to derive a directed subnet broadcast.
   * investigate
 * consider adding lighthouse tests to CI and/or local tests.
-* update example config and printed host config with timeouts
-* need to reword/work the main poll interval, as the interval is more likely to be limited by the timeouts on the hosts.
-* add transition host states to the frontend etc.
+* need to reword/work the main poll interval description in the documentation, as the interval is more likely to be limited by the timeouts on the hosts.
 * need tests for the self-extracting update flow. Though annoyingly even these need local admin rights. At first I thought that we should be able to remove that requirement from installers, but in that case the agent would not - in default setups - have the rights to shutdown the machine at all, so we probably should keep that around. But that also means that testing the update flow cant be done without admin rights (and/or docker), which is a bit of a pain.
   * I could just require sudo and make them primarily CI tests, like some other tests.
-* reconciler currently leads to a bunch of calls to handle_host_state every poll. This should be deduplicated.
-  * we might want to emit multiple WOL calls during the waiting period instead (they are UDP after all)
-  * we probably also want to deduplicate logs in some way, if a host just doesnt come online we dont want to spam the logs every 5 seconds about it. But if we do that, we should emit a log when we stopped trying to change the state for some reason.
-  * make knobs of this mechanic (or the original, if this doesnt get implemented) configurable
-* test github pages page once its on main, especially the about page
 -->
