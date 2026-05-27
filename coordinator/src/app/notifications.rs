@@ -265,7 +265,7 @@ async fn fire_push_notifications(
             }
         }
         // PWA online-for notifications are driven by individual timer tasks in
-        // spawn_online_for_notifications; they are not dispatched through here.
+        // spawn_push_online_for_timers; they are not dispatched through here.
         EventKind::OnlineFor { .. } => {}
     }
 }
