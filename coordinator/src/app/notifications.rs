@@ -2,7 +2,7 @@
 //!
 //! All notification callsites in the coordinator (unscheduled state changes,
 //! operation failures, online-for timers) funnel through [`dispatch`], which
-//! reads the current webhook configuration from the hot-reloadable [`ConfigRx`]
+//! takes an explicit `webhooks: &[WebhookConfig]` snapshot for webhook delivery
 //! and also forwards to the existing PWA push infrastructure.
 
 use alloc::sync::Arc;
