@@ -92,7 +92,7 @@ jobs:
       - run: cargo install sqlx-cli --no-default-features --features sqlite --locked
       - run: |
           cd coordinator;
-          export DATABASE_URL=sqlite:./shuthost.db
+          export DATABASE_URL=sqlite:$PWD/shuthost.db
           cargo sqlx database create;
           cargo sqlx migrate run --source migrations
           cargo sqlx prepare --check --workspace
