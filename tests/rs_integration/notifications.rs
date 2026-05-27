@@ -13,15 +13,81 @@ use shuthost_coordinator::app::HostState;
 use tokio::time::sleep;
 
 use crate::common::{
-    MockWebhookServer, get_free_port, runtime_test_config, spawn_coordinator_with_config,
-    spawn_host_agent, spawn_host_agent_default, wait_for_agent_ready, wait_for_host_state,
-    wait_for_listening,
+    KillOnDrop, MockWebhookServer, get_free_port, runtime_test_config,
+    spawn_coordinator_with_config, spawn_host_agent, spawn_host_agent_default,
+    wait_for_agent_ready, wait_for_host_state, wait_for_listening,
 };
 
 /// Short sleep after a successful assertion to let any spurious follow-on
 /// notifications accumulate before we drain and check for unexpected payloads.
 /// Two poll cycles (2 × `status_poll_interval_secs = 1 s`) is sufficient.
 const SETTLING_SECS: u64 = 2;
+
+/// Shared secret used in all notification tests.
+const SECRET: &str = "testsecret";
+
+// ─────────────────────────────────────────────────────────────────
+// Test context helpers
+// ─────────────────────────────────────────────────────────────────
+
+/// Common setup for notification integration tests: free ports and a running
+/// [`MockWebhookServer`], plus helpers for building configs and spawning the
+/// coordinator.
+struct NotifTestCtx {
+    coord_port: u16,
+    agent_port: u16,
+    webhook: MockWebhookServer,
+}
+
+impl NotifTestCtx {
+    async fn setup() -> Self {
+        Self {
+            coord_port: get_free_port(),
+            agent_port: get_free_port(),
+            webhook: MockWebhookServer::start().await,
+        }
+    }
+
+    /// Build the base TOML config string for a notification test.
+    ///
+    /// * `mac` – MAC address for `[hosts.myhost]` (`"disableWOL"` to skip `WoL`).
+    /// * `host_extra` – Additional TOML key-value lines appended inside
+    ///   `[hosts.myhost]` (pass `""` when no extra fields are needed).
+    /// * `webhook_events` – Optional TOML fragment for the webhook `events`
+    ///   field, e.g. `r#"events = [{ type = "operation_failed" }]"#`.  Pass
+    ///   `""` to subscribe to all events.
+    fn base_config(&self, mac: &str, host_extra: &str, webhook_events: &str) -> String {
+        let coord_port = self.coord_port;
+        let agent_port = self.agent_port;
+        let webhook_url = self.webhook.url();
+        let secret = SECRET;
+        format!(
+            r#"
+[server]
+port = {coord_port}
+bind = "127.0.0.1"
+
+[hosts.myhost]
+ip = "127.0.0.1"
+mac = "{mac}"
+port = {agent_port}
+shared_secret = "{secret}"
+{host_extra}
+[[notifications.webhooks]]
+url = "{webhook_url}"
+{webhook_events}
+[clients]
+"#
+        )
+    }
+
+    /// Spawn the coordinator with the given config and wait until it is listening.
+    async fn spawn_coord(&self, config: &str) -> KillOnDrop {
+        let coord = spawn_coordinator_with_config(self.coord_port, config);
+        wait_for_listening(self.coord_port, 5).await;
+        coord
+    }
+}
 
 // ─────────────────────────────────────────────────────────────────
 // unscheduled.startup
@@ -31,40 +97,17 @@ const SETTLING_SECS: u64 = 2;
 /// `unscheduled { kind: "startup" }` webhook.
 #[tokio::test]
 async fn webhook_fires_for_unscheduled_startup() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
+    let ctx = NotifTestCtx::setup().await;
+    let config = ctx.base_config("disableWOL", "", "") + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
     // The agent starts up with no leases held — the coordinator should detect
     // an Offline→Online transition without a corresponding lease and fire the
     // unscheduled-startup notification.
-    let _agent = spawn_host_agent_default(secret, agent_port);
+    let _agent = spawn_host_agent_default(SECRET, ctx.agent_port);
 
-    let payload = webhook
+    let payload = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "unscheduled" && p["kind"] == "startup",
             Duration::from_secs(10),
@@ -78,7 +121,7 @@ async fn webhook_fires_for_unscheduled_startup() {
     // After the startup notification, allow two poll cycles to elapse and verify
     // that no spurious `unscheduled.shutdown` (or any other wrong event) was sent.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let unexpected = webhook.drain_all_payloads().await;
+    let unexpected = ctx.webhook.drain_all_payloads().await;
     assert!(
         !unexpected
             .iter()
@@ -95,47 +138,24 @@ async fn webhook_fires_for_unscheduled_startup() {
 /// `unscheduled { kind: "shutdown" }` webhook.
 #[tokio::test]
 async fn webhook_fires_for_unscheduled_shutdown() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
+    let ctx = NotifTestCtx::setup().await;
+    let config = ctx.base_config("disableWOL", "", "") + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
-
-    let agent = spawn_host_agent_default(secret, agent_port);
+    let agent = spawn_host_agent_default(SECRET, ctx.agent_port);
 
     // Wait until the coordinator sees the host as Online, then take a lease so
     // that a subsequent disappearance is treated as unexpected.
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 15).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 15).await,
         "host should become online before taking a lease"
     );
 
     let client = reqwest::Client::new();
     client
         .post(format!(
-            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+            "http://127.0.0.1:{}/api/lease/myhost/take",
+            ctx.coord_port
         ))
         .send()
         .await
@@ -144,19 +164,20 @@ async fn webhook_fires_for_unscheduled_shutdown() {
     // With disableWOL, the wake attempt returns Noop (WakeErr), setting the
     // actor state to Offline. Wait for the subsequent poll to confirm Online.
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 15).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 15).await,
         "host should be online again after WakeErr → poll cycle"
     );
 
     // Drain the queue now so any startup notification from the WakeErr→Offline→
     // Online cycle does not pollute the shutdown assertion below.
-    webhook.drain_all_payloads().await;
+    ctx.webhook.drain_all_payloads().await;
 
     // Dropping the agent causes the host to go offline while the lease is
     // still held → unscheduled shutdown.
     drop(agent);
 
-    let payload = webhook
+    let payload = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "unscheduled" && p["kind"] == "shutdown",
             Duration::from_secs(10),
@@ -169,7 +190,7 @@ async fn webhook_fires_for_unscheduled_shutdown() {
 
     // Agent is gone; allow settling time and verify the queue is fully empty.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let unexpected = webhook.drain_all_payloads().await;
+    let unexpected = ctx.webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
         "unexpected extra payloads after unscheduled-shutdown: {unexpected:?}"
@@ -184,48 +205,28 @@ async fn webhook_fires_for_unscheduled_shutdown() {
 /// fire an `operation_failed { kind: "startup", is_repeat: false }` webhook.
 #[tokio::test]
 async fn webhook_fires_for_operation_failed_startup() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
+    let ctx = NotifTestCtx::setup().await;
     // Per-host wake_timeout_secs kept short so the test completes quickly.
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
-        port = {agent_port}
-        shared_secret = "{secret}"
-        wake_timeout_secs = 3
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-        events = [{{ type = "operation_failed" }}]
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
+    let config = ctx.base_config(
+        "00:11:22:33:44:55",
+        "wake_timeout_secs = 3",
+        r#"events = [{ type = "operation_failed" }]"#,
     ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
+    let _coord = ctx.spawn_coord(&config).await;
 
     // No agent is started — taking a lease triggers a wake attempt that will
     // never succeed, resulting in an operation_failed notification.
     reqwest::Client::new()
         .post(format!(
-            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+            "http://127.0.0.1:{}/api/lease/myhost/take",
+            ctx.coord_port
         ))
         .send()
         .await
         .expect("failed to take lease");
 
-    let payload = webhook
+    let payload = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "operation_failed" && p["kind"] == "startup",
             Duration::from_secs(15),
@@ -239,7 +240,7 @@ async fn webhook_fires_for_operation_failed_startup() {
 
     // No agent, no enforce_state — no retry is scheduled. Verify silence.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let unexpected = webhook.drain_all_payloads().await;
+    let unexpected = ctx.webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
         "unexpected extra payloads after operation_failed-startup: {unexpected:?}"
@@ -254,53 +255,32 @@ async fn webhook_fires_for_operation_failed_startup() {
 /// failure. The retry should fire a second webhook with `is_repeat: true`.
 #[tokio::test]
 async fn webhook_fires_for_operation_failed_startup_repeat() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [server.runtime]
-        status_poll_interval_secs = 1
-        transition_poll_interval_ms = 100
-        enforce_stabilization_threshold_secs = 1
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "00:11:22:33:44:55"
-        port = {agent_port}
-        shared_secret = "{secret}"
-        wake_timeout_secs = 3
-        enforce_state = true
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-        events = [{{ type = "operation_failed" }}]
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    );
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
+    let ctx = NotifTestCtx::setup().await;
+    let config = ctx.base_config(
+        "00:11:22:33:44:55",
+        "wake_timeout_secs = 3\nenforce_state = true",
+        r#"events = [{ type = "operation_failed" }]"#,
+    ) + "
+[server.runtime]
+status_poll_interval_secs = 1
+transition_poll_interval_ms = 100
+enforce_stabilization_threshold_secs = 1
+";
+    let _coord = ctx.spawn_coord(&config).await;
 
     // No agent — every wake attempt will time out.
     reqwest::Client::new()
         .post(format!(
-            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+            "http://127.0.0.1:{}/api/lease/myhost/take",
+            ctx.coord_port
         ))
         .send()
         .await
         .expect("failed to take lease");
 
     // First failure: is_repeat must be false.
-    let first = webhook
+    let first = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "operation_failed" && p["kind"] == "startup",
             Duration::from_secs(15),
@@ -313,7 +293,8 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
     );
 
     // enforce_state re-triggers the wake; the second attempt also fails.
-    let second = webhook
+    let second = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "operation_failed" && p["kind"] == "startup",
             Duration::from_secs(15),
@@ -328,7 +309,7 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
     // enforce_state keeps retrying, so further operation_failed.startup payloads
     // are expected. Only assert that no wrong-kind events slipped through.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let extra = webhook.drain_all_payloads().await;
+    let extra = ctx.webhook.drain_all_payloads().await;
     assert!(
         extra
             .iter()
@@ -345,52 +326,31 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
 /// offline, it should fire an `operation_failed { kind: "shutdown" }` webhook.
 #[tokio::test]
 async fn webhook_fires_for_operation_failed_shutdown() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-        shutdown_timeout_secs = 3
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-        events = [{{ type = "operation_failed" }}]
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
+    let ctx = NotifTestCtx::setup().await;
+    let config = ctx.base_config(
+        "disableWOL",
+        "shutdown_timeout_secs = 3",
+        r#"events = [{ type = "operation_failed" }]"#,
     ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
+    let _coord = ctx.spawn_coord(&config).await;
 
     // The no-op shutdown command means the agent process stays alive after the
     // coordinator sends the shutdown message, keeping the host Online.
     let _agent = spawn_host_agent(
-        secret,
-        agent_port,
+        SECRET,
+        ctx.agent_port,
         shuthost_common::DEFAULT_COORDINATOR_BROADCAST_PORT,
         "echo noop",
     );
-    wait_for_agent_ready(agent_port, &SecretString::from(secret), 5).await;
+    wait_for_agent_ready(ctx.agent_port, &SecretString::from(SECRET), 5).await;
 
     let client = reqwest::Client::new();
 
     // Take a lease so the host is "under coordinator control".
     client
         .post(format!(
-            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+            "http://127.0.0.1:{}/api/lease/myhost/take",
+            ctx.coord_port
         ))
         .send()
         .await
@@ -399,7 +359,7 @@ async fn webhook_fires_for_operation_failed_shutdown() {
     // With disableWOL, the wake attempt is a Noop (WakeErr → Offline). Wait
     // for the poll to confirm the host is Online again before releasing.
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 15).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 15).await,
         "host should be online before releasing lease"
     );
 
@@ -407,13 +367,15 @@ async fn webhook_fires_for_operation_failed_shutdown() {
     // (no-op command) and stays alive, so the coordinator times out.
     client
         .post(format!(
-            "http://127.0.0.1:{coord_port}/api/lease/myhost/release"
+            "http://127.0.0.1:{}/api/lease/myhost/release",
+            ctx.coord_port
         ))
         .send()
         .await
         .expect("failed to release lease");
 
-    let payload = webhook
+    let payload = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "operation_failed" && p["kind"] == "shutdown",
             Duration::from_secs(15),
@@ -427,7 +389,7 @@ async fn webhook_fires_for_operation_failed_shutdown() {
 
     // Without enforce_state, no retry is scheduled. Verify silence.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let unexpected = webhook.drain_all_payloads().await;
+    let unexpected = ctx.webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
         "unexpected extra payloads after operation_failed-shutdown: {unexpected:?}"
@@ -442,47 +404,25 @@ async fn webhook_fires_for_operation_failed_shutdown() {
 /// coordinator should fire an `online_for { online_for_secs }` webhook.
 #[tokio::test]
 async fn webhook_fires_for_online_for() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
     const ONLINE_FOR_SECS: u64 = 3;
 
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
+    let ctx = NotifTestCtx::setup().await;
+    let events =
+        format!(r#"events = [{{ type = "online_for", duration_secs = {ONLINE_FOR_SECS} }}]"#);
+    let config = ctx.base_config("disableWOL", "", &events) + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-        events = [{{ type = "online_for", duration_secs = {ONLINE_FOR_SECS} }}]
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
-
-    let _agent = spawn_host_agent_default(secret, agent_port);
+    let _agent = spawn_host_agent_default(SECRET, ctx.agent_port);
 
     // Wait for the coordinator to confirm the host is online before starting
     // the clock, then allow enough time for the online_for timer to fire.
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 10).await,
         "host should come online before waiting for online_for webhook"
     );
 
-    let payload = webhook
+    let payload = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "online_for",
             // online_for_secs (3) + generous buffer for polling and scheduling jitter
@@ -498,7 +438,7 @@ async fn webhook_fires_for_online_for() {
     // online_for fires once per online session; the host is still up, so no
     // further notifications should arrive during the settling window.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let unexpected = webhook.drain_all_payloads().await;
+    let unexpected = ctx.webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
         "unexpected extra payloads after online_for: {unexpected:?}"
@@ -513,49 +453,25 @@ async fn webhook_fires_for_online_for() {
 /// `unscheduled.shutdown` notification (graceful / unmanaged shutdown).
 #[tokio::test]
 async fn no_unscheduled_shutdown_for_graceful_offline() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
+    let ctx = NotifTestCtx::setup().await;
+    let config = ctx.base_config("disableWOL", "", "") + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
-
-    let agent = spawn_host_agent_default(secret, agent_port);
+    let agent = spawn_host_agent_default(SECRET, ctx.agent_port);
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 10).await,
         "host should come online"
     );
 
     // Drain any startup notification so it does not pollute the shutdown check.
-    webhook.drain_all_payloads().await;
+    ctx.webhook.drain_all_payloads().await;
 
     // Drop the agent — host goes Offline with no active leases.  This
     // transition must NOT produce an `unscheduled.shutdown` notification.
     drop(agent);
 
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let payloads = webhook.drain_all_payloads().await;
+    let payloads = ctx.webhook.drain_all_payloads().await;
     assert!(
         !payloads
             .iter()
@@ -568,33 +484,9 @@ async fn no_unscheduled_shutdown_for_graceful_offline() {
 /// `unscheduled.startup` notification.
 #[tokio::test]
 async fn no_unscheduled_startup_when_lease_held_at_online() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
+    let ctx = NotifTestCtx::setup().await;
+    let config = ctx.base_config("disableWOL", "", "") + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
     // Take a lease BEFORE the agent starts.  The coordinator attempts a wake
     // (WakeErr with disableWOL) and records the host as Offline.  When the
@@ -602,20 +494,21 @@ async fn no_unscheduled_startup_when_lease_held_at_online() {
     // `unscheduled.startup` because a lease is held.
     reqwest::Client::new()
         .post(format!(
-            "http://127.0.0.1:{coord_port}/api/lease/myhost/take"
+            "http://127.0.0.1:{}/api/lease/myhost/take",
+            ctx.coord_port
         ))
         .send()
         .await
         .expect("failed to take lease");
 
-    let _agent = spawn_host_agent_default(secret, agent_port);
+    let _agent = spawn_host_agent_default(SECRET, ctx.agent_port);
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 15).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 15).await,
         "host should come online after taking lease"
     );
 
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let payloads = webhook.drain_all_payloads().await;
+    let payloads = ctx.webhook.drain_all_payloads().await;
     assert!(
         !payloads
             .iter()
@@ -628,40 +521,17 @@ async fn no_unscheduled_startup_when_lease_held_at_online() {
 /// the configured duration has elapsed.
 #[tokio::test]
 async fn no_online_for_when_host_goes_offline_before_threshold() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
     const ONLINE_FOR_SECS: u64 = 5;
 
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
+    let ctx = NotifTestCtx::setup().await;
+    let events =
+        format!(r#"events = [{{ type = "online_for", duration_secs = {ONLINE_FOR_SECS} }}]"#);
+    let config = ctx.base_config("disableWOL", "", &events) + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-        events = [{{ type = "online_for", duration_secs = {ONLINE_FOR_SECS} }}]
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
-
-    let agent = spawn_host_agent_default(secret, agent_port);
+    let agent = spawn_host_agent_default(SECRET, ctx.agent_port);
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 10).await,
         "host should come online"
     );
 
@@ -670,14 +540,14 @@ async fn no_online_for_when_host_goes_offline_before_threshold() {
     drop(agent);
 
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Offline, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Offline, 10).await,
         "host should go offline after agent drop"
     );
 
     // Wait out the remaining original threshold plus a settling buffer to
     // confirm the timer was cancelled when the host went offline.
     sleep(Duration::from_secs(ONLINE_FOR_SECS / 2 + SETTLING_SECS)).await;
-    let payloads = webhook.drain_all_payloads().await;
+    let payloads = ctx.webhook.drain_all_payloads().await;
     assert!(
         payloads.is_empty(),
         "online_for must not fire when host went offline before threshold: {payloads:?}"
@@ -689,60 +559,38 @@ async fn no_online_for_when_host_goes_offline_before_threshold() {
 /// second session); the partial uptime of the first session must not carry over.
 #[tokio::test]
 async fn online_for_timer_resets_on_offline_and_online_again() {
-    let coord_port = get_free_port();
-    let agent_port = get_free_port();
-    let webhook = MockWebhookServer::start().await;
-    let secret = "testsecret";
-
     const ONLINE_FOR_SECS: u64 = 3;
 
-    let config = format!(
-        r#"
-        [server]
-        port = {coord_port}
-        bind = "127.0.0.1"
-
-        [hosts.myhost]
-        ip = "127.0.0.1"
-        mac = "disableWOL"
-        port = {agent_port}
-        shared_secret = "{secret}"
-
-        [[notifications.webhooks]]
-        url = "{webhook_url}"
-        events = [{{ type = "online_for", duration_secs = {ONLINE_FOR_SECS} }}]
-
-        [clients]
-        "#,
-        webhook_url = webhook.url(),
-    ) + &runtime_test_config();
-
-    let _coord = spawn_coordinator_with_config(coord_port, &config);
-    wait_for_listening(coord_port, 5).await;
+    let ctx = NotifTestCtx::setup().await;
+    let events =
+        format!(r#"events = [{{ type = "online_for", duration_secs = {ONLINE_FOR_SECS} }}]"#);
+    let config = ctx.base_config("disableWOL", "", &events) + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
 
     // Session 1: agent comes online, then drops before the threshold.
-    let agent = spawn_host_agent_default(secret, agent_port);
+    let agent = spawn_host_agent_default(SECRET, ctx.agent_port);
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 10).await,
         "host should come online (session 1)"
     );
     sleep(Duration::from_secs(1)).await;
     drop(agent);
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Offline, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Offline, 10).await,
         "host should go offline after session 1 agent drop"
     );
 
     // Session 2: restart the agent — the timer must restart from zero.
-    let _agent2 = spawn_host_agent_default(secret, agent_port);
+    let _agent2 = spawn_host_agent_default(SECRET, ctx.agent_port);
     assert!(
-        wait_for_host_state(coord_port, "myhost", HostState::Online, 10).await,
+        wait_for_host_state(ctx.coord_port, "myhost", HostState::Online, 10).await,
         "host should come online (session 2)"
     );
 
     // Wait for the notification; it must arrive after a full threshold elapses
     // from the start of session 2 (not from any earlier accumulated time).
-    let payload = webhook
+    let payload = ctx
+        .webhook
         .wait_for_matching_payload(
             |p| p["event"] == "online_for",
             Duration::from_secs(ONLINE_FOR_SECS + 8),
@@ -755,7 +603,7 @@ async fn online_for_timer_resets_on_offline_and_online_again() {
 
     // Settle and verify no duplicate notification arrived.
     sleep(Duration::from_secs(SETTLING_SECS)).await;
-    let extra = webhook.drain_all_payloads().await;
+    let extra = ctx.webhook.drain_all_payloads().await;
     assert!(
         extra.is_empty(),
         "only one online_for notification expected, got extra: {extra:?}"
