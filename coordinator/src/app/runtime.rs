@@ -740,15 +740,17 @@ async fn handle_host_events(
                 };
 
                 let webhooks = config_rx.borrow().notifications.webhooks.clone();
-                let pool_ref = db_pool.as_ref();
-                let vapid_ref = vapid_key.as_ref();
-                notifications::dispatch(
-                    notification_event,
-                    &webhooks,
-                    pool_ref,
-                    vapid_ref,
-                )
-                .await;
+                let pool_clone = db_pool.clone();
+                let vapid_clone = vapid_key.clone();
+                tokio::spawn(async move {
+                    notifications::dispatch(
+                        notification_event,
+                        &webhooks,
+                        pool_clone.as_ref(),
+                        vapid_clone.as_ref(),
+                    )
+                    .await;
+                });
             }
         }
     }
