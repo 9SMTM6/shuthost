@@ -31,7 +31,7 @@
 -#     "unscheduled",
 -#     # Structured: same event, scoped to specific hosts
 -#     { type = "operation_failed", hosts = ["my-host", "other-host"] },
--#     # online_for has no string shorthand — duration_secs is always required
+-#     # online_for has no string shorthand -- duration_secs is always required
 -#     { type = "online_for", duration_secs = 300 },
 -#     { type = "online_for", duration_secs = 3600, hosts = ["my-host"] },
 -# ]
@@ -62,7 +62,7 @@
 +    "unscheduled",
 +    # Structured: same event, scoped to specific hosts
 +    { type = "operation_failed", hosts = ["my-host", "other-host"] },
-+    # online_for has no shorthand — duration_secs is always required
++    # online_for has no shorthand -- duration_secs is always required
 +    { type = "online_for", duration_secs = 300 },
 +    { type = "online_for", duration_secs = 3600, hosts = ["my-host"] },
 +]
