@@ -575,7 +575,7 @@ fn spawn_webhook_online_for_timers(
     online_since: &Arc<RwLock<HashMap<String, Instant>>>,
     config_rx: &ConfigRx,
 ) {
-    let durations: Vec<u64> = config_rx
+    let durations: HashSet<u64> = config_rx
         .borrow()
         .notifications
         .webhooks
