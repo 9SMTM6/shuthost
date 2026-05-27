@@ -11,6 +11,8 @@ repository = "https://github.com/9SMTM6/shuthost"
 license = "GPL-2.0-only"
 readme = true
 keywords = [
+    "api",
+    "docker",
     "energy-consumption",
     "energy-management",
     "green-computing",
@@ -22,6 +24,7 @@ keywords = [
     "power-management",
     "progressive-web-app",
     "pwa",
+    "self-hosted",
     "sleep-on-lan",
     "wake-on-lan",
     "webhook-events",
