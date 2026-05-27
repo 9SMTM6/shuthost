@@ -89,7 +89,7 @@ serde_json.workspace = true
 serde_plain = "1.0.2"
 sha2.workspace = true
 shuthost_common = { workspace = true, features = ["coordinator"] }
-sqlx = { version = "0.8", features = [
+sqlx = { version = "0.9", features = [
     "chrono",
     "macros",
     "migrate",

@@ -1,5 +1,5 @@
---- example_config.toml	2026-05-26 13:03:48.259742928 +0200
-+++ example_config_webhooks.toml	2026-05-26 13:02:26.982748296 +0200
+--- example_config.toml	2026-05-27 19:56:23.504065432 +0200
++++ example_config_webhooks.toml	2026-05-27 11:42:40.208202143 +0200
 @@ -184,37 +184,37 @@
  #     # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
  #     shutdown_timeout_secs = 20

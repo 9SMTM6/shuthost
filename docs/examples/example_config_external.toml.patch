@@ -1,5 +1,5 @@
---- example_config.toml	2026-04-23 20:42:23.642651283 +0200
-+++ example_config_external.toml	2026-04-23 12:29:08.700220492 +0200
+--- example_config.toml	2026-05-27 19:56:23.504065432 +0200
++++ example_config_external.toml	2026-05-27 11:42:40.195640670 +0200
 @@ -62,18 +62,18 @@
  # The default if none is configured is no authentication!
  # Only one authentication mode can be active at a time.
