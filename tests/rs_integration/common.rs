@@ -316,6 +316,14 @@ impl MockWebhookServer {
         format!("http://127.0.0.1:{}", self.port)
     }
 
+    /// Drains and returns all payloads received so far, leaving the queue empty.
+    ///
+    /// Useful for negative assertions: sleep a settling window, then call this
+    /// and assert that no unexpected payloads accumulated.
+    pub(crate) async fn drain_all_payloads(&self) -> Vec<serde_json::Value> {
+        std::mem::take(&mut *self.payloads.lock().await)
+    }
+
     /// Poll until a payload satisfying `predicate` arrives, or `timeout` elapses.
     ///
     /// Non-matching payloads are left in the queue so that ordering between
