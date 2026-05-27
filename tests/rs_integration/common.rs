@@ -13,6 +13,7 @@
 use alloc::sync::Arc;
 use core::{mem::take, time::Duration};
 use std::{
+    collections::HashMap,
     env, fs,
     io::Write as _,
     net::{TcpListener as StdTcpListener, TcpStream as StdTcpStream},
@@ -281,7 +282,7 @@ pub(crate) struct CapturedRequest {
     /// Parsed JSON body.
     pub(crate) body: serde_json::Value,
     /// HTTP request headers, with names lower-cased.
-    pub(crate) headers: std::collections::HashMap<String, String>,
+    pub(crate) headers: HashMap<String, String>,
 }
 
 /// A minimal in-process HTTP server that collects JSON webhook payloads `POSTed` to it.
@@ -304,8 +305,7 @@ impl MockWebhookServer {
                 let requests = requests_task.clone();
                 async move {
                     if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&body) {
-                        let raw_body =
-                            String::from_utf8(body.to_vec()).unwrap_or_default();
+                        let raw_body = String::from_utf8(body.to_vec()).unwrap_or_default();
                         let header_map = headers
                             .iter()
                             .filter_map(|(k, v)| {
@@ -395,7 +395,7 @@ impl MockWebhookServer {
         loop {
             {
                 let mut requests = self.requests.lock().await;
-                if let Some(pos) = requests.iter().position(|r| predicate(r)) {
+                if let Some(pos) = requests.iter().position(&predicate) {
                     return Some(requests.remove(pos));
                 }
             }
