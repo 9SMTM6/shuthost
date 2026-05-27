@@ -24,6 +24,8 @@ keywords = [
     "pwa",
     "sleep-on-lan",
     "wake-on-lan",
+    "webhook-events",
+    "webhooks",
     "wol",
 ]
 # this ain't no crate
