@@ -10,6 +10,7 @@ use core::time::Duration;
 
 use secrecy::SecretString;
 use shuthost_coordinator::app::HostState;
+use tokio::time::sleep;
 
 use crate::common::{
     MockWebhookServer, get_free_port, runtime_test_config, spawn_coordinator_with_config,
@@ -76,7 +77,7 @@ async fn webhook_fires_for_unscheduled_startup() {
 
     // After the startup notification, allow two poll cycles to elapse and verify
     // that no spurious `unscheduled.shutdown` (or any other wrong event) was sent.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let unexpected = webhook.drain_all_payloads().await;
     assert!(
         !unexpected
@@ -167,7 +168,7 @@ async fn webhook_fires_for_unscheduled_shutdown() {
     assert!(payload["at_unix"].is_number());
 
     // Agent is gone; allow settling time and verify the queue is fully empty.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let unexpected = webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
@@ -237,7 +238,7 @@ async fn webhook_fires_for_operation_failed_startup() {
     assert!(payload["at_unix"].is_number());
 
     // No agent, no enforce_state — no retry is scheduled. Verify silence.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let unexpected = webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
@@ -326,7 +327,7 @@ async fn webhook_fires_for_operation_failed_startup_repeat() {
 
     // enforce_state keeps retrying, so further operation_failed.startup payloads
     // are expected. Only assert that no wrong-kind events slipped through.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let extra = webhook.drain_all_payloads().await;
     assert!(
         extra
@@ -425,7 +426,7 @@ async fn webhook_fires_for_operation_failed_shutdown() {
     assert!(payload["at_unix"].is_number());
 
     // Without enforce_state, no retry is scheduled. Verify silence.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let unexpected = webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
@@ -496,7 +497,7 @@ async fn webhook_fires_for_online_for() {
 
     // online_for fires once per online session; the host is still up, so no
     // further notifications should arrive during the settling window.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let unexpected = webhook.drain_all_payloads().await;
     assert!(
         unexpected.is_empty(),
@@ -553,7 +554,7 @@ async fn no_unscheduled_shutdown_for_graceful_offline() {
     // transition must NOT produce an `unscheduled.shutdown` notification.
     drop(agent);
 
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let payloads = webhook.drain_all_payloads().await;
     assert!(
         !payloads
@@ -613,7 +614,7 @@ async fn no_unscheduled_startup_when_lease_held_at_online() {
         "host should come online after taking lease"
     );
 
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let payloads = webhook.drain_all_payloads().await;
     assert!(
         !payloads
@@ -665,7 +666,7 @@ async fn no_online_for_when_host_goes_offline_before_threshold() {
     );
 
     // Drop the agent well before the threshold (half the duration).
-    tokio::time::sleep(Duration::from_secs(ONLINE_FOR_SECS / 2)).await;
+    sleep(Duration::from_secs(ONLINE_FOR_SECS / 2)).await;
     drop(agent);
 
     assert!(
@@ -675,7 +676,7 @@ async fn no_online_for_when_host_goes_offline_before_threshold() {
 
     // Wait out the remaining original threshold plus a settling buffer to
     // confirm the timer was cancelled when the host went offline.
-    tokio::time::sleep(Duration::from_secs(ONLINE_FOR_SECS / 2 + SETTLING_SECS)).await;
+    sleep(Duration::from_secs(ONLINE_FOR_SECS / 2 + SETTLING_SECS)).await;
     let payloads = webhook.drain_all_payloads().await;
     assert!(
         payloads.is_empty(),
@@ -725,7 +726,7 @@ async fn online_for_timer_resets_on_offline_and_online_again() {
         wait_for_host_state(coord_port, "myhost", HostState::Online, 10).await,
         "host should come online (session 1)"
     );
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1)).await;
     drop(agent);
     assert!(
         wait_for_host_state(coord_port, "myhost", HostState::Offline, 10).await,
@@ -753,7 +754,7 @@ async fn online_for_timer_resets_on_offline_and_online_again() {
     assert_eq!(payload["host"], "myhost");
 
     // Settle and verify no duplicate notification arrived.
-    tokio::time::sleep(Duration::from_secs(SETTLING_SECS)).await;
+    sleep(Duration::from_secs(SETTLING_SECS)).await;
     let extra = webhook.drain_all_payloads().await;
     assert!(
         extra.is_empty(),
