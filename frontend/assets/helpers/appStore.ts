@@ -69,8 +69,6 @@ export type OperationFailure = {
     operation: 'shutdown' | 'startup';
 };
 
-// TODO:
-// * Add updates for client stats and (upcoming) host stats, IIRC I went against that in the past cause it was annoying to do in raw html + js without signals etc.
 export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
     | { type: 'ClientStats'; payload: Record<string, ClientStats> }
