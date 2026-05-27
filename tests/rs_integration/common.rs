@@ -21,7 +21,7 @@ use std::{
     time::Instant,
 };
 
-use axum::{Router, body::Bytes, http::StatusCode, routing::post};
+use axum::{Router, body::Bytes, http::HeaderMap, http::StatusCode, routing::post};
 use clap::Parser as _;
 use secrecy::SecretString;
 use shuthost_common::CoordinatorMessage;
@@ -273,27 +273,52 @@ pub(crate) async fn wait_for_host_state(
     false
 }
 
+/// A webhook request captured by [`MockWebhookServer`]: the raw body string,
+/// parsed JSON body, and all HTTP request headers (lowercased names).
+pub(crate) struct CapturedRequest {
+    /// Raw UTF-8 body as sent by the coordinator.
+    pub(crate) raw_body: String,
+    /// Parsed JSON body.
+    pub(crate) body: serde_json::Value,
+    /// HTTP request headers, with names lower-cased.
+    pub(crate) headers: std::collections::HashMap<String, String>,
+}
+
 /// A minimal in-process HTTP server that collects JSON webhook payloads `POSTed` to it.
 ///
 /// Used by notification integration tests to verify that the coordinator fires
 /// the correct webhook payload for each event kind.
 pub(crate) struct MockWebhookServer {
     port: u16,
-    payloads: Arc<Mutex<Vec<serde_json::Value>>>,
+    requests: Arc<Mutex<Vec<CapturedRequest>>>,
 }
 
 impl MockWebhookServer {
     pub(crate) async fn start() -> Self {
-        let payloads: Arc<Mutex<Vec<serde_json::Value>>> = Arc::new(Mutex::new(Vec::new()));
-        let payloads_task = payloads.clone();
+        let requests: Arc<Mutex<Vec<CapturedRequest>>> = Arc::new(Mutex::new(Vec::new()));
+        let requests_task = requests.clone();
 
         let app = Router::new().route(
             "/",
-            post(move |body: Bytes| {
-                let payloads = payloads_task.clone();
+            post(move |headers: HeaderMap, body: Bytes| {
+                let requests = requests_task.clone();
                 async move {
                     if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&body) {
-                        payloads.lock().await.push(v);
+                        let raw_body =
+                            String::from_utf8(body.to_vec()).unwrap_or_default();
+                        let header_map = headers
+                            .iter()
+                            .filter_map(|(k, v)| {
+                                v.to_str()
+                                    .ok()
+                                    .map(|s| (k.as_str().to_lowercase(), s.to_owned()))
+                            })
+                            .collect();
+                        requests.lock().await.push(CapturedRequest {
+                            raw_body,
+                            body: v,
+                            headers: header_map,
+                        });
                     }
                     StatusCode::OK
                 }
@@ -309,7 +334,7 @@ impl MockWebhookServer {
             axum::serve(listener, app).await.unwrap();
         });
 
-        Self { port, payloads }
+        Self { port, requests }
     }
 
     pub(crate) fn url(&self) -> String {
@@ -321,7 +346,10 @@ impl MockWebhookServer {
     /// Useful for negative assertions: sleep a settling window, then call this
     /// and assert that no unexpected payloads accumulated.
     pub(crate) async fn drain_all_payloads(&self) -> Vec<serde_json::Value> {
-        take(&mut *self.payloads.lock().await)
+        take(&mut *self.requests.lock().await)
+            .into_iter()
+            .map(|r| r.body)
+            .collect()
     }
 
     /// Poll until a payload satisfying `predicate` arrives, or `timeout` elapses.
@@ -340,9 +368,35 @@ impl MockWebhookServer {
         let deadline = time::Instant::now() + timeout;
         loop {
             {
-                let mut payloads = self.payloads.lock().await;
-                if let Some(pos) = payloads.iter().position(&predicate) {
-                    return Some(payloads.remove(pos));
+                let mut requests = self.requests.lock().await;
+                if let Some(pos) = requests.iter().position(|r| predicate(&r.body)) {
+                    return Some(requests.remove(pos).body);
+                }
+            }
+            if time::Instant::now() >= deadline {
+                return None;
+            }
+            time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+
+    /// Poll until a full [`CapturedRequest`] satisfying `predicate` arrives, or
+    /// `timeout` elapses.  The returned value includes the raw body string and
+    /// all HTTP headers so callers can assert on signature/custom-header values.
+    pub(crate) async fn wait_for_matching_request<F>(
+        &self,
+        predicate: F,
+        timeout: Duration,
+    ) -> Option<CapturedRequest>
+    where
+        F: Fn(&CapturedRequest) -> bool,
+    {
+        let deadline = time::Instant::now() + timeout;
+        loop {
+            {
+                let mut requests = self.requests.lock().await;
+                if let Some(pos) = requests.iter().position(|r| predicate(r)) {
+                    return Some(requests.remove(pos));
                 }
             }
             if time::Instant::now() >= deadline {

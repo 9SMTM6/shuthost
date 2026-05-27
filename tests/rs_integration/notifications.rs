@@ -610,3 +610,96 @@ async fn online_for_timer_resets_on_offline_and_online_again() {
         "only one online_for notification expected, got extra: {extra:?}"
     );
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Webhook signing — X-ShutHost-Signature header
+// ─────────────────────────────────────────────────────────────────
+
+/// When a webhook is configured with a `secret`, every POST must include an
+/// `X-ShutHost-Signature: sha256=<hex>` header whose value is the HMAC-SHA256
+/// of the raw JSON body signed with that secret.
+#[tokio::test]
+async fn webhook_signature_header_is_present_and_correct() {
+    const WEBHOOK_SECRET: &str = "webhook_signing_secret";
+
+    let ctx = NotifTestCtx::setup().await;
+    // Inject the signing secret into the webhook config via TOML inline table.
+    let webhook_secret_toml = format!(r#"secret = "{WEBHOOK_SECRET}""#);
+    let config = ctx.base_config("disableWOL", "", &webhook_secret_toml) + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
+
+    // Trigger an unscheduled-startup event (simplest path to a webhook POST).
+    let _agent = spawn_host_agent_default(SECRET, ctx.agent_port);
+
+    let req = ctx
+        .webhook
+        .wait_for_matching_request(
+            |r| r.body["event"] == "unscheduled" && r.body["kind"] == "startup",
+            Duration::from_secs(10),
+        )
+        .await
+        .expect("expected unscheduled-startup webhook request within timeout");
+
+    // Verify the signature header is present.
+    let sig_header = req
+        .headers
+        .get("x-shuthost-signature")
+        .expect("X-ShutHost-Signature header must be present when secret is configured");
+
+    // Recompute the expected signature over the raw body the coordinator sent.
+    let expected_sig = format!(
+        "sha256={}",
+        shuthost_common::sign_hmac(
+            &req.raw_body,
+            &secrecy::SecretString::from(WEBHOOK_SECRET),
+        )
+    );
+
+    assert_eq!(
+        sig_header, &expected_sig,
+        "X-ShutHost-Signature does not match expected HMAC-SHA256 of the raw body"
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Custom header injection
+// ─────────────────────────────────────────────────────────────────
+
+/// When a webhook is configured with custom `headers`, every POST must include
+/// those headers with their configured values.
+#[tokio::test]
+async fn webhook_custom_headers_are_sent() {
+    const CUSTOM_HEADER_NAME: &str = "x-my-auth-token";
+    const CUSTOM_HEADER_VALUE: &str = "super-secret-token-42";
+
+    let ctx = NotifTestCtx::setup().await;
+    // Inline-table TOML for the custom header (names are case-insensitive in HTTP,
+    // but we verify with the lowercased form that axum normalises to).
+    let headers_toml = format!(
+        r#"headers = {{ "X-My-Auth-Token" = "{CUSTOM_HEADER_VALUE}" }}"#
+    );
+    let config = ctx.base_config("disableWOL", "", &headers_toml) + &runtime_test_config();
+    let _coord = ctx.spawn_coord(&config).await;
+
+    // Trigger an unscheduled-startup event.
+    let _agent = spawn_host_agent_default(SECRET, ctx.agent_port);
+
+    let req = ctx
+        .webhook
+        .wait_for_matching_request(
+            |r| r.body["event"] == "unscheduled" && r.body["kind"] == "startup",
+            Duration::from_secs(10),
+        )
+        .await
+        .expect("expected unscheduled-startup webhook request within timeout");
+
+    let value = req
+        .headers
+        .get(CUSTOM_HEADER_NAME)
+        .expect("custom header must be present in the webhook POST");
+
+    assert_eq!(
+        value, CUSTOM_HEADER_VALUE,
+        "custom header value does not match the configured value"
+    );
+}
