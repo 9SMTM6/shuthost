@@ -11,7 +11,7 @@
 )]
 
 use alloc::sync::Arc;
-use core::time::Duration;
+use core::{mem::take, time::Duration};
 use std::{
     env, fs,
     io::Write as _,
@@ -321,7 +321,7 @@ impl MockWebhookServer {
     /// Useful for negative assertions: sleep a settling window, then call this
     /// and assert that no unexpected payloads accumulated.
     pub(crate) async fn drain_all_payloads(&self) -> Vec<serde_json::Value> {
-        std::mem::take(&mut *self.payloads.lock().await)
+        take(&mut *self.payloads.lock().await)
     }
 
     /// Poll until a payload satisfying `predicate` arrives, or `timeout` elapses.
