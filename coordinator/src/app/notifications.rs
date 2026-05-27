@@ -6,7 +6,8 @@
 //! and also forwards to the existing PWA push infrastructure.
 
 use alloc::sync::Arc;
-use std::time::{Duration, SystemTime};
+use core::time::Duration;
+use std::time::SystemTime;
 
 use futures::future::join_all;
 use secrecy::ExposeSecret as _;

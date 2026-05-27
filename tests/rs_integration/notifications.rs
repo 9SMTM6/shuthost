@@ -159,7 +159,7 @@ async fn webhook_fires_for_unscheduled_shutdown() {
         ))
         .send()
         .await
-        .and_then(|resp| resp.error_for_status())
+        .and_then(reqwest::Response::error_for_status)
         .expect("failed to take lease");
 
     // With disableWOL, the wake attempt returns Noop (WakeErr), setting the
@@ -649,10 +649,7 @@ async fn webhook_signature_header_is_present_and_correct() {
     // Recompute the expected signature over the raw body the coordinator sent.
     let expected_sig = format!(
         "sha256={}",
-        shuthost_common::sign_hmac(
-            &req.raw_body,
-            &secrecy::SecretString::from(WEBHOOK_SECRET),
-        )
+        shuthost_common::sign_hmac(&req.raw_body, &secrecy::SecretString::from(WEBHOOK_SECRET),)
     );
 
     assert_eq!(
@@ -675,9 +672,7 @@ async fn webhook_custom_headers_are_sent() {
     let ctx = NotifTestCtx::setup().await;
     // Inline-table TOML for the custom header (names are case-insensitive in HTTP,
     // but we verify with the lowercased form that axum normalises to).
-    let headers_toml = format!(
-        r#"headers = {{ "X-My-Auth-Token" = "{CUSTOM_HEADER_VALUE}" }}"#
-    );
+    let headers_toml = format!(r#"headers = {{ "X-My-Auth-Token" = "{CUSTOM_HEADER_VALUE}" }}"#);
     let config = ctx.base_config("disableWOL", "", &headers_toml) + &runtime_test_config();
     let _coord = ctx.spawn_coord(&config).await;
 
