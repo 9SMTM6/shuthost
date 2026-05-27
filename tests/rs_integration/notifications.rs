@@ -159,6 +159,7 @@ async fn webhook_fires_for_unscheduled_shutdown() {
         ))
         .send()
         .await
+        .and_then(|resp| resp.error_for_status())
         .expect("failed to take lease");
 
     // With disableWOL, the wake attempt returns Noop (WakeErr), setting the
