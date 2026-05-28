@@ -190,13 +190,9 @@ These are generated or validated automatically as part of the test suite, and th
 ## 🚀 Potential Future Features
 
 ### 🎯 Core Features
-- 🔌 **Custom Wakers**: Support for alternative wake mechanisms beyond WOL, such as smart plugs or custom scripts (e.g., via API integrations). This would allow hosts without WOL support to be managed through external devices or services.
-- 🔔 **Notifications about host state changes through the PWA**
 - 📊 **Host state tracking for statistics**
 - 🛡️ **Rate limiting of requests by shuthost clients**
 - **Per-user leases in WebUI**: When user authentication is supported (e.g., via OIDC), leases in the WebUI could be tracked per user instead of globally for all users. This would allow for more granular control and visibility over which user holds a lease on a host.
-- 🛑 **Notifications on failed operations**: Notify users if a shutdown or startup operation does not complete within the expected time window (e.g., host fails to power off or on as requested).
-- ⏰ **Notifications for hosts online too long**: Notify when a host remains online for longer than a configurable threshold. Support both one-time notifications and/or persistent ("always") notifications until the state changes.
 - Agents pushing state changes to the coordinator (instead of coordinator polling agents for state)
   - currently the coordinator polls agents for their state, this keeps logic in the agents minimal and requires less configuration (no need to configure coordinator address in agents, and potentially change it on all agents if coordinator address changes). However, it also means that state changes aren't reflected in the UI until the next poll.
   - this is already supported, but not well tested, and disabling polling is not currently supported.
@@ -208,7 +204,6 @@ These are generated or validated automatically as part of the test suite, and th
 
 ### 🔧 Management Features
 - 🗑️ **Uninstalls**
-- 🔄 **Agent update flow**: Currently, updating an agent requires manually re-running the installer with the correct flags (e.g. `--shared-secret`) or re-generating the install command from the coordinator. A dedicated update flow that handles this automatically would improve the experience.
 - ✅ **Validate broadcast port configuration on agent install**
 - **Direct control script download** from the coordinator. IDK if thats actually a good idea. It means that that direct control script might interfere with the coordinator and/or cause unexpected event notifications, and the primary reason direct control scripts exist is for users who dont want to use the coordinator at all. This also introduces the ability to extract the shared secrets from just the coordinator GUI, this ability didn't previously exist.
 - 📝 **Self-registration endpoint** for host agents
@@ -231,6 +226,7 @@ These are generated or validated automatically as part of the test suite, and th
   > The WoL packet is always sent to the global broadcast address. For hosts on a different subnet (common in home-lab setups), this won't work. The config already stores the host's IP, which could be used to derive a directed subnet broadcast.
   * investigate
 * consider adding lighthouse tests to CI and/or local tests.
+* extend the host detail page to show the hooks in at least some detail
 * need to reword/work the main poll interval description in the documentation, as the interval is more likely to be limited by the timeouts on the hosts.
 * need tests for the self-extracting update flow. Though annoyingly even these need local admin rights. At first I thought that we should be able to remove that requirement from installers, but in that case the agent would not - in default setups - have the rights to shutdown the machine at all, so we probably should keep that around. But that also means that testing the update flow cant be done without admin rights (and/or docker), which is a bit of a pain.
   * I could just require sudo and make them primarily CI tests, like some other tests.
