@@ -11,6 +11,7 @@ use std::{
 
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::{Deserialize, de};
+use reqwest::Method;
 
 /// Action to execute as a pre-startup or post-shutdown hook.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -28,14 +29,19 @@ pub(crate) enum HookAction {
     Http {
         /// The URL to send the request to.
         url: reqwest::Url,
-        /// HTTP method. Defaults to `GET` when omitted.
+        /// HTTP method. Defaults to `POST` when omitted.
         /// Validated at parse time — an invalid method string is a configuration error.
-        #[serde(default, deserialize_with = "deserialize_http_method")]
-        method: reqwest::Method,
+        #[serde(default = "POST", deserialize_with = "deserialize_http_method")]
+        method: Method,
         /// Optional request body sent as a raw string.
         #[serde(default)]
         body: Option<String>,
     },
+}
+
+#[expect(non_snake_case, reason = "Used as serde(default)")]
+fn POST() -> Method {
+    Method::POST
 }
 
 /// Deserializes an optional HTTP method string, validating it at parse time.
