@@ -18,8 +18,11 @@ pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
     let timeout = Duration::from_secs(hook.timeout_secs.unwrap_or(DEFAULT_HOOK_TIMEOUT_SECS));
 
     match hook.action {
-        HookAction::Shell { ref command } => {
-            run_shell(host_name, label, command, timeout).await;
+        HookAction::Exec {
+            ref program,
+            ref args,
+        } => {
+            run_exec(host_name, label, program, args, timeout).await;
         }
         HookAction::Http {
             ref url,
@@ -32,19 +35,21 @@ pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
 }
 
 #[tracing::instrument]
-async fn run_shell(host_name: &str, label: &str, command: &str, duration: Duration) {
-    let result = timeout(
-        duration,
-        process::Command::new("sh").arg("-c").arg(command).output(),
-    )
-    .await;
+async fn run_exec(
+    host_name: &str,
+    label: &str,
+    program: &str,
+    args: &[String],
+    duration: Duration,
+) {
+    let result = timeout(duration, process::Command::new(program).args(args).output()).await;
 
     match result {
         Err(_elapsed) => {
-            warn!("Hook shell command timed out");
+            warn!("Hook exec command timed out");
         }
         Ok(Err(e)) => {
-            warn!("Hook shell command failed to spawn: {e}");
+            warn!("Hook exec command failed to spawn: {e}");
         }
         Ok(Ok(output)) => {
             if !output.status.success() {
@@ -52,7 +57,7 @@ async fn run_shell(host_name: &str, label: &str, command: &str, duration: Durati
                 warn!(
                     exit_code = output.status.code(),
                     stderr = %stderr,
-                    "Hook shell command exited with non-zero status",
+                    "Hook exec command exited with non-zero status",
                 );
             }
         }

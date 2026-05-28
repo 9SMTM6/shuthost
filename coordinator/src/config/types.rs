@@ -16,10 +16,13 @@ use serde::{Deserialize, de};
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(crate) enum HookAction {
-    /// Run a shell command via `sh -c`. See the example config for portability caveats.
-    Shell {
-        /// The shell command to execute.
-        command: String,
+    /// Directly execute a program with arguments — no shell involved.
+    Exec {
+        /// The program to execute (path or name resolvable via `PATH`).
+        program: String,
+        /// Arguments to pass to the program.
+        #[serde(default)]
+        args: Vec<String>,
     },
     /// Send an HTTP request. See the example config for timing caveats with pre-startup hooks.
     Http {
