@@ -192,10 +192,9 @@ timeout_secs = 5"#,
     assert_eq!(body, r#"{"on": true}"#);
 }
 
-// ── Shell hook tests (Unix only: hooks.rs uses `sh -c`) ──────────────────────
+// ── Exec hook tests ──────────────────────────────────────────────────────────
 
 /// Wait for `path` to appear and contain `expected_content` (trimmed), or panic on timeout.
-#[cfg(unix)]
 async fn wait_for_file_content(path: &Path, expected_content: &str, timeout: Duration) {
     let deadline = time::Instant::now() + timeout;
     loop {
@@ -212,26 +211,34 @@ async fn wait_for_file_content(path: &Path, expected_content: &str, timeout: Dur
     }
 }
 
-#[cfg(unix)]
 #[tokio::test]
-async fn shell_pre_startup_hook_fires_on_wake() {
+async fn exec_pre_startup_hook_fires_on_wake() {
     let coord_port = get_free_port();
     let signal_file = env::temp_dir().join(format!("shuthost_hook_test_{coord_port}"));
     drop(fs::remove_file(&signal_file).await);
-    let signal_path = signal_file.display().to_string();
+    let signal_path = signal_file.display().to_string().replace('\\', "\\\\");
+
+    let hook_toml = if cfg!(windows) {
+        format!(
+            r#"[hosts.myhost.pre_startup]
+type = "exec"
+program = "cmd"
+args = ["/C", "echo done>{signal_path}"]
+timeout_secs = 5"#
+        )
+    } else {
+        format!(
+            r#"[hosts.myhost.pre_startup]
+type = "exec"
+program = "sh"
+args = ["-c", "echo done > {signal_path}"]
+timeout_secs = 5"#
+        )
+    };
 
     let _coord = spawn_coordinator_with_config(
         coord_port,
-        &base_config(
-            coord_port,
-            get_free_port(),
-            &format!(
-                r#"[hosts.myhost.pre_startup]
-type = "shell"
-command = "echo done > {signal_path}"
-timeout_secs = 5"#
-            ),
-        ),
+        &base_config(coord_port, get_free_port(), &hook_toml),
     );
     wait_for_listening(coord_port, 5).await;
 
@@ -317,27 +324,35 @@ timeout_secs = 5"#,
     assert_eq!(body, "");
 }
 
-#[cfg(unix)]
 #[tokio::test]
-async fn shell_post_shutdown_hook_fires_after_shutdown() {
+async fn exec_post_shutdown_hook_fires_after_shutdown() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
     let signal_file = env::temp_dir().join(format!("shuthost_post_shutdown_hook_{coord_port}"));
     drop(fs::remove_file(&signal_file));
-    let signal_path = signal_file.display().to_string();
+    let signal_path = signal_file.display().to_string().replace('\\', "\\\\");
+
+    let hook_toml = if cfg!(windows) {
+        format!(
+            r#"[hosts.myhost.post_shutdown]
+type = "exec"
+program = "cmd"
+args = ["/C", "echo done>{signal_path}"]
+timeout_secs = 5"#
+        )
+    } else {
+        format!(
+            r#"[hosts.myhost.post_shutdown]
+type = "exec"
+program = "sh"
+args = ["-c", "echo done > {signal_path}"]
+timeout_secs = 5"#
+        )
+    };
 
     let _coord = spawn_coordinator_with_config(
         coord_port,
-        &agent_config(
-            coord_port,
-            agent_port,
-            &format!(
-                r#"[hosts.myhost.post_shutdown]
-type = "shell"
-command = "echo done > {signal_path}"
-timeout_secs = 5"#
-            ),
-        ),
+        &agent_config(coord_port, agent_port, &hook_toml),
     );
     wait_for_listening(coord_port, 5).await;
 

@@ -1,6 +1,6 @@
---- example_config.toml	2026-05-28 19:01:34.270810150 +0200
-+++ example_config_with_client_and_host.toml	2026-05-28 19:02:55.390590048 +0200
-@@ -156,53 +156,53 @@
+--- example_config.toml	2026-05-28 20:24:38.347465890 +0200
++++ example_config_with_client_and_host.toml	2026-05-28 20:26:56.171775801 +0200
+@@ -156,54 +156,54 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [hosts]
@@ -35,16 +35,17 @@
 -#     # Two hook points are available: `pre_startup` (before WoL) and `post_shutdown` (after confirmed offline).
 -#     # Both run on the coordinator machine, block until complete or timed out, and are fail-open:
 -#     # errors are logged as warnings but operation proceeds regardless.
--#     # Two action types are supported (mutually exclusive): "http" and "shell".
--#     # Shell hooks: run via `sh -c`. Useful for native (non-container) deployments.
+-#     # Two action types are supported (mutually exclusive): "http" and "exec".
+-#     # Exec hooks: Useful mostly for native (non-container) deployments.
 -#     #   Warning: Docker/Alpine containers ship only BusyBox sh (ash) and other posix tools; e.g. bash is not available, and
--#     #   glibc-linked binaries wont work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
+-#     #   glibc-linked linux binaries also won't work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
 -#     # HTTP hooks: send an HTTP request and wait for the response before continuing.
 -#     # [pre_startup] the coordinator proceeds to WoL immediately after receiving the HTTP response.
 -#     #   The built-in WoL resend loop should handle most initialisation gaps
--#     pre_startup.type = "shell"
--#     pre_startup.command = "/usr/local/bin/power-on.sh outlet-3"
--#     pre_startup.timeout_secs = 30       # optional, on both hook types; defaults to 30 s
+-#     pre_startup.type = "exec"
+-#     pre_startup.program = "/usr/local/bin/power-on.sh"
+-#     pre_startup.args = ["outlet-3"]      # optional; list of arguments
+-#     pre_startup.timeout_secs = 30        # optional, on both hook types; defaults to 30 s
 -#     # [post_shutdown] This hook is executed after the host is confirmed offline.
 -#     #   Not executed when shutdown times out or the agent is unreachable.
 -#     post_shutdown.type = "http"
@@ -82,16 +83,17 @@
 +    # Two hook points are available: `pre_startup` (before WoL) and `post_shutdown` (after confirmed offline).
 +    # Both run on the coordinator machine, block until complete or timed out, and are fail-open:
 +    # errors are logged as warnings but operation proceeds regardless.
-+    # Two action types are supported (mutually exclusive): "http" and "shell".
-+    # Shell hooks: run via `sh -c`. Useful for native (non-container) deployments.
++    # Two action types are supported (mutually exclusive): "http" and "exec".
++    # Exec hooks: Useful mostly for native (non-container) deployments.
 +    #   Warning: Docker/Alpine containers ship only BusyBox sh (ash) and other posix tools; e.g. bash is not available, and
-+    #   glibc-linked binaries wont work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
++    #   glibc-linked linux binaries also won't work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
 +    # HTTP hooks: send an HTTP request and wait for the response before continuing.
 +    # [pre_startup] the coordinator proceeds to WoL immediately after receiving the HTTP response.
 +    #   The built-in WoL resend loop should handle most initialisation gaps
-+    pre_startup.type = "shell"
-+    pre_startup.command = "/usr/local/bin/power-on.sh outlet-3"
-+    pre_startup.timeout_secs = 30       # optional, on both hook types; defaults to 30 s
++    pre_startup.type = "exec"
++    pre_startup.program = "/usr/local/bin/power-on.sh"
++    pre_startup.args = ["outlet-3"]      # optional; list of arguments
++    pre_startup.timeout_secs = 30        # optional, on both hook types; defaults to 30 s
 +    # [post_shutdown] This hook is executed after the host is confirmed offline.
 +    #   Not executed when shutdown times out or the agent is unreachable.
 +    post_shutdown.type = "http"
@@ -101,7 +103,7 @@
  
  # # =============================================================================
  # # NOTIFICATIONS CONFIGURATION
-@@ -245,9 +245,9 @@
+@@ -246,9 +246,9 @@
  # The client installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [clients]

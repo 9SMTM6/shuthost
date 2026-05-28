@@ -262,8 +262,9 @@ mod tests {
         assert_eq!(
             pre,
             &HookConfig {
-                action: HookAction::Shell {
-                    command: "/usr/local/bin/power-on.sh outlet-3".to_string(),
+                action: HookAction::Exec {
+                    program: "/usr/local/bin/power-on.sh".to_string(),
+                    args: vec!["outlet-3".to_string()],
                 },
                 timeout_secs: Some(30),
             }
