@@ -1,5 +1,5 @@
---- example_config.toml	2026-05-28 20:24:38.347465890 +0200
-+++ example_config_with_client_and_host.toml	2026-05-28 20:26:56.171775801 +0200
+--- example_config.toml	2026-05-28 20:42:05.284972727 +0200
++++ example_config_with_client_and_host.toml	2026-05-28 20:42:59.249381423 +0200
 @@ -156,54 +156,54 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
@@ -50,7 +50,7 @@
 -#     #   Not executed when shutdown times out or the agent is unreachable.
 -#     post_shutdown.type = "http"
 -#     post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1
--#     post_shutdown.method = "POST"        # optional; defaults to GET
+-#     post_shutdown.method = "POST"        # optional; defaults to POST
 -#     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
 +[hosts.my-host-name] 
 +    # IP address of the host where the agent is running.
@@ -98,7 +98,7 @@
 +    #   Not executed when shutdown times out or the agent is unreachable.
 +    post_shutdown.type = "http"
 +    post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1
-+    post_shutdown.method = "POST"        # optional; defaults to GET
++    post_shutdown.method = "POST"        # optional; defaults to POST
 +    post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
  
  # # =============================================================================

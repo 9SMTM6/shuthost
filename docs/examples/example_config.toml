@@ -202,7 +202,7 @@ bind = "127.0.0.1"
 #     #   Not executed when shutdown times out or the agent is unreachable.
 #     post_shutdown.type = "http"
 #     post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1
-#     post_shutdown.method = "POST"        # optional; defaults to GET
+#     post_shutdown.method = "POST"        # optional; defaults to POST
 #     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
 
 # # =============================================================================
