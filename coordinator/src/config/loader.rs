@@ -41,8 +41,8 @@ mod tests {
 
     use super::*;
     use crate::config::{
-        AuthMode, DbConfig, OidcConfig, RuntimeConfig, SimpleEventFilter, StructuredEventFilter,
-        WebhookEventFilter,
+        AuthMode, DbConfig, HookAction, HookConfig, OidcConfig, RuntimeConfig, SimpleEventFilter,
+        StructuredEventFilter, WebhookEventFilter,
     };
 
     #[tokio::test]
@@ -245,8 +245,42 @@ mod tests {
         let cfg = load(&temp_file)
             .await
             .expect("Failed to load example_config_with_client_and_host.toml");
-        assert!(cfg.hosts.contains_key("my-host-name"));
-        assert!(cfg.clients.contains_key("my-client-name"));
+
+        let host = cfg.hosts.get("my-host-name").expect("host 'my-host-name' missing");
+        assert_eq!(host.ip, "192.168.1.100");
+        assert_eq!(host.mac, "AA:BB:CC:DD:EE:FF");
+        assert_eq!(host.port, 9090);
+        assert_eq!(host.shared_secret.expose_secret(), "your-generated-secret");
+        assert!(!host.enforce_state);
+        assert_eq!(host.wake_timeout_secs, Some(120));
+        assert_eq!(host.shutdown_timeout_secs, Some(20));
+
+        let pre = host.pre_startup.as_ref().expect("pre_startup hook missing");
+        assert_eq!(
+            pre,
+            &HookConfig {
+                action: HookAction::Shell {
+                    command: "/usr/local/bin/power-on.sh outlet-3".to_string(),
+                },
+                timeout_secs: Some(30),
+            }
+        );
+
+        let post = host.post_shutdown.as_ref().expect("post_shutdown hook missing");
+        assert_eq!(
+            post,
+            &HookConfig {
+                action: HookAction::Http {
+                    url: "http://192.168.1.50/relay/0?turn=off".parse().unwrap(),
+                    method: reqwest::Method::POST,
+                    body: Some("{\"on\":false}".to_string()),
+                },
+                timeout_secs: None,
+            }
+        );
+
+        let client = cfg.clients.get("my-client-name").expect("client 'my-client-name' missing");
+        assert_eq!(client.shared_secret.expose_secret(), "your-generated-secret");
     }
 
     #[tokio::test]

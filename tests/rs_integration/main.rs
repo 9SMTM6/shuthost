@@ -14,6 +14,7 @@ extern crate core;
 
 mod common;
 mod enforce_state;
+mod hooks;
 mod host_agent;
 mod leases;
 mod login_error_redirects;

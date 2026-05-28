@@ -1,8 +1,8 @@
---- example_config.toml	2026-05-27 19:56:23.504065432 +0200
-+++ example_config_webhooks.toml	2026-05-27 11:42:40.208202143 +0200
-@@ -184,37 +184,37 @@
- #     # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
- #     shutdown_timeout_secs = 20
+--- example_config.toml	2026-05-28 19:01:34.270810150 +0200
++++ example_config_webhooks.toml	2026-05-28 19:02:55.419450855 +0200
+@@ -204,37 +204,37 @@
+ #     post_shutdown.method = "POST"        # optional; defaults to GET
+ #     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
  
 -# # =============================================================================
 -# # NOTIFICATIONS CONFIGURATION

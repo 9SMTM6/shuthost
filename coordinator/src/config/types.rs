@@ -12,6 +12,50 @@ use std::{
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
 
+/// Action to execute as a pre-startup or post-shutdown hook.
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub(crate) enum HookAction {
+    /// Run a shell command via `sh -c`. See the example config for portability caveats.
+    Shell {
+        /// The shell command to execute.
+        command: String,
+    },
+    /// Send an HTTP request. See the example config for timing caveats with pre-startup hooks.
+    Http {
+        /// The URL to send the request to.
+        url: reqwest::Url,
+        /// HTTP method. Defaults to `GET` when omitted.
+        /// Validated at parse time — an invalid method string is a configuration error.
+        #[serde(default, deserialize_with = "deserialize_http_method")]
+        method: reqwest::Method,
+        /// Optional request body sent as a raw string.
+        #[serde(default)]
+        body: Option<String>,
+    },
+}
+
+/// Deserializes an optional HTTP method string, validating it at parse time.
+fn deserialize_http_method<'de, D>(de: D) -> Result<reqwest::Method, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(de)?;
+    reqwest::Method::from_bytes(s.as_bytes())
+        .map_err(serde::de::Error::custom)
+}
+
+/// Configuration for a single pre-startup or post-shutdown hook.
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub(crate) struct HookConfig {
+    /// The action to execute.
+    #[serde(flatten)]
+    pub action: HookAction,
+    /// Timeout in seconds for this hook. Defaults to 30 seconds when omitted.
+    #[serde(default)]
+    pub timeout_secs: Option<u64>,
+}
+
 /// Represents a configured host entry with network and security parameters.
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct Host {
@@ -39,6 +83,12 @@ pub(crate) struct Host {
     /// When `None`, the runtime-configured default shutdown timeout is used.
     #[serde(default)]
     pub shutdown_timeout_secs: Option<u64>,
+    /// Optional hook to execute before sending the wake-on-LAN packet.
+    #[serde(default)]
+    pub pre_startup: Option<HookConfig>,
+    /// Optional hook to execute after the host is confirmed offline.
+    #[serde(default)]
+    pub post_shutdown: Option<HookConfig>,
 }
 
 impl PartialEq for Host {
@@ -50,6 +100,8 @@ impl PartialEq for Host {
             && self.wake_timeout_secs == other.wake_timeout_secs
             && self.shutdown_timeout_secs == other.shutdown_timeout_secs
             && self.shared_secret.expose_secret() == other.shared_secret.expose_secret()
+            && self.pre_startup == other.pre_startup
+            && self.post_shutdown == other.post_shutdown
     }
 }
 

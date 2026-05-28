@@ -1,6 +1,6 @@
---- example_config.toml	2026-05-27 19:56:23.504065432 +0200
-+++ example_config_with_client_and_host.toml	2026-05-27 11:42:40.181714280 +0200
-@@ -156,33 +156,33 @@
+--- example_config.toml	2026-05-28 19:01:34.270810150 +0200
++++ example_config_with_client_and_host.toml	2026-05-28 19:02:55.390590048 +0200
+@@ -156,53 +156,53 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [hosts]
@@ -31,6 +31,26 @@
 -#     # Maximum seconds to wait for the host to go offline after sending a shutdown command.
 -#     # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
 -#     shutdown_timeout_secs = 20
+-#     # Hooks let you run custom actions at key points in the host lifecycle.
+-#     # Two hook points are available: `pre_startup` (before WoL) and `post_shutdown` (after confirmed offline).
+-#     # Both run on the coordinator machine, block until complete or timed out, and are fail-open:
+-#     # errors are logged as warnings but operation proceeds regardless.
+-#     # Two action types are supported (mutually exclusive): "http" and "shell".
+-#     # Shell hooks: run via `sh -c`. Useful for native (non-container) deployments.
+-#     #   Warning: Docker/Alpine containers ship only BusyBox sh (ash) and other posix tools; e.g. bash is not available, and
+-#     #   glibc-linked binaries wont work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
+-#     # HTTP hooks: send an HTTP request and wait for the response before continuing.
+-#     # pre_startup: the coordinator proceeds to WoL immediately after receiving the HTTP response.
+-#     #   The built-in WoL resend loop should handle most initialisation gaps
+-#     pre_startup.type = "shell"
+-#     pre_startup.command = "/usr/local/bin/power-on.sh outlet-3"
+-#     pre_startup.timeout_secs = 30       # optional, on both hook types; defaults to 30 s
+-#     # post_shutdown: This hook is executed after the host is confirmed offline.
+-#     #   Not executed when shutdown times out or the agent is unreachable.
+-#     post_shutdown.type = "http"
+-#     post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1
+-#     post_shutdown.method = "POST"        # optional; defaults to GET
+-#     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
 +[hosts.my-host-name] 
 +    # IP address of the host where the agent is running.
 +    # This should be reachable from the coordinator.
@@ -58,10 +78,30 @@
 +    # Maximum seconds to wait for the host to go offline after sending a shutdown command.
 +    # When omitted, the coordinator's `default_shutdown_timeout_secs` is used.
 +    shutdown_timeout_secs = 20
++    # Hooks let you run custom actions at key points in the host lifecycle.
++    # Two hook points are available: `pre_startup` (before WoL) and `post_shutdown` (after confirmed offline).
++    # Both run on the coordinator machine, block until complete or timed out, and are fail-open:
++    # errors are logged as warnings but operation proceeds regardless.
++    # Two action types are supported (mutually exclusive): "http" and "shell".
++    # Shell hooks: run via `sh -c`. Useful for native (non-container) deployments.
++    #   Warning: Docker/Alpine containers ship only BusyBox sh (ash) and other posix tools; e.g. bash is not available, and
++    #   glibc-linked binaries wont work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
++    # HTTP hooks: send an HTTP request and wait for the response before continuing.
++    # pre_startup: the coordinator proceeds to WoL immediately after receiving the HTTP response.
++    #   The built-in WoL resend loop should handle most initialisation gaps
++    pre_startup.type = "shell"
++    pre_startup.command = "/usr/local/bin/power-on.sh outlet-3"
++    pre_startup.timeout_secs = 30       # optional, on both hook types; defaults to 30 s
++    # post_shutdown: This hook is executed after the host is confirmed offline.
++    #   Not executed when shutdown times out or the agent is unreachable.
++    post_shutdown.type = "http"
++    post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1
++    post_shutdown.method = "POST"        # optional; defaults to GET
++    post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
  
  # # =============================================================================
  # # NOTIFICATIONS CONFIGURATION
-@@ -225,9 +225,9 @@
+@@ -245,9 +245,9 @@
  # The client installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [clients]

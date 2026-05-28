@@ -20,6 +20,7 @@ use tracing::{Instrument as _, debug, info};
 use crate::app::{
     AppState, OperationFailure, OperationKind,
     host_actor::{HostActorHandle, TransitionResult},
+    hooks,
     notifications,
     runtime::{PollError, poll_until_host_state},
     shared_watch_store::{SharedWatchRx, SharedWatchStore},
@@ -379,6 +380,10 @@ async fn wake_host_and_wait(
     host_with_name: &ResolvedHost,
     runtime: &RuntimeConfig,
 ) -> Result<OperationOrNoop, HostControlError> {
+    if let Some(ref hook) = host_with_name.host.pre_startup {
+        hooks::run_hook(&host_with_name.name, "pre_startup", hook).await;
+    }
+
     if host_with_name.host.mac.eq_ignore_ascii_case("disablewol") {
         info!(host = %host_with_name.name, "WOL disabled for host");
         return Ok(OperationOrNoop::Noop);
@@ -475,7 +480,12 @@ async fn shutdown_host_and_wait(
     )
     .await
     {
-        Ok(()) => Ok(OperationOrNoop::Executed),
+        Ok(()) => {
+            if let Some(ref hook) = host_with_name.host.post_shutdown {
+                hooks::run_hook(&host_with_name.name, "post_shutdown", hook).await;
+            }
+            Ok(OperationOrNoop::Executed)
+        }
         Err(e) => match e {
             PollError::Timeout { .. } => Err(HostControlError::Timeout(e.into())),
         },

@@ -1055,6 +1055,8 @@ mod tests {
             enforce_state: enforce,
             wake_timeout_secs: None,
             shutdown_timeout_secs: None,
+            pre_startup: None,
+            post_shutdown: None,
         }
     }
 
