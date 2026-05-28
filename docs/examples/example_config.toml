@@ -192,12 +192,12 @@ bind = "127.0.0.1"
 #     #   Warning: Docker/Alpine containers ship only BusyBox sh (ash) and other posix tools; e.g. bash is not available, and
 #     #   glibc-linked binaries wont work. Use POSIX-compatible commands only (e.g. wget, nc, echo, with no gnu exclusive extensions).
 #     # HTTP hooks: send an HTTP request and wait for the response before continuing.
-#     # pre_startup: the coordinator proceeds to WoL immediately after receiving the HTTP response.
+#     # [pre_startup] the coordinator proceeds to WoL immediately after receiving the HTTP response.
 #     #   The built-in WoL resend loop should handle most initialisation gaps
 #     pre_startup.type = "shell"
 #     pre_startup.command = "/usr/local/bin/power-on.sh outlet-3"
 #     pre_startup.timeout_secs = 30       # optional, on both hook types; defaults to 30 s
-#     # post_shutdown: This hook is executed after the host is confirmed offline.
+#     # [post_shutdown] This hook is executed after the host is confirmed offline.
 #     #   Not executed when shutdown times out or the agent is unreachable.
 #     post_shutdown.type = "http"
 #     post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1

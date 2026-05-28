@@ -18,9 +18,8 @@ use tokio::{
 use tracing::{Instrument as _, debug, info};
 
 use crate::app::{
-    AppState, OperationFailure, OperationKind,
+    AppState, OperationFailure, OperationKind, hooks,
     host_actor::{HostActorHandle, TransitionResult},
-    hooks,
     notifications,
     runtime::{PollError, poll_until_host_state},
     shared_watch_store::{SharedWatchRx, SharedWatchStore},
