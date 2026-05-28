@@ -34,7 +34,7 @@ pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
     }
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip_all, fields(host_name, label, program, duration))]
 async fn run_exec(
     host_name: &str,
     label: &str,
@@ -64,7 +64,7 @@ async fn run_exec(
     }
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip_all, fields(host_name, label, url, method, timeout))]
 async fn run_http(
     host_name: &str,
     label: &str,

@@ -329,7 +329,7 @@ async fn exec_post_shutdown_hook_fires_after_shutdown() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
     let signal_file = env::temp_dir().join(format!("shuthost_post_shutdown_hook_{coord_port}"));
-    drop(fs::remove_file(&signal_file));
+    drop(fs::remove_file(&signal_file).await);
     let signal_path = signal_file.display().to_string().replace('\\', "\\\\");
 
     let hook_toml = if cfg!(windows) {
@@ -370,5 +370,5 @@ timeout_secs = 5"#
     drop(agent);
 
     wait_for_file_content(&signal_file, "done", Duration::from_secs(10)).await;
-    drop(fs::remove_file(&signal_file));
+    drop(fs::remove_file(&signal_file).await);
 }
