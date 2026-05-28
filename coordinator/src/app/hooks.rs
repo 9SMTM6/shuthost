@@ -2,6 +2,7 @@
 
 use core::time::Duration;
 
+use tokio::{process, time::timeout};
 use tracing::warn;
 
 use crate::config::{HookAction, HookConfig};
@@ -16,32 +17,31 @@ const DEFAULT_HOOK_TIMEOUT_SECS: u64 = 30;
 pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
     let timeout = Duration::from_secs(hook.timeout_secs.unwrap_or(DEFAULT_HOOK_TIMEOUT_SECS));
 
-    match &hook.action {
-        HookAction::Shell { command } => {
+    match hook.action {
+        HookAction::Shell { ref command } => {
             run_shell(host_name, label, command, timeout).await;
         }
-        HookAction::Http { url, method, body } => {
+        HookAction::Http {
+            ref url,
+            ref method,
+            ref body,
+        } => {
             run_http(host_name, label, url, method, body.as_deref(), timeout).await;
         }
     }
 }
 
 #[tracing::instrument]
-async fn run_shell(host_name: &str, _label: &str, command: &str, timeout: Duration) {
-    let result = tokio::time::timeout(
-        timeout,
-        tokio::process::Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .output(),
+async fn run_shell(host_name: &str, label: &str, command: &str, duration: Duration) {
+    let result = timeout(
+        duration,
+        process::Command::new("sh").arg("-c").arg(command).output(),
     )
     .await;
 
     match result {
         Err(_elapsed) => {
-            warn!(
-                "Hook shell command timed out"
-            );
+            warn!("Hook shell command timed out");
         }
         Ok(Err(e)) => {
             warn!("Hook shell command failed to spawn: {e}");
@@ -62,7 +62,7 @@ async fn run_shell(host_name: &str, _label: &str, command: &str, timeout: Durati
 #[tracing::instrument]
 async fn run_http(
     host_name: &str,
-    _label: &str,
+    label: &str,
     url: &reqwest::Url,
     method: &reqwest::Method,
     body: Option<&str>,

@@ -10,7 +10,7 @@ use std::{
 };
 
 use secrecy::{ExposeSecret as _, SecretString};
-use serde::Deserialize;
+use serde::{Deserialize, de};
 
 /// Action to execute as a pre-startup or post-shutdown hook.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -41,8 +41,7 @@ where
     D: serde::Deserializer<'de>,
 {
     let s = String::deserialize(de)?;
-    reqwest::Method::from_bytes(s.as_bytes())
-        .map_err(serde::de::Error::custom)
+    reqwest::Method::from_bytes(s.as_bytes()).map_err(de::Error::custom)
 }
 
 /// Configuration for a single pre-startup or post-shutdown hook.

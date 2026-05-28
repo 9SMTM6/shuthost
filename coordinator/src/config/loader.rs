@@ -246,7 +246,10 @@ mod tests {
             .await
             .expect("Failed to load example_config_with_client_and_host.toml");
 
-        let host = cfg.hosts.get("my-host-name").expect("host 'my-host-name' missing");
+        let host = cfg
+            .hosts
+            .get("my-host-name")
+            .expect("host 'my-host-name' missing");
         assert_eq!(host.ip, "192.168.1.100");
         assert_eq!(host.mac, "AA:BB:CC:DD:EE:FF");
         assert_eq!(host.port, 9090);
@@ -266,7 +269,10 @@ mod tests {
             }
         );
 
-        let post = host.post_shutdown.as_ref().expect("post_shutdown hook missing");
+        let post = host
+            .post_shutdown
+            .as_ref()
+            .expect("post_shutdown hook missing");
         assert_eq!(
             post,
             &HookConfig {
@@ -279,8 +285,14 @@ mod tests {
             }
         );
 
-        let client = cfg.clients.get("my-client-name").expect("client 'my-client-name' missing");
-        assert_eq!(client.shared_secret.expose_secret(), "your-generated-secret");
+        let client = cfg
+            .clients
+            .get("my-client-name")
+            .expect("client 'my-client-name' missing");
+        assert_eq!(
+            client.shared_secret.expose_secret(),
+            "your-generated-secret"
+        );
     }
 
     #[tokio::test]

@@ -2,17 +2,19 @@
 //!
 //! Each test spawns a full coordinator configured with a hook, then triggers a
 //! host wake via the M2M lease API and verifies the hook fired.  No real host
-//! agent is required: `mac = "disableWOL"` suppresses the WoL packet, and the
+//! agent is required: `mac = "disableWOL"` suppresses the `WoL` packet, and the
 //! lease-take task is left running in the background (it will block waiting for
 //! the host to come online, which never happens — the hook has already fired).
 
+use alloc::sync::Arc;
 use core::time::Duration;
-use std::sync::Arc;
+use std::{env, path::Path};
+use tokio::fs;
 
 use axum::{Router, body::Bytes, http::Method, http::StatusCode, routing::any};
 use secrecy::SecretString;
 use shuthost_common::create_signed_message;
-use tokio::{net::TcpListener, sync::Mutex, time};
+use tokio::{net::TcpListener, sync::Mutex, task, time};
 
 use shuthost_coordinator::app::HostState;
 
@@ -32,7 +34,7 @@ struct MockHookServer {
 
 impl MockHookServer {
     async fn start() -> Self {
-        let requests: Arc<Mutex<Vec<(String, String)>>> = Default::default();
+        let requests: Arc<Mutex<Vec<(String, String)>>> = Arc::default();
         let cap = requests.clone();
 
         let app = Router::new().route(
@@ -107,7 +109,7 @@ shared_secret = "{CLIENT_SECRET}"
 /// Spawn a background task that takes a lease on `myhost`.  The task will
 /// block until the host comes online (which never happens in these tests) and
 /// is implicitly cancelled when the returned handle is dropped.
-fn spawn_take_lease(coord_port: u16) -> tokio::task::JoinHandle<()> {
+fn spawn_take_lease(coord_port: u16) -> task::JoinHandle<()> {
     let signed = create_signed_message("take", &SecretString::from(CLIENT_SECRET));
     tokio::spawn(async move {
         drop(
@@ -194,18 +196,17 @@ timeout_secs = 5"#,
 
 /// Wait for `path` to appear and contain `expected_content` (trimmed), or panic on timeout.
 #[cfg(unix)]
-async fn wait_for_file_content(path: &std::path::Path, expected_content: &str, timeout: Duration) {
+async fn wait_for_file_content(path: &Path, expected_content: &str, timeout: Duration) {
     let deadline = time::Instant::now() + timeout;
     loop {
-        if let Ok(content) = std::fs::read_to_string(path) {
-            if content.trim() == expected_content {
-                return;
-            }
+        if let Ok(content) = fs::read_to_string(path).await
+            && content.trim() == expected_content
+        {
+            return;
         }
         assert!(
             time::Instant::now() < deadline,
-            "hook signal file {:?} did not appear with expected content within timeout",
-            path,
+            "hook signal file {path:?} did not appear with expected content within timeout",
         );
         time::sleep(Duration::from_millis(100)).await;
     }
@@ -215,8 +216,8 @@ async fn wait_for_file_content(path: &std::path::Path, expected_content: &str, t
 #[tokio::test]
 async fn shell_pre_startup_hook_fires_on_wake() {
     let coord_port = get_free_port();
-    let signal_file = std::env::temp_dir().join(format!("shuthost_hook_test_{coord_port}"));
-    drop(std::fs::remove_file(&signal_file));
+    let signal_file = env::temp_dir().join(format!("shuthost_hook_test_{coord_port}"));
+    drop(fs::remove_file(&signal_file).await);
     let signal_path = signal_file.display().to_string();
 
     let _coord = spawn_coordinator_with_config(
@@ -237,12 +238,12 @@ timeout_secs = 5"#
     let _task = spawn_take_lease(coord_port);
 
     wait_for_file_content(&signal_file, "done", Duration::from_secs(10)).await;
-    drop(std::fs::remove_file(&signal_file));
+    drop(fs::remove_file(&signal_file).await);
 }
 
 // ── post_shutdown hook tests ───────────────────────────────────────────────────
 
-/// Coordinator config for post_shutdown tests: a real agent can connect,
+/// Coordinator config for `post_shutdown` tests: a real agent can connect,
 /// `enforce_state = true` so the coordinator shuts the host down once no lease
 /// holds it online, and the given hook TOML fragment is appended.
 fn agent_config(coord_port: u16, agent_port: u16, hook_toml: &str) -> String {
@@ -321,9 +322,8 @@ timeout_secs = 5"#,
 async fn shell_post_shutdown_hook_fires_after_shutdown() {
     let coord_port = get_free_port();
     let agent_port = get_free_port();
-    let signal_file =
-        std::env::temp_dir().join(format!("shuthost_post_shutdown_hook_{coord_port}"));
-    drop(std::fs::remove_file(&signal_file));
+    let signal_file = env::temp_dir().join(format!("shuthost_post_shutdown_hook_{coord_port}"));
+    drop(fs::remove_file(&signal_file));
     let signal_path = signal_file.display().to_string();
 
     let _coord = spawn_coordinator_with_config(
@@ -355,5 +355,5 @@ timeout_secs = 5"#
     drop(agent);
 
     wait_for_file_content(&signal_file, "done", Duration::from_secs(10)).await;
-    drop(std::fs::remove_file(&signal_file));
+    drop(fs::remove_file(&signal_file));
 }
