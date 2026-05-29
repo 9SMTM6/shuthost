@@ -21,9 +21,6 @@ const hashedFaviconRedirect = {
 
 export default defineConfig({
     plugins: [solid(), tailwindcss(), hashedFaviconRedirect],
-    server: {
-        open: true,
-    },
     build: {
         outDir: 'assets/generated',
         emptyOutDir: false,

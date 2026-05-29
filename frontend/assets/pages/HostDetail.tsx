@@ -40,7 +40,7 @@ type ClientLease = { type: 'Client'; value: string };
 
 // --- Sub-components ---
 
-const HostStatusBadge = (props: {
+export const HostStatusBadge = (props: {
     status: 'online' | 'offline' | 'waking' | 'shutting_down' | undefined;
 }) => (
     <Switch

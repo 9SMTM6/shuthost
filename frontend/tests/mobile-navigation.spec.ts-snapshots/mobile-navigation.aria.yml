@@ -16,11 +16,5 @@
       - heading "Install Host Agent" [level=2]
   - region "Hosts Table":
     - heading "Hosts Table" [level=2]
-    - table:
-      - rowgroup:
-        - row "Host Status Actions":
-          - columnheader "Host"
-          - columnheader "Status"
-          - columnheader "Actions"
-      - rowgroup
+    - list
 - contentinfo: ShutHost Coordinator v<<VERSION>> | About & Licenses

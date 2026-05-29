@@ -183,23 +183,6 @@ body {
         .table-cell {
             @apply px-4 py-1.5 text-sm sm:text-base border-b border-[#e5e5e5] dark:border-[#3e3e42] text-black dark:text-[#cccccc];
         }
-        .actions-cell {
-            @apply py-1.5;
-            display: grid;
-            grid-template-columns: 1fr;
-            align-items: center;
-            > button {
-                grid-column: 1;
-                grid-row: 1;
-            }
-            .take-lease {
-                visibility: visible;
-            }
-            .release-lease {
-                visibility: hidden;
-            }
-        }
-
         .table-cell.status {
             white-space: nowrap;
         }
@@ -218,15 +201,56 @@ body {
             }
         }
 
-        tr[data-has-lease="true"] {
-            .actions-cell {
-                .take-lease {
-                    visibility: hidden;
-                }
-                .release-lease {
-                    visibility: visible;
-                }
+    }
+
+    .actions-cell {
+        @apply py-1.5;
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: center;
+        > button {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        .take-lease {
+            visibility: visible;
+        }
+        .release-lease {
+            visibility: hidden;
+        }
+    }
+
+    [data-has-lease="true"] {
+        .actions-cell {
+            .take-lease {
+                visibility: hidden;
             }
+            .release-lease {
+                visibility: visible;
+            }
+        }
+    }
+
+    /* Mobile card view (below md breakpoint) */
+    .actions-card {
+        @apply rounded-lg border border-[#e5e5e5] dark:border-[#3e3e42] pt-3 bg-white dark:bg-[#1e1e1e] flex flex-col gap-2;
+        .actions-card-header {
+            @apply flex items-center justify-between gap-2 px-3;
+        }
+        .actions-card-status {
+            @apply text-sm text-[#616161] dark:text-[#9d9d9d] inline-flex items-center shrink-0;
+        }
+        .actions-card-id {
+            @apply font-medium text-sm text-black dark:text-[#cccccc] px-3;
+        }
+        .actions-card-row {
+            @apply text-sm text-black dark:text-[#cccccc] px-3;
+        }
+        .actions-card-label {
+            @apply text-[#616161] dark:text-[#9d9d9d];
+        }
+        .actions-cell {
+            padding: 0;
         }
     }
 

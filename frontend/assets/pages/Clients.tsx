@@ -17,76 +17,104 @@ const formatLastUsed = (clientId: string): string => {
 };
 
 // ==========================
+// Shared client helpers
+// ==========================
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: demo mode requires parallel mutation paths alongside the real API path
+const resetLeases = async (clientId: string) => {
+    if (isDemoMode) {
+        // Demo: clear leases out of the store directly
+        const newLeaseMap = { ...state.leaseMap };
+        for (const host of Object.keys(newLeaseMap)) {
+            newLeaseMap[host] = (newLeaseMap[host] ?? []).filter(
+                (l) => l.type !== 'Client' || l.value !== clientId,
+            );
+        }
+        applyMessage({
+            type: 'ConfigChanged',
+            payload: { hosts: state.hosts, clients: state.clients },
+        });
+        // Force a LeaseUpdate for each host to clear the demo state
+        for (const host of Object.keys(newLeaseMap)) {
+            applyMessage({
+                type: 'LeaseUpdate',
+                payload: { host, leases: newLeaseMap[host] ?? [] },
+            });
+        }
+        return;
+    }
+    try {
+        await apiFetch(`/api/reset_leases/${clientId}`, {
+            method: 'POST',
+        });
+    } catch (err) {
+        if (err instanceof Error && err.message === 'Unauthorized') return;
+        console.error(`Failed to reset leases for client ${clientId}:`, err);
+    }
+};
+
+// ==========================
+// ClientResetButton
+// ==========================
+
+const ClientResetButton = ((props: { clientId: string; leases: string[] }) => (
+    <div class="actions-cell">
+        <button
+            class="btn btn-height btn-red reset-client"
+            type="button"
+            disabled={props.leases.length === 0}
+            onClick={() => resetLeases(props.clientId)}
+            aria-label="Reset Leases"
+        >
+            <RotateCcw size={14} aria-hidden="true" />
+            Reset Leases
+        </button>
+    </div>
+)) satisfies AnyComponent;
+
+// ==========================
 // ClientRow
 // ==========================
 
-const ClientRow = ((props: { clientId: string; leases: string[] }) => {
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: demo mode requires parallel mutation paths alongside the real API path
-    const resetLeases = async () => {
-        if (isDemoMode) {
-            // Demo: clear leases out of the store directly
-            const newLeaseMap = { ...state.leaseMap };
-            for (const host of Object.keys(newLeaseMap)) {
-                newLeaseMap[host] = (newLeaseMap[host] ?? []).filter(
-                    (l) => l.type !== 'Client' || l.value !== props.clientId,
-                );
-            }
-            applyMessage({
-                type: 'ConfigChanged',
-                payload: { hosts: state.hosts, clients: state.clients },
-            });
-            // Force a LeaseUpdate for each host to clear the demo state
-            for (const host of Object.keys(newLeaseMap)) {
-                applyMessage({
-                    type: 'LeaseUpdate',
-                    payload: { host, leases: newLeaseMap[host] ?? [] },
-                });
-            }
-            return;
-        }
-        try {
-            await apiFetch(`/api/reset_leases/${props.clientId}`, {
-                method: 'POST',
-            });
-        } catch (err) {
-            if (err instanceof Error && err.message === 'Unauthorized') return;
-            console.error(
-                `Failed to reset leases for client ${props.clientId}:`,
-                err,
-            );
-        }
-    };
+const ClientRow = ((props: { clientId: string; leases: string[] }) => (
+    <tr class="table-row" data-client-id={props.clientId}>
+        <th class="table-cell" scope="row">
+            {props.clientId}
+        </th>
+        <td class="table-cell leases" aria-label="Leases">
+            {props.leases.join(', ') || 'None'}
+        </td>
+        <Show when={state.dbData.status === 'available'}>
+            <td class="table-cell last-used" aria-label="Last Used">
+                {formatLastUsed(props.clientId)}
+            </td>
+        </Show>
+        <td class="table-cell" aria-label="Actions">
+            <ClientResetButton clientId={props.clientId} leases={props.leases} />
+        </td>
+    </tr>
+)) satisfies AnyComponent;
 
-    return (
-        <tr class="table-row" data-client-id={props.clientId}>
-            <th class="table-cell" scope="row">
-                {props.clientId}
-            </th>
-            <td class="table-cell leases" aria-label="Leases">
-                {props.leases.join(', ') || 'None'}
-            </td>
-            <Show when={state.dbData.status === 'available'}>
-                <td class="table-cell last-used" aria-label="Last Used">
-                    {formatLastUsed(props.clientId)}
-                </td>
-            </Show>
-            <td class="table-cell" aria-label="Actions">
-                <div class="actions-cell">
-                    <button
-                        class="btn btn-height btn-red reset-client"
-                        type="button"
-                        disabled={props.leases.length === 0}
-                        onClick={resetLeases}
-                        aria-label="Reset Leases"
-                    >
-                        <RotateCcw size={14} aria-hidden="true" />
-                        Reset Leases
-                    </button>
-                </div>
-            </td>
-        </tr>
-    );
-}) satisfies AnyComponent;
+// ==========================
+// ClientCard (mobile)
+// ==========================
+
+const ClientCard = ((props: { clientId: string; leases: string[] }) => (
+    <li class="actions-card" data-client-id={props.clientId}>
+        <p class="actions-card-id">{props.clientId}</p>
+        <p class="actions-card-row">
+            <span class="actions-card-label">Leases: </span>
+            {props.leases.join(', ') || 'None'}
+        </p>
+        <Show when={state.dbData.status === 'available'}>
+            <p class="actions-card-row">
+                <span class="actions-card-label">Last Used: </span>
+                {formatLastUsed(props.clientId)}
+            </p>
+        </Show>
+        <ClientResetButton clientId={props.clientId} leases={props.leases} />
+    </li>
+)) satisfies AnyComponent;
 
 const makeClientCommands = () => {
     const baseUrl = window.location.origin + demoSubpath;
@@ -230,7 +258,20 @@ export const ClientsPage = (() => {
                 <h2 id="clients-table-title" class="sr-only">
                     Clients Table
                 </h2>
-                <div class="table-wrapper">
+                {/* Mobile card list */}
+                <ul
+                    id="client-card-list"
+                    class="flex flex-col gap-3 py-3 md:hidden"
+                    aria-live="polite"
+                >
+                    <For each={sortedClients()}>
+                        {([clientId, leases]) => (
+                            <ClientCard clientId={clientId} leases={leases} />
+                        )}
+                    </For>
+                </ul>
+                {/* Desktop table */}
+                <div class="table-wrapper hidden md:block">
                     <table
                         class="actions-table w-full"
                         aria-describedby="clients-table-title"

@@ -19,7 +19,7 @@
           - cell "Status": offline
           - cell "Actions":
             - button "Take Lease"
-          - cell "Leases"
+          - cell "Leases": None
         - row "tarbean Status Actions Leases":
           - rowheader "tarbean":
             - link "tarbean":
@@ -27,4 +27,4 @@
           - cell "Status": offline
           - cell "Actions":
             - button "Take Lease"
-          - cell "Leases"
+          - cell "Leases": None

@@ -14,13 +14,13 @@
       - rowgroup:
         - row "denna Leases Last Used Actions":
           - rowheader "denna"
-          - cell "Leases"
-          - cell "Last Used"
+          - cell "Leases": None
+          - cell "Last Used": Never
           - cell "Actions":
             - button "Reset Leases" [disabled]
         - row "felurian Leases Last Used Actions":
           - rowheader "felurian"
-          - cell "Leases"
-          - cell "Last Used"
+          - cell "Leases": None
+          - cell "Last Used": Never
           - cell "Actions":
             - button "Reset Leases" [disabled]
