@@ -8,6 +8,7 @@ mod runtime;
 mod shared_watch_store;
 mod startup;
 mod state;
+mod update_check;
 
 // Re-export a curated crate-visible surface for consumers of `crate::app`
 pub(crate) use db::DbPool;
@@ -18,7 +19,7 @@ pub(crate) use host_control::{
 };
 pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
 pub(crate) use startup::{shutdown_signal, start};
-pub(crate) use state::{AppState, ConfigRx, HostStatusRx, RwMap, WsTx};
+pub(crate) use state::{AppState, ConfigRx, HostStatusRx, LatestReleaseInfo, RwMap, WsTx};
 
 pub(crate) use state::OperationFailureStore;
 pub use state::{HostState, HostStatus, OperationFailure, OperationFailureMap, OperationKind};

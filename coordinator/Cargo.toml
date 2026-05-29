@@ -82,6 +82,7 @@ rand.workspace = true
 rcgen = { version = "0.14.x", default-features = false, features = ["pem", "crypto", "aws_lc_rs"] }
 regex.workspace = true
 reqwest = { workspace = true, features = ["http2", "charset"] }
+semver = "1"
 rustls = { version = "0.23.x", default-features = false, features = ["logging", "std", "tls12", "aws_lc_rs"] }
 secrecy = { workspace = true, features = ["serde"] }
 serde.workspace = true

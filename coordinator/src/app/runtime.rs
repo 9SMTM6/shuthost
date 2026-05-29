@@ -270,6 +270,8 @@ pub(super) fn start_background_tasks(
     // Spawn this last since other tasks may depend on some changes triggered by this task, e.g. last-online.
     tasks.spawn(poll_host_statuses(state.clone()));
 
+    tasks.spawn(super::update_check::check_for_updates_loop(state.clone()));
+
     tasks
 }
 
