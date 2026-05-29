@@ -20,7 +20,6 @@ const formatLastUsed = (clientId: string): string => {
 // Shared client helpers
 // ==========================
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: demo mode requires parallel mutation paths alongside the real API path
 const resetLeases = async (clientId: string) => {
     if (isDemoMode) {
         // Demo: clear leases out of the store directly
@@ -90,7 +89,10 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => (
             </td>
         </Show>
         <td class="table-cell" aria-label="Actions">
-            <ClientResetButton clientId={props.clientId} leases={props.leases} />
+            <ClientResetButton
+                clientId={props.clientId}
+                leases={props.leases}
+            />
         </td>
     </tr>
 )) satisfies AnyComponent;
