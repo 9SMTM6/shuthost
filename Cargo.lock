@@ -3895,6 +3895,7 @@ dependencies = [
  "resvg",
  "rustls",
  "secrecy",
+ "semver",
  "serde",
  "serde_json",
  "serde_plain",

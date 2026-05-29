@@ -28,6 +28,14 @@ pub(crate) fn routes() -> Router<AppState> {
         )
         .route("/hosts_status", get(get_hosts_status))
         .route("/dependency-data.json", get(serve_dependency_data))
+        .route("/update", get(get_latest_release))
+}
+
+/// Returns the latest GitHub release if a newer version than the running one is available,
+/// or `null` if the running version is already up to date (or the check has not completed yet).
+#[axum::debug_handler]
+async fn get_latest_release(State(state): State<AppState>) -> impl IntoResponse {
+    axum::Json(state.latest_release.read().await.clone())
 }
 
 #[axum::debug_handler]

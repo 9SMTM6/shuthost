@@ -109,6 +109,13 @@ pub(crate) struct HostInstallInfo {
 
 pub(crate) type RwMap<V> = Arc<RwLock<HashMap<String, V>>>;
 
+/// Latest GitHub release info, populated when an update is available.
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct LatestReleaseInfo {
+    pub tag_name: String,
+    pub url: String,
+}
+
 /// Application state shared across request handlers and background tasks.
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -158,6 +165,10 @@ pub(crate) struct AppState {
     /// time matches the one recorded at subscribe time, the host is still in the same online
     /// session.
     pub online_since: RwMap<Instant>,
+
+    /// Latest GitHub release info. `Some` only when an update is available.
+    /// `None` until the first check completes or if the running version is up to date.
+    pub latest_release: Arc<RwLock<Option<LatestReleaseInfo>>>,
 }
 
 /// Initialize database pool based on configuration.
@@ -382,6 +393,7 @@ pub(super) async fn initialize_state(
         vapid_key,
         operation_failures,
         online_since: RwMap::default(),
+        latest_release: Arc::default(),
     };
 
     emit_startup_warnings(&app_state, &initial_config);

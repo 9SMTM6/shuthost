@@ -69,6 +69,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         vapid_key: None,
         operation_failures: OperationFailureStore::new(HashMap::new()).0,
         online_since: RwMap::default(),
+        latest_release: Arc::default(),
     };
 
     let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);

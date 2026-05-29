@@ -175,6 +175,8 @@ pub(crate) struct ServerConfig {
     pub auth: AuthConfig,
     /// Runtime tuning parameters (poll intervals, default timeouts, etc.).
     pub runtime: RuntimeConfig,
+    /// When `false`, disables the periodic GitHub release check. Defaults to `true`.
+    pub check_for_updates: bool,
 }
 
 impl Default for ServerConfig {
@@ -186,6 +188,7 @@ impl Default for ServerConfig {
             tls: None,
             auth: AuthConfig::default(),
             runtime: RuntimeConfig::default(),
+            check_for_updates: true,
         }
     }
 }
