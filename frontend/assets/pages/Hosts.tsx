@@ -4,7 +4,6 @@ import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
-import { HostStatusBadge } from './HostDetail';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
@@ -12,6 +11,7 @@ import { serverData } from '../helpers/serverData';
 import type { AnyComponent } from '../helpers/utils';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
+import { HostStatusBadge } from './HostDetail';
 
 const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
@@ -143,7 +143,10 @@ const HostRow = ((props: { hostName: string }) => {
             data-has-lease={String(hasWebInterfaceLease())}
         >
             <th class="table-cell" scope="row">
-                <HostNameLink hostName={props.hostName} class="block btn-height" />
+                <HostNameLink
+                    hostName={props.hostName}
+                    class="block btn-height"
+                />
             </th>
             <td class="table-cell status" aria-label="Status">
                 <HostStatusDisplay hostName={props.hostName} />
@@ -173,15 +176,20 @@ const HostCard = ((props: { hostName: string }) => {
         leases().some((l) => l.type === 'WebInterface');
     const hasClients = () => state.clients.length > 0;
 
+    const navitateToDetail = (e: { target: Element }) => {
+        if (!e.target.closest('a, button')) {
+            navigate(`/hosts/${props.hostName}`);
+        }
+    };
+
     return (
         <li
             class="actions-card cursor-pointer"
             data-hostname={props.hostName}
             data-has-lease={String(hasWebInterfaceLease())}
-            onClick={(e) => {
-                if (!e.target.closest('a, button')) {
-                    navigate(`/hosts/${props.hostName}`);
-                }
+            onClick={navitateToDetail}
+            onKeyUp={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') navitateToDetail(e);
             }}
         >
             <div class="actions-card-header">
