@@ -34,9 +34,10 @@ async fn do_check(state: &AppState) {
             Some(false) => {
                 *state.latest_release.write().await = None;
             }
-            None => {
-                debug!("Could not compare versions: current={VERSION}, latest={tag_name}");
-            }
+None => {
+    *state.latest_release.write().await = None;
+    debug!("Could not compare versions: current={VERSION}, latest={tag_name}");
+}
         },
         Err(e) => {
             debug!("Update check failed: {e}");
