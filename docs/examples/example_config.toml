@@ -27,6 +27,10 @@ port = 8080
 # Default: "127.0.0.1"
 bind = "127.0.0.1"
 
+# When `false`, disables the periodic GitHub release check.
+# Default: true
+# check_for_updates = true
+
 # =============================================================================
 # TLS CONFIGURATION
 # =============================================================================
