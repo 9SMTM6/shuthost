@@ -71,6 +71,7 @@ async fn fetch_latest_release() -> eyre::Result<(String, String)> {
 
     let text = client
         .get("https://api.github.com/repos/9smtm6/shuthost/releases/latest")
+        .timeout(Duration::from_secs(10))
         .send()
         .await?
         .error_for_status()?
