@@ -8,6 +8,9 @@ strictDepBuilds: true
 # Fail on peer dependency conflicts rather than silently ignoring them.
 strictPeerDependencies: true
 
+# prevents transitive dependencies from using exotic sources like Git repositories
+blockExoticSubdeps: true
+
 # Only allow packages whose latest version is at least 3 days (in minutes = 3 * 24 * 60) old, reducing
 # the window for a freshly-published malicious package to slip in.
 minimumReleaseAge: 4320
