@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router';
-import { Show, createResource } from 'solid-js';
+import { createResource, Show } from 'solid-js';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath } from '../helpers/demo';
 import type { AnyComponent } from '../helpers/utils';

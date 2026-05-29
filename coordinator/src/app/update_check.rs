@@ -33,20 +33,14 @@ async fn do_check(state: &AppState) {
 
             match (Version::parse(latest_str), Version::parse(current_str)) {
                 (Ok(latest), Ok(current)) if latest > current => {
-                    tracing::warn!(
-                        "Update available: {} \u{2192} {tag_name} ({url})",
-                        VERSION
-                    );
-                    *state.latest_release.write().await =
-                        Some(LatestReleaseInfo { tag_name, url });
+                    tracing::warn!("Update available: {} \u{2192} {tag_name} ({url})", VERSION);
+                    *state.latest_release.write().await = Some(LatestReleaseInfo { tag_name, url });
                 }
                 (Ok(_), Ok(_)) => {
                     *state.latest_release.write().await = None;
                 }
                 _ => {
-                    debug!(
-                        "Could not compare versions: current={VERSION}, latest={tag_name}"
-                    );
+                    debug!("Could not compare versions: current={VERSION}, latest={tag_name}");
                 }
             }
         }
@@ -63,9 +57,7 @@ async fn fetch_latest_release() -> eyre::Result<(String, String)> {
         html_url: String,
     }
 
-    let client = reqwest::Client::builder()
-        .user_agent("shuthost")
-        .build()?;
+    let client = reqwest::Client::builder().user_agent("shuthost").build()?;
 
     let text = client
         .get("https://api.github.com/repos/9smtm6/shuthost/releases/latest")
