@@ -15,8 +15,8 @@ pub(super) async fn check_for_updates_loop(state: AppState) {
     // don't flood the API
     ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
     loop {
-        do_check(&state).await;
         ticker.tick().await;
+        do_check(&state).await;
     }
 }
 
