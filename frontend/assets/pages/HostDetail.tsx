@@ -952,13 +952,22 @@ export const HostDetailPage = (() => {
                     </A>
 
                     {/* Notifications — centered, prominent, above information */}
-                    <div class="flex justify-evenly gap-3 mb-6 flex-wrap">
-                        <NotifyUnscheduledButton hostname={hostname()} />
-                        <NotifyDurationButton
-                            hostname={hostname()}
-                            isOnline={status() === 'online'}
-                        />
-                        <NotifyOperationFailedButton hostname={hostname()} />
+                    {/* 1-col: Unscheduled → OperationFailed → Duration (stacked)
+                        sm (2-col): Unscheduled | OperationFailed, then Duration full-width
+                        lg (3-col): Unscheduled | Duration (middle) | OperationFailed */}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="flex justify-center">
+                            <NotifyUnscheduledButton hostname={hostname()} />
+                        </div>
+                        <div class="flex justify-center lg:order-3">
+                            <NotifyOperationFailedButton hostname={hostname()} />
+                        </div>
+                        <div class="flex justify-center sm:col-span-2 lg:col-span-1 lg:order-2">
+                            <NotifyDurationButton
+                                hostname={hostname()}
+                                isOnline={status() === 'online'}
+                            />
+                        </div>
                     </div>
 
                     <Show when={state.dbData.status === 'available'}>
