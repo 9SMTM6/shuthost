@@ -117,7 +117,8 @@ export const AboutPage = (() => {
                                         >
                                             Log in
                                         </a>{' '}
-                                        to view open source dependencies, or see the{' '}
+                                        to view open source dependencies, or see
+                                        the{' '}
                                         <a
                                             href={safeExternalUrl(
                                                 'https://9smtm6.github.io/shuthost/about',

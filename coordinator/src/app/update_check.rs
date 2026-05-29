@@ -34,10 +34,10 @@ async fn do_check(state: &AppState) {
             Some(false) => {
                 *state.latest_release.write().await = None;
             }
-None => {
-    *state.latest_release.write().await = None;
-    debug!("Could not compare versions: current={VERSION}, latest={tag_name}");
-}
+            None => {
+                *state.latest_release.write().await = None;
+                debug!("Could not compare versions: current={VERSION}, latest={tag_name}");
+            }
         },
         Err(e) => {
             debug!("Update check failed: {e}");
@@ -108,13 +108,13 @@ mod tests {
     }
 
     #[test]
-    fn unparseable_current_returns_none() {
+    fn unparsable_current_returns_none() {
         assert_eq!(needs_update("gabcdef", "v1.9.0"), None);
         assert_eq!(needs_update("unknown", "v1.9.0"), None);
     }
 
     #[test]
-    fn unparseable_latest_returns_none() {
+    fn unparsable_latest_returns_none() {
         assert_eq!(needs_update("v1.8.1", "not-a-version"), None);
     }
 
