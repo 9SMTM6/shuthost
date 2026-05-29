@@ -9,9 +9,9 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+use reqwest::Method;
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::{Deserialize, de};
-use reqwest::Method;
 
 /// Action to execute as a pre-startup or post-shutdown hook.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -40,7 +40,7 @@ pub(crate) enum HookAction {
 }
 
 #[expect(non_snake_case, reason = "Used as serde(default)")]
-fn POST() -> Method {
+const fn POST() -> Method {
     Method::POST
 }
 
