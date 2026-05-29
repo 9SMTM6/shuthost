@@ -1,6 +1,6 @@
---- example_config.toml	2026-05-27 19:56:23.504065432 +0200
-+++ example_config_external.toml	2026-05-27 11:42:40.195640670 +0200
-@@ -62,18 +62,18 @@
+--- example_config.toml	2026-05-29 11:45:27.029268367 +0200
++++ example_config_external.toml	2026-05-29 11:47:21.180244981 +0200
+@@ -66,18 +66,18 @@
  # The default if none is configured is no authentication!
  # Only one authentication mode can be active at a time.
  
@@ -31,7 +31,7 @@
  
  # # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
  # # OIDC authentication using authorization code flow with PKCE as a confidential client.
-@@ -94,13 +94,13 @@
+@@ -98,13 +98,13 @@
  # # Generate a secure key with: openssl rand -base64 32
  # # cookie_secret = "base64-encoded-32-byte-key-here"
  

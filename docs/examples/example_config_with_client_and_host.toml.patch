@@ -1,6 +1,6 @@
---- example_config.toml	2026-05-28 20:42:05.284972727 +0200
-+++ example_config_with_client_and_host.toml	2026-05-28 20:42:59.249381423 +0200
-@@ -156,54 +156,54 @@
+--- example_config.toml	2026-05-29 11:45:27.029268367 +0200
++++ example_config_with_client_and_host.toml	2026-05-29 11:47:21.168218858 +0200
+@@ -160,54 +160,54 @@
  # The host agent installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [hosts]
@@ -103,7 +103,7 @@
  
  # # =============================================================================
  # # NOTIFICATIONS CONFIGURATION
-@@ -246,9 +246,9 @@
+@@ -250,9 +250,9 @@
  # The client installer will print the exact configuration line you need to add here.
  # Simply copy and paste it into this file.
  [clients]
