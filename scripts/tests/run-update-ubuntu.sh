@@ -29,7 +29,7 @@ else
 fi
 
 # Build the systemd test container and run the coordinator installer update test inside it.
-docker build -f scripts/tests/Containerfile.systemd -t shuthost-installer-update-systemd .
+ docker build --pull="newer" -f scripts/tests/Containerfile.systemd -t shuthost-installer-update-systemd .
 
 docker run --rm -t --privileged \
   -v "$(pwd)":/repo \

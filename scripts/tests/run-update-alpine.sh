@@ -21,7 +21,7 @@ else
 fi
 
 # Build the Alpine OpenRC test container and run the coordinator installer update test inside it.
-docker build -f scripts/tests/Containerfile.alpine -t shuthost-installer-update-alpine .
+ docker build --pull="newer" -f scripts/tests/Containerfile.alpine -t shuthost-installer-update-alpine .
 
 docker run --rm -t --privileged \
   -v "$(pwd)":/repo \
