@@ -48,9 +48,6 @@ impl HostState {
 
 pub(crate) type ConfigRx = watch::Receiver<Arc<ControllerConfig>>;
 pub(super) type ConfigTx = watch::Sender<Arc<ControllerConfig>>;
-pub type HostStatus = HashMap<String, HostState>;
-/// Alias kept for compatibility with existing watch subscribers.
-pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
 pub(crate) type OperationFailureStore = SharedWatchStore<OperationFailureMap>;
 pub(crate) type WsTx = broadcast::Sender<WsMessage>;
 
@@ -359,7 +356,7 @@ pub(super) async fn initialize_state(
     let initial_config = Arc::new(load(config_path).await?);
 
     let (config_tx, config_rx) = watch::channel(initial_config.clone());
-    let host_actor = HostActorHandle::spawn(HostStatus::new());
+    let host_actor = HostActorHandle::spawn(HashMap::new());
     let (ws_tx, _) = broadcast::channel(32);
     let (operation_failures, _) = OperationFailureStore::new(OperationFailureMap::new());
 
