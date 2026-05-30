@@ -11,9 +11,9 @@ if [ -f "$SCRIPT_DIR/../helpers.sh" ] || [ -f "$SCRIPT_DIR/helpers.sh" ]; then
   cd "$SCRIPT_DIR/../.."
 fi
 
-docker build --pull="always" -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
+docker build --pull -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
 
-docker build --pull="always" -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .
+docker build --pull -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine .
 
 alpine_test() {
     docker run --rm -t -v "$(pwd)":/repo --env-file scripts/tests/coverage.env shuthost-test-alpine /bin/sh -c "cd /repo; $1"
