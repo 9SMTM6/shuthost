@@ -1,5 +1,5 @@
 --- example_config.toml	2026-05-29 15:03:56.184457582 +0200
-+++ example_config_webhooks.toml	2026-05-29 11:47:21.191845437 +0200
++++ example_config_webhooks.toml	2026-05-30 13:28:53.128616925 +0200
 @@ -209,37 +209,37 @@
  #     post_shutdown.method = "POST"        # optional; defaults to POST
  #     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests

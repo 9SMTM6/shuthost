@@ -1,5 +1,5 @@
 --- example_config.toml	2026-05-29 15:03:56.184457582 +0200
-+++ example_config_runtime_config.toml	2026-05-29 11:47:21.186530191 +0200
++++ example_config_runtime_config.toml	2026-05-30 13:28:53.125057648 +0200
 @@ -106,32 +106,32 @@
  # [server.auth.external]
  # exceptions_version = 0
