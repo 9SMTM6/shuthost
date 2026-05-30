@@ -960,7 +960,9 @@ export const HostDetailPage = (() => {
                             <NotifyUnscheduledButton hostname={hostname()} />
                         </div>
                         <div class="flex justify-center lg:order-3">
-                            <NotifyOperationFailedButton hostname={hostname()} />
+                            <NotifyOperationFailedButton
+                                hostname={hostname()}
+                            />
                         </div>
                         <div class="flex justify-center sm:col-span-2 lg:col-span-1 lg:order-2">
                             <NotifyDurationButton
