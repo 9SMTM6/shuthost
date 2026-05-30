@@ -22,7 +22,7 @@ else
 fi
 
 # Build the container
-     docker build --pull="newer" -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
+    docker build --pull="always" -f scripts/tests/Containerfile.systemd -t shuthost-test-systemd .
 
 # Run the test
 docker run --rm -t --privileged -v "$(pwd)":/repo --workdir /repo --env-file scripts/tests/coverage.env shuthost-test-systemd /bin/sh -c "

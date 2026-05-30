@@ -22,7 +22,7 @@ else
 fi
 
 # Build the container
-docker build --pull="newer" -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine-pwsh .
+docker build --pull="always" -f scripts/tests/Containerfile.alpine -t shuthost-test-alpine-pwsh .
 
 # Run the test
 docker run --rm -t --privileged -v "$(pwd)":/repo --workdir /repo --env-file scripts/tests/coverage.env shuthost-test-alpine-pwsh /bin/sh -c "

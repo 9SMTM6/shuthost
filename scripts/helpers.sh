@@ -4,7 +4,7 @@ set -e
 
 build_musl() {
     #  we build musl binaries in a container, and fake the release builds by copying the debug builds to release paths
-    docker build --pull="newer" --network host -t shuthost-builder -f scripts/build.Containerfile .
+   docker build --pull="always" --network host -t shuthost-builder -f scripts/build.Containerfile .
     mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-musl/debug/
         # --user "$(id -u):$(id -g)" \
     docker run --rm \
