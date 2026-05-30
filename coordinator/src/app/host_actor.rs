@@ -12,7 +12,7 @@
 //! visible state.
 
 use alloc::sync::Arc;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use tokio::{
     sync::{broadcast, mpsc, oneshot, watch},
@@ -22,8 +22,13 @@ use tracing::{debug, warn};
 
 use crate::app::{
     host_control::LeaseSources,
-    state::{HostState, HostStatus, OperationKind},
+    state::{HostState, OperationKind},
 };
+
+/// The full online/offline + transition state map for all known hosts.
+pub type HostStatus = HashMap<String, HostState>;
+/// Watch receiver for [`HostStatus`] snapshots published by the [`HostActorHandle`].
+pub(crate) type HostStatusRx = watch::Receiver<Arc<HostStatus>>;
 
 // ---------------------------------------------------------------------------
 // Public types

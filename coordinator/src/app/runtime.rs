@@ -28,7 +28,8 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus, OperationKind};
+use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, OperationKind};
+use super::host_actor::HostStatus;
 use crate::{
     app::{
         AppState, HostActorHandle, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
@@ -45,6 +46,22 @@ use crate::app::{host_control::HostWithName, notifications};
 /// How long a diverged enforced-host state must be stable before the enforcer
 /// re-triggers a wake / shutdown (prevents hammering during transitions).
 pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
+
+/// Receive one event from a broadcast channel, logging a warning on lag and breaking on close.
+///
+/// Takes a pre-resolved `Result<T, RecvError>` and evaluates to `T`. Must be used inside a `loop`.
+macro_rules! next_broadcast_event {
+    ($result:expr, $label:literal) => {
+        match $result {
+            Ok(e) => e,
+            Err(RecvError::Lagged(n)) => {
+                warn!(concat!($label, ": missed {} events (broadcast channel lagged)"), n);
+                continue;
+            }
+            Err(RecvError::Closed) => break,
+        }
+    };
+}
 
 /// Poll a single host for its online status.
 async fn poll_host_status(host: &HostWithName) -> (HostState, Option<HostInstallInfo>) {
@@ -219,21 +236,17 @@ pub(super) fn start_background_tasks(
         config_tx.clone(),
     ));
 
-    // Reconcile host state on lease changes (edge-triggered, all hosts)
-    tasks.spawn(reconcile_on_lease_change(
-        state.leases.subscribe(),
-        state.clone(),
-    ));
+    // Reconcile host state on lease changes (edge-triggered, per-host via actor event stream)
+    tasks.spawn(reconcile_on_lease_change(state.clone()));
 
     tasks.spawn(listen_for_agent_startup(state.clone(), broadcast_socket));
 
     spawn_websocket_forwarders(
         &mut tasks,
         &state.ws_tx,
-        state.host_actor.subscribe_status(),
         state.operation_failures.subscribe(),
         state.config_rx.clone(),
-        state.leases.subscribe(),
+        state.host_actor.clone(),
     );
 
     tasks.spawn(log_host_transitions(state.host_actor.subscribe_status()));
@@ -278,23 +291,34 @@ pub(super) fn start_background_tasks(
 fn spawn_websocket_forwarders(
     tasks: &mut JoinSet<()>,
     ws_tx: &WsTx,
-    mut hoststatus_rx: SharedWatchRx<HostStatus>,
     mut op_failure_rx: SharedWatchRx<OperationFailureMap>,
     config_rx: ConfigRx,
-    leases_rx: LeaseRx,
+    host_actor: HostActorHandle,
 ) {
-    // Forwards host status updates to the websocket client loops
-    let ws_tx_status = ws_tx.clone();
+    // Forwards host state and lease changes to WebSocket clients via the actor event stream.
+    // StateChanged → full HostStatus snapshot (with config-defined hosts filled in as Offline).
+    // LeaseChanged  → per-host LeaseUpdate.
+    let ws_tx_events = ws_tx.clone();
     let config_rx_for_status = config_rx.clone();
     tasks.spawn(async move {
-        while hoststatus_rx.changed().await.is_ok() {
-            let mut status_map = hoststatus_rx.borrow().as_ref().clone();
-            let config = config_rx_for_status.borrow();
-            for host in config.hosts.keys() {
-                status_map.entry(host.clone()).or_insert(HostState::Offline);
-            }
-            let msg = WsMessage::HostStatus(status_map);
-            if ws_tx_status.send(msg).is_err() {
+        let mut events_rx = host_actor.subscribe_events();
+        loop {
+            let event = next_broadcast_event!(events_rx.recv().await, "ws_forwarder");
+            let msg = match event.event {
+                HostEventType::StateChanged { .. } => {
+                    let mut status_map = host_actor.borrow().as_ref().clone();
+                    let config = config_rx_for_status.borrow();
+                    for host in config.hosts.keys() {
+                        status_map.entry(host.clone()).or_insert(HostState::Offline);
+                    }
+                    WsMessage::HostStatus(status_map)
+                }
+                HostEventType::LeaseChanged { leases } => WsMessage::LeaseUpdate {
+                    host: event.host,
+                    leases,
+                },
+            };
+            if ws_tx_events.send(msg).is_err() {
                 debug!("No Websocket Subscribers");
             }
         }
@@ -323,11 +347,6 @@ fn spawn_websocket_forwarders(
                 debug!("No Websocket Subscribers");
             }
         }
-    });
-
-    let ws_tx_leases = ws_tx.clone();
-    tasks.spawn(async move {
-        broadcast_lease_updates(leases_rx, ws_tx_leases).await;
     });
 }
 
@@ -695,15 +714,8 @@ async fn handle_host_events(
                 current_leases = leases_rx.borrow().clone();
             }
             // React to host state transitions.
-            event = events_rx.recv() => {
-                let event = match event {
-                    Ok(e) => e,
-                    Err(RecvError::Lagged(n)) => {
-                        warn!("handle_host_events: missed {n} events (broadcast channel lagged)");
-                        continue;
-                    }
-                    Err(RecvError::Closed) => break,
-                };
+            recv_result = events_rx.recv() => {
+                let event = next_broadcast_event!(recv_result, "handle_host_events");
 
                 let HostEventType::StateChanged { from, to } = event.event else {
                     continue;
@@ -783,86 +795,36 @@ async fn forward_lease_events(mut leases_rx: LeaseRx, host_actor: HostActorHandl
     }
 }
 
-/// Background task: forwards per-host lease changes to WebSocket clients.
-async fn broadcast_lease_updates(mut leases_rx: LeaseRx, ws_tx: WsTx) {
-    let mut prev_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
 
-    while leases_rx.changed().await.is_ok() {
-        let new_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
+/// Background task: reconcile host control on every per-host lease change.
+///
+/// Consumes [`HostEventType::LeaseChanged`] events from the actor's broadcast stream
+/// (populated by [`forward_lease_events`]). Each event carries the new lease set for
+/// exactly the host that changed, so no full-map diff or `prev_desired` tracking is needed.
+///
+/// On broadcast lag the missed events are simply skipped; any divergence for hosts with
+/// `enforce_state = true` will be caught by the periodic poller.
+async fn reconcile_on_lease_change(state: AppState) {
+    let mut events_rx = state.host_actor.subscribe_events();
+    loop {
+        let event = next_broadcast_event!(events_rx.recv().await, "reconcile_on_lease_change");
 
-        // Collect all host names that appear in either snapshot.
-        let all_hosts: HashSet<&str> = prev_leases
-            .keys()
-            .chain(new_leases.keys())
-            .map(String::as_str)
-            .collect();
+        let HostEventType::LeaseChanged { leases } = event.event else {
+            continue;
+        };
+        let host_name = &event.host;
+        let desired_running = !leases.is_empty();
 
-        for host in all_hosts {
-            if prev_leases.get(host) != new_leases.get(host) {
-                let leases = new_leases.get(host).cloned().unwrap_or_default();
-                let msg = WsMessage::LeaseUpdate {
-                    host: host.to_string(),
-                    leases,
-                };
-                if ws_tx.send(msg).is_err() {
-                    debug!("No Websocket Subscribers");
-                }
-            }
+        let current_state = state.host_actor.get_current_state(host_name);
+
+        // Skip hosts already in a transition — the in-flight task re-checks on completion.
+        if current_state.is_transitioning() {
+            continue;
         }
 
-        prev_leases = new_leases;
-    }
-}
-
-/// Background task: reconcile host control on every lease-map change (edge-triggered, all hosts).
-async fn reconcile_on_lease_change(mut leases_rx: LeaseRx, state: AppState) {
-    // Build a map from host → desired_running for every host currently in the lease map.
-    // A host absent from this map has never been seen in the lease map (treated as None).
-    //
-    // Using a full HashMap rather than a subset-set (e.g. "desired_offline" or "desired_online")
-    // means ALL transitions are detected:
-    //   None  → Some(true)  – first-ever lease added          → trigger startup
-    //   None  → Some(false) – first explicit release (no prior lease) → shutdown check
-    //   Some(true)  → Some(false) – lease released            → trigger shutdown
-    //   Some(false) → Some(true)  – new lease                 → trigger startup
-    // The old "desired_offline" approach missed the None→Some(true) case (Bug #1).
-    // The "desired_online" approach missed the None→Some(false) case.
-    fn get_desired_map(leases: &LeaseMapRaw) -> HashMap<String, bool> {
-        leases
-            .iter()
-            .map(|(host, lease_set)| (host.clone(), !lease_set.is_empty()))
-            .collect()
-    }
-
-    let mut prev_desired = get_desired_map(&leases_rx.borrow_and_update());
-
-    while leases_rx.changed().await.is_ok() {
-        let new_leases = leases_rx.borrow_and_update();
-        let new_desired = get_desired_map(&new_leases);
-        let hoststatus = state.host_actor.borrow();
-
-        for (host_name, &desired_running) in &new_desired {
-            let prev = prev_desired.get(host_name).copied();
-            // Act if: newly added to lease map (None), or desired running changed.
-            if prev == Some(desired_running) {
-                continue;
-            }
-
-            let current_state = *hoststatus.get(host_name).unwrap_or(&HostState::Offline);
-
-            // Skip hosts already in a transition — the in-flight task re-checks on completion.
-            if current_state.is_transitioning() {
-                continue;
-            }
-
-            let is_running = current_state == HostState::Online;
-
-            if desired_running != is_running {
-                spawn_handle_host_state(host_name, &state);
-            }
+        if desired_running != (current_state == HostState::Online) {
+            spawn_handle_host_state(host_name, &state);
         }
-
-        prev_desired = new_desired;
     }
 }
 
