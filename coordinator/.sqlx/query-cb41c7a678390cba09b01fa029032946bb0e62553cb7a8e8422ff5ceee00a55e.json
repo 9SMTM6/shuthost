@@ -6,32 +6,68 @@
       {
         "name": "hostname",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "host_stats",
+            "name": "hostname"
+          }
+        }
       },
       {
         "name": "last_online",
         "ordinal": 1,
-        "type_info": "Datetime"
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "host_stats",
+            "name": "last_online"
+          }
+        }
       },
       {
         "name": "agent_version",
         "ordinal": 2,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "host_stats",
+            "name": "agent_version"
+          }
+        }
       },
       {
         "name": "init_system",
         "ordinal": 3,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "host_stats",
+            "name": "init_system"
+          }
+        }
       },
       {
         "name": "os",
         "ordinal": 4,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "host_stats",
+            "name": "os"
+          }
+        }
       },
       {
         "name": "script_path",
         "ordinal": 5,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "host_stats",
+            "name": "script_path"
+          }
+        }
       }
     ],
     "parameters": {

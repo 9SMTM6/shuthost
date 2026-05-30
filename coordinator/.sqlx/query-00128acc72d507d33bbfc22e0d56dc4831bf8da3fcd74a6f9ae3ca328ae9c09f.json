@@ -6,12 +6,24 @@
       {
         "name": "client_id",
         "ordinal": 0,
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "client_stats",
+            "name": "client_id"
+          }
+        }
       },
       {
         "name": "last_used",
         "ordinal": 1,
-        "type_info": "Datetime"
+        "type_info": "Datetime",
+        "origin": {
+          "Table": {
+            "table": "client_stats",
+            "name": "last_used"
+          }
+        }
       }
     ],
     "parameters": {

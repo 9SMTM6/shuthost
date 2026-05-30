@@ -6,7 +6,13 @@
       {
         "name": "duration_secs",
         "ordinal": 0,
-        "type_info": "Integer"
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "push_subscription_host_online_for",
+            "name": "duration_secs"
+          }
+        }
       }
     ],
     "parameters": {
