@@ -32,7 +32,7 @@ use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, HostStatus, O
 use crate::{
     app::{
         AppState, HostActorHandle, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
-        config_watcher::watch_config_file, db, host_actor::HostEvent,
+        config_watcher::watch_config_file, db, host_actor::FullHostEvent, host_actor::HostEventType,
         host_control::spawn_handle_host_state, shared_watch_store::SharedWatchRx,
     },
     config::{Host, StructuredEventFilter, WebhookEventFilter},
@@ -667,14 +667,14 @@ async fn spawn_push_online_for_timers(
     }
 }
 
-/// Background task: consumes the [`HostEvent`] stream and fires push notifications
+/// Background task: consumes the [`FullHostEvent`] stream and fires push notifications
 /// for unscheduled host state transitions.
 ///
 /// An event is "unscheduled" when:
 /// - `Offline → Online` with no active leases (host booted without coordinator involvement).
 /// - `Online → Offline` while leases are held (host went offline unexpectedly).
 async fn handle_host_events(
-    mut events_rx: broadcast::Receiver<HostEvent>,
+    mut events_rx: broadcast::Receiver<FullHostEvent>,
     initial_leases: Arc<LeaseMapRaw>,
     db_pool: Option<db::DbPool>,
     vapid_key: Option<Arc<ES256KeyPair>>,
@@ -705,9 +705,10 @@ async fn handle_host_events(
                     Err(RecvError::Closed) => break,
                 };
 
-                let HostEvent::StateChanged { host: host_name, from, to, .. } = event else {
+                let HostEventType::StateChanged { from, to } = event.event else {
                     continue;
                 };
+                let host_name = event.host;
 
                 let has_leases = current_leases
                     .get(&host_name)

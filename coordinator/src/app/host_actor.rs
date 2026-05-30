@@ -46,23 +46,19 @@ pub(crate) enum TransitionResult {
 ///
 /// Subscribers can use this stream to react to transitions in a single, ordered
 /// place rather than watching multiple independent channels.
-#[expect(dead_code)]
 #[derive(Debug, Clone)]
-pub(crate) enum HostEvent {
+pub(crate) enum HostEventType {
     /// A host's visible [`HostState`] changed.
-    StateChanged {
-        host: String,
-        from: HostState,
-        to: HostState,
-        /// Wall-clock instant of the change (from the actor's perspective).
-        at: Instant,
-    },
+    StateChanged { from: HostState, to: HostState },
     /// The lease set for a host changed.
-    LeaseChanged {
-        host: String,
-        leases: LeaseSources,
-        at: Instant,
-    },
+    LeaseChanged { leases: LeaseSources },
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct FullHostEvent {
+    pub(crate) host: String,
+    pub(crate) at: Instant,
+    pub(crate) event: HostEventType,
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +99,7 @@ pub(crate) enum HostCmd {
     },
 
     /// The lease set for `host` changed; the actor re-emits it as a
-    /// [`HostEvent::LeaseChanged`] so all consumers can use a single stream.
+    /// [`HostEventType::LeaseChanged`] so all consumers can use a single stream.
     LeaseChanged { host: String, leases: LeaseSources },
 }
 
@@ -120,7 +116,7 @@ struct HostActor {
     /// Watch channel – published to on every state change.
     status_tx: Arc<watch::Sender<Arc<HostStatus>>>,
     /// Broadcast channel – events emitted on state & lease changes.
-    event_tx: Arc<broadcast::Sender<HostEvent>>,
+    event_tx: Arc<broadcast::Sender<FullHostEvent>>,
 }
 
 impl HostActor {
@@ -141,11 +137,13 @@ impl HostActor {
         drop(self.status_tx.send_replace(Arc::new(snapshot)));
 
         // Emit a typed event.
-        drop(self.event_tx.send(HostEvent::StateChanged {
+        drop(self.event_tx.send(FullHostEvent {
             host: host.to_string(),
-            from: old,
-            to: new_state,
             at: Instant::now(),
+            event: HostEventType::StateChanged {
+                from: old,
+                to: new_state,
+            },
         }));
     }
 
@@ -226,10 +224,10 @@ impl HostActor {
             }
 
             HostCmd::LeaseChanged { host, leases } => {
-                drop(self.event_tx.send(HostEvent::LeaseChanged {
+                drop(self.event_tx.send(FullHostEvent {
                     host,
-                    leases,
                     at: Instant::now(),
+                    event: HostEventType::LeaseChanged { leases },
                 }));
             }
         }
@@ -257,7 +255,7 @@ pub(crate) struct HostActorHandle {
     /// Held so callers can call `.subscribe()` / `.borrow()` / `.send_if_modified()`.
     pub(crate) status_tx: Arc<watch::Sender<Arc<HostStatus>>>,
     /// Held so callers can call `.subscribe()` to receive events.
-    event_tx: Arc<broadcast::Sender<HostEvent>>,
+    event_tx: Arc<broadcast::Sender<FullHostEvent>>,
 }
 
 impl HostActorHandle {
@@ -387,8 +385,8 @@ impl HostActorHandle {
         self.status_tx.subscribe()
     }
 
-    /// Subscribe to the typed [`HostEvent`] stream.
-    pub(crate) fn subscribe_events(&self) -> broadcast::Receiver<HostEvent> {
+    /// Subscribe to the typed [`FullHostEvent`] stream.
+    pub(crate) fn subscribe_events(&self) -> broadcast::Receiver<FullHostEvent> {
         self.event_tx.subscribe()
     }
 }
@@ -602,13 +600,13 @@ mod tests {
         });
 
         let ev = ev_rx.try_recv().expect("event should be available");
-        match ev {
-            HostEvent::StateChanged { host, from, to, .. } => {
-                assert_eq!(host, "srv");
+        match ev.event {
+            HostEventType::StateChanged { from, to } => {
+                assert_eq!(ev.host, "srv");
                 assert_eq!(from, HostState::Offline);
                 assert_eq!(to, HostState::Waking);
             }
-            HostEvent::LeaseChanged { .. } => panic!("unexpected event"),
+            HostEventType::LeaseChanged { .. } => panic!("unexpected event"),
         }
     }
 
@@ -624,16 +622,12 @@ mod tests {
         });
 
         let ev = ev_rx.try_recv().expect("event should be available");
-        match ev {
-            HostEvent::LeaseChanged {
-                host,
-                leases: got_leases,
-                ..
-            } => {
-                assert_eq!(host, "srv");
+        match ev.event {
+            HostEventType::LeaseChanged { leases: got_leases } => {
+                assert_eq!(ev.host, "srv");
                 assert_eq!(got_leases, leases);
             }
-            HostEvent::StateChanged { .. } => panic!("unexpected event"),
+            HostEventType::StateChanged { .. } => panic!("unexpected event"),
         }
     }
 
