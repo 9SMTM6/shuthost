@@ -21,7 +21,7 @@ use tokio::{
 use tracing::{debug, warn};
 
 use crate::app::{
-    host_control::LeaseSources,
+    host_control::{LeaseMap, LeaseSources},
     state::{HostState, OperationKind},
 };
 
@@ -54,9 +54,22 @@ pub(crate) enum TransitionResult {
 #[derive(Debug, Clone)]
 pub(crate) enum HostEventType {
     /// A host's visible [`HostState`] changed.
-    StateChanged { from: HostState, to: HostState },
+    ///
+    /// `coordinator_initiated` is `true` when the change was driven by the coordinator
+    /// (e.g. a control task or a startup broadcast while a control task is in-flight).
+    /// It is `false` for changes that came purely from external observation (background
+    /// polling, or an unsolicited startup broadcast with no active control task).
+    StateChanged {
+        from: HostState,
+        to: HostState,
+        coordinator_initiated: bool,
+    },
     /// The lease set for a host changed.
-    LeaseChanged { leases: LeaseSources },
+    ///
+    /// `all_leases` is a snapshot of the **full** lease map at the moment of the change,
+    /// allowing consumers to make decisions based on the complete picture without a separate
+    /// subscription to the lease store.
+    LeaseChanged { leases: LeaseSources, all_leases: Arc<LeaseMap> },
 }
 
 #[derive(Debug, Clone)]
@@ -105,7 +118,8 @@ pub(crate) enum HostCmd {
 
     /// The lease set for `host` changed; the actor re-emits it as a
     /// [`HostEventType::LeaseChanged`] so all consumers can use a single stream.
-    LeaseChanged { host: String, leases: LeaseSources },
+    /// `all_leases` is the full lease map snapshot at the time of the change.
+    LeaseChanged { host: String, leases: LeaseSources, all_leases: Arc<LeaseMap> },
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +141,11 @@ struct HostActor {
 impl HostActor {
     /// Apply a state transition for `host`, publishing to the watch and event
     /// channels if the state actually changed.
-    fn apply_state_change(&mut self, host: &str, new_state: HostState) {
+    ///
+    /// `coordinator_initiated` should be `true` when the change originates from
+    /// a coordinator-driven action (control task or in-flight startup broadcast),
+    /// and `false` for externally-observed changes (polling, unsolicited broadcast).
+    fn apply_state_change(&mut self, host: &str, new_state: HostState, coordinator_initiated: bool) {
         let old = self.states.get(host).copied().unwrap_or(HostState::Offline);
         if old == new_state {
             return;
@@ -148,6 +166,7 @@ impl HostActor {
             event: HostEventType::StateChanged {
                 from: old,
                 to: new_state,
+                coordinator_initiated,
             },
         }));
     }
@@ -177,7 +196,7 @@ impl HostActor {
                         );
                         continue;
                     }
-                    self.apply_state_change(&host, new_state);
+                    self.apply_state_change(&host, new_state, false);
                 }
                 // Reply with the post-apply snapshot so the caller observes the
                 // definitive state without a separate watch read.
@@ -187,7 +206,10 @@ impl HostActor {
             HostCmd::StartupBroadcast { host } => {
                 // The control task (if any) remains the owner; we just update
                 // the visible state so the UI and watch subscribers are current.
-                self.apply_state_change(&host, HostState::Online);
+                // coordinator_initiated is true only when a control task is in-flight
+                // (i.e. we woke the host); false means the host booted unsolicited.
+                let coordinator_initiated = self.control_active.contains(&host);
+                self.apply_state_change(&host, HostState::Online, coordinator_initiated);
             }
 
             HostCmd::BeginTransition {
@@ -215,7 +237,7 @@ impl HostActor {
                     OperationKind::Shutdown => HostState::ShuttingDown,
                 };
                 self.control_active.insert(host.clone());
-                self.apply_state_change(&host, transition_state);
+                self.apply_state_change(&host, transition_state, true);
                 let _ = reply.send(true);
             }
 
@@ -225,14 +247,14 @@ impl HostActor {
                     TransitionResult::WakeOk | TransitionResult::ShutdownErr => HostState::Online,
                     TransitionResult::WakeErr | TransitionResult::ShutdownOk => HostState::Offline,
                 };
-                self.apply_state_change(&host, final_state);
+                self.apply_state_change(&host, final_state, true);
             }
 
-            HostCmd::LeaseChanged { host, leases } => {
+            HostCmd::LeaseChanged { host, leases, all_leases } => {
                 drop(self.event_tx.send(FullHostEvent {
                     host,
                     at: Instant::now(),
-                    event: HostEventType::LeaseChanged { leases },
+                    event: HostEventType::LeaseChanged { leases, all_leases },
                 }));
             }
         }
@@ -358,8 +380,20 @@ impl HostActorHandle {
 
     /// Notify the actor (and event stream subscribers) that the lease set for
     /// `host` changed.
-    pub(crate) async fn notify_lease_changed(&self, host: String, leases: LeaseSources) {
-        drop(self.tx.send(HostCmd::LeaseChanged { host, leases }).await);
+    ///
+    /// `all_leases` is the full current lease map snapshot, passed through to
+    /// [`HostEventType::LeaseChanged`] so consumers don't need a direct lease-store subscription.
+    pub(crate) async fn notify_lease_changed(
+        &self,
+        host: String,
+        leases: LeaseSources,
+        all_leases: Arc<LeaseMap>,
+    ) {
+        drop(
+            self.tx
+                .send(HostCmd::LeaseChanged { host, leases, all_leases })
+                .await,
+        );
     }
 
     // ------------------------------------------------------------------
@@ -606,10 +640,15 @@ mod tests {
 
         let ev = ev_rx.try_recv().expect("event should be available");
         match ev.event {
-            HostEventType::StateChanged { from, to } => {
+            HostEventType::StateChanged {
+                from,
+                to,
+                coordinator_initiated,
+            } => {
                 assert_eq!(ev.host, "srv");
                 assert_eq!(from, HostState::Offline);
                 assert_eq!(to, HostState::Waking);
+                assert!(coordinator_initiated, "BeginTransition must be coordinator_initiated");
             }
             HostEventType::LeaseChanged { .. } => panic!("unexpected event"),
         }
@@ -621,16 +660,22 @@ mod tests {
         let mut ev_rx = actor.event_tx.subscribe();
 
         let leases: LeaseSources = vec![LeaseSource::WebInterface].into_iter().collect();
+        let all_leases = Arc::new(LeaseMap::from([("srv".to_string(), leases.clone())]));
         actor.handle_cmd(HostCmd::LeaseChanged {
             host: "srv".to_string(),
             leases: leases.clone(),
+            all_leases: Arc::clone(&all_leases),
         });
 
         let ev = ev_rx.try_recv().expect("event should be available");
         match ev.event {
-            HostEventType::LeaseChanged { leases: got_leases } => {
+            HostEventType::LeaseChanged {
+                leases: got_leases,
+                all_leases: got_all,
+            } => {
                 assert_eq!(ev.host, "srv");
                 assert_eq!(got_leases, leases);
+                assert_eq!(got_all, all_leases);
             }
             HostEventType::StateChanged { .. } => panic!("unexpected event"),
         }
@@ -652,5 +697,56 @@ mod tests {
             ev_rx.try_recv().is_err(),
             "no event expected for no-op state write"
         );
+    }
+
+    #[test]
+    fn startup_broadcast_with_active_control_is_coordinator_initiated() {
+        let mut actor = make_actor();
+        // Simulate a control task in-flight by inserting into control_active.
+        actor.control_active.insert("srv".to_string());
+        let mut ev_rx = actor.event_tx.subscribe();
+
+        actor.handle_cmd(HostCmd::StartupBroadcast {
+            host: "srv".to_string(),
+        });
+
+        let ev = ev_rx.try_recv().expect("event should be emitted");
+        match ev.event {
+            HostEventType::StateChanged {
+                coordinator_initiated,
+                ..
+            } => {
+                assert!(
+                    coordinator_initiated,
+                    "StartupBroadcast while control_active must set coordinator_initiated"
+                );
+            }
+            _ => panic!("expected StateChanged"),
+        }
+    }
+
+    #[test]
+    fn startup_broadcast_without_active_control_is_not_coordinator_initiated() {
+        let mut actor = make_actor();
+        // No control task active.
+        let mut ev_rx = actor.event_tx.subscribe();
+
+        actor.handle_cmd(HostCmd::StartupBroadcast {
+            host: "srv".to_string(),
+        });
+
+        let ev = ev_rx.try_recv().expect("event should be emitted");
+        match ev.event {
+            HostEventType::StateChanged {
+                coordinator_initiated,
+                ..
+            } => {
+                assert!(
+                    !coordinator_initiated,
+                    "StartupBroadcast without control_active must NOT set coordinator_initiated"
+                );
+            }
+            _ => panic!("expected StateChanged"),
+        }
     }
 }
