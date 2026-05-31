@@ -14,7 +14,7 @@ use shuthost_common::protocol::{InitSystem, OsType};
 use sqlx::{Sqlite, SqlitePool, migrate::MigrateDatabase as _};
 use tracing::warn;
 
-use crate::app::{LeaseMapRaw, LeaseSource};
+use crate::app::{LeaseMap, LeaseSource};
 
 /// Database connection pool type alias.
 // This lint seems to have false negatives with pub(crate)
@@ -241,7 +241,7 @@ pub(crate) async fn delete_host_ip_override(pool: &DbPool, hostname: &str) -> ey
 ///
 /// Returns an error if the database query fails.
 #[tracing::instrument(skip(pool, leases), err)]
-pub(crate) async fn load_leases(pool: &DbPool, leases: &mut LeaseMapRaw) -> eyre::Result<()> {
+pub(crate) async fn load_leases(pool: &DbPool, leases: &mut LeaseMap) -> eyre::Result<()> {
     // Clear existing leases
     leases.clear();
 
@@ -1009,7 +1009,7 @@ mod tests {
     #[tokio::test]
     async fn add_and_load_leases() {
         let pool = setup_test_db().await.unwrap();
-        let mut leases: LeaseMapRaw = HashMap::new();
+        let mut leases: LeaseMap = HashMap::new();
 
         // Initially empty
         load_leases(&pool, &mut leases).await.unwrap();
@@ -1040,7 +1040,7 @@ mod tests {
     #[tokio::test]
     async fn remove_lease_works() {
         let pool = setup_test_db().await.unwrap();
-        let mut leases: LeaseMapRaw = HashMap::new();
+        let mut leases: LeaseMap = HashMap::new();
 
         // Add leases
         add_lease(&pool, "host1", &LeaseSource::WebInterface)
@@ -1066,7 +1066,7 @@ mod tests {
     #[tokio::test]
     async fn remove_client_leases_works() {
         let pool = setup_test_db().await.unwrap();
-        let mut leases: LeaseMapRaw = HashMap::new();
+        let mut leases: LeaseMap = HashMap::new();
 
         // Add client leases
         add_lease(&pool, "host1", &LeaseSource::Client("client1".to_string()))
@@ -1092,7 +1092,7 @@ mod tests {
     #[tokio::test]
     async fn duplicate_leases_ignored() {
         let pool = setup_test_db().await.unwrap();
-        let mut leases: LeaseMapRaw = HashMap::new();
+        let mut leases: LeaseMap = HashMap::new();
 
         // Add same lease twice
         add_lease(&pool, "host1", &LeaseSource::WebInterface)

@@ -15,7 +15,7 @@ use web_push_native::jwt_simple::algorithms::ES256KeyPair;
 use super::shared_watch_store::SharedWatchStore;
 use crate::{
     app::{
-        LeaseMapRaw,
+        LeaseMap,
         db::{self, DbPool},
         host_actor::HostActorHandle,
         host_control::LeaseStore,
@@ -263,7 +263,7 @@ fn emit_startup_warnings(app_state: &AppState, app_config: &ControllerConfig) {
 }
 
 async fn load_leases(db_pool: Option<&DbPool>) -> eyre::Result<Arc<LeaseStore>> {
-    let mut initial_leases = LeaseMapRaw::default();
+    let mut initial_leases = LeaseMap::default();
     if let Some(pool) = db_pool {
         db::load_leases(pool, &mut initial_leases).await?;
         info!("Loaded leases from database");

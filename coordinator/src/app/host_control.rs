@@ -58,19 +58,19 @@ impl ops::Deref for ResolvedHost {
 pub(crate) type LeaseSources = HashSet<LeaseSource>;
 
 /// `host_name` => set of lease sources holding lease
-pub(crate) type LeaseMapRaw = HashMap<String, LeaseSources>;
+pub(crate) type LeaseMap = HashMap<String, LeaseSources>;
 
-pub(crate) type LeaseStore = SharedWatchStore<LeaseMapRaw>;
-pub(crate) type LeaseRx = SharedWatchRx<LeaseMapRaw>;
+pub(crate) type LeaseStore = SharedWatchStore<LeaseMap>;
+pub(crate) type LeaseRx = SharedWatchRx<LeaseMap>;
 
-impl SharedWatchStore<LeaseMapRaw> {
+impl SharedWatchStore<LeaseMap> {
     /// Lock the map, run `f` against the mutable map (may do async work such as
     /// DB writes), then publish the new snapshot and return it.
     ///
     /// If `f` returns an error the map is not published and the error is forwarded.
     pub(crate) async fn update<F, E, R>(&self, f: F) -> Result<R, E>
     where
-        F: AsyncFnOnce(&mut LeaseMapRaw) -> Result<R, E>,
+        F: AsyncFnOnce(&mut LeaseMap) -> Result<R, E>,
     {
         let mut guard = self.inner.lock().await;
         let mut snapshot = guard.clone();

@@ -15,7 +15,7 @@ pub(crate) use db::DbPool;
 pub use host_actor::HostStatus;
 pub(crate) use host_actor::{HostActorHandle, HostStatusRx};
 pub(crate) use host_control::{
-    HostControlError, LeaseMapRaw, LeaseRx, LeaseSource, LeaseSources, LeaseStore, lookup_host,
+    HostControlError, LeaseMap, LeaseRx, LeaseSource, LeaseSources, LeaseStore, lookup_host,
     lookup_host_with_overrides, wait_for_transition,
 };
 pub use runtime::ENFORCE_STABILIZATION_THRESHOLD;
