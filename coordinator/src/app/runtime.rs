@@ -47,10 +47,6 @@ use crate::{
 
 use crate::app::{host_control::HostWithName, notifications};
 
-/// How long a diverged enforced-host state must be stable before the enforcer
-/// re-triggers a wake / shutdown (prevents hammering during transitions).
-pub const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
-
 /// Receive one event from a broadcast channel, logging a warning on lag and breaking on close.
 ///
 /// Takes a pre-resolved `Result<T, RecvError>` and evaluates to `T`. Must be used inside a `loop`.
@@ -1025,6 +1021,8 @@ mod tests {
     use alloc::sync::Arc;
     use core::time::Duration;
     use std::collections::HashSet;
+
+    const ENFORCE_STABILIZATION_THRESHOLD: Duration = Duration::from_secs(5);
 
     fn make_host(enforce: bool) -> Host {
         Host {
