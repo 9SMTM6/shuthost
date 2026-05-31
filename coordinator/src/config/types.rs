@@ -324,12 +324,13 @@ pub(crate) enum AuthMode {
     Token { token: Option<Arc<SecretString>> },
     /// `OpenID` Connect login via authorization code flow
     Oidc(OidcConfig),
-    /// External auth was configured (reverse proxy / external provider). The
-    /// `exceptions_version` is used to record which set/level of exceptions the
-    /// operator acknowledged; the UI will show a warning when this doesn't
-    /// match the current expected version so operators can update their proxy
-    /// rules.
-    External { exceptions_version: u32 },
+    /// External auth was configured (reverse proxy / external provider).
+    External {
+        /// Records which set/level of exceptions the operator acknowledged;
+        /// the UI will show a warning when this doesn't match the current
+        /// expected version so operators can update their proxy rules.
+        exceptions_version: u32,
+    },
 }
 
 impl PartialEq for AuthMode {

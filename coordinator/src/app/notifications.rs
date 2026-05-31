@@ -44,11 +44,11 @@ pub(crate) enum EventKind {
     Unscheduled {
         kind: OperationKind,
     },
-    /// `is_repeat` is `true` when the same failure kind was already recorded for
-    /// this host (i.e. a previous enforce-state retry). Webhooks always fire;
-    /// PWA push is suppressed for repeats.
     OperationFailed {
         kind: OperationKind,
+        /// `true` when the same failure kind was already recorded for
+        /// this host (i.e. a previous enforce-state retry). Webhooks always fire;
+        /// PWA push is suppressed for repeats.
         is_repeat: bool,
     },
     OnlineFor {

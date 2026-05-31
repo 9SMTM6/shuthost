@@ -54,22 +54,23 @@ pub(crate) enum TransitionResult {
 #[derive(Debug, Clone)]
 pub(crate) enum HostEventType {
     /// A host's visible [`HostState`] changed.
-    ///
-    /// `coordinator_initiated` is `true` when the change was driven by the coordinator
-    /// (e.g. a control task or a startup broadcast while a control task is in-flight).
-    /// It is `false` for changes that came purely from external observation (background
-    /// polling, or an unsolicited startup broadcast with no active control task).
     StateChanged {
         from: HostState,
         to: HostState,
+        /// `true` when the change was driven by the coordinator
+        /// (e.g. a control task or a startup broadcast while a control task is in-flight).
+        /// `false` for changes that came purely from external observation (background
+        /// polling, or an unsolicited startup broadcast with no active control task).
         coordinator_initiated: bool,
     },
     /// The lease set for a host changed.
-    ///
-    /// `all_leases` is a snapshot of the **full** lease map at the moment of the change,
-    /// allowing consumers to make decisions based on the complete picture without a separate
-    /// subscription to the lease store.
-    LeaseChanged { leases: LeaseSources, all_leases: Arc<LeaseMap> },
+    LeaseChanged {
+        leases: LeaseSources,
+        /// A snapshot of the **full** lease map at the moment of the change,
+        /// allowing consumers to make decisions based on the complete picture without a separate
+        /// subscription to the lease store.
+        all_leases: Arc<LeaseMap>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -86,9 +87,9 @@ pub(crate) struct FullHostEvent {
 pub(crate) enum HostCmd {
     /// Batch of polled (Online/Offline) observations from the background poller.
     /// Ignored for any host currently under control-task ownership.
-    /// The actor sends the resulting snapshot back via `reply` once processed.
     PollResults {
         results: Vec<(String, HostState)>,
+        /// Receives the post-apply host-status snapshot once processed.
         reply: oneshot::Sender<Arc<HostStatus>>,
     },
 
@@ -99,13 +100,12 @@ pub(crate) enum HostCmd {
     StartupBroadcast { host: String },
 
     /// Atomically claim a transition slot for `host`.
-    ///
-    /// Replies `true` if the slot was claimed (host is now `Waking` or
-    /// `ShuttingDown` and added to `control_active`), `false` if already
-    /// claimed or already in a transition state.
     BeginTransition {
         host: String,
         direction: OperationKind,
+        /// Receives `true` if the slot was claimed (host is now `Waking` or
+        /// `ShuttingDown` and added to `control_active`), `false` if already
+        /// claimed or already in a transition state.
         reply: oneshot::Sender<bool>,
     },
 
@@ -118,8 +118,12 @@ pub(crate) enum HostCmd {
 
     /// The lease set for `host` changed; the actor re-emits it as a
     /// [`HostEventType::LeaseChanged`] so all consumers can use a single stream.
-    /// `all_leases` is the full lease map snapshot at the time of the change.
-    LeaseChanged { host: String, leases: LeaseSources, all_leases: Arc<LeaseMap> },
+    LeaseChanged {
+        host: String,
+        leases: LeaseSources,
+        /// The full lease map snapshot at the time of the change.
+        all_leases: Arc<LeaseMap>,
+    },
 }
 
 // ---------------------------------------------------------------------------
