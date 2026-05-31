@@ -274,7 +274,6 @@ pub(super) fn start_background_tasks(
         state.leases.snapshot(),
         state.db_pool.clone(),
         state.vapid_key.clone(),
-        state.leases.subscribe(),
         state.config_rx.clone(),
     ));
 
@@ -311,7 +310,7 @@ fn spawn_websocket_forwarders(
                     }
                     WsMessage::HostStatus(status_map)
                 }
-                HostEventType::LeaseChanged { leases } => WsMessage::LeaseUpdate {
+                HostEventType::LeaseChanged { leases, .. } => WsMessage::LeaseUpdate {
                     host: event.host,
                     leases,
                 },
@@ -688,86 +687,89 @@ async fn spawn_push_online_for_timers(
 /// for unscheduled host state transitions.
 ///
 /// An event is "unscheduled" when:
-/// - `Offline → Online` with no active leases (host booted without coordinator involvement).
+/// - `coordinator_initiated` is `false` (change not driven by a coordinator control task), AND
+/// - `Offline → Online` with no active leases (host booted without coordinator involvement), OR
 /// - `Online → Offline` while leases are held (host went offline unexpectedly).
+///
+/// `current_leases` is kept up-to-date by consuming [`HostEventType::LeaseChanged`] events from
+/// the **same** broadcast channel as [`HostEventType::StateChanged`]. Because both event kinds
+/// are ordered within a single channel, a `StateChanged` can never be observed before a
+/// `LeaseChanged` that happened earlier in the actor — eliminating the `tokio::select!` ordering
+/// race of the previous implementation. No direct lease-store subscription is needed.
 async fn report_unscheduled_events(
     mut events_rx: broadcast::Receiver<FullHostEvent>,
     initial_leases: Arc<LeaseMap>,
     db_pool: Option<db::DbPool>,
     vapid_key: Option<Arc<ES256KeyPair>>,
-    mut leases_rx: LeaseRx,
     config_rx: ConfigRx,
 ) {
-    // Keep a local copy of the lease map so we can check it at event time without
-    // holding a lock on the LeaseStore.
     let mut current_leases = initial_leases;
-
     loop {
-        tokio::select! {
-            // Update our local lease snapshot whenever it changes.
-            result = leases_rx.changed() => {
-                if result.is_err() {
-                    break;
-                }
-                current_leases = leases_rx.borrow().clone();
-            }
-            // React to host state transitions.
-            recv_result = events_rx.recv() => {
-                let event = next_broadcast_event!(recv_result, "handle_host_events");
+        let event = next_broadcast_event!(events_rx.recv().await, "report_unscheduled_events");
 
-                let HostEventType::StateChanged { from, to } = event.event else {
-                    continue;
-                };
-                let host_name = event.host;
-
-                let has_leases = current_leases
-                    .get(&host_name)
-                    .is_some_and(|s| !s.is_empty());
-
-                use HostState as HS;
-
-                let is_unscheduled = match (from, to) {
-                    // Host came online without the coordinator waking it.
-                    (HS::Offline, HS::Online) => !has_leases,
-                    // Host went offline while the coordinator expected it to stay up.
-                    (HS::Online, HS::Offline) => has_leases,
-                    _ => false,
-                };
-
-                if !is_unscheduled {
-                    continue;
-                }
-
-                let notification_event = match to {
-                    HS::Online => NotificationEvent {
-                        host: host_name.clone(),
-                        kind: EventKind::Unscheduled {
-                            kind: OperationKind::Startup,
-                        },
-                    },
-                    HS::Offline => NotificationEvent {
-                        host: host_name.clone(),
-                        kind: EventKind::Unscheduled {
-                            kind: OperationKind::Shutdown,
-                        },
-                    },
-                    HS::Waking | HS::ShuttingDown => continue,
-                };
-
-                let webhooks = config_rx.borrow().notifications.webhooks.clone();
-                let pool_clone = db_pool.clone();
-                let vapid_clone = vapid_key.clone();
-                tokio::spawn(async move {
-                    notifications::dispatch(
-                        notification_event,
-                        &webhooks,
-                        pool_clone.as_ref(),
-                        vapid_clone.as_ref(),
-                    )
-                    .await;
-                });
-            }
+        // Keep current_leases up-to-date from lease events in the same stream.
+        if let HostEventType::LeaseChanged { all_leases, .. } = &event.event {
+            current_leases = Arc::clone(all_leases);
+            continue;
         }
+
+        let HostEventType::StateChanged { from, to, coordinator_initiated } = event.event else {
+            continue;
+        };
+
+        // Fast-path: changes driven by the coordinator are never "unscheduled".
+        // This also covers the race where a lease is taken and a WoL control task
+        // is in-flight at the same time the host boots.
+        if coordinator_initiated {
+            continue;
+        }
+
+        let has_leases = current_leases
+            .get(&event.host)
+            .is_some_and(|s| !s.is_empty());
+
+        use HostState as HS;
+
+        let is_unscheduled = match (from, to) {
+            // Host came online without the coordinator waking it.
+            (HS::Offline, HS::Online) => !has_leases,
+            // Host went offline while the coordinator expected it to stay up.
+            (HS::Online, HS::Offline) => has_leases,
+            _ => false,
+        };
+
+        if !is_unscheduled {
+            continue;
+        }
+
+        let notification_event = match to {
+            HS::Online => NotificationEvent {
+                host: event.host.clone(),
+                kind: EventKind::Unscheduled {
+                    kind: OperationKind::Startup,
+                },
+            },
+            HS::Offline => NotificationEvent {
+                host: event.host.clone(),
+                kind: EventKind::Unscheduled {
+                    kind: OperationKind::Shutdown,
+                },
+            },
+            HS::Waking | HS::ShuttingDown => continue,
+        };
+
+        let webhooks = config_rx.borrow().notifications.webhooks.clone();
+        let pool_clone = db_pool.clone();
+        let vapid_clone = vapid_key.clone();
+        tokio::spawn(async move {
+            notifications::dispatch(
+                notification_event,
+                &webhooks,
+                pool_clone.as_ref(),
+                vapid_clone.as_ref(),
+            )
+            .await;
+        });
     }
 }
 
@@ -787,7 +789,7 @@ async fn forward_lease_events(mut leases_rx: LeaseRx, host_actor: HostActorHandl
             if prev_leases.get(host) != new_leases.get(host) {
                 let leases = new_leases.get(host).cloned().unwrap_or_default();
                 host_actor
-                    .notify_lease_changed(host.to_string(), leases)
+                    .notify_lease_changed(host.to_string(), leases, Arc::clone(&new_leases))
                     .await;
             }
         }
@@ -809,7 +811,7 @@ async fn reconcile_on_lease_change(state: AppState) {
     loop {
         let event = next_broadcast_event!(events_rx.recv().await, "reconcile_on_lease_change");
 
-        let HostEventType::LeaseChanged { leases } = event.event else {
+        let HostEventType::LeaseChanged { leases, .. } = event.event else {
             continue;
         };
         let host_name = &event.host;
