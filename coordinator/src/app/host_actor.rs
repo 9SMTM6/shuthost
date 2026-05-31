@@ -14,10 +14,7 @@
 use alloc::sync::Arc;
 use std::collections::{HashMap, HashSet};
 
-use tokio::{
-    sync::{broadcast, mpsc, oneshot, watch},
-    time::Instant,
-};
+use tokio::sync::{broadcast, mpsc, oneshot, watch};
 use tracing::{debug, warn};
 
 use crate::app::{
@@ -76,7 +73,6 @@ pub(crate) enum HostEventType {
 #[derive(Debug, Clone)]
 pub(crate) struct FullHostEvent {
     pub(crate) host: String,
-    pub(crate) at: Instant,
     pub(crate) event: HostEventType,
 }
 
@@ -149,7 +145,12 @@ impl HostActor {
     /// `coordinator_initiated` should be `true` when the change originates from
     /// a coordinator-driven action (control task or in-flight startup broadcast),
     /// and `false` for externally-observed changes (polling, unsolicited broadcast).
-    fn apply_state_change(&mut self, host: &str, new_state: HostState, coordinator_initiated: bool) {
+    fn apply_state_change(
+        &mut self,
+        host: &str,
+        new_state: HostState,
+        coordinator_initiated: bool,
+    ) {
         let old = self.states.get(host).copied().unwrap_or(HostState::Offline);
         if old == new_state {
             return;
@@ -166,7 +167,6 @@ impl HostActor {
         // Emit a typed event.
         drop(self.event_tx.send(FullHostEvent {
             host: host.to_string(),
-            at: Instant::now(),
             event: HostEventType::StateChanged {
                 from: old,
                 to: new_state,
@@ -254,10 +254,13 @@ impl HostActor {
                 self.apply_state_change(&host, final_state, true);
             }
 
-            HostCmd::LeaseChanged { host, leases, all_leases } => {
+            HostCmd::LeaseChanged {
+                host,
+                leases,
+                all_leases,
+            } => {
                 drop(self.event_tx.send(FullHostEvent {
                     host,
-                    at: Instant::now(),
                     event: HostEventType::LeaseChanged { leases, all_leases },
                 }));
             }
@@ -395,7 +398,11 @@ impl HostActorHandle {
     ) {
         drop(
             self.tx
-                .send(HostCmd::LeaseChanged { host, leases, all_leases })
+                .send(HostCmd::LeaseChanged {
+                    host,
+                    leases,
+                    all_leases,
+                })
                 .await,
         );
     }
@@ -652,7 +659,10 @@ mod tests {
                 assert_eq!(ev.host, "srv");
                 assert_eq!(from, HostState::Offline);
                 assert_eq!(to, HostState::Waking);
-                assert!(coordinator_initiated, "BeginTransition must be coordinator_initiated");
+                assert!(
+                    coordinator_initiated,
+                    "BeginTransition must be coordinator_initiated"
+                );
             }
             HostEventType::LeaseChanged { .. } => panic!("unexpected event"),
         }
