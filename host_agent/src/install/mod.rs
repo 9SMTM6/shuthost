@@ -70,8 +70,6 @@ pub(crate) fn bind_template_replacements(
         .replace("{ hostname }", hostname)
 }
 
-// TODO: update command needs integration tests
-
 /// Arguments for the `install` subcommand of `host_agent`.
 #[derive(Debug, Parser)]
 pub struct Args {
