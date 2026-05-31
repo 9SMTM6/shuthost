@@ -32,9 +32,7 @@ use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, OperationKind
 use super::host_actor::HostStatus;
 use crate::{
     app::{
-        AppState, HostActorHandle, LeaseMapRaw, LeaseRx, OperationFailureMap, WsTx,
-        config_watcher::watch_config_file, db, host_actor::FullHostEvent, host_actor::HostEventType,
-        host_control::spawn_handle_host_state, shared_watch_store::SharedWatchRx,
+        AppState, HostActorHandle, LeaseMap, LeaseRx, OperationFailureMap, WsTx, config_watcher::watch_config_file, db, host_actor::{FullHostEvent, HostEventType}, host_control::spawn_handle_host_state, notifications::{EventKind, NotificationEvent}, shared_watch_store::SharedWatchRx
     },
     config::{Host, StructuredEventFilter, WebhookEventFilter},
     http::push,
@@ -271,7 +269,7 @@ pub(super) fn start_background_tasks(
     ));
 
     // Consume the HostEvent stream to fire unscheduled push notifications.
-    tasks.spawn(handle_host_events(
+    tasks.spawn(report_unscheduled_events(
         state.host_actor.subscribe_events(),
         state.leases.snapshot(),
         state.db_pool.clone(),
@@ -692,9 +690,9 @@ async fn spawn_push_online_for_timers(
 /// An event is "unscheduled" when:
 /// - `Offline → Online` with no active leases (host booted without coordinator involvement).
 /// - `Online → Offline` while leases are held (host went offline unexpectedly).
-async fn handle_host_events(
+async fn report_unscheduled_events(
     mut events_rx: broadcast::Receiver<FullHostEvent>,
-    initial_leases: Arc<LeaseMapRaw>,
+    initial_leases: Arc<LeaseMap>,
     db_pool: Option<db::DbPool>,
     vapid_key: Option<Arc<ES256KeyPair>>,
     mut leases_rx: LeaseRx,
@@ -726,11 +724,13 @@ async fn handle_host_events(
                     .get(&host_name)
                     .is_some_and(|s| !s.is_empty());
 
+                use HostState as HS;
+
                 let is_unscheduled = match (from, to) {
                     // Host came online without the coordinator waking it.
-                    (HostState::Offline, HostState::Online) => !has_leases,
+                    (HS::Offline, HS::Online) => !has_leases,
                     // Host went offline while the coordinator expected it to stay up.
-                    (HostState::Online, HostState::Offline) => has_leases,
+                    (HS::Online, HS::Offline) => has_leases,
                     _ => false,
                 };
 
@@ -739,19 +739,19 @@ async fn handle_host_events(
                 }
 
                 let notification_event = match to {
-                    HostState::Online => notifications::NotificationEvent {
+                    HS::Online => NotificationEvent {
                         host: host_name.clone(),
-                        kind: notifications::EventKind::Unscheduled {
+                        kind: EventKind::Unscheduled {
                             kind: OperationKind::Startup,
                         },
                     },
-                    HostState::Offline => notifications::NotificationEvent {
+                    HS::Offline => NotificationEvent {
                         host: host_name.clone(),
-                        kind: notifications::EventKind::Unscheduled {
+                        kind: EventKind::Unscheduled {
                             kind: OperationKind::Shutdown,
                         },
                     },
-                    HostState::Waking | HostState::ShuttingDown => continue,
+                    HS::Waking | HS::ShuttingDown => continue,
                 };
 
                 let webhooks = config_rx.borrow().notifications.webhooks.clone();
@@ -774,9 +774,9 @@ async fn handle_host_events(
 /// Background task: watches the lease store and forwards per-host lease changes
 /// into the [`HostActorHandle`] event stream so all consumers can use a single stream.
 async fn forward_lease_events(mut leases_rx: LeaseRx, host_actor: HostActorHandle) {
-    let mut prev_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
+    let mut prev_leases: Arc<LeaseMap> = leases_rx.borrow_and_update().clone();
     while leases_rx.changed().await.is_ok() {
-        let new_leases: Arc<LeaseMapRaw> = leases_rx.borrow_and_update().clone();
+        let new_leases: Arc<LeaseMap> = leases_rx.borrow_and_update().clone();
         // Notify the actor for each host whose lease set changed.
         let all_hosts: HashSet<&str> = prev_leases
             .keys()

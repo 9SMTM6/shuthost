@@ -15,7 +15,7 @@ use tracing::info;
 
 use crate::{
     app::{
-        AppState, HostActorHandle, LeaseMapRaw, LeaseStore, OperationFailureStore, RwMap,
+        AppState, HostActorHandle, LeaseMap, LeaseStore, OperationFailureStore, RwMap,
         shutdown_signal,
     },
     config::{AuthConfig, ControllerConfig, RuntimeConfig},
@@ -55,7 +55,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         config_rx: watch::channel(Arc::new(ControllerConfig::default())).1,
         host_actor: hoststatus,
         ws_tx: broadcast::channel(1).0,
-        leases: LeaseStore::new(LeaseMapRaw::default()).0,
+        leases: LeaseStore::new(LeaseMap::default()).0,
         host_overrides: RwMap::default(),
         host_install_info: RwMap::default(),
         auth: Arc::new(

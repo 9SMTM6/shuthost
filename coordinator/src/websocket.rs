@@ -17,7 +17,7 @@ use tracing::{Instrument as _, debug, error, info, warn};
 use tungstenite::{Error as TError, error::ProtocolError as TPError};
 
 use crate::app::{
-    AppState, ConfigRx, DbPool, HostState, HostStatus, HostStatusRx, LeaseMapRaw, LeaseSources,
+    AppState, ConfigRx, DbPool, HostState, HostStatus, HostStatusRx, LeaseMap, LeaseSources,
     LeaseStore, OperationFailureMap,
     db::{self, ClientStats, HostStats},
 };
@@ -74,7 +74,7 @@ pub enum WsMessage {
         hosts: Vec<String>,
         clients: Vec<String>,
         status_map: HostStatus,
-        lease_map: LeaseMapRaw,
+        lease_map: LeaseMap,
         db_data: DbDataState,
         operation_failures: OperationFailureMap,
     },
