@@ -28,11 +28,17 @@ use shuthost_common::{
     validate_hmac_message,
 };
 
-use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, OperationKind};
 use super::host_actor::HostStatus;
+use super::state::{ConfigRx, ConfigTx, HostInstallInfo, HostState, OperationKind};
 use crate::{
     app::{
-        AppState, HostActorHandle, LeaseMap, LeaseRx, OperationFailureMap, WsTx, config_watcher::watch_config_file, db, host_actor::{FullHostEvent, HostEventType}, host_control::spawn_handle_host_state, notifications::{EventKind, NotificationEvent}, shared_watch_store::SharedWatchRx
+        AppState, HostActorHandle, LeaseMap, LeaseRx, OperationFailureMap, WsTx,
+        config_watcher::watch_config_file,
+        db,
+        host_actor::{FullHostEvent, HostEventType},
+        host_control::spawn_handle_host_state,
+        notifications::{EventKind, NotificationEvent},
+        shared_watch_store::SharedWatchRx,
     },
     config::{Host, StructuredEventFilter, WebhookEventFilter},
     http::push,
@@ -53,7 +59,10 @@ macro_rules! next_broadcast_event {
         match $result {
             Ok(e) => e,
             Err(RecvError::Lagged(n)) => {
-                warn!(concat!($label, ": missed {} events (broadcast channel lagged)"), n);
+                warn!(
+                    concat!($label, ": missed {} events (broadcast channel lagged)"),
+                    n
+                );
                 continue;
             }
             Err(RecvError::Closed) => break,
@@ -713,7 +722,12 @@ async fn report_unscheduled_events(
             continue;
         }
 
-        let HostEventType::StateChanged { from, to, coordinator_initiated } = event.event else {
+        let HostEventType::StateChanged {
+            from,
+            to,
+            coordinator_initiated,
+        } = event.event
+        else {
             continue;
         };
 
@@ -796,7 +810,6 @@ async fn forward_lease_events(mut leases_rx: LeaseRx, host_actor: HostActorHandl
         prev_leases = new_leases;
     }
 }
-
 
 /// Background task: reconcile host control on every per-host lease change.
 ///
