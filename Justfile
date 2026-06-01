@@ -70,7 +70,7 @@ build_all_nix_host_agents:
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_host_agent --target aarch64-unknown-linux-musl
 
 [group('devops')]
-deploy_branch_on_metal: build_all_nix_host_agents
+deploy_branch_on_metal:
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
 [group('devops')]
