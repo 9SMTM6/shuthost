@@ -671,6 +671,25 @@ const HostInfoSection = (props: {
     const agentVersion = props.hostStats
         ? (props.hostStats.agentVersion ?? `<= 1.7.1`)
         : 'unknown';
+    const agentVersionNote =
+        agentVersion === 'unknown'
+            ? 'No record of this host connecting yet.'
+            : agentVersion === '<= 1.7.1'
+              ? 'Predates version reporting (added in 1.8.0).'
+              : undefined;
+    const isSelfExtracting =
+        props.hostStats?.initSystem === 'self-extracting-shell' ||
+        props.hostStats?.initSystem === 'self-extracting-pwsh';
+    const initSystemNote = isSelfExtracting
+        ? 'Runs as a standalone script, not a registered service. Autostart must be configured manually (e.g. via the init system).'
+        : undefined;
+    const enforceStateNote = props.hostConfig?.enforceState
+        ? 'Periodically corrects power state to match current leases.'
+        : 'Edge-triggered only — reacts to lease changes, no periodic correction.';
+    const lastOnlinePrecise =
+        !props.isOnline && lastOnline != null
+            ? new Date(lastOnline).toLocaleString()
+            : undefined;
 
     return (
         <section
@@ -684,13 +703,18 @@ const HostInfoSection = (props: {
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Agent version
                 </dt>
-                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                <dd class="text-[#616161] dark:text-[#9d9d9d]" title={agentVersionNote}>
                     {agentVersion}
                 </dd>
+                <Show when={agentVersionNote != null}>
+                    <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
+                        {agentVersionNote}
+                    </dd>
+                </Show>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Init system
                 </dt>
-                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                <dd class="text-[#616161] dark:text-[#9d9d9d]" title={initSystemNote}>
                     {
                         (
                             {
@@ -705,6 +729,11 @@ const HostInfoSection = (props: {
                         )[props.hostStats?.initSystem ?? 'unknown']
                     }
                 </dd>
+                <Show when={initSystemNote != null}>
+                    <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
+                        {initSystemNote}
+                    </dd>
+                </Show>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Operating system
                 </dt>
@@ -728,19 +757,12 @@ const HostInfoSection = (props: {
                         {props.hostStats?.scriptPath}
                     </dd>
                 </Show>
-                <dt
-                    class="font-medium text-black dark:text-[#cccccc]"
-                    title="Whether the coordinator periodically re-enforces the desired host state, beyond reacting to lease changes."
-                >
+                <dt class="font-medium text-black dark:text-[#cccccc]">
                     Enforce state
                 </dt>
                 <dd
                     class="text-[#616161] dark:text-[#9d9d9d] inline-flex items-center gap-1"
-                    title={
-                        props.hostConfig?.enforceState
-                            ? 'Enabled — the coordinator periodically checks and corrects the host power state to match the current lease set, even without a lease change.'
-                            : 'Disabled — the coordinator only reacts to lease changes (edge-triggered). It will not periodically re-check or correct the host state.'
-                    }
+                    title={enforceStateNote}
                 >
                     <Show
                         when={props.hostConfig?.enforceState}
@@ -763,14 +785,25 @@ const HostInfoSection = (props: {
                         Yes
                     </Show>
                 </dd>
+                <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
+                    {enforceStateNote}
+                </dd>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Last online
                 </dt>
-                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                <dd
+                    class="text-[#616161] dark:text-[#9d9d9d]"
+                    title={lastOnlinePrecise}
+                >
                     {props.isOnline
                         ? 'Currently online'
                         : formatRelativeTimestamp(lastOnline)}
                 </dd>
+                <Show when={lastOnlinePrecise != null}>
+                    <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
+                        {lastOnlinePrecise}
+                    </dd>
+                </Show>
             </dl>
             <HostUpdateCommands hostStats={props.hostStats} />
         </section>
