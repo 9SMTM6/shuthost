@@ -42,6 +42,12 @@ export const hostStatChecker = is.object({
 
 export type HostStats = Infer<typeof hostStatChecker>;
 
+const hostConfigChecker = is.object({
+    enforceState: is.boolean,
+} as const);
+
+export type HostConfig = Infer<typeof hostConfigChecker>;
+
 export type DbData = {
     clientStats: Record<string, ClientStats>;
     hostStats: Record<string, HostStats>;
@@ -63,6 +69,7 @@ export type AppState = {
     leaseMap: Record<string, LeaseSource[]>;
     dbData: DbDataState;
     operationFailures: Record<string, OperationFailure>;
+    hostConfigMap: Record<string, HostConfig>;
 } & DynamicConfig;
 
 export type OperationFailure = {
@@ -92,6 +99,7 @@ const [state, setState] = createStore<AppState>({
     clients: [],
     dbData: { status: 'disabled' },
     operationFailures: {},
+    hostConfigMap: {},
 });
 
 export { state };

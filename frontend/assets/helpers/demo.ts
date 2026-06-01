@@ -86,6 +86,11 @@ export const initDemoMode = () => {
                         },
                     },
                 },
+                hostConfigMap: {
+                    archive: { enforceState: true },
+                    tarbean: { enforceState: false },
+                    junpui: { enforceState: false },
+                },
             },
         });
     }, 500);

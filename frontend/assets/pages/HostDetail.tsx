@@ -5,6 +5,8 @@ import {
     Bell,
     BellOff,
     BellRing,
+    CircleDashed,
+    Crosshair,
     LoaderCircle,
     Power,
     PowerOff,
@@ -15,6 +17,7 @@ import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import {
+    type HostConfig,
     type HostStats,
     type OperationFailure,
     state,
@@ -661,6 +664,7 @@ const buildHostUpdateCommands = (
 
 const HostInfoSection = (props: {
     hostStats: HostStats | undefined;
+    hostConfig: HostConfig | undefined;
     isOnline: boolean;
 }) => {
     const lastOnline = props.hostStats?.lastOnline ?? null;
@@ -724,6 +728,41 @@ const HostInfoSection = (props: {
                         {props.hostStats?.scriptPath}
                     </dd>
                 </Show>
+                <dt
+                    class="font-medium text-black dark:text-[#cccccc]"
+                    title="Whether the coordinator periodically re-enforces the desired host state, beyond reacting to lease changes."
+                >
+                    Enforce state
+                </dt>
+                <dd
+                    class="text-[#616161] dark:text-[#9d9d9d] inline-flex items-center gap-1"
+                    title={
+                        props.hostConfig?.enforceState
+                            ? 'Enabled — the coordinator periodically checks and corrects the host power state to match the current lease set, even without a lease change.'
+                            : 'Disabled — the coordinator only reacts to lease changes (edge-triggered). It will not periodically re-check or correct the host state.'
+                    }
+                >
+                    <Show
+                        when={props.hostConfig?.enforceState}
+                        fallback={
+                            <>
+                                <CircleDashed
+                                    size={14}
+                                    class="text-[#9d9d9d]"
+                                    aria-hidden="true"
+                                />
+                                No
+                            </>
+                        }
+                    >
+                        <Crosshair
+                            size={14}
+                            class="text-green-600 dark:text-[rgba(46,193,100,0.9)]"
+                            aria-hidden="true"
+                        />
+                        Yes
+                    </Show>
+                </dd>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Last online
                 </dt>
@@ -900,6 +939,8 @@ export const HostDetailPage = (() => {
         state.dbData.status === 'available'
             ? state.dbData.payload.hostStats[hostname()]
             : undefined;
+    const hostConfig = (): HostConfig | undefined =>
+        state.hostConfigMap[hostname()];
 
     const updateLease = async (action: 'take' | 'release') => {
         if (isDemoMode) {
@@ -972,9 +1013,10 @@ export const HostDetailPage = (() => {
                         </div>
                     </div>
 
-                    <Show when={state.dbData.status === 'available'}>
+                    <Show when={state.dbData.status === 'available' || hostConfig() !== undefined}>
                         <HostInfoSection
                             hostStats={hostStats()}
+                            hostConfig={hostConfig()}
                             isOnline={status() === 'online'}
                         />
                     </Show>

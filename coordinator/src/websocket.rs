@@ -42,6 +42,13 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
     false
 }
 
+/// Subset of per-host configuration that is safe to expose to the frontend.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FrontendHostConfig {
+    pub enforce_state: bool,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "status", content = "payload")]
 pub enum DbDataState {
@@ -77,6 +84,7 @@ pub enum WsMessage {
         lease_map: LeaseMap,
         db_data: DbDataState,
         operation_failures: OperationFailureMap,
+        host_configs: HashMap<String, FrontendHostConfig>,
     },
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
@@ -246,6 +254,18 @@ async fn send_startup_msg(
 
     let hosts = config.hosts.keys().cloned().collect();
     let clients = config.clients.keys().cloned().collect();
+    let host_configs = config
+        .hosts
+        .iter()
+        .map(|(name, host)| {
+            (
+                name.clone(),
+                FrontendHostConfig {
+                    enforce_state: host.enforce_state,
+                },
+            )
+        })
+        .collect();
     let leases = (*current_leases.snapshot()).clone();
     let db_data = if let Some(pool) = db_pool {
         let client_stats = db::get_all_client_stats(pool).await;
@@ -282,6 +302,7 @@ async fn send_startup_msg(
         lease_map: leases,
         db_data,
         operation_failures: operation_failures.as_ref().clone(),
+        host_configs,
     };
 
     send_ws_message(socket, &initial_msg)
