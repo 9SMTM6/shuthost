@@ -56,6 +56,7 @@ fn needs_update(current: &str, latest_tag: &str) -> Option<bool> {
     let current_str = current_base.strip_prefix('v').unwrap_or(current_base);
 
     let latest = Version::parse(latest_str).ok()?;
+    #[expect(clippy::shadow_unrelated, reason = "false positive")]
     let current = Version::parse(current_str).ok()?;
     Some(latest > current)
 }

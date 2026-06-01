@@ -735,7 +735,7 @@ mod tests {
                     "StartupBroadcast while control_active must set coordinator_initiated"
                 );
             }
-            _ => panic!("expected StateChanged"),
+            HostEventType::LeaseChanged { .. } => panic!("expected StateChanged"),
         }
     }
 
@@ -760,7 +760,7 @@ mod tests {
                     "StartupBroadcast without control_active must NOT set coordinator_initiated"
                 );
             }
-            _ => panic!("expected StateChanged"),
+            HostEventType::LeaseChanged { .. } => panic!("expected StateChanged"),
         }
     }
 }

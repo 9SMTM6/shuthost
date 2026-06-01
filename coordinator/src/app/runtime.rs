@@ -713,7 +713,7 @@ async fn report_unscheduled_events(
         let event = next_broadcast_event!(events_rx.recv().await, "report_unscheduled_events");
 
         // Keep current_leases up-to-date from lease events in the same stream.
-        if let HostEventType::LeaseChanged { all_leases, .. } = &event.event {
+        if let &HostEventType::LeaseChanged { ref all_leases, .. } = &event.event {
             current_leases = Arc::clone(all_leases);
             continue;
         }
@@ -1153,7 +1153,10 @@ mod tests {
         // Unscheduled only when no leases are held
         let empty = Arc::new(LeaseMap::new());
         let e = make_state_event("h", HostState::Offline, HostState::Online, false);
-        assert_eq!(unscheduled_transition_to(&e, &empty), Some(HostState::Online));
+        assert_eq!(
+            unscheduled_transition_to(&e, &empty),
+            Some(HostState::Online)
+        );
         let held = leases_for("h", vec![LeaseSource::WebInterface].into_iter().collect());
         assert!(unscheduled_transition_to(&e, &held).is_none());
     }
@@ -1163,7 +1166,10 @@ mod tests {
         // Unscheduled only when leases are still held
         let e = make_state_event("h", HostState::Online, HostState::Offline, false);
         let held = leases_for("h", vec![LeaseSource::WebInterface].into_iter().collect());
-        assert_eq!(unscheduled_transition_to(&e, &held), Some(HostState::Offline));
+        assert_eq!(
+            unscheduled_transition_to(&e, &held),
+            Some(HostState::Offline)
+        );
         let empty = Arc::new(LeaseMap::new());
         assert!(unscheduled_transition_to(&e, &empty).is_none());
     }
