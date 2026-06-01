@@ -63,14 +63,14 @@ build_linux_host_agents:
 
 [macos]
 [group('setup')]
-build_all__nix_host_agents:
+build_all_nix_host_agents:
     cargo build --release --bin shuthost_host_agent --target aarch64-apple-darwin
     cargo build --release --bin shuthost_host_agent --target x86_64-apple-darwin
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc cargo build --release --bin shuthost_host_agent --target x86_64-unknown-linux-musl
     CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc cargo build --release --bin shuthost_host_agent --target aarch64-unknown-linux-musl
 
 [group('devops')]
-deploy_branch_on_metal:
+deploy_branch_on_metal: build_all_nix_host_agents
     unset DATABASE_URL && cargo build --release --bin shuthost_coordinator --features include_linux_agents,include_macos_agents && sudo ./target/release/shuthost_coordinator install --port 8081
 
 [group('devops')]
