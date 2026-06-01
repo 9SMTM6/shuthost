@@ -35,7 +35,7 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     }
 
     let binary_path = env::current_exe().map_err_to_string_simple()?;
-    let target_bin = Path::new("/usr/sbin/").join(name);
+    let target_bin = Path::new("/usr/local/sbin/").join(name);
     let init_script_path = PathBuf::from(get_service_path(name));
 
     // Stop and remove any existing service
