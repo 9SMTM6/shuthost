@@ -718,40 +718,11 @@ async fn report_unscheduled_events(
             continue;
         }
 
-        let HostEventType::StateChanged {
-            from,
-            to,
-            coordinator_initiated,
-        } = event.event
-        else {
+        let Some(to) = unscheduled_transition_to(&event, &current_leases) else {
             continue;
         };
-
-        // Fast-path: changes driven by the coordinator are never "unscheduled".
-        // This also covers the race where a lease is taken and a WoL control task
-        // is in-flight at the same time the host boots.
-        if coordinator_initiated {
-            continue;
-        }
-
-        let has_leases = current_leases
-            .get(&event.host)
-            .is_some_and(|s| !s.is_empty());
 
         use HostState as HS;
-
-        let is_unscheduled = match (from, to) {
-            // Host came online without the coordinator waking it.
-            (HS::Offline, HS::Online) => !has_leases,
-            // Host went offline while the coordinator expected it to stay up.
-            (HS::Online, HS::Offline) => has_leases,
-            _ => false,
-        };
-
-        if !is_unscheduled {
-            continue;
-        }
-
         let notification_event = match to {
             HS::Online => NotificationEvent {
                 host: event.host.clone(),
@@ -1010,6 +981,38 @@ async fn persist_host_override_if_needed(
     }
 }
 
+/// If `event` represents an unscheduled host state transition, returns the target
+/// [`HostState`]; otherwise returns `None`.
+///
+/// A transition is "unscheduled" when it was not driven by the coordinator and
+/// represents a surprising change:
+/// - `Offline → Online` with no active leases (host booted on its own), or
+/// - `Online → Offline` while leases are held (host went offline unexpectedly).
+///
+/// Non-`StateChanged` events, coordinator-initiated transitions, and transitions
+/// involving intermediate states (`Waking`, `ShuttingDown`) all return `None`.
+fn unscheduled_transition_to(event: &FullHostEvent, leases: &LeaseMap) -> Option<HostState> {
+    let HostEventType::StateChanged {
+        from,
+        to,
+        coordinator_initiated,
+    } = event.event
+    else {
+        return None;
+    };
+    if coordinator_initiated {
+        return None;
+    }
+    let has_leases = leases.get(&event.host).is_some_and(|s| !s.is_empty());
+    match (from, to) {
+        // Host came online without the coordinator waking it.
+        (HostState::Offline, HostState::Online) if !has_leases => Some(to),
+        // Host went offline while the coordinator expected it to stay up.
+        (HostState::Online, HostState::Offline) if has_leases => Some(to),
+        _ => None,
+    }
+}
+
 // -------------------------------------------------------------
 // Unit tests for enforcement-related code
 // -------------------------------------------------------------
@@ -1093,6 +1096,76 @@ mod tests {
             ENFORCE_STABILIZATION_THRESHOLD,
             ENFORCE_STABILIZATION_THRESHOLD,
         ));
+    }
+
+    use crate::app::{
+        LeaseMap,
+        host_actor::{FullHostEvent, HostEventType},
+    };
+
+    fn make_state_event(
+        host: &str,
+        from: HostState,
+        to: HostState,
+        coordinator_initiated: bool,
+    ) -> FullHostEvent {
+        FullHostEvent {
+            host: host.to_string(),
+            event: HostEventType::StateChanged {
+                from,
+                to,
+                coordinator_initiated,
+            },
+        }
+    }
+
+    fn leases_for(host: &str, sources: LeaseSources) -> Arc<LeaseMap> {
+        let mut m = LeaseMap::new();
+        m.insert(host.to_string(), sources);
+        Arc::new(m)
+    }
+
+    #[test]
+    fn unscheduled_transition_to_coordinator_initiated_returns_none() {
+        let empty = Arc::new(LeaseMap::new());
+        let e = make_state_event("h", HostState::Offline, HostState::Online, true);
+        assert!(unscheduled_transition_to(&e, &empty).is_none());
+        let e = make_state_event("h", HostState::Online, HostState::Offline, true);
+        let held = leases_for("h", vec![LeaseSource::WebInterface].into_iter().collect());
+        assert!(unscheduled_transition_to(&e, &held).is_none());
+    }
+
+    #[test]
+    fn unscheduled_transition_to_non_state_changed_returns_none() {
+        let empty = Arc::new(LeaseMap::new());
+        let e = FullHostEvent {
+            host: "h".to_string(),
+            event: HostEventType::LeaseChanged {
+                leases: HashSet::new(),
+                all_leases: empty.clone(),
+            },
+        };
+        assert!(unscheduled_transition_to(&e, &empty).is_none());
+    }
+
+    #[test]
+    fn unscheduled_transition_to_offline_to_online() {
+        // Unscheduled only when no leases are held
+        let empty = Arc::new(LeaseMap::new());
+        let e = make_state_event("h", HostState::Offline, HostState::Online, false);
+        assert_eq!(unscheduled_transition_to(&e, &empty), Some(HostState::Online));
+        let held = leases_for("h", vec![LeaseSource::WebInterface].into_iter().collect());
+        assert!(unscheduled_transition_to(&e, &held).is_none());
+    }
+
+    #[test]
+    fn unscheduled_transition_to_online_to_offline() {
+        // Unscheduled only when leases are still held
+        let e = make_state_event("h", HostState::Online, HostState::Offline, false);
+        let held = leases_for("h", vec![LeaseSource::WebInterface].into_iter().collect());
+        assert_eq!(unscheduled_transition_to(&e, &held), Some(HostState::Offline));
+        let empty = Arc::new(LeaseMap::new());
+        assert!(unscheduled_transition_to(&e, &empty).is_none());
     }
 
     #[test]
