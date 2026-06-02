@@ -14,7 +14,7 @@ build_musl() {
         shuthost-builder sh -c "\
             set -e
             # build with coverage support
-            eval \"\$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)\"
+            eval \"\$(cargo llvm-cov show-env --sh --remap-path-prefix)\"
             cargo build --bin shuthost_host_agent
             # copy agent debug build to release path for inclusion in coordinator
             cp ./target/debug/shuthost_host_agent ./target/x86_64-unknown-linux-musl/release/
@@ -27,7 +27,7 @@ build_musl() {
 build_gnu() {
     # Check if the cargo llvm-cov subcommand exists and set up the environment
     if cargo llvm-cov --help > /dev/null 2>&1; then
-        eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
+        eval "$(cargo llvm-cov show-env --sh --remap-path-prefix)"
     fi
     mkdir -p target/x86_64-unknown-linux-musl/release target/x86_64-unknown-linux-gnu/release target/x86_64-unknown-linux-gnu/debug/
 
