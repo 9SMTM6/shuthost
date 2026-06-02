@@ -38,6 +38,10 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     let target_bin = Path::new("/usr/local/sbin/").join(name);
     let init_script_path = PathBuf::from(get_service_path(name));
 
+    if let Some(parent) = target_bin.parent() {
+        fs::create_dir_all(parent).map_err_to_string_simple()?;
+    }
+
     // Stop and remove any existing service
     // Attempt to stop the service if it's running, but don't fail if it isn't
     match Command::new("rc-service")

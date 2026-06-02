@@ -38,6 +38,10 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     let target_bin = PathBuf::from("/usr/local/sbin/").join(name);
     let service_name = format!("{name}.service");
 
+    if let Some(parent) = target_bin.parent() {
+        fs::create_dir_all(parent).map_err_to_string_simple()?;
+    }
+
     // Stop potentially existing service it before overwriting
     match Command::new("systemctl")
         .arg("stop")
