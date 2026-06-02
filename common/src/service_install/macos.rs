@@ -39,6 +39,10 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
     let label = format!("com.github_9smtm6.{name}");
     let plist_path = PathBuf::from(get_service_path(name));
 
+    if let Some(parent) = target_bin.parent() {
+        fs::create_dir_all(parent).map_err_to_string_simple()?;
+    }
+
     fs::copy(&binary_path, &target_bin).map_err_to_string_simple()?;
     println!("Installed binary to {target_bin:?}");
     // Set binary permissions to 0755 (root can write, others can read/execute)
