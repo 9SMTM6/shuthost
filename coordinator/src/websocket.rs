@@ -61,6 +61,18 @@ pub enum DbDataState {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct InitialPayload {
+    pub hosts: Vec<String>,
+    pub clients: Vec<String>,
+    pub status_map: HostStatus,
+    pub lease_map: LeaseMap,
+    pub db_data: DbDataState,
+    pub operation_failures: OperationFailureMap,
+    pub host_configs: HashMap<String, FrontendHostConfig>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "payload")]
 pub enum WsMessage {
     /// Gets sent on host status changes
@@ -76,16 +88,7 @@ pub enum WsMessage {
         clients: Vec<String>,
     },
     /// Send the entire state in the beginning to bootstrap the web client UI.
-    #[serde(rename_all = "camelCase")]
-    Initial {
-        hosts: Vec<String>,
-        clients: Vec<String>,
-        status_map: HostStatus,
-        lease_map: LeaseMap,
-        db_data: DbDataState,
-        operation_failures: OperationFailureMap,
-        host_configs: HashMap<String, FrontendHostConfig>,
-    },
+    Initial(Box<InitialPayload>),
     /// Gets sent on Lease status updates
     LeaseUpdate { host: String, leases: LeaseSources },
     /// Gets sent when a host's last control operation failure state changes.
@@ -295,7 +298,7 @@ async fn send_startup_msg(
     } else {
         DbDataState::Disabled
     };
-    let initial_msg = WsMessage::Initial {
+    let initial_msg = WsMessage::Initial(Box::new(InitialPayload {
         hosts,
         clients,
         status_map,
@@ -303,7 +306,7 @@ async fn send_startup_msg(
         db_data,
         operation_failures: operation_failures.as_ref().clone(),
         host_configs,
-    };
+    }));
 
     send_ws_message(socket, &initial_msg)
         .in_current_span()
