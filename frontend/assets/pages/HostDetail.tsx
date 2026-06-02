@@ -703,7 +703,10 @@ const HostInfoSection = (props: {
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Agent version
                 </dt>
-                <dd class="text-[#616161] dark:text-[#9d9d9d]" title={agentVersionNote}>
+                <dd
+                    class="text-[#616161] dark:text-[#9d9d9d]"
+                    title={agentVersionNote}
+                >
                     {agentVersion}
                 </dd>
                 <Show when={agentVersionNote != null}>
@@ -714,7 +717,10 @@ const HostInfoSection = (props: {
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Init system
                 </dt>
-                <dd class="text-[#616161] dark:text-[#9d9d9d]" title={initSystemNote}>
+                <dd
+                    class="text-[#616161] dark:text-[#9d9d9d]"
+                    title={initSystemNote}
+                >
                     {
                         (
                             {
@@ -1046,7 +1052,12 @@ export const HostDetailPage = (() => {
                         </div>
                     </div>
 
-                    <Show when={state.dbData.status === 'available' || hostConfig() !== undefined}>
+                    <Show
+                        when={
+                            state.dbData.status === 'available' ||
+                            hostConfig() !== undefined
+                        }
+                    >
                         <HostInfoSection
                             hostStats={hostStats()}
                             hostConfig={hostConfig()}
