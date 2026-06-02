@@ -9,7 +9,7 @@ perms = "640"
 type = "ASCII text"
 
 [[files]]
-path = "/usr/sbin/shuthost_host_agent"
+path = "/usr/local/sbin/shuthost_host_agent"
 perms = "755"
 type = "ELF 64-bit LSB pie executable"
 

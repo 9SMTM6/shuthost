@@ -9,7 +9,7 @@ perms = "777"
 type = "symbolic link to /etc/init.d/shuthost_host_agent"
 
 [[files]]
-path = "/usr/sbin/shuthost_host_agent"
+path = "/usr/local/sbin/shuthost_host_agent"
 perms = "755"
 type = "ELF 64-bit LSB pie executable"
 
