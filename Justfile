@@ -95,7 +95,7 @@ export SQLX_OFFLINE := "true"
 coverage:
     export COVERAGE=1
     export SKIP_BUILD=1
-    eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
+    eval "$(cargo llvm-cov show-env --sh --remap-path-prefix)"
     # note: removes binaries too (only in combination with previous line)
     cargo llvm-cov clean --workspace
     # note: building for a provided target instead of native
