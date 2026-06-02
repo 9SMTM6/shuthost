@@ -16,6 +16,9 @@ test.describe('mobile navigation', () => {
         });
         await page.waitForLoadState('networkidle');
 
+        // Redact version for stable snapshots
+        await sanitizeVersion(page);
+
         await expect(page).toHaveScreenshot(`mobile-navigation.png`);
     });
 
