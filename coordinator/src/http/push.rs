@@ -591,6 +591,42 @@ pub(crate) async fn send_push_notifications(
     }
 }
 
+fn build_push_request(
+    sub: &db::PushSubscription,
+    vapid_key: &Arc<ES256KeyPair>,
+    payload: &str,
+) -> Result<reqwest::Request, String> {
+    let builder = build_web_push_builder(&sub.endpoint, &sub.p256dh, &sub.auth)
+        .map_err(|e| e.to_string())?;
+
+    let request = builder
+        .with_vapid(vapid_key, "mailto:push@localhost")
+        .build(payload.as_bytes())
+        .map_err(|e| format!("Failed to build push request: {e:?}"))?;
+
+    reqwest::Request::try_from(request)
+        .map_err(|e| format!("Failed to convert push request: {e}"))
+}
+
+async fn handle_push_response(
+    pool: &db::DbPool,
+    sub: &db::PushSubscription,
+    resp: reqwest::Response,
+) {
+    match resp.status().as_u16() {
+        200..=299 => {}
+        404 | 410 => {
+            warn!(endpoint = %sub.endpoint, "Push subscription expired, removing");
+            if let Err(e) = db::delete_push_subscription(pool, &sub.endpoint).await {
+                error!("Failed to delete expired subscription: {e:#}");
+            }
+        }
+        status => {
+            error!(endpoint = %sub.endpoint, "Push notification failed with status {status}");
+        }
+    }
+}
+
 async fn send_one_push_notification(
     client: &reqwest::Client,
     vapid_key: &Arc<ES256KeyPair>,
@@ -598,46 +634,16 @@ async fn send_one_push_notification(
     sub: &db::PushSubscription,
     payload: &str,
 ) {
-    let builder = match build_web_push_builder(&sub.endpoint, &sub.p256dh, &sub.auth) {
-        Ok(b) => b,
+    let reqwest_req = match build_push_request(sub, vapid_key, payload) {
+        Ok(r) => r,
         Err(e) => {
             error!(endpoint = %sub.endpoint, "{e}");
             return;
         }
     };
 
-    let request = match builder
-        .with_vapid(vapid_key, "mailto:push@localhost")
-        .build(payload.as_bytes())
-    {
-        Ok(r) => r,
-        Err(e) => {
-            error!(endpoint = %sub.endpoint, "Failed to build push request: {e:?}");
-            return;
-        }
-    };
-
-    let reqwest_req = match reqwest::Request::try_from(request) {
-        Ok(r) => r,
-        Err(e) => {
-            error!(endpoint = %sub.endpoint, "Failed to convert push request: {e}");
-            return;
-        }
-    };
-
     match client.execute(reqwest_req).await {
-        Ok(resp) => match resp.status().as_u16() {
-            200..=299 => {}
-            404 | 410 => {
-                warn!(endpoint = %sub.endpoint, "Push subscription expired, removing");
-                if let Err(e) = db::delete_push_subscription(pool, &sub.endpoint).await {
-                    error!("Failed to delete expired subscription: {e:#}");
-                }
-            }
-            status => {
-                error!(endpoint = %sub.endpoint, "Push notification failed with status {status}");
-            }
-        },
+        Ok(resp) => handle_push_response(pool, sub, resp).await,
         Err(e) => {
             error!(endpoint = %sub.endpoint, "Failed to send push notification: {e}");
         }
