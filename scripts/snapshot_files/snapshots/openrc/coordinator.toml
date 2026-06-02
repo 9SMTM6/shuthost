@@ -39,7 +39,7 @@ perms = "600"
 type = "OpenSSH private key (no password)"
 
 [[files]]
-path = "/usr/sbin/shuthost_coordinator"
+path = "/usr/local/sbin/shuthost_coordinator"
 perms = "755"
 type = "ELF 64-bit LSB pie executable"
 
