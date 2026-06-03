@@ -353,6 +353,9 @@ body {
         .alert-title {
             @apply font-semibold mb-1;
         }
+        a {
+            @apply underline decoration-2;
+        }
         &.alert-warning {
             @apply bg-[#fff3cc] border-l-4 border-[#ffc107] text-[#6b4500] dark:bg-[rgba(204,167,0,0.10)] dark:border-[#cca700] dark:text-[#ffd54f];
         }
