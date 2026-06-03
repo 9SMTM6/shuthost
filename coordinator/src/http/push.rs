@@ -596,16 +596,15 @@ fn build_push_request(
     vapid_key: &Arc<ES256KeyPair>,
     payload: &str,
 ) -> Result<reqwest::Request, String> {
-    let builder = build_web_push_builder(&sub.endpoint, &sub.p256dh, &sub.auth)
-        .map_err(|e| e.to_string())?;
+    let builder =
+        build_web_push_builder(&sub.endpoint, &sub.p256dh, &sub.auth).map_err(|e| e.to_string())?;
 
     let request = builder
         .with_vapid(vapid_key, "mailto:push@localhost")
         .build(payload.as_bytes())
         .map_err(|e| format!("Failed to build push request: {e:?}"))?;
 
-    reqwest::Request::try_from(request)
-        .map_err(|e| format!("Failed to convert push request: {e}"))
+    reqwest::Request::try_from(request).map_err(|e| format!("Failed to convert push request: {e}"))
 }
 
 async fn handle_push_response(
