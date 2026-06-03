@@ -44,7 +44,11 @@
               - text: BSD-based systems are not currently supported.
         - note "Wake-on-LAN (WOL) Requirements":
           - heading "💡 Wake-on-LAN (WOL) Requirements" [level=3]
-          - paragraph: "The agent requires Wake-on-LAN for remote startup functionality:"
+          - paragraph:
+            - text: The agent requires Wake-on-LAN for remote startup functionality. I recommend the
+            - link "Arch Wiki":
+              - /url: https://wiki.archlinux.org/title/Wake-on-LAN
+            - text: for configuration guidance.
           - list:
             - listitem:
               - strong: "Motherboard Support:"
@@ -54,8 +58,14 @@
                   - strong: "BIOS Configuration:"
                   - text: WOL must be enabled (and thus available, which isnt guaranteed, e.g. Raspberry Pi) in BIOS/UEFI settings.
                 - listitem:
+                  - strong: "ErP / Energy Saving:"
+                  - text: Energy Saving features, especially ErP, can prevent Wake-on-LAN from working.
+                - listitem:
                   - strong: "Power State Limitation:"
                   - text: Some systems only support WOL from sleep mode, not full shutdown.
+                - listitem:
+                  - strong: "Power Loss Behavior:"
+                  - text: Many motherboards also require a clean shutdown of the OS after power loss. Most UEFIs which support WoL also offer a "start after power loss" option; which will let your system recover after power loss.
             - listitem:
               - strong: "OS Configuration:"
               - text: WOL must be enabled in the operating system.
