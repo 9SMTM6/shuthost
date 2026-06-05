@@ -2,7 +2,10 @@
 
 use core::time::Duration;
 
-use tokio::{process, time::{sleep, timeout}};
+use tokio::{
+    process,
+    time::{sleep, timeout},
+};
 use tracing::warn;
 
 use crate::config::{HookAction, HookConfig};
@@ -30,15 +33,7 @@ pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
             ref method,
             ref body,
         } => {
-            run_http(
-                host_name,
-                label,
-                url,
-                method,
-                body.as_deref(),
-                timeout_d,
-            )
-            .await;
+            run_http(host_name, label, url, method, body.as_deref(), timeout_d).await;
         }
     }
 }
@@ -51,7 +46,11 @@ async fn run_exec(
     args: &[String],
     timeout_d: Duration,
 ) {
-    let result = timeout(timeout_d, process::Command::new(program).args(args).output()).await;
+    let result = timeout(
+        timeout_d,
+        process::Command::new(program).args(args).output(),
+    )
+    .await;
 
     match result {
         Err(_elapsed) => {
