@@ -36,6 +36,9 @@ pub(crate) enum HookAction {
         /// Optional request body sent as a raw string.
         #[serde(default)]
         body: Option<String>,
+        /// Optional delay in seconds before sending the HTTP request.
+        #[serde(default)]
+        delay_secs: u64,
     },
 }
 
@@ -59,9 +62,13 @@ pub(crate) struct HookConfig {
     /// The action to execute.
     #[serde(flatten)]
     pub action: HookAction,
-    /// Timeout in seconds for this hook. Defaults to 30 seconds when omitted.
-    #[serde(default)]
-    pub timeout_secs: Option<u64>,
+    /// Timeout in seconds for this hook.
+    #[serde(default = "default_hook_timeout_secs")]
+    pub timeout_secs: u64,
+}
+
+const fn default_hook_timeout_secs() -> u64 {
+    30
 }
 
 /// Represents a configured host entry with network and security parameters.

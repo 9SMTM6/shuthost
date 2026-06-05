@@ -1,8 +1,8 @@
---- example_config.toml	2026-05-29 15:03:56.184457582 +0200
-+++ example_config_webhooks.toml	2026-05-30 13:28:53.128616925 +0200
-@@ -209,37 +209,37 @@
- #     post_shutdown.method = "POST"        # optional; defaults to POST
+--- example_config.toml	2026-06-05 17:33:44.944842659 +0200
++++ example_config_webhooks.toml	2026-06-05 17:52:54.229298117 +0200
+@@ -210,37 +210,37 @@
  #     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
+ #     post_shutdown.delay_secs = 5         # optional, HTTP hooks only; wait before sending request
  
 -# # =============================================================================
 -# # NOTIFICATIONS CONFIGURATION

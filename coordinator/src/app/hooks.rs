@@ -2,34 +2,41 @@
 
 use core::time::Duration;
 
-use tokio::{process, time::timeout};
+use tokio::{process, time::{sleep, timeout}};
 use tracing::warn;
 
 use crate::config::{HookAction, HookConfig};
-
-/// Default timeout in seconds for hook execution when not specified in config.
-const DEFAULT_HOOK_TIMEOUT_SECS: u64 = 30;
 
 /// Execute a hook action, waiting for it to complete before returning.
 ///
 /// Fail-open: errors are logged as warnings but never propagate. The caller
 /// always proceeds regardless of whether the hook succeeded.
 pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
-    let timeout = Duration::from_secs(hook.timeout_secs.unwrap_or(DEFAULT_HOOK_TIMEOUT_SECS));
+    let timeout_d = Duration::from_secs(hook.timeout_secs);
 
     match hook.action {
         HookAction::Exec {
             ref program,
             ref args,
         } => {
-            run_exec(host_name, label, program, args, timeout).await;
+            run_exec(host_name, label, program, args, timeout_d).await;
         }
         HookAction::Http {
             ref url,
             ref method,
             ref body,
+            delay_secs,
         } => {
-            run_http(host_name, label, url, method, body.as_deref(), timeout).await;
+            run_http(
+                host_name,
+                label,
+                url,
+                method,
+                body.as_deref(),
+                delay_secs,
+                timeout_d,
+            )
+            .await;
         }
     }
 }
@@ -40,9 +47,9 @@ async fn run_exec(
     label: &str,
     program: &str,
     args: &[String],
-    duration: Duration,
+    timeout_d: Duration,
 ) {
-    let result = timeout(duration, process::Command::new(program).args(args).output()).await;
+    let result = timeout(timeout_d, process::Command::new(program).args(args).output()).await;
 
     match result {
         Err(_elapsed) => {
@@ -71,12 +78,17 @@ async fn run_http(
     url: &reqwest::Url,
     method: &reqwest::Method,
     body: Option<&str>,
-    timeout: Duration,
+    delay_secs: u64,
+    timeout_d: Duration,
 ) {
+    if delay_secs > 0 {
+        sleep(Duration::from_secs(delay_secs)).await;
+    }
+
     let client = reqwest::Client::new();
     let req_method = method.clone();
 
-    let mut builder = client.request(req_method, url.clone()).timeout(timeout);
+    let mut builder = client.request(req_method, url.clone()).timeout(timeout_d);
 
     if let Some(b) = body {
         builder = builder.body(b.to_owned());

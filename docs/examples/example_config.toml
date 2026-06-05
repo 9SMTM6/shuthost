@@ -200,7 +200,7 @@ bind = "127.0.0.1"
 #     #   The built-in WoL resend loop should handle most initialisation gaps
 #     pre_startup.type = "exec"
 #     pre_startup.program = "/usr/local/bin/power-on.sh"
-#     pre_startup.args = ["outlet-3"]      # optional; list of arguments
+#     pre_startup.args = ["outlet-3"]      # optional; exec hook only; list of arguments
 #     pre_startup.timeout_secs = 30        # optional, on both hook types; defaults to 30 s
 #     # [post_shutdown] This hook is executed after the host is confirmed offline.
 #     #   Not executed when shutdown times out or the agent is unreachable.
@@ -208,6 +208,7 @@ bind = "127.0.0.1"
 #     post_shutdown.url = "http://192.168.1.50/relay/0?turn=off"   # e.g. Shelly Gen1
 #     post_shutdown.method = "POST"        # optional; defaults to POST
 #     post_shutdown.body = '{"on":false}'  # optional; raw string body for POST requests
+#     post_shutdown.delay_secs = 5         # optional, HTTP hooks only; wait before sending request
 
 # # =============================================================================
 # # NOTIFICATIONS CONFIGURATION
