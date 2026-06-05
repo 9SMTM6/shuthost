@@ -1,9 +1,6 @@
---- example_config.toml	2026-05-29 15:03:56.184457582 +0200
-+++ example_config_external.toml	2026-05-30 13:28:53.122188790 +0200
-@@ -66,18 +66,18 @@
- # The default if none is configured is no authentication!
- # Only one authentication mode can be active at a time.
- 
+--- example_config.toml	2026-06-05 18:46:47.014514834 +0200
++++ example_config_external.toml	2026-06-05 18:13:40.184905447 +0200
+@@ -69,12 +69,12 @@
 -# TOKEN-BASED AUTHENTICATION
 -# Simple token authentication.
 -# If token is omitted or set to null, a random token will be generated and logged on startup.
@@ -28,13 +25,7 @@
 +# # If omitted, a random key is generated on startup and persisted to database if available.
 +# # Generate a secure key with: openssl rand -base64 32
 +# # cookie_secret = "base64-encoded-32-byte-key-here"
- 
- # # ALTERNATIVE: OPENID CONNECT (OIDC) AUTHENTICATION
- # # OIDC authentication using authorization code flow with PKCE as a confidential client.
-@@ -98,13 +98,13 @@
- # # Generate a secure key with: openssl rand -base64 32
- # # cookie_secret = "base64-encoded-32-byte-key-here"
- 
+@@ -101,7 +101,7 @@
 -# # EXTERNAL AUTHENTICATION
 -# # Use when authentication is handled by a reverse proxy or external provider.
 -# # The coordinator will trust the proxy to authenticate requests.
@@ -49,6 +40,3 @@
 +# The exceptions_version tracks which set of exceptions you've configured.
 +[server.auth.external]
 +exceptions_version = 0
- 
- # # =============================================================================
- # # RUNTIME CONFIGURATION

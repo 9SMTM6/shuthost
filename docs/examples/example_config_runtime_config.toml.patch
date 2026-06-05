@@ -1,9 +1,6 @@
---- example_config.toml	2026-05-29 15:03:56.184457582 +0200
-+++ example_config_runtime_config.toml	2026-05-30 13:28:53.125057648 +0200
-@@ -106,32 +106,32 @@
- # [server.auth.external]
- # exceptions_version = 0
- 
+--- example_config.toml	2026-06-05 18:46:47.014514834 +0200
++++ example_config_runtime_config.toml	2026-06-05 18:13:40.188103552 +0200
+@@ -109,26 +109,26 @@
 -# # =============================================================================
 -# # RUNTIME CONFIGURATION
 -# # =============================================================================
@@ -56,6 +53,3 @@
 +# Only relevant when `enforce_state = true` on one or more hosts.
 +# Default: 5
 +enforce_stabilization_threshold_secs = 5
- 
- # =============================================================================
- # DATABASE CONFIGURATION
