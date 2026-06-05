@@ -268,24 +268,6 @@ const NotifyOperationFailedButton = (props: { hostname: string }) => {
             >
                 {description}
             </p>
-            <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] text-center max-w-[20rem]">
-                Experimental: subscriptions for failed operations are still
-                experimental.
-                <a
-                    class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
-                    href={safeExternalUrl(
-                        `${buildData.repository}/issues/new?title=${encodeURIComponent(
-                            `Feedback: failed operations subscription for ${props.hostname}`,
-                        )}&body=${encodeURIComponent(
-                            'Describe what happened and include steps to reproduce if possible.',
-                        )}`,
-                    )}
-                    target="_blank"
-                    rel="external noopener noreferrer"
-                >
-                    Give feedback
-                </a>
-            </p>
             <Show when={error() !== null}>
                 <span
                     class="text-xs text-red-500 dark:text-[#f48771]"
@@ -555,24 +537,6 @@ const NotifyDurationButton = (props: {
                     {isPermanentlySubscribed() ? 'unsubscribe' : 'always'}
                 </button>
             </div>
-            <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] text-center max-w-[20rem]">
-                Experimental: recurring and one-time "notify after online"
-                subscriptions are still experimental.
-                <a
-                    class="text-xs text-blue-600 dark:text-blue-400 underline ml-1"
-                    href={safeExternalUrl(
-                        `${buildData.repository}/issues/new?title=${encodeURIComponent(
-                            `Feedback: notify-after-online subscription for ${props.hostname}`,
-                        )}&body=${encodeURIComponent(
-                            'Describe what happened and include steps to reproduce if possible.',
-                        )}`,
-                    )}
-                    target="_blank"
-                    rel="external noopener noreferrer"
-                >
-                    Give feedback
-                </a>
-            </p>
             {/* Feedback */}
             <Show when={oneshotSuccess()}>
                 <span
