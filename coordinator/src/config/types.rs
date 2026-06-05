@@ -36,10 +36,21 @@ pub(crate) enum HookAction {
         /// Optional request body sent as a raw string.
         #[serde(default)]
         body: Option<String>,
-        /// Optional delay in seconds before sending the HTTP request.
-        #[serde(default)]
-        delay_secs: u64,
     },
+}
+
+/// Configuration for a single pre-startup or post-shutdown hook.
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub(crate) struct HookConfig {
+    /// The action to execute.
+    #[serde(flatten)]
+    pub action: HookAction,
+    /// Optional delay in seconds before executing the hook.
+    #[serde(default)]
+    pub delay_secs: u64,
+    /// Timeout in seconds for this hook.
+    #[serde(default = "default_hook_timeout_secs")]
+    pub timeout_secs: u64,
 }
 
 #[expect(non_snake_case, reason = "Used as serde(default)")]
@@ -54,17 +65,6 @@ where
 {
     let s = String::deserialize(de)?;
     reqwest::Method::from_bytes(s.as_bytes()).map_err(de::Error::custom)
-}
-
-/// Configuration for a single pre-startup or post-shutdown hook.
-#[derive(Debug, Deserialize, Clone, PartialEq)]
-pub(crate) struct HookConfig {
-    /// The action to execute.
-    #[serde(flatten)]
-    pub action: HookAction,
-    /// Timeout in seconds for this hook.
-    #[serde(default = "default_hook_timeout_secs")]
-    pub timeout_secs: u64,
 }
 
 const fn default_hook_timeout_secs() -> u64 {

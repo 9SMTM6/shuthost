@@ -266,6 +266,7 @@ mod tests {
                     program: "/usr/local/bin/power-on.sh".to_string(),
                     args: vec!["outlet-3".to_string()],
                 },
+                delay_secs: 5,
                 timeout_secs: 30,
             }
         );
@@ -281,8 +282,8 @@ mod tests {
                     url: "http://192.168.1.50/relay/0?turn=off".parse().unwrap(),
                     method: reqwest::Method::POST,
                     body: Some("{\"on\":false}".to_string()),
-                    delay_secs: 5,
                 },
+                delay_secs: 0,
                 timeout_secs: 30,
             }
         );

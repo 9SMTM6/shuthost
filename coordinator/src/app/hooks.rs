@@ -14,6 +14,10 @@ use crate::config::{HookAction, HookConfig};
 pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
     let timeout_d = Duration::from_secs(hook.timeout_secs);
 
+    if hook.delay_secs > 0 {
+        sleep(Duration::from_secs(hook.delay_secs)).await;
+    }
+
     match hook.action {
         HookAction::Exec {
             ref program,
@@ -25,7 +29,6 @@ pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
             ref url,
             ref method,
             ref body,
-            delay_secs,
         } => {
             run_http(
                 host_name,
@@ -33,7 +36,6 @@ pub(crate) async fn run_hook(host_name: &str, label: &str, hook: &HookConfig) {
                 url,
                 method,
                 body.as_deref(),
-                delay_secs,
                 timeout_d,
             )
             .await;
@@ -78,13 +80,8 @@ async fn run_http(
     url: &reqwest::Url,
     method: &reqwest::Method,
     body: Option<&str>,
-    delay_secs: u64,
     timeout_d: Duration,
 ) {
-    if delay_secs > 0 {
-        sleep(Duration::from_secs(delay_secs)).await;
-    }
-
     let client = reqwest::Client::new();
     let req_method = method.clone();
 
