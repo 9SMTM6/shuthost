@@ -31,7 +31,11 @@ const resetLeases = async (clientId: string) => {
         }
         applyMessage({
             type: 'ConfigChanged',
-            payload: { hosts: state.hosts, clients: state.clients },
+            payload: {
+                hosts: state.hosts,
+                clients: state.clients,
+                hostConfigMap: state.hostConfigMap,
+            },
         });
         // Force a LeaseUpdate for each host to clear the demo state
         for (const host of Object.keys(newLeaseMap)) {

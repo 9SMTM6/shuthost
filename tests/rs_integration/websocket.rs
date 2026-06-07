@@ -4,7 +4,7 @@ use core::time::Duration;
 use std::env;
 
 use futures_util::StreamExt as _;
-use shuthost_coordinator::{WsMessage, app::HostState};
+use shuthost_coordinator::{WsMessage, app::HostState, websocket::DynamicConfig};
 use tokio::{fs, time};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
@@ -48,8 +48,9 @@ async fn websocket_config_updates() {
     let initial: WsMessage = serde_json::from_str(&initial_msg.to_string()).unwrap();
     match initial {
         WsMessage::Initial(initial) => {
-            assert!(initial.hosts.is_empty());
-            assert!(initial.clients.is_empty());
+            assert!(initial.dynamic_config.hosts.is_empty());
+            assert!(initial.dynamic_config.clients.is_empty());
+            assert!(initial.dynamic_config.host_config_map.is_empty());
         }
         _ => panic!("Expected Initial message"),
     }
@@ -81,9 +82,16 @@ async fn websocket_config_updates() {
             let msg = msg.unwrap();
             if let Message::Text(text) = msg {
                 let ws_msg: WsMessage = serde_json::from_str(&text).unwrap();
-                if let WsMessage::ConfigChanged { hosts, clients } = ws_msg {
+                if let WsMessage::ConfigChanged(DynamicConfig {
+                    clients,
+                    hosts,
+                    host_config_map,
+                }) = ws_msg
+                {
                     assert_eq!(hosts, vec!["newhost".to_string()]);
                     assert!(clients.is_empty());
+                    assert_eq!(host_config_map.len(), 1);
+                    assert!(!host_config_map["newhost"].enforce_state);
                     config_changed_received = true;
                     break;
                 }

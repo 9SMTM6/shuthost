@@ -62,6 +62,7 @@ export type DbDataState =
 type DynamicConfig = {
     hosts: string[];
     clients: string[];
+    hostConfigMap: Record<string, HostConfig>;
 };
 
 export type AppState = {
@@ -69,7 +70,6 @@ export type AppState = {
     leaseMap: Record<string, LeaseSource[]>;
     dbData: DbDataState;
     operationFailures: Record<string, OperationFailure>;
-    hostConfigMap: Record<string, HostConfig>;
 } & DynamicConfig;
 
 export type OperationFailure = {
@@ -80,7 +80,10 @@ export type WsMessage =
     | { type: 'HostStatus'; payload: StatusMap }
     | { type: 'ClientStats'; payload: Record<string, ClientStats> }
     | { type: 'HostStats'; payload: { host: string; stats: HostStats } }
-    | { type: 'ConfigChanged'; payload: DynamicConfig }
+    | {
+          type: 'ConfigChanged';
+          payload: DynamicConfig;
+      }
     | {
           type: 'Initial';
           payload: AppState;
@@ -127,6 +130,7 @@ export const applyMessage = (message: WsMessage) => {
         case 'ConfigChanged':
             setState('hosts', message.payload.hosts);
             setState('clients', message.payload.clients);
+            setState('hostConfigMap', message.payload.hostConfigMap);
             break;
         case 'LeaseUpdate':
             setState(

@@ -50,6 +50,14 @@ pub struct FrontendHostConfig {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DynamicConfig {
+    pub hosts: Vec<String>,
+    pub clients: Vec<String>,
+    pub host_config_map: HashMap<String, FrontendHostConfig>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "status", content = "payload")]
 pub enum DbDataState {
     Disabled,
@@ -63,13 +71,12 @@ pub enum DbDataState {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct InitialPayload {
-    pub hosts: Vec<String>,
-    pub clients: Vec<String>,
+    #[serde(flatten)]
+    pub dynamic_config: DynamicConfig,
     pub status_map: HostStatus,
     pub lease_map: LeaseMap,
     pub db_data: DbDataState,
     pub operation_failures: OperationFailureMap,
-    pub host_configs: HashMap<String, FrontendHostConfig>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -83,10 +90,7 @@ pub enum WsMessage {
     HostStats { host: String, stats: HostStats },
     /// We watch for select config changes and update the `WebUI` to immediately
     /// reflect additions to hosts/clients.
-    ConfigChanged {
-        hosts: Vec<String>,
-        clients: Vec<String>,
-    },
+    ConfigChanged(DynamicConfig),
     /// Send the entire state in the beginning to bootstrap the web client UI.
     Initial(Box<InitialPayload>),
     /// Gets sent on Lease status updates
@@ -255,20 +259,22 @@ async fn send_startup_msg(
         status_map.entry(host.clone()).or_insert(HostState::Offline);
     }
 
-    let hosts = config.hosts.keys().cloned().collect();
-    let clients = config.clients.keys().cloned().collect();
-    let host_configs = config
-        .hosts
-        .iter()
-        .map(|(name, host)| {
-            (
-                name.clone(),
-                FrontendHostConfig {
-                    enforce_state: host.enforce_state,
-                },
-            )
-        })
-        .collect();
+    let dynamic_config = DynamicConfig {
+        hosts: config.hosts.keys().cloned().collect(),
+        clients: config.clients.keys().cloned().collect(),
+        host_config_map: config
+            .hosts
+            .iter()
+            .map(|(name, host)| {
+                (
+                    name.clone(),
+                    FrontendHostConfig {
+                        enforce_state: host.enforce_state,
+                    },
+                )
+            })
+            .collect(),
+    };
     let leases = (*current_leases.snapshot()).clone();
     let db_data = if let Some(pool) = db_pool {
         let client_stats = db::get_all_client_stats(pool).await;
@@ -299,13 +305,11 @@ async fn send_startup_msg(
         DbDataState::Disabled
     };
     let initial_msg = WsMessage::Initial(Box::new(InitialPayload {
-        hosts,
-        clients,
+        dynamic_config,
         status_map,
         lease_map: leases,
         db_data,
         operation_failures: operation_failures.as_ref().clone(),
-        host_configs,
     }));
 
     send_ws_message(socket, &initial_msg)

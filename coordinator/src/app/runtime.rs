@@ -42,7 +42,7 @@ use crate::{
     },
     config::{Host, StructuredEventFilter, WebhookEventFilter},
     http::push,
-    websocket::WsMessage,
+    websocket::{DynamicConfig, FrontendHostConfig, WsMessage},
 };
 
 use crate::app::{host_control::HostWithName, notifications};
@@ -342,9 +342,23 @@ fn spawn_websocket_forwarders(
     tasks.spawn(async move {
         while config_rx.changed().await.is_ok() {
             let config = config_rx.borrow();
-            let hosts = config.hosts.keys().cloned().collect::<Vec<_>>();
-            let clients = config.clients.keys().cloned().collect::<Vec<_>>();
-            let msg = WsMessage::ConfigChanged { hosts, clients };
+            let dynamic_host_config = DynamicConfig {
+                hosts: config.hosts.keys().cloned().collect::<Vec<_>>(),
+                clients: config.clients.keys().cloned().collect::<Vec<_>>(),
+                host_config_map: config
+                    .hosts
+                    .iter()
+                    .map(|(name, host)| {
+                        (
+                            name.clone(),
+                            FrontendHostConfig {
+                                enforce_state: host.enforce_state,
+                            },
+                        )
+                    })
+                    .collect(),
+            };
+            let msg = WsMessage::ConfigChanged(dynamic_host_config);
             if ws_tx_config.send(msg).is_err() {
                 debug!("No Websocket Subscribers");
             }
