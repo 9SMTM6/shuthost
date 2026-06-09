@@ -1,5 +1,7 @@
 import { demoSubpath } from './demo';
 
+export const noServiceWorkerSupport = !('serviceWorker' in navigator);
+
 /**
  * Registers the service worker as early as possible.
  * Safe to call multiple times — the browser deduplicates registrations for
@@ -9,7 +11,7 @@ import { demoSubpath } from './demo';
  * needed, or ignore it for fire-and-forget registration.
  */
 export const registerServiceWorker = () => {
-    if (!('serviceWorker' in navigator)) {
+    if (noServiceWorkerSupport) {
         return null;
     }
     return navigator.serviceWorker
@@ -26,7 +28,7 @@ export const registerServiceWorker = () => {
  * The caller should prompt the user to reload.
  */
 export const onUpdateAvailable = (callback: () => void) => {
-    if (!('serviceWorker' in navigator)) return;
+    if (noServiceWorkerSupport) return;
     navigator.serviceWorker.addEventListener(
         'message',
         (event: MessageEvent) => {
