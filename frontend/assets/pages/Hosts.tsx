@@ -11,7 +11,7 @@ import { serverData } from '../helpers/serverData';
 import type { AnyComponent } from '../helpers/utils';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
-import { HostStatusBadge } from './HostDetail';
+import { HostStatusBadge } from '../components/HostStatusBadge';
 
 const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
