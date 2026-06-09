@@ -4,7 +4,11 @@ use core::time::Duration;
 use std::env;
 
 use futures_util::StreamExt as _;
-use shuthost_coordinator::{WsMessage, app::HostState, websocket::DynamicConfig};
+use shuthost_coordinator::{
+    WsMessage,
+    app::HostState,
+    websocket::{DynamicConfig, FrontendHookAction},
+};
 use tokio::{fs, time};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
@@ -113,15 +117,17 @@ async fn websocket_config_updates() {
                         .expect("pre_startup hook should be present");
                     assert_eq!(pre_hook.delay_secs, 2);
                     assert_eq!(pre_hook.timeout_secs, 5);
-                    match &pre_hook.action {
-                        shuthost_coordinator::websocket::FrontendHookAction::Http {
-                            url,
-                            method,
+                    match pre_hook.action {
+                        FrontendHookAction::Http {
+                            ref url,
+                            ref method,
                         } => {
                             assert_eq!(url, "https://example.com/pre-startup");
                             assert_eq!(method, "GET");
                         }
-                        _ => panic!("Expected pre_startup HTTP hook"),
+                        FrontendHookAction::Exec { .. } => {
+                            panic!("Expected pre_startup HTTP hook")
+                        }
                     }
 
                     let post_hook = host_config
@@ -130,11 +136,13 @@ async fn websocket_config_updates() {
                         .expect("post_shutdown hook should be present");
                     assert_eq!(post_hook.delay_secs, 1);
                     assert_eq!(post_hook.timeout_secs, 10);
-                    match &post_hook.action {
-                        shuthost_coordinator::websocket::FrontendHookAction::Exec { program } => {
+                    match post_hook.action {
+                        FrontendHookAction::Exec { ref program } => {
                             assert_eq!(program, "/usr/bin/shutdown");
                         }
-                        _ => panic!("Expected post_shutdown exec hook"),
+                        FrontendHookAction::Http { .. } => {
+                            panic!("Expected post_shutdown exec hook")
+                        }
                     }
 
                     config_changed_received = true;

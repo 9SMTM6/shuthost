@@ -1,4 +1,4 @@
-import { applyMessage, WsMessage } from './appStore';
+import { applyMessage, type WsMessage } from './appStore';
 import { buildData } from './buildData';
 import { serverData } from './serverData';
 

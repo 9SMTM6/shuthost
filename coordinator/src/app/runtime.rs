@@ -42,11 +42,7 @@ use crate::{
     },
     config::{Host, StructuredEventFilter, WebhookEventFilter},
     http::push,
-    websocket::{
-        DynamicConfig,
-        FrontendHostConfig,
-        WsMessage,
-    },
+    websocket::{DynamicConfig, FrontendHostConfig, WsMessage},
 };
 
 use crate::app::{host_control::HostWithName, notifications};

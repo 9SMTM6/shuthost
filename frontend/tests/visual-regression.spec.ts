@@ -176,9 +176,12 @@ test.describe('host hooks config', () => {
         const base = getBaseUrl('hooks-hosts');
         await page.goto(`${base}/hosts/archive`);
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('section[aria-labelledby="host-info-title"]', {
-            state: 'visible',
-        });
+        await page.waitForSelector(
+            'section[aria-labelledby="host-info-title"]',
+            {
+                state: 'visible',
+            },
+        );
         await page.waitForSelector('text=Before startup', { state: 'visible' });
         await page.waitForSelector('text=After shutdown', { state: 'visible' });
         const hooksSection = page.locator('dt:has-text("Hooks") + dd');

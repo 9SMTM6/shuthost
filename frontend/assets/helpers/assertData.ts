@@ -54,18 +54,18 @@ export function validateDataAsync<T>(
 
 /** Common type-predicate helpers for use in checker objects. */
 export const is = {
-    string: (v => typeof v === 'string') as Checker<string>,
-    boolean: (v => typeof v === 'boolean') as Checker<boolean>,
-    number: (v => typeof v === 'number') as Checker<number>,
-    optional:
-        <T>(check: Checker<T>) =>
-        (v => v === undefined || v === null|| check(v)) as Checker<T | undefined | null>,
-    literal:
-        <const T extends Literal>(value: T) =>
-        (v => v === value) as Checker<T>,
-    object:
-        <C extends StructChecker>(checks: C) =>
-        (v => typeof v === 'object' &&
+    string: ((v) => typeof v === 'string') as Checker<string>,
+    boolean: ((v) => typeof v === 'boolean') as Checker<boolean>,
+    number: ((v) => typeof v === 'number') as Checker<number>,
+    optional: <T>(check: Checker<T>) =>
+        ((v) => v === undefined || v === null || check(v)) as Checker<
+            T | undefined | null
+        >,
+    literal: <const T extends Literal>(value: T) =>
+        ((v) => v === value) as Checker<T>,
+    object: <C extends StructChecker>(checks: C) =>
+        ((v) =>
+            typeof v === 'object' &&
             v !== null &&
             !Array.isArray(v) &&
             Object.entries(checks).every(([key, check]) =>
@@ -73,19 +73,17 @@ export const is = {
                     ? check((v as Record<string, unknown>)[key])
                     : check === (v as Record<string, unknown>)[key],
             )) as Checker<Infer<C>>,
-    recordOf:
-        <T>(check: Checker<T>) =>
-        (v => typeof v === 'object' &&
+    recordOf: <T>(check: Checker<T>) =>
+        ((v) =>
+            typeof v === 'object' &&
             v !== null &&
             !Array.isArray(v) &&
             Object.values(v).every(check)) as Checker<Record<string, T>>,
     arrayOf: <T>(check: Checker<T>) =>
-        (v => Array.isArray(v) && v.every(check)) as Checker<T[]>,
-    oneOf:
-        <const T extends readonly ComplexCheckerElement[]>(...values: T) =>
-        (v => values.some((value) =>
-                typeof value === 'function'
-                    ? value(v)
-                    : value === v,
+        ((v) => Array.isArray(v) && v.every(check)) as Checker<T[]>,
+    oneOf: <const T extends readonly ComplexCheckerElement[]>(...values: T) =>
+        ((v) =>
+            values.some((value) =>
+                typeof value === 'function' ? value(v) : value === v,
             )) as Checker<InferChecked<T[number]>>,
 };
