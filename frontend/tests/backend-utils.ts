@@ -11,6 +11,7 @@ import path from 'node:path';
 export const CONFIG_KEYS = [
     'hosts-only',
     'hosts-and-clients',
+    'hooks-hosts',
     'nada',
     'auth-none',
     'auth-token',
