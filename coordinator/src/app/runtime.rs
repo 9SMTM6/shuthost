@@ -40,12 +40,10 @@ use crate::{
         notifications::{EventKind, NotificationEvent},
         shared_watch_store::SharedWatchRx,
     },
-    config::{Host, HookAction, StructuredEventFilter, WebhookEventFilter},
+    config::{Host, StructuredEventFilter, WebhookEventFilter},
     http::push,
     websocket::{
         DynamicConfig,
-        FrontendHookAction,
-        FrontendHookConfig,
         FrontendHostConfig,
         WsMessage,
     },
@@ -354,44 +352,7 @@ fn spawn_websocket_forwarders(
                 host_config_map: config
                     .hosts
                     .iter()
-                    .map(|(name, host)| {
-                        (
-                            name.clone(),
-                            FrontendHostConfig {
-                                enforce_state: host.enforce_state,
-                                pre_startup: host.pre_startup.as_ref().map(|hook| FrontendHookConfig {
-                                    action: match &hook.action {
-                                        HookAction::Exec { program, .. } =>
-                                            FrontendHookAction::Exec {
-                                                program: program.clone(),
-                                            },
-                                        HookAction::Http { url, method, .. } =>
-                                            FrontendHookAction::Http {
-                                                url: url.to_string(),
-                                                method: method.as_str().to_string(),
-                                            },
-                                    },
-                                    delay_secs: hook.delay_secs,
-                                    timeout_secs: hook.timeout_secs,
-                                }),
-                                post_shutdown: host.post_shutdown.as_ref().map(|hook| FrontendHookConfig {
-                                    action: match &hook.action {
-                                        HookAction::Exec { program, .. } =>
-                                            FrontendHookAction::Exec {
-                                                program: program.clone(),
-                                            },
-                                        HookAction::Http { url, method, .. } =>
-                                            FrontendHookAction::Http {
-                                                url: url.to_string(),
-                                                method: method.as_str().to_string(),
-                                            },
-                                    },
-                                    delay_secs: hook.delay_secs,
-                                    timeout_secs: hook.timeout_secs,
-                                }),
-                            },
-                        )
-                    })
+                    .map(|(name, host)| (name.clone(), FrontendHostConfig::from(host)))
                     .collect(),
             };
             let msg = WsMessage::ConfigChanged(dynamic_host_config);

@@ -21,7 +21,7 @@ use crate::app::{
     LeaseStore, OperationFailureMap,
     db::{self, ClientStats, HostStats},
 };
-use crate::config::HookAction;
+use crate::config::{Host, HookAction, HookConfig};
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
 fn is_websocket_closed(err: &axum::Error) -> bool {
@@ -64,6 +64,26 @@ pub struct FrontendHookConfig {
     pub timeout_secs: u64,
 }
 
+impl From<&HookConfig> for FrontendHookConfig {
+    fn from(hook: &HookConfig) -> Self {
+        let action = match &hook.action {
+            HookAction::Exec { program, .. } => FrontendHookAction::Exec {
+                program: program.clone(),
+            },
+            HookAction::Http { url, method, .. } => FrontendHookAction::Http {
+                url: url.to_string(),
+                method: method.as_str().to_string(),
+            },
+        };
+
+        FrontendHookConfig {
+            action,
+            delay_secs: hook.delay_secs,
+            timeout_secs: hook.timeout_secs,
+        }
+    }
+}
+
 /// Subset of per-host configuration that is safe to expose to the frontend.
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -71,6 +91,16 @@ pub struct FrontendHostConfig {
     pub enforce_state: bool,
     pub pre_startup: Option<FrontendHookConfig>,
     pub post_shutdown: Option<FrontendHookConfig>,
+}
+
+impl From<&Host> for FrontendHostConfig {
+    fn from(host: &Host) -> Self {
+        FrontendHostConfig {
+            enforce_state: host.enforce_state,
+            pre_startup: host.pre_startup.as_ref().map(FrontendHookConfig::from),
+            post_shutdown: host.post_shutdown.as_ref().map(FrontendHookConfig::from),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -289,44 +319,7 @@ async fn send_startup_msg(
         host_config_map: config
             .hosts
             .iter()
-            .map(|(name, host)| {
-                (
-                    name.clone(),
-                    FrontendHostConfig {
-                        enforce_state: host.enforce_state,
-                        pre_startup: host.pre_startup.as_ref().map(|hook| FrontendHookConfig {
-                            action: match &hook.action {
-                                HookAction::Exec { program, .. } =>
-                                    FrontendHookAction::Exec {
-                                        program: program.clone(),
-                                    },
-                                HookAction::Http { url, method, .. } =>
-                                    FrontendHookAction::Http {
-                                        url: url.to_string(),
-                                        method: method.as_str().to_string(),
-                                    },
-                            },
-                            delay_secs: hook.delay_secs,
-                            timeout_secs: hook.timeout_secs,
-                        }),
-                        post_shutdown: host.post_shutdown.as_ref().map(|hook| FrontendHookConfig {
-                            action: match &hook.action {
-                                HookAction::Exec { program, .. } =>
-                                    FrontendHookAction::Exec {
-                                        program: program.clone(),
-                                    },
-                                HookAction::Http { url, method, .. } =>
-                                    FrontendHookAction::Http {
-                                        url: url.to_string(),
-                                        method: method.as_str().to_string(),
-                                    },
-                            },
-                            delay_secs: hook.delay_secs,
-                            timeout_secs: hook.timeout_secs,
-                        }),
-                    },
-                )
-            })
+            .map(|(name, host)| (name.clone(), FrontendHostConfig::from(host)))
             .collect(),
     };
     let leases = (*current_leases.snapshot()).clone();
