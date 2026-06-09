@@ -40,9 +40,15 @@ use crate::{
         notifications::{EventKind, NotificationEvent},
         shared_watch_store::SharedWatchRx,
     },
-    config::{Host, StructuredEventFilter, WebhookEventFilter},
+    config::{Host, HookAction, StructuredEventFilter, WebhookEventFilter},
     http::push,
-    websocket::{DynamicConfig, FrontendHostConfig, WsMessage},
+    websocket::{
+        DynamicConfig,
+        FrontendHookAction,
+        FrontendHookConfig,
+        FrontendHostConfig,
+        WsMessage,
+    },
 };
 
 use crate::app::{host_control::HostWithName, notifications};
@@ -353,6 +359,36 @@ fn spawn_websocket_forwarders(
                             name.clone(),
                             FrontendHostConfig {
                                 enforce_state: host.enforce_state,
+                                pre_startup: host.pre_startup.as_ref().map(|hook| FrontendHookConfig {
+                                    action: match &hook.action {
+                                        HookAction::Exec { program, .. } =>
+                                            FrontendHookAction::Exec {
+                                                program: program.clone(),
+                                            },
+                                        HookAction::Http { url, method, .. } =>
+                                            FrontendHookAction::Http {
+                                                url: url.to_string(),
+                                                method: method.as_str().to_string(),
+                                            },
+                                    },
+                                    delay_secs: hook.delay_secs,
+                                    timeout_secs: hook.timeout_secs,
+                                }),
+                                post_shutdown: host.post_shutdown.as_ref().map(|hook| FrontendHookConfig {
+                                    action: match &hook.action {
+                                        HookAction::Exec { program, .. } =>
+                                            FrontendHookAction::Exec {
+                                                program: program.clone(),
+                                            },
+                                        HookAction::Http { url, method, .. } =>
+                                            FrontendHookAction::Http {
+                                                url: url.to_string(),
+                                                method: method.as_str().to_string(),
+                                            },
+                                    },
+                                    delay_secs: hook.delay_secs,
+                                    timeout_secs: hook.timeout_secs,
+                                }),
                             },
                         )
                     })

@@ -59,7 +59,6 @@ export const initDemoMode = () => {
                                 isOnline: false,
                                 initSystem: 'systemd',
                                 operatingSystem: 'linux',
-                                scriptPath: undefined,
                             },
                             tarbean: {
                                 agentVersion: buildData.version,
@@ -87,8 +86,29 @@ export const initDemoMode = () => {
                     },
                 },
                 hostConfigMap: {
-                    archive: { enforceState: true },
-                    tarbean: { enforceState: false },
+                    archive: {
+                        enforceState: true,
+                        preStartup: {
+                            action: {
+                                type: 'http',
+                                url: 'https://example.com/pre-startup',
+                                method: 'POST',
+                            },
+                            delaySecs: 2,
+                            timeoutSecs: 10,
+                        },
+                    },
+                    tarbean: {
+                        enforceState: false,
+                        postShutdown: {
+                            action: {
+                                type: 'exec',
+                                program: '/usr/bin/shutdown',
+                            },
+                            delaySecs: 1,
+                            timeoutSecs: 15,
+                        },
+                    },
                     junpui: { enforceState: false },
                 },
             },

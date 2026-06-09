@@ -1,5 +1,5 @@
 import { createStore, produce } from 'solid-js/store';
-import { type Infer, is } from './assertData';
+import { type Infer, is, validateDataAsync } from './assertData';
 import { serverData } from './serverData';
 
 // ==========================
@@ -12,16 +12,23 @@ export const statusOptions = [
     'waking',
     'shutting_down',
 ] as const;
-export type Status = (typeof statusOptions)[number];
-export type StatusMap = Record<string, Status>;
 
-export type LeaseSource =
-    | { type: 'WebInterface' }
-    | { type: 'Client'; value: string };
+const statusOptionsChecker = is.oneOf(...statusOptions);
+export type Status = Infer<typeof statusOptionsChecker>;
 
-export type ClientStats = {
-    lastUsed: string | null;
-};
+const statusMapChecker = is.recordOf(statusOptionsChecker);
+
+const leaseSourceChecker = is.oneOf(
+    is.object({ type: 'WebInterface' } as const),
+    is.object({ type: 'Client', value: is.string } as const),
+)
+
+export type LeaseSource = Infer<typeof leaseSourceChecker>;
+
+const clientStatsChecker = is.object({
+    lastUsed: is.optional(is.string),
+} as const);
+export type ClientStats = Infer<typeof clientStatsChecker>;
 
 export const hostStatChecker = is.object({
     lastOnline: is.optional(is.string),
@@ -42,54 +49,89 @@ export const hostStatChecker = is.object({
 
 export type HostStats = Infer<typeof hostStatChecker>;
 
+const hostHookActionChecker = is.oneOf(
+    is.object({
+        type: 'exec',
+        program: is.string,
+    } as const),
+    is.object({
+        type: 'http',
+        url: is.string,
+        method: is.oneOf('GET', 'POST', 'PUT', 'DELETE', 'PATCH'),
+    } as const),
+);
+
+const hostHookConfigChecker = is.object({
+    action: hostHookActionChecker,
+    delaySecs: is.number,
+    timeoutSecs: is.number,
+} as const);
+
 const hostConfigChecker = is.object({
     enforceState: is.boolean,
+    preStartup: is.optional(hostHookConfigChecker),
+    postShutdown: is.optional(hostHookConfigChecker),
 } as const);
 
 export type HostConfig = Infer<typeof hostConfigChecker>;
 
-export type DbData = {
-    clientStats: Record<string, ClientStats>;
-    hostStats: Record<string, HostStats>;
-};
+const dbDataChecker = is.object({
+    clientStats: is.recordOf(clientStatsChecker),
+    hostStats: is.recordOf(hostStatChecker),
+}as const);
 
-export type DbDataState =
-    | { status: 'disabled' }
-    | { status: 'available'; payload: DbData }
-    | { status: 'error'; payload: { message: string } };
+export type DbData = Infer<typeof dbDataChecker>;
+
+const dbDataStateChecker = is.oneOf(
+    is.object({ status: 'disabled' } as const),
+    is.object({
+        status: 'available',
+        payload: dbDataChecker,
+    } as const),
+    is.object({
+        status: 'error',
+        payload: is.object({ message: is.string } as const),
+    } as const),
+);
+
+export type DbDataState = Infer<typeof dbDataStateChecker>;
 
 /** The configuration values (mapped to what the frontend can see) that the coordinator accepts runtime changes of */
-type DynamicConfig = {
-    hosts: string[];
-    clients: string[];
-    hostConfigMap: Record<string, HostConfig>;
-};
+const dynamicConfigCheckerObj = {
+    hosts: is.arrayOf(is.string),
+    clients: is.arrayOf(is.string),
+    hostConfigMap: is.recordOf(hostConfigChecker),
+} as const
+const dynamicConfigChecker = is.object(dynamicConfigCheckerObj);
 
-export type AppState = {
-    statusMap: StatusMap;
-    leaseMap: Record<string, LeaseSource[]>;
-    dbData: DbDataState;
-    operationFailures: Record<string, OperationFailure>;
-} & DynamicConfig;
+const operationFailureChecker = is.object({ operation: is.oneOf('shutdown', 'startup') } as const);
 
-export type OperationFailure = {
-    operation: 'shutdown' | 'startup';
-};
+const appStateChecker = is.object({
+    statusMap: statusMapChecker,
+    leaseMap: is.recordOf(is.arrayOf(leaseSourceChecker)),
+    dbData: dbDataStateChecker,
+    operationFailures: is.recordOf(operationFailureChecker),
+    ...dynamicConfigCheckerObj,
+} as const);
 
-export type WsMessage =
-    | { type: 'HostStatus'; payload: StatusMap }
-    | { type: 'ClientStats'; payload: Record<string, ClientStats> }
-    | { type: 'HostStats'; payload: { host: string; stats: HostStats } }
-    | {
-          type: 'ConfigChanged';
-          payload: DynamicConfig;
-      }
-    | {
-          type: 'Initial';
-          payload: AppState;
-      }
-    | { type: 'LeaseUpdate'; payload: { host: string; leases: LeaseSource[] } }
-    | { type: 'OperationFailed'; payload: Record<string, OperationFailure> };
+export type AppState = Infer<typeof appStateChecker>;
+
+export type OperationFailure = Infer<typeof operationFailureChecker>;
+
+const wsMessageChecker = is.oneOf(
+    is.object({ type: 'HostStatus', payload: statusMapChecker } as const),
+    is.object({ type: 'ClientStats', payload: is.recordOf(clientStatsChecker) } as const),
+    is.object({ type: 'HostStats', payload: is.object({ host: is.string, stats: hostStatChecker }) } as const),
+    is.object({ type: 'ConfigChanged', payload: dynamicConfigChecker } as const),
+    is.object({ type: 'Initial', payload: appStateChecker } as const),
+    is.object({ type: 'LeaseUpdate', payload: is.object({ host: is.string, leases: is.arrayOf(leaseSourceChecker) }) } as const),
+    is.object({ type: 'OperationFailed', payload: is.recordOf(operationFailureChecker) } as const),
+);
+
+export type WsMessage = Infer<typeof wsMessageChecker>;
+
+const validateWsMessageAsync = (unknownMessage: unknown) =>
+    validateDataAsync('ws-message', unknownMessage, wsMessageChecker);
 
 // ==========================
 // Store
@@ -107,12 +149,10 @@ const [state, setState] = createStore<AppState>({
 
 export { state };
 
-export const hasDb = (
-    s: AppState,
-): s is AppState & { dbData: { status: 'available'; payload: DbData } } =>
-    s.dbData.status === 'available';
+export const applyMessage = (unknownMessage: unknown) => {
+    const message = unknownMessage as WsMessage;
+    validateWsMessageAsync(unknownMessage);
 
-export const applyMessage = (message: WsMessage) => {
     switch (message.type) {
         case 'Initial': {
             const isDisabled = message.payload.dbData.status === 'disabled';
