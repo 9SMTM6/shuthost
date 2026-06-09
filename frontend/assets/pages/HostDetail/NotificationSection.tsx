@@ -1,9 +1,10 @@
+import type { AnyComponent } from '../../helpers/utils';
 import { NotifyDurationButton } from './NotifyDurationButton';
 import { NotifyOperationFailedButton } from './NotifyOperationFailedButton';
 import { NotifyUnscheduledButton } from './NotifyUnscheduledButton';
 import type { OperationFailure } from '../../helpers/appStore';
 
-export const NotificationSection = (props: {
+export const NotificationSection = ((props: {
     hostname: string;
     status: string | undefined;
     operationFailure: OperationFailure | undefined;
@@ -22,4 +23,4 @@ export const NotificationSection = (props: {
             />
         </div>
     </div>
-);
+)) satisfies AnyComponent;
