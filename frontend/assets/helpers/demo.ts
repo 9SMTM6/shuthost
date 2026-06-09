@@ -127,162 +127,152 @@ export const initDemoMode = () => {
 };
 
 // ── Demo push subscription state ───────────────────────────────────────────
-// In demo mode there is no real backend, so we maintain an in-memory set of
-// subscribed hostnames and expose helpers that the push-subscription module
-// can delegate to.
 
-const demoPushSubscriptions = new Set<string>();
+/** In demo mode there is no real backend, so we maintain an in-memory 
+ * fake backend with relevant state.*/
+const demoBackendState = {
+    pushSubscriptions: new Set<string>(),
+    operationFailedSubscriptions: new Set<string>(),
+    onlineForSubs: new Map<string, number>(),
+    oneshotOnlineForSubs: new Map<string, number>(),
+}
 
-export const demoCheckHostUnscheduledSubscription = (
-    hostname: string,
-) => demoPushSubscriptions.has(hostname);
-
-export const demoSubscribeToHostUnscheduled = (hostname: string): void => {
-    demoPushSubscriptions.add(hostname);
-};
-
-export const demoUnsubscribeFromHostUnscheduled = (hostname: string): void => {
-    demoPushSubscriptions.delete(hostname);
-};
-
-const demoOperationFailedSubscriptions = new Set<string>();
-
-export const demoResetLeases = (clientId: string): void => {
-    // Demo: clear leases out of the store directly
-    const newLeaseMap = { ...state.leaseMap };
-    for (const host of Object.keys(newLeaseMap)) {
-        newLeaseMap[host] = (newLeaseMap[host] ?? []).filter(
-            (l) => l.type !== 'Client' || l.value !== clientId,
-        );
-    }
-    applyTypedMessage({
-        type: 'ConfigChanged',
-        payload: {
-            hosts: state.hosts,
-            clients: state.clients,
-            hostConfigMap: state.hostConfigMap,
-        },
-    });
-    // Force a LeaseUpdate for each host to clear the demo state
-    for (const host of Object.keys(newLeaseMap)) {
+const demoRequests = {
+    checkHostUnscheduledSubscription: (
+        hostname: string,
+    ) => demoBackendState.pushSubscriptions.has(hostname),
+    subscribeToHostUnscheduled: (hostname: string): void => {
+        demoBackendState.pushSubscriptions.add(hostname);
+    },
+    unsubscribeFromHostUnscheduled: (hostname: string): void => {
+        demoBackendState.pushSubscriptions.delete(hostname);
+    },
+    resetLeases: (clientId: string): void => {
+        // Demo: clear leases out of the store directly
+        const newLeaseMap = { ...state.leaseMap };
+        for (const host of Object.keys(newLeaseMap)) {
+            newLeaseMap[host] = (newLeaseMap[host] ?? []).filter(
+                (l) => l.type !== 'Client' || l.value !== clientId,
+            );
+        }
         applyTypedMessage({
-            type: 'LeaseUpdate',
-            payload: { host, leases: newLeaseMap[host] ?? [] },
+            type: 'ConfigChanged',
+            payload: {
+                hosts: state.hosts,
+                clients: state.clients,
+                hostConfigMap: state.hostConfigMap,
+            },
         });
-    }
-};
+        // Force a LeaseUpdate for each host to clear the demo state
+        for (const host of Object.keys(newLeaseMap)) {
+            applyTypedMessage({
+                type: 'LeaseUpdate',
+                payload: { host, leases: newLeaseMap[host] ?? [] },
+            });
+        }
+    },
+    checkHostOperationFailedSubscription: (
+        hostname: string,
+    ) => demoBackendState.operationFailedSubscriptions.has(hostname),
+    subscribeToHostOperationFailed: (hostname: string): void => {
+        demoBackendState.operationFailedSubscriptions.add(hostname);
+    },
+    unsubscribeFromHostOperationFailed: (
+        hostname: string,
+    ): void => {
+        demoBackendState.operationFailedSubscriptions.delete(hostname);
+    },
+    checkHostOnlineForSubscription: (
+        hostname: string,
+    ) => demoBackendState.onlineForSubs.get(hostname) ?? null,
+    subscribeToHostOnlineFor: (
+        hostname: string,
+        durationSecs: number,
+    ): void => {
+        demoBackendState.onlineForSubs.set(hostname, durationSecs);
+    },
+    unsubscribeFromHostOnlineFor: (hostname: string): void => {
+        demoBackendState.onlineForSubs.delete(hostname);
+    },
+    subscribeToHostOnlineForOneshot: (
+        hostname: string,
+        durationSecs: number,
+    ): void => {
+        demoBackendState.oneshotOnlineForSubs.set(hostname, durationSecs);
+    },
+    updateLease: async (
+        host: string,
+        action: 'take' | 'release',
+    ) => {
+        const clearHostTimeouts = () => {
+            const lt = leaseTimeouts.get(host);
+            if (lt != null) clearTimeout(lt);
+            const st = statusTimeouts.get(host);
+            if (st != null) clearTimeout(st);
+        };
 
-export const demoCheckHostOperationFailedSubscription = (
-    hostname: string,
-) => demoOperationFailedSubscriptions.has(hostname);
+        if (action === 'take') {
+            clearHostTimeouts();
+            leaseTimeouts.set(
+                host,
+                setTimeout(() => {
+                    applyTypedMessage({
+                        type: 'LeaseUpdate',
+                        payload: { host, leases: [{ type: 'WebInterface' }] },
+                    });
+                }, 300),
+            );
+            statusTimeouts.set(
+                host,
+                setTimeout(() => {
+                    applyTypedMessage({
+                        type: 'HostStatus',
+                        payload: { [host]: 'waking' },
+                    });
+                    statusTimeouts.set(
+                        host,
+                        setTimeout(() => {
+                            applyTypedMessage({
+                                type: 'HostStatus',
+                                payload: { [host]: 'online' },
+                            });
+                        }, 1500),
+                    );
+                }, 300),
+            );
+        } else {
+            clearHostTimeouts();
+            leaseTimeouts.set(
+                host,
+                setTimeout(() => {
+                    applyTypedMessage({
+                        type: 'LeaseUpdate',
+                        payload: { host, leases: [] },
+                    });
+                }, 300),
+            );
+            statusTimeouts.set(
+                host,
+                setTimeout(() => {
+                    applyTypedMessage({
+                        type: 'HostStatus',
+                        payload: { [host]: 'shutting_down' },
+                    });
+                    statusTimeouts.set(
+                        host,
+                        setTimeout(() => {
+                            applyTypedMessage({
+                                type: 'HostStatus',
+                                payload: { [host]: 'offline' },
+                            });
+                        }, 1500),
+                    );
+                }, 300),
+            );
+        }
+    },
+} as const;
 
-export const demoSubscribeToHostOperationFailed = (hostname: string): void => {
-    demoOperationFailedSubscriptions.add(hostname);
-};
-
-export const demoUnsubscribeFromHostOperationFailed = (
-    hostname: string,
-): void => {
-    demoOperationFailedSubscriptions.delete(hostname);
-};
-
-// Online-for subscriptions (permanent: hostname → duration_secs)
-const demoOnlineForSubs = new Map<string, number>();
-
-export const demoCheckHostOnlineForSubscription = (
-    hostname: string,
-) => demoOnlineForSubs.get(hostname) ?? null;
-
-export const demoSubscribeToHostOnlineFor = (
-    hostname: string,
-    durationSecs: number,
-): void => {
-    demoOnlineForSubs.set(hostname, durationSecs);
-};
-
-export const demoUnsubscribeFromHostOnlineFor = (hostname: string): void => {
-    demoOnlineForSubs.delete(hostname);
-};
-
-// Online-for one-shot subscriptions (hostname → duration_secs)
-// In demo mode these just record that a subscription was requested.
-const demoOneshotOnlineForSubs = new Map<string, number>();
-
-export const demoSubscribeToHostOnlineForOneshot = (
-    hostname: string,
-    durationSecs: number,
-): void => {
-    demoOneshotOnlineForSubs.set(hostname, durationSecs);
-};
-
-export const demoUpdateLease = async (
-    host: string,
-    action: 'take' | 'release',
-) => {
-    const clearHostTimeouts = () => {
-        const lt = leaseTimeouts.get(host);
-        if (lt != null) clearTimeout(lt);
-        const st = statusTimeouts.get(host);
-        if (st != null) clearTimeout(st);
-    };
-
-    if (action === 'take') {
-        clearHostTimeouts();
-        leaseTimeouts.set(
-            host,
-            setTimeout(() => {
-                applyTypedMessage({
-                    type: 'LeaseUpdate',
-                    payload: { host, leases: [{ type: 'WebInterface' }] },
-                });
-            }, 300),
-        );
-        statusTimeouts.set(
-            host,
-            setTimeout(() => {
-                applyTypedMessage({
-                    type: 'HostStatus',
-                    payload: { [host]: 'waking' },
-                });
-                statusTimeouts.set(
-                    host,
-                    setTimeout(() => {
-                        applyTypedMessage({
-                            type: 'HostStatus',
-                            payload: { [host]: 'online' },
-                        });
-                    }, 1500),
-                );
-            }, 300),
-        );
-    } else {
-        clearHostTimeouts();
-        leaseTimeouts.set(
-            host,
-            setTimeout(() => {
-                applyTypedMessage({
-                    type: 'LeaseUpdate',
-                    payload: { host, leases: [] },
-                });
-            }, 300),
-        );
-        statusTimeouts.set(
-            host,
-            setTimeout(() => {
-                applyTypedMessage({
-                    type: 'HostStatus',
-                    payload: { [host]: 'shutting_down' },
-                });
-                statusTimeouts.set(
-                    host,
-                    setTimeout(() => {
-                        applyTypedMessage({
-                            type: 'HostStatus',
-                            payload: { [host]: 'offline' },
-                        });
-                    }, 1500),
-                );
-            }, 300),
-        );
-    }
-};
+export {
+    demoRequests as demo,
+}
