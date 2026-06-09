@@ -7,12 +7,12 @@ import { demoSubpath } from '../helpers/demo';
 import type { AnyComponent } from '../helpers/utils';
 import { safeExternalUrl } from '../helpers/utils';
 
-export type Author = {
+type Author = {
     name: string;
     email?: string | null;
 };
 
-export type DependencyEntry = {
+type DependencyEntry = {
     name: string;
     version: string;
     ecosystem: 'Rust' | 'Npm';
@@ -22,7 +22,7 @@ export type DependencyEntry = {
     repository?: string | null;
 };
 
-export type AboutPageProps = {
+type AboutPageProps = {
     description: string;
     repository: string;
     version: string;
