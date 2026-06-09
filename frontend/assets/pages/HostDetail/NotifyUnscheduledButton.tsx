@@ -1,3 +1,4 @@
+import type { AnyComponent } from '../../helpers/utils';
 import { Bell, BellOff, LoaderCircle } from 'lucide-solid';
 import { createSignal, Match, onMount, Show, Switch } from 'solid-js';
 import {
@@ -9,7 +10,7 @@ import {
 const notifyUnscheduledDescription =
     'Get a push notification when this host starts up or shuts down without being triggered by ShutHost.';
 
-export const NotifyUnscheduledButton = (props: { hostname: string }) => {
+export const NotifyUnscheduledButton = ((props: { hostname: string }) => {
     const [subscribed, setSubscribed] = createSignal<boolean | null>(null);
     const [loading, setLoading] = createSignal(false);
     const [error, setError] = createSignal<string | null>(null);
@@ -100,4 +101,4 @@ export const NotifyUnscheduledButton = (props: { hostname: string }) => {
             </Show>
         </div>
     );
-};
+}) satisfies AnyComponent;

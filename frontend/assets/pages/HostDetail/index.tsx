@@ -9,7 +9,7 @@ import { type OperationFailure, state } from '../../helpers/appStore';
 import { HostStatusBadge } from '../../components/HostStatusBadge';
 import type { AnyComponent } from '../../helpers/utils';
 
-const OperationFailureBadge = (props: {
+const OperationFailureBadge = ((props: {
     failure: OperationFailure | undefined;
 }) => (
     <Show when={props.failure !== undefined}>
@@ -17,7 +17,7 @@ const OperationFailureBadge = (props: {
             {props.failure?.operation} failed
         </span>
     </Show>
-);
+)) satisfies AnyComponent;
 
 export const HostDetailPage = (() => {
     const params = useParams<{ hostname: string }>();

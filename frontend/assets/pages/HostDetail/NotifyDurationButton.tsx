@@ -1,3 +1,4 @@
+import type { AnyComponent } from '../../helpers/utils';
 import { Bell, BellOff, BellRing, LoaderCircle, RefreshCw } from 'lucide-solid';
 import { createSignal, Match, onMount, Show, Switch } from 'solid-js';
 import {
@@ -21,7 +22,7 @@ type PermanentSubState =
     | { subscribed: false }
     | { subscribed: true; duration: number; unit: DurationUnit };
 
-export const NotifyDurationButton = (props: {
+export const NotifyDurationButton = ((props: {
     hostname: string;
     isOnline: boolean;
 }) => {
@@ -301,4 +302,4 @@ export const NotifyDurationButton = (props: {
             </Show>
         </div>
     );
-};
+}) satisfies AnyComponent;

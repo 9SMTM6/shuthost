@@ -1,3 +1,4 @@
+import type { AnyComponent } from '../../helpers/utils';
 import { For, Show } from 'solid-js';
 import { Power, PowerOff } from 'lucide-solid';
 import { apiFetch } from '../../helpers/apiFetch';
@@ -7,7 +8,7 @@ import {
     type LeaseSource,
 } from '../../helpers/appStore';
 
-export const HostLeasesSection = (props: { hostname: string }) => {
+export const HostLeasesSection = ((props: { hostname: string }) => {
     const leases = () =>
         state.leaseMap[props.hostname] ?? ([] as LeaseSource[]);
     const hasWebInterfaceLease = () =>
@@ -108,4 +109,4 @@ export const HostLeasesSection = (props: { hostname: string }) => {
             </div>
         </section>
     );
-};
+}) satisfies AnyComponent;
