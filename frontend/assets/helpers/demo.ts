@@ -1,4 +1,4 @@
-import { applyMessage, type WsMessage } from './appStore';
+import { applyTypedMessage, type WsMessage, state } from './appStore';
 import { buildData } from './buildData';
 import { serverData } from './serverData';
 
@@ -34,7 +34,7 @@ export const initDemoMode = () => {
 
     // Simulate the Initial push from the backend
     setTimeout(() => {
-        applyMessage({
+        applyTypedMessage({
             type: 'Initial',
             payload: {
                 hosts: ['archive', 'tarbean', 'junpui'],
@@ -147,6 +147,31 @@ export const demoUnsubscribeFromHostUnscheduled = (hostname: string): void => {
 
 const demoOperationFailedSubscriptions = new Set<string>();
 
+export const demoResetLeases = (clientId: string): void => {
+    // Demo: clear leases out of the store directly
+    const newLeaseMap = { ...state.leaseMap };
+    for (const host of Object.keys(newLeaseMap)) {
+        newLeaseMap[host] = (newLeaseMap[host] ?? []).filter(
+            (l) => l.type !== 'Client' || l.value !== clientId,
+        );
+    }
+    applyTypedMessage({
+        type: 'ConfigChanged',
+        payload: {
+            hosts: state.hosts,
+            clients: state.clients,
+            hostConfigMap: state.hostConfigMap,
+        },
+    });
+    // Force a LeaseUpdate for each host to clear the demo state
+    for (const host of Object.keys(newLeaseMap)) {
+        applyTypedMessage({
+            type: 'LeaseUpdate',
+            payload: { host, leases: newLeaseMap[host] ?? [] },
+        });
+    }
+}
+
 export const demoCheckHostOperationFailedSubscription = (
     hostname: string,
 ): boolean => demoOperationFailedSubscriptions.has(hostname);
@@ -206,7 +231,7 @@ export const demoUpdateLease = async (
         leaseTimeouts.set(
             host,
             setTimeout(() => {
-                applyMessage({
+                applyTypedMessage({
                     type: 'LeaseUpdate',
                     payload: { host, leases: [{ type: 'WebInterface' }] },
                 });
@@ -215,14 +240,14 @@ export const demoUpdateLease = async (
         statusTimeouts.set(
             host,
             setTimeout(() => {
-                applyMessage({
+                applyTypedMessage({
                     type: 'HostStatus',
                     payload: { [host]: 'waking' },
                 });
                 statusTimeouts.set(
                     host,
                     setTimeout(() => {
-                        applyMessage({
+                        applyTypedMessage({
                             type: 'HostStatus',
                             payload: { [host]: 'online' },
                         });
@@ -235,7 +260,7 @@ export const demoUpdateLease = async (
         leaseTimeouts.set(
             host,
             setTimeout(() => {
-                applyMessage({
+                applyTypedMessage({
                     type: 'LeaseUpdate',
                     payload: { host, leases: [] },
                 });
@@ -244,14 +269,14 @@ export const demoUpdateLease = async (
         statusTimeouts.set(
             host,
             setTimeout(() => {
-                applyMessage({
+                applyTypedMessage({
                     type: 'HostStatus',
                     payload: { [host]: 'shutting_down' },
                 });
                 statusTimeouts.set(
                     host,
                     setTimeout(() => {
-                        applyMessage({
+                        applyTypedMessage({
                             type: 'HostStatus',
                             payload: { [host]: 'offline' },
                         });

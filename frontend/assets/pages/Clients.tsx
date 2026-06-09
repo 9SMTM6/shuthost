@@ -3,8 +3,8 @@ import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
-import { applyMessage, state } from '../helpers/appStore';
-import { demoSubpath, isDemoMode } from '../helpers/demo';
+import { state } from '../helpers/appStore';
+import { demoResetLeases, demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import type { AnyComponent } from '../helpers/utils';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
@@ -22,28 +22,7 @@ const formatLastUsed = (clientId: string): string => {
 
 const resetLeases = async (clientId: string) => {
     if (isDemoMode) {
-        // Demo: clear leases out of the store directly
-        const newLeaseMap = { ...state.leaseMap };
-        for (const host of Object.keys(newLeaseMap)) {
-            newLeaseMap[host] = (newLeaseMap[host] ?? []).filter(
-                (l) => l.type !== 'Client' || l.value !== clientId,
-            );
-        }
-        applyMessage({
-            type: 'ConfigChanged',
-            payload: {
-                hosts: state.hosts,
-                clients: state.clients,
-                hostConfigMap: state.hostConfigMap,
-            },
-        });
-        // Force a LeaseUpdate for each host to clear the demo state
-        for (const host of Object.keys(newLeaseMap)) {
-            applyMessage({
-                type: 'LeaseUpdate',
-                payload: { host, leases: newLeaseMap[host] ?? [] },
-            });
-        }
+        demoResetLeases(clientId);
         return;
     }
     try {
