@@ -1,4 +1,4 @@
-import { applyMessage, type WsMessage } from './appStore';
+import { applyMessage } from './appStore';
 
 let currentSocket: WebSocket | null = null;
 let _heartbeatIntervalId: number | null = null;
@@ -64,7 +64,7 @@ export const connectWebSocket = () => {
                 }
             }
 
-            applyMessage(JSON.parse(event.data) as WsMessage);
+            applyMessage(JSON.parse(event.data));
         } catch (err) {
             console.error('Error handling WS message:', err);
             setTimeout(() => {

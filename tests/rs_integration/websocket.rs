@@ -68,6 +68,19 @@ async fn websocket_config_updates() {
         port = 8080
         shared_secret = "{shared_secret}"
 
+        [hosts.newhost.pre_startup]
+        type = "http"
+        url = "https://example.com/pre-startup"
+        method = "GET"
+        delay_secs = 2
+        timeout_secs = 5
+
+        [hosts.newhost.post_shutdown]
+        type = "exec"
+        program = "/usr/bin/shutdown"
+        delay_secs = 1
+        timeout_secs = 10
+
         [clients]
     "#
     );
@@ -91,7 +104,39 @@ async fn websocket_config_updates() {
                     assert_eq!(hosts, vec!["newhost".to_string()]);
                     assert!(clients.is_empty());
                     assert_eq!(host_config_map.len(), 1);
-                    assert!(!host_config_map["newhost"].enforce_state);
+                    let host_config = &host_config_map["newhost"];
+                    assert!(!host_config.enforce_state);
+
+                    let pre_hook = host_config
+                        .pre_startup
+                        .as_ref()
+                        .expect("pre_startup hook should be present");
+                    assert_eq!(pre_hook.delay_secs, 2);
+                    assert_eq!(pre_hook.timeout_secs, 5);
+                    match &pre_hook.action {
+                        shuthost_coordinator::websocket::FrontendHookAction::Http {
+                            url,
+                            method,
+                        } => {
+                            assert_eq!(url, "https://example.com/pre-startup");
+                            assert_eq!(method, "GET");
+                        }
+                        _ => panic!("Expected pre_startup HTTP hook"),
+                    }
+
+                    let post_hook = host_config
+                        .post_shutdown
+                        .as_ref()
+                        .expect("post_shutdown hook should be present");
+                    assert_eq!(post_hook.delay_secs, 1);
+                    assert_eq!(post_hook.timeout_secs, 10);
+                    match &post_hook.action {
+                        shuthost_coordinator::websocket::FrontendHookAction::Exec { program } => {
+                            assert_eq!(program, "/usr/bin/shutdown");
+                        }
+                        _ => panic!("Expected post_shutdown exec hook"),
+                    }
+
                     config_changed_received = true;
                     break;
                 }

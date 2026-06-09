@@ -650,6 +650,23 @@ const HostInfoSection = (props: {
     const enforceStateNote = props.hostConfig?.enforceState
         ? 'Periodically corrects power state to match current leases.'
         : 'Edge-triggered only — reacts to lease changes, no periodic correction.';
+    const formatHookSummary = (
+        hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
+    ) => {
+        if (hook.action.type === 'exec') {
+            return `Exec: ${hook.action.program}`;
+        }
+
+        return `${hook.action.method} ${hook.action.url}`;
+    };
+
+    const formatHookTiming = (
+        hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
+    ) => `Delay: ${hook.delaySecs}s · Timeout: ${hook.timeoutSecs}s`;
+
+    const preStartupHook = props.hostConfig?.preStartup;
+    const postShutdownHook = props.hostConfig?.postShutdown;
+
     const lastOnlinePrecise =
         !props.isOnline && lastOnline != null
             ? new Date(lastOnline).toLocaleString()
@@ -758,6 +775,43 @@ const HostInfoSection = (props: {
                 <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
                     {enforceStateNote}
                 </dd>
+                <Show
+                    when={
+                        props.hostConfig?.preStartup || props.hostConfig?.postShutdown
+                    }
+                >
+                    <dt class="font-medium text-black dark:text-[#cccccc]">
+                        Hooks
+                    </dt>
+                    <dd class="col-span-2 space-y-3">
+                                <Show when={preStartupHook}>
+                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
+                                <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
+                                    pre_startup
+                                </p>
+                                <p class="text-sm text-[#616161] dark:text-[#9d9d9d] wrap-break-words">
+                                    {formatHookSummary(preStartupHook!)}
+                                </p>
+                                <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-1">
+                                    {formatHookTiming(preStartupHook!)}
+                                </p>
+                            </div>
+                        </Show>
+                        <Show when={postShutdownHook}>
+                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
+                                <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
+                                    post_shutdown
+                                </p>
+                                <p class="text-sm text-[#616161] dark:text-[#9d9d9d] wrap-break-words">
+                                    {formatHookSummary(postShutdownHook!)}
+                                </p>
+                                <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-1">
+                                    {formatHookTiming(postShutdownHook!)}
+                                </p>
+                            </div>
+                        </Show>
+                    </dd>
+                </Show>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Last online
                 </dt>
