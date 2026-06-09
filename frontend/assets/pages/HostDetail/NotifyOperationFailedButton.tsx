@@ -1,4 +1,3 @@
-import type { AnyComponent } from '../../helpers/utils';
 import { Bell, BellOff, LoaderCircle } from 'lucide-solid';
 import { createSignal, Match, onMount, Show, Switch } from 'solid-js';
 import {
@@ -6,6 +5,7 @@ import {
     subscribeToHostOperationFailed,
     unsubscribeFromHostOperationFailed,
 } from '../../helpers/pushSubscription';
+import type { AnyComponent } from '../../helpers/utils';
 
 const description =
     'Get a push notification when a shutdown or startup command for this host fails or times out.';

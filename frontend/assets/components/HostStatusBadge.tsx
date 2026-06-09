@@ -1,5 +1,5 @@
-import { Switch, Match } from 'solid-js';
-import { AnyComponent } from '../helpers/utils';
+import { Match, Switch } from 'solid-js';
+import type { AnyComponent } from '../helpers/utils';
 
 export const HostStatusBadge = ((props: {
     status: 'online' | 'offline' | 'waking' | 'shutting_down' | undefined;
