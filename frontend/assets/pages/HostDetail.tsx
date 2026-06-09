@@ -17,7 +17,9 @@ import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import {
+    ClientLease,
     type HostConfig,
+    HostHookConfig,
     type HostStats,
     type OperationFailure,
     state,
@@ -38,8 +40,6 @@ import {
 } from '../helpers/pushSubscription';
 import type { AnyComponent } from '../helpers/utils';
 import { formatRelativeTimestamp, safeExternalUrl } from '../helpers/utils';
-
-type ClientLease = { type: 'Client'; value: string };
 
 // --- Sub-components ---
 
@@ -651,21 +651,21 @@ const HostInfoSection = (props: {
         ? 'Periodically corrects power state to match current leases.'
         : 'Edge-triggered only — reacts to lease changes, no periodic correction.';
     const formatHookActionLabel = (
-        hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
+        hook: HostHookConfig,
     ) =>
         hook.action.type === 'exec'
             ? 'Exec'
             : `HTTP ${hook.action.method}`;
 
     const formatHookActionValue = (
-        hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
+        hook: HostHookConfig,
     ) =>
         hook.action.type === 'exec'
             ? hook.action.program
             : hook.action.url;
 
     const formatHookTiming = (
-        hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
+        hook: HostHookConfig,
     ) => {
         if (hook.delaySecs === 0) {
             return `Timeout: ${hook.timeoutSecs}s`;
@@ -805,7 +805,7 @@ const HostInfoSection = (props: {
                 </Show>
                 <Show
                     when={
-                        props.hostConfig?.preStartup || props.hostConfig?.postShutdown
+                        preStartupHook || postShutdownHook
                     }
                 >
                     <dt class="font-medium text-black dark:text-[#cccccc]">
@@ -1017,7 +1017,7 @@ export const HostDetailPage = (() => {
     const hasWebInterfaceLease = () =>
         leases().some((l) => l.type === 'WebInterface');
     const clientLeases = () =>
-        leases().filter((l): l is ClientLease => l.type === 'Client');
+        leases().filter((l) => l.type === 'Client');
     const hostStats = (): HostStats | undefined =>
         state.dbData.status === 'available'
             ? state.dbData.payload.hostStats[hostname()]
