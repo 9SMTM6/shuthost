@@ -179,9 +179,11 @@ const [state, setState] = createStore<AppState>({
 export { state };
 
 export const applyMessage = (unknownMessage: unknown) => {
-    const message = unknownMessage as WsMessage;
     validateWsMessageAsync(unknownMessage);
+    applyTypedMessage(unknownMessage as WsMessage);
+};
 
+export const applyTypedMessage = (message: WsMessage) => {
     switch (message.type) {
         case 'Initial': {
             const isDisabled = message.payload.dbData.status === 'disabled';
