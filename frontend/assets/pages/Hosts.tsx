@@ -58,10 +58,7 @@ const makeInstallCommands = () => {
 // ==========================
 
 const updateLease = async (hostName: string, action: 'take' | 'release') => {
-    if (isDemoMode) {
-        await demo.updateLease(hostName, action);
-        return;
-    }
+    if (isDemoMode) return demo.updateLease(hostName, action);
     try {
         await apiFetch(`/api/lease/${hostName}/${action}`, {
             method: 'POST',

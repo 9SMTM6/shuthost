@@ -129,9 +129,7 @@ const REVALIDATE_TIMEOUT_MS = 250;
 // bgWorkPromise:   if a cached response was served, keeps the in-flight network request alive
 //                  to revalidate in the background; if the HTML changed, prefetches newly
 //                  referenced hashed assets and posts NEW_VERSION_AVAILABLE to all clients.
-const fastestOfWithTimeout = (
-    request: Request,
-) => {
+const fastestOfWithTimeout = (request: Request) => {
     // Fire network fetch immediately so it runs in parallel with cache lookup.
     const networkFetchPromise = fetch(request.clone());
     const cacheMatchPromise = caches
