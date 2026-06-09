@@ -1,4 +1,3 @@
-import type { AnyComponent } from '../../helpers/utils';
 import { Bell, BellOff, LoaderCircle } from 'lucide-solid';
 import { createSignal, Match, onMount, Show, Switch } from 'solid-js';
 import {
@@ -6,6 +5,7 @@ import {
     subscribeToHostUnscheduled,
     unsubscribeFromHostUnscheduled,
 } from '../../helpers/pushSubscription';
+import type { AnyComponent } from '../../helpers/utils';
 
 const notifyUnscheduledDescription =
     'Get a push notification when this host starts up or shuts down without being triggered by ShutHost.';

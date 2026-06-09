@@ -1,12 +1,12 @@
-import type { AnyComponent } from '../../helpers/utils';
-import { For, Show } from 'solid-js';
 import { Power, PowerOff } from 'lucide-solid';
+import { For, Show } from 'solid-js';
 import { apiFetch } from '../../helpers/apiFetch';
 import {
-    state,
     type ClientLease,
     type LeaseSource,
+    state,
 } from '../../helpers/appStore';
+import type { AnyComponent } from '../../helpers/utils';
 
 export const HostLeasesSection = ((props: { hostname: string }) => {
     const leases = () =>

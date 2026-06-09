@@ -1,4 +1,3 @@
-import type { AnyComponent } from '../../helpers/utils';
 import { Bell, BellOff, BellRing, LoaderCircle, RefreshCw } from 'lucide-solid';
 import { createSignal, Match, onMount, Show, Switch } from 'solid-js';
 import {
@@ -7,6 +6,7 @@ import {
     subscribeToHostOnlineForOneshot,
     unsubscribeFromHostOnlineFor,
 } from '../../helpers/pushSubscription';
+import type { AnyComponent } from '../../helpers/utils';
 
 const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
 
