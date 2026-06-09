@@ -21,7 +21,7 @@ use crate::app::{
     LeaseStore, OperationFailureMap,
     db::{self, ClientStats, HostStats},
 };
-use crate::config::{Host, HookAction, HookConfig};
+use crate::config::{HookAction, HookConfig, Host};
 
 /// Walk the error source chain and return true if any source is an error about the websocket being closed.
 fn is_websocket_closed(err: &axum::Error) -> bool {
@@ -44,19 +44,14 @@ fn is_websocket_closed(err: &axum::Error) -> bool {
 }
 
 /// Action metadata for a host hook that is safe to expose to the frontend.
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum FrontendHookAction {
-    Exec {
-        program: String,
-    },
-    Http {
-        url: String,
-        method: String,
-    },
+    Exec { program: String },
+    Http { url: String, method: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FrontendHookConfig {
     pub action: FrontendHookAction,
@@ -66,11 +61,15 @@ pub struct FrontendHookConfig {
 
 impl From<&HookConfig> for FrontendHookConfig {
     fn from(hook: &HookConfig) -> Self {
-        let action = match &hook.action {
-            HookAction::Exec { program, .. } => FrontendHookAction::Exec {
+        let action = match hook.action {
+            HookAction::Exec { ref program, .. } => FrontendHookAction::Exec {
                 program: program.clone(),
             },
-            HookAction::Http { url, method, .. } => FrontendHookAction::Http {
+            HookAction::Http {
+                ref url,
+                ref method,
+                ..
+            } => FrontendHookAction::Http {
                 url: url.to_string(),
                 method: method.as_str().to_string(),
             },
@@ -85,7 +84,7 @@ impl From<&HookConfig> for FrontendHookConfig {
 }
 
 /// Subset of per-host configuration that is safe to expose to the frontend.
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FrontendHostConfig {
     pub enforce_state: bool,

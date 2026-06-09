@@ -17,9 +17,9 @@ import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import {
-    ClientLease,
+    type ClientLease,
     type HostConfig,
-    HostHookConfig,
+    type HostHookConfig,
     type HostStats,
     type OperationFailure,
     state,
@@ -626,6 +626,50 @@ const buildHostUpdateCommands = (
     return { sh: shCmd };
 };
 
+const HostHookCard = (props: {
+    hookName: 'preStartup' | 'postShutdown';
+    hook: HostHookConfig;
+}) => {
+    const formatHookActionLabel = (hook: HostHookConfig) =>
+        hook.action.type === 'exec' ? 'Exec' : `HTTP ${hook.action.method}`;
+
+    const formatHookActionValue = (hook: HostHookConfig) =>
+        hook.action.type === 'exec' ? hook.action.program : hook.action.url;
+
+    const formatHookTiming = (hook: HostHookConfig) => {
+        if (hook.delaySecs === 0) {
+            return `Timeout: ${hook.timeoutSecs}s`;
+        }
+        return `Delay: ${hook.delaySecs}s · Timeout: ${hook.timeoutSecs}s`;
+    };
+
+    return (
+        <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
+            <div class="flex flex-wrap items-baseline gap-2">
+                <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
+                    {
+                        (
+                            {
+                                preStartup: 'Before startup',
+                                postShutdown: 'After shutdown',
+                            } as const
+                        )[props.hookName]
+                    }
+                </p>
+                <p class="text-xs uppercase tracking-[0.08em] text-[#7a7a7a] dark:text-[#8f8f8f]">
+                    {formatHookActionLabel(props.hook)}
+                </p>
+            </div>
+            <code class="inline-block text-sm text-[#333333] dark:text-[#dddddd] wrap-break-words bg-[#f4f4f4] dark:bg-[#2b2b2f] border border-[#e5e5e5] dark:border-[#3e3e42] rounded px-2 py-1 mt-1 whitespace-pre-wrap max-w-full">
+                {formatHookActionValue(props.hook)}
+            </code>
+            <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-2">
+                {formatHookTiming(props.hook)}
+            </p>
+        </div>
+    );
+};
+
 const HostInfoSection = (props: {
     hostStats: HostStats | undefined;
     hostConfig: HostConfig | undefined;
@@ -650,31 +694,6 @@ const HostInfoSection = (props: {
     const enforceStateNote = props.hostConfig?.enforceState
         ? 'Periodically corrects power state to match current leases.'
         : 'Edge-triggered only — reacts to lease changes, no periodic correction.';
-    const formatHookActionLabel = (
-        hook: HostHookConfig,
-    ) =>
-        hook.action.type === 'exec'
-            ? 'Exec'
-            : `HTTP ${hook.action.method}`;
-
-    const formatHookActionValue = (
-        hook: HostHookConfig,
-    ) =>
-        hook.action.type === 'exec'
-            ? hook.action.program
-            : hook.action.url;
-
-    const formatHookTiming = (
-        hook: HostHookConfig,
-    ) => {
-        if (hook.delaySecs === 0) {
-            return `Timeout: ${hook.timeoutSecs}s`;
-        }
-        return `Delay: ${hook.delaySecs}s · Timeout: ${hook.timeoutSecs}s`;
-    };
-
-    const prettyHookName = (hookName: 'preStartup' | 'postShutdown') =>
-        hookName === 'preStartup' ? 'Before startup' : 'After shutdown';
 
     const preStartupHook = props.hostConfig?.preStartup;
     const postShutdownHook = props.hostConfig?.postShutdown;
@@ -803,54 +822,26 @@ const HostInfoSection = (props: {
                         {lastOnlinePrecise}
                     </dd>
                 </Show>
-                <Show
-                    when={
-                        preStartupHook || postShutdownHook
-                    }
-                >
+                <Show when={preStartupHook || postShutdownHook}>
                     <dt class="font-medium text-black dark:text-[#cccccc]">
                         Hooks
                     </dt>
                     <dd class="col-span-2 space-y-3">
                         <Show when={preStartupHook}>
-                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
-                                <div class="flex flex-wrap items-baseline gap-2">
-                                    <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
-                                        {prettyHookName('preStartup')}
-                                    </p>
-                                    <p class="text-xs uppercase tracking-[0.08em] text-[#7a7a7a] dark:text-[#8f8f8f]">
-                                        {formatHookActionLabel(preStartupHook!)}
-                                    </p>
-                                </div>
-                                <code class="inline-block text-sm text-[#333333] dark:text-[#dddddd] wrap-break-words bg-[#f4f4f4] dark:bg-[#2b2b2f] border border-[#e5e5e5] dark:border-[#3e3e42] rounded px-2 py-1 mt-1 whitespace-pre-wrap max-w-full">
-                                    {formatHookActionValue(preStartupHook!)}
-                                </code>
-                                <Show when={formatHookTiming(preStartupHook!) !== ''}>
-                                    <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-2">
-                                        {formatHookTiming(preStartupHook!)}
-                                    </p>
-                                </Show>
-                            </div>
+                            {(hook) => (
+                                <HostHookCard
+                                    hookName="preStartup"
+                                    hook={hook()}
+                                />
+                            )}
                         </Show>
                         <Show when={postShutdownHook}>
-                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
-                                <div class="flex flex-wrap items-baseline gap-2">
-                                    <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
-                                        {prettyHookName('postShutdown')}
-                                    </p>
-                                    <p class="text-xs uppercase tracking-[0.08em] text-[#7a7a7a] dark:text-[#8f8f8f]">
-                                        {formatHookActionLabel(postShutdownHook!)}
-                                    </p>
-                                </div>
-                                <code class="inline-block text-sm text-[#333333] dark:text-[#dddddd] wrap-break-words bg-[#f4f4f4] dark:bg-[#2b2b2f] border border-[#e5e5e5] dark:border-[#3e3e42] rounded px-2 py-1 mt-1 whitespace-pre-wrap max-w-full">
-                                    {formatHookActionValue(postShutdownHook!)}
-                                </code>
-                                <Show when={formatHookTiming(postShutdownHook!) !== ''}>
-                                    <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-2">
-                                        {formatHookTiming(postShutdownHook!)}
-                                    </p>
-                                </Show>
-                            </div>
+                            {(hook) => (
+                                <HostHookCard
+                                    hookName="postShutdown"
+                                    hook={hook()}
+                                />
+                            )}
                         </Show>
                     </dd>
                 </Show>
@@ -1016,8 +1007,7 @@ export const HostDetailPage = (() => {
     const leases = () => state.leaseMap[hostname()] ?? [];
     const hasWebInterfaceLease = () =>
         leases().some((l) => l.type === 'WebInterface');
-    const clientLeases = () =>
-        leases().filter((l) => l.type === 'Client');
+    const clientLeases = () => leases().filter((l) => l.type === 'Client');
     const hostStats = (): HostStats | undefined =>
         state.dbData.status === 'available'
             ? state.dbData.payload.hostStats[hostname()]

@@ -18,14 +18,17 @@ export type Status = Infer<typeof statusOptionsChecker>;
 
 const statusMapChecker = is.recordOf(statusOptionsChecker);
 
-const clientLeaseChecker = is.object({ type: 'Client', value: is.string } as const);
+const clientLeaseChecker = is.object({
+    type: 'Client',
+    value: is.string,
+} as const);
 
 export type ClientLease = Infer<typeof clientLeaseChecker>;
 
 const leaseSourceChecker = is.oneOf(
     is.object({ type: 'WebInterface' } as const),
     clientLeaseChecker,
-)
+);
 
 export type LeaseSource = Infer<typeof leaseSourceChecker>;
 
@@ -84,7 +87,7 @@ export type HostConfig = Infer<typeof hostConfigChecker>;
 const dbDataChecker = is.object({
     clientStats: is.recordOf(clientStatsChecker),
     hostStats: is.recordOf(hostStatChecker),
-}as const);
+} as const);
 
 export type DbData = Infer<typeof dbDataChecker>;
 
@@ -107,10 +110,12 @@ const dynamicConfigCheckerObj = {
     hosts: is.arrayOf(is.string),
     clients: is.arrayOf(is.string),
     hostConfigMap: is.recordOf(hostConfigChecker),
-} as const
+} as const;
 const dynamicConfigChecker = is.object(dynamicConfigCheckerObj);
 
-const operationFailureChecker = is.object({ operation: is.oneOf('shutdown', 'startup') } as const);
+const operationFailureChecker = is.object({
+    operation: is.oneOf('shutdown', 'startup'),
+} as const);
 
 const appStateChecker = is.object({
     statusMap: statusMapChecker,
@@ -126,12 +131,30 @@ export type OperationFailure = Infer<typeof operationFailureChecker>;
 
 const wsMessageChecker = is.oneOf(
     is.object({ type: 'HostStatus', payload: statusMapChecker } as const),
-    is.object({ type: 'ClientStats', payload: is.recordOf(clientStatsChecker) } as const),
-    is.object({ type: 'HostStats', payload: is.object({ host: is.string, stats: hostStatChecker }) } as const),
-    is.object({ type: 'ConfigChanged', payload: dynamicConfigChecker } as const),
+    is.object({
+        type: 'ClientStats',
+        payload: is.recordOf(clientStatsChecker),
+    } as const),
+    is.object({
+        type: 'HostStats',
+        payload: is.object({ host: is.string, stats: hostStatChecker }),
+    } as const),
+    is.object({
+        type: 'ConfigChanged',
+        payload: dynamicConfigChecker,
+    } as const),
     is.object({ type: 'Initial', payload: appStateChecker } as const),
-    is.object({ type: 'LeaseUpdate', payload: is.object({ host: is.string, leases: is.arrayOf(leaseSourceChecker) }) } as const),
-    is.object({ type: 'OperationFailed', payload: is.recordOf(operationFailureChecker) } as const),
+    is.object({
+        type: 'LeaseUpdate',
+        payload: is.object({
+            host: is.string,
+            leases: is.arrayOf(leaseSourceChecker),
+        }),
+    } as const),
+    is.object({
+        type: 'OperationFailed',
+        payload: is.recordOf(operationFailureChecker),
+    } as const),
 );
 
 export type WsMessage = Infer<typeof wsMessageChecker>;
