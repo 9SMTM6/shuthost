@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { assignedPortForConfig, type ConfigKey } from './backend-utils';
 
-export const getBaseUrl = (configKey: ConfigKey, useTls = false): string => {
+export const getBaseUrl = (configKey: ConfigKey, useTls = false) => {
     const port = assignedPortForConfig(configKey);
     const protocol = useTls ? 'https' : 'http';
     return `${protocol}://127.0.0.1:${port}`;
@@ -24,7 +24,7 @@ export const sanitizeEnvironmentDependents = async (page: Page) => {
             /localhost/g,
         ];
         /** Replace environment-dependent URLs and domains in a string.*/
-        const sanitizeText = (text: string): string => {
+        const sanitizeText = (text: string) => {
             let sanitized = text;
             fullUrlRegexes.forEach((r: RegExp) => {
                 sanitized = sanitized.replace(r, '<protocol://base_url>');
