@@ -984,10 +984,7 @@ export const HostDetailPage = (() => {
         state.hostConfigMap[hostname()];
 
     const updateLease = async (action: 'take' | 'release') => {
-        if (isDemoMode) {
-            await demo.updateLease(hostname(), action);
-            return;
-        }
+        if (isDemoMode) return demo.updateLease(hostname(), action);
         try {
             await apiFetch(`/api/lease/${hostname()}/${action}`, {
                 method: 'POST',

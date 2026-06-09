@@ -20,11 +20,8 @@ export const AppLayout = ((props: ParentProps) => {
         }
     });
     onMount(() => {
-        if (isDemoMode) {
-            initDemoMode();
-        } else {
-            connectWebSocket();
-        }
+        if (isDemoMode) return initDemoMode();
+        connectWebSocket();
     });
 
     return (

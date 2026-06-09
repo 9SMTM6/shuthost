@@ -75,10 +75,7 @@ const getOrCreatePushSubscription = async () => {
  * on the given host (startup or shutdown not triggered by ShutHost).
  */
 export const subscribeToHostUnscheduled = async (hostname: string) => {
-    if (isDemoMode) {
-        demo.subscribeToHostUnscheduled(hostname);
-        return;
-    }
+    if (isDemoMode) return demo.subscribeToHostUnscheduled(hostname);
     const subscription = await getOrCreatePushSubscription();
     const subJson = subscription.toJSON();
 
@@ -94,12 +91,8 @@ export const subscribeToHostUnscheduled = async (hostname: string) => {
  * push notifications for the given host. Does NOT request notification permission.
  * Returns false if the browser has no push subscription or push is unsupported.
  */
-export const checkHostUnscheduledSubscription = async (
-    hostname: string,
-) => {
-    if (isDemoMode) {
-        return demo.checkHostUnscheduledSubscription(hostname);
-    }
+export const checkHostUnscheduledSubscription = async (hostname: string) => {
+    if (isDemoMode) return demo.checkHostUnscheduledSubscription(hostname);
     if (noPushSupport) {
         return false;
     }
@@ -121,13 +114,8 @@ export const checkHostUnscheduledSubscription = async (
  * Removes the unscheduled-event subscription link for the current browser + host pair.
  * Has no effect if the browser has no push subscription.
  */
-export const unsubscribeFromHostUnscheduled = async (
-    hostname: string,
-) => {
-    if (isDemoMode) {
-        demo.unsubscribeFromHostUnscheduled(hostname);
-        return;
-    }
+export const unsubscribeFromHostUnscheduled = async (hostname: string) => {
+    if (isDemoMode) return demo.unsubscribeFromHostUnscheduled(hostname);
     if (noPushSupport) return;
 
     const registration = await navigator.serviceWorker.ready;
@@ -146,10 +134,7 @@ export const unsubscribeFromHostUnscheduled = async (
  * on the given host (when a shutdown or startup command times out or errors).
  */
 export const subscribeToHostOperationFailed = async (hostname: string) => {
-    if (isDemoMode) {
-        demo.subscribeToHostOperationFailed(hostname);
-        return;
-    }
+    if (isDemoMode) return demo.subscribeToHostOperationFailed(hostname);
     const subscription = await getOrCreatePushSubscription();
     const subJson = subscription.toJSON();
 
@@ -167,9 +152,7 @@ export const subscribeToHostOperationFailed = async (hostname: string) => {
 export const checkHostOperationFailedSubscription = async (
     hostname: string,
 ) => {
-    if (isDemoMode) {
-        return demo.checkHostOperationFailedSubscription(hostname);
-    }
+    if (isDemoMode) return demo.checkHostOperationFailedSubscription(hostname);
     if (noPushSupport) {
         return false;
     }
@@ -190,13 +173,8 @@ export const checkHostOperationFailedSubscription = async (
 /**
  * Removes the operation-failed subscription link for the current browser + host pair.
  */
-export const unsubscribeFromHostOperationFailed = async (
-    hostname: string,
-) => {
-    if (isDemoMode) {
-        demo.unsubscribeFromHostOperationFailed(hostname);
-        return;
-    }
+export const unsubscribeFromHostOperationFailed = async (hostname: string) => {
+    if (isDemoMode) return demo.unsubscribeFromHostOperationFailed(hostname);
     if (noPushSupport) return;
 
     const registration = await navigator.serviceWorker.ready;
@@ -219,10 +197,8 @@ export const subscribeToHostOnlineFor = async (
     hostname: string,
     durationSecs: number,
 ) => {
-    if (isDemoMode) {
-        demo.subscribeToHostOnlineFor(hostname, durationSecs);
-        return;
-    }
+    if (isDemoMode)
+        return demo.subscribeToHostOnlineFor(hostname, durationSecs);
     const subscription = await getOrCreatePushSubscription();
     const subJson = subscription.toJSON();
 
@@ -242,12 +218,8 @@ export const subscribeToHostOnlineFor = async (
  * notifications for the given host. Returns the duration in seconds if subscribed,
  * or `null` if not.
  */
-export const checkHostOnlineForSubscription = async (
-    hostname: string,
-) => {
-    if (isDemoMode) {
-        return demo.checkHostOnlineForSubscription(hostname);
-    }
+export const checkHostOnlineForSubscription = async (hostname: string) => {
+    if (isDemoMode) return demo.checkHostOnlineForSubscription(hostname);
     if (noPushSupport) {
         return null;
     }
@@ -273,13 +245,8 @@ export const checkHostOnlineForSubscription = async (
 /**
  * Removes the recurring online-for subscription link for the current browser + host pair.
  */
-export const unsubscribeFromHostOnlineFor = async (
-    hostname: string,
-) => {
-    if (isDemoMode) {
-        demo.unsubscribeFromHostOnlineFor(hostname);
-        return;
-    }
+export const unsubscribeFromHostOnlineFor = async (hostname: string) => {
+    if (isDemoMode) return demo.unsubscribeFromHostOnlineFor(hostname);
     if (noPushSupport) return;
 
     const registration = await navigator.serviceWorker.ready;
@@ -302,10 +269,8 @@ export const subscribeToHostOnlineForOneshot = async (
     hostname: string,
     durationSecs: number,
 ) => {
-    if (isDemoMode) {
-        demo.subscribeToHostOnlineForOneshot(hostname, durationSecs);
-        return;
-    }
+    if (isDemoMode)
+        return demo.subscribeToHostOnlineForOneshot(hostname, durationSecs);
     const subscription = await getOrCreatePushSubscription();
     const subJson = subscription.toJSON();
 

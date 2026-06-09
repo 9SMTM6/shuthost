@@ -21,10 +21,7 @@ const formatLastUsed = (clientId: string): string => {
 // ==========================
 
 const resetLeases = async (clientId: string) => {
-    if (isDemoMode) {
-        demo.resetLeases(clientId);
-        return;
-    }
+    if (isDemoMode) return demo.resetLeases(clientId);
     try {
         await apiFetch(`/api/reset_leases/${clientId}`, {
             method: 'POST',

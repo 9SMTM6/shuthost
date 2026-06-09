@@ -128,19 +128,18 @@ export const initDemoMode = () => {
 
 // ── Demo push subscription state ───────────────────────────────────────────
 
-/** In demo mode there is no real backend, so we maintain an in-memory 
+/** In demo mode there is no real backend, so we maintain an in-memory
  * fake backend with relevant state.*/
 const demoBackendState = {
     pushSubscriptions: new Set<string>(),
     operationFailedSubscriptions: new Set<string>(),
     onlineForSubs: new Map<string, number>(),
     oneshotOnlineForSubs: new Map<string, number>(),
-}
+};
 
 const demoRequests = {
-    checkHostUnscheduledSubscription: (
-        hostname: string,
-    ) => demoBackendState.pushSubscriptions.has(hostname),
+    checkHostUnscheduledSubscription: (hostname: string) =>
+        demoBackendState.pushSubscriptions.has(hostname),
     subscribeToHostUnscheduled: (hostname: string): void => {
         demoBackendState.pushSubscriptions.add(hostname);
     },
@@ -171,20 +170,16 @@ const demoRequests = {
             });
         }
     },
-    checkHostOperationFailedSubscription: (
-        hostname: string,
-    ) => demoBackendState.operationFailedSubscriptions.has(hostname),
+    checkHostOperationFailedSubscription: (hostname: string) =>
+        demoBackendState.operationFailedSubscriptions.has(hostname),
     subscribeToHostOperationFailed: (hostname: string): void => {
         demoBackendState.operationFailedSubscriptions.add(hostname);
     },
-    unsubscribeFromHostOperationFailed: (
-        hostname: string,
-    ): void => {
+    unsubscribeFromHostOperationFailed: (hostname: string): void => {
         demoBackendState.operationFailedSubscriptions.delete(hostname);
     },
-    checkHostOnlineForSubscription: (
-        hostname: string,
-    ) => demoBackendState.onlineForSubs.get(hostname) ?? null,
+    checkHostOnlineForSubscription: (hostname: string) =>
+        demoBackendState.onlineForSubs.get(hostname) ?? null,
     subscribeToHostOnlineFor: (
         hostname: string,
         durationSecs: number,
@@ -200,10 +195,7 @@ const demoRequests = {
     ): void => {
         demoBackendState.oneshotOnlineForSubs.set(hostname, durationSecs);
     },
-    updateLease: async (
-        host: string,
-        action: 'take' | 'release',
-    ) => {
+    updateLease: async (host: string, action: 'take' | 'release') => {
         const clearHostTimeouts = () => {
             const lt = leaseTimeouts.get(host);
             if (lt != null) clearTimeout(lt);
@@ -273,6 +265,4 @@ const demoRequests = {
     },
 } as const;
 
-export {
-    demoRequests as demo,
-}
+export { demoRequests as demo };
