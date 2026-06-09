@@ -1,4 +1,4 @@
-import { applyMessage } from './appStore';
+import { applyMessage, WsMessage } from './appStore';
 import { buildData } from './buildData';
 import { serverData } from './serverData';
 
@@ -94,25 +94,35 @@ export const initDemoMode = () => {
                                 url: 'https://example.com/pre-startup',
                                 method: 'POST',
                             },
-                            delaySecs: 2,
+                            delaySecs: 0,
                             timeoutSecs: 10,
+                        },
+                        postShutdown: {
+                            action: {
+                                type: 'exec',
+                                program: '/home/user/disable-plug.sh',
+                            },
+                            delaySecs: 2,
+                            timeoutSecs: 15,
                         },
                     },
                     tarbean: {
                         enforceState: false,
+                    },
+                    junpui: {
+                        enforceState: false,
                         postShutdown: {
                             action: {
                                 type: 'exec',
-                                program: '/usr/bin/shutdown',
+                                program: '/home/user/disable-plug.sh',
                             },
                             delaySecs: 1,
                             timeoutSecs: 15,
                         },
                     },
-                    junpui: { enforceState: false },
                 },
             },
-        });
+        } satisfies WsMessage);
     }, 500);
 };
 

@@ -650,19 +650,31 @@ const HostInfoSection = (props: {
     const enforceStateNote = props.hostConfig?.enforceState
         ? 'Periodically corrects power state to match current leases.'
         : 'Edge-triggered only — reacts to lease changes, no periodic correction.';
-    const formatHookSummary = (
+    const formatHookActionLabel = (
         hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
-    ) => {
-        if (hook.action.type === 'exec') {
-            return `Exec: ${hook.action.program}`;
-        }
+    ) =>
+        hook.action.type === 'exec'
+            ? 'Exec'
+            : `HTTP ${hook.action.method}`;
 
-        return `${hook.action.method} ${hook.action.url}`;
-    };
+    const formatHookActionValue = (
+        hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
+    ) =>
+        hook.action.type === 'exec'
+            ? hook.action.program
+            : hook.action.url;
 
     const formatHookTiming = (
         hook: NonNullable<HostConfig['preStartup'] | HostConfig['postShutdown']>,
-    ) => `Delay: ${hook.delaySecs}s · Timeout: ${hook.timeoutSecs}s`;
+    ) => {
+        if (hook.delaySecs === 0) {
+            return `Timeout: ${hook.timeoutSecs}s`;
+        }
+        return `Delay: ${hook.delaySecs}s · Timeout: ${hook.timeoutSecs}s`;
+    };
+
+    const prettyHookName = (hookName: 'preStartup' | 'postShutdown') =>
+        hookName === 'preStartup' ? 'Before startup' : 'After shutdown';
 
     const preStartupHook = props.hostConfig?.preStartup;
     const postShutdownHook = props.hostConfig?.postShutdown;
@@ -775,43 +787,6 @@ const HostInfoSection = (props: {
                 <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
                     {enforceStateNote}
                 </dd>
-                <Show
-                    when={
-                        props.hostConfig?.preStartup || props.hostConfig?.postShutdown
-                    }
-                >
-                    <dt class="font-medium text-black dark:text-[#cccccc]">
-                        Hooks
-                    </dt>
-                    <dd class="col-span-2 space-y-3">
-                                <Show when={preStartupHook}>
-                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
-                                <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
-                                    pre_startup
-                                </p>
-                                <p class="text-sm text-[#616161] dark:text-[#9d9d9d] wrap-break-words">
-                                    {formatHookSummary(preStartupHook!)}
-                                </p>
-                                <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-1">
-                                    {formatHookTiming(preStartupHook!)}
-                                </p>
-                            </div>
-                        </Show>
-                        <Show when={postShutdownHook}>
-                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
-                                <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
-                                    post_shutdown
-                                </p>
-                                <p class="text-sm text-[#616161] dark:text-[#9d9d9d] wrap-break-words">
-                                    {formatHookSummary(postShutdownHook!)}
-                                </p>
-                                <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-1">
-                                    {formatHookTiming(postShutdownHook!)}
-                                </p>
-                            </div>
-                        </Show>
-                    </dd>
-                </Show>
                 <dt class="font-medium text-black dark:text-[#cccccc]">
                     Last online
                 </dt>
@@ -826,6 +801,57 @@ const HostInfoSection = (props: {
                 <Show when={lastOnlinePrecise != null}>
                     <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
                         {lastOnlinePrecise}
+                    </dd>
+                </Show>
+                <Show
+                    when={
+                        props.hostConfig?.preStartup || props.hostConfig?.postShutdown
+                    }
+                >
+                    <dt class="font-medium text-black dark:text-[#cccccc]">
+                        Hooks
+                    </dt>
+                    <dd class="col-span-2 space-y-3">
+                        <Show when={preStartupHook}>
+                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
+                                <div class="flex flex-wrap items-baseline gap-2">
+                                    <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
+                                        {prettyHookName('preStartup')}
+                                    </p>
+                                    <p class="text-xs uppercase tracking-[0.08em] text-[#7a7a7a] dark:text-[#8f8f8f]">
+                                        {formatHookActionLabel(preStartupHook!)}
+                                    </p>
+                                </div>
+                                <code class="inline-block text-sm text-[#333333] dark:text-[#dddddd] wrap-break-words bg-[#f4f4f4] dark:bg-[#2b2b2f] border border-[#e5e5e5] dark:border-[#3e3e42] rounded px-2 py-1 mt-1 whitespace-pre-wrap max-w-full">
+                                    {formatHookActionValue(preStartupHook!)}
+                                </code>
+                                <Show when={formatHookTiming(preStartupHook!) !== ''}>
+                                    <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-2">
+                                        {formatHookTiming(preStartupHook!)}
+                                    </p>
+                                </Show>
+                            </div>
+                        </Show>
+                        <Show when={postShutdownHook}>
+                            <div class="rounded border border-[#e5e5e5] dark:border-[#3e3e42] p-3 bg-[#fafafa] dark:bg-[#1f1f23]">
+                                <div class="flex flex-wrap items-baseline gap-2">
+                                    <p class="text-sm font-semibold text-black dark:text-[#cccccc]">
+                                        {prettyHookName('postShutdown')}
+                                    </p>
+                                    <p class="text-xs uppercase tracking-[0.08em] text-[#7a7a7a] dark:text-[#8f8f8f]">
+                                        {formatHookActionLabel(postShutdownHook!)}
+                                    </p>
+                                </div>
+                                <code class="inline-block text-sm text-[#333333] dark:text-[#dddddd] wrap-break-words bg-[#f4f4f4] dark:bg-[#2b2b2f] border border-[#e5e5e5] dark:border-[#3e3e42] rounded px-2 py-1 mt-1 whitespace-pre-wrap max-w-full">
+                                    {formatHookActionValue(postShutdownHook!)}
+                                </code>
+                                <Show when={formatHookTiming(postShutdownHook!) !== ''}>
+                                    <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-2">
+                                        {formatHookTiming(postShutdownHook!)}
+                                    </p>
+                                </Show>
+                            </div>
+                        </Show>
                     </dd>
                 </Show>
             </dl>
