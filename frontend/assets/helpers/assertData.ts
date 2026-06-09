@@ -59,7 +59,7 @@ export const is = {
     number: (v => typeof v === 'number') as Checker<number>,
     optional:
         <T>(check: Checker<T>) =>
-        (v => v === undefined || check(v)) as Checker<T | undefined>,
+        (v => v === undefined || v === null|| check(v)) as Checker<T | undefined | null>,
     literal:
         <const T extends Literal>(value: T) =>
         (v => v === value) as Checker<T>,
