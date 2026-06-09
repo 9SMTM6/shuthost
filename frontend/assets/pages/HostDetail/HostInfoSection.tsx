@@ -1,9 +1,9 @@
 import { CircleDashed, Crosshair } from 'lucide-solid';
-import { Show } from 'solid-js';
+import { Match, Show, Switch, type JSX } from 'solid-js';
 import { CopyButton } from '../../components/CopyButton';
 import { buildData } from '../../helpers/buildData';
 import { demoSubpath } from '../../helpers/demo';
-import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
+import { AnyComponent, AnyParentComponent, formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 import type {
     HostConfig,
     HostHookConfig,
@@ -31,8 +31,7 @@ const buildHostUpdateCommands = (
             ps1ScriptPathArg = ` -ScriptPath '${scriptPath}'`;
         } else {
             console.error(
-                `Host has scriptPath '${scriptPath}' but init system '${
-                    initSystem ?? 'unknown'
+                `Host has scriptPath '${scriptPath}' but init system '${initSystem ?? 'unknown'
                 }' is not a self-extracting type`,
             );
         }
@@ -50,7 +49,31 @@ const buildHostUpdateCommands = (
     return { sh: shCmd };
 };
 
-const HostHookCard = (props: {
+const InfoRow = ((props: {
+    label: string;
+    children: JSX.Element;
+    hint?: string | undefined;
+    ddClass?: string | undefined;
+}) => (
+    <>
+        <dt class="font-medium text-black dark:text-[#cccccc]">
+            {props.label}
+        </dt>
+        <dd
+            class={`text-[#616161] dark:text-[#9d9d9d] ${props.ddClass ?? ''}`}
+            title={props.hint}
+        >
+            {props.children}
+        </dd>
+        <Show when={props.hint != null}>
+            <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
+                {props.hint}
+            </dd>
+        </Show>
+    </>
+)) satisfies AnyParentComponent;
+
+const HostHookCard = ((props: {
     hookName: 'preStartup' | 'postShutdown';
     hook: HostHookConfig;
 }) => {
@@ -90,9 +113,9 @@ const HostHookCard = (props: {
             </p>
         </div>
     );
-};
+}) satisfies AnyComponent;
 
-export const HostInfoSection = (props: {
+export const HostInfoSection = ((props: {
     hostStats: HostStats | undefined;
     hostConfig: HostConfig | undefined;
     isOnline: boolean;
@@ -105,8 +128,8 @@ export const HostInfoSection = (props: {
         agentVersion === 'unknown'
             ? 'No record of this host connecting yet.'
             : agentVersion === '<= 1.7.1'
-              ? 'Predates version reporting (added in 1.8.0).'
-              : undefined;
+                ? 'Predates version reporting (added in 1.8.0).'
+                : undefined;
     const isSelfExtracting =
         props.hostStats?.initSystem === 'self-extracting-shell' ||
         props.hostStats?.initSystem === 'self-extracting-pwsh';
@@ -134,26 +157,15 @@ export const HostInfoSection = (props: {
                 Information
             </h3>
             <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-                <dt class="font-medium text-black dark:text-[#cccccc]">
-                    Agent version
-                </dt>
-                <dd
-                    class="text-[#616161] dark:text-[#9d9d9d]"
-                    title={agentVersionNote}
+                <InfoRow
+                    label="Agent version"
+                    hint={agentVersionNote}
                 >
                     {agentVersion}
-                </dd>
-                <Show when={agentVersionNote != null}>
-                    <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
-                        {agentVersionNote}
-                    </dd>
-                </Show>
-                <dt class="font-medium text-black dark:text-[#cccccc]">
-                    Init system
-                </dt>
-                <dd
-                    class="text-[#616161] dark:text-[#9d9d9d]"
-                    title={initSystemNote}
+                </InfoRow>
+                <InfoRow
+                    label="Init system"
+                    hint={initSystemNote}
                 >
                     {
                         {
@@ -166,16 +178,10 @@ export const HostInfoSection = (props: {
                             unknown: 'Unknown',
                         }[props.hostStats?.initSystem ?? 'unknown']
                     }
-                </dd>
-                <Show when={initSystemNote != null}>
-                    <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
-                        {initSystemNote}
-                    </dd>
-                </Show>
-                <dt class="font-medium text-black dark:text-[#cccccc]">
-                    Operating system
-                </dt>
-                <dd class="text-[#616161] dark:text-[#9d9d9d]">
+                </InfoRow>
+                <InfoRow
+                    label="Operating system"
+                >
                     {
                         {
                             linux: 'Linux',
@@ -184,62 +190,49 @@ export const HostInfoSection = (props: {
                             unknown: 'Unknown',
                         }[props.hostStats?.operatingSystem ?? 'unknown']
                     }
-                </dd>
+                </InfoRow>
                 <Show when={props.hostStats?.scriptPath}>
-                    <dt class="font-medium text-black dark:text-[#cccccc]">
-                        Install script
-                    </dt>
-                    <dd class="text-[#616161] dark:text-[#9d9d9d] break-all">
-                        {props.hostStats?.scriptPath}
-                    </dd>
-                </Show>
-                <dt class="font-medium text-black dark:text-[#cccccc]">
-                    Enforce state
-                </dt>
-                <dd
-                    class="text-[#616161] dark:text-[#9d9d9d] inline-flex items-center gap-1"
-                    title={enforceStateNote}
-                >
-                    <Show
-                        when={props.hostConfig?.enforceState}
-                        fallback={
-                            <>
-                                <CircleDashed
-                                    size={14}
-                                    class="text-[#9d9d9d]"
-                                    aria-hidden="true"
-                                />
-                                No
-                            </>
-                        }
+                    <InfoRow
+                        label="Install script"
+                        ddClass="break-all"
                     >
-                        <Crosshair
-                            size={14}
-                            class="text-green-600 dark:text-[rgba(46,193,100,0.9)]"
-                            aria-hidden="true"
-                        />
-                        Yes
-                    </Show>
-                </dd>
-                <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
-                    {enforceStateNote}
-                </dd>
-                <dt class="font-medium text-black dark:text-[#cccccc]">
-                    Last online
-                </dt>
-                <dd
-                    class="text-[#616161] dark:text-[#9d9d9d]"
-                    title={lastOnlinePrecise}
-                >
-                    {props.isOnline
-                        ? 'Currently online'
-                        : formatRelativeTimestamp(lastOnline)}
-                </dd>
-                <Show when={lastOnlinePrecise != null}>
-                    <dd class="col-span-2 touch-description text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mb-1">
-                        {lastOnlinePrecise}
-                    </dd>
+                        {props.hostStats?.scriptPath}
+                    </InfoRow>
                 </Show>
+                <InfoRow
+                    label="Enforce state"
+                    hint={enforceStateNote}
+                    ddClass="inline-flex items-center gap-1"
+                >
+                    <Switch>
+                        <Match when={props.hostConfig?.enforceState}>
+                            <Crosshair
+                                size={14}
+                                class="text-green-600 dark:text-[rgba(46,193,100,0.9)]"
+                                aria-hidden="true"
+                            />
+                            Yes
+                        </Match>
+                        <Match when={!props.hostConfig?.enforceState}>
+                            <CircleDashed
+                                size={14}
+                                class="text-[#9d9d9d]"
+                                aria-hidden="true"
+                            />
+                            No
+                        </Match>
+                    </Switch>
+                </InfoRow>
+                <InfoRow
+                    label="Last online"
+                    hint={lastOnlinePrecise}
+                >
+                    {
+                        props.isOnline
+                            ? 'Currently online'
+                            : formatRelativeTimestamp(lastOnline)
+                    }
+                </InfoRow>
                 <Show when={preStartupHook || postShutdownHook}>
                     <dt class="font-medium text-black dark:text-[#cccccc]">
                         Hooks
@@ -267,9 +260,9 @@ export const HostInfoSection = (props: {
             <HostUpdateCommands hostStats={props.hostStats} />
         </section>
     );
-};
+}) satisfies AnyComponent;
 
-const HostUpdateCommands = (props: { hostStats: HostStats | undefined }) => {
+const HostUpdateCommands = ((props: { hostStats: HostStats | undefined }) => {
     const updateCmds = buildHostUpdateCommands(props.hostStats);
 
     return (
@@ -331,4 +324,4 @@ const HostUpdateCommands = (props: { hostStats: HostStats | undefined }) => {
             </div>
         </Show>
     );
-};
+}) satisfies AnyComponent;
