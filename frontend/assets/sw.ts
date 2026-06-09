@@ -100,7 +100,7 @@ const notifyClients = async () => {
 const networkFirstWithCacheFallback = async (
     networkRequest: Request,
     cacheKey: Request,
-): Promise<Response> => {
+) => {
     const cache = await caches.open(CACHE_NAME);
     let networkResponse: Response | null = null;
     try {
@@ -131,7 +131,7 @@ const REVALIDATE_TIMEOUT_MS = 250;
 //                  referenced hashed assets and posts NEW_VERSION_AVAILABLE to all clients.
 const fastestOfWithTimeout = (
     request: Request,
-): { responsePromise: Promise<Response>; bgWorkPromise: Promise<void> } => {
+) => {
     // Fire network fetch immediately so it runs in parallel with cache lookup.
     const networkFetchPromise = fetch(request.clone());
     const cacheMatchPromise = caches
