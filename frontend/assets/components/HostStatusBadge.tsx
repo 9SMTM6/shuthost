@@ -4,9 +4,11 @@ export const HostStatusBadge = (props: {
     status: 'online' | 'offline' | 'waking' | 'shutting_down' | undefined;
 }) => (
     <Switch
-        fallback={<span class="host-status-badge bg-gray-100 text-gray-500 dark:bg-[#2d2d30] dark:text-[#858585]">
-            unknown
-        </span>}
+        fallback={
+            <span class="host-status-badge bg-gray-100 text-gray-500 dark:bg-[#2d2d30] dark:text-[#858585]">
+                unknown
+            </span>
+        }
     >
         <Match when={props.status === 'online'}>
             <span class="host-status-badge bg-green-100 text-green-800 dark:bg-[rgba(46,193,100,0.15)] dark:text-[rgba(46,193,100,0.9)]">
