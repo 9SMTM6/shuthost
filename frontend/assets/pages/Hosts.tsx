@@ -6,7 +6,7 @@ import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
-import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
+import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import type { AnyComponent } from '../helpers/utils';
 import { sortActiveFirst } from '../helpers/utils';
@@ -59,7 +59,7 @@ const makeInstallCommands = () => {
 
 const updateLease = async (hostName: string, action: 'take' | 'release') => {
     if (isDemoMode) {
-        await demoUpdateLease(hostName, action);
+        await demo.updateLease(hostName, action);
         return;
     }
     try {
