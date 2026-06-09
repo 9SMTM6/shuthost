@@ -4,7 +4,7 @@ import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { apiFetch } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
-import { demoResetLeases, demoSubpath, isDemoMode } from '../helpers/demo';
+import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
 import type { AnyComponent } from '../helpers/utils';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
@@ -22,7 +22,7 @@ const formatLastUsed = (clientId: string): string => {
 
 const resetLeases = async (clientId: string) => {
     if (isDemoMode) {
-        demoResetLeases(clientId);
+        demo.resetLeases(clientId);
         return;
     }
     try {

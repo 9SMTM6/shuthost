@@ -1,17 +1,5 @@
 import { apiFetch } from './apiFetch';
-import {
-    demoCheckHostOnlineForSubscription,
-    demoCheckHostOperationFailedSubscription,
-    demoCheckHostUnscheduledSubscription,
-    demoSubscribeToHostOnlineFor,
-    demoSubscribeToHostOnlineForOneshot,
-    demoSubscribeToHostOperationFailed,
-    demoSubscribeToHostUnscheduled,
-    demoUnsubscribeFromHostOnlineFor,
-    demoUnsubscribeFromHostOperationFailed,
-    demoUnsubscribeFromHostUnscheduled,
-    isDemoMode,
-} from './demo';
+import { demo, isDemoMode } from './demo';
 import { noServiceWorkerSupport } from './serviceWorker';
 
 /**
@@ -88,7 +76,7 @@ const getOrCreatePushSubscription = async () => {
  */
 export const subscribeToHostUnscheduled = async (hostname: string) => {
     if (isDemoMode) {
-        demoSubscribeToHostUnscheduled(hostname);
+        demo.subscribeToHostUnscheduled(hostname);
         return;
     }
     const subscription = await getOrCreatePushSubscription();
@@ -110,7 +98,7 @@ export const checkHostUnscheduledSubscription = async (
     hostname: string,
 ) => {
     if (isDemoMode) {
-        return demoCheckHostUnscheduledSubscription(hostname);
+        return demo.checkHostUnscheduledSubscription(hostname);
     }
     if (noPushSupport) {
         return false;
@@ -137,7 +125,7 @@ export const unsubscribeFromHostUnscheduled = async (
     hostname: string,
 ) => {
     if (isDemoMode) {
-        demoUnsubscribeFromHostUnscheduled(hostname);
+        demo.unsubscribeFromHostUnscheduled(hostname);
         return;
     }
     if (noPushSupport) return;
@@ -159,7 +147,7 @@ export const unsubscribeFromHostUnscheduled = async (
  */
 export const subscribeToHostOperationFailed = async (hostname: string) => {
     if (isDemoMode) {
-        demoSubscribeToHostOperationFailed(hostname);
+        demo.subscribeToHostOperationFailed(hostname);
         return;
     }
     const subscription = await getOrCreatePushSubscription();
@@ -180,7 +168,7 @@ export const checkHostOperationFailedSubscription = async (
     hostname: string,
 ) => {
     if (isDemoMode) {
-        return demoCheckHostOperationFailedSubscription(hostname);
+        return demo.checkHostOperationFailedSubscription(hostname);
     }
     if (noPushSupport) {
         return false;
@@ -206,7 +194,7 @@ export const unsubscribeFromHostOperationFailed = async (
     hostname: string,
 ) => {
     if (isDemoMode) {
-        demoUnsubscribeFromHostOperationFailed(hostname);
+        demo.unsubscribeFromHostOperationFailed(hostname);
         return;
     }
     if (noPushSupport) return;
@@ -232,7 +220,7 @@ export const subscribeToHostOnlineFor = async (
     durationSecs: number,
 ) => {
     if (isDemoMode) {
-        demoSubscribeToHostOnlineFor(hostname, durationSecs);
+        demo.subscribeToHostOnlineFor(hostname, durationSecs);
         return;
     }
     const subscription = await getOrCreatePushSubscription();
@@ -258,7 +246,7 @@ export const checkHostOnlineForSubscription = async (
     hostname: string,
 ) => {
     if (isDemoMode) {
-        return demoCheckHostOnlineForSubscription(hostname);
+        return demo.checkHostOnlineForSubscription(hostname);
     }
     if (noPushSupport) {
         return null;
@@ -289,7 +277,7 @@ export const unsubscribeFromHostOnlineFor = async (
     hostname: string,
 ) => {
     if (isDemoMode) {
-        demoUnsubscribeFromHostOnlineFor(hostname);
+        demo.unsubscribeFromHostOnlineFor(hostname);
         return;
     }
     if (noPushSupport) return;
@@ -315,7 +303,7 @@ export const subscribeToHostOnlineForOneshot = async (
     durationSecs: number,
 ) => {
     if (isDemoMode) {
-        demoSubscribeToHostOnlineForOneshot(hostname, durationSecs);
+        demo.subscribeToHostOnlineForOneshot(hostname, durationSecs);
         return;
     }
     const subscription = await getOrCreatePushSubscription();

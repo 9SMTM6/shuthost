@@ -25,7 +25,7 @@ import {
     state,
 } from '../helpers/appStore';
 import { buildData } from '../helpers/buildData';
-import { demoSubpath, demoUpdateLease, isDemoMode } from '../helpers/demo';
+import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import {
     checkHostOnlineForSubscription,
     checkHostOperationFailedSubscription,
@@ -985,7 +985,7 @@ export const HostDetailPage = (() => {
 
     const updateLease = async (action: 'take' | 'release') => {
         if (isDemoMode) {
-            await demoUpdateLease(hostname(), action);
+            await demo.updateLease(hostname(), action);
             return;
         }
         try {
