@@ -170,3 +170,18 @@ test.describe('demo mode', () => {
         );
     });
 });
+
+test.describe('host hooks config', () => {
+    test('host detail page with startup/shutdown hooks', async ({ page }) => {
+        const base = getBaseUrl('hooks-hosts');
+        await page.goto(`${base}/hosts/archive`);
+        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('section[aria-labelledby="host-info-title"]', {
+            state: 'visible',
+        });
+        await page.waitForSelector('text=Before startup', { state: 'visible' });
+        await page.waitForSelector('text=After shutdown', { state: 'visible' });
+        const hooksSection = page.locator('dt:has-text("Hooks") + dd');
+        await expect(hooksSection).toHaveScreenshot('host_detail_hooks.png');
+    });
+});

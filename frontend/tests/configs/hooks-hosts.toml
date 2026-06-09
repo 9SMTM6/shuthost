@@ -1,0 +1,12 @@
+[server]
+port = 0
+bind = "127.0.0.1"
+
+[db]
+path = ":memory:"
+
+[hosts]
+archive = { ip = "192.168.1.10", mac = "AA:BB:CC:DD:EE:FF", port = 9000, shared_secret = "hostsecret1", enforce_state = true, pre_startup = { type = "http", url = "https://example.com/pre-startup", method = "POST", delay_secs = 0, timeout_secs = 10 }, post_shutdown = { type = "exec", program = "/home/user/disable-plug.sh", delay_secs = 2, timeout_secs = 15 } }
+
+[clients]
+
