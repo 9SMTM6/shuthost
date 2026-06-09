@@ -18,9 +18,13 @@ export type Status = Infer<typeof statusOptionsChecker>;
 
 const statusMapChecker = is.recordOf(statusOptionsChecker);
 
+const clientLeaseChecker = is.object({ type: 'Client', value: is.string } as const);
+
+export type ClientLease = Infer<typeof clientLeaseChecker>;
+
 const leaseSourceChecker = is.oneOf(
     is.object({ type: 'WebInterface' } as const),
-    is.object({ type: 'Client', value: is.string } as const),
+    clientLeaseChecker,
 )
 
 export type LeaseSource = Infer<typeof leaseSourceChecker>;
@@ -66,6 +70,8 @@ const hostHookConfigChecker = is.object({
     delaySecs: is.number,
     timeoutSecs: is.number,
 } as const);
+
+export type HostHookConfig = Infer<typeof hostHookConfigChecker>;
 
 const hostConfigChecker = is.object({
     enforceState: is.boolean,
