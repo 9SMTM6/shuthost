@@ -105,7 +105,7 @@ export const subscribeToHostUnscheduled = async (hostname: string) => {
  */
 export const checkHostUnscheduledSubscription = async (
     hostname: string,
-): Promise<boolean> => {
+) => {
     if (isDemoMode) {
         return demoCheckHostUnscheduledSubscription(hostname);
     }
@@ -132,7 +132,7 @@ export const checkHostUnscheduledSubscription = async (
  */
 export const unsubscribeFromHostUnscheduled = async (
     hostname: string,
-): Promise<void> => {
+) => {
     if (isDemoMode) {
         demoUnsubscribeFromHostUnscheduled(hostname);
         return;
@@ -175,7 +175,7 @@ export const subscribeToHostOperationFailed = async (hostname: string) => {
  */
 export const checkHostOperationFailedSubscription = async (
     hostname: string,
-): Promise<boolean> => {
+) => {
     if (isDemoMode) {
         return demoCheckHostOperationFailedSubscription(hostname);
     }
@@ -201,7 +201,7 @@ export const checkHostOperationFailedSubscription = async (
  */
 export const unsubscribeFromHostOperationFailed = async (
     hostname: string,
-): Promise<void> => {
+) => {
     if (isDemoMode) {
         demoUnsubscribeFromHostOperationFailed(hostname);
         return;
@@ -227,7 +227,7 @@ export const unsubscribeFromHostOperationFailed = async (
 export const subscribeToHostOnlineFor = async (
     hostname: string,
     durationSecs: number,
-): Promise<void> => {
+) => {
     if (isDemoMode) {
         demoSubscribeToHostOnlineFor(hostname, durationSecs);
         return;
@@ -253,7 +253,7 @@ export const subscribeToHostOnlineFor = async (
  */
 export const checkHostOnlineForSubscription = async (
     hostname: string,
-): Promise<number | null> => {
+) => {
     if (isDemoMode) {
         return demoCheckHostOnlineForSubscription(hostname);
     }
@@ -284,7 +284,7 @@ export const checkHostOnlineForSubscription = async (
  */
 export const unsubscribeFromHostOnlineFor = async (
     hostname: string,
-): Promise<void> => {
+) => {
     if (isDemoMode) {
         demoUnsubscribeFromHostOnlineFor(hostname);
         return;
@@ -310,7 +310,7 @@ export const unsubscribeFromHostOnlineFor = async (
 export const subscribeToHostOnlineForOneshot = async (
     hostname: string,
     durationSecs: number,
-): Promise<void> => {
+) => {
     if (isDemoMode) {
         demoSubscribeToHostOnlineForOneshot(hostname, durationSecs);
         return;

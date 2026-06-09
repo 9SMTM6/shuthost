@@ -3,7 +3,7 @@ import { showJSError } from './utils';
 export const apiFetch = async (
     url: string,
     options?: RequestInit,
-): Promise<Response> => {
+) => {
     try {
         const resp = await fetch(url, options);
         if (resp.status === 401) {

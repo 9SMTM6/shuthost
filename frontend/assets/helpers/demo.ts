@@ -6,7 +6,7 @@ export const isDemoMode = serverData.demoSubpath != null;
 
 const DEMO_SUBPATH_PATTERN = /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)$/;
 
-const sanitizeDemoSubpath = (raw: string): string => {
+const sanitizeDemoSubpath = (raw: string) => {
     if (!raw || raw === '/') return '';
 
     const candidate = raw.replace(/^\/+/, '/').replace(/\/+$/, ''); // trim leading/trailing slashes, ensure leading slash
@@ -135,7 +135,7 @@ const demoPushSubscriptions = new Set<string>();
 
 export const demoCheckHostUnscheduledSubscription = (
     hostname: string,
-): boolean => demoPushSubscriptions.has(hostname);
+) => demoPushSubscriptions.has(hostname);
 
 export const demoSubscribeToHostUnscheduled = (hostname: string): void => {
     demoPushSubscriptions.add(hostname);
@@ -174,7 +174,7 @@ export const demoResetLeases = (clientId: string): void => {
 
 export const demoCheckHostOperationFailedSubscription = (
     hostname: string,
-): boolean => demoOperationFailedSubscriptions.has(hostname);
+) => demoOperationFailedSubscriptions.has(hostname);
 
 export const demoSubscribeToHostOperationFailed = (hostname: string): void => {
     demoOperationFailedSubscriptions.add(hostname);
@@ -191,7 +191,7 @@ const demoOnlineForSubs = new Map<string, number>();
 
 export const demoCheckHostOnlineForSubscription = (
     hostname: string,
-): number | null => demoOnlineForSubs.get(hostname) ?? null;
+) => demoOnlineForSubs.get(hostname) ?? null;
 
 export const demoSubscribeToHostOnlineFor = (
     hostname: string,
