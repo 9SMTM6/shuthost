@@ -1,8 +1,11 @@
 // DO NOT import any (other than type) parts from component files in this file.
-import type { Component } from 'solid-js';
+import type { Component, ParentComponent } from 'solid-js';
 
 // biome-ignore lint/suspicious/noExplicitAny: intentional type alias so call sites don't need per-site suppressions
 export type AnyComponent = Component<any>;
+
+// biome-ignore lint/suspicious/noExplicitAny: intentional type alias so call sites don't need per-site suppressions
+export type AnyParentComponent = ParentComponent<any>;
 
 export const showJSError = (message: string) => {
     const errorDiv = document.getElementById(
