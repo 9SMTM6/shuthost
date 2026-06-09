@@ -12,6 +12,7 @@ import {
     demoUnsubscribeFromHostUnscheduled,
     isDemoMode,
 } from './demo';
+import { noServiceWorkerSupport } from './serviceWorker';
 
 /**
  * Converts a URL-safe base64 string (no padding) to a Uint8Array.
@@ -29,12 +30,14 @@ const urlBase64ToUint8Array = (base64: string) => {
     return output;
 };
 
+const noPushSupport = noServiceWorkerSupport || !('PushManager' in window);
+
 /**
  * Registers the service worker (if not already registered) and returns the
  * push subscription, creating one if it doesn't exist.
  */
 const getOrCreatePushSubscription = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (noPushSupport) {
         throw new Error('Push notifications are not supported in this browser');
     }
 
@@ -109,7 +112,7 @@ export const checkHostUnscheduledSubscription = async (
     if (isDemoMode) {
         return demoCheckHostUnscheduledSubscription(hostname);
     }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (noPushSupport) {
         return false;
     }
 
@@ -137,7 +140,7 @@ export const unsubscribeFromHostUnscheduled = async (
         demoUnsubscribeFromHostUnscheduled(hostname);
         return;
     }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (noPushSupport) return;
 
     const registration = await navigator.serviceWorker.ready;
     const existing = await registration.pushManager.getSubscription();
@@ -179,7 +182,7 @@ export const checkHostOperationFailedSubscription = async (
     if (isDemoMode) {
         return demoCheckHostOperationFailedSubscription(hostname);
     }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (noPushSupport) {
         return false;
     }
 
@@ -206,7 +209,7 @@ export const unsubscribeFromHostOperationFailed = async (
         demoUnsubscribeFromHostOperationFailed(hostname);
         return;
     }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (noPushSupport) return;
 
     const registration = await navigator.serviceWorker.ready;
     const existing = await registration.pushManager.getSubscription();
@@ -257,7 +260,7 @@ export const checkHostOnlineForSubscription = async (
     if (isDemoMode) {
         return demoCheckHostOnlineForSubscription(hostname);
     }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (noPushSupport) {
         return null;
     }
 
@@ -289,7 +292,7 @@ export const unsubscribeFromHostOnlineFor = async (
         demoUnsubscribeFromHostOnlineFor(hostname);
         return;
     }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (noPushSupport) return;
 
     const registration = await navigator.serviceWorker.ready;
     const existing = await registration.pushManager.getSubscription();
