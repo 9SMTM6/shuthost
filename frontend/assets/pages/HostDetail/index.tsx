@@ -1,13 +1,13 @@
 import { Title } from '@solidjs/meta';
 import { A, useParams } from '@solidjs/router';
-import { Switch, Match, Show } from 'solid-js';
+import { Match, Show, Switch } from 'solid-js';
 import { AppLayout } from '../../components/App';
+import { HostStatusBadge } from '../../components/HostStatusBadge';
+import { type OperationFailure, state } from '../../helpers/appStore';
+import type { AnyComponent } from '../../helpers/utils';
 import { HostInfoSection } from './HostInfoSection';
 import { HostLeasesSection } from './HostLeasesSection';
 import { NotificationSection } from './NotificationSection';
-import { type OperationFailure, state } from '../../helpers/appStore';
-import { HostStatusBadge } from '../../components/HostStatusBadge';
-import type { AnyComponent } from '../../helpers/utils';
 
 const OperationFailureBadge = ((props: {
     failure: OperationFailure | undefined;

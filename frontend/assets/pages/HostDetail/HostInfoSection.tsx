@@ -1,14 +1,19 @@
 import { CircleDashed, Crosshair } from 'lucide-solid';
-import { Match, Show, Switch, type JSX } from 'solid-js';
+import { type JSX, Match, Show, Switch } from 'solid-js';
 import { CopyButton } from '../../components/CopyButton';
-import { buildData } from '../../helpers/buildData';
-import { demoSubpath } from '../../helpers/demo';
-import { AnyComponent, AnyParentComponent, formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 import type {
     HostConfig,
     HostHookConfig,
     HostStats,
 } from '../../helpers/appStore';
+import { buildData } from '../../helpers/buildData';
+import { demoSubpath } from '../../helpers/demo';
+import {
+    type AnyComponent,
+    type AnyParentComponent,
+    formatRelativeTimestamp,
+    safeExternalUrl,
+} from '../../helpers/utils';
 
 const buildHostUpdateCommands = (
     hostStats: HostStats | undefined,
@@ -31,8 +36,7 @@ const buildHostUpdateCommands = (
             ps1ScriptPathArg = ` -ScriptPath '${scriptPath}'`;
         } else {
             console.error(
-                `Host has scriptPath '${scriptPath}' but init system '${initSystem ?? 'unknown'
-                }' is not a self-extracting type`,
+                `Host has scriptPath '${scriptPath}' but init system '${initSystem ?? 'unknown'}' is not a self-extracting type`,
             );
         }
     }
@@ -102,14 +106,14 @@ const HostHookCard = ((props: {
                     }
                 </p>
                 <p class="text-xs uppercase tracking-[0.08em] text-[#7a7a7a] dark:text-[#8f8f8f]">
-                    {formatHookActionLabel(props.hook!)}
+                    {formatHookActionLabel(props.hook)}
                 </p>
             </div>
             <code class="inline-block text-sm text-[#333333] dark:text-[#dddddd] wrap-break-words bg-[#f4f4f4] dark:bg-[#2b2b2f] border border-[#e5e5e5] dark:border-[#3e3e42] rounded px-2 py-1 mt-1 whitespace-pre-wrap max-w-full">
-                {formatHookActionValue(props.hook!)}
+                {formatHookActionValue(props.hook)}
             </code>
             <p class="text-xs text-[#7a7a7a] dark:text-[#8f8f8f] mt-2">
-                {formatHookTiming(props.hook!)}
+                {formatHookTiming(props.hook)}
             </p>
         </div>
     );
@@ -124,21 +128,6 @@ export const HostInfoSection = ((props: {
     const agentVersion = props.hostStats
         ? (props.hostStats.agentVersion ?? `<= 1.7.1`)
         : 'unknown';
-    const agentVersionNote =
-        agentVersion === 'unknown'
-            ? 'No record of this host connecting yet.'
-            : agentVersion === '<= 1.7.1'
-                ? 'Predates version reporting (added in 1.8.0).'
-                : undefined;
-    const isSelfExtracting =
-        props.hostStats?.initSystem === 'self-extracting-shell' ||
-        props.hostStats?.initSystem === 'self-extracting-pwsh';
-    const initSystemNote = isSelfExtracting
-        ? 'Runs as a standalone script, not a registered service. Autostart must be configured manually (e.g. via the init system).'
-        : undefined;
-    const enforceStateNote = props.hostConfig?.enforceState
-        ? 'Periodically corrects power state to match current leases.'
-        : 'Edge-triggered only — reacts to lease changes, no periodic correction.';
 
     const preStartupHook = props.hostConfig?.preStartup;
     const postShutdownHook = props.hostConfig?.postShutdown;
@@ -159,13 +148,25 @@ export const HostInfoSection = ((props: {
             <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
                 <InfoRow
                     label="Agent version"
-                    hint={agentVersionNote}
+                    hint={
+                        {
+                            unknown: 'No record of this host connecting yet.',
+                            '<= 1.7.1':
+                                'Predates version reporting (added in 1.8.0).',
+                        }[agentVersion]
+                    }
                 >
                     {agentVersion}
                 </InfoRow>
                 <InfoRow
                     label="Init system"
-                    hint={initSystemNote}
+                    hint={
+                        props.hostStats?.initSystem?.startsWith(
+                            'self-extracting',
+                        )
+                            ? 'Runs as a standalone script, not a registered service. Autostart must be configured manually (e.g. via the init system).'
+                            : undefined
+                    }
                 >
                     {
                         {
@@ -179,9 +180,7 @@ export const HostInfoSection = ((props: {
                         }[props.hostStats?.initSystem ?? 'unknown']
                     }
                 </InfoRow>
-                <InfoRow
-                    label="Operating system"
-                >
+                <InfoRow label="Operating system">
                     {
                         {
                             linux: 'Linux',
@@ -192,16 +191,17 @@ export const HostInfoSection = ((props: {
                     }
                 </InfoRow>
                 <Show when={props.hostStats?.scriptPath}>
-                    <InfoRow
-                        label="Install script"
-                        ddClass="break-all"
-                    >
+                    <InfoRow label="Install script" ddClass="break-all">
                         {props.hostStats?.scriptPath}
                     </InfoRow>
                 </Show>
                 <InfoRow
                     label="Enforce state"
-                    hint={enforceStateNote}
+                    hint={
+                        props.hostConfig?.enforceState
+                            ? 'Periodically corrects power state to match current leases.'
+                            : 'Edge-triggered only — reacts to lease changes, no periodic correction.'
+                    }
                     ddClass="inline-flex items-center gap-1"
                 >
                     <Switch>
@@ -223,15 +223,10 @@ export const HostInfoSection = ((props: {
                         </Match>
                     </Switch>
                 </InfoRow>
-                <InfoRow
-                    label="Last online"
-                    hint={lastOnlinePrecise}
-                >
-                    {
-                        props.isOnline
-                            ? 'Currently online'
-                            : formatRelativeTimestamp(lastOnline)
-                    }
+                <InfoRow label="Last online" hint={lastOnlinePrecise}>
+                    {props.isOnline
+                        ? 'Currently online'
+                        : formatRelativeTimestamp(lastOnline)}
                 </InfoRow>
                 <Show when={preStartupHook || postShutdownHook}>
                     <dt class="font-medium text-black dark:text-[#cccccc]">
