@@ -64,7 +64,17 @@ const hostHookActionChecker = is.oneOf(
     is.object({
         type: 'http',
         url: is.string,
-        method: is.oneOf('GET', 'POST', 'PUT', 'DELETE', 'PATCH'),
+        method: is.oneOf(
+            'GET',
+            'POST',
+            'PUT',
+            'DELETE',
+            'PATCH',
+            'HEAD',
+            'OPTIONS',
+            'TRACE',
+            'CONNECT',
+        ),
     } as const),
 );
 

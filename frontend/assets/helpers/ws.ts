@@ -43,15 +43,15 @@ export const connectWebSocket = () => {
 
     socket.onopen = () => console.info('WebSocket connected to', url);
     socket.onmessage = (event: MessageEvent) => {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(event.data);
+        } catch {
+            parsed = null;
+        }
+
         try {
             // Try to parse app-level control frames (ping/pong) first.
-            let parsed: unknown;
-            try {
-                parsed = JSON.parse(event.data);
-            } catch {
-                parsed = null;
-            }
-
             if (parsed && typeof parsed === 'object' && 'type' in parsed) {
                 const t = parsed.type;
                 if (t === 'pong') {
@@ -64,7 +64,7 @@ export const connectWebSocket = () => {
                 }
             }
 
-            applyMessage(JSON.parse(event.data));
+            applyMessage(parsed);
         } catch (err) {
             console.error('Error handling WS message:', err);
             setTimeout(() => {
