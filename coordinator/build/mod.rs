@@ -68,10 +68,10 @@ fn main() -> eyre::Result<()> {
     // independent of the other build steps.
     println!("{ON_CHANGE}/package.json");
     println!("{ON_CHANGE}/src/index.tsx");
-    println!("{ON_CHANGE}/src/components");
+    println!("{ON_CHANGE}/src/sharedComponents");
     println!("{ON_CHANGE}/src/pages");
     println!("{ON_CHANGE}/src/helpers");
-    println!("{ON_CHANGE}/src/partials");
+    println!("{ON_CHANGE}/src/htmlPartials");
     println!("{ON_CHANGE}/src/page.template.html");
     println!("{ON_CHANGE}/vite.config.ts");
     println!("{ON_CHANGE}/tsconfig.json");
