@@ -2,9 +2,9 @@ import { Title } from '@solidjs/meta';
 import { useSearchParams } from '@solidjs/router';
 import { Eye, EyeOff, LogIn } from 'lucide-solid';
 import { createSignal, Match, Show, Switch } from 'solid-js';
-import { Footer } from '../components/Footer';
-import { SimpleHeader } from '../components/Header';
-import { JsErrorBox } from '../components/JsErrorBox';
+import { Footer } from '../sharedComponents/Footer';
+import { SimpleHeader } from '../sharedComponents/Header';
+import { JsErrorBox } from '../sharedComponents/JsErrorBox';
 import { serverData } from '../helpers/dataIslands';
 import type { AnyComponent } from '../helpers/utils/solid';
 

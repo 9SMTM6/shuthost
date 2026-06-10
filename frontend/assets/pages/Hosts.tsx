@@ -1,9 +1,9 @@
 import { A, useNavigate } from '@solidjs/router';
 import { Power, PowerOff, TriangleAlert } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
-import { AppLayout } from '../components/App';
-import { CopyButton } from '../components/CopyButton';
-import { HostStatusBadge } from '../components/HostStatusBadge';
+import { AppLayout } from '../sharedComponents/App';
+import { CopyButton } from '../sharedComponents/CopyButton';
+import { HostStatusBadge } from '../sharedComponents/HostStatusBadge';
 import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/utils';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
