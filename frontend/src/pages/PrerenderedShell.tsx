@@ -1,8 +1,8 @@
 import { Title } from '@solidjs/meta';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { Footer } from '../sharedComponents/Footer';
 import { SimpleHeader } from '../sharedComponents/Header';
 import { JsErrorBox } from '../sharedComponents/JsErrorBox';
-import type { AnyComponent } from '../helpers/utils/solid';
 
 /**
  * Static HTML shell served to all routes before JS loads.

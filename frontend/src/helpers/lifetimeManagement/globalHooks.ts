@@ -1,5 +1,5 @@
 import { showJSError } from '../utils';
-import { connectWebSocket, closeWebSocket } from './websocket';
+import { closeWebSocket, connectWebSocket } from './websocket';
 
 export const registerGlobalErrorHandlers = () => {
     window.addEventListener('error', (event) => {
@@ -10,18 +10,21 @@ export const registerGlobalErrorHandlers = () => {
 
     window.addEventListener('unhandledrejection', (event) => {
         console.error('Unhandled promise rejection:', event.reason);
-        const message = event.reason?.message || 'An unhandled promise rejection occurred';
+        const message =
+            event.reason?.message || 'An unhandled promise rejection occurred';
         showJSError(message);
     });
 
     window.addEventListener('securitypolicyviolation', (event) => {
         // Ignore violations originating from browser extensions — they inject their
         // own styles/scripts and are correctly blocked by our CSP, but are not our bug.
-        if (event.sourceFile?.startsWith('moz-extension://') ||
-            event.sourceFile?.startsWith('chrome-extension://')) {
+        if (
+            event.sourceFile?.startsWith('moz-extension://') ||
+            event.sourceFile?.startsWith('chrome-extension://')
+        ) {
             console.warn(
                 'CSP violation from browser extension (ignored):',
-                event.sourceFile
+                event.sourceFile,
             );
             return;
         }

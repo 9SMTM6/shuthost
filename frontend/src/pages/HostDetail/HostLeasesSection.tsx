@@ -1,11 +1,11 @@
 import { Power, PowerOff } from 'lucide-solid';
 import { For, Show } from 'solid-js';
-import { ApiFetchUnauthorizedError, apiFetch } from '../../helpers/utils';
 import {
     type ClientLease,
     type LeaseSource,
     state,
 } from '../../helpers/appStore';
+import { ApiFetchUnauthorizedError, apiFetch } from '../../helpers/utils';
 import type { AnyComponent } from '../../helpers/utils/solid';
 
 export const HostLeasesSection = ((props: { hostname: string }) => {
