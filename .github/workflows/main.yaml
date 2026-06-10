@@ -764,11 +764,11 @@ jobs:
           path: ./rehydrate
 
       - name: Set up Docker Buildx
-        uses: &setup-buildx docker/setup-buildx-action@v3
+        uses: &setup-buildx docker/setup-buildx-action@v4
 
       - &docker_login
         name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -1218,7 +1218,7 @@ jobs:
           fi
 
       - name: Upload binaries to release (create one if not existing)
-        uses: &gh-release softprops/action-gh-release@v2
+        uses: &gh-release softprops/action-gh-release@v3
         with:
           fail_on_unmatched_files: true
           files: ./release-assets/flat/*

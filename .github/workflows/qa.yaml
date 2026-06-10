@@ -35,7 +35,7 @@ jobs:
       - uses: *checkout
       - &setup-pnpm
         name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: latest
           package_json_file: frontend/package.json
