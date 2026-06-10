@@ -37,10 +37,7 @@ const getOrCreatePushSubscription = async () => {
     // The service worker is registered eagerly at app startup; just wait for it.
     const registration = await navigator.serviceWorker.ready;
 
-    const vapidResp = await fetch('/api/push/vapid-public-key');
-    if (!vapidResp.ok) {
-        throw new Error('Failed to fetch VAPID public key');
-    }
+    const vapidResp = await apiFetch('/api/push/vapid-public-key');
     const { publicKey } = (await vapidResp.json()) as { publicKey: string };
 
     const applicationServerKey = urlBase64ToUint8Array(publicKey);
@@ -71,6 +68,21 @@ const getOrCreatePushSubscription = async () => {
 };
 
 /**
+ * Returns the current browser push subscription if one exists.
+ *
+ * In contrast to getOrCreatePushSubscription, this is side effect free -
+ * it does not request notification permission or create a new subscription.
+ */
+const getExistingPushSubscription = async () => {
+    if (noPushSupport) {
+        return null;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    return await registration.pushManager.getSubscription();
+};
+
+/**
  * Subscribes the current browser to push notifications for unscheduled events
  * on the given host (startup or shutdown not triggered by ShutHost).
  */
@@ -93,17 +105,13 @@ export const subscribeToHostUnscheduled = async (hostname: string) => {
  */
 export const checkHostUnscheduledSubscription = async (hostname: string) => {
     if (isDemoMode) return demo.checkHostUnscheduledSubscription(hostname);
-    if (noPushSupport) {
-        return false;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
+    const existing = await getExistingPushSubscription();
     if (!existing) return false;
 
     const endpoint = encodeURIComponent(existing.endpoint);
-    const resp = await fetch(
+    const resp = await apiFetch(
         `/api/push/subscribe-host-unscheduled?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
+        { checkRespOk: false },
     );
     if (!resp.ok) return false;
     const { subscribed } = (await resp.json()) as { subscribed: boolean };
@@ -116,10 +124,7 @@ export const checkHostUnscheduledSubscription = async (hostname: string) => {
  */
 export const unsubscribeFromHostUnscheduled = async (hostname: string) => {
     if (isDemoMode) return demo.unsubscribeFromHostUnscheduled(hostname);
-    if (noPushSupport) return;
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
+    const existing = await getExistingPushSubscription();
     if (!existing) return;
 
     await apiFetch('/api/push/subscribe-host-unscheduled', {
@@ -153,17 +158,15 @@ export const checkHostOperationFailedSubscription = async (
     hostname: string,
 ) => {
     if (isDemoMode) return demo.checkHostOperationFailedSubscription(hostname);
-    if (noPushSupport) {
-        return false;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
+    const existing = await getExistingPushSubscription();
     if (!existing) return false;
 
     const endpoint = encodeURIComponent(existing.endpoint);
-    const resp = await fetch(
+    const resp = await apiFetch(
         `/api/push/subscribe-host-operation-failed?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
+        {
+            checkRespOk: false,
+        },
     );
     if (!resp.ok) return false;
     const { subscribed } = (await resp.json()) as { subscribed: boolean };
@@ -175,10 +178,7 @@ export const checkHostOperationFailedSubscription = async (
  */
 export const unsubscribeFromHostOperationFailed = async (hostname: string) => {
     if (isDemoMode) return demo.unsubscribeFromHostOperationFailed(hostname);
-    if (noPushSupport) return;
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
+    const existing = await getExistingPushSubscription();
     if (!existing) return;
 
     await apiFetch('/api/push/subscribe-host-operation-failed', {
@@ -220,17 +220,13 @@ export const subscribeToHostOnlineFor = async (
  */
 export const checkHostOnlineForSubscription = async (hostname: string) => {
     if (isDemoMode) return demo.checkHostOnlineForSubscription(hostname);
-    if (noPushSupport) {
-        return null;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
+    const existing = await getExistingPushSubscription();
     if (!existing) return null;
 
     const endpoint = encodeURIComponent(existing.endpoint);
-    const resp = await fetch(
+    const resp = await apiFetch(
         `/api/push/subscribe-host-online-for?endpoint=${endpoint}&hostname=${encodeURIComponent(hostname)}`,
+        { checkRespOk: false },
     );
     if (!resp.ok) return null;
     const data = (await resp.json()) as {
@@ -247,10 +243,7 @@ export const checkHostOnlineForSubscription = async (hostname: string) => {
  */
 export const unsubscribeFromHostOnlineFor = async (hostname: string) => {
     if (isDemoMode) return demo.unsubscribeFromHostOnlineFor(hostname);
-    if (noPushSupport) return;
-
-    const registration = await navigator.serviceWorker.ready;
-    const existing = await registration.pushManager.getSubscription();
+    const existing = await getExistingPushSubscription();
     if (!existing) return;
 
     await apiFetch('/api/push/subscribe-host-online-for', {

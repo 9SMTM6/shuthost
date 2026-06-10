@@ -1,6 +1,6 @@
 import { Power, PowerOff } from 'lucide-solid';
 import { For, Show } from 'solid-js';
-import { apiFetch } from '../../helpers/apiFetch';
+import { apiFetch, ApiFetchUnauthorizedError } from '../../helpers/apiFetch';
 import {
     type ClientLease,
     type LeaseSource,
@@ -22,7 +22,7 @@ export const HostLeasesSection = ((props: { hostname: string }) => {
                 method: 'POST',
             });
         } catch (err) {
-            if (err instanceof Error && err.message === 'Unauthorized') return;
+            if (err instanceof ApiFetchUnauthorizedError) return;
             console.error(
                 `Failed to ${action} lease for ${props.hostname}:`,
                 err,
