@@ -2,10 +2,10 @@ import { Title } from '@solidjs/meta';
 import { createResource, For, Match, Suspense, Switch } from 'solid-js';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
-import { apiFetch } from '../helpers/apiFetch';
-import { buildData } from '../helpers/buildData';
+import { apiFetch } from '../helpers/utils';
+import { buildData } from '../helpers/dataIslands';
 import { demoSubpath } from '../helpers/demo';
-import type { AnyComponent } from '../helpers/solidUtils';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { safeExternalUrl } from '../helpers/utils';
 
 type Author = {

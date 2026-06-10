@@ -1,6 +1,6 @@
 import { createStore, produce } from 'solid-js/store';
-import { type Infer, is, validateDataAsync } from './assertData';
-import { serverData } from './serverData';
+import { serverData } from './dataIslands';
+import { type Infer, is, validateDataAsync } from "./utils/assertData";
 
 // ==========================
 // Types

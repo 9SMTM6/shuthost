@@ -4,7 +4,7 @@ import { Match, Show, Switch } from 'solid-js';
 import { AppLayout } from '../../components/App';
 import { HostStatusBadge } from '../../components/HostStatusBadge';
 import { type OperationFailure, state } from '../../helpers/appStore';
-import type { AnyComponent } from '../../helpers/solidUtils';
+import type { AnyComponent } from '../../helpers/utils/solid';
 import { HostInfoSection } from './HostInfoSection';
 import { HostLeasesSection } from './HostLeasesSection';
 import { NotificationSection } from './NotificationSection';

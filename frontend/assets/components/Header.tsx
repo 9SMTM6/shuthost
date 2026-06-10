@@ -2,11 +2,10 @@ import { A, useLocation, useNavigate } from '@solidjs/router';
 import { LogOut } from 'lucide-solid';
 import type { JSX, ParentProps } from 'solid-js';
 import { createSignal, Show } from 'solid-js';
-import { authStatus } from '../helpers/authState';
-import { buildData } from '../helpers/buildData';
+import { authStatus } from '../helpers/apis/authState';
+import { type AuthMode, buildData, serverData } from '../helpers/dataIslands';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
-import { type ServerData, serverData } from '../helpers/serverData';
-import type { AnyComponent } from '../helpers/solidUtils';
+import type { AnyComponent } from '../helpers/utils/solid';
 
 const TAB_LABELS = {
     architecture: 'Docs',
@@ -64,7 +63,7 @@ const SHOW_LOGOUT_FOR = {
     external: false,
     token: true,
     oidc: true,
-} satisfies Record<ServerData['authMode'], boolean>;
+} satisfies Record<AuthMode, boolean>;
 
 /** Header for the About page: logo + conditional logout, no tab navigation. */
 export const SimpleHeader = (() => (
