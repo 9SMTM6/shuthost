@@ -1,6 +1,6 @@
 import { apiFetch } from './apiFetch';
 import { demo, isDemoMode } from './demo';
-import { noServiceWorkerSupport } from './serviceWorker';
+import { noServiceWorkerSupport } from './serviceWorkerManagement';
 
 /**
  * Converts a URL-safe base64 string (no padding) to a Uint8Array.
