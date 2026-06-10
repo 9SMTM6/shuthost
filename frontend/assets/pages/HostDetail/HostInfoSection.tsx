@@ -1,6 +1,6 @@
 import { CircleDashed, Crosshair } from 'lucide-solid';
 import { type JSX, Match, Show, Switch } from 'solid-js';
-import { CopyButton } from '../../components/CopyButton';
+import { CopyButton } from '../../sharedComponents/CopyButton';
 import type {
     HostConfig,
     HostHookConfig,

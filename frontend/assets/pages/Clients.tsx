@@ -1,7 +1,7 @@
 import { RotateCcw } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
-import { AppLayout } from '../components/App';
-import { CopyButton } from '../components/CopyButton';
+import { AppLayout } from '../sharedComponents/App';
+import { CopyButton } from '../sharedComponents/CopyButton';
 import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/utils';
 import { state } from '../helpers/appStore';
 import { serverData } from '../helpers/dataIslands';

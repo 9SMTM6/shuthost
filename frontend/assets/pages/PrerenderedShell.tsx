@@ -1,7 +1,7 @@
 import { Title } from '@solidjs/meta';
-import { Footer } from '../components/Footer';
-import { SimpleHeader } from '../components/Header';
-import { JsErrorBox } from '../components/JsErrorBox';
+import { Footer } from '../sharedComponents/Footer';
+import { SimpleHeader } from '../sharedComponents/Header';
+import { JsErrorBox } from '../sharedComponents/JsErrorBox';
 import type { AnyComponent } from '../helpers/utils/solid';
 
 /**
