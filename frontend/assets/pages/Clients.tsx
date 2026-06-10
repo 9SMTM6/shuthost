@@ -8,7 +8,7 @@ import { serverData } from '../helpers/dataIslands';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import { type AnyComponent, useCurrentTime } from '../helpers/utils/solid';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
-import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
+import clientGotchasHtml from '../htmlPartials/client_install_requirements_gotchas.md?raw';
 
 // ==========================
 // Shared client helpers
@@ -236,7 +236,7 @@ export const ClientsPage = (() => {
                             </code>
                         </div>
 
-                        {/* Inlined at build time from partials/client_install_requirements_gotchas.md */}
+                        {/* Inlined at build time from htmlPartials/client_install_requirements_gotchas.md */}
                         <div innerHTML={clientGotchasHtml} />
                     </div>
                 </details>

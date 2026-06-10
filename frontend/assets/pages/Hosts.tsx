@@ -11,7 +11,7 @@ import { serverData } from '../helpers/dataIslands';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import type { AnyComponent } from '../helpers/utils/solid';
 import { sortActiveFirst } from '../helpers/utils';
-import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
+import agentGotchasHtml from '../htmlPartials/agent_install_requirements_gotchas.md?raw';
 
 const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
@@ -317,7 +317,7 @@ export const HostsPage = (() => {
                             </code>
                         </div>
 
-                        {/* Inlined at build time from partials/agent_install_requirements_gotchas.md */}
+                        {/* Inlined at build time from htmlPartials/agent_install_requirements_gotchas.md */}
                         <div innerHTML={agentGotchasHtml} />
                     </div>
                 </details>
