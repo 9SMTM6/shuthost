@@ -12,7 +12,7 @@ const hashedFaviconRedirect = {
     configureServer(server: import('vite').ViteDevServer) {
         server.middlewares.use((req, _res, next) => {
             if (req.url?.match(/^\/favicon\.[^.]+\.svg(\?.*)?$/)) {
-                req.url = '/assets/favicon.svg';
+                req.url = '/src/favicon.svg';
             }
             next();
         });
@@ -22,14 +22,14 @@ const hashedFaviconRedirect = {
 export default defineConfig({
     plugins: [solid(), tailwindcss(), hashedFaviconRedirect],
     build: {
-        outDir: 'assets/generated',
+        outDir: 'src/generated',
         emptyOutDir: false,
         minify: !isDebugBuild,
         sourcemap: isDebugBuild ? ('inline' as const) : false,
         rolldownOptions: {
             input: {
-                app: 'assets/index.tsx',
-                sw: 'assets/sw.ts',
+                app: 'src/index.tsx',
+                sw: 'src/sw.ts',
             },
             output: {
                 // No hash in filenames: Rust reads app.js serves it under hashed url.

@@ -1,4 +1,4 @@
 node_modules
-assets/generated/*
-!assets/generated/*.svg
+src/generated/*
+!src/generated/*.svg
 playwright-report

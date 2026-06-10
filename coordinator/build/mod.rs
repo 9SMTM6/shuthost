@@ -67,12 +67,12 @@ fn main() -> eyre::Result<()> {
     // Spawn typecheck in parallel — it produces no output files so it is
     // independent of the other build steps.
     println!("{ON_CHANGE}/package.json");
-    println!("{ON_CHANGE}/assets/index.tsx");
-    println!("{ON_CHANGE}/assets/components");
-    println!("{ON_CHANGE}/assets/pages");
-    println!("{ON_CHANGE}/assets/helpers");
-    println!("{ON_CHANGE}/assets/partials");
-    println!("{ON_CHANGE}/assets/page.template.html");
+    println!("{ON_CHANGE}/src/index.tsx");
+    println!("{ON_CHANGE}/src/components");
+    println!("{ON_CHANGE}/src/pages");
+    println!("{ON_CHANGE}/src/helpers");
+    println!("{ON_CHANGE}/src/partials");
+    println!("{ON_CHANGE}/src/page.template.html");
     println!("{ON_CHANGE}/vite.config.ts");
     println!("{ON_CHANGE}/tsconfig.json");
     let typecheck = tasks::spawn("typecheck", || pnpm::run("typecheck"));
@@ -83,26 +83,26 @@ fn main() -> eyre::Result<()> {
 
     let warnings = tasks::spawn("warnings", warnings::emit);
 
-    println!("{ON_CHANGE}/assets/client_controller_interaction.d2");
-    println!("{ON_CHANGE}/assets/deployment.d2");
-    println!("{ON_CHANGE}/assets/direct_control_comparison.d2");
-    println!("{ON_CHANGE}/assets/host_agent_interaction.d2");
+    println!("{ON_CHANGE}/src/client_controller_interaction.d2");
+    println!("{ON_CHANGE}/src/deployment.d2");
+    println!("{ON_CHANGE}/src/direct_control_comparison.d2");
+    println!("{ON_CHANGE}/src/host_agent_interaction.d2");
     println!("{ON_CHANGE}/build-diagrams.ts");
     let build_diagrams = tasks::spawn("build-diagrams", || pnpm::run("build:diagrams"));
 
-    println!("{ON_CHANGE}/assets/prerender.tsx");
-    println!("{ON_CHANGE}/assets/vite.config.ssr.ts");
+    println!("{ON_CHANGE}/src/prerender.tsx");
+    println!("{ON_CHANGE}/src/vite.config.ssr.ts");
     let prerender = tasks::spawn("build-prerender", || pnpm::run("build:prerender"));
 
-    println!("{ON_CHANGE}/assets/favicon.svg");
+    println!("{ON_CHANGE}/src/favicon.svg");
     let pngs = tasks::spawn("generate-png-icons", icons::generate_pngs);
 
     // Icons and the manifest/build-data.json must be ready before the pnpm build
     // because vite.config.ts reads build-data.json at config-load time.
-    println!("{ON_CHANGE}/assets/manifest.tmpl.json");
-    println!("{ON_CHANGE}/assets/styles.tailwind.css");
-    println!("{ON_CHANGE}/assets/htmlPartials/client_install_requirements_gotchas.md");
-    println!("{ON_CHANGE}/assets/htmlPartials/agent_install_requirements_gotchas.md");
+    println!("{ON_CHANGE}/src/manifest.tmpl.json");
+    println!("{ON_CHANGE}/src/styles.tailwind.css");
+    println!("{ON_CHANGE}/src/htmlPartials/client_install_requirements_gotchas.md");
+    println!("{ON_CHANGE}/src/htmlPartials/agent_install_requirements_gotchas.md");
     let main_frontend_assets = tasks::spawn("build-frontend", move || {
         tasks::join(build_diagrams)?;
         pnpm::run("build")?;

@@ -59,7 +59,7 @@ playwright_report:
 [group('devops')]
 [confirm]
 clean:
-    rm -rf node_modules && rm -r assets/generated && pnpm install && just build_graphs
+    rm -rf node_modules && rm -r src/generated && pnpm install && just build_graphs
 
 [group('projectmanagement')]
 update_deps:

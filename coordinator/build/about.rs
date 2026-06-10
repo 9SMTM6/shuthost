@@ -284,7 +284,7 @@ fn generate_about_json(
         "licenses": licenses_map,
     });
     fs::write(
-        "../frontend/assets/generated/about-data.json",
+        "../frontend/src/generated/about-data.json",
         serde_json::to_string_pretty(&data)?,
     )?;
     Ok(())
