@@ -1,6 +1,6 @@
 import { buildData } from '../helpers/dataIslands';
-import type { AnyComponent } from '../helpers/utils/solid';
 import { safeExternalUrl } from '../helpers/utils';
+import type { AnyComponent } from '../helpers/utils/solid';
 
 /** Inline error banner shown by the global error handlers in index.tsx. */
 export const JsErrorBox = (() => (

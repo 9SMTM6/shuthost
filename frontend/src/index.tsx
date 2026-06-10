@@ -7,6 +7,10 @@ import { createSignal, Show } from 'solid-js';
 import { render } from 'solid-js/web';
 import { demoSubpath } from './helpers/demo';
 import {
+    backForwardCacheHandling,
+    registerGlobalErrorHandlers,
+} from './helpers/lifetimeManagement/globalHooks';
+import {
     onUpdateAvailable,
     registerServiceWorker,
 } from './helpers/lifetimeManagement/serviceWorker';
@@ -17,7 +21,6 @@ import { HostDetailPage } from './pages/HostDetail';
 import { HostsPage } from './pages/Hosts';
 import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
-import { backForwardCacheHandling, registerGlobalErrorHandlers } from './helpers/lifetimeManagement/globalHooks';
 
 const [updateAvailable, setUpdateAvailable] = createSignal(false);
 

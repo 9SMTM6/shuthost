@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import { type Infer, is, validateData } from "./utils/assertData";
+import { type Infer, is, validateData } from './utils/assertData';
 
 const authModeChecks = is.oneOf('token', 'oidc', 'disabled', 'external');
 
@@ -39,7 +39,6 @@ const loadServerData = (): ServerData => {
  * - `string` => demo mode (optional base subpath).
  */
 export const serverData = loadServerData();
-
 
 const buildDataChecks = is.object({
     stylesHash: is.string,

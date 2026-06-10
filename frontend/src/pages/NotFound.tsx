@@ -1,8 +1,8 @@
 import { Title } from '@solidjs/meta';
 import { A } from '@solidjs/router';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { Footer } from '../sharedComponents/Footer';
 import { SimpleHeader } from '../sharedComponents/Header';
-import type { AnyComponent } from '../helpers/utils/solid';
 
 export const NotFoundPage = (() => {
     return (
