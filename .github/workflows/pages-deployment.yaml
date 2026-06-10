@@ -58,7 +58,7 @@ jobs:
           path: ./target/gh-pages
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   client-sh-installer-test:
     name: Test live-demo client installer (shell)
