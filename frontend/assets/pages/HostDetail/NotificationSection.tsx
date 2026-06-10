@@ -1,5 +1,5 @@
 import type { OperationFailure } from '../../helpers/appStore';
-import type { AnyComponent } from '../../helpers/utils';
+import type { AnyComponent } from '../../helpers/solidUtils';
 import { NotifyDurationButton } from './NotifyDurationButton';
 import { NotifyOperationFailedButton } from './NotifyOperationFailedButton';
 import { NotifyUnscheduledButton } from './NotifyUnscheduledButton';

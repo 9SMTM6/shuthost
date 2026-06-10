@@ -6,19 +6,19 @@ import { apiFetch, ApiFetchUnauthorizedError } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
-import type { AnyComponent } from '../helpers/utils';
+import { AnyComponent, useCurrentTime } from '../helpers/solidUtils';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
-
-const formatLastUsed = (clientId: string): string => {
-    if (state.dbData.status !== 'available') return '';
-    const stats = state.dbData.payload.clientStats[clientId];
-    return formatRelativeTimestamp(stats?.lastUsed);
-};
 
 // ==========================
 // Shared client helpers
 // ==========================
+
+const formatLastUsed = (clientId: string, now: number): string => {
+    if (state.dbData.status !== 'available') return '';
+    const stats = state.dbData.payload.clientStats[clientId];
+    return formatRelativeTimestamp(stats?.lastUsed, now);
+};
 
 const resetLeases = async (clientId: string) => {
     if (isDemoMode) return demo.resetLeases(clientId);
@@ -55,7 +55,11 @@ const ClientResetButton = ((props: { clientId: string; leases: string[] }) => (
 // ClientRow
 // ==========================
 
-const ClientRow = ((props: { clientId: string; leases: string[] }) => (
+const ClientRow = ((props: {
+    clientId: string;
+    leases: string[];
+    now: number;
+}) => (
     <tr class="table-row" data-client-id={props.clientId}>
         <th class="table-cell" scope="row">
             {props.clientId}
@@ -65,7 +69,7 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => (
         </td>
         <Show when={state.dbData.status === 'available'}>
             <td class="table-cell last-used" aria-label="Last Used">
-                {formatLastUsed(props.clientId)}
+                {formatLastUsed(props.clientId, props.now)}
             </td>
         </Show>
         <td class="table-cell" aria-label="Actions">
@@ -81,7 +85,11 @@ const ClientRow = ((props: { clientId: string; leases: string[] }) => (
 // ClientCard (mobile)
 // ==========================
 
-const ClientCard = ((props: { clientId: string; leases: string[] }) => (
+const ClientCard = ((props: {
+    clientId: string;
+    leases: string[];
+    now: number;
+}) => (
     <li class="actions-card" data-client-id={props.clientId}>
         <p class="actions-card-id">{props.clientId}</p>
         <p class="actions-card-row">
@@ -91,7 +99,7 @@ const ClientCard = ((props: { clientId: string; leases: string[] }) => (
         <Show when={state.dbData.status === 'available'}>
             <p class="actions-card-row">
                 <span class="actions-card-label">Last Used: </span>
-                {formatLastUsed(props.clientId)}
+                {formatLastUsed(props.clientId, props.now)}
             </p>
         </Show>
         <ClientResetButton clientId={props.clientId} leases={props.leases} />
@@ -107,6 +115,8 @@ const makeClientCommands = () => {
 };
 
 export const ClientsPage = (() => {
+    const currentTime = useCurrentTime();
+
     // Build a map of clientId -> [hosts with that client's lease]
     const clientLeaseMap = createMemo(() => {
         const map = new Map<string, string[]>();
@@ -248,7 +258,11 @@ export const ClientsPage = (() => {
                 >
                     <For each={sortedClients()}>
                         {([clientId, leases]) => (
-                            <ClientCard clientId={clientId} leases={leases} />
+                            <ClientCard
+                                clientId={clientId}
+                                leases={leases}
+                                now={currentTime()}
+                            />
                         )}
                     </For>
                 </ul>
@@ -292,6 +306,7 @@ export const ClientsPage = (() => {
                                     <ClientRow
                                         clientId={clientId}
                                         leases={leases}
+                                        now={currentTime()}
                                     />
                                 )}
                             </For>

@@ -6,7 +6,7 @@ import { authStatus } from '../helpers/authState';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { type ServerData, serverData } from '../helpers/serverData';
-import type { AnyComponent } from '../helpers/utils';
+import type { AnyComponent } from '../helpers/solidUtils';
 
 const TAB_LABELS = {
     architecture: 'Docs',

@@ -2,23 +2,24 @@
 
 import { type Infer, is, validateData } from './assertData';
 
-/**
- * Data embedded by the server into the HTML for the client to read on startup.
- * This is used for configuration and should only contain static and non-sensitive data.
- */
 const serverDataChecks = is.object({
     configPath: is.string,
     authWarning: is.boolean,
-    /** Demo mode is encoded by presence of this field.
-     * - `undefined` => normal mode
-     * - `string` => demo mode (optional base subpath).
-     */
     demoSubpath: is.optional(is.string),
     authMode: is.oneOf('token', 'oidc', 'disabled', 'external'),
     broadcastPort: is.number,
     dbEnabled: is.boolean,
 } as const);
 
+/**
+ * Data embedded by the server into the HTML for the client to read on startup.
+ * This is used for configuration and should only contain static and non-sensitive data.
+ *
+ * `demoSubpath`:
+ * Demo mode is encoded by presence of this field.
+ * - `undefined` => normal mode
+ * - `string` => demo mode (optional base subpath).
+ */
 export type ServerData = Infer<typeof serverDataChecks>;
 
 const loadServerData = () => {
