@@ -53,9 +53,8 @@ vars: {
     }
   }
 }
-*: {style.font-size: 18}
-*.*: {style.font-size: 18}
-*.*.*: {style.font-size: 18}
+***: {style.font-size: 18}
+(*** -> ***)[*]: {style.font-size: 19}
 `;
 
 const getFontFamilyFromTailwind = () => {
@@ -130,7 +129,12 @@ try {
             noXMLTag: true,
         });
 
-        const optimizedSvg = replaceEmbeddedFonts(svg, FONT_FAMILY);
+        let optimizedSvg = replaceEmbeddedFonts(svg, FONT_FAMILY);
+        // override the connection font size, since D2s default font seems to have less horizontal width
+        optimizedSvg = optimizedSvg.replace(
+            /(<text[^>]+class="text-italic fill-N2"[^>]*style="[^"]*?)font-size:19px/gs,
+            '$1font-size:16px',
+        );
 
         writeFileSync(`src/generated/${name}.svg`, optimizedSvg);
         console.info(`Generated src/generated/${name}.svg`);
