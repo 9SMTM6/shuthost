@@ -136,7 +136,10 @@ try {
         let optimizedSvg = replaceEmbeddedFonts(svg, FONT_FAMILY);
         // override the connection font size, since D2s default font seems to have less horizontal width
         optimizedSvg = optimizedSvg.replace(
-            new RegExp(`(<text[^>]+class="text-italic fill-N2"[^>]*style="[^"]*?)font-size:${d2ConnectionLayoutFontSize}px`, 'gs'),
+            new RegExp(
+                `(<text[^>]+class="text-italic fill-N2"[^>]*style="[^"]*?)font-size:${d2ConnectionLayoutFontSize}px`,
+                'gs',
+            ),
             `$1font-size:${d2ConnectionActualFontSize}px`,
         );
 
