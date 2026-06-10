@@ -2,7 +2,7 @@ import { RotateCcw } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
-import { apiFetch } from '../helpers/apiFetch';
+import { apiFetch, ApiFetchUnauthorizedError } from '../helpers/apiFetch';
 import { state } from '../helpers/appStore';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
@@ -27,7 +27,7 @@ const resetLeases = async (clientId: string) => {
             method: 'POST',
         });
     } catch (err) {
-        if (err instanceof Error && err.message === 'Unauthorized') return;
+        if (err instanceof ApiFetchUnauthorizedError) return;
         console.error(`Failed to reset leases for client ${clientId}:`, err);
     }
 };
