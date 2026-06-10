@@ -1,4 +1,5 @@
 import { showJSError } from '../utils';
+import { connectWebSocket, closeWebSocket } from './websocket';
 
 export const registerGlobalErrorHandlers = () => {
     window.addEventListener('error', (event) => {
@@ -26,5 +27,21 @@ export const registerGlobalErrorHandlers = () => {
         }
         console.error('Security policy violation:', event);
         showJSError('A security policy violation occurred');
+    });
+};
+
+export const backForwardCacheHandling = () => {
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            console.info('Page restored from bfcache, reconnecting WebSocket');
+            connectWebSocket();
+        }
+    });
+
+    window.addEventListener('pagehide', (event) => {
+        if (event.persisted) {
+            console.info('Page being cached, closing WebSocket');
+            closeWebSocket();
+        }
     });
 };

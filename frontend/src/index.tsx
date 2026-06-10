@@ -17,7 +17,7 @@ import { HostDetailPage } from './pages/HostDetail';
 import { HostsPage } from './pages/Hosts';
 import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
-import { registerGlobalErrorHandlers } from './helpers/lifetimeManagement/globalHooks';
+import { backForwardCacheHandling, registerGlobalErrorHandlers } from './helpers/lifetimeManagement/globalHooks';
 
 const [updateAvailable, setUpdateAvailable] = createSignal(false);
 
@@ -62,3 +62,4 @@ registerServiceWorker();
 onUpdateAvailable(() => setUpdateAvailable(true));
 
 registerGlobalErrorHandlers();
+backForwardCacheHandling();
