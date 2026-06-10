@@ -2,11 +2,11 @@ import { RotateCcw } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
-import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/apiFetch';
+import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/utils';
 import { state } from '../helpers/appStore';
+import { serverData } from '../helpers/dataIslands';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
-import { serverData } from '../helpers/serverData';
-import { type AnyComponent, useCurrentTime } from '../helpers/solidUtils';
+import { type AnyComponent, useCurrentTime } from '../helpers/utils/solid';
 import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../partials/client_install_requirements_gotchas.md?raw';
 

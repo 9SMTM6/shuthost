@@ -1,4 +1,4 @@
-import { applyMessage } from './appStore';
+import { applyMessage } from '../appStore';
 
 let currentSocket: WebSocket | null = null;
 let _heartbeatIntervalId: number | null = null;

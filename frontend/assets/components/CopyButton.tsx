@@ -1,6 +1,6 @@
 import { Check, Copy } from 'lucide-solid';
 import { createSignal, onCleanup } from 'solid-js';
-import type { AnyComponent } from '../helpers/solidUtils';
+import type { AnyComponent } from '../helpers/utils/solid';
 
 export const CopyButton = ((props: { targetId: string; label: string }) => {
     const [text, setText] = createSignal('Copy');

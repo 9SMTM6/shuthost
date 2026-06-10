@@ -6,13 +6,13 @@ import type {
     HostHookConfig,
     HostStats,
 } from '../../helpers/appStore';
-import { buildData } from '../../helpers/buildData';
+import { buildData } from '../../helpers/dataIslands';
 import { demoSubpath } from '../../helpers/demo';
 import {
     type AnyComponent,
     type AnyParentComponent,
     useCurrentTime,
-} from '../../helpers/solidUtils';
+} from '../../helpers/utils/solid';
 import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 
 const buildHostUpdateCommands = (

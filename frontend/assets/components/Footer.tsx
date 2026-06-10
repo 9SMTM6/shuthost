@@ -1,10 +1,10 @@
 import { A } from '@solidjs/router';
 import { createResource, Show } from 'solid-js';
-import { apiFetch } from '../helpers/apiFetch';
-import { authStatus } from '../helpers/authState';
-import { buildData } from '../helpers/buildData';
+import { apiFetch } from '../helpers/utils';
+import { authStatus } from '../helpers/apis/authState';
+import { buildData } from '../helpers/dataIslands';
 import { demoSubpath } from '../helpers/demo';
-import type { AnyComponent } from '../helpers/solidUtils';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { safeExternalUrl } from '../helpers/utils';
 
 type LatestRelease = { tag_name: string; url: string };

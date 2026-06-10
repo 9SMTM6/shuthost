@@ -4,12 +4,12 @@ import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { HostStatusBadge } from '../components/HostStatusBadge';
-import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/apiFetch';
+import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/utils';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
+import { serverData } from '../helpers/dataIslands';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
-import { serverData } from '../helpers/serverData';
-import type { AnyComponent } from '../helpers/solidUtils';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
 

@@ -1,6 +1,5 @@
-import { applyTypedMessage, state, type WsMessage } from './appStore';
-import { buildData } from './buildData';
-import { serverData } from './serverData';
+import { applyTypedMessage, state } from './appStore';
+import { buildData, serverData } from './dataIslands';
 
 export const isDemoMode = serverData.demoSubpath != null;
 
@@ -122,7 +121,7 @@ export const initDemoMode = () => {
                     },
                 },
             },
-        } satisfies WsMessage);
+        });
     }, 500);
 };
 

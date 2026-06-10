@@ -1,4 +1,4 @@
-import type { AnyComponent } from '../helpers/solidUtils';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { CopyButton } from './CopyButton';
 
 /**

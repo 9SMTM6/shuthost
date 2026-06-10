@@ -1,5 +1,5 @@
-import { buildData } from '../helpers/buildData';
-import type { AnyComponent } from '../helpers/solidUtils';
+import { buildData } from '../helpers/dataIslands';
+import type { AnyComponent } from '../helpers/utils/solid';
 import { safeExternalUrl } from '../helpers/utils';
 
 /** Inline error banner shown by the global error handlers in index.tsx. */
