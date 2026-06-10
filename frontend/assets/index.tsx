@@ -9,7 +9,7 @@ import { demoSubpath } from './helpers/demo';
 import {
     onUpdateAvailable,
     registerServiceWorker,
-} from './helpers/serviceWorker';
+} from './helpers/serviceWorkerManagement';
 import { showJSError } from './helpers/utils';
 import { AboutPage } from './pages/About';
 import { ArchitecturePage } from './pages/Architecture';
