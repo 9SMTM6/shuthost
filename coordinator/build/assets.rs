@@ -13,12 +13,12 @@ pub(crate) const VERSION: &str = shuthost_common::version_string!();
 
 macro_rules! include_frontend_asset {
     ($path:expr) => {
-        include_str!(concat!("../../frontend/assets/", $path))
+        include_str!(concat!("../../frontend/src/", $path))
     };
 }
 
 pub fn generate_frontend_assets() -> eyre::Result<()> {
-    let generated_dir = PathBuf::from("../frontend/assets/generated");
+    let generated_dir = PathBuf::from("../frontend/src/generated");
     fs::create_dir_all(&generated_dir)?;
 
     let styles_css = read_generated_text("app.css")?;
@@ -45,12 +45,12 @@ pub fn generate_frontend_assets() -> eyre::Result<()> {
 }
 
 fn read_generated_text(file_name: &str) -> eyre::Result<String> {
-    fs::read_to_string(format!("../frontend/assets/generated/{file_name}"))
+    fs::read_to_string(format!("../frontend/src/generated/{file_name}"))
         .wrap_err_with(|| format!("Failed to read generated {file_name}"))
 }
 
 fn read_generated_bytes(file_name: &str) -> eyre::Result<Vec<u8>> {
-    fs::read(format!("../frontend/assets/generated/{file_name}"))
+    fs::read(format!("../frontend/src/generated/{file_name}"))
         .wrap_err_with(|| format!("Failed to read generated {file_name}"))
 }
 
@@ -62,7 +62,7 @@ fn compute_icon_hashes() -> eyre::Result<(HashMap<u32, String>, HashMap<String, 
     let mut icon_hashes = HashMap::new();
     for &size in &ICON_SIZES {
         let png = fs::read(format!(
-            "../frontend/assets/generated/icons/icon-{size}.png"
+            "../frontend/src/generated/icons/icon-{size}.png"
         ))?;
         icon_hashes.insert(size, cache_busting_hash(&png));
     }
@@ -140,7 +140,7 @@ struct BuildData {
 }
 
 fn write_index_html(generated_dir: &Path, data: &BuildData) -> eyre::Result<()> {
-    let template = fs::read_to_string("../frontend/assets/page.template.html")
+    let template = fs::read_to_string("../frontend/src/page.template.html")
         .wrap_err("Failed to read page.template.html")?;
 
     // Embed build-data JSON safely inside a <script type="application/json"> tag.
@@ -150,7 +150,7 @@ fn write_index_html(generated_dir: &Path, data: &BuildData) -> eyre::Result<()> 
         .expect("build data serialization should not fail")
         .replace("</", r"<\/");
 
-    let prerendered_html = fs::read_to_string("../frontend/assets/generated/prerendered-app.html")
+    let prerendered_html = fs::read_to_string("../frontend/src/generated/prerendered-app.html")
         .wrap_err("Failed to read prerendered-app.html")?;
 
     let html = template

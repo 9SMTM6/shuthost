@@ -1,4 +1,4 @@
-# <img src="frontend/assets/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
+# <img src="frontend/src/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
 
 [![License: GPL-2.0-only](https://img.shields.io/badge/license-GPL--2.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
@@ -55,7 +55,7 @@ Extended documentation, examples, and additional resources to help you get the m
 - [🔒 Security Considerations](docs/security_considerations.md)
 - [❓ FAQ](docs/FAQ.md)
 - [📷 UI screenshots](#-ui-screenshots)
-- [🖥️ Platform Support](frontend/assets/htmlPartials/platform_support.md)
+- [🖥️ Platform Support](frontend/src/htmlPartials/platform_support.md)
 - [🏗️ Architecture](https://9smtm6.github.io/shuthost/docs)
 - [🚀 Potential Future Features](#-potential-future-features)
 - [🤝 Contributing](docs/CONTRIBUTING.md)
@@ -73,7 +73,7 @@ ShutHost addresses these challenges through three key design decisions:
 
 Host agents are intentionally minimal and designed for security. They use IP-addressed, authenticated requests and avoid running full-featured HTTP servers. This reduces the attack surface for components that typically run with elevated privileges. The `host_agent` performs the actual shutdown and registers with the host's service manager so the capability survives reboots. The `host_agent` can also be used standalone with direct control scripts (see [Agent-only Installation](docs/examples/agent-installation.md)); its API is documented in [docs/API.md](docs/API.md). The `host_agent` supports custom shutdown commands, allowing users to define how their systems should be powered down or put to sleep—this can also be seen in the [Unraid example](docs/examples/unraid-self-extracting-agent-deployment.md).
 
-![Host-Agent Interaction](frontend/assets/generated/host_agent_interaction.svg)
+![Host-Agent Interaction](frontend/src/generated/host_agent_interaction.svg)
 
 The coordinator glues the pieces together and provides usability features:
 
@@ -83,12 +83,12 @@ The coordinator glues the pieces together and provides usability features:
 - A lease system prevents hosts from being shut down while a client holds an active lease (for instance, while a backup job is running).
   > This safety depends on all starts and stops going through the coordinator (either the UI or a client using the coordinator API); actions performed outside the coordinator are outside its control.
 
-![Lease system explainer](frontend/assets/generated/client_controller_interaction.svg)
+![Lease system explainer](frontend/src/generated/client_controller_interaction.svg)
 
 ## 💿 Installation
 
 Choose either the binary or the container (Linux only) installation.
-Windows [isn't supported by the coordinator](frontend/assets/htmlPartials/platform_support.md); use a Linux VM or install the agent only (see [Agent-only Install](#-agent-only-install)).
+Windows [isn't supported by the coordinator](frontend/src/htmlPartials/platform_support.md); use a Linux VM or install the agent only (see [Agent-only Install](#-agent-only-install)).
 
 #### Binary
 - Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
@@ -122,7 +122,7 @@ Windows [isn't supported by the coordinator](frontend/assets/htmlPartials/platfo
 - Notes:
   - Uses `network_mode: host` to reach the hosts with the Wake-on-LAN packet. This setting is Linux-only and will not work properly on Docker Desktop for Mac/Windows. Use the binary on Mac or run on a Linux VM with bridged networking on Mac or Windows.
 
-![Deployment Possibilities](frontend/assets/generated/deployment.svg)
+![Deployment Possibilities](frontend/src/generated/deployment.svg)
 
 ### Agent / Client installation
 - To install a host-agent (controls the hosts): open the web UI, open "Install Host Agent" and follow the instructions shown.
@@ -134,7 +134,7 @@ Windows [isn't supported by the coordinator](frontend/assets/htmlPartials/platfo
 
 Lightweight option: install the host agent only (no coordinator). This does not require an always-on coordinator or a domain; it is easy to deploy but has limitations — the control scripts work only on the same LAN. See the detailed example in [docs/examples/agent-installation.md](docs/examples/agent-installation.md).
 
-![Direct Control Comparison with LAN Limitation](frontend/assets/generated/direct_control_comparison.svg)
+![Direct Control Comparison with LAN Limitation](frontend/src/generated/direct_control_comparison.svg)
 
 > **Note for Windows users:** Windows agents are only available as self-extracting archives. You must manually configure the agent to start on boot using a service manager like [NSSM](https://nssm.cc/).
 >

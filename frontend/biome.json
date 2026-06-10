@@ -2,11 +2,11 @@
     "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
     "files": {
         "includes": [
-            "assets/**/*.ts",
-            "assets/**/*.tsx",
-            "assets/**/*.json",
-            "!assets/generated",
-            "assets/*.css",
+            "src/**/*.ts",
+            "src/**/*.tsx",
+            "src/**/*.json",
+            "!src/generated",
+            "src/*.css",
             "tests/**/*.ts",
             "tests/tsconfig.json",
             "*.ts",
