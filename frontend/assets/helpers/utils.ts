@@ -1,11 +1,4 @@
-// DO NOT import any (other than type) parts from component files in this file.
-import type { Component, ParentComponent } from 'solid-js';
-
-// biome-ignore lint/suspicious/noExplicitAny: intentional type alias so call sites don't need per-site suppressions
-export type AnyComponent = Component<any>;
-
-// biome-ignore lint/suspicious/noExplicitAny: intentional type alias so call sites don't need per-site suppressions
-export type AnyParentComponent = ParentComponent<any>;
+// DO NOT import any solidjs (including indirectly via e.g. components) in this file.
 
 export const showJSError = (message: string) => {
     const errorDiv = document.getElementById(
@@ -42,10 +35,11 @@ const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 
 export const formatRelativeTimestamp = (
     isoTimestamp: string | null | undefined,
+    now = Date.now(),
 ): string => {
     if (!isoTimestamp) return 'Never';
     const date = new Date(isoTimestamp);
-    const diffMs = Date.now() - date.getTime();
+    const diffMs = now - date.getTime();
     const oneYearMs = 365 * 24 * 60 * 60 * 1000;
     if (diffMs >= oneYearMs) return date.toLocaleString();
     const seconds = Math.round(diffMs / 1000);

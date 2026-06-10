@@ -25,7 +25,6 @@ export const apiFetch = async (
         ...fetchInit
     } = options;
 
-
     try {
         const resp = await fetch(url, fetchInit);
         if (checkAndRedirectUnauthorized && resp.status === 401) {

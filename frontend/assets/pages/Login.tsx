@@ -6,7 +6,7 @@ import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
 import { JsErrorBox } from '../components/JsErrorBox';
 import { serverData } from '../helpers/serverData';
-import type { AnyComponent } from '../helpers/utils';
+import type { AnyComponent } from '../helpers/solidUtils';
 
 // Login error message map — mirrors the LOGIN_ERROR_* constants defined in the Rust coordinator.
 const ERROR_MESSAGES: Record<string, { title: string; body: string }> = {

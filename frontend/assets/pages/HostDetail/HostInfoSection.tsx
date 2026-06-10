@@ -8,12 +8,12 @@ import type {
 } from '../../helpers/appStore';
 import { buildData } from '../../helpers/buildData';
 import { demoSubpath } from '../../helpers/demo';
+import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 import {
-    type AnyComponent,
-    type AnyParentComponent,
-    formatRelativeTimestamp,
-    safeExternalUrl,
-} from '../../helpers/utils';
+    AnyComponent,
+    AnyParentComponent,
+    useCurrentTime,
+} from '../../helpers/solidUtils';
 
 const buildHostUpdateCommands = (
     hostStats: HostStats | undefined,
@@ -124,6 +124,8 @@ export const HostInfoSection = ((props: {
     hostConfig: HostConfig | undefined;
     isOnline: boolean;
 }) => {
+    const currentTime = useCurrentTime();
+
     const lastOnline = props.hostStats?.lastOnline ?? null;
     const agentVersion = props.hostStats
         ? (props.hostStats.agentVersion ?? `<= 1.7.1`)
@@ -226,7 +228,7 @@ export const HostInfoSection = ((props: {
                 <InfoRow label="Last online" hint={lastOnlinePrecise}>
                     {props.isOnline
                         ? 'Currently online'
-                        : formatRelativeTimestamp(lastOnline)}
+                        : formatRelativeTimestamp(lastOnline, currentTime())}
                 </InfoRow>
                 <Show when={preStartupHook || postShutdownHook}>
                     <dt class="font-medium text-black dark:text-[#cccccc]">
