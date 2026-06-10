@@ -9,7 +9,7 @@ import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
 import { serverData } from '../helpers/serverData';
-import type { AnyComponent } from '../helpers/utils';
+import type { AnyComponent } from '../helpers/solidUtils';
 import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../partials/agent_install_requirements_gotchas.md?raw';
 

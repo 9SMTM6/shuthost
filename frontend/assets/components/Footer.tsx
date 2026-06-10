@@ -3,7 +3,7 @@ import { createResource, Show } from 'solid-js';
 import { apiFetch } from '../helpers/apiFetch';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath } from '../helpers/demo';
-import type { AnyComponent } from '../helpers/utils';
+import type { AnyComponent } from '../helpers/solidUtils';
 import { safeExternalUrl } from '../helpers/utils';
 import { authStatus } from '../helpers/authState';
 
@@ -13,7 +13,9 @@ export const Footer = (() => {
     // re-runs the fetch when authStatus changes
     const [latest] = createResource(authStatus, async () => {
         try {
-            const res = await apiFetch(`${demoSubpath}/api/update`, { checkAndRedirectUnauthorized: false });
+            const res = await apiFetch(`${demoSubpath}/api/update`, {
+                checkAndRedirectUnauthorized: false,
+            });
             // with !checkAndRedirectUnauthorized apiFetch ignores 401 errors
             if (res.status === 401) return null;
             return (await res.json()) as LatestRelease;

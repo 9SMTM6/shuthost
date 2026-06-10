@@ -5,7 +5,7 @@ import {
     subscribeToHostOperationFailed,
     unsubscribeFromHostOperationFailed,
 } from '../../helpers/pushSubscription';
-import type { AnyComponent } from '../../helpers/utils';
+import type { AnyComponent } from '../../helpers/solidUtils';
 
 const description =
     'Get a push notification when a shutdown or startup command for this host fails or times out.';

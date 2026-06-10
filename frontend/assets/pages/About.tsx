@@ -5,7 +5,7 @@ import { SimpleHeader } from '../components/Header';
 import { apiFetch } from '../helpers/apiFetch';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath } from '../helpers/demo';
-import type { AnyComponent } from '../helpers/utils';
+import type { AnyComponent } from '../helpers/solidUtils';
 import { safeExternalUrl } from '../helpers/utils';
 
 type Author = {

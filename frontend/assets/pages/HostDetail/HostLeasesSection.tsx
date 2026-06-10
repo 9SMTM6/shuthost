@@ -6,7 +6,7 @@ import {
     type LeaseSource,
     state,
 } from '../../helpers/appStore';
-import type { AnyComponent } from '../../helpers/utils';
+import type { AnyComponent } from '../../helpers/solidUtils';
 
 export const HostLeasesSection = ((props: { hostname: string }) => {
     const leases = () =>
