@@ -10,7 +10,6 @@ import {
     onUpdateAvailable,
     registerServiceWorker,
 } from './helpers/lifetimeManagement/serviceWorker';
-import { showJSError } from './helpers/utils';
 import { AboutPage } from './pages/About';
 import { ArchitecturePage } from './pages/Architecture';
 import { ClientsPage } from './pages/Clients';
@@ -18,6 +17,7 @@ import { HostDetailPage } from './pages/HostDetail';
 import { HostsPage } from './pages/Hosts';
 import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
+import { registerGlobalErrorHandlers } from './helpers/lifetimeManagement/globalHooks';
 
 const [updateAvailable, setUpdateAvailable] = createSignal(false);
 
@@ -61,33 +61,4 @@ render(
 registerServiceWorker();
 onUpdateAvailable(() => setUpdateAvailable(true));
 
-// Global error handlers
-window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error);
-    const message = event.error?.message || 'An unknown error occurred';
-    showJSError(message);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
-    const message =
-        event.reason?.message || 'An unhandled promise rejection occurred';
-    showJSError(message);
-});
-
-window.addEventListener('securitypolicyviolation', (event) => {
-    // Ignore violations originating from browser extensions — they inject their
-    // own styles/scripts and are correctly blocked by our CSP, but are not our bug.
-    if (
-        event.sourceFile?.startsWith('moz-extension://') ||
-        event.sourceFile?.startsWith('chrome-extension://')
-    ) {
-        console.warn(
-            'CSP violation from browser extension (ignored):',
-            event.sourceFile,
-        );
-        return;
-    }
-    console.error('Security policy violation:', event);
-    showJSError('A security policy violation occurred');
-});
+registerGlobalErrorHandlers();
