@@ -1,8 +1,8 @@
 import { Title } from '@solidjs/meta';
 import { A, useParams } from '@solidjs/router';
 import { Match, Show, Switch } from 'solid-js';
-import { AppLayout } from '../../components/App';
-import { HostStatusBadge } from '../../components/HostStatusBadge';
+import { AppLayout } from '../../sharedComponents/App';
+import { HostStatusBadge } from '../../sharedComponents/HostStatusBadge';
 import { type OperationFailure, state } from '../../helpers/appStore';
 import type { AnyComponent } from '../../helpers/utils/solid';
 import { HostInfoSection } from './HostInfoSection';

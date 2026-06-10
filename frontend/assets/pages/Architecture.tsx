@@ -1,4 +1,4 @@
-import { AppLayout } from '../components/App';
+import { AppLayout } from '../sharedComponents/App';
 import clientControllerInteractionSvg from '../generated/client_controller_interaction.svg?raw';
 import deploymentSvg from '../generated/deployment.svg?raw';
 import directControlComparisonSvg from '../generated/direct_control_comparison.svg?raw';
