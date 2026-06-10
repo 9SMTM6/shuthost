@@ -18,6 +18,10 @@ use crate::common::{
 };
 
 #[tokio::test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "Integration test are expected to need a lot of assertions etc from time to time, but whitelisting for all tests feels too broad"
+)]
 async fn websocket_config_updates() {
     let port = get_free_port();
     let shared_secret = "secret";

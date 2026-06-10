@@ -1,4 +1,4 @@
-import { applyTypedMessage, type WsMessage, state } from './appStore';
+import { applyTypedMessage, state, type WsMessage } from './appStore';
 import { buildData } from './buildData';
 import { serverData } from './serverData';
 
@@ -170,7 +170,7 @@ export const demoResetLeases = (clientId: string): void => {
             payload: { host, leases: newLeaseMap[host] ?? [] },
         });
     }
-}
+};
 
 export const demoCheckHostOperationFailedSubscription = (
     hostname: string,
