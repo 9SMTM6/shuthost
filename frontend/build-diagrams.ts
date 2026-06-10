@@ -1,6 +1,10 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { D2 } from '@terrastruct/d2';
 
+const d2ConnectionLayoutFontSize = 19;
+const d2ConnectionActualFontSize = 16;
+const d2NodeFontSize = 18;
+
 // Theme colors derived from the frontend's VS Code-like light/dark palette.
 // Prepended to every diagram source so the theme is defined once here.
 //
@@ -53,8 +57,8 @@ vars: {
     }
   }
 }
-***: {style.font-size: 18}
-(*** -> ***)[*]: {style.font-size: 19}
+***: {style.font-size: ${d2NodeFontSize}}
+(*** -> ***)[*]: {style.font-size: ${d2ConnectionLayoutFontSize} }
 `;
 
 const getFontFamilyFromTailwind = () => {
@@ -132,8 +136,8 @@ try {
         let optimizedSvg = replaceEmbeddedFonts(svg, FONT_FAMILY);
         // override the connection font size, since D2s default font seems to have less horizontal width
         optimizedSvg = optimizedSvg.replace(
-            /(<text[^>]+class="text-italic fill-N2"[^>]*style="[^"]*?)font-size:19px/gs,
-            '$1font-size:16px',
+            new RegExp(`(<text[^>]+class="text-italic fill-N2"[^>]*style="[^"]*?)font-size:${d2ConnectionLayoutFontSize}px`, 'gs'),
+            `$1font-size:${d2ConnectionActualFontSize}px`,
         );
 
         writeFileSync(`src/generated/${name}.svg`, optimizedSvg);
