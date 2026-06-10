@@ -5,8 +5,8 @@ import {
     subscribeToHostOnlineFor,
     subscribeToHostOnlineForOneshot,
     unsubscribeFromHostOnlineFor,
-} from '../../helpers/pushSubscription';
-import type { AnyComponent } from '../../helpers/solidUtils';
+} from '../../helpers/apis/pushSubscription';
+import type { AnyComponent } from '../../helpers/utils/solid';
 
 const unitDefaults = { minutes: 30 as number, hours: 3, days: 1 } as const;
 

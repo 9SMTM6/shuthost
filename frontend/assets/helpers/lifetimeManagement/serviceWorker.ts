@@ -1,4 +1,4 @@
-import { demoSubpath } from './demo';
+import { demoSubpath } from '../demo';
 
 export const noServiceWorkerSupport = !('serviceWorker' in navigator);
 

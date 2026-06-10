@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
-import { demoSubpath, isDemoMode } from './demo';
-import { serverData } from './serverData';
+import { serverData } from '../dataIslands';
+import { demoSubpath, isDemoMode } from '../demo';
 
 export type AuthStatus = 'probing' | 'authenticated' | 'unauthenticated';
 

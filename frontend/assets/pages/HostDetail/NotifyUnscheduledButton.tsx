@@ -4,8 +4,8 @@ import {
     checkHostUnscheduledSubscription,
     subscribeToHostUnscheduled,
     unsubscribeFromHostUnscheduled,
-} from '../../helpers/pushSubscription';
-import type { AnyComponent } from '../../helpers/solidUtils';
+} from '../../helpers/apis/pushSubscription';
+import type { AnyComponent } from '../../helpers/utils/solid';
 
 const notifyUnscheduledDescription =
     'Get a push notification when this host starts up or shuts down without being triggered by ShutHost.';
