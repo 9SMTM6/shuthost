@@ -4,7 +4,7 @@ import deploymentSvg from '../generated/deployment.svg?raw';
 import directControlComparisonSvg from '../generated/direct_control_comparison.svg?raw';
 import hostAgentInteractionSvg from '../generated/host_agent_interaction.svg?raw';
 import type { AnyComponent } from '../helpers/utils/solid';
-import platformSupportHtml from '../partials/platform_support.md?raw';
+import platformSupportHtml from '../htmlPartials/platform_support.md?raw';
 
 export const ArchitecturePage = (() => (
     <AppLayout>

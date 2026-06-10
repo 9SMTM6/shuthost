@@ -101,8 +101,8 @@ fn main() -> eyre::Result<()> {
     // because vite.config.ts reads build-data.json at config-load time.
     println!("{ON_CHANGE}/assets/manifest.tmpl.json");
     println!("{ON_CHANGE}/assets/styles.tailwind.css");
-    println!("{ON_CHANGE}/assets/partials/client_install_requirements_gotchas.md");
-    println!("{ON_CHANGE}/assets/partials/agent_install_requirements_gotchas.md");
+    println!("{ON_CHANGE}/assets/htmlPartials/client_install_requirements_gotchas.md");
+    println!("{ON_CHANGE}/assets/htmlPartials/agent_install_requirements_gotchas.md");
     let main_frontend_assets = tasks::spawn("build-frontend", move || {
         tasks::join(build_diagrams)?;
         pnpm::run("build")?;

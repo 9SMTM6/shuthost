@@ -55,7 +55,7 @@ Extended documentation, examples, and additional resources to help you get the m
 - [🔒 Security Considerations](docs/security_considerations.md)
 - [❓ FAQ](docs/FAQ.md)
 - [📷 UI screenshots](#-ui-screenshots)
-- [🖥️ Platform Support](frontend/assets/partials/platform_support.md)
+- [🖥️ Platform Support](frontend/assets/htmlPartials/platform_support.md)
 - [🏗️ Architecture](https://9smtm6.github.io/shuthost/docs)
 - [🚀 Potential Future Features](#-potential-future-features)
 - [🤝 Contributing](docs/CONTRIBUTING.md)
@@ -88,7 +88,7 @@ The coordinator glues the pieces together and provides usability features:
 ## 💿 Installation
 
 Choose either the binary or the container (Linux only) installation.
-Windows [isn't supported by the coordinator](frontend/assets/partials/platform_support.md); use a Linux VM or install the agent only (see [Agent-only Install](#-agent-only-install)).
+Windows [isn't supported by the coordinator](frontend/assets/htmlPartials/platform_support.md); use a Linux VM or install the agent only (see [Agent-only Install](#-agent-only-install)).
 
 #### Binary
 - Use the [automated installation script](scripts/enduser_installers/coordinator.sh):
