@@ -8,12 +8,12 @@ import type {
 } from '../../helpers/appStore';
 import { buildData } from '../../helpers/buildData';
 import { demoSubpath } from '../../helpers/demo';
-import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 import {
-    AnyComponent,
-    AnyParentComponent,
+    type AnyComponent,
+    type AnyParentComponent,
     useCurrentTime,
 } from '../../helpers/solidUtils';
+import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 
 const buildHostUpdateCommands = (
     hostStats: HostStats | undefined,

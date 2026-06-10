@@ -1,6 +1,6 @@
 import { Power, PowerOff } from 'lucide-solid';
 import { For, Show } from 'solid-js';
-import { apiFetch, ApiFetchUnauthorizedError } from '../../helpers/apiFetch';
+import { ApiFetchUnauthorizedError, apiFetch } from '../../helpers/apiFetch';
 import {
     type ClientLease,
     type LeaseSource,
