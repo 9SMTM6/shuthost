@@ -2,6 +2,7 @@ import { Title } from '@solidjs/meta';
 import { createResource, For, Match, Suspense, Switch } from 'solid-js';
 import { Footer } from '../components/Footer';
 import { SimpleHeader } from '../components/Header';
+import { apiFetch } from '../helpers/apiFetch';
 import { buildData } from '../helpers/buildData';
 import { demoSubpath } from '../helpers/demo';
 import type { AnyComponent } from '../helpers/utils';
@@ -36,10 +37,18 @@ type DepsResult =
     | { kind: 'ok'; data: AboutPageProps };
 
 const fetchDeps = async (): Promise<DepsResult> => {
-    const res = await fetch(`${demoSubpath}/api/dependency-data.json`);
-    if (res.status === 401) return { kind: 'unauthorized' };
-    if (!res.ok) return { kind: 'error', message: `HTTP ${res.status}` };
-    return { kind: 'ok', data: (await res.json()) as AboutPageProps };
+    try {
+        const res = await apiFetch(`${demoSubpath}/api/dependency-data.json`, {
+            checkAndRedirectUnauthorized: false,
+        });
+        if (res.status === 401) return { kind: 'unauthorized' };
+        return { kind: 'ok', data: (await res.json()) as AboutPageProps };
+    } catch (err) {
+        return {
+            kind: 'error',
+            message: err instanceof Error ? err.message : 'Unknown error',
+        };
+    }
 };
 
 export const AboutPage = (() => {

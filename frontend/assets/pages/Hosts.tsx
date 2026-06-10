@@ -4,7 +4,7 @@ import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { HostStatusBadge } from '../components/HostStatusBadge';
-import { apiFetch } from '../helpers/apiFetch';
+import { apiFetch, ApiFetchUnauthorizedError } from '../helpers/apiFetch';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
@@ -64,7 +64,7 @@ const updateLease = async (hostName: string, action: 'take' | 'release') => {
             method: 'POST',
         });
     } catch (err) {
-        if (err instanceof Error && err.message === 'Unauthorized') return;
+        if (err instanceof ApiFetchUnauthorizedError) return;
         console.error(`Failed to ${action} lease for ${hostName}:`, err);
     }
 };
