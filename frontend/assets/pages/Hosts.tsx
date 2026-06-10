@@ -4,7 +4,7 @@ import { createMemo, For, Show } from 'solid-js';
 import { AppLayout } from '../components/App';
 import { CopyButton } from '../components/CopyButton';
 import { HostStatusBadge } from '../components/HostStatusBadge';
-import { apiFetch, ApiFetchUnauthorizedError } from '../helpers/apiFetch';
+import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/apiFetch';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
