@@ -127,19 +127,3 @@ export const closeWebSocket = () => {
         currentSocket = null;
     }
 };
-
-// Back-Forward Cache handling
-window.addEventListener('pageshow', (event) => {
-    if (event.persisted) {
-        console.info('Page restored from bfcache, reconnecting WebSocket');
-        connectWebSocket();
-    }
-});
-
-window.addEventListener('pagehide', (event) => {
-    if (event.persisted && currentSocket) {
-        console.info('Page being cached, closing WebSocket');
-        currentSocket.close();
-        currentSocket = null;
-    }
-});
