@@ -59,7 +59,7 @@ vars: {
 `;
 
 const getFontFamilyFromTailwind = () => {
-    const css = readFileSync('assets/styles.tailwind.css', 'utf8');
+    const css = readFileSync('src/styles.tailwind.css', 'utf8');
     const match = css.match(/--font-sans:\s*([^;]+);/s);
     // biome-ignore lint/style/noNonNullAssertion: We expect this to always be present in the generated Tailwind CSS.
     return match![1]!.trim().replace(/\s+/g, ' ');
@@ -114,11 +114,11 @@ const replaceEmbeddedFonts = (svg: string, fontFamily: string) => {
 const d2 = new D2();
 
 try {
-    mkdirSync('assets/generated', { recursive: true });
-    const files = readdirSync('assets').filter((f) => f.endsWith('.d2'));
+    mkdirSync('src/generated', { recursive: true });
+    const files = readdirSync('src').filter((f) => f.endsWith('.d2'));
     for (const f of files) {
         const name = f.replace(/\.d2$/, '');
-        const source = readFileSync(`assets/${f}`, 'utf8');
+        const source = readFileSync(`src/${f}`, 'utf8');
 
         const result = await d2.compile(`${D2_THEME_HEADER}\n${source}`);
         const svg = await d2.render(result.diagram, {
@@ -132,8 +132,8 @@ try {
 
         const optimizedSvg = replaceEmbeddedFonts(svg, FONT_FAMILY);
 
-        writeFileSync(`assets/generated/${name}.svg`, optimizedSvg);
-        console.info(`Generated assets/generated/${name}.svg`);
+        writeFileSync(`src/generated/${name}.svg`, optimizedSvg);
+        console.info(`Generated src/generated/${name}.svg`);
     }
 } catch (error) {
     console.error('Error building diagrams:', error);

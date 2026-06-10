@@ -38,7 +38,7 @@ macro_rules! include_utf8_asset {
     ($asset_path:expr) => {
         include_str!(concat!(
             env!("WORKSPACE_ROOT"),
-            "frontend/assets/",
+            "frontend/src/",
             $asset_path
         ))
     };
@@ -123,7 +123,7 @@ macro_rules! static_png_download_handler {
         async fn $name() -> impl IntoResponse {
             const DATA: &[u8] = include_bytes!(concat!(
                 env!("WORKSPACE_ROOT"),
-                "frontend/assets/generated/icons/",
+                "frontend/src/generated/icons/",
                 $file
             ));
             (
@@ -270,7 +270,7 @@ pub(crate) async fn serve_styles() -> impl IntoResponse {
 
 static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
 
-// Binary icon handlers (generated in build.rs into frontend/assets/generated/icons)
+// Binary icon handlers (generated in build.rs into frontend/src/generated/icons)
 static_png_download_handler!(fn serve_icon_32, file = "icon-32.png");
 static_png_download_handler!(fn serve_icon_48, file = "icon-48.png");
 static_png_download_handler!(fn serve_icon_64, file = "icon-64.png");

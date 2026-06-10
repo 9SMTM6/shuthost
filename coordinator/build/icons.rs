@@ -9,15 +9,15 @@ use tiny_skia::Pixmap;
 pub(super) const ICON_SIZES: [u32; 7] = [32, 48, 64, 128, 180, 192, 512];
 
 pub fn generate_pngs() -> eyre::Result<()> {
-    let out_dir = PathBuf::from("../frontend/assets/generated/icons");
+    let out_dir = PathBuf::from("../frontend/src/generated/icons");
     if !out_dir.exists() {
         fs::create_dir_all(&out_dir).wrap_err_with(|| format!("creating {}", out_dir.display()))?;
     }
 
-    let svg_data = include_bytes!("../../frontend/assets/favicon.svg");
+    let svg_data = include_bytes!("../../frontend/src/favicon.svg");
 
     let opt = usvg::Options {
-        resources_dir: Some(PathBuf::from("../frontend/assets/")),
+        resources_dir: Some(PathBuf::from("../frontend/src/")),
         ..Default::default()
     };
     let rtree = usvg::Tree::from_str(str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
