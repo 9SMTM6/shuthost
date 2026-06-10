@@ -1,10 +1,10 @@
-import { AppLayout } from '../sharedComponents/App';
 import clientControllerInteractionSvg from '../generated/client_controller_interaction.svg?raw';
 import deploymentSvg from '../generated/deployment.svg?raw';
 import directControlComparisonSvg from '../generated/direct_control_comparison.svg?raw';
 import hostAgentInteractionSvg from '../generated/host_agent_interaction.svg?raw';
 import type { AnyComponent } from '../helpers/utils/solid';
 import platformSupportHtml from '../htmlPartials/platform_support.md?raw';
+import { AppLayout } from '../sharedComponents/App';
 
 export const ArchitecturePage = (() => (
     <AppLayout>

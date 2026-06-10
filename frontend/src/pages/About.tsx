@@ -1,12 +1,11 @@
 import { Title } from '@solidjs/meta';
 import { createResource, For, Match, Suspense, Switch } from 'solid-js';
-import { Footer } from '../sharedComponents/Footer';
-import { SimpleHeader } from '../sharedComponents/Header';
-import { apiFetch } from '../helpers/utils';
 import { buildData } from '../helpers/dataIslands';
 import { demoSubpath } from '../helpers/demo';
+import { apiFetch, safeExternalUrl } from '../helpers/utils';
 import type { AnyComponent } from '../helpers/utils/solid';
-import { safeExternalUrl } from '../helpers/utils';
+import { Footer } from '../sharedComponents/Footer';
+import { SimpleHeader } from '../sharedComponents/Header';
 
 type Author = {
     name: string;

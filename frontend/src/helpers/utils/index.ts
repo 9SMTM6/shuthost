@@ -84,12 +84,14 @@ export const apiFetch = async (
     options: RequestInit & {
         checkRespOk?: boolean;
         checkAndRedirectUnauthorized?: boolean;
-    } = {}
+    } = {},
 ) => {
     // default to checking resp.ok and redirecting on 401.
     // We dont assign these in a default object parameter because then they would be overridden when fetch options are passed in.
     const {
-        checkRespOk = true, checkAndRedirectUnauthorized = true, ...fetchInit
+        checkRespOk = true,
+        checkAndRedirectUnauthorized = true,
+        ...fetchInit
     } = options;
 
     try {
@@ -107,10 +109,9 @@ export const apiFetch = async (
     } catch (err) {
         if (!(err instanceof ApiFetchUnauthorizedError)) {
             showJSError(
-                err instanceof Error ? err.message : 'Unknown fetch error'
+                err instanceof Error ? err.message : 'Unknown fetch error',
             );
         }
         throw err;
     }
 };
-

@@ -1,6 +1,5 @@
 import { CircleDashed, Crosshair } from 'lucide-solid';
 import { type JSX, Match, Show, Switch } from 'solid-js';
-import { CopyButton } from '../../sharedComponents/CopyButton';
 import type {
     HostConfig,
     HostHookConfig,
@@ -8,12 +7,13 @@ import type {
 } from '../../helpers/appStore';
 import { buildData } from '../../helpers/dataIslands';
 import { demoSubpath } from '../../helpers/demo';
+import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
 import {
     type AnyComponent,
     type AnyParentComponent,
     useCurrentTime,
 } from '../../helpers/utils/solid';
-import { formatRelativeTimestamp, safeExternalUrl } from '../../helpers/utils';
+import { CopyButton } from '../../sharedComponents/CopyButton';
 
 const buildHostUpdateCommands = (
     hostStats: HostStats | undefined,

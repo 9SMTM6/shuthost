@@ -1,14 +1,18 @@
 import { RotateCcw } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
-import { AppLayout } from '../sharedComponents/App';
-import { CopyButton } from '../sharedComponents/CopyButton';
-import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/utils';
 import { state } from '../helpers/appStore';
 import { serverData } from '../helpers/dataIslands';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
+import {
+    ApiFetchUnauthorizedError,
+    apiFetch,
+    formatRelativeTimestamp,
+    sortActiveFirst,
+} from '../helpers/utils';
 import { type AnyComponent, useCurrentTime } from '../helpers/utils/solid';
-import { formatRelativeTimestamp, sortActiveFirst } from '../helpers/utils';
 import clientGotchasHtml from '../htmlPartials/client_install_requirements_gotchas.md?raw';
+import { AppLayout } from '../sharedComponents/App';
+import { CopyButton } from '../sharedComponents/CopyButton';
 
 // ==========================
 // Shared client helpers

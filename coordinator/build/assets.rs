@@ -61,9 +61,7 @@ fn compute_icon_hashes() -> eyre::Result<(HashMap<u32, String>, HashMap<String, 
 
     let mut icon_hashes = HashMap::new();
     for &size in &ICON_SIZES {
-        let png = fs::read(format!(
-            "../frontend/src/generated/icons/icon-{size}.png"
-        ))?;
+        let png = fs::read(format!("../frontend/src/generated/icons/icon-{size}.png"))?;
         icon_hashes.insert(size, cache_busting_hash(&png));
     }
 

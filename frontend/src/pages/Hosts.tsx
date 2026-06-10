@@ -1,17 +1,20 @@
 import { A, useNavigate } from '@solidjs/router';
 import { Power, PowerOff, TriangleAlert } from 'lucide-solid';
 import { createMemo, For, Show } from 'solid-js';
-import { AppLayout } from '../sharedComponents/App';
-import { CopyButton } from '../sharedComponents/CopyButton';
-import { HostStatusBadge } from '../sharedComponents/HostStatusBadge';
-import { ApiFetchUnauthorizedError, apiFetch } from '../helpers/utils';
 import type { LeaseSource, Status } from '../helpers/appStore';
 import { state } from '../helpers/appStore';
 import { serverData } from '../helpers/dataIslands';
 import { demo, demoSubpath, isDemoMode } from '../helpers/demo';
+import {
+    ApiFetchUnauthorizedError,
+    apiFetch,
+    sortActiveFirst,
+} from '../helpers/utils';
 import type { AnyComponent } from '../helpers/utils/solid';
-import { sortActiveFirst } from '../helpers/utils';
 import agentGotchasHtml from '../htmlPartials/agent_install_requirements_gotchas.md?raw';
+import { AppLayout } from '../sharedComponents/App';
+import { CopyButton } from '../sharedComponents/CopyButton';
+import { HostStatusBadge } from '../sharedComponents/HostStatusBadge';
 
 const formatLeaseSource = (lease: LeaseSource) =>
     lease.type === 'Client' ? lease.value : '';
