@@ -222,6 +222,7 @@ These are generated or validated automatically as part of the test suite, and th
 * add e2e tests for OIDC in a compose setup or similar, with kanidm (use example), authelia, authentik, dex
   * (add tests for OIDC refresh flow) currently not active code
 * consider using secrets crate or secure-types instead for secrecy. These offer OS locks. On the other hand, once we give these secrets to dependencies, like openidconnect, its not as if they are well protected any longer...
+* consider using https://crates.io/crates/include_packed on some of the assets included, especially the agents. Should reduce shuthost binary size (including in memory if we decompress on request) by ~6mb with all agents.
 * > WoL always broadcasts to 255.255.255.255
   > The WoL packet is always sent to the global broadcast address. For hosts on a different subnet (common in home-lab setups), this won't work. The config already stores the host's IP, which could be used to derive a directed subnet broadcast.
   * investigate
