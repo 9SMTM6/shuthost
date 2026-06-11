@@ -227,7 +227,9 @@ These are generated or validated automatically as part of the test suite, and th
   > The WoL packet is always sent to the global broadcast address. For hosts on a different subnet (common in home-lab setups), this won't work. The config already stores the host's IP, which could be used to derive a directed subnet broadcast.
   * investigate
 * consider adding lighthouse tests to CI and/or local tests.
-* extend the host detail page to show the hooks in at least some detail
+* pre_startup hook etc should display the EXISTENCE of a http body and similar
+* Add the ability to start/shutdown hosts (probably only without enforce_state) without changing leases.
+* A bypass for the startup/shutdown hooks might also be a good idea. That could potentially be implemented only into the lease-less startup/shutdown.
 * need to reword/work the main poll interval description in the documentation, as the interval is more likely to be limited by the timeouts on the hosts.
 * need tests for the self-extracting update flow. Though annoyingly even these need local admin rights. At first I thought that we should be able to remove that requirement from installers, but in that case the agent would not - in default setups - have the rights to shutdown the machine at all, so we probably should keep that around. But that also means that testing the update flow cant be done without admin rights (and/or docker), which is a bit of a pain.
   * I could just require sudo and make them primarily CI tests, like some other tests.
