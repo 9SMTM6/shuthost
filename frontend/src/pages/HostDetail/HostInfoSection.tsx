@@ -13,7 +13,7 @@ import {
     type AnyParentComponent,
     useCurrentTime,
 } from '../../helpers/utils/solid';
-import { CopyButton } from '../../sharedComponents/CopyButton';
+import { CopyableCodeBlock } from '../../sharedComponents/CopyButton';
 
 const buildHostUpdateCommands = (
     hostStats: HostStats | undefined,
@@ -292,15 +292,12 @@ const HostUpdateCommands = ((props: { hostStats: HostStats | undefined }) => {
                             Linux/macOS:
                         </p>
                     </Show>
-                    <div class="code-container py-2">
-                        <CopyButton
-                            targetId="host-update-command-sh"
-                            label="Copy update command (sh)"
-                        />
-                        <code id="host-update-command-sh" class="code-block">
-                            {updateCmds?.sh}
-                        </code>
-                    </div>
+                    <CopyableCodeBlock
+                        id="host-update-command-sh"
+                        label="Copy update command (sh)"
+                        value={updateCmds?.sh ?? ''}
+                        classList={{ 'py-2': true }}
+                    />
                 </Show>
                 <Show when={updateCmds?.ps1 != null}>
                     <Show when={updateCmds?.sh != null}>
@@ -308,15 +305,12 @@ const HostUpdateCommands = ((props: { hostStats: HostStats | undefined }) => {
                             Windows (PowerShell):
                         </p>
                     </Show>
-                    <div class="code-container py-2">
-                        <CopyButton
-                            targetId="host-update-command-ps1"
-                            label="Copy update command (PowerShell)"
-                        />
-                        <code id="host-update-command-ps1" class="code-block">
-                            {updateCmds?.ps1}
-                        </code>
-                    </div>
+                    <CopyableCodeBlock
+                        label="Copy update command (PowerShell)"
+                        id="host-update-command-ps1"
+                        value={updateCmds?.ps1 ?? ''}
+                        classList={{ 'py-2': true }}
+                    />
                 </Show>
             </div>
         </Show>

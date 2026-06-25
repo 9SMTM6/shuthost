@@ -13,7 +13,10 @@ import {
 import type { AnyComponent } from '../helpers/utils/solid';
 import agentGotchasHtml from '../htmlPartials/agent_install_requirements_gotchas.md?raw';
 import { AppLayout } from '../sharedComponents/App';
-import { CopyButton } from '../sharedComponents/CopyButton';
+import {
+    CopyableCodeBlock,
+    CopyableInstallCommand,
+} from '../sharedComponents/CopyButton';
 import { HostStatusBadge } from '../sharedComponents/HostStatusBadge';
 
 const formatLeaseSource = (lease: LeaseSource) =>
@@ -268,37 +271,17 @@ export const HostsPage = (() => {
                             Run one of the following commands in your terminal:
                         </p>
 
-                        <p class="mb-1 text-xs font-semibold">
-                            For Linux/macOS:
-                        </p>
-                        <div class="code-container py-2">
-                            <CopyButton
-                                targetId="host-install-command-sh"
-                                label="Copy install command"
-                            />
-                            <code
-                                id="host-install-command-sh"
-                                class="code-block"
-                            >
-                                {cmds().hostSh}
-                            </code>
-                        </div>
+                        <CopyableInstallCommand
+                            title="For Linux/macOS:"
+                            id="host-install-command-sh"
+                            command={cmds().hostSh}
+                        />
 
-                        <p class="mb-1 text-xs font-semibold">
-                            For Windows (PowerShell):
-                        </p>
-                        <div class="code-container py-2">
-                            <CopyButton
-                                targetId="host-install-command-ps1"
-                                label="Copy install command"
-                            />
-                            <code
-                                id="host-install-command-ps1"
-                                class="code-block"
-                            >
-                                {cmds().hostPs1}
-                            </code>
-                        </div>
+                        <CopyableInstallCommand
+                            title="For Windows (PowerShell):"
+                            id="host-install-command-ps1"
+                            command={cmds().hostPs1}
+                        />
 
                         <p class="description-text text-xs">
                             Adjust options as needed. The command will already
@@ -306,19 +289,11 @@ export const HostsPage = (() => {
                             change is required. Add the output to the hosts
                             section of your config on the Coordinator Host:
                         </p>
-                        <div class="code-container">
-                            <CopyButton
-                                targetId="host-config-location"
-                                label="Copy config location"
-                            />
-                            <code
-                                id="host-config-location"
-                                data-config-location
-                                class="code-block"
-                            >
-                                {serverData.configPath}
-                            </code>
-                        </div>
+                        <CopyableCodeBlock
+                            label="Copy config location"
+                            id="host-config-location"
+                            value={serverData.configPath}
+                        />
 
                         {/* Inlined at build time from htmlPartials/agent_install_requirements_gotchas.md */}
                         <div innerHTML={agentGotchasHtml} />

@@ -1,5 +1,5 @@
 import type { AnyComponent } from '../helpers/utils/solid';
-import { CopyButton } from './CopyButton';
+import { CopyableCodeBlock } from './CopyButton';
 
 /**
  * Security warning panel for when no internal auth is configured or the
@@ -112,57 +112,42 @@ export const AuthWarningPanel = (() => {
                     <div class="alert alert-warning">
                         <div class="alert-title">Configuration Examples</div>
                         <p class="text-sm font-semibold mb-2">Authelia:</p>
-                        <div class="code-container">
-                            <CopyButton
-                                targetId="authelia-config"
-                                label="Copy Authelia config"
-                            />
-                            <code
-                                id="authelia-config"
-                                class="code-block"
-                            >{`- domain: ${domain}
+                        <CopyableCodeBlock
+                            label="Copy Authelia config"
+                            id="authelia-config"
+                            value={`- domain: ${domain}
     policy: bypass
     resources:
         - '^/download/(.*)'
         - '^/api/m2m/(.*)$'
         - '/manifest..*.json$'
-        - '/favicon..*.svg$'`}</code>
-                        </div>
+        - '/favicon..*.svg$'`}
+                        />
 
                         <p class="text-sm font-semibold mb-2 mt-4">
                             Nginx Proxy Manager with Authentication:
                         </p>
-                        <div class="code-container">
-                            <CopyButton
-                                targetId="nginx-config"
-                                label="Copy Nginx config"
-                            />
-                            <code
-                                id="nginx-config"
-                                class="code-block"
-                            >{`# In your proxy host's advanced configuration
+                        <CopyableCodeBlock
+                            label="Copy Nginx config"
+                            id="nginx-config"
+                            value={`# In your proxy host's advanced configuration
 location ~ ^/(download|api/m2m|manifest\\..*\\.json|favicon\\..*\\.svg)$ {
     auth_basic off;
     proxy_pass http://your-shuthost-backend;
-}`}</code>
-                        </div>
+}`}
+                        />
 
                         <p class="text-sm font-semibold mb-2 mt-4">
                             Traefik with ForwardAuth:
                         </p>
-                        <div class="code-container">
-                            <CopyButton
-                                targetId="traefik-config"
-                                label="Copy Traefik config"
-                            />
-                            <code
-                                id="traefik-config"
-                                class="code-block"
-                            >{`# Add to your service labels
+                        <CopyableCodeBlock
+                            label="Copy Traefik config"
+                            id="traefik-config"
+                            value={`# Add to your service labels
 - "traefik.http.routers.shuthost-bypass.rule=Host(\`${domain}\`) && (PathPrefix(\`/download\`) || PathPrefix(\`/api/m2m\`) || PathRegexp(\`/manifest..*.json\`) || PathRegexp(\`/favicon..*.svg\`))"
 - "traefik.http.routers.shuthost-bypass.priority=100"
-# Remove auth middleware for bypass routes`}</code>
-                        </div>
+# Remove auth middleware for bypass routes`}
+                        />
 
                         <p class="text-xs mt-2">
                             <em>

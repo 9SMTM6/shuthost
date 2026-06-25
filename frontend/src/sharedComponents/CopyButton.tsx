@@ -1,6 +1,8 @@
 import { Check, Copy } from 'lucide-solid';
 import { createSignal, onCleanup } from 'solid-js';
 import type { AnyComponent } from '../helpers/utils/solid';
+import { serverData } from '../helpers/dataIslands';
+import { JSX } from 'solid-js/h/jsx-runtime';
 
 export const CopyButton = ((props: { targetId: string; label: string }) => {
     const [text, setText] = createSignal('Copy');
@@ -38,3 +40,44 @@ export const CopyButton = ((props: { targetId: string; label: string }) => {
         </button>
     );
 }) satisfies AnyComponent;
+
+export type CopyableCodeBlockProps = {
+    id: string;
+    value: string;
+    label?: string;
+    classList?: JSX.ClassList;
+};
+
+export const CopyableCodeBlock = ((props: CopyableCodeBlockProps) => (
+    <div class="code-container" classList={props.classList}>
+        <CopyButton targetId={props.id} label={props.label ?? 'Copy'} />
+        <code
+            id={props.id}
+            class="code-block"
+            // add a data-attribute that identifies config location copy blocks. This is used to fix up (redact) the config location in snapshots.
+            {...(props.value == serverData.configPath
+                ? { 'data-config-location': '' }
+                : {})}
+        >
+            {props.value}
+        </code>
+    </div>
+)) satisfies AnyComponent;
+
+export type CopyableInstallCommandProps = {
+    id: string;
+    title: string;
+    command: string;
+};
+
+export const CopyableInstallCommand = ((props: CopyableInstallCommandProps) => (
+    <>
+        <p class="mb-1 text-xs font-semibold">{props.title}</p>
+        <CopyableCodeBlock
+            id={props.id}
+            value={props.command}
+            label="Copy install command"
+            classList={{ 'py-2': true }}
+        />
+    </>
+)) satisfies AnyComponent;
