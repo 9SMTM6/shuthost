@@ -154,16 +154,16 @@ const HostRow = ((props: { hostName: string }) => {
             <td class="table-cell status" aria-label="Status">
                 <HostStatusDisplay hostName={props.hostName} />
             </td>
-            <td class="table-cell actions" aria-label="Actions">
-                <div class="actions-cell">
-                    <HostLeaseButtons hostName={props.hostName} />
-                </div>
-            </td>
             <Show when={hasClients()}>
                 <td class="table-cell leases" aria-label="Leases">
                     {getFormattedLeases(leases())}
                 </td>
             </Show>
+            <td class="table-cell actions" aria-label="Actions">
+                <div class="actions-cell">
+                    <HostLeaseButtons hostName={props.hostName} />
+                </div>
+            </td>
         </tr>
     );
 }) satisfies AnyComponent;
@@ -344,6 +344,15 @@ export const HostsPage = (() => {
                                         </span>
                                     </span>
                                 </th>
+                                <Show when={hasClients()}>
+                                    <th
+                                        class="table-header"
+                                        id="host-table-leases-header"
+                                        scope="col"
+                                    >
+                                        Leases
+                                    </th>
+                                </Show>
                                 <th
                                     class="table-header actions-column"
                                     scope="col"
@@ -358,15 +367,6 @@ export const HostsPage = (() => {
                                         </span>
                                     </span>
                                 </th>
-                                <Show when={hasClients()}>
-                                    <th
-                                        class="table-header"
-                                        id="host-table-leases-header"
-                                        scope="col"
-                                    >
-                                        Leases
-                                    </th>
-                                </Show>
                             </tr>
                         </thead>
                         <tbody
