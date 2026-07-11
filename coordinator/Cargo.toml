@@ -104,7 +104,7 @@ tokio = { workspace = true, features = [
 toml.workspace = true
 tower = "0.5"
 web-push-native = "0.4.0"
-tower-http = { version = "0.6", features = [
+tower-http = { version = "0.7", features = [
     "request-id",
     "sensitive-headers",
     "timeout",
@@ -113,7 +113,7 @@ tower-http = { version = "0.6", features = [
 ] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.x", features = [
-    "chrono", 
+    "chrono",
     "env-filter",
     "json",
     "tracing-log", # default
