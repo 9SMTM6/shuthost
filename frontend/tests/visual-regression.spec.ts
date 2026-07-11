@@ -89,9 +89,9 @@ test.describe('main page(s)', () => {
     test('GPL2 license display', async ({ page }) => {
         await page.goto(`${base}/about`);
         await page.waitForLoadState('networkidle');
-        const licenseLink = page.locator('#license-GPL-2\\.0-only');
-        await expect(licenseLink).toBeVisible();
-        await expect(licenseLink).toHaveScreenshot(`gpl2_license_display.png`);
+        const licenseSection = page.locator('#license-GPL-2\\.0-only').locator('..');
+        await expect(licenseSection).toBeVisible();
+        await expect(licenseSection).toHaveScreenshot(`gpl2_license_display.png`);
     });
 });
 
