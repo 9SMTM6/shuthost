@@ -11,7 +11,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{ResultMapErrExt as _, is_superuser};
+use crate::{run_init_command, ResultMapErrExt as _, is_superuser};
 
 /// Returns the systemd service file path for the given service name.
 #[must_use]
@@ -78,10 +78,10 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 
     drop(service_file);
 
-    Command::new("systemctl")
-        .arg("daemon-reload")
-        .output()
-        .map_err_to_string_simple()?;
+    run_init_command!(
+        Command::new("systemctl").arg("daemon-reload"),
+        "reload systemd daemon",
+    );
 
     Ok(())
 }
@@ -98,22 +98,20 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     let service_name = format!("{name}.service");
 
-    Command::new("systemctl")
-        .arg("daemon-reload")
-        .output()
-        .map_err_to_string_simple()?;
+    run_init_command!(
+        Command::new("systemctl").arg("daemon-reload"),
+        "reload systemd daemon",
+    );
 
-    Command::new("systemctl")
-        .arg("enable")
-        .arg(&service_name)
-        .output()
-        .map_err_to_string_simple()?;
+    run_init_command!(
+        Command::new("systemctl").arg("enable").arg(&service_name),
+        "enable service",
+    );
 
-    Command::new("systemctl")
-        .arg("start")
-        .arg(&service_name)
-        .output()
-        .map_err_to_string_simple()?;
+    run_init_command!(
+        Command::new("systemctl").arg("start").arg(&service_name),
+        "start service",
+    );
 
     println!("Service {service_name} started and enabled.");
     Ok(())

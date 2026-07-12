@@ -50,6 +50,30 @@ macro_rules! version_string {
     };
 }
 
+/// Run an init-system command, check its exit status, and return `Err` on failure.
+///
+/// `$cmd` must be a [`std::process::Command`] ready to spawn (all args set).
+/// `$action` is a human-readable description used in the error message
+/// (e.g. `"reload systemd daemon"`, `"enable service"`).
+///
+/// # Errors
+///
+/// Returns `Err(String)` if the command cannot be spawned or exits with a non-zero status;
+/// the error includes stderr output from the command.
+#[macro_export]
+macro_rules! run_init_command {
+    ($cmd:expr, $action:expr $(,)?) => {{
+        let output = $cmd.output().map_err(|e| format!("Failed to execute {}: {e}", $action))?;
+        if !output.status.success() {
+            return Err(format!(
+                "Failed to {}: {}",
+                $action,
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+    }};
+}
+
 /// Creates a UDP socket configured for broadcasting on the specified port.
 ///
 /// Binds to the given port on all interfaces and enables broadcasting.

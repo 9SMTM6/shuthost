@@ -11,7 +11,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{ResultMapErrExt, is_superuser};
+use crate::{run_init_command, ResultMapErrExt, is_superuser};
 
 /// Returns the launchd service file path for the given service name.
 pub fn get_service_path(name: &str) -> String {
@@ -98,13 +98,13 @@ pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     let label = format!("com.github_9smtm6.{name}");
     let plist_path = PathBuf::from(get_service_path(name));
 
-    // Load and start the daemon (modern launchctl)
-    Command::new("launchctl")
-        .arg("bootstrap")
-        .arg("system")
-        .arg(&plist_path)
-        .output()
-        .map_err_to_string_simple()?;
+    run_init_command!(
+        Command::new("launchctl")
+            .arg("bootstrap")
+            .arg("system")
+            .arg(&plist_path),
+        "bootstrap launchd service",
+    );
 
     println!("Service bootstrapped with launchctl.");
 
