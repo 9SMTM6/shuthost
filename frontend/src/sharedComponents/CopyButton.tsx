@@ -1,8 +1,8 @@
 import { Check, Copy } from 'lucide-solid';
 import { createSignal, onCleanup } from 'solid-js';
-import type { AnyComponent } from '../helpers/utils/solid';
+import type { JSX } from 'solid-js/h/jsx-runtime';
 import { serverData } from '../helpers/dataIslands';
-import { JSX } from 'solid-js/h/jsx-runtime';
+import type { AnyComponent } from '../helpers/utils/solid';
 
 export const CopyButton = ((props: { targetId: string; label: string }) => {
     const [text, setText] = createSignal('Copy');
@@ -55,7 +55,7 @@ export const CopyableCodeBlock = ((props: CopyableCodeBlockProps) => (
             id={props.id}
             class="code-block"
             // add a data-attribute that identifies config location copy blocks. This is used to fix up (redact) the config location in snapshots.
-            {...(props.value == serverData.configPath
+            {...(props.value === serverData.configPath
                 ? { 'data-config-location': '' }
                 : {})}
         >
