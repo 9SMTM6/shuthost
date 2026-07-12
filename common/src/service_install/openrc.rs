@@ -11,7 +11,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{run_init_command, ResultMapErrExt as _, is_superuser};
+use crate::{ResultMapErrExt as _, is_superuser, run_init_command};
 
 /// Returns the `OpenRC` service file path for the given service name.
 #[must_use]
@@ -96,7 +96,10 @@ pub fn install_self_as_service(name: &str, init_script_content: &str) -> Result<
 /// Returns `Err` if the `rc-update` or `rc-service` commands fail.
 pub fn start_and_enable_self_as_service(name: &str) -> Result<(), String> {
     run_init_command!(
-        Command::new("rc-update").arg("add").arg(name).arg("default"),
+        Command::new("rc-update")
+            .arg("add")
+            .arg(name)
+            .arg("default"),
         "add service to default runlevel",
     );
 

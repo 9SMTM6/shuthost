@@ -5,6 +5,8 @@
 
 use std::{io, process};
 
+use shuthost_common::ResultMapErrExt;
+
 use crate::server::ServiceOptions;
 
 /// Executes the configured shutdown command via the appropriate shell for the platform.
@@ -16,16 +18,23 @@ use crate::server::ServiceOptions;
 /// # Errors
 ///
 /// Returns `Err` if spawning or waiting on the process fails.
-pub(crate) fn execute_shutdown(config: &ServiceOptions) -> Result<(), io::Error> {
+pub(crate) fn execute_shutdown(config: &ServiceOptions) -> Result<(), String> {
     println!("Executing command: {}", config.shutdown_command);
 
     const IS_WINDOWS: bool = cfg!(target_os = "windows");
 
-    process::Command::new(if IS_WINDOWS { "powershell.exe" } else { "sh" })
+    let status = process::Command::new(if IS_WINDOWS { "powershell.exe" } else { "sh" })
         .arg(if IS_WINDOWS { "-Command" } else { "-c" })
         .arg(&config.shutdown_command)
-        .spawn()?
-        .wait()?;
+        .status()
+        .map_err_to_string_simple()?;
+
+    if !status.success() {
+        return Err(format!(
+            "Shutdown command failed (exit code: {:?})",
+            status.code()
+        ));
+    }
 
     Ok(())
 }

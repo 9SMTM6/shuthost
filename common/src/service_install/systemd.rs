@@ -11,7 +11,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{run_init_command, ResultMapErrExt as _, is_superuser};
+use crate::{ResultMapErrExt as _, is_superuser, run_init_command};
 
 /// Returns the systemd service file path for the given service name.
 #[must_use]

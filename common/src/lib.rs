@@ -63,7 +63,9 @@ macro_rules! version_string {
 #[macro_export]
 macro_rules! run_init_command {
     ($cmd:expr, $action:expr $(,)?) => {{
-        let output = $cmd.output().map_err(|e| format!("Failed to execute {}: {e}", $action))?;
+        let output = $cmd
+            .output()
+            .map_err(|e| format!("Failed to execute {}: {e}", $action))?;
         if !output.status.success() {
             return Err(format!(
                 "Failed to {}: {}",

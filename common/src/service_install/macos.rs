@@ -11,7 +11,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{run_init_command, ResultMapErrExt, is_superuser};
+use crate::{ResultMapErrExt, is_superuser, run_init_command};
 
 /// Returns the launchd service file path for the given service name.
 pub fn get_service_path(name: &str) -> String {
