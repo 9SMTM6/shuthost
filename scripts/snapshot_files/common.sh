@@ -30,6 +30,18 @@ do_snapshot() {
     podman run -d -t --rm --privileged -v "$(pwd)":/repo --name "temp-$BASE_IMAGE-container" "$BASE_IMAGE-built" sleep infinity
     commit_snapshot "$BASE_IMAGE"
 
+    # Wait for systemd/D-Bus to be ready (systemd images only)
+    if [ "$BASE_IMAGE" = "shuthost-systemd" ]; then
+        echo "Waiting for systemd D-Bus socket..."
+        for i in $(seq 1 30); do
+            if podman exec "temp-$BASE_IMAGE-container" test -S /run/dbus/system_bus_socket 2>/dev/null; then
+                echo "Systemd ready after ${i}s"
+                break
+            fi
+            sleep 1
+        done
+    fi
+
     # Install the coordinator
     exec_with_coverage //workspace/shuthost_coordinator install root
 
