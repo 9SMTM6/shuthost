@@ -3,9 +3,9 @@
 //! This module provides functions for executing system commands,
 //! particularly shutdown commands received from the coordinator.
 
-use std::{io, process};
+use std::process;
 
-use shuthost_common::ResultMapErrExt;
+use shuthost_common::ResultMapErrExt as _;
 
 use crate::server::ServiceOptions;
 
