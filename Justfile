@@ -40,13 +40,13 @@ install_cross_toolchains_on_apple_silicon:
     rustup target add x86_64-apple-darwin
 
     brew tap messense/macos-cross-toolchains
-    
+
     brew install x86_64-unknown-linux-gnu
     rustup target add x86_64-unknown-linux-gnu
-    
+
     brew install aarch64-unknown-linux-gnu
     rustup target add aarch64-unknown-linux-gnu
-    
+
     brew install x86_64-unknown-linux-musl
     rustup target add x86_64-unknown-linux-musl
 
@@ -95,7 +95,7 @@ export SQLX_OFFLINE := "true"
 coverage:
     export COVERAGE=1
     export SKIP_BUILD=1
-    eval "$(cargo llvm-cov show-env --sh --remap-path-prefix)"
+    eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
     # note: removes binaries too (only in combination with previous line)
     cargo llvm-cov clean --workspace
     # note: building for a provided target instead of native

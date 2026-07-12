@@ -101,7 +101,7 @@ jobs:
     name: Coverage report (llvm-cov)
     runs-on: ubuntu-latest
     # disabled for now, its broken in CI and I cant reproduce the issue locally, needs investigation in the branch fix_coverage_job
-    if: false 
+    if: false
     steps:
       - uses: *checkout
         with:
@@ -158,7 +158,7 @@ jobs:
         run: |
           set -e
           set -v
-          eval "$(cargo llvm-cov show-env --sh --remap-path-prefix)"
+          eval "$(cargo llvm-cov show-env --export-prefix --remap-path-prefix)"
           cargo llvm-cov clean --workspace
           . ./scripts/helpers.sh && build_gnu
           if [ "$LFS_AVAILABLE" = "true" ]; then
