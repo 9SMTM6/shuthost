@@ -23,6 +23,8 @@ allow-git = [
 [advisories]
 ignore = [
     { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security already failed." },
+    { id = "RUSTSEC-2026-0192", reason = "That dependency only comes in via buildtime usvg usage" },
+    { id = "RUSTSEC-2026-0206", reason = "That dependency only comes in via buildtime usvg usage" },
 ]
 
 [bans]
@@ -58,7 +60,7 @@ use-instead = "aws-lc-rs"
 # Blacklist multiple crate versions ---------------------
 # deny-multiple-versions makes bans essentially a blacklist for multiple versions of the crate
 # instead of blacklisting the crate in general.
-# 
+#
 # We also warn on all multiple versions, but solving all of them, with the number of dependencies we have
 # would be a huge  and only temporary effort, so we only deny multiple versions for crates where we have a good reason to.
 
@@ -90,7 +92,7 @@ reason = "multiple versions of this could lead to subtle bugs or unpredicted pan
 #\ ---------------------
 
 # Ban build scripts.
-# Note that this has issues, as listed in the cargo deny book, and doesnt get checked befofe execution, so its certainly not perfect. 
+# Note that this has issues, as listed in the cargo deny book, and doesnt get checked befofe execution, so its certainly not perfect.
 [bans.build]
 # comments describe findings of a cursory scan on 20.05.26
 allow-build-scripts = [
@@ -129,6 +131,7 @@ allow-build-scripts = [
     # needs to bind to sqlite headers
     "libsqlite3-sys",
     "serde_json", "num-traits", "num-bigint-dig",
+    "crossbeam-deque", "crossbeam-epoch", "inotify-sys",
 ]
 
 [licenses]

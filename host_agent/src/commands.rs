@@ -17,7 +17,7 @@ use crate::server::ServiceOptions;
 ///
 /// Returns `Err` if spawning or waiting on the process fails.
 pub(crate) fn execute_shutdown(config: &ServiceOptions) -> Result<(), io::Error> {
-    println!("Executing command: {}", &config.shutdown_command);
+    println!("Executing command: {}", config.shutdown_command);
 
     const IS_WINDOWS: bool = cfg!(target_os = "windows");
 
