@@ -306,7 +306,7 @@ dependencies = [
  "sha1 0.10.7",
  "sync_wrapper",
  "tokio",
- "tokio-tungstenite 0.29.0",
+ "tokio-tungstenite",
  "tower",
  "tower-layer",
  "tower-service",
@@ -3806,7 +3806,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
 name = "shuthost"
-version = "1.9.3"
+version = "1.9.4"
 dependencies = [
  "axum",
  "clap",
@@ -3821,12 +3821,12 @@ dependencies = [
  "shuthost_coordinator",
  "shuthost_host_agent",
  "tokio",
- "tokio-tungstenite 0.30.0",
+ "tokio-tungstenite",
 ]
 
 [[package]]
 name = "shuthost_common"
-version = "1.9.3"
+version = "1.9.4"
 dependencies = [
  "hex",
  "hmac 0.13.0",
@@ -3840,7 +3840,7 @@ dependencies = [
 
 [[package]]
 name = "shuthost_coordinator"
-version = "1.9.3"
+version = "1.9.4"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3885,14 +3885,14 @@ dependencies = [
  "tower-http 0.7.0",
  "tracing",
  "tracing-subscriber",
- "tungstenite 0.30.0",
+ "tungstenite",
  "url",
  "web-push-native",
 ]
 
 [[package]]
 name = "shuthost_host_agent"
-version = "1.9.3"
+version = "1.9.4"
 dependencies = [
  "base64 0.22.1",
  "clap",
@@ -4513,19 +4513,7 @@ dependencies = [
  "futures-util",
  "log",
  "tokio",
- "tungstenite 0.29.0",
-]
-
-[[package]]
-name = "tokio-tungstenite"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17a073bfed563fa236697a068031408a93cd9522e08abf9933ead3e73411bd71"
-dependencies = [
- "futures-util",
- "log",
- "tokio",
- "tungstenite 0.30.0",
+ "tungstenite",
 ]
 
 [[package]]
@@ -4767,22 +4755,6 @@ dependencies = [
  "log",
  "rand 0.9.5",
  "sha1 0.10.7",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "tungstenite"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48ac77174b19c110a50ab2128b24215ac9cb40e0e12e093fb602d175c569d22"
-dependencies = [
- "bytes",
- "data-encoding",
- "http",
- "httparse",
- "log",
- "rand 0.10.2",
- "sha1 0.11.0",
  "thiserror 2.0.18",
 ]
 
