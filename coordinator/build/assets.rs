@@ -149,7 +149,9 @@ fn write_index_html(generated_dir: &Path, data: &BuildData) -> eyre::Result<()> 
         .replace("</", r"<\/");
 
     let prerendered_html = fs::read_to_string("../frontend/src/generated/prerendered-app.html")
-        .wrap_err("Failed to read prerendered-app.html")?;
+        .wrap_err("Failed to read prerendered-app.html")?
+        .replace("%7B%7B", "{{")
+        .replace("%7D%7D", "}}");
 
     let html = template
         .replace("{{PRERENDERED_HTML}}", &prerendered_html)

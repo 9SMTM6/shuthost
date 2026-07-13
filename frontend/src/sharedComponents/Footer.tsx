@@ -2,7 +2,7 @@ import { A } from '@solidjs/router';
 import { createResource, Show } from 'solid-js';
 import { authStatus } from '../helpers/apis/authState';
 import { buildData } from '../helpers/dataIslands';
-import { demoSubpath } from '../helpers/demo';
+import { demoSubpath, isDemoMode } from '../helpers/demo';
 import { apiFetch, safeExternalUrl } from '../helpers/utils';
 import type { AnyComponent } from '../helpers/utils/solid';
 
@@ -10,7 +10,9 @@ type LatestRelease = { tag_name: string; url: string };
 
 export const Footer = (() => {
     // re-runs the fetch when authStatus changes
-    const [latest] = createResource(authStatus, async () => {
+  const [latest] = createResource(authStatus, async () => {
+        if (isDemoMode) return null;  // Skip in demo mode
+
         try {
             const res = await apiFetch(`${demoSubpath}/api/update`, {
                 checkAndRedirectUnauthorized: false,
