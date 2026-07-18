@@ -40,6 +40,9 @@ install_frozen:
 install:
     pnpm install
 
+run +args="":
+    pnpm run {{args}}
+
 [group('tests')]
 playwright +flags="":
     pnpm exec playwright test {{flags}}

@@ -268,7 +268,7 @@ pub(crate) async fn serve_styles() -> impl IntoResponse {
     )
 }
 
-static_svg_download_handler!(fn serve_favicon, file = "favicon.svg");
+static_svg_download_handler!(fn serve_favicon, file = "generated/favicon.svg");
 
 // Binary icon handlers (generated in build.rs into frontend/src/generated/icons)
 static_png_download_handler!(fn serve_icon_32, file = "icon-32.png");
