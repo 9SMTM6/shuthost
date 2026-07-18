@@ -55,7 +55,7 @@ fn read_generated_bytes(file_name: &str) -> eyre::Result<Vec<u8>> {
 }
 
 fn compute_icon_hashes() -> eyre::Result<(HashMap<u32, String>, HashMap<String, String>)> {
-    let favicon_hash = cache_busting_hash(include_frontend_asset!("favicon.svg").as_bytes());
+    let favicon_hash = cache_busting_hash(include_frontend_asset!("generated/favicon.svg").as_bytes());
     let mut svg_hashes = HashMap::new();
     svg_hashes.insert("favicon".to_string(), favicon_hash);
 

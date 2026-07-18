@@ -1,4 +1,4 @@
-# <img src="frontend/src/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
+# <img src="frontend/src/generated/favicon.svg" alt="ShutHost" width="24" height="24"> ShutHost
 
 [![License: GPL-2.0-only](https://img.shields.io/badge/license-GPL--2.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()

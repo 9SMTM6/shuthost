@@ -94,7 +94,7 @@ fn main() -> eyre::Result<()> {
     println!("{ON_CHANGE}/src/vite.config.ssr.ts");
     let prerender = tasks::spawn("build-prerender", || pnpm::run("build:prerender"));
 
-    println!("{ON_CHANGE}/src/favicon.svg");
+    println!("{ON_CHANGE}/src/generated/favicon.svg");
     let pngs = tasks::spawn("generate-png-icons", icons::generate_pngs);
 
     // Icons and the manifest/build-data.json must be ready before the pnpm build

@@ -1,4 +1,3 @@
-use core::str;
 use std::{fs, path::PathBuf};
 
 use eyre::{Ok, WrapErr as _, eyre};
@@ -14,7 +13,7 @@ pub fn generate_pngs() -> eyre::Result<()> {
         fs::create_dir_all(&out_dir).wrap_err_with(|| format!("creating {}", out_dir.display()))?;
     }
 
-    let svg_data = include_bytes!("../../frontend/src/favicon.svg");
+    let svg_data = include_bytes!("../../frontend/src/generated/favicon.svg");
 
     let opt = usvg::Options {
         resources_dir: Some(PathBuf::from("../frontend/src/")),

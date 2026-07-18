@@ -10,6 +10,7 @@
         "typecheck": "tsc --noEmit",
         "build": "vite build",
         "build:diagrams": "node build-diagrams.ts",
+        "build:favicon": "node build-favicon.ts",
         "build:prerender": "vite-node --config vite.config.ssr.ts prerender.tsx",
         "test": "playwright test",
         "install-chromium": "playwright install chromium",

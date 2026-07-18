@@ -12,7 +12,7 @@ const hashedFaviconRedirect = {
     configureServer(server: import('vite').ViteDevServer) {
         server.middlewares.use((req, _res, next) => {
             if (req.url?.match(/^\/favicon\.[^.]+\.svg(\?.*)?$/)) {
-                req.url = '/src/favicon.svg';
+                req.url = '/src/generated/favicon.svg';
             }
             next();
         });
