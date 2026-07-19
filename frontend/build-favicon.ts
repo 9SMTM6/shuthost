@@ -50,8 +50,8 @@ const contentMaxY = neckBottom + baseH;
 const contentCenterY = (contentMinY + contentMaxY) / 2;
 const yOffset = size / 2 - contentCenterY;
 
-const color = "#2b2b2b";
-const darkColor = "#e6e6e6";
+const color = '#2b2b2b';
+const darkColor = '#e6e6e6';
 
 const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -74,7 +74,7 @@ const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}"
     <!-- lower frame — left side, bottom edge, right side -->
     <path d="M ${screenLeft} ${rectTop} V ${screenBottom} H ${screenRight} V ${rectTop}"/>
     <!-- stand base (filled trapezoid): top-left → top-right → bottom-right → bottom-left -->
-    <polygon points="${baseTopLeft},${neckBottom} ${baseTopRight},${neckBottom} ${baseBottomRight},${neckBottom+baseH} ${baseBottomLeft},${neckBottom+baseH}" class="f"/>
+    <polygon points="${baseTopLeft},${neckBottom} ${baseTopRight},${neckBottom} ${baseBottomRight},${neckBottom + baseH} ${baseBottomLeft},${neckBottom + baseH}" class="f"/>
     <!-- stand neck -->
     <line x1="${cx}" y1="${screenBottom}" x2="${cx}" y2="${neckBottom}"/>
   </g>
