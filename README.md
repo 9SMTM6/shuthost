@@ -41,6 +41,45 @@ Note that the theme (light/dark) of the WebUI is selected based on your system p
 - simplified agent-only deployment doesn't require a coordinator on an always-on host
 - security wasn't an afterthought
 
+## 💰 Energy & Cost Savings
+
+ShutHost can dramatically cut electricity use by keeping hosts powered down when idle. This is particularly impactful with recent household energy price surges.
+
+### Example: Repurposed Old PC as Backup Server
+
+A typical home server built from reused desktop hardware:
+
+| State | Power Draw |
+|---|---|
+| Idle (always-on) | ~60 W |
+| Active (backup, maintenance) | ~120 W |
+| Shut down (WOL standby) | ~1.7 W |
+
+With energy-costs of **€0.37/kWh** and CO₂ emissions of **344 g/kWh** - both taken from Germany, 2026, and 30 days per month.
+
+If the server is actively used 4h/week for e.g. backups we can save:
+
+$$
+\begin{aligned}
+24 - \frac{4}{7 \cdot 24}               &\approx 23.976\ \text{h}            &&\text{idle per day} \\
+23.98\ \text{h} \cdot 60\ \text{W}      &\approx 1.439\ \text{kWh}           &&\text{per day} \\
+1.439\ \text{kWh} \cdot 0.37\ \frac{\text{€}}{\text{kWh}} &\approx 0.5323\ \text{€}    &&\text{per day} \\
+1.439\ \text{kWh} \cdot 344\ \frac{\text{g}}{\text{kWh}}  &\approx 494.9\ \text{g\,CO}_2 &&\text{per day} \\[4pt]
+0.5323\ \text{€} \cdot 30               &\approx 15.97\ \text{€}             &&\text{per month} \\
+494.9\ \text{g\,CO}_2 \cdot 30          &\approx 14.85\ \text{kg\,CO}_2      &&\text{per month} \\[4pt]
+0.5323\ \text{€} \cdot 365              &\approx 194.30\ \text{€}            &&\text{per year} \\
+494.9\ \text{g} \cdot 365               &\approx 180.6\ \text{kg\,CO}_2      &&\text{per year}
+\end{aligned}
+$$
+
+<!--| Scenario | Monthly Consumption | Yearly Consumption | Yearly Cost | CO₂ |
+|---|---|---|---|---|
+| **Savings** | **9.35 kWh** | **487 kWh** | **€170** | **170 kg** |
+
+A single modest server saves **~€170/year** and **~170 kg CO₂** — enough to offset the embedded carbon of the reused hardware many times over. Multiply by multiple hosts, and the financial and environmental case for WOL-based power management becomes compelling.-->
+
+---
+
 ---
 
 ## 📚 Documentation & Resources
