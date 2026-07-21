@@ -2,12 +2,12 @@
   <title>Shuthost icon combining a monitor and power symbol into a single glyph</title>
   <defs>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#000"/>
     </filter>
     <style>
-      .m{fill:none;stroke:#2b2b2b;stroke-width:26;stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
-      .f{fill:#2b2b2b}
-      @media(prefers-color-scheme:dark){.m{stroke:#e6e6e6}.f{fill:#e6e6e6}#shadow feDropShadow{flood-color:#000}}
+      .m{fill:none;stroke:#e6e6e6;stroke-width:26;stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
+      .f{fill:#e6e6e6}
+      @media(prefers-color-scheme:light){.m{stroke:#2b2b2b}.f{fill:#2b2b2b}#shadow feDropShadow{flood-color:#fff}}
     </style>
   </defs>
     <g class="m" transform="translate(0, -24)">
