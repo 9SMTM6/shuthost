@@ -66,10 +66,10 @@ const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}"
   <defs>
     <style><![CDATA[
       .s{fill:none;stroke-linecap:round;stroke-linejoin:round}
-      .g{stroke:#fff;stroke-width:${stroke + 6};opacity:0.6}
+      .g{stroke:#fff;stroke-width:${stroke + 6}}
       .m{stroke:${color};stroke-width:${stroke}}
       .f{fill:${color}}
-      @media(prefers-color-scheme:dark){.g{stroke:#000;opacity:0.3}.m{stroke:${darkColor}}.f{fill:${darkColor}}}
+      @media(prefers-color-scheme:dark){.g{stroke:#000;opacity:0.6}.m{stroke:${darkColor}}.f{fill:${darkColor}}}
     ]]></style>
   </defs>
   <g class="s" transform="translate(0, ${yOffset})">
