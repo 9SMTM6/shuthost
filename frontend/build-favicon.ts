@@ -53,33 +53,28 @@ const yOffset = size / 2 - contentCenterY;
 const color = '#2b2b2b';
 const darkColor = '#e6e6e6';
 
-const glowStroke = stroke  + 6;
-
 const paths = `
       <path d="M ${screenLeft} ${rectTop} A ${arcR} ${arcR} 0 0 1 ${arcEndX} ${arcMeetY}"/>
       <path d="M ${arcStartX} ${arcMeetY} A ${arcR} ${arcR} 0 0 1 ${screenRight} ${rectTop}"/>
       <line x1="${cx}" y1="${powerTop}" x2="${cx}" y2="${powerBottom}"/>
       <path d="M ${screenLeft} ${rectTop} V ${screenBottom} H ${screenRight} V ${rectTop}"/>
-      <polygon points="${baseTopLeft},${neckBottom} ${baseTopRight},${neckBottom} ${baseBottomRight},${neckBottom + baseH} ${baseBottomLeft},${neckBottom + baseH}"/>
-      <line x1="${cx}" y1="${screenBottom}" x2="${cx}" y2="${neckBottom}"/>
-    `;
+      <polygon class="f" points="${baseTopLeft},${neckBottom} ${baseTopRight},${neckBottom} ${baseBottomRight},${neckBottom + baseH} ${baseBottomLeft},${neckBottom + baseH}"/>
+      <line x1="${cx}" y1="${screenBottom}" x2="${cx}" y2="${neckBottom}"/>`;
 
+// note: usvg does NOT support CSS var() and ignores @media, and it fails silently.
 const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
+    </filter>
     <style><![CDATA[
-      :root{--glow-color:#fff;--glow-opacity:0.6}
-      .s{fill:none;stroke-linecap:round;stroke-linejoin:round}
-      .g{stroke:var(--glow-color);stroke-width:${glowStroke};opacity:var(--glow-opacity)}
-      .m{stroke:${color};stroke-width:${stroke}}
+      .m{fill:none;stroke:${color};stroke-width:${stroke};stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
       .f{fill:${color}}
-      @media(prefers-color-scheme:dark){:root{--glow-color:#000;--glow-opacity:0.3}.m{stroke:${darkColor}}.f{fill:${darkColor}}}
+      @media(prefers-color-scheme:dark){.m{stroke:${darkColor}}.f{fill:${darkColor}}#shadow feDropShadow{flood-color:#000}}
     ]]></style>
   </defs>
-  <g transform="translate(0, ${yOffset})">
-    <g class="s g">${paths}</g>
-    <g class="s m">${paths}
-      <polygon points="${baseTopLeft},${neckBottom} ${baseTopRight},${neckBottom} ${baseBottomRight},${neckBottom + baseH} ${baseBottomLeft},${neckBottom + baseH}" class="f"/>
-    </g>
+    <g class="m" transform="translate(0, ${yOffset})">
+    ${paths}
   </g>
 </svg>
 `;

@@ -19,6 +19,7 @@ pub fn generate_pngs() -> eyre::Result<()> {
         resources_dir: Some(PathBuf::from("../frontend/src/")),
         ..Default::default()
     };
+    // NOTE: usvg introduces limitations. See frontend/build-favicon.ts for more information
     let rtree = usvg::Tree::from_str(str::from_utf8(svg_data)?, &opt).wrap_err("parsing SVG")?;
 
     #[expect(
