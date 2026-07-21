@@ -2,10 +2,10 @@
   <defs>
     <style><![CDATA[
       .s{fill:none;stroke-linecap:round;stroke-linejoin:round}
-      .g{stroke:#fff;stroke-width:32;opacity:0.6}
+      .g{stroke:#fff;stroke-width:32}
       .m{stroke:#2b2b2b;stroke-width:26}
       .f{fill:#2b2b2b}
-      @media(prefers-color-scheme:dark){.g{stroke:#000;opacity:0.3}.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
+      @media(prefers-color-scheme:dark){.g{stroke:#000;opacity:0.6}.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
     ]]></style>
   </defs>
   <g class="s" transform="translate(0, -24)">
