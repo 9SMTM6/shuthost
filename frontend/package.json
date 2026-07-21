@@ -21,20 +21,20 @@
     },
     "dependencies": {
         "@solidjs/meta": "^0.29.4",
-        "@solidjs/router": "^0.16.1",
-        "lucide-solid": "^1.24.0",
+        "@solidjs/router": "^0.16.2",
+        "lucide-solid": "^1.25.0",
         "solid-js": "^1.9.14",
-        "tailwindcss": "^4.3.2",
+        "tailwindcss": "^4.3.3",
         "typescript": "^7.0.2"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.12.1",
-        "@biomejs/biome": "^2.5.3",
+        "@biomejs/biome": "^2.5.4",
         "@playwright/test": "^1.61.1",
-        "@tailwindcss/vite": "^4.3.2",
+        "@tailwindcss/vite": "^4.3.3",
         "@terrastruct/d2": "^0.1.33",
         "@types/node": "^26.1.1",
-        "vite": "^8.1.4",
+        "vite": "^8.1.5",
         "vite-node": "^6.0.0",
         "vite-plugin-solid": "^2.11.12"
     }

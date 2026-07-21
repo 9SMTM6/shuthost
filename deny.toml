@@ -64,10 +64,11 @@ use-instead = "aws-lc-rs"
 # We also warn on all multiple versions, but solving all of them, with the number of dependencies we have
 # would be a huge  and only temporary effort, so we only deny multiple versions for crates where we have a good reason to.
 
-[[bans.deny]]
-name = "syn"
-deny-multiple-versions = true
-reason = "multiple versions of this increases build time significantly"
+# It seems syn just had a breaking 3.0 release, it'll take some time until the ecosystem has caught up.
+# [[bans.deny]]
+# name = "syn"
+# deny-multiple-versions = true
+# reason = "multiple versions of this increases build time significantly"
 
 [[bans.deny]]
 name = "proc-macro2"
