@@ -64,17 +64,17 @@ const paths = `
 // note: usvg does NOT support CSS var() and ignores @media, and it fails silently.
 const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
+    </filter>
     <style><![CDATA[
-      .s{fill:none;stroke-linecap:round;stroke-linejoin:round}
-      .g{stroke:#fff;stroke-width:${stroke + 6}}
-      .m{stroke:${color};stroke-width:${stroke}}
+      .m{fill:none;stroke:${color};stroke-width:${stroke};stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
       .f{fill:${color}}
-      @media(prefers-color-scheme:dark){.g{stroke:#000;opacity:0.6}.m{stroke:${darkColor}}.f{fill:${darkColor}}}
+      @media(prefers-color-scheme:dark){.m{stroke:${darkColor}}.f{fill:${darkColor}}#shadow feDropShadow{flood-color:#000}}
     ]]></style>
   </defs>
-  <g class="s" transform="translate(0, ${yOffset})">
-    <g class="g">${paths}</g>
-    <g class="m">${paths}</g>
+    <g class="m" transform="translate(0, ${yOffset})">
+    ${paths}
   </g>
 </svg>
 `;
