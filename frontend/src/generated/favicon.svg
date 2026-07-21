@@ -1,21 +1,27 @@
 <svg height="400" viewBox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
-    </filter>
     <style><![CDATA[
-      .m{fill:none;stroke:#2b2b2b;stroke-width:26;stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
+      .s{fill:none;stroke-linecap:round;stroke-linejoin:round}
+      .g{stroke:#fff;stroke-width:32;opacity:0.6}
+      .m{stroke:#2b2b2b;stroke-width:26}
       .f{fill:#2b2b2b}
-      @media(prefers-color-scheme:dark){.m{stroke:#e6e6e6}.f{fill:#e6e6e6}#shadow feDropShadow{flood-color:#000}}
+      @media(prefers-color-scheme:dark){.g{stroke:#000;opacity:0.3}.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
     ]]></style>
   </defs>
-    <g class="m" transform="translate(0, -24)">
-    
+  <g class="s" transform="translate(0, -24)">
+    <g class="g">
       <path d="M 72 249 A 128 128 0 0 1 161 127.08609595292258"/>
       <path d="M 239 127.08609595292258 A 128 128 0 0 1 328 249"/>
       <line x1="200" y1="104" x2="200" y2="159"/>
       <path d="M 72 249 V 279 H 328 V 249"/>
       <polygon class="f" points="136,318 264,318 280,344 120,344"/>
-      <line x1="200" y1="279" x2="200" y2="318"/>
+      <line x1="200" y1="279" x2="200" y2="318"/></g>
+    <g class="m">
+      <path d="M 72 249 A 128 128 0 0 1 161 127.08609595292258"/>
+      <path d="M 239 127.08609595292258 A 128 128 0 0 1 328 249"/>
+      <line x1="200" y1="104" x2="200" y2="159"/>
+      <path d="M 72 249 V 279 H 328 V 249"/>
+      <polygon class="f" points="136,318 264,318 280,344 120,344"/>
+      <line x1="200" y1="279" x2="200" y2="318"/></g>
   </g>
 </svg>
