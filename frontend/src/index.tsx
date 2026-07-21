@@ -21,6 +21,7 @@ import { HostDetailPage } from './pages/HostDetail';
 import { HostsPage } from './pages/Hosts';
 import { LoginPage } from './pages/Login';
 import { NotFoundPage } from './pages/NotFound';
+import { SavingsCalculatorPage } from './pages/SavingsCalculator';
 
 const [updateAvailable, setUpdateAvailable] = createSignal(false);
 
@@ -41,6 +42,7 @@ render(
                 <Route path="/docs" component={ArchitecturePage} />
                 <Route path="/login" component={LoginPage} />
                 <Route path="/about" component={AboutPage} />
+                <Route path="/savings" component={SavingsCalculatorPage} />
                 <Route path="/hosts/:hostname" component={HostDetailPage} />
                 <Route path="*" component={NotFoundPage} />
             </Router>
