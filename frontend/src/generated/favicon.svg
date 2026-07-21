@@ -1,12 +1,13 @@
 <svg height="400" viewBox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="dropShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow-color)" flood-opacity="var(--shadow-opacity)"/>
     </filter>
     <style><![CDATA[
+      :root{--shadow-color:#fff;--shadow-opacity:0.65}
       .m{fill:none;stroke:#2b2b2b;stroke-width:26;stroke-linecap:round;stroke-linejoin:round;filter:url(#dropShadow)}
       .f{fill:#2b2b2b}
-      @media(prefers-color-scheme:dark){.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
+      @media(prefers-color-scheme:dark){:root{--shadow-color:#000;--shadow-opacity:0.35}.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
     ]]></style>
   </defs>
   <g class="m" transform="translate(0, -24)">
