@@ -50,7 +50,7 @@ If the server is
 
 we can save: **~15.74 €/month** and **~14.6 kg CO₂/month** (≈ 189 €/year, ≈ 176 kg CO₂/year)
 
-[Open the interactive calculator](https://9smtm6.github.io/shuthost/savings) to adjust parameters and see full daily/monthly/yearly breakdowns.
+[Open the interactive calculator](https://9smtm6.github.io/shuthost/savings) to adjust parameters, and see the calculation.
 
 ---
 
