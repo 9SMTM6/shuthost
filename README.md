@@ -43,24 +43,12 @@ Note that the theme (light/dark) of the WebUI is selected based on your system p
 
 ## 💰 Energy & Cost Savings
 
-ShutHost can dramatically cut electricity use by keeping hosts powered down when idle. This is particularly impactful with recent household energy price surges.
+If the server is 
+* actively used 4h/week for e.g. backups
+* uses ~60W in Idle, 1.7W in WOL standby - typical old desktop hardware -
+* with energy-costs of **0.37 €/kWh** and CO₂ emissions of **344 g/kWh** - both taken from Germany, 2026
 
-### Example: Repurposed Old PC as Backup Server
-
-A typical home server built from reused desktop hardware:
-
-| State | Power Draw |
-|---|---|
-| Idle (always-on) | ~60 W |
-| Active (backup, maintenance) | ~120 W |
-| Shut down (WOL standby) | ~1.7 W |
-
-With energy-costs of **€0.37/kWh** and CO₂ emissions of **344 g/kWh** - both taken from Germany, 2026, and 30 days per month.
-
-If the server is actively used 4h/week for e.g. backups we can save:
-
-**Default assumptions** (Germany, 2026): 60 W idle, 1.7 W WOL standby, 4 h/week active, €0.37/kWh, 344 g CO₂/kWh  
-→ **~€15.74/month** and **~14.6 kg CO₂/month** (≈ €189/year, ≈ 176 kg CO₂/year)
+we can save: **~15.74 €/month** and **~14.6 kg CO₂/month** (≈ 189 €/year, ≈ 176 kg CO₂/year)
 
 [Open the interactive calculator](https://9smtm6.github.io/shuthost/savings) to adjust parameters and see full daily/monthly/yearly breakdowns.
 
