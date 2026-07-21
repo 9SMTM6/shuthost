@@ -63,15 +63,16 @@ const paths = `
 
 // note: usvg does NOT support CSS var() and ignores @media, and it fails silently.
 const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
+  <title>Shuthost icon combining a monitor and power symbol into a single glyph</title>
   <defs>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
       <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
     </filter>
-    <style><![CDATA[
+    <style>
       .m{fill:none;stroke:${color};stroke-width:${stroke};stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
       .f{fill:${color}}
       @media(prefers-color-scheme:dark){.m{stroke:${darkColor}}.f{fill:${darkColor}}#shadow feDropShadow{flood-color:#000}}
-    ]]></style>
+    </style>
   </defs>
     <g class="m" transform="translate(0, ${yOffset})">
     ${paths}

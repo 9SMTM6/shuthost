@@ -1,16 +1,17 @@
 <svg height="400" viewBox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
+  <title>Shuthost icon combining a monitor and power symbol into a single glyph</title>
   <defs>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
       <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
     </filter>
-    <style><![CDATA[
+    <style>
       .m{fill:none;stroke:#2b2b2b;stroke-width:26;stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
       .f{fill:#2b2b2b}
       @media(prefers-color-scheme:dark){.m{stroke:#e6e6e6}.f{fill:#e6e6e6}#shadow feDropShadow{flood-color:#000}}
-    ]]></style>
+    </style>
   </defs>
     <g class="m" transform="translate(0, -24)">
-
+    
       <path d="M 72 249 A 128 128 0 0 1 161 127.08609595292258"/>
       <path d="M 239 127.08609595292258 A 128 128 0 0 1 328 249"/>
       <line x1="200" y1="104" x2="200" y2="159"/>
