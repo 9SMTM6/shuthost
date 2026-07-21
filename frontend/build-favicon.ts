@@ -66,12 +66,12 @@ const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}"
   <title>Shuthost icon combining a monitor and power symbol into a single glyph</title>
   <defs>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fff"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#000"/>
     </filter>
     <style>
-      .m{fill:none;stroke:${color};stroke-width:${stroke};stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
-      .f{fill:${color}}
-      @media(prefers-color-scheme:dark){.m{stroke:${darkColor}}.f{fill:${darkColor}}#shadow feDropShadow{flood-color:#000}}
+      .m{fill:none;stroke:${darkColor};stroke-width:${stroke};stroke-linecap:round;stroke-linejoin:round;filter:url(#shadow)}
+      .f{fill:${darkColor}}
+      @media(prefers-color-scheme:light){.m{stroke:${color}}.f{fill:${color}}#shadow feDropShadow{flood-color:#fff}}
     </style>
   </defs>
     <g class="m" transform="translate(0, ${yOffset})">
