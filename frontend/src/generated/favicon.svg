@@ -1,27 +1,32 @@
 <svg height="400" viewBox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="dropShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow-color)" flood-opacity="0.65"/>
-    </filter>
     <style><![CDATA[
-      :root{--shadow-color:#fff;--shadow-opacity:0.65}
-      .m{fill:none;stroke:#2b2b2b;stroke-width:26;stroke-linecap:round;stroke-linejoin:round;filter:url(#dropShadow)}
+      :root{--glow-color:#fff;--glow-opacity:0.6}
+      .s{fill:none;stroke-linecap:round;stroke-linejoin:round}
+      .g{stroke:var(--glow-color);stroke-width:32;opacity:var(--glow-opacity)}
+      .m{stroke:#2b2b2b;stroke-width:26}
       .f{fill:#2b2b2b}
-      @media(prefers-color-scheme:dark){:root{--shadow-color:#000;--shadow-opacity:0.35}.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
+      @media(prefers-color-scheme:dark){:root{--glow-color:#000;--glow-opacity:0.3}.m{stroke:#e6e6e6}.f{fill:#e6e6e6}}
     ]]></style>
   </defs>
-  <g class="m" transform="translate(0, -24)">
-    <!-- left quarter-arc: from the left side up to arcEndX (trimmed from notch edge) -->
-    <path d="M 72 249 A 128 128 0 0 1 161 127.08609595292258"/>
-    <!-- right quarter-arc: from arcStartX (trimmed from notch edge) down to the right side -->
-    <path d="M 239 127.08609595292258 A 128 128 0 0 1 328 249"/>
-    <!-- power-button stem (bottom is stemAboveRect above rectTop, height is stemHeight) -->
-    <line x1="200" y1="104" x2="200" y2="159"/>
-    <!-- lower frame — left side, bottom edge, right side -->
-    <path d="M 72 249 V 279 H 328 V 249"/>
-    <!-- stand base (filled trapezoid): top-left → top-right → bottom-right → bottom-left -->
-    <polygon points="136,318 264,318 280,344 120,344" class="f"/>
-    <!-- stand neck -->
-    <line x1="200" y1="279" x2="200" y2="318"/>
+  <g transform="translate(0, -24)">
+    <g class="s g">
+      <path d="M 72 249 A 128 128 0 0 1 161 127.08609595292258"/>
+      <path d="M 239 127.08609595292258 A 128 128 0 0 1 328 249"/>
+      <line x1="200" y1="104" x2="200" y2="159"/>
+      <path d="M 72 249 V 279 H 328 V 249"/>
+      <polygon points="136,318 264,318 280,344 120,344"/>
+      <line x1="200" y1="279" x2="200" y2="318"/>
+    </g>
+    <g class="s m">
+      <path d="M 72 249 A 128 128 0 0 1 161 127.08609595292258"/>
+      <path d="M 239 127.08609595292258 A 128 128 0 0 1 328 249"/>
+      <line x1="200" y1="104" x2="200" y2="159"/>
+      <path d="M 72 249 V 279 H 328 V 249"/>
+      <polygon points="136,318 264,318 280,344 120,344"/>
+      <line x1="200" y1="279" x2="200" y2="318"/>
+    
+      <polygon points="136,318 264,318 280,344 120,344" class="f"/>
+    </g>
   </g>
 </svg>
