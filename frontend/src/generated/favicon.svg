@@ -1,7 +1,7 @@
 <svg height="400" viewBox="0 0 400 400" width="400" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="dropShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow-color)" flood-opacity="var(--shadow-opacity)"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow-color)" flood-opacity="0.65"/>
     </filter>
     <style><![CDATA[
       :root{--shadow-color:#fff;--shadow-opacity:0.65}

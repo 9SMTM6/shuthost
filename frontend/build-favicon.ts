@@ -56,13 +56,13 @@ const darkColor = '#e6e6e6';
 const svg = `<svg height="${size}" viewBox="0 0 ${size} ${size}" width="${size}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="dropShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow-color)" flood-opacity="var(--shadow-opacity)"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="var(--shadow-color)" flood-opacity="0.65"/>
     </filter>
     <style><![CDATA[
-      :root{--shadow-color:#fff;--shadow-opacity:0.65}
+      :root{--shadow-color:#fff}
       .m{fill:none;stroke:${color};stroke-width:${stroke};stroke-linecap:round;stroke-linejoin:round;filter:url(#dropShadow)}
       .f{fill:${color}}
-      @media(prefers-color-scheme:dark){:root{--shadow-color:#000;--shadow-opacity:0.35}.m{stroke:${darkColor}}.f{fill:${darkColor}}}
+      @media(prefers-color-scheme:dark){:root{--shadow-color:#000}.m{stroke:${darkColor}}.f{fill:${darkColor}}}
     ]]></style>
   </defs>
   <g class="m" transform="translate(0, ${yOffset})">
