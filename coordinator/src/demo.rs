@@ -6,7 +6,7 @@
 use alloc::sync::Arc;
 use std::{collections::HashMap, path};
 
-use axum::{http::Response, response::IntoResponse as _};
+use axum::{http::Response, middleware as ax_middleware, response::IntoResponse as _};
 use tokio::{
     net::TcpListener,
     sync::{broadcast, watch},
@@ -72,7 +72,12 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         latest_release: Arc::default(),
     };
 
-    let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);
+    let app = create_app_router(serve_demo_ui)
+        .route_layer(ax_middleware::from_fn_with_state(
+            app_state.clone(),
+            auth::require,
+        ))
+        .with_state(app_state);
 
     let listener = TcpListener::bind(&addr)
         .await

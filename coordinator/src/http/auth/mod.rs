@@ -4,7 +4,9 @@
 //! - OIDC mode: standard authorization code flow with PKCE. Maintains a signed
 //!   session cookie once the user is authenticated.
 
+pub mod auth_info;
 pub mod cookies;
+pub mod hmac;
 pub mod middleware;
 pub mod oidc;
 pub mod token;
@@ -31,6 +33,7 @@ use crate::{
     config::{AuthConfig, AuthMode},
 };
 
+pub(crate) use auth_info::AuthInfo;
 pub(crate) use cookies::{
     COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, OIDCSessionClaims,
 };
@@ -247,19 +250,6 @@ async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<Arc<Secret
         // We expose the generated token in logs once for operator use
         info!("Token: {}", generated.expose_secret());
         Ok(generated)
-    }
-}
-
-#[derive(Clone)]
-pub(crate) struct LayerState {
-    pub auth: Arc<Runtime>,
-}
-
-impl FromRef<AppState> for LayerState {
-    fn from_ref(input: &AppState) -> Self {
-        Self {
-            auth: input.auth.clone(),
-        }
     }
 }
 
