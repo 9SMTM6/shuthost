@@ -1,4 +1,3 @@
-use alloc::sync::Arc;
 use core::time::Duration;
 
 use axum::{
@@ -34,8 +33,9 @@ use crate::http::server::middleware::secure_headers_middleware;
 /// Private routes include the main UI, API endpoints, and WebSocket handler, protected by auth middleware.
 ///
 /// When routes get added to public routes, [`crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION`] needs to be bumped.
+///
+/// Note: auth middleware is NOT applied here; it is added in [`create_app`] where `AppState` is available.
 pub(crate) fn create_app_router(
-    auth_runtime: &Arc<auth::Runtime>,
     spa_handler: impl Fn(AppState) -> Response + Send + Sync + Clone + 'static,
 ) -> Router<AppState> {
     let public = Router::new()
@@ -54,13 +54,7 @@ pub(crate) fn create_app_router(
                 async move |State(state): State<AppState>| spa_handler(state)
             }),
         )
-        .route("/ws", any(websocket::ws_handler))
-        .route_layer(ax_middleware::from_fn_with_state(
-            auth::LayerState {
-                auth: auth_runtime.clone(),
-            },
-            auth::require,
-        ));
+        .route("/ws", any(websocket::ws_handler));
 
     public
         .merge(private)
@@ -103,7 +97,13 @@ pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         ))
         .layer(ax_middleware::from_fn(secure_headers_middleware));
 
-    let app = create_app_router(&app_state.auth, assets::serve_ui)
+    let app = create_app_router(assets::serve_ui)
+        // Apply auth middleware using AppState directly so the middleware
+        // has access to both auth runtime and config_rx for HMAC validation.
+        .route_layer(ax_middleware::from_fn_with_state(
+            app_state.clone(),
+            auth::require,
+        ))
         .with_state(app_state)
         .layer(middleware_stack);
 
