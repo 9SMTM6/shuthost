@@ -46,10 +46,7 @@ use crate::config::ControllerConfig;
 pub(crate) const EXPECTED_FRONTEND_ENDPOINT_VERSION: &str = "frontendpointV1";
 
 /// Paths where M2M authentication is rejected even with valid credentials.
-pub(crate) const M2M_BLOCKED_PREFIXES: &[&str] = &[
-    "/api/push/",
-    "/ws",
-];
+pub(crate) const M2M_BLOCKED_PREFIXES: &[&str] = &["/api/push/", "/ws"];
 
 /// Validates HMAC identity headers and returns the verified `client_id`.
 ///

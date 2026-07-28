@@ -49,9 +49,7 @@ pub(crate) async fn require(
     }
 
     // ── M2M HMAC authentication (unified path) ──────────────────────────
-    if req.headers().contains_key("X-Client-ID")
-        || req.headers().contains_key("X-Request")
-    {
+    if req.headers().contains_key("X-Client-ID") || req.headers().contains_key("X-Request") {
         // Clone the Arc<ControllerConfig> synchronously to avoid holding
         // the !Send RefGuard across any await point.
         let config = state.config_rx.borrow().clone();
@@ -65,9 +63,7 @@ pub(crate) async fn require(
             .iter()
             .any(|prefix| path.starts_with(prefix))
         {
-            tracing::info!(
-                "Blocked M2M request to {path} from client '{client_id}'"
-            );
+            tracing::info!("Blocked M2M request to {path} from client '{client_id}'");
             return (
                 StatusCode::FORBIDDEN,
                 "Endpoint not available for M2M clients",

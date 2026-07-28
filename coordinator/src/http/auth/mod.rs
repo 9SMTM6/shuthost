@@ -4,9 +4,9 @@
 //! - OIDC mode: standard authorization code flow with PKCE. Maintains a signed
 //!   session cookie once the user is authenticated.
 
-pub mod auth_info;
 pub mod cookies;
 pub mod hmac;
+pub mod info;
 pub mod middleware;
 pub mod oidc;
 pub mod token;
@@ -33,10 +33,10 @@ use crate::{
     config::{AuthConfig, AuthMode},
 };
 
-pub(crate) use auth_info::AuthInfo;
 pub(crate) use cookies::{
     COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, OIDCSessionClaims,
 };
+pub(crate) use info::AuthInfo;
 pub(crate) use middleware::{request_is_secure, require};
 
 // Centralized login error keys used as query values on /login?error=<key>
