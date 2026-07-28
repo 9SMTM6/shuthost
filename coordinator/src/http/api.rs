@@ -54,9 +54,7 @@ async fn get_latest_release(
 }
 
 #[axum::debug_handler]
-async fn serve_dependency_data(
-    _auth: Option<Extension<AuthInfo>>,
-) -> impl IntoResponse {
+async fn serve_dependency_data(_auth: Option<Extension<AuthInfo>>) -> impl IntoResponse {
     (
         TypedHeader(ContentType::json()),
         include_utf8_asset!("generated/about-data.json"),
@@ -173,7 +171,7 @@ async fn handle_web_lease_action(
 async fn handle_reset_client_leases(
     Path(client_id): Path<String>,
     State(state): State<AppState>,
-    _auth: Option<Extension<AuthInfo>>,
+    auth: Option<Extension<AuthInfo>>,
 ) -> impl IntoResponse {
     state
         .leases

@@ -6,7 +6,5 @@ pub(crate) enum AuthInfo {
     /// Authenticated via cookie (Token or OIDC session), i.e. a browser user.
     WebSession,
     /// Authenticated via HMAC headers (M2M client).
-    M2MClient {
-        client_id: String,
-    },
+    M2MClient { client_id: String },
 }
