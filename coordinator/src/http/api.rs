@@ -46,15 +46,12 @@ pub(crate) fn routes() -> Router<AppState> {
 /// Returns the latest GitHub release if a newer version than the running one is available,
 /// or `null` if the running version is already up to date (or the check has not completed yet).
 #[axum::debug_handler]
-async fn get_latest_release(
-    State(state): State<AppState>,
-    _auth: Option<Extension<AuthInfo>>,
-) -> impl IntoResponse {
+async fn get_latest_release(State(state): State<AppState>) -> impl IntoResponse {
     axum::Json(state.latest_release.read().await.clone())
 }
 
 #[axum::debug_handler]
-async fn serve_dependency_data(_auth: Option<Extension<AuthInfo>>) -> impl IntoResponse {
+async fn serve_dependency_data() -> impl IntoResponse {
     (
         TypedHeader(ContentType::json()),
         include_utf8_asset!("generated/about-data.json"),
@@ -207,10 +204,7 @@ async fn handle_reset_client_leases(
 
 /// Returns the online status of all hosts as a JSON object.
 #[axum::debug_handler]
-async fn get_hosts_status(
-    State(state): State<AppState>,
-    _auth: Option<Extension<AuthInfo>>,
-) -> impl IntoResponse {
+async fn get_hosts_status(State(state): State<AppState>) -> impl IntoResponse {
     let hoststatus = state.host_actor.borrow().clone();
     axum::Json((*hoststatus).clone())
 }
