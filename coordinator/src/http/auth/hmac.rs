@@ -31,7 +31,7 @@
 use alloc::sync::Arc;
 
 use axum::http::{HeaderMap, StatusCode};
-use shuthost_common::validate_hmac_message;
+use shuthost_common::{HmacValidationResult, validate_hmac_message};
 use tracing::{info, warn};
 
 use crate::config::ControllerConfig;
@@ -70,31 +70,32 @@ pub(crate) fn validate_hmac_identity(
         .clients
         .get(client_id)
         .ok_or_else(|| {
-            warn!("Unknown client '{}'", client_id);
+            warn!("Unknown client '{client_id}'");
             (StatusCode::FORBIDDEN, "Unknown client")
         })?
         .shared_secret
         .clone();
 
+    use HmacValidationResult as HVR;
+
     let version = match validate_hmac_message(data_str, shared_secret.as_ref()) {
-        shuthost_common::HmacValidationResult::Valid(msg) => msg,
-        shuthost_common::HmacValidationResult::InvalidTimestamp => {
-            info!("Timestamp out of range for client '{}'", client_id);
+        HVR::Valid(msg) => msg,
+        HVR::InvalidTimestamp => {
+            info!("Timestamp out of range for client '{client_id}'");
             return Err((StatusCode::UNAUTHORIZED, "Timestamp out of range"));
         }
-        shuthost_common::HmacValidationResult::InvalidHmac => {
-            info!("Invalid HMAC signature for client '{}'", client_id);
+        HVR::InvalidHmac => {
+            info!("Invalid HMAC signature for client '{client_id}'");
             return Err((StatusCode::UNAUTHORIZED, "Invalid HMAC signature"));
         }
-        shuthost_common::HmacValidationResult::MalformedMessage => {
+        HVR::MalformedMessage => {
             return Err((StatusCode::BAD_REQUEST, "Invalid request format"));
         }
     };
 
     if version != EXPECTED_FRONTEND_ENDPOINT_VERSION {
         info!(
-            "Client '{}' used outdated frontend-endpoint version '{}', expected '{}'",
-            client_id, version, EXPECTED_FRONTEND_ENDPOINT_VERSION
+            "Client '{client_id}' used outdated frontend-endpoint version '{version}', expected '{EXPECTED_FRONTEND_ENDPOINT_VERSION}'"
         );
         return Err((StatusCode::FORBIDDEN, "Outdated client version"));
     }

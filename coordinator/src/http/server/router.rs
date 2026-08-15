@@ -18,13 +18,13 @@ use tower_http::{
 
 use crate::{
     app::AppState,
-    http::{auth, middleware::LevelAdjustingOnFailure},
+    http::{
+        api, assets, auth, download, login, m2m,
+        middleware::{LevelAdjustingOnFailure, secure_headers_middleware},
+        push,
+    },
     websocket,
 };
-
-use crate::http::{api, assets, download, login, m2m, push};
-
-use crate::http::server::middleware::secure_headers_middleware;
 
 /// Creates the main application router by merging public and private routes.
 ///

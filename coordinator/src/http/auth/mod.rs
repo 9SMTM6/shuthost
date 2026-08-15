@@ -15,10 +15,11 @@ use alloc::{fmt, sync::Arc};
 
 use crate::{
     app::{
-        AppState,
-        db::{KV_AUTH_TOKEN, KV_COOKIE_SECRET},
+        AppState, DbPool,
+        db::{self, KV_AUTH_TOKEN, KV_COOKIE_SECRET},
     },
     config::OidcConfig,
+    config::{AuthConfig, AuthMode},
     http::auth::oidc::OidcClientReady,
 };
 use axum::{extract::FromRef, response::Redirect};
@@ -27,11 +28,6 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as base64_gp_STANDAR
 use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
 use tracing::{Instrument as _, info, warn};
-
-use crate::{
-    app::{DbPool, db},
-    config::{AuthConfig, AuthMode},
-};
 
 pub(crate) use cookies::{
     COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, OIDCSessionClaims,
