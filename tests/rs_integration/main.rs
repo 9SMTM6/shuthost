@@ -12,6 +12,7 @@
 extern crate alloc;
 extern crate core;
 
+mod auth_scope;
 mod common;
 mod enforce_state;
 mod hooks;

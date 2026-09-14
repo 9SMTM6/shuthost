@@ -1,4 +1,14 @@
-//! HMAC validation for the unified frontend-API M2M path.
+//! HMAC validation for M2M requests.
+//!
+//! The [`validate_hmac_headers`] core is shared by both HMAC-authenticated
+//! paths:
+//!
+//! - the stable `/api/m2m/*` endpoints ([`crate::http::m2m`]), which parse
+//!   the signed message as an action and require it to match the requested
+//!   operation;
+//! - the frontend `/api/*` fallback path ([`validate_hmac_identity`], used by
+//!   the auth middleware), which requires the signed message to equal
+//!   [`EXPECTED_FRONTEND_ENDPOINT_VERSION`] exactly.
 //!
 //! # Stability Warning
 //!
@@ -17,18 +27,16 @@
 //!
 //! # Header Format
 //!
-//! Reuses the same `X-Client-ID` / `X-Request` header format as `/api/m2m/*`:
+//! Both paths reuse the same `X-Client-ID` / `X-Request` header format:
 //!
 //! ```text
 //! X-Client-ID: <client_id>
-//! X-Request:   <unix_timestamp>|<version_string>|<hex_hmac_sha256>
+//! X-Request:   <unix_timestamp>|<message>|<hex_hmac_sha256>
 //! ```
 //!
-//! The `version_string` must match `EXPECTED_FRONTEND_ENDPOINT_VERSION`
-//! exactly.  Unlike the stable M2M path, no action matching is performed —
-//! the signed message is compared verbatim to the expected version string.
-
-use alloc::sync::Arc;
+//! The `message` is a per-action string for the stable M2M endpoints, and
+//! must match `EXPECTED_FRONTEND_ENDPOINT_VERSION` exactly for the frontend
+//! fallback path.
 
 use axum::http::{HeaderMap, StatusCode};
 use shuthost_common::{HmacValidationResult, validate_hmac_message};
@@ -48,14 +56,19 @@ pub(crate) const EXPECTED_FRONTEND_ENDPOINT_VERSION: &str = "frontendpointV1";
 /// Paths where M2M authentication is rejected even with valid credentials.
 pub(crate) const M2M_BLOCKED_PREFIXES: &[&str] = &["/api/push/", "/ws"];
 
-/// Validates HMAC identity headers and returns the verified `client_id`.
+/// Validates the `X-Client-ID` / `X-Request` HMAC identity headers and
+/// returns the verified `client_id` together with the signed message.
 ///
-/// On success the returned `String` is the verified client identifier.
+/// Callers decide how to interpret the returned message: the stable
+/// `/api/m2m/*` endpoints parse it as an action and require it to match the
+/// requested operation, while the frontend fallback path requires it to equal
+/// [`EXPECTED_FRONTEND_ENDPOINT_VERSION`] (see [`validate_hmac_identity`]).
+///
 /// On failure a `(StatusCode, &'static str)` error tuple is returned.
-pub(crate) fn validate_hmac_identity(
+pub(crate) fn validate_hmac_headers(
     headers: &HeaderMap,
-    config: &Arc<ControllerConfig>,
-) -> Result<String, (StatusCode, &'static str)> {
+    config: &ControllerConfig,
+) -> Result<(String, String), (StatusCode, &'static str)> {
     let client_id = headers
         .get("X-Client-ID")
         .and_then(|v| v.to_str().ok())
@@ -66,6 +79,7 @@ pub(crate) fn validate_hmac_identity(
         .and_then(|v| v.to_str().ok())
         .ok_or((StatusCode::BAD_REQUEST, "Missing X-Request"))?;
 
+    // potential enumeration issue, if thats something we want to cover.
     let shared_secret = config
         .clients
         .get(client_id)
@@ -78,7 +92,7 @@ pub(crate) fn validate_hmac_identity(
 
     use HmacValidationResult as HVR;
 
-    let version = match validate_hmac_message(data_str, shared_secret.as_ref()) {
+    let message = match validate_hmac_message(data_str, shared_secret.as_ref()) {
         HVR::Valid(msg) => msg,
         HVR::InvalidTimestamp => {
             info!("Timestamp out of range for client '{client_id}'");
@@ -93,6 +107,20 @@ pub(crate) fn validate_hmac_identity(
         }
     };
 
+    Ok((client_id.to_string(), message))
+}
+
+/// Validates HMAC identity headers for the frontend `/api/*` fallback path
+/// and returns the verified `client_id`.
+///
+/// The signed message must equal [`EXPECTED_FRONTEND_ENDPOINT_VERSION`]
+/// exactly; clients presenting an outdated version are rejected with a 403.
+pub(crate) fn validate_hmac_identity(
+    headers: &HeaderMap,
+    config: &ControllerConfig,
+) -> Result<String, (StatusCode, &'static str)> {
+    let (client_id, version) = validate_hmac_headers(headers, config)?;
+
     if version != EXPECTED_FRONTEND_ENDPOINT_VERSION {
         info!(
             "Client '{client_id}' used outdated frontend-endpoint version '{version}', expected '{EXPECTED_FRONTEND_ENDPOINT_VERSION}'"
@@ -100,5 +128,5 @@ pub(crate) fn validate_hmac_identity(
         return Err((StatusCode::FORBIDDEN, "Outdated client version"));
     }
 
-    Ok(client_id.to_string())
+    Ok(client_id)
 }

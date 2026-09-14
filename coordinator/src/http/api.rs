@@ -168,7 +168,6 @@ async fn handle_web_lease_action(
 async fn handle_reset_client_leases(
     Path(client_id): Path<String>,
     State(state): State<AppState>,
-    auth: Option<Extension<AuthInfo>>,
 ) -> impl IntoResponse {
     state
         .leases

@@ -34,8 +34,11 @@ use crate::{
 ///
 /// When routes get added to public routes, [`crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION`] needs to be bumped.
 ///
-/// Note: auth middleware is NOT applied here; it is added in [`create_app`] where `AppState` is available.
+/// The auth middleware is applied to the private routes only. It takes
+/// [`AppState`] (rather than just the auth runtime) so it can also reach
+/// `config_rx` for HMAC validation of m2m clients on the unified path.
 pub(crate) fn create_app_router(
+    app_state: &AppState,
     spa_handler: impl Fn(AppState) -> Response + Send + Sync + Clone + 'static,
 ) -> Router<AppState> {
     let public = Router::new()
@@ -54,7 +57,11 @@ pub(crate) fn create_app_router(
                 async move |State(state): State<AppState>| spa_handler(state)
             }),
         )
-        .route("/ws", any(websocket::ws_handler));
+        .route("/ws", any(websocket::ws_handler))
+        .route_layer(ax_middleware::from_fn_with_state(
+            app_state.clone(),
+            auth::require,
+        ));
 
     public
         .merge(private)
@@ -97,13 +104,7 @@ pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         ))
         .layer(ax_middleware::from_fn(secure_headers_middleware));
 
-    let app = create_app_router(assets::serve_ui)
-        // Apply auth middleware using AppState directly so the middleware
-        // has access to both auth runtime and config_rx for HMAC validation.
-        .route_layer(ax_middleware::from_fn_with_state(
-            app_state.clone(),
-            auth::require,
-        ))
+    let app = create_app_router(&app_state, assets::serve_ui)
         .with_state(app_state)
         .layer(middleware_stack);
 
