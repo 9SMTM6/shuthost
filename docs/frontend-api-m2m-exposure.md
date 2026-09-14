@@ -144,7 +144,7 @@ All handlers in `coordinator/src/http/api.rs`:
 | Handler | Change |
 |---|---|
 | `handle_lease_action` | Extract `AuthInfo`. `WebSession` → `LeaseSource::WebInterface`. `M2MClient { client_id }` → `LeaseSource::Client(client_id)`. Fire-and-forget response only (no `?async`). |
-| `handle_reset_leases` | Extract `AuthInfo`. No additional verification — m2m clients can reset any client's leases, same as web UI. |
+| `handle_reset_leases` | No change — m2m clients can reset any client's leases, same as web UI. |
 | `get_hosts_status` | Just check `AuthInfo` exists (any variant). |
 | `serve_dependency_data` | Same — static data, no behavioural difference. |
 | `get_latest_release` | Same — no behavioural difference. |
@@ -167,14 +167,15 @@ All handlers in `coordinator/src/http/api.rs`:
 
 | File | Change |
 |---|---|
-| `coordinator/src/http/auth/auth_info.rs` | **New** — `AuthInfo` enum |
-| `coordinator/src/http/auth/mod.rs` | Add `pub mod auth_info;`, `pub mod hmac;`, re-export `AuthInfo` |
-| `coordinator/src/http/auth/hmac.rs` | **New** — `validate_hmac_identity(headers, state) -> Result<String, ...>`. Extracted from `m2m/validation.rs` but drops action matching. Returns only the verified `client_id`. Adds version constant check. |
+| `coordinator/src/http/auth/info.rs` | **New** — `AuthInfo` enum |
+| `coordinator/src/http/auth/mod.rs` | Add `pub mod info;`, `pub mod hmac;`, re-export `AuthInfo`. Remove `LayerState` (middleware now uses `State<AppState>` directly). |
+| `coordinator/src/http/auth/hmac.rs` | **New** — shared HMAC core `validate_hmac_headers(headers, config) -> Result<(client_id, message), ...>` plus `validate_hmac_identity` for the frontend path, which only adds the version-constant check. |
 | `coordinator/src/http/auth/middleware.rs` | Add HMAC branch + blocklist check. Insert `AuthInfo` extension. |
 | `coordinator/src/http/api.rs` | Unify handlers: extract `AuthInfo`, use for `LeaseSource` decision. |
-| `coordinator/src/http/m2m/validation.rs` | No change — still used by old `/api/m2m/*` with strict matching. |
+| `coordinator/src/http/m2m/validation.rs` | Deduplicated — delegates the HMAC crypto to `auth::hmac::validate_hmac_headers`, keeps strict action matching for the stable `/api/m2m/*` API. |
 | `coordinator/src/http/m2m/mod.rs` | No change. |
-| `coordinator/src/http/server/router.rs` | Move auth `route_layer` into `create_app` (where `AppState` is available). Middleware now uses `State<AppState>` directly. |
+| `coordinator/src/http/server/router.rs` | `create_app_router` now takes `&AppState` instead of `&Arc<auth::Runtime>`; the auth `route_layer` stays scoped to the private router exactly as before. |
+| `coordinator/src/demo.rs` | No functional change — passes `&app_state` to `create_app_router`. |
 
 ---
 
