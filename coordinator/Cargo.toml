@@ -103,7 +103,7 @@ tokio = { workspace = true, features = [
 ]}
 toml.workspace = true
 tower = "0.5"
-web-push-native = "0.4.0"
+web-push-native = "0.5.0"
 tower-http = { version = "0.7", features = [
     "request-id",
     "sensitive-headers",
@@ -130,10 +130,10 @@ cargo-about = "0.9"
 eyre.workspace = true
 git-version.workspace = true
 hex.workspace = true
-krates = "0.21.1"
+krates = "0.21.2"
 regex.workspace = true
 # Generate PNG favicons from SVG at build time (no external browser)
-resvg = "0.47"
+resvg = "0.48"
 serde_json.workspace = true
 serde.workspace = true
 sha2.workspace = true
