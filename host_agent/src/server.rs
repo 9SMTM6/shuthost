@@ -243,7 +243,6 @@ pub(crate) fn get_default_shutdown_command() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Read as _, Write as _};
     use std::net::{TcpListener, TcpStream};
     use std::thread;
 
