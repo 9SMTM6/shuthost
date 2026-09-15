@@ -62,7 +62,7 @@ async fn public_routes_remain_public_under_token_auth() {
     let (port, _child) = spawn_token_auth_coordinator().await;
     let client = no_redirect_client();
 
-    // The login page must be served directly — a mis-scoped auth middleware
+    // The login page must be served directly — a miss-scoped auth middleware
     // turns this into a redirect loop (browser) or a 401 (API client).
     let resp = client
         .get(format!("http://127.0.0.1:{port}/login"))
@@ -108,7 +108,7 @@ async fn m2m_paths_work_under_token_auth() {
     let client = no_redirect_client();
 
     // Stable m2m status endpoint: the signed message is the action ("status").
-    // A mis-scoped unified-auth middleware rejects this with a 403 version error.
+    // A miss-scoped unified-auth middleware rejects this with a 403 version error.
     let resp = client
         .get(format!("http://127.0.0.1:{port}/api/m2m/status/{HOST}"))
         .header("X-Client-ID", CLIENT_ID)
