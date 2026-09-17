@@ -3,7 +3,7 @@
     <h2 id="platform-support-title" class="section-title px-4 pt-4">🖥️ Platform Support</h2>
     <div class="table-wrapper" tabindex="0">
         <table class="info-table">
-            <thead>
+            <thead id="platform-support-table-header">
                 <tr>
                     <th scope="col">Component</th>
                     <th scope="col">Linux</th>

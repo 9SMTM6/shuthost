@@ -76,14 +76,15 @@ test.describe('main page(s)', () => {
         );
     });
 
-    // WARN: This is a bit brittle since the licenses list changes on updates etc, leading to different distributions between column widths
-    test('license table header', async ({ page }) => {
-        await page.goto(`${base}/about`);
+    test('platform support table header', async ({ page }) => {
+        await page.goto(`${base}/docs`);
         await page.waitForLoadState('networkidle');
-        await page.waitForSelector('#dependencies-title', { state: 'visible' });
-        await expect(page.locator('thead')).toHaveScreenshot(
-            `license_table_header.png`,
-        );
+        await page.waitForSelector('#platform-support-table-header', {
+            state: 'visible',
+        });
+        await expect(
+            page.locator('#platform-support-table-header'),
+        ).toHaveScreenshot(`platform_support_table_header.png`);
     });
 
     test('GPL2 license display', async ({ page }) => {
