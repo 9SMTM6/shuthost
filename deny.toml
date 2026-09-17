@@ -23,8 +23,6 @@ allow-git = [
 [advisories]
 ignore = [
     { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security already failed." },
-    { id = "RUSTSEC-2026-0192", reason = "That dependency only comes in via buildtime usvg usage" },
-    { id = "RUSTSEC-2026-0206", reason = "That dependency only comes in via buildtime usvg usage" },
 ]
 
 [bans]
@@ -104,7 +102,7 @@ allow-build-scripts = [
     # system headers
     "getrandom",
     # TODO: remove once they released the current main branches without build.rs
-    "cookie@<=0.18.1", "httparse@<=1.10.1",
+    "cookie@<=0.18.2", "httparse@<=1.10.1",
     # uses crypto algos in C
     "rustls", "aws-lc-rs", "aws-lc-sys", "ring", "crc32fast", "curve25519-dalek",
     # build.rs in these crates does, mostly checks about the environment and rustc capabilities.
@@ -133,6 +131,7 @@ allow-build-scripts = [
     "libsqlite3-sys",
     "serde_json", "num-traits", "num-bigint-dig",
     "crossbeam-deque", "crossbeam-epoch", "inotify-sys",
+    "encoding_rs",
 ]
 
 [licenses]

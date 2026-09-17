@@ -5,6 +5,8 @@
 //!   session cookie once the user is authenticated.
 
 pub mod cookies;
+pub mod hmac;
+pub mod info;
 pub mod middleware;
 pub mod oidc;
 pub mod token;
@@ -13,10 +15,11 @@ use alloc::{fmt, sync::Arc};
 
 use crate::{
     app::{
-        AppState,
-        db::{KV_AUTH_TOKEN, KV_COOKIE_SECRET},
+        AppState, DbPool,
+        db::{self, KV_AUTH_TOKEN, KV_COOKIE_SECRET},
     },
     config::OidcConfig,
+    config::{AuthConfig, AuthMode},
     http::auth::oidc::OidcClientReady,
 };
 use axum::{extract::FromRef, response::Redirect};
@@ -26,14 +29,10 @@ use eyre::Context as _;
 use secrecy::{ExposeSecret as _, SecretString};
 use tracing::{Instrument as _, info, warn};
 
-use crate::{
-    app::{DbPool, db},
-    config::{AuthConfig, AuthMode},
-};
-
 pub(crate) use cookies::{
     COOKIE_NONCE, COOKIE_OIDC_SESSION, COOKIE_PKCE, COOKIE_STATE, OIDCSessionClaims,
 };
+pub(crate) use info::AuthInfo;
 pub(crate) use middleware::{request_is_secure, require};
 
 // Centralized login error keys used as query values on /login?error=<key>
@@ -247,19 +246,6 @@ async fn resolve_auto_token(db_pool: Option<&DbPool>) -> eyre::Result<Arc<Secret
         // We expose the generated token in logs once for operator use
         info!("Token: {}", generated.expose_secret());
         Ok(generated)
-    }
-}
-
-#[derive(Clone)]
-pub(crate) struct LayerState {
-    pub auth: Arc<Runtime>,
-}
-
-impl FromRef<AppState> for LayerState {
-    fn from_ref(input: &AppState) -> Self {
-        Self {
-            auth: input.auth.clone(),
-        }
     }
 }
 

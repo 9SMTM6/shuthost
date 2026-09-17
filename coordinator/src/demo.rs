@@ -72,7 +72,7 @@ pub(crate) async fn run_demo_service(port: u16, bind: &str, subpath: &str) {
         latest_release: Arc::default(),
     };
 
-    let app = create_app_router(&app_state.auth, serve_demo_ui).with_state(app_state);
+    let app = create_app_router(&app_state, serve_demo_ui).with_state(app_state);
 
     let listener = TcpListener::bind(&addr)
         .await

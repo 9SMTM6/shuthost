@@ -1,10 +1,21 @@
+//! Frontend API endpoints (`/api/*`).
+//!
+//! These endpoints are the backend for the browser SPA.  They are also
+//! exposed to M2M clients via HMAC authentication as a **fallback** with
+//! **no stability guarantees**.  Production M2M automation should use the
+//! stable `/api/m2m/*` endpoints instead.
+//!
+//! When `AuthInfo::M2MClient` is extracted, the lease source is attributed
+//! to the specific client (`LeaseSource::Client(client_id)`) instead of
+//! the generic `LeaseSource::WebInterface`.
+
 use core::{
     convert::Infallible,
     fmt::{self, Display},
 };
 
 use axum::{
-    Router,
+    Extension, Router,
     extract::{Path, State},
     response::IntoResponse,
     routing::{get, post},
@@ -16,6 +27,7 @@ use tracing::{error, info, warn};
 
 use crate::{
     app::{AppState, LeaseSource, db, lookup_host},
+    http::auth::AuthInfo,
     include_utf8_asset,
 };
 
@@ -114,21 +126,23 @@ pub(crate) async fn update_lease(
         .await
 }
 
-/// Handles taking or releasing a lease on a host via the web interface.
+/// Handles taking or releasing a lease on a host, attributed to the authenticated identity.
 ///
-/// This function is used by the web UI to take or release a lease on a host. It does not require
-/// any client authentication or HMAC signature, unlike the m2m `handle_lease` endpoint.
-/// The lease is attributed to the web interface and is visible to all clients.
-///
-/// Use this for user-initiated actions from the web dashboard. For programmatic or
-/// machine-to-machine lease management, use the `/m2m/lease/{hostname}/{action}` endpoint.
+/// The lease source is determined from the [`AuthInfo`] extension inserted by the auth middleware:
+/// - `WebSession` → attributed to `WebInterface` (browser user).
+/// - `M2MClient { client_id }` → attributed to `Client(client_id)` (m2m client).
+/// - No `AuthInfo` (Disabled/External mode) → default to `WebInterface`.
 #[axum::debug_handler]
 #[tracing::instrument(skip(state))]
 async fn handle_web_lease_action(
     Path((hostname, action)): Path<(String, LeaseAction)>,
     State(state): State<AppState>,
+    auth: Option<Extension<AuthInfo>>,
 ) -> impl IntoResponse {
-    let lease_source = LeaseSource::WebInterface;
+    let lease_source = match auth {
+        Some(Extension(AuthInfo::WebSession)) | None => LeaseSource::WebInterface,
+        Some(Extension(AuthInfo::M2MClient { client_id })) => LeaseSource::Client(client_id),
+    };
     match update_lease(&hostname, lease_source, action, &state).await {
         Ok(_) => {
             // Reconciler task handles the host control action.
@@ -148,9 +162,7 @@ async fn handle_web_lease_action(
     }
 }
 
-/// This function is used by the web UI to reset all leases associated with a client.
-/// It does not require any client authentication or HMAC signature.
-/// The reconciler background task will handle bringing affected hosts to the correct state.
+/// Resets all leases associated with a client. Accepts both web sessions and m2m clients.
 #[axum::debug_handler]
 #[tracing::instrument(skip(state))]
 async fn handle_reset_client_leases(

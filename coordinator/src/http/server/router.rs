@@ -1,4 +1,3 @@
-use alloc::sync::Arc;
 use core::time::Duration;
 
 use axum::{
@@ -19,13 +18,13 @@ use tower_http::{
 
 use crate::{
     app::AppState,
-    http::{auth, middleware::LevelAdjustingOnFailure},
+    http::{
+        api, assets, auth, download, login, m2m,
+        middleware::{LevelAdjustingOnFailure, secure_headers_middleware},
+        push,
+    },
     websocket,
 };
-
-use crate::http::{api, assets, download, login, m2m, push};
-
-use crate::http::server::middleware::secure_headers_middleware;
 
 /// Creates the main application router by merging public and private routes.
 ///
@@ -34,8 +33,12 @@ use crate::http::server::middleware::secure_headers_middleware;
 /// Private routes include the main UI, API endpoints, and WebSocket handler, protected by auth middleware.
 ///
 /// When routes get added to public routes, [`crate::http::server::EXPECTED_AUTH_EXCEPTIONS_VERSION`] needs to be bumped.
+///
+/// The auth middleware is applied to the private routes only. It takes
+/// [`AppState`] (rather than just the auth runtime) so it can also reach
+/// `config_rx` for HMAC validation of m2m clients on the unified path.
 pub(crate) fn create_app_router(
-    auth_runtime: &Arc<auth::Runtime>,
+    app_state: &AppState,
     spa_handler: impl Fn(AppState) -> Response + Send + Sync + Clone + 'static,
 ) -> Router<AppState> {
     let public = Router::new()
@@ -56,9 +59,7 @@ pub(crate) fn create_app_router(
         )
         .route("/ws", any(websocket::ws_handler))
         .route_layer(ax_middleware::from_fn_with_state(
-            auth::LayerState {
-                auth: auth_runtime.clone(),
-            },
+            app_state.clone(),
             auth::require,
         ));
 
@@ -103,7 +104,7 @@ pub(crate) fn create_app(app_state: AppState) -> IntoMakeService<Router<()>> {
         ))
         .layer(ax_middleware::from_fn(secure_headers_middleware));
 
-    let app = create_app_router(&app_state.auth, assets::serve_ui)
+    let app = create_app_router(&app_state, assets::serve_ui)
         .with_state(app_state)
         .layer(middleware_stack);
 

@@ -1,4 +1,12 @@
 //! Authentication middleware and security utilities.
+//!
+//! # Stability Warning
+//!
+//! The M2M path through this middleware (HMAC headers on `/api/*`) is a
+//! **fallback** for machine-to-machine access to frontend UI endpoints.
+//! Unlike the stable `/api/m2m/*` endpoints, these endpoints carry
+//! **no stability guarantees** — they are the frontend's own backend and
+//! can change at any time.  See [`super::hmac`] for details.
 
 use axum::{
     body::Body,
@@ -9,28 +17,74 @@ use axum::{
 };
 use axum_extra::extract::cookie::SignedCookieJar;
 
-use crate::http::auth::{
-    LOGIN_ERROR_SESSION_EXPIRED, LayerState, Resolved,
-    cookies::{
-        create_return_to_cookie, get_oidc_session_from_cookie, get_token_session_from_cookie,
+use crate::{
+    app::AppState,
+    http::auth::{
+        AuthInfo, LOGIN_ERROR_SESSION_EXPIRED, Resolved,
+        cookies::{
+            create_return_to_cookie, get_oidc_session_from_cookie, get_token_session_from_cookie,
+        },
+        hmac, login_error_redirect,
     },
-    login_error_redirect,
 };
 
 /// Middleware that enforces authentication depending on configured mode.
+///
+/// Accepts either cookie sessions (existing) or HMAC-SHA256 headers (new).
+/// The same private routes serve both browser and M2M clients.
 pub(crate) async fn require(
-    State(LayerState { auth }): State<LayerState>,
-    req: Request<Body>,
+    State(state): State<AppState>,
+    mut req: Request<Body>,
     next: Next,
 ) -> Response {
-    let headers = req.headers();
-    let jar = SignedCookieJar::from_headers(headers, auth.cookie_key.clone());
+    let auth = &state.auth;
+
+    // External auth (reverse proxy or external provider) is handled
+    // outside the app; do not enforce internal auth here and let
+    // requests through. The UI will show a prominent notice when
+    // external auth is not acknowledged or has mismatched version.
     match auth.mode {
-        // External auth (reverse proxy or external provider) is handled
-        // outside the app; do not enforce internal auth here and let
-        // requests through. The UI will show a prominent notice when
-        // external auth is not acknowledged or has mismatched version.
-        Resolved::Disabled | Resolved::External { .. } => next.run(req).await,
+        Resolved::Disabled | Resolved::External { .. } => return next.run(req).await,
+        _ => {}
+    }
+
+    // ── M2M HMAC authentication (unified path) ──────────────────────────
+    if req.headers().contains_key("X-Client-ID") || req.headers().contains_key("X-Request") {
+        // Clone the Arc<ControllerConfig> synchronously to avoid holding
+        // the !Send RefGuard across any await point.
+        let config = state.config_rx.borrow().clone();
+        let client_id = match hmac::validate_hmac_identity(req.headers(), &config) {
+            Ok(id) => id,
+            Err((status, msg)) => return (status, msg).into_response(),
+        };
+
+        let path = req.uri().path();
+        if hmac::M2M_BLOCKED_PREFIXES
+            .iter()
+            .any(|prefix| path.starts_with(prefix))
+        {
+            tracing::info!("Blocked M2M request to {path} from client '{client_id}'");
+            return (
+                StatusCode::FORBIDDEN,
+                "Endpoint not available for M2M clients",
+            )
+                .into_response();
+        }
+
+        tracing::info!(
+            client_id,
+            version = %hmac::EXPECTED_FRONTEND_ENDPOINT_VERSION,
+            path,
+            "M2M frontend API request",
+        );
+        req.extensions_mut()
+            .insert(AuthInfo::M2MClient { client_id });
+        return next.run(req).await;
+    }
+
+    // ── Cookie-based authentication ─────────────────────────────────────
+    let jar = SignedCookieJar::from_headers(req.headers(), auth.cookie_key.clone());
+    match auth.mode {
         Resolved::Token { ref token } => {
             // Token auth uses a signed cookie with claims (iat, exp, token_hash)
             if let Some(claims) = get_token_session_from_cookie(&jar) {
@@ -43,10 +97,11 @@ pub(crate) async fn require(
                     );
                 }
                 if claims.matches_token(token) {
+                    req.extensions_mut().insert(AuthInfo::WebSession);
                     return next.run(req).await;
                 }
             }
-            if wants_html(headers) {
+            if wants_html(req.headers()) {
                 // remember path for redirect-after-login
                 redirect_with_return_to(jar, &req, Redirect::temporary("/login"))
             } else {
@@ -64,15 +119,19 @@ pub(crate) async fn require(
                         login_error_redirect(LOGIN_ERROR_SESSION_EXPIRED),
                     )
                 } else {
+                    req.extensions_mut().insert(AuthInfo::WebSession);
                     next.run(req).await
                 };
             }
             tracing::info!("require: no valid session cookie, redirecting to /login");
-            if wants_html(headers) {
+            if wants_html(req.headers()) {
                 redirect_with_return_to(jar, &req, Redirect::temporary("/login"))
             } else {
                 StatusCode::UNAUTHORIZED.into_response()
             }
+        }
+        Resolved::Disabled | Resolved::External { .. } => {
+            unreachable!("handled by early return above")
         }
     }
 }
