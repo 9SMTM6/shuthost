@@ -8,6 +8,7 @@ use axum_extra::extract::cookie::SignedCookieJar;
 use cookie::time::Duration as CookieDuration;
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::Deserialize;
+use subtle::ConstantTimeEq as _;
 
 use crate::{
     app::AppState,
@@ -45,7 +46,13 @@ pub(crate) async fn login_post(
         &Resolved::Token {
             token: ref expected,
             ..
-        } if token.expose_secret() == expected.expose_secret() => {
+            // Constant-time comparison to avoid leaking the token via a timing side channel
+        } if bool::from(
+            token
+                .expose_secret()
+                .as_bytes()
+                .ct_eq(expected.expose_secret().as_bytes()),
+        ) => {
             let claims = TokenSessionClaims::new((*expected).expose_secret());
             let cookie = create_token_session_cookie(
                 &claims,

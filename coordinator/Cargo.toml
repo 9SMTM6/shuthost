@@ -97,6 +97,7 @@ sqlx = { version = "0.9", features = [
     "runtime-tokio",
     "sqlite",
 ] }
+subtle = "2.6.1"
 tokio = { workspace = true, features = [
     # requires RUSTFLAGS="--cfg tokio_unstable", which we don't currently ship as part of this project
     # "tracing",

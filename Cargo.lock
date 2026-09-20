@@ -4053,6 +4053,7 @@ dependencies = [
  "shuthost_common",
  "spdx",
  "sqlx",
+ "subtle",
  "thiserror 2.0.20",
  "tiny-skia",
  "tokio",

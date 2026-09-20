@@ -9,6 +9,7 @@ use rand::{RngExt as _, distr::Alphanumeric};
 use secrecy::{ExposeSecret as _, SecretString};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
+use subtle::ConstantTimeEq as _;
 
 /// Cookie name constants for authentication
 pub(crate) const COOKIE_OIDC_SESSION: &str = "shuthost_oidc_session";
@@ -46,11 +47,15 @@ impl TokenSessionClaims {
         now_ts() >= self.exp
     }
     /// Check if the token matches (by hash).
+    ///
+    /// The comparison runs in constant time to avoid leaking the expected
+    /// token hash through a timing side channel.
     pub(crate) fn matches_token(&self, token: &SecretString) -> bool {
         let mut hasher = Sha256::new();
         hasher.update(token.expose_secret().as_bytes());
         let hash = hex::encode(hasher.finalize());
-        self.token_hash == hash
+        // Both sides are fixed-length hex-encoded SHA-256 digests.
+        bool::from(self.token_hash.as_bytes().ct_eq(hash.as_bytes()))
     }
 }
 
