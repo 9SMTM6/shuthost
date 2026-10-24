@@ -118,7 +118,7 @@ tail_expr_drop_order = "allow" # This doesnt help in this project, since we're a
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(tokio_unstable, rust_analyzer, coverage, coverage_nightly, oidc_danger_accept_invalid_certs)',
 ] }
-unsafe-op-in-unsafe-fn = "warn"
+unsafe_op_in_unsafe_fn = "warn"
 unused_extern_crates = "allow"
 # Note: We import from core and alloc explicitly to clarify where names come from, which helps understand what they might do
 # Always importing the crates is the most elegant way to avoid autofix not properly working
