@@ -23,6 +23,7 @@ allow-git = [
 [advisories]
 ignore = [
     { id = "RUSTSEC-2023-0071", reason = "AFAICT exploiting this would require the attacker to be able to control the OIDC provider / set the OIDC provider, at which point several other layers of security already failed." },
+    { id = "RUSTSEC-2026-0387", reason = "Depended on through openidconnect and web-push-native. IDK how realistic an exploitation is, but regardless, I don't have the capacity to fix it." },
 ]
 
 [bans]
