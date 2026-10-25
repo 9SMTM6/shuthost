@@ -56,8 +56,8 @@ async fn websocket_config_updates() {
     let initial: WsMessage = serde_json::from_str(&initial_msg.to_string()).unwrap();
     match initial {
         WsMessage::Initial(initial) => {
-            assert!(initial.dynamic_config.hosts.is_empty());
-            assert!(initial.dynamic_config.clients.is_empty());
+            assert_eq!(initial.dynamic_config.hosts, [] as [String; 0]);
+            assert_eq!(initial.dynamic_config.clients, [] as [String; 0]);
             assert!(initial.dynamic_config.host_config_map.is_empty());
         }
         _ => panic!("Expected Initial message"),
@@ -110,7 +110,7 @@ async fn websocket_config_updates() {
                 }) = ws_msg
                 {
                     assert_eq!(hosts, vec!["newhost".to_string()]);
-                    assert!(clients.is_empty());
+                    assert_eq!(clients, [] as [String; 0]);
                     assert_eq!(host_config_map.len(), 1);
                     let host_config = &host_config_map["newhost"];
                     assert!(!host_config.enforce_state);
