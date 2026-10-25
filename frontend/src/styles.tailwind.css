@@ -23,10 +23,12 @@ body {
 
     /* Global layouting */
     display: grid;
+    /*biome-ignore-start lint/correctness/noInvalidGridAreas: AFAICT this is a false positive.*/
     grid-template-areas:
         "header"
         "main"
         "footer";
+    /*biome-ignore-end lint/correctness/noInvalidGridAreas: AFAICT this is a false positive.*/
     grid-template-rows: auto 1fr auto;
 
     header {
