@@ -134,7 +134,7 @@ hex.workspace = true
 krates = "0.21.2"
 regex.workspace = true
 # Generate PNG favicons from SVG at build time (no external browser)
-resvg = "0.48"
+resvg = "0.49"
 serde_json.workspace = true
 serde.workspace = true
 sha2.workspace = true
